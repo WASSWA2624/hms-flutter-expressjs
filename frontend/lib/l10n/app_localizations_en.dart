@@ -499,6 +499,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'The sign-in details are not valid.';
 
   @override
+  String get authAccountNotFoundMessage =>
+      'No account exists for that email or phone. Check the details or create an account.';
+
+  @override
+  String get authWrongPasswordMessage =>
+      'The password is incorrect for this account.';
+
+  @override
   String get authForbiddenMessage =>
       'This account cannot complete that action.';
 

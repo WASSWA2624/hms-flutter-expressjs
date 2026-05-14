@@ -829,7 +829,7 @@ const login = async (data) => {
     const users = await authRepository.findUsersByIdentifier(identifier);
 
     if (users.length === 0) {
-      throw new HttpError('errors.auth.invalid_credentials', 401);
+      throw new HttpError('errors.auth.user_not_found', 401);
     }
 
     const activeUsers = users.filter((candidate) => candidate.status === 'ACTIVE');
@@ -856,7 +856,7 @@ const login = async (data) => {
   }
 
   if (!user) {
-    throw new HttpError('errors.auth.invalid_credentials', 401);
+    throw new HttpError('errors.auth.user_not_found', 401);
   }
 
   // Check if user is active
@@ -887,7 +887,7 @@ const login = async (data) => {
       user_agent,
       details: { reason: 'invalid_password' }
     });
-    throw new HttpError('errors.auth.invalid_credentials', 401);
+    throw new HttpError('errors.auth.wrong_password', 401);
   }
 
   // Get user's accessible facilities

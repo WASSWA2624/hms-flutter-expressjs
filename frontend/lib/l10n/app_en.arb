@@ -610,6 +610,14 @@
   "@authInvalidCredentialsMessage": {
     "description": "Safe login failure message."
   },
+  "authAccountNotFoundMessage": "No account exists for that email or phone. Check the details or create an account.",
+  "@authAccountNotFoundMessage": {
+    "description": "Login failure message when the entered email or phone does not match an account."
+  },
+  "authWrongPasswordMessage": "The password is incorrect for this account.",
+  "@authWrongPasswordMessage": {
+    "description": "Login failure message when the account exists but the password is wrong."
+  },
   "authForbiddenMessage": "This account cannot complete that action.",
   "@authForbiddenMessage": {
     "description": "Safe auth forbidden failure message."

@@ -22,6 +22,12 @@ class AuthFailureText extends StatelessWidget {
     if (failure.code == 'auth.account_pending') {
       return l10n.authAccountPendingMessage;
     }
+    if (failure.code == 'auth.account_not_found') {
+      return l10n.authAccountNotFoundMessage;
+    }
+    if (failure.code == 'auth.wrong_password') {
+      return l10n.authWrongPasswordMessage;
+    }
 
     return switch (failure.category) {
       AppFailureCategory.unauthorized => l10n.authInvalidCredentialsMessage,

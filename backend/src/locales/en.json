@@ -25,6 +25,7 @@
   "errors.auth.account_suspended": "Account has been suspended",
   "errors.auth.account_pending": "This email is already registered but has not been verified.",
   "errors.auth.password_incorrect": "Current password is incorrect",
+  "errors.auth.wrong_password": "Password is incorrect",
   "errors.auth.token_invalid": "Invalid or expired token",
   "errors.auth.refresh_token_invalid": "Invalid or expired refresh token",
   "errors.auth.session_expired": "Session has expired",

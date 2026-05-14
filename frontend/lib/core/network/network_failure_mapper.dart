@@ -61,7 +61,10 @@ final class NetworkFailureMapper {
     }
 
     if (statusCode == 401) {
-      return AppFailure.unauthorized(statusCode: statusCode);
+      return AppFailure.unauthorized(
+        code: _unauthorizedFailureCode(response?.data),
+        statusCode: statusCode,
+      );
     }
 
     if (statusCode == 403) {
@@ -131,5 +134,14 @@ final class NetworkFailureMapper {
     }
 
     return code.toString().trim().toUpperCase();
+  }
+
+  String _unauthorizedFailureCode(Object? data) {
+    return switch (_responseCode(data)) {
+      'USER_NOT_FOUND' => 'auth.account_not_found',
+      'WRONG_PASSWORD' => 'auth.wrong_password',
+      'INVALID_CREDENTIALS' => 'auth.invalid_credentials',
+      _ => 'auth.unauthorized',
+    };
   }
 }

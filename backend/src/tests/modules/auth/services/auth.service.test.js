@@ -194,7 +194,10 @@ describe('Auth Service', () => {
         .toThrow(HttpError);
       await expect(authService.login(loginData))
         .rejects
-        .toMatchObject({ statusCode: 401 });
+        .toMatchObject({
+          statusCode: 401,
+          messageKey: 'errors.auth.user_not_found',
+        });
     });
 
     it('should reject login with invalid phone credentials', async () => {
@@ -211,7 +214,10 @@ describe('Auth Service', () => {
         .toThrow(HttpError);
       await expect(authService.login(loginData))
         .rejects
-        .toMatchObject({ statusCode: 401 });
+        .toMatchObject({
+          statusCode: 401,
+          messageKey: 'errors.auth.user_not_found',
+        });
     });
 
     it('should reject login for inactive user', async () => {
@@ -258,7 +264,10 @@ describe('Auth Service', () => {
         .toThrow(HttpError);
       await expect(authService.login(loginData))
         .rejects
-        .toMatchObject({ statusCode: 401 });
+        .toMatchObject({
+          statusCode: 401,
+          messageKey: 'errors.auth.wrong_password',
+        });
     });
 
     it('should require email verification for pending user when tenant is not provided', async () => {

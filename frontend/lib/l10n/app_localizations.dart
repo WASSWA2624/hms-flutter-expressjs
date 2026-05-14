@@ -976,6 +976,18 @@ abstract class AppLocalizations {
   /// **'The sign-in details are not valid.'**
   String get authInvalidCredentialsMessage;
 
+  /// Login failure message when the entered email or phone does not match an account.
+  ///
+  /// In en, this message translates to:
+  /// **'No account exists for that email or phone. Check the details or create an account.'**
+  String get authAccountNotFoundMessage;
+
+  /// Login failure message when the account exists but the password is wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'The password is incorrect for this account.'**
+  String get authWrongPasswordMessage;
+
   /// Safe auth forbidden failure message.
   ///
   /// In en, this message translates to:

@@ -39,6 +39,45 @@ void main() {
       expect(failure.isRetryable, isFalse);
     });
 
+    test(
+      'preserves specific login failure codes from unauthorized responses',
+      () {
+        final requestOptions = RequestOptions(path: '/auth/login');
+        final accountNotFoundFailure = mapper.map(
+          DioException(
+            requestOptions: requestOptions,
+            response: Response<Object?>(
+              requestOptions: requestOptions,
+              statusCode: 401,
+              data: <String, Object?>{'code': 'USER_NOT_FOUND'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+          StackTrace.empty,
+        );
+        final wrongPasswordFailure = mapper.map(
+          DioException(
+            requestOptions: requestOptions,
+            response: Response<Object?>(
+              requestOptions: requestOptions,
+              statusCode: 401,
+              data: <String, Object?>{'code': 'WRONG_PASSWORD'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+          StackTrace.empty,
+        );
+
+        expect(
+          accountNotFoundFailure.category,
+          AppFailureCategory.unauthorized,
+        );
+        expect(accountNotFoundFailure.code, 'auth.account_not_found');
+        expect(wrongPasswordFailure.category, AppFailureCategory.unauthorized);
+        expect(wrongPasswordFailure.code, 'auth.wrong_password');
+      },
+    );
+
     test('maps forbidden and missing responses to typed failures', () {
       final forbiddenRequest = RequestOptions(path: '/admin');
       final notFoundRequest = RequestOptions(path: '/missing');
