@@ -41,8 +41,11 @@ const resolveAccountStatusErrorKey = (status) => {
 const APP_DISPLAY_NAME =
   String(env.APP_DISPLAY_NAME || 'Hospital Management System').trim() ||
   'Hospital Management System';
+const VERIFICATION_EMAIL_APP_NAME = 'HOSSPI HMS';
 const EMAIL_LOGO_CID = 'hms-app-logo';
 const EMAIL_LOGO_PATHS = [
+  path.resolve(__dirname, '../../../../../frontend/assets/logos/logo.png'),
+  path.resolve(__dirname, '../../../../../frontend/web/favicon.png'),
   path.resolve(__dirname, '../../../../../hms-frontend/public/logo.png'),
   path.resolve(__dirname, '../../../../../hms-frontend/assets/logo.png'),
   path.resolve(__dirname, '../../../../public/logo.png'),
@@ -222,27 +225,32 @@ const buildVerificationEmailMessage = ({
     new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_MINUTES * 60 * 1000);
   const expiresAtLabel = formatExpiryDateTime(expiryDate, resolvedLocale);
   const subject = translate('messages.auth.email_verification.subject', resolvedLocale, {
-    app_name: APP_DISPLAY_NAME,
+    app_name: VERIFICATION_EMAIL_APP_NAME,
   });
   const preheader = translate('messages.auth.email_verification.preheader', resolvedLocale, {
     code,
   });
-  const copyCodeLabel = translate('messages.auth.email_verification.copy_code_label', resolvedLocale);
   const expiryLine = translate('messages.auth.email_verification.expires_at', resolvedLocale, {
+    minutes: EMAIL_VERIFICATION_EXPIRY_MINUTES,
     expires_at: expiresAtLabel,
   });
+  const { logoSrc, attachments } = resolveEmailLogoAsset();
 
   const text = [
     subject,
     '',
     code,
-    copyCodeLabel,
     expiryLine,
   ].join('\n');
 
-  const safeCopyCodeLabel = escapeHtml(copyCodeLabel);
   const safeExpiryLine = escapeHtml(expiryLine);
   const safeCode = escapeHtml(code);
+  const safeLogoSrc = logoSrc ? escapeHtml(logoSrc) : '';
+  const logoHeaderCell = logoSrc
+    ? `<td style="padding:0 8px 0 0;vertical-align:middle;width:34px;">
+        <img src="${safeLogoSrc}" alt="${escapeHtml(`${VERIFICATION_EMAIL_APP_NAME} logo`)}" width="28" height="28" style="display:block;width:28px;height:28px;border:0;outline:none;text-decoration:none;background:#ffffff;" />
+      </td>`
+    : '';
 
   const html = `<!doctype html>
 <html lang="${escapeHtml(resolvedLocale)}">
@@ -261,16 +269,16 @@ const buildVerificationEmailMessage = ({
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:360px;background:#ffffff;border:1px solid #dbe4f3;">
           <tr>
             <td align="center" style="padding:16px 18px 14px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#0f172a;">
-              <h1 style="margin:0 0 12px;font-size:18px;line-height:24px;font-weight:700;color:#0f172a;">${escapeHtml(APP_DISPLAY_NAME)}</h1>
-              <p style="margin:0 0 12px;font-family:Consolas,Monaco,'Courier New',monospace;font-size:30px;line-height:34px;font-weight:700;color:#0f172a;letter-spacing:0.16em;">${safeCode}</p>
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 0 12px;">
                 <tr>
-                  <td style="background:#0b66c3;color:#ffffff;font-size:13px;line-height:18px;font-weight:700;padding:8px 14px;text-align:center;">
-                    ${safeCopyCodeLabel}
+                  ${logoHeaderCell}
+                  <td style="vertical-align:middle;">
+                    <h1 style="margin:0;font-size:18px;line-height:24px;font-weight:700;color:#0f172a;">${escapeHtml(VERIFICATION_EMAIL_APP_NAME)}</h1>
                   </td>
                 </tr>
               </table>
-              <p style="margin:10px 0 0;font-size:12px;line-height:16px;color:#64748b;">${safeExpiryLine}</p>
+              <p style="margin:0 0 10px;font-family:Consolas,Monaco,'Courier New',monospace;font-size:30px;line-height:34px;font-weight:700;color:#0f172a;letter-spacing:0.16em;">${safeCode}</p>
+              <p style="margin:0;font-size:12px;line-height:16px;color:#64748b;">${safeExpiryLine}</p>
             </td>
           </tr>
         </table>
@@ -280,7 +288,7 @@ const buildVerificationEmailMessage = ({
 </body>
 </html>`;
 
-  return { subject, text, html, attachments: [] };
+  return { subject, text, html, attachments };
 };
 
 const sendVerificationEmail = async ({

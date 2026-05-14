@@ -23,6 +23,7 @@ class AppTextField extends StatefulWidget {
     this.onChanged,
     this.onSaved,
     this.onFieldSubmitted,
+    this.onFocusChanged,
     this.focusNode,
     this.autovalidateMode,
     this.restorationId,
@@ -71,6 +72,7 @@ class AppTextField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final FormFieldSetter<String>? onSaved;
   final ValueChanged<String>? onFieldSubmitted;
+  final ValueChanged<bool>? onFocusChanged;
   final FocusNode? focusNode;
   final AutovalidateMode? autovalidateMode;
   final String? restorationId;
@@ -92,12 +94,15 @@ class AppTextField extends StatefulWidget {
 }
 
 class _AppTextFieldState extends State<AppTextField> {
+  late FocusNode _focusNode;
+  late bool _ownsFocusNode;
   late bool _obscureText;
 
   @override
   void initState() {
     super.initState();
     _obscureText = widget.obscureText;
+    _attachFocusNode();
   }
 
   @override
@@ -106,6 +111,33 @@ class _AppTextFieldState extends State<AppTextField> {
     if (oldWidget.obscureText != widget.obscureText) {
       _obscureText = widget.obscureText;
     }
+    if (oldWidget.focusNode != widget.focusNode) {
+      _detachFocusNode();
+      _attachFocusNode();
+    }
+  }
+
+  @override
+  void dispose() {
+    _detachFocusNode();
+    super.dispose();
+  }
+
+  void _attachFocusNode() {
+    _ownsFocusNode = widget.focusNode == null;
+    _focusNode = widget.focusNode ?? FocusNode();
+    _focusNode.addListener(_handleFocusChanged);
+  }
+
+  void _detachFocusNode() {
+    _focusNode.removeListener(_handleFocusChanged);
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
+  }
+
+  void _handleFocusChanged() {
+    widget.onFocusChanged?.call(_focusNode.hasFocus);
   }
 
   @override
@@ -130,7 +162,7 @@ class _AppTextFieldState extends State<AppTextField> {
       onChanged: widget.onChanged,
       onSaved: widget.onSaved,
       onFieldSubmitted: widget.onFieldSubmitted,
-      focusNode: widget.focusNode,
+      focusNode: _focusNode,
       autovalidateMode: widget.autovalidateMode,
       restorationId: widget.restorationId,
       maxLines: widget.obscureText ? 1 : widget.maxLines,

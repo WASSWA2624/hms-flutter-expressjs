@@ -20,14 +20,19 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
+  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _identifierFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
   void dispose() {
     _identifierController.dispose();
     _passwordController.dispose();
+    _identifierFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -47,6 +52,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               child: AutofillGroup(
                 child: Form(
                   key: _formKey,
+                  autovalidateMode: _autovalidateMode,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
@@ -84,6 +90,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         validator: AppValidators.requiredText(
                           l10n.validationRequired,
                         ),
+                        onChanged: (_) => _clearFormFeedback(),
+                        onFocusChanged: _handleFieldFocusChanged,
+                        focusNode: _identifierFocusNode,
                         enabled: !state.isSubmitting,
                         autofocus: true,
                       ),
@@ -101,6 +110,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           l10n.validationRequired,
                           trim: false,
                         ),
+                        onChanged: (_) => _clearFormFeedback(),
+                        onFocusChanged: _handleFieldFocusChanged,
+                        focusNode: _passwordFocusNode,
                         enabled: !state.isSubmitting,
                         onFieldSubmitted: (_) => _submit(),
                       ),
@@ -131,8 +143,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> _submit() async {
+    ref.read(authControllerProvider.notifier).clearFailure();
     final form = _formKey.currentState;
     if (form == null || !form.validate()) {
+      _enableValidationRefresh();
       return;
     }
 
@@ -170,5 +184,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ? AppRoutes.home.location()
           : from,
     );
+  }
+
+  void _handleFieldFocusChanged(bool hasFocus) {
+    _clearFormFeedback();
+    _resetValidationFeedback();
+  }
+
+  void _clearFormFeedback() {
+    ref.read(authControllerProvider.notifier).clearFailure();
+  }
+
+  void _enableValidationRefresh() {
+    if (_autovalidateMode == AutovalidateMode.onUserInteraction) {
+      return;
+    }
+
+    setState(() {
+      _autovalidateMode = AutovalidateMode.onUserInteraction;
+    });
+  }
+
+  void _resetValidationFeedback() {
+    if (_autovalidateMode == AutovalidateMode.disabled) {
+      return;
+    }
+
+    setState(() {
+      _formKey = GlobalKey<FormState>();
+      _autovalidateMode = AutovalidateMode.disabled;
+    });
   }
 }

@@ -16,16 +16,23 @@ class ChangePasswordDialog extends ConsumerStatefulWidget {
 }
 
 class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
-  final _formKey = GlobalKey<FormState>();
+  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _currentPasswordFocusNode = FocusNode();
+  final _newPasswordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
   void dispose() {
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _currentPasswordFocusNode.dispose();
+    _newPasswordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -41,6 +48,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
         width: 420,
         child: Form(
           key: _formKey,
+          autovalidateMode: _autovalidateMode,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -59,6 +67,9 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                   l10n.validationRequired,
                   trim: false,
                 ),
+                onChanged: (_) => _clearFormFeedback(),
+                onFocusChanged: _handleFieldFocusChanged,
+                focusNode: _currentPasswordFocusNode,
                 enabled: !state.isSubmitting,
               ),
               SizedBox(height: theme.spacing.md),
@@ -74,6 +85,9 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                   l10n.authPasswordMinLengthMessage,
                   allowEmpty: false,
                 ),
+                onChanged: (_) => _clearFormFeedback(),
+                onFocusChanged: _handleFieldFocusChanged,
+                focusNode: _newPasswordFocusNode,
                 enabled: !state.isSubmitting,
               ),
               SizedBox(height: theme.spacing.md),
@@ -97,6 +111,9 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                       ? null
                       : l10n.authPasswordMismatchMessage;
                 },
+                onChanged: (_) => _clearFormFeedback(),
+                onFocusChanged: _handleFieldFocusChanged,
+                focusNode: _confirmPasswordFocusNode,
                 enabled: !state.isSubmitting,
               ),
             ],
@@ -120,8 +137,10 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
   }
 
   Future<void> _submit() async {
+    ref.read(authControllerProvider.notifier).clearFailure();
     final form = _formKey.currentState;
     if (form == null || !form.validate()) {
+      _enableValidationRefresh();
       return;
     }
 
@@ -136,5 +155,35 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
     if (mounted && success) {
       Navigator.of(context).pop(true);
     }
+  }
+
+  void _handleFieldFocusChanged(bool hasFocus) {
+    _clearFormFeedback();
+    _resetValidationFeedback();
+  }
+
+  void _clearFormFeedback() {
+    ref.read(authControllerProvider.notifier).clearFailure();
+  }
+
+  void _enableValidationRefresh() {
+    if (_autovalidateMode == AutovalidateMode.onUserInteraction) {
+      return;
+    }
+
+    setState(() {
+      _autovalidateMode = AutovalidateMode.onUserInteraction;
+    });
+  }
+
+  void _resetValidationFeedback() {
+    if (_autovalidateMode == AutovalidateMode.disabled) {
+      return;
+    }
+
+    setState(() {
+      _formKey = GlobalKey<FormState>();
+      _autovalidateMode = AutovalidateMode.disabled;
+    });
   }
 }

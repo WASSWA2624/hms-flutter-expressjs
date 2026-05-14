@@ -44,6 +44,14 @@ final class AuthController extends Notifier<AuthControllerState> {
     return const AuthControllerState();
   }
 
+  void clearFailure() {
+    if (state.failure == null) {
+      return;
+    }
+
+    state = state.copyWith(clearFailure: true);
+  }
+
   Future<bool> login({
     required String identifier,
     required String password,

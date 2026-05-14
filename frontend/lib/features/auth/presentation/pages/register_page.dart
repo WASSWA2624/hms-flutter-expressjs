@@ -18,14 +18,21 @@ class RegisterPage extends ConsumerStatefulWidget {
 }
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
-  final _formKey = GlobalKey<FormState>();
+  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _adminNameController = TextEditingController();
   final _facilityNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _locationController = TextEditingController();
+  final _adminNameFocusNode = FocusNode();
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  final _facilityNameFocusNode = FocusNode();
+  final _phoneFocusNode = FocusNode();
+  final _locationFocusNode = FocusNode();
   String _facilityType = 'HOSPITAL';
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
   void dispose() {
@@ -35,6 +42,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _facilityNameController.dispose();
     _phoneController.dispose();
     _locationController.dispose();
+    _adminNameFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _facilityNameFocusNode.dispose();
+    _phoneFocusNode.dispose();
+    _locationFocusNode.dispose();
     super.dispose();
   }
 
@@ -53,6 +66,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               constraints: const BoxConstraints(maxWidth: 520),
               child: Form(
                 key: _formKey,
+                autovalidateMode: _autovalidateMode,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
@@ -84,6 +98,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       validator: AppValidators.requiredText(
                         l10n.validationRequired,
                       ),
+                      onChanged: (_) => _clearFormFeedback(),
+                      onFocusChanged: _handleFieldFocusChanged,
+                      focusNode: _adminNameFocusNode,
                       enabled: !state.isSubmitting,
                     ),
                     SizedBox(height: theme.spacing.md),
@@ -100,6 +117,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           allowEmpty: false,
                         ),
                       ]),
+                      onChanged: (_) => _clearFormFeedback(),
+                      onFocusChanged: _handleFieldFocusChanged,
+                      focusNode: _emailFocusNode,
                       enabled: !state.isSubmitting,
                     ),
                     SizedBox(height: theme.spacing.md),
@@ -117,6 +137,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         l10n.authPasswordMinLengthMessage,
                         allowEmpty: false,
                       ),
+                      onChanged: (_) => _clearFormFeedback(),
+                      onFocusChanged: _handleFieldFocusChanged,
+                      focusNode: _passwordFocusNode,
                       enabled: !state.isSubmitting,
                     ),
                     SizedBox(height: theme.spacing.md),
@@ -127,6 +150,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       validator: AppValidators.requiredText(
                         l10n.validationRequired,
                       ),
+                      onChanged: (_) => _clearFormFeedback(),
+                      onFocusChanged: _handleFieldFocusChanged,
+                      focusNode: _facilityNameFocusNode,
                       enabled: !state.isSubmitting,
                     ),
                     SizedBox(height: theme.spacing.md),
@@ -167,6 +193,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       ],
                       onChanged: (value) {
                         if (value != null) {
+                          _clearFormFeedback();
+                          _resetValidationFeedback();
                           setState(() => _facilityType = value);
                         }
                       },
@@ -180,6 +208,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       inputFormatters: <TextInputFormatter>[
                         FilteringTextInputFormatter.digitsOnly,
                       ],
+                      onChanged: (_) => _clearFormFeedback(),
+                      onFocusChanged: _handleFieldFocusChanged,
+                      focusNode: _phoneFocusNode,
                       enabled: !state.isSubmitting,
                     ),
                     SizedBox(height: theme.spacing.md),
@@ -187,6 +218,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       controller: _locationController,
                       labelText: l10n.authLocationOptionalLabel,
                       textInputAction: TextInputAction.done,
+                      onChanged: (_) => _clearFormFeedback(),
+                      onFocusChanged: _handleFieldFocusChanged,
+                      focusNode: _locationFocusNode,
                       enabled: !state.isSubmitting,
                     ),
                     SizedBox(height: theme.spacing.lg),
@@ -215,8 +249,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Future<void> _submit() async {
+    ref.read(authControllerProvider.notifier).clearFailure();
     final form = _formKey.currentState;
     if (form == null || !form.validate()) {
+      _enableValidationRefresh();
       return;
     }
 
@@ -243,5 +279,35 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         queryParameters: <String, String>{'email': email},
       ),
     );
+  }
+
+  void _handleFieldFocusChanged(bool hasFocus) {
+    _clearFormFeedback();
+    _resetValidationFeedback();
+  }
+
+  void _clearFormFeedback() {
+    ref.read(authControllerProvider.notifier).clearFailure();
+  }
+
+  void _enableValidationRefresh() {
+    if (_autovalidateMode == AutovalidateMode.onUserInteraction) {
+      return;
+    }
+
+    setState(() {
+      _autovalidateMode = AutovalidateMode.onUserInteraction;
+    });
+  }
+
+  void _resetValidationFeedback() {
+    if (_autovalidateMode == AutovalidateMode.disabled) {
+      return;
+    }
+
+    setState(() {
+      _formKey = GlobalKey<FormState>();
+      _autovalidateMode = AutovalidateMode.disabled;
+    });
   }
 }

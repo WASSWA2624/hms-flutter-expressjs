@@ -37,15 +37,16 @@ describe('Auth Service', () => {
     const lastEmailCall = sendEmail.mock.calls[sendEmail.mock.calls.length - 1][0];
 
     expect(lastEmailCall).toEqual(expect.objectContaining({
-      subject: 'Hospital Management System',
-      attachments: [],
-      html: expect.stringContaining('Copy code'),
-      text: expect.stringContaining('Copy code'),
+      subject: 'HOSSPI HMS',
+      attachments: expect.any(Array),
+      html: expect.stringContaining('HOSSPI HMS'),
+      text: expect.stringContaining('HOSSPI HMS'),
     }));
     expect(lastEmailCall.html).toMatch(/>\s*\d{6}\s*</);
     expect(lastEmailCall.text).toMatch(/\b\d{6}\b/);
-    expect(lastEmailCall.html).toContain('Expires:');
-    expect(lastEmailCall.text).toContain('Expires:');
+    expect(lastEmailCall.html).toContain('cid:hms-app-logo');
+    expect(lastEmailCall.html).toContain('Expires in 15 minutes:');
+    expect(lastEmailCall.text).toContain('Expires in 15 minutes:');
 
     [
       'href=',
@@ -53,7 +54,9 @@ describe('Auth Service', () => {
       'https://',
       '/verify-email?token=',
       'Verify email now',
+      'Copy code',
       'Verification code',
+      'HOSSPI Hospital Management System',
       'Hello ',
       'thanks for registering',
       'This code expires',

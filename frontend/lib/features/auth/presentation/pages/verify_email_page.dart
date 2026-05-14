@@ -29,12 +29,14 @@ class VerifyEmailPage extends ConsumerStatefulWidget {
 }
 
 class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
-  final _formKey = GlobalKey<FormState>();
+  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
+  final _codeFocusNode = FocusNode();
   bool _isSubmitting = false;
   bool _isResending = false;
   bool _isVerified = false;
   bool _codeResent = false;
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
   AppFailure? _failure;
 
   @override
@@ -49,6 +51,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   @override
   void dispose() {
     _codeController.dispose();
+    _codeFocusNode.dispose();
     super.dispose();
   }
 
@@ -67,6 +70,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Form(
                 key: _formKey,
+                autovalidateMode: _autovalidateMode,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,6 +127,9 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                             allowEmpty: false,
                           ),
                         ]),
+                        onChanged: (_) => _clearFormFeedback(),
+                        onFocusChanged: _handleFieldFocusChanged,
+                        focusNode: _codeFocusNode,
                         enabled: !_isSubmitting && !_isResending,
                         onFieldSubmitted: (_) => _verifyCode(),
                       ),
@@ -187,8 +194,10 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   }
 
   Future<void> _verifyCode() async {
+    _clearFormFeedback();
     final form = _formKey.currentState;
     if (form == null || !form.validate()) {
+      _enableValidationRefresh();
       return;
     }
 
@@ -232,6 +241,8 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
       _isResending = true;
       _failure = null;
       _codeResent = false;
+      _formKey = GlobalKey<FormState>();
+      _autovalidateMode = AutovalidateMode.disabled;
     });
 
     final result = await ref
@@ -256,5 +267,42 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
         });
       },
     );
+  }
+
+  void _handleFieldFocusChanged(bool hasFocus) {
+    _clearFormFeedback();
+    _resetValidationFeedback();
+  }
+
+  void _clearFormFeedback() {
+    if (_failure == null && !_codeResent) {
+      return;
+    }
+
+    setState(() {
+      _failure = null;
+      _codeResent = false;
+    });
+  }
+
+  void _enableValidationRefresh() {
+    if (_autovalidateMode == AutovalidateMode.onUserInteraction) {
+      return;
+    }
+
+    setState(() {
+      _autovalidateMode = AutovalidateMode.onUserInteraction;
+    });
+  }
+
+  void _resetValidationFeedback() {
+    if (_autovalidateMode == AutovalidateMode.disabled) {
+      return;
+    }
+
+    setState(() {
+      _formKey = GlobalKey<FormState>();
+      _autovalidateMode = AutovalidateMode.disabled;
+    });
   }
 }
