@@ -1,12 +1,15 @@
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 
 abstract final class TenantFacilityPermissions {
-  static const AppPermission tenantAdmin = AppPermission('tenant:admin');
-  static const AppPermission facilityAdmin = AppPermission('facility:admin');
+  static const AppPermission tenantAdmin = AppPermissions.tenantAdmin;
+  static const AppPermission facilityAdmin = AppPermissions.facilityAdmin;
+  static const AppPermission systemAdmin = AppPermissions.systemAdmin;
 
   static final Set<AppPermission> setupAccess = <AppPermission>{
     tenantAdmin,
     facilityAdmin,
+    systemAdmin,
   };
 }
 

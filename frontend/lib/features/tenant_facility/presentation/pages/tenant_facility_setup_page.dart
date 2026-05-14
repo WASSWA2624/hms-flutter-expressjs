@@ -44,13 +44,9 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final permissions = ref.watch(grantedAppPermissionsProvider);
-    final bool canManageTenant = permissions.grants(
-      TenantFacilityPermissions.tenantAdmin,
-    );
-    final bool canManageFacility = permissions.grantsAny(
-      TenantFacilityPermissions.setupAccess,
-    );
+    final accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canManageTenant = accessPolicy.canManageTenant();
+    final bool canManageFacility = accessPolicy.canManageFacility();
 
     return AppScreen(
       title: l10n.tenantFacilitySetupTitle,

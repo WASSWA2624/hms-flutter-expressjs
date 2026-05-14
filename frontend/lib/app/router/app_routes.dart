@@ -1,3 +1,4 @@
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 
 enum AppRouteAccess { public, authenticated }
@@ -7,17 +8,29 @@ final class AppRouteData {
     required this.name,
     required this.path,
     this.access = AppRouteAccess.public,
-    this.requiredPermissions = const <AppPermission>{},
+    this.requiredPermissions = const <AppPermission>[],
+    this.requiredAnyPermissions = const <AppPermission>[],
+    this.requiredAnyRoles = const <AppRole>[],
+    this.requiresTenantContext = false,
+    this.requiresFacilityContext = false,
   });
 
   final String name;
   final String path;
   final AppRouteAccess access;
-  final Set<AppPermission> requiredPermissions;
+  final Iterable<AppPermission> requiredPermissions;
+  final Iterable<AppPermission> requiredAnyPermissions;
+  final Iterable<AppRole> requiredAnyRoles;
+  final bool requiresTenantContext;
+  final bool requiresFacilityContext;
 
   bool get requiresAuthenticatedSession {
     return access == AppRouteAccess.authenticated ||
-        requiredPermissions.isNotEmpty;
+        requiredPermissions.isNotEmpty ||
+        requiredAnyPermissions.isNotEmpty ||
+        requiredAnyRoles.isNotEmpty ||
+        requiresTenantContext ||
+        requiresFacilityContext;
   }
 
   bool get isAuthEntryRoute {
@@ -57,6 +70,16 @@ abstract final class AppRoutes {
     name: 'tenantFacilitySetup',
     path: '/admin/setup',
     access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.systemAdmin,
+    ],
+    requiredAnyRoles: <AppRole>[
+      AppRole.superAdmin,
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+    ],
   );
   static const AppRouteData profile = AppRouteData(
     name: 'profile',

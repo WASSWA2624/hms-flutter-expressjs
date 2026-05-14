@@ -563,8 +563,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     HmsApiResource resource,
     String tenantId,
     String facilityId,
-  ) {
-    return _apiClient.get<int>(
+  ) async {
+    final result = await _apiClient.get<int>(
       ApiEndpoints.collection(
         resource,
         queryParameters: <String, String>{
@@ -592,6 +592,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
               ? payload.toList(growable: false)
               : const <Object?>[],
         ).length;
+      },
+    );
+
+    return result.when(
+      success: (int count) => Result<int>.success(count),
+      failure: (AppFailure failure) {
+        if (failure.category == AppFailureCategory.forbidden) {
+          return const Result<int>.success(0);
+        }
+
+        return Result<int>.failure(failure);
       },
     );
   }

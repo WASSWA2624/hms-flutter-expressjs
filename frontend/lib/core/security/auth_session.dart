@@ -125,9 +125,12 @@ final class AuthUserProfile {
     this.middleName,
     this.lastName,
     this.gender,
+    this.tenantId,
     this.tenantName,
+    this.facilityId,
     this.facilityName,
     this.facilityType,
+    this.branchId,
     this.staffNumber,
     this.staffPosition,
     this.practitionerType,
@@ -140,6 +143,10 @@ final class AuthUserProfile {
     return AuthUserProfile(
       id: _string(payload['userId']) ?? _string(payload['sub']),
       email: _string(payload['email']),
+      tenantId: _string(payload['tenant_id']) ?? _string(payload['tenantId']),
+      facilityId:
+          _string(payload['facility_id']) ?? _string(payload['facilityId']),
+      branchId: _string(payload['branch_id']) ?? _string(payload['branchId']),
       roles: roles,
     );
   }
@@ -154,9 +161,12 @@ final class AuthUserProfile {
   final String? middleName;
   final String? lastName;
   final String? gender;
+  final String? tenantId;
   final String? tenantName;
+  final String? facilityId;
   final String? facilityName;
   final String? facilityType;
+  final String? branchId;
   final String? staffNumber;
   final String? staffPosition;
   final String? practitionerType;

@@ -1,4 +1,5 @@
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 
@@ -74,6 +75,34 @@ final class AppRouteGuards {
     AppRouteData route,
     AppPermissionGrant grantedPermissions,
   ) {
-    return grantedPermissions.grantsAll(route.requiredPermissions);
+    final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+      sessionState.session,
+    );
+    if (!policy.hasAnyRole(route.requiredAnyRoles)) {
+      return false;
+    }
+    final AppPermissionGrant effectivePermissions = AppPermissionGrant(
+      <AppPermission>{...policy.permissions, ...grantedPermissions.permissions},
+    );
+    if (!effectivePermissions.grantsAll(route.requiredPermissions)) {
+      return false;
+    }
+    if (route.requiredAnyPermissions.isNotEmpty &&
+        !effectivePermissions.grantsAny(route.requiredAnyPermissions) &&
+        !policy.isElevated) {
+      return false;
+    }
+    if (route.requiresTenantContext &&
+        !policy.hasTenantContext &&
+        !policy.isElevated) {
+      return false;
+    }
+    if (route.requiresFacilityContext &&
+        !policy.hasFacilityContext &&
+        !policy.isElevated) {
+      return false;
+    }
+
+    return true;
   }
 }

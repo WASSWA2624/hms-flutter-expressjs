@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/router/route_guards.dart';
 import 'package:hosspi_hms/app/router/route_refresh_listenable.dart';
 import 'package:hosspi_hms/app/router/route_status_pages.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -172,8 +173,13 @@ class _AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final accessPolicy = ref.watch(appAccessPolicyProvider);
     final List<_ShellDestinationRoute> shellDestinations =
-        _localizedShellDestinations(l10n);
+        _localizedShellDestinations(l10n)
+            .where((_ShellDestinationRoute destination) {
+              return _canAccessShellRoute(destination.route, accessPolicy);
+            })
+            .toList(growable: false);
     final int selectedIndex = _selectedIndexForPath(
       location.path,
       shellDestinations,
@@ -266,6 +272,31 @@ class _AppShell extends ConsumerWidget {
 
     return index < 0 ? 0 : index;
   }
+}
+
+bool _canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
+  if (!accessPolicy.hasAnyRole(route.requiredAnyRoles)) {
+    return false;
+  }
+  if (!accessPolicy.grantsAll(route.requiredPermissions)) {
+    return false;
+  }
+  if (route.requiredAnyPermissions.isNotEmpty &&
+      !accessPolicy.grantsAny(route.requiredAnyPermissions)) {
+    return false;
+  }
+  if (route.requiresTenantContext &&
+      !accessPolicy.hasTenantContext &&
+      !accessPolicy.isElevated) {
+    return false;
+  }
+  if (route.requiresFacilityContext &&
+      !accessPolicy.hasFacilityContext &&
+      !accessPolicy.isElevated) {
+    return false;
+  }
+
+  return true;
 }
 
 UserMenuProfileData? _userMenuProfile(AuthSession? session) {

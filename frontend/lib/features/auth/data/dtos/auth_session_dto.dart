@@ -114,9 +114,15 @@ final class AuthSessionDto {
       middleName: _optionalString(profile, 'middle_name'),
       lastName: _optionalString(profile, 'last_name'),
       gender: _optionalString(profile, 'gender'),
+      tenantId:
+          _optionalString(user, 'tenant_id') ?? _optionalString(tenant, 'id'),
       tenantName: _optionalString(tenant, 'name'),
+      facilityId:
+          _optionalString(user, 'facility_id') ??
+          _optionalString(facility, 'id'),
       facilityName: _optionalString(facility, 'name'),
       facilityType: _optionalString(facility, 'facility_type'),
+      branchId: _optionalString(user, 'branch_id'),
       staffNumber: _optionalString(staffProfile, 'staff_number'),
       staffPosition: _optionalString(staffProfile, 'position'),
       practitionerType: _optionalString(staffProfile, 'practitioner_type'),
