@@ -34,6 +34,10 @@ final class SessionManager {
     return SessionState.authenticated(session: AuthSession(tokens: tokens));
   }
 
+  Future<SessionTokens?> readTokens() {
+    return _sessionStorage.readTokens();
+  }
+
   Future<String?> readAccessToken() async {
     final tokens = await _sessionStorage.readTokens();
     if (tokens == null) {

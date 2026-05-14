@@ -23,7 +23,15 @@ final class AppRouteGuards {
 
   String? redirect(AppRouteGuardRequest request) {
     final AppRouteData? targetRoute = _matchRoute(request.location.path);
-    if (targetRoute == null || !targetRoute.requiresAuthenticatedSession) {
+    if (targetRoute == null) {
+      return null;
+    }
+
+    if (targetRoute.isAuthEntryRoute && sessionState.isAuthenticated) {
+      return AppRoutes.home.location();
+    }
+
+    if (!targetRoute.requiresAuthenticatedSession) {
       return null;
     }
 
@@ -37,7 +45,7 @@ final class AppRouteGuards {
           request.location,
         ),
         SessionStatus.expired || SessionStatus.unauthenticated =>
-          AppRoutes.authRequired.locationWithFrom(request.location),
+          AppRoutes.login.locationWithFrom(request.location),
         SessionStatus.unknown => AppRoutes.sessionRestoring.locationWithFrom(
           request.location,
         ),

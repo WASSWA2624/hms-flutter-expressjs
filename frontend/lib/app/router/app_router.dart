@@ -8,10 +8,15 @@ import 'package:hosspi_hms/app/router/route_status_pages.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
+import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
 
 final appInitialLocationProvider = Provider<String?>((ref) {
@@ -57,6 +62,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const SettingsPage(),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.login.path,
+        name: AppRoutes.login.name,
+        builder: (_, GoRouterState state) {
+          return LoginPage(from: state.uri.queryParameters['from']);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.register.path,
+        name: AppRoutes.register.name,
+        builder: (_, _) => const RegisterPage(),
       ),
       GoRoute(
         path: AppRoutes.sessionRestoring.path,
@@ -152,9 +169,37 @@ class _AppShell extends ConsumerWidget {
       settingsLabel: l10n.appUserMenuSettingsLabel,
       changePasswordLabel: l10n.appUserMenuChangePasswordLabel,
       logoutLabel: l10n.appUserMenuLogoutLabel,
+      showUserAvatar: ref.watch(
+        sessionStateProvider.select((state) => state.isAuthenticated),
+      ),
+      onProfileSelected: () {
+        if (!AppRoutes.settings.matchesPath(location.path)) {
+          context.go(AppRoutes.settings.location());
+        }
+      },
       onSettingsSelected: () {
         if (!AppRoutes.settings.matchesPath(location.path)) {
           context.go(AppRoutes.settings.location());
+        }
+      },
+      onChangePasswordSelected: () async {
+        final changed = await showAppDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const ChangePasswordDialog(),
+        );
+        if (changed == true && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.authPasswordChangedMessage)),
+          );
+          context.go(AppRoutes.login.location());
+        }
+      },
+      onLogoutSelected: () async {
+        await ref.read(authRepositoryProvider).logout();
+        await ref.read(sessionStateProvider.notifier).logout();
+        if (context.mounted) {
+          context.go(AppRoutes.login.location());
         }
       },
       destinations: <ResponsiveShellDestination>[

@@ -20,6 +20,10 @@ final class AppRouteData {
         requiredPermissions.isNotEmpty;
   }
 
+  bool get isAuthEntryRoute {
+    return path == AppRoutes.login.path || path == AppRoutes.register.path;
+  }
+
   bool matchesPath(String locationPath) {
     return locationPath == path;
   }
@@ -39,10 +43,22 @@ final class AppRouteData {
 }
 
 abstract final class AppRoutes {
-  static const AppRouteData home = AppRouteData(name: 'home', path: '/');
+  static const AppRouteData home = AppRouteData(
+    name: 'home',
+    path: '/',
+    access: AppRouteAccess.authenticated,
+  );
   static const AppRouteData settings = AppRouteData(
     name: 'settings',
     path: '/settings',
+    access: AppRouteAccess.authenticated,
+  );
+
+  static const AppRouteData login = AppRouteData(name: 'login', path: '/login');
+
+  static const AppRouteData register = AppRouteData(
+    name: 'register',
+    path: '/register',
   );
 
   static const AppRouteData sessionRestoring = AppRouteData(
@@ -63,6 +79,8 @@ abstract final class AppRoutes {
   static const List<AppRouteData> all = <AppRouteData>[
     home,
     settings,
+    login,
+    register,
     sessionRestoring,
     authRequired,
     forbidden,

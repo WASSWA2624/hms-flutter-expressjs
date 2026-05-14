@@ -5,7 +5,31 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 abstract interface class AuthRepository {
   Future<Result<AuthSession?>> restoreSession();
 
+  Future<Result<AuthSession>> login({
+    required String identifier,
+    required String password,
+    String? tenantId,
+    String? facilityId,
+  });
+
+  Future<Result<void>> register({
+    required String email,
+    required String password,
+    required String facilityName,
+    required String adminName,
+    required String facilityType,
+    String? phone,
+    String? location,
+    String? interests,
+  });
+
   Future<Result<AuthSession>> refreshSession(SessionTokens tokens);
+
+  Future<Result<void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
 
   Future<Result<void>> logout();
 }

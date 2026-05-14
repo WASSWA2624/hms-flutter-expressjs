@@ -62,11 +62,11 @@ void main() {
 
       expect(
         guards.redirect(AppRouteGuardRequest(location: targetLocation)),
-        AppRoutes.authRequired.locationWithFrom(targetLocation),
+        AppRoutes.login.locationWithFrom(targetLocation),
       );
     });
 
-    test('redirects expired sessions to the auth-required route', () {
+    test('redirects expired sessions to the login route', () {
       final Uri targetLocation = Uri(path: protectedRoute.path);
       const AppRouteGuards guards = AppRouteGuards(
         sessionState: SessionState.expired(),
@@ -75,7 +75,7 @@ void main() {
 
       expect(
         guards.redirect(AppRouteGuardRequest(location: targetLocation)),
-        AppRoutes.authRequired.locationWithFrom(targetLocation),
+        AppRoutes.login.locationWithFrom(targetLocation),
       );
     });
 

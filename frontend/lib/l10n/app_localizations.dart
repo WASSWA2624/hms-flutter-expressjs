@@ -142,6 +142,12 @@ abstract class AppLocalizations {
   /// **'Go home'**
   String get commonGoHomeActionLabel;
 
+  /// Label for actions that dismiss the current dialog or flow.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get commonCancelActionLabel;
+
   /// Label shown in the app header when network connectivity is available.
   ///
   /// In en, this message translates to:
@@ -489,6 +495,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This route is not available.'**
   String get routeNotFoundBody;
+
+  /// Authentication login page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authLoginTitle;
+
+  /// Authentication login page supporting text.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your facility account to open the HMS workspace.'**
+  String get authLoginBody;
+
+  /// Login identifier field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or phone'**
+  String get authIdentifierLabel;
+
+  /// Email field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get authEmailLabel;
+
+  /// Password field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authPasswordLabel;
+
+  /// Password visibility action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get authShowPasswordLabel;
+
+  /// Password visibility action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get authHidePasswordLabel;
+
+  /// Login submit action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authLoginActionLabel;
+
+  /// Navigate to self-registration action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get authCreateAccountActionLabel;
+
+  /// Self-registration page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Create facility account'**
+  String get authRegisterTitle;
+
+  /// Self-registration page supporting text.
+  ///
+  /// In en, this message translates to:
+  /// **'Register the first administrator for a facility workspace.'**
+  String get authRegisterBody;
+
+  /// Self-registration submit action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get authRegisterActionLabel;
+
+  /// Navigate back to login action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get authBackToLoginActionLabel;
+
+  /// Facility administrator name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator name'**
+  String get authAdminNameLabel;
+
+  /// Facility name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility name'**
+  String get authFacilityNameLabel;
+
+  /// Facility type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility type'**
+  String get authFacilityTypeLabel;
+
+  /// Hospital facility type option.
+  ///
+  /// In en, this message translates to:
+  /// **'Hospital'**
+  String get authFacilityTypeHospital;
+
+  /// Clinic facility type option.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinic'**
+  String get authFacilityTypeClinic;
+
+  /// Lab facility type option.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab'**
+  String get authFacilityTypeLab;
+
+  /// Pharmacy facility type option.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get authFacilityTypePharmacy;
+
+  /// Other facility type option.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get authFacilityTypeOther;
+
+  /// Optional phone field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get authPhoneOptionalLabel;
+
+  /// Optional location field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location (optional)'**
+  String get authLocationOptionalLabel;
+
+  /// Title shown after registration request succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your email'**
+  String get authRegistrationSubmittedTitle;
+
+  /// Body shown after registration request succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a verification link before the workspace can be used.'**
+  String get authRegistrationSubmittedBody;
+
+  /// Change password dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get authChangePasswordTitle;
+
+  /// Current password field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get authCurrentPasswordLabel;
+
+  /// New password field label.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get authNewPasswordLabel;
+
+  /// Confirm password field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get authConfirmPasswordLabel;
+
+  /// Change password submit action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get authChangePasswordActionLabel;
+
+  /// Snackbar shown after password is changed and sessions are revoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed. Sign in again.'**
+  String get authPasswordChangedMessage;
+
+  /// Safe login failure message.
+  ///
+  /// In en, this message translates to:
+  /// **'The sign-in details are not valid.'**
+  String get authInvalidCredentialsMessage;
+
+  /// Safe auth forbidden failure message.
+  ///
+  /// In en, this message translates to:
+  /// **'This account cannot complete that action.'**
+  String get authForbiddenMessage;
+
+  /// Email validation message.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get authEmailInvalidMessage;
+
+  /// Password minimum length validation message.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 8 characters.'**
+  String get authPasswordMinLengthMessage;
+
+  /// Password confirmation mismatch validation message.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get authPasswordMismatchMessage;
 
   /// Generic required-field validation message for forms.
   ///

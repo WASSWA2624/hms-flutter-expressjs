@@ -40,7 +40,10 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.changePasswordLabel,
     super.logoutLabel,
     super.unreadNotificationCount,
+    super.onProfileSelected,
     super.onSettingsSelected,
+    super.onChangePasswordSelected,
+    super.onLogoutSelected,
     super.key,
   });
 }
@@ -68,7 +71,10 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.changePasswordLabel = 'Change password',
     this.logoutLabel = 'Logout',
     this.unreadNotificationCount = 0,
+    this.onProfileSelected,
     this.onSettingsSelected,
+    this.onChangePasswordSelected,
+    this.onLogoutSelected,
     super.key,
   });
 
@@ -92,7 +98,10 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final String changePasswordLabel;
   final String logoutLabel;
   final int unreadNotificationCount;
+  final VoidCallback? onProfileSelected;
   final VoidCallback? onSettingsSelected;
+  final VoidCallback? onChangePasswordSelected;
+  final VoidCallback? onLogoutSelected;
   final Widget child;
 
   @override
@@ -149,7 +158,10 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   changePasswordLabel: widget.changePasswordLabel,
                   logoutLabel: widget.logoutLabel,
                   unreadNotificationCount: widget.unreadNotificationCount,
+                  onProfileSelected: widget.onProfileSelected,
                   onSettingsSelected: widget.onSettingsSelected,
+                  onChangePasswordSelected: widget.onChangePasswordSelected,
+                  onLogoutSelected: widget.onLogoutSelected,
                   toggleTooltip: isMobile
                       ? widget.openMenuTooltip
                       : widget.toggleSidebarTooltip,
@@ -233,7 +245,10 @@ class AppMenuBar extends StatelessWidget {
     required this.toggleTooltip,
     required this.onToggleNavigation,
     this.compactTitle,
+    this.onProfileSelected,
     this.onSettingsSelected,
+    this.onChangePasswordSelected,
+    this.onLogoutSelected,
     super.key,
   });
 
@@ -254,7 +269,10 @@ class AppMenuBar extends StatelessWidget {
   final int unreadNotificationCount;
   final String toggleTooltip;
   final VoidCallback onToggleNavigation;
+  final VoidCallback? onProfileSelected;
   final VoidCallback? onSettingsSelected;
+  final VoidCallback? onChangePasswordSelected;
+  final VoidCallback? onLogoutSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +340,10 @@ class AppMenuBar extends StatelessWidget {
                   settingsLabel: settingsLabel,
                   changePasswordLabel: changePasswordLabel,
                   logoutLabel: logoutLabel,
+                  onProfileSelected: onProfileSelected,
                   onSettingsSelected: onSettingsSelected,
+                  onChangePasswordSelected: onChangePasswordSelected,
+                  onLogoutSelected: onLogoutSelected,
                   child: _UserAvatar(
                     status: connectivityStatus,
                     showStatusDot: isMobile,
@@ -385,7 +406,10 @@ class _UserMenuButton extends StatelessWidget {
     required this.changePasswordLabel,
     required this.logoutLabel,
     required this.child,
+    this.onProfileSelected,
     this.onSettingsSelected,
+    this.onChangePasswordSelected,
+    this.onLogoutSelected,
   });
 
   final String tooltip;
@@ -394,7 +418,10 @@ class _UserMenuButton extends StatelessWidget {
   final String changePasswordLabel;
   final String logoutLabel;
   final Widget child;
+  final VoidCallback? onProfileSelected;
   final VoidCallback? onSettingsSelected;
+  final VoidCallback? onChangePasswordSelected;
+  final VoidCallback? onLogoutSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -402,12 +429,17 @@ class _UserMenuButton extends StatelessWidget {
       tooltip: tooltip,
       onSelected: (_UserMenuAction action) {
         switch (action) {
+          case _UserMenuAction.profile:
+            onProfileSelected?.call();
+            break;
           case _UserMenuAction.settings:
             onSettingsSelected?.call();
             break;
-          case _UserMenuAction.profile:
           case _UserMenuAction.changePassword:
+            onChangePasswordSelected?.call();
+            break;
           case _UserMenuAction.logout:
+            onLogoutSelected?.call();
             break;
         }
       },
@@ -415,7 +447,7 @@ class _UserMenuButton extends StatelessWidget {
         return <PopupMenuEntry<_UserMenuAction>>[
           PopupMenuItem<_UserMenuAction>(
             value: _UserMenuAction.profile,
-            enabled: false,
+            enabled: onProfileSelected != null,
             child: _UserMenuItemLabel(
               icon: Icons.person_outline,
               label: profileLabel,
@@ -430,7 +462,7 @@ class _UserMenuButton extends StatelessWidget {
           ),
           PopupMenuItem<_UserMenuAction>(
             value: _UserMenuAction.changePassword,
-            enabled: false,
+            enabled: onChangePasswordSelected != null,
             child: _UserMenuItemLabel(
               icon: Icons.lock_reset_outlined,
               label: changePasswordLabel,
@@ -439,7 +471,7 @@ class _UserMenuButton extends StatelessWidget {
           const PopupMenuDivider(),
           PopupMenuItem<_UserMenuAction>(
             value: _UserMenuAction.logout,
-            enabled: false,
+            enabled: onLogoutSelected != null,
             child: _UserMenuItemLabel(
               icon: Icons.logout_outlined,
               label: logoutLabel,

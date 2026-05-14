@@ -32,6 +32,10 @@
   "@commonGoHomeActionLabel": {
     "description": "Label for actions that navigate back to the home route."
   },
+  "commonCancelActionLabel": "Cancel",
+  "@commonCancelActionLabel": {
+    "description": "Label for actions that dismiss the current dialog or flow."
+  },
   "appStatusOnlineLabel": "Online",
   "@appStatusOnlineLabel": {
     "description": "Label shown in the app header when network connectivity is available."
@@ -268,6 +272,150 @@
   "routeNotFoundBody": "This route is not available.",
   "@routeNotFoundBody": {
     "description": "Body shown when a route cannot be matched."
+  },
+  "authLoginTitle": "Sign in",
+  "@authLoginTitle": {
+    "description": "Authentication login page title."
+  },
+  "authLoginBody": "Use your facility account to open the HMS workspace.",
+  "@authLoginBody": {
+    "description": "Authentication login page supporting text."
+  },
+  "authIdentifierLabel": "Email or phone",
+  "@authIdentifierLabel": {
+    "description": "Login identifier field label."
+  },
+  "authEmailLabel": "Email",
+  "@authEmailLabel": {
+    "description": "Email field label."
+  },
+  "authPasswordLabel": "Password",
+  "@authPasswordLabel": {
+    "description": "Password field label."
+  },
+  "authShowPasswordLabel": "Show password",
+  "@authShowPasswordLabel": {
+    "description": "Password visibility action label."
+  },
+  "authHidePasswordLabel": "Hide password",
+  "@authHidePasswordLabel": {
+    "description": "Password visibility action label."
+  },
+  "authLoginActionLabel": "Sign in",
+  "@authLoginActionLabel": {
+    "description": "Login submit action label."
+  },
+  "authCreateAccountActionLabel": "Create account",
+  "@authCreateAccountActionLabel": {
+    "description": "Navigate to self-registration action label."
+  },
+  "authRegisterTitle": "Create facility account",
+  "@authRegisterTitle": {
+    "description": "Self-registration page title."
+  },
+  "authRegisterBody": "Register the first administrator for a facility workspace.",
+  "@authRegisterBody": {
+    "description": "Self-registration page supporting text."
+  },
+  "authRegisterActionLabel": "Create account",
+  "@authRegisterActionLabel": {
+    "description": "Self-registration submit action label."
+  },
+  "authBackToLoginActionLabel": "Back to sign in",
+  "@authBackToLoginActionLabel": {
+    "description": "Navigate back to login action label."
+  },
+  "authAdminNameLabel": "Administrator name",
+  "@authAdminNameLabel": {
+    "description": "Facility administrator name field label."
+  },
+  "authFacilityNameLabel": "Facility name",
+  "@authFacilityNameLabel": {
+    "description": "Facility name field label."
+  },
+  "authFacilityTypeLabel": "Facility type",
+  "@authFacilityTypeLabel": {
+    "description": "Facility type field label."
+  },
+  "authFacilityTypeHospital": "Hospital",
+  "@authFacilityTypeHospital": {
+    "description": "Hospital facility type option."
+  },
+  "authFacilityTypeClinic": "Clinic",
+  "@authFacilityTypeClinic": {
+    "description": "Clinic facility type option."
+  },
+  "authFacilityTypeLab": "Lab",
+  "@authFacilityTypeLab": {
+    "description": "Lab facility type option."
+  },
+  "authFacilityTypePharmacy": "Pharmacy",
+  "@authFacilityTypePharmacy": {
+    "description": "Pharmacy facility type option."
+  },
+  "authFacilityTypeOther": "Other",
+  "@authFacilityTypeOther": {
+    "description": "Other facility type option."
+  },
+  "authPhoneOptionalLabel": "Phone (optional)",
+  "@authPhoneOptionalLabel": {
+    "description": "Optional phone field label."
+  },
+  "authLocationOptionalLabel": "Location (optional)",
+  "@authLocationOptionalLabel": {
+    "description": "Optional location field label."
+  },
+  "authRegistrationSubmittedTitle": "Check your email",
+  "@authRegistrationSubmittedTitle": {
+    "description": "Title shown after registration request succeeds."
+  },
+  "authRegistrationSubmittedBody": "We sent a verification link before the workspace can be used.",
+  "@authRegistrationSubmittedBody": {
+    "description": "Body shown after registration request succeeds."
+  },
+  "authChangePasswordTitle": "Change password",
+  "@authChangePasswordTitle": {
+    "description": "Change password dialog title."
+  },
+  "authCurrentPasswordLabel": "Current password",
+  "@authCurrentPasswordLabel": {
+    "description": "Current password field label."
+  },
+  "authNewPasswordLabel": "New password",
+  "@authNewPasswordLabel": {
+    "description": "New password field label."
+  },
+  "authConfirmPasswordLabel": "Confirm password",
+  "@authConfirmPasswordLabel": {
+    "description": "Confirm password field label."
+  },
+  "authChangePasswordActionLabel": "Change password",
+  "@authChangePasswordActionLabel": {
+    "description": "Change password submit action label."
+  },
+  "authPasswordChangedMessage": "Password changed. Sign in again.",
+  "@authPasswordChangedMessage": {
+    "description": "Snackbar shown after password is changed and sessions are revoked."
+  },
+  "authInvalidCredentialsMessage": "The sign-in details are not valid.",
+  "@authInvalidCredentialsMessage": {
+    "description": "Safe login failure message."
+  },
+  "authForbiddenMessage": "This account cannot complete that action.",
+  "@authForbiddenMessage": {
+    "description": "Safe auth forbidden failure message."
+  },
+  "authEmailInvalidMessage": "Enter a valid email address.",
+  "@authEmailInvalidMessage": {
+    "description": "Email validation message."
+  },
+  "authPasswordMinLengthMessage": "Use at least 8 characters.",
+  "@authPasswordMinLengthMessage": {
+    "description": "Password minimum length validation message."
+  },
+  "authPasswordMismatchMessage": "Passwords do not match.",
+  "@authPasswordMismatchMessage": {
+    "description": "Password confirmation mismatch validation message."
   },
   "validationRequired": "This field is required.",
   "@validationRequired": {

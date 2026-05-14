@@ -7,7 +7,10 @@ import 'package:hosspi_hms/app/router/app_router.dart';
 import 'package:hosspi_hms/app/router/route_status_pages.dart';
 import 'package:hosspi_hms/app/startup/app_startup_state.dart';
 import 'package:hosspi_hms/app/startup/startup_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -15,9 +18,36 @@ import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
   const Locale englishLocale = Locale('en');
+  final authenticatedSessionState = SessionState.authenticated(
+    session: AuthSession(
+      tokens: SessionTokens(accessToken: 'test-access-token'),
+      subject: 'admin@example.com',
+    ),
+  );
+
+  List<Object?> authenticatedOverrides({String? initialLocation}) {
+    return <Object?>[
+      initialSessionStateProvider.overrideWithValue(authenticatedSessionState),
+      appStartupStateProvider.overrideWithValue(
+        AppStartupState(
+          themeMode: ThemeMode.system,
+          locale: englishLocale,
+          storageReadiness: const StorageReadiness.ready(),
+          sessionReadiness: authenticatedSessionState,
+        ),
+      ),
+      if (initialLocation != null)
+        appInitialLocationProvider.overrideWithValue(initialLocation),
+    ];
+  }
 
   testWidgets('renders the HOSSPI HMS shell', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: authenticatedOverrides().cast(),
+        child: const HosspiHmsApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final l10n = tester.element(find.byType(HomePage)).l10n;
@@ -40,7 +70,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: authenticatedOverrides().cast(),
+        child: const HosspiHmsApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final l10n = tester.element(find.byType(HomePage)).l10n;
@@ -60,7 +95,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: authenticatedOverrides().cast(),
+        child: const HosspiHmsApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final l10n = tester.element(find.byType(HomePage)).l10n;
@@ -72,7 +112,12 @@ void main() {
   testWidgets('navigates to settings and shows HMS preferences', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: authenticatedOverrides().cast(),
+        child: const HosspiHmsApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final homeContext = tester.element(find.byType(HomePage));
@@ -96,12 +141,15 @@ void main() {
       ProviderScope(
         overrides: [
           appStartupStateProvider.overrideWithValue(
-            const AppStartupState(
+            AppStartupState(
               themeMode: ThemeMode.dark,
               locale: englishLocale,
-              storageReadiness: StorageReadiness.ready(),
-              sessionReadiness: SessionState.ready(),
+              storageReadiness: const StorageReadiness.ready(),
+              sessionReadiness: authenticatedSessionState,
             ),
+          ),
+          initialSessionStateProvider.overrideWithValue(
+            authenticatedSessionState,
           ),
         ],
         child: const HosspiHmsApp(),
@@ -118,7 +166,12 @@ void main() {
   testWidgets('shows localized not-found UI for unknown routes', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: authenticatedOverrides().cast(),
+        child: const HosspiHmsApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     GoRouter.of(tester.element(find.byType(HomePage))).go('/missing-route');
@@ -136,9 +189,9 @@ void main() {
   ) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          appInitialLocationProvider.overrideWithValue('/missing-route'),
-        ],
+        overrides: authenticatedOverrides(
+          initialLocation: '/missing-route',
+        ).cast(),
         child: const HosspiHmsApp(),
       ),
     );

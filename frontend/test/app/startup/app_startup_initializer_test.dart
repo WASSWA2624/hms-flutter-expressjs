@@ -8,6 +8,7 @@ import 'package:hosspi_hms/app/startup/startup_providers.dart';
 import 'package:hosspi_hms/app/startup/startup_shell.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -48,6 +49,10 @@ void main() {
     testWidgets('replaces loading shell with configured app scope', (
       WidgetTester tester,
     ) async {
+      FlutterSecureStorage.setMockInitialValues(<String, String>{
+        SecureStorageKeys.accessToken: 'test-access-token',
+      });
+
       await tester.pumpWidget(const StartupLoadingApp());
       await tester.pump();
 

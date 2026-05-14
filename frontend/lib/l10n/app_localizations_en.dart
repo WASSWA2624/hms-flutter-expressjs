@@ -33,6 +33,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonGoHomeActionLabel => 'Go home';
 
   @override
+  String get commonCancelActionLabel => 'Cancel';
+
+  @override
   String get appStatusOnlineLabel => 'Online';
 
   @override
@@ -224,6 +227,119 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routeNotFoundBody => 'This route is not available.';
+
+  @override
+  String get authLoginTitle => 'Sign in';
+
+  @override
+  String get authLoginBody =>
+      'Use your facility account to open the HMS workspace.';
+
+  @override
+  String get authIdentifierLabel => 'Email or phone';
+
+  @override
+  String get authEmailLabel => 'Email';
+
+  @override
+  String get authPasswordLabel => 'Password';
+
+  @override
+  String get authShowPasswordLabel => 'Show password';
+
+  @override
+  String get authHidePasswordLabel => 'Hide password';
+
+  @override
+  String get authLoginActionLabel => 'Sign in';
+
+  @override
+  String get authCreateAccountActionLabel => 'Create account';
+
+  @override
+  String get authRegisterTitle => 'Create facility account';
+
+  @override
+  String get authRegisterBody =>
+      'Register the first administrator for a facility workspace.';
+
+  @override
+  String get authRegisterActionLabel => 'Create account';
+
+  @override
+  String get authBackToLoginActionLabel => 'Back to sign in';
+
+  @override
+  String get authAdminNameLabel => 'Administrator name';
+
+  @override
+  String get authFacilityNameLabel => 'Facility name';
+
+  @override
+  String get authFacilityTypeLabel => 'Facility type';
+
+  @override
+  String get authFacilityTypeHospital => 'Hospital';
+
+  @override
+  String get authFacilityTypeClinic => 'Clinic';
+
+  @override
+  String get authFacilityTypeLab => 'Lab';
+
+  @override
+  String get authFacilityTypePharmacy => 'Pharmacy';
+
+  @override
+  String get authFacilityTypeOther => 'Other';
+
+  @override
+  String get authPhoneOptionalLabel => 'Phone (optional)';
+
+  @override
+  String get authLocationOptionalLabel => 'Location (optional)';
+
+  @override
+  String get authRegistrationSubmittedTitle => 'Check your email';
+
+  @override
+  String get authRegistrationSubmittedBody =>
+      'We sent a verification link before the workspace can be used.';
+
+  @override
+  String get authChangePasswordTitle => 'Change password';
+
+  @override
+  String get authCurrentPasswordLabel => 'Current password';
+
+  @override
+  String get authNewPasswordLabel => 'New password';
+
+  @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authChangePasswordActionLabel => 'Change password';
+
+  @override
+  String get authPasswordChangedMessage => 'Password changed. Sign in again.';
+
+  @override
+  String get authInvalidCredentialsMessage =>
+      'The sign-in details are not valid.';
+
+  @override
+  String get authForbiddenMessage =>
+      'This account cannot complete that action.';
+
+  @override
+  String get authEmailInvalidMessage => 'Enter a valid email address.';
+
+  @override
+  String get authPasswordMinLengthMessage => 'Use at least 8 characters.';
+
+  @override
+  String get authPasswordMismatchMessage => 'Passwords do not match.';
 
   @override
   String get validationRequired => 'This field is required.';
