@@ -33,6 +33,38 @@ describe('Auth Service', () => {
     sendEmail.mockResolvedValue({ sent: true, provider: 'smtp' });
   });
 
+  const expectMinimalVerificationEmail = () => {
+    const lastEmailCall = sendEmail.mock.calls[sendEmail.mock.calls.length - 1][0];
+
+    expect(lastEmailCall).toEqual(expect.objectContaining({
+      subject: 'Hospital Management System',
+      attachments: [],
+      html: expect.stringContaining('Copy code'),
+      text: expect.stringContaining('Copy code'),
+    }));
+    expect(lastEmailCall.html).toMatch(/>\s*\d{6}\s*</);
+    expect(lastEmailCall.text).toMatch(/\b\d{6}\b/);
+    expect(lastEmailCall.html).toContain('Expires:');
+    expect(lastEmailCall.text).toContain('Expires:');
+
+    [
+      'href=',
+      'http://',
+      'https://',
+      '/verify-email?token=',
+      'Verify email now',
+      'Verification code',
+      'Hello ',
+      'thanks for registering',
+      'This code expires',
+      'Regards',
+      'Password used',
+    ].forEach((removedContent) => {
+      expect(lastEmailCall.html).not.toContain(removedContent);
+      expect(lastEmailCall.text).not.toContain(removedContent);
+    });
+  };
+
   describe('login', () => {
     it('should login user with valid credentials', async () => {
       const loginData = {
@@ -413,9 +445,7 @@ describe('Auth Service', () => {
       }));
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
-      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.not.stringContaining('/verify-email?token='),
-      }));
+      expectMinimalVerificationEmail();
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 'user-123',
@@ -469,9 +499,7 @@ describe('Auth Service', () => {
       expect(authRepository.registerFacilityOwner).not.toHaveBeenCalled();
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
-      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.not.stringContaining('/verify-email?token='),
-      }));
+      expectMinimalVerificationEmail();
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 'user-pending-123',
@@ -518,9 +546,7 @@ describe('Auth Service', () => {
       expect(authRepository.registerFacilityOwner).not.toHaveBeenCalled();
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
-      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.not.stringContaining('/verify-email?token='),
-      }));
+      expectMinimalVerificationEmail();
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 'user-active-123',
@@ -916,9 +942,7 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('message');
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
-      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.not.stringContaining('/verify-email?token='),
-      }));
+      expectMinimalVerificationEmail();
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'VERIFICATION_RESENT'
       }));
@@ -945,9 +969,7 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('message');
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
-      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.not.stringContaining('/verify-email?token='),
-      }));
+      expectMinimalVerificationEmail();
     });
 
     it('should fail resend when verification email cannot be delivered', async () => {

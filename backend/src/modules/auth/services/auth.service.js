@@ -195,16 +195,6 @@ const getRoleNames = (user = {}) => uniqueValues(
     .filter(Boolean)
 );
 
-const formatExpiryCountdown = (expiresAt) => {
-  const remainingSeconds = Math.max(
-    0,
-    Math.ceil((expiresAt.getTime() - Date.now()) / 1000)
-  );
-  const minutes = Math.floor(remainingSeconds / 60);
-  const seconds = remainingSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-};
-
 const formatExpiryDateTime = (expiresAt, locale) => {
   try {
     return new Intl.DateTimeFormat(locale || 'en', {
@@ -222,88 +212,37 @@ const formatExpiryDateTime = (expiresAt, locale) => {
 };
 
 const buildVerificationEmailMessage = ({
-  email,
-  adminName,
-  facilityName,
   code,
-  plainPassword,
   expiresAt,
   locale,
 }) => {
   const resolvedLocale = resolveLocale(locale);
-  const resolvedExpiresAt =
+  const expiryDate =
     resolveExpiryDate(expiresAt) ||
     new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_MINUTES * 60 * 1000);
-  const expiryCountdown = formatExpiryCountdown(resolvedExpiresAt);
-  const expiryAtFormatted = formatExpiryDateTime(resolvedExpiresAt, resolvedLocale);
-  const safeAdminName = String(adminName || 'there').trim() || 'there';
-  const safeFacilityName = String(facilityName || 'your facility').trim() || 'your facility';
-  const passwordLine = plainPassword
-    ? `${translate('messages.auth.email_verification.password_notice', resolvedLocale)} ${plainPassword}\n`
-    : '';
+  const expiresAtLabel = formatExpiryDateTime(expiryDate, resolvedLocale);
   const subject = translate('messages.auth.email_verification.subject', resolvedLocale, {
     app_name: APP_DISPLAY_NAME,
   });
   const preheader = translate('messages.auth.email_verification.preheader', resolvedLocale, {
-    app_name: APP_DISPLAY_NAME,
+    code,
   });
-  const greeting = translate('messages.auth.email_verification.greeting', resolvedLocale, {
-    name: safeAdminName,
+  const copyCodeLabel = translate('messages.auth.email_verification.copy_code_label', resolvedLocale);
+  const expiryLine = translate('messages.auth.email_verification.expires_at', resolvedLocale, {
+    expires_at: expiresAtLabel,
   });
-  const intro = translate('messages.auth.email_verification.intro', resolvedLocale, {
-    facility: safeFacilityName,
-    app_name: APP_DISPLAY_NAME,
-  });
-  const codeLabel = translate('messages.auth.email_verification.code_label', resolvedLocale);
-  const expiryLine = translate('messages.auth.email_verification.code_expiry', resolvedLocale, {
-    countdown: expiryCountdown,
-    minutes: EMAIL_VERIFICATION_EXPIRY_MINUTES,
-  });
-  const expiryAtLine = translate('messages.auth.email_verification.code_expiry_at', resolvedLocale, {
-    expires_at: expiryAtFormatted,
-  });
-  const ignoreLine = translate('messages.auth.email_verification.ignore', resolvedLocale);
-  const noReplyLine = translate('messages.auth.email_verification.no_reply', resolvedLocale);
-  const signature = translate('messages.auth.email_verification.signature', resolvedLocale, {
-    app_name: APP_DISPLAY_NAME,
-  });
-  const logoAlt = translate('messages.auth.email_verification.logo_alt', resolvedLocale, {
-    app_name: APP_DISPLAY_NAME,
-  });
-  const { logoSrc, attachments } = resolveEmailLogoAsset();
 
-  const text =
-    `${subject}\n\n` +
-    `${greeting} ${intro}\n\n` +
-    `${codeLabel}: ${code}\n` +
-    `${expiryLine}\n` +
-    `${expiryAtLine}\n\n` +
-    `${ignoreLine}\n` +
-    `${noReplyLine}\n\n` +
-    passwordLine +
-    `${signature}`;
+  const text = [
+    subject,
+    '',
+    code,
+    copyCodeLabel,
+    expiryLine,
+  ].join('\n');
 
-  const safeGreeting = escapeHtml(greeting);
-  const safeIntro = escapeHtml(intro);
-  const safeRegistrationMessage = `${safeGreeting} ${safeIntro}`;
-  const safeCodeLabel = escapeHtml(codeLabel);
+  const safeCopyCodeLabel = escapeHtml(copyCodeLabel);
   const safeExpiryLine = escapeHtml(expiryLine);
-  const safeExpiryAtLine = escapeHtml(expiryAtLine);
-  const safeIgnoreLine = escapeHtml(ignoreLine);
-  const safeNoReplyLine = escapeHtml(noReplyLine);
-  const safeSignature = escapeHtml(signature);
-  const safeSignatureHtml = safeSignature.replace(/\n/g, '<br />');
-  const safeLogoAlt = escapeHtml(logoAlt);
-  const safeLogoSrc = logoSrc ? escapeHtml(logoSrc) : '';
-  const logoHeaderCell = logoSrc
-    ? `<td style="padding:0 16px 0 0;vertical-align:middle;width:64px;">
-        <img src="${safeLogoSrc}" alt="${safeLogoAlt}" width="52" height="52" style="display:block;width:52px;height:52px;border:0;outline:none;text-decoration:none;background:#ffffff;border-radius:12px;padding:4px;" />
-      </td>`
-    : '';
   const safeCode = escapeHtml(code);
-  const htmlPasswordLine = plainPassword
-    ? `<p style="margin:0 0 20px;font-size:13px;line-height:20px;color:#b45309;background:#fff8eb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;"><strong>${escapeHtml(translate('messages.auth.email_verification.password_notice', resolvedLocale))}</strong> <code style="font-family:Consolas,Monaco,'Courier New',monospace;">${escapeHtml(plainPassword)}</code></p>`
-    : '';
 
   const html = `<!doctype html>
 <html lang="${escapeHtml(resolvedLocale)}">
@@ -312,55 +251,26 @@ const buildVerificationEmailMessage = ({
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>${escapeHtml(subject)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f2f5fb;">
+<body style="margin:0;padding:0;background:#f5f7fb;">
   <div style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden;visibility:hidden;mso-hide:all;">
     ${escapeHtml(preheader)}
   </div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f2f5fb;padding:28px 12px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f7fb;padding:12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #dbe4f3;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:360px;background:#ffffff;border:1px solid #dbe4f3;">
           <tr>
-            <td style="padding:26px 28px;background:linear-gradient(120deg,#0a66c2,#0b88e6);">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+            <td align="center" style="padding:16px 18px 14px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#0f172a;">
+              <h1 style="margin:0 0 12px;font-size:18px;line-height:24px;font-weight:700;color:#0f172a;">${escapeHtml(APP_DISPLAY_NAME)}</h1>
+              <p style="margin:0 0 12px;font-family:Consolas,Monaco,'Courier New',monospace;font-size:30px;line-height:34px;font-weight:700;color:#0f172a;letter-spacing:0.16em;">${safeCode}</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
                 <tr>
-                  ${logoHeaderCell}
-                  <td style="vertical-align:middle;">
-                    <h1 style="margin:0;color:#ffffff;font-size:24px;line-height:1.3;font-weight:700;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">${escapeHtml(APP_DISPLAY_NAME)}</h1>
+                  <td style="background:#0b66c3;color:#ffffff;font-size:13px;line-height:18px;font-weight:700;padding:8px 14px;text-align:center;">
+                    ${safeCopyCodeLabel}
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:28px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#0f172a;">
-              <p style="margin:0 0 18px;font-size:15px;line-height:24px;color:#1e293b;">${safeRegistrationMessage}</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 20px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;">
-                <tr>
-                  <td style="padding:14px 16px 6px;font-size:13px;line-height:18px;color:#1d4ed8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">
-                    ${safeCodeLabel}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:0 16px 8px;font-family:Consolas,Monaco,'Courier New',monospace;font-size:32px;line-height:38px;font-weight:700;color:#0f172a;letter-spacing:0.08em;">
-                    ${safeCode}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:0 16px 4px;font-size:13px;line-height:20px;color:#334155;">
-                    ${safeExpiryLine}
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:0 16px 14px;font-size:12px;line-height:18px;color:#475569;">
-                    ${safeExpiryAtLine}
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#475569;">${safeIgnoreLine}</p>
-              <p style="margin:0 0 20px;font-size:13px;line-height:20px;color:#64748b;">${safeNoReplyLine}</p>
-              ${htmlPasswordLine}
-              <p style="margin:0;font-size:14px;line-height:22px;color:#0f172a;">${safeSignatureHtml}</p>
+              <p style="margin:10px 0 0;font-size:12px;line-height:16px;color:#64748b;">${safeExpiryLine}</p>
             </td>
           </tr>
         </table>
@@ -370,25 +280,17 @@ const buildVerificationEmailMessage = ({
 </body>
 </html>`;
 
-  return { subject, text, html, attachments };
+  return { subject, text, html, attachments: [] };
 };
 
 const sendVerificationEmail = async ({
   email,
-  adminName,
-  facilityName,
   code,
-  plainPassword,
   expiresAt,
   locale,
 }) => {
-  const includePassword = Boolean(env.ALLOW_PLAINTEXT_PASSWORD_EMAIL);
   const payload = buildVerificationEmailMessage({
-    email,
-    adminName,
-    facilityName,
     code,
-    plainPassword: includePassword ? plainPassword : null,
     expiresAt,
     locale,
   });
@@ -1193,7 +1095,7 @@ const register = async (data) => {
     throw new HttpError('errors.database.unexpected', 500);
   }
 
-  // Create verification code + link tokens (same 15 minute expiry window).
+  // Create a verification code for the email verification form.
   const verification = await createEmailVerificationTokens(user.id);
 
   const deliveryResult = await sendVerificationEmail({
