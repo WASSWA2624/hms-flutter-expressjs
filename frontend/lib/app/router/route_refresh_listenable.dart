@@ -10,7 +10,7 @@ final routeRefreshListenableProvider = Provider<RouteRefreshListenable>((ref) {
     ..listen(sessionStateProvider.select((state) => state.status), (_, _) {
       listenable.refresh();
     })
-    ..listen(grantedAppPermissionsProvider, (_, _) {
+    ..listen(appAccessPolicyProvider, (_, _) {
       listenable.refresh();
     })
     ..onDispose(listenable.dispose);

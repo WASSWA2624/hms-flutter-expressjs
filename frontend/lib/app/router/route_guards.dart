@@ -102,6 +102,9 @@ final class AppRouteGuards {
         !policy.isElevated) {
       return false;
     }
+    if (!policy.hasAllActiveModules(route.requiredActiveModules)) {
+      return false;
+    }
 
     return true;
   }

@@ -11,6 +11,7 @@ final class AppRouteData {
     this.requiredPermissions = const <AppPermission>[],
     this.requiredAnyPermissions = const <AppPermission>[],
     this.requiredAnyRoles = const <AppRole>[],
+    this.requiredActiveModules = const <String>[],
     this.requiresTenantContext = false,
     this.requiresFacilityContext = false,
   });
@@ -21,6 +22,7 @@ final class AppRouteData {
   final Iterable<AppPermission> requiredPermissions;
   final Iterable<AppPermission> requiredAnyPermissions;
   final Iterable<AppRole> requiredAnyRoles;
+  final Iterable<String> requiredActiveModules;
   final bool requiresTenantContext;
   final bool requiresFacilityContext;
 
@@ -29,6 +31,7 @@ final class AppRouteData {
         requiredPermissions.isNotEmpty ||
         requiredAnyPermissions.isNotEmpty ||
         requiredAnyRoles.isNotEmpty ||
+        requiredActiveModules.isNotEmpty ||
         requiresTenantContext ||
         requiresFacilityContext;
   }

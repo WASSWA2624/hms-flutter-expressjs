@@ -295,6 +295,9 @@ bool _canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
       !accessPolicy.isElevated) {
     return false;
   }
+  if (!accessPolicy.hasAllActiveModules(route.requiredActiveModules)) {
+    return false;
+  }
 
   return true;
 }

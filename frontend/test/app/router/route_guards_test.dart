@@ -2,7 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/router/route_guards.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 
 void main() {
   const AppRouteData publicRoute = AppRouteData(
@@ -19,6 +21,11 @@ void main() {
     name: 'reports',
     path: '/reports',
     requiredPermissions: <AppPermission>{reportsReadPermission},
+  );
+  const AppRouteData moduleRoute = AppRouteData(
+    name: 'billing',
+    path: '/billing',
+    requiredActiveModules: <String>['billing'],
   );
 
   group('AppRouteGuards', () {
@@ -135,6 +142,25 @@ void main() {
           ),
         ),
         isNull,
+      );
+    });
+
+    test('redirects authenticated users without active module access', () {
+      final Uri targetLocation = Uri(path: moduleRoute.path);
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'billing', isActive: false),
+        ],
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+        routes: <AppRouteData>[moduleRoute],
+      );
+
+      expect(
+        guards.redirect(AppRouteGuardRequest(location: targetLocation)),
+        AppRoutes.forbidden.locationWithFrom(targetLocation),
       );
     });
   });

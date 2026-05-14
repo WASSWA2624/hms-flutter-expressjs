@@ -7,6 +7,10 @@ import 'package:hosspi_hms/app/locale/app_locale_controller.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_mode_controller.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -22,6 +26,12 @@ class SettingsPage extends ConsumerWidget {
     final ThemeMode themeMode = ref.watch(appThemeModeProvider);
     final Locale selectedLocale =
         ref.watch(appLocaleProvider) ?? _englishLocale;
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final List<_SettingsAction> adminActions = _adminActions(context, l10n)
+        .where((_SettingsAction action) {
+          return action.requirement?.isAllowed(accessPolicy) ?? true;
+        })
+        .toList(growable: false);
 
     return AppScreen(
       title: l10n.settingsTitle,
@@ -108,28 +118,12 @@ class SettingsPage extends ConsumerWidget {
                 ],
               ),
             ),
-            AppScreenSection(
-              title: l10n.settingsAdministrationSectionTitle,
-              body: l10n.settingsAdministrationSectionBody,
-              child: _SettingsActionList(
-                actions: <_SettingsAction>[
-                  _SettingsAction(
-                    icon: Icons.domain_add_outlined,
-                    title: l10n.settingsTenantFacilitySetupActionTitle,
-                    body: l10n.settingsTenantFacilitySetupActionBody,
-                    onTap: () =>
-                        context.go(AppRoutes.tenantFacilitySetup.location()),
-                  ),
-                  _SettingsAction(
-                    icon: Icons.admin_panel_settings_outlined,
-                    title: l10n.settingsSecurityBoundaryLabel,
-                    body: l10n.settingsSecurityBoundaryBody,
-                    onTap: () =>
-                        context.go(AppRoutes.tenantFacilitySetup.location()),
-                  ),
-                ],
+            if (adminActions.isNotEmpty)
+              AppScreenSection(
+                title: l10n.settingsAdministrationSectionTitle,
+                body: l10n.settingsAdministrationSectionBody,
+                child: _SettingsActionList(actions: adminActions),
               ),
-            ),
           ],
         ),
       ],
@@ -194,13 +188,50 @@ final class _SettingsAction {
     required this.title,
     required this.body,
     required this.onTap,
+    this.requirement,
   });
 
   final IconData icon;
   final String title;
   final String body;
   final VoidCallback onTap;
+  final AccessRequirement? requirement;
 }
+
+List<_SettingsAction> _adminActions(
+  BuildContext context,
+  AppLocalizations l10n,
+) {
+  return <_SettingsAction>[
+    _SettingsAction(
+      icon: Icons.domain_add_outlined,
+      title: l10n.settingsTenantFacilitySetupActionTitle,
+      body: l10n.settingsTenantFacilitySetupActionBody,
+      requirement: _tenantFacilitySetupRequirement,
+      onTap: () => context.go(AppRoutes.tenantFacilitySetup.location()),
+    ),
+    _SettingsAction(
+      icon: Icons.admin_panel_settings_outlined,
+      title: l10n.settingsSecurityBoundaryLabel,
+      body: l10n.settingsSecurityBoundaryBody,
+      requirement: _tenantFacilitySetupRequirement,
+      onTap: () => context.go(AppRoutes.tenantFacilitySetup.location()),
+    ),
+  ];
+}
+
+const AccessRequirement _tenantFacilitySetupRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.tenantAdmin,
+    AppPermissions.facilityAdmin,
+    AppPermissions.systemAdmin,
+  ],
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+  ],
+);
 
 class _SettingsActionList extends StatelessWidget {
   const _SettingsActionList({required this.actions});

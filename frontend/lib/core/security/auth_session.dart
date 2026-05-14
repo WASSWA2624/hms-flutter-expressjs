@@ -9,11 +9,17 @@ final class AuthSession {
     String? subject,
     this.user,
     Iterable<AppPermission> permissions = const <AppPermission>[],
+    Iterable<AppModuleEntitlement> moduleEntitlements =
+        const <AppModuleEntitlement>[],
   }) : subject =
            _normalizedSubject(subject) ??
            _normalizedSubject(user?.email) ??
            _normalizedSubject(user?.id),
-       permissions = Set<AppPermission>.unmodifiable(permissions);
+       permissions = Set<AppPermission>.unmodifiable(permissions),
+       moduleEntitlements = Map<String, AppModuleEntitlement>.unmodifiable({
+         for (final entitlement in moduleEntitlements)
+           entitlement.normalizedCode: entitlement,
+       });
 
   factory AuthSession.fromTokens(SessionTokens tokens) {
     final Map<String, Object?>? payload = _tokenPayload(tokens.accessToken);
@@ -26,6 +32,7 @@ final class AuthSession {
           _firstString(payload, const <String>['email', 'sub', 'userId']),
       user: profile,
       permissions: _permissionsFromPayload(payload),
+      moduleEntitlements: _moduleEntitlementsFromPayload(payload),
     );
   }
 
@@ -33,6 +40,7 @@ final class AuthSession {
   final String? subject;
   final AuthUserProfile? user;
   final Set<AppPermission> permissions;
+  final Map<String, AppModuleEntitlement> moduleEntitlements;
 
   bool hasPermission(AppPermission permission) {
     return permissions.grants(permission);
@@ -48,6 +56,7 @@ final class AuthSession {
         'subject: ${subject ?? 'none'}, '
         'tokens: $tokens, '
         'permissions: $permissions, '
+        'moduleEntitlements: ${moduleEntitlements.keys}, '
         'hasUser: ${user != null}'
         ')';
   }
@@ -110,6 +119,146 @@ final class AuthSession {
         .map(AppPermission.new)
         .toSet()
         .toList(growable: false);
+  }
+
+  static List<AppModuleEntitlement> _moduleEntitlementsFromPayload(
+    Map<String, Object?>? payload,
+  ) {
+    if (payload == null) {
+      return const <AppModuleEntitlement>[];
+    }
+
+    final Object? source =
+        payload['module_entitlements'] ??
+        payload['moduleEntitlements'] ??
+        payload['modules'] ??
+        payload['active_modules'] ??
+        payload['activeModules'];
+    if (source is! Iterable<Object?>) {
+      return const <AppModuleEntitlement>[];
+    }
+
+    return source
+        .map(AppModuleEntitlement.tryFromPayload)
+        .whereType<AppModuleEntitlement>()
+        .toSet()
+        .toList(growable: false);
+  }
+}
+
+final class AppModuleEntitlement {
+  const AppModuleEntitlement({
+    required this.code,
+    this.isActive = true,
+    this.licenseStatus,
+  });
+
+  static AppModuleEntitlement? tryFromPayload(Object? payload) {
+    if (payload is String) {
+      final code = payload.trim();
+      if (code.isEmpty) {
+        return null;
+      }
+
+      return AppModuleEntitlement(code: code);
+    }
+
+    if (payload is! Map<Object?, Object?>) {
+      return null;
+    }
+
+    final code = _firstPresentString(payload, const <String>[
+      'code',
+      'name',
+      'module',
+      'module_code',
+      'moduleCode',
+      'module_id',
+      'moduleId',
+    ]);
+    if (code == null) {
+      return null;
+    }
+
+    return AppModuleEntitlement(
+      code: code,
+      isActive: _boolValue(
+        payload['is_active'] ?? payload['isActive'] ?? payload['active'],
+      ),
+      licenseStatus: _stringValue(
+        payload['license_status'] ??
+            payload['licenseStatus'] ??
+            payload['subscription_status'] ??
+            payload['subscriptionStatus'],
+      )?.toUpperCase(),
+    );
+  }
+
+  final String code;
+  final bool isActive;
+  final String? licenseStatus;
+
+  String get normalizedCode => normalizeModuleCode(code);
+
+  bool get isAvailable {
+    final status = licenseStatus;
+    return isActive &&
+        (status == null ||
+            status == 'ACTIVE' ||
+            status == 'TRIAL' ||
+            status == 'HEALTHY');
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AppModuleEntitlement &&
+        normalizedCode == other.normalizedCode &&
+        isActive == other.isActive &&
+        licenseStatus == other.licenseStatus;
+  }
+
+  @override
+  int get hashCode => Object.hash(normalizedCode, isActive, licenseStatus);
+
+  static String normalizeModuleCode(String value) {
+    return value.trim().toUpperCase().replaceAll(RegExp(r'[\s-]+'), '_');
+  }
+
+  static String? _firstPresentString(
+    Map<Object?, Object?> payload,
+    Iterable<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = _stringValue(payload[key]);
+      if (value != null) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  static String? _stringValue(Object? value) {
+    if (value == null) {
+      return null;
+    }
+
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  static bool _boolValue(Object? value) {
+    if (value is bool) {
+      return value;
+    }
+    if (value is num) {
+      return value != 0;
+    }
+
+    return switch (value?.toString().trim().toUpperCase()) {
+      'FALSE' || '0' || 'NO' || 'INACTIVE' || 'DISABLED' => false,
+      _ => true,
+    };
   }
 }
 
