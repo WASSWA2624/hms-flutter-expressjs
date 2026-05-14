@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "postinstall": "prisma generate",
     "test": "npm run test:backend",
     "test:watch": "npm run test:backend:watch",
     "test:coverage": "npm run test:backend:coverage",

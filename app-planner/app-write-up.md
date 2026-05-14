@@ -3,84 +3,131 @@
 ## Official Product Name
 **HOSSPI HMS** means **HOSSPI Hospital Management System**.
 
-## Purpose
-HOSSPI HMS is a full-stack Hospital Management System for managing hospital administration, patient flow, clinical work, nursing work, inpatient care, ICU care, theater workflows, pharmacy, billing, insurance, claims, human resources, biomedical services, facility operations, housekeeping, notifications, reports, and audit tracking.
+## Product Scope
+HOSSPI HMS is a full-stack, multi-tenant Hospital Management System for managing hospital administration, patient registration, outpatient flow, triage, clinical care, nursing, inpatient care, ICU, theater, pharmacy, laboratory, radiology, billing, insurance, claims, human resources, biomedical engineering, facility operations, housekeeping, mortuary services, subscriptions, notifications, reports, audit, and integrations.
 
-This file defines product scope only: core functions, modules, and module responsibilities. Technical rules belong in `app-rules`. Chronological implementation steps belong in `dev-plan`.
+This file defines product scope only: core functions, modules, and module responsibilities. Technical implementation rules remain in the backend and frontend `app-rules` folders. Chronological implementation work belongs in the root `app-planner/dev-plan` folder.
+
+## Current Codebase Position
+- The backend is treated as the current source of truth for available APIs, permissions, tenancy, subscriptions, feature flags, seed scripts, audit logging, and module contracts.
+- The Flutter frontend already contains a reusable starter foundation for routing, shell layout, theme, localization readiness, networking, secure/session storage, responsive layout, shared components, settings, and state management.
+- Root planning should build on the existing backend and Flutter foundation instead of recreating completed work.
+- Backend source files, frontend source files, backend planner files, and frontend planner files must not be changed by product-scope documentation updates unless a future task explicitly allows it.
 
 ## Core Product Goals
-- Help a health facility manage daily operations from one secure system.
-- Keep every module simple, focused, and practical for the staff who use it.
-- Support multi-tenant and multi-facility usage.
-- Enforce role-based and action-based access control.
-- Keep routine work inside the correct module without unnecessary navigation.
-- Use clean forms, clear tables, focused dashboards, and modal-based actions where appropriate.
-- Allow modules to work as self-contained workspaces while still sharing patient, user, facility, billing, permission, notification, and audit data.
+- Give hospitals one secure system for daily clinical, operational, financial, and administrative work.
+- Keep each module focused on the staff who use it.
+- Support tenants, facilities, branches, departments, units, rooms, wards, and beds.
+- Enforce role-based access control, action-based access control, tenant scope, facility scope, and module entitlements.
+- Keep routine work inside the correct module without unnecessary cross-navigation.
+- Use clean forms, searchable lists, readable detail panels, and modal-based actions where appropriate.
+- Keep modules self-contained while sharing common patient, user, facility, billing, notification, report, subscription, and audit data.
 
-## Main User Flow
-1. A tenant account is created.
-2. The tenant configures the organization and facility profile.
-3. Facility users, roles, and permissions are created.
-4. Rooms, wards, beds, departments, service units, and operational service points are configured.
-5. Patients are registered and managed through outpatient, triage, clinical, nursing, pharmacy, billing, insurance, inpatient, ICU, theater, and discharge workflows where applicable.
-6. Staff work inside module-specific workspaces based on their roles and permissions.
-7. Managers review notifications, reports, audit records, operational performance, and compliance evidence.
+## Main Setup Flow
+1. Create or seed a default tenant.
+2. Create or seed a default facility under the tenant.
+3. Configure facility identity: name, logo, contacts, address, branches, departments, units, rooms, wards, and beds.
+4. Create default admins: platform admin, tenant admin, facility admin, and facility-level admin users.
+5. Create department-based demo users such as doctor, nurse, receptionist, cashier/billing, pharmacist, lab user, radiology user, HR user, operations user, biomedical user, housekeeping user, mortuary user, and other module users.
+6. Assign roles, permissions, module entitlements, subscription plan, and license state.
+7. Register patients and process work through the correct module-specific flows.
+8. Review notifications, reports, dashboards, audit records, subscription state, and operational readiness.
 
 ## Core Modules
 
 | Module | Core responsibility |
 | --- | --- |
-| Authentication and access control | Manage login, logout, registration, session restoration, password changes, user identity, roles, permissions, and action-level access. |
-| General settings | Manage app preferences such as theme mode, language, user preferences, and local app behavior. |
-| Tenant settings | Manage tenant profile, enabled modules, tenant users, and tenant-wide access rules. |
-| Facility settings | Manage facility name, logo, contacts, address, departments, service units, branches, and facility defaults. |
-| Users and permissions | Manage staff accounts, invitations, roles, permission groups, action permissions, activation, and access scope. |
-| Rooms, wards, and beds | Manage physical care spaces, rooms, wards, beds, bed readiness, occupancy status, and service-point structure. |
-| Patient registry | Register patients and manage demographics, contacts, identifiers, guardians, documents, allergies, and patient lookup. |
-| OPD triage | Capture vitals, chief complaint, priority, triage notes, and routing decisions before consultation. |
-| OPD and outpatient flow management | Manage appointments, arrivals, queues, service routing, consultation readiness, patient movement, and outpatient completion. |
-| Clinical module | Manage consultations, clinical notes, diagnoses, procedures, treatment plans, orders, follow-up instructions, and clinical reviews. |
-| Nursing module | Manage nursing notes, observations, medication administration records, care tasks, handovers, and ward nursing activity. |
-| Inpatient management | Manage admissions, bed assignment, inpatient episode tracking, ward rounds, inpatient nursing coordination, transfers, and inpatient progress. |
-| ICU module | Manage ICU admissions, ICU bed assignment, critical-care observations, ICU rounds, monitoring records, escalation notes, transfer-out, and ICU discharge readiness. |
-| Theater module | Manage theater bookings, procedure schedules, pre-theater checks, theater room allocation, procedure status, post-theater notes, and handover back to ward/ICU/outpatient care. |
+| App identity and shell | Manage HOSSPI HMS name, logo, app shell, screen shell, responsive navigation, app bar, user menu, notification badge, and in-app status indicators. |
+| Authentication and session | Manage login, logout, registration, session restoration, password changes, secure session handling, and authenticated route guards. |
+| General settings | Manage user-level app preferences such as theme mode, language, local behavior, and accessibility-friendly preferences. |
+| Tenant settings | Manage tenant profile, subscription relationship, tenant-wide settings, enabled modules, tenant admins, and tenant access scope. |
+| Facility settings | Manage facility name, logo, contacts, address, departments, units, branches, facility defaults, and operational service points. |
+| Users, roles, and permissions | Manage staff accounts, default demo accounts, roles, permission groups, action permissions, role assignment, activation, and access scope. |
+| Subscription management | Manage subscription plans, active subscriptions, module subscriptions, licenses, subscription invoices, entitlement visibility, renewal state, and plan limits. |
+| Rooms, wards, and beds | Manage physical care spaces, room readiness, wards, beds, occupancy, assignments, and bed-status visibility. |
+| Patient registry | Register patients and manage demographics, identifiers, contacts, guardians, allergies, documents, consent, and patient lookup. |
+| Appointment and OPD flow | Manage appointments, arrivals, visit queues, outpatient routing, service movement, consultation readiness, and outpatient completion. |
+| OPD triage | Capture vital signs, chief complaint, priority, triage notes, emergency indicators, and routing decisions before consultation. |
+| Clinical module | Manage consultations, encounters, clinical notes, diagnoses, procedures, care plans, treatment decisions, orders, and follow-up instructions. |
+| Nursing module | Manage nursing notes, medication administration, care tasks, handovers, observations, and nursing activity across outpatient, inpatient, ICU, and ward workflows. |
+| Inpatient management | Manage admitted patients, bed assignment, IPD flow, ward rounds, inpatient progress, transfers, and inpatient nursing coordination. |
+| ICU module | Manage ICU stays, ICU bed assignment, critical-care observations, escalation, critical alerts, ICU rounds, transfer-out, and ICU discharge readiness. |
+| Theater module | Manage theater bookings, theater flow, pre-theater checks, anesthesia records, procedure status, post-op notes, and handover back to ward, ICU, or outpatient care. |
 | Discharge | Prepare discharge summaries, complete discharge checks, record instructions, close care episodes, and trigger final billing where required. |
+| Emergency and ambulance | Manage emergency cases, triage assessments, emergency response records, ambulances, dispatch, trips, and handover into OPD/IPD/ICU/theater. |
+| Laboratory | Manage lab tests, panels, orders, samples, results, quality control, and lab workspace actions. |
+| Radiology and imaging | Manage radiology tests, orders, results, imaging studies, imaging assets, PACS links, and radiology workspace actions. |
+| Physiotherapy | Manage therapy referrals, assessment, therapy plans, treatment sessions, exercise instructions, progress notes, attendance, and outcome review. |
 | Pharmacy | Manage drugs, formulary items, batches, pharmacy orders, dispensing, returns, stock visibility, and medication-related events. |
-| Billing and cashier | Manage invoices, invoice items, payments, refunds, adjustments, receipts, cashier workflows, and payment reconciliation. |
+| Billing and cashier | Manage invoices, invoice items, payments, receipts, refunds, billing adjustments, cashier workflow, and shift/day close support. |
 | Insurance and claims | Manage coverage plans, pre-authorizations, claim preparation, submission, approval, rejection, resubmission, and claim tracking. |
-| Human resources | Manage staff profiles, positions, assignments, leave, shifts, rosters, availability, and workforce administration. |
-| Biomedical | Manage clinical equipment records, maintenance plans, work orders, calibration, downtime, safety testing, incidents, recalls, spare parts, service providers, and equipment lifecycle status. |
-| Operations | Manage facility operations such as electrical, plumbing, water, power backup, HVAC/air-conditioning, general maintenance, safety checks, maintenance requests, and operational readiness. |
-| Housekeeping | Manage cleaning tasks, room/bed turnover, ward cleaning, sanitation schedules, laundry coordination, housekeeping requests, and cleanliness readiness. |
-| Notifications | Show in-app alerts, notification badges, unread indicators, delivery status, task reminders, and workflow indicators. |
-| Reports, dashboards, and audit | Provide operational dashboards, reports, exports, audit logs, user activity trails, and compliance evidence. |
-| Integrations | Manage API keys, webhooks, external service configuration, integration logs, and integration status where supported by the backend. |
+| Human resources | Manage staff profiles, positions, assignments, leave, availability, shifts, rosters, payroll runs, and workforce administration. |
+| Biomedical | Manage medical equipment registry, categories, maintenance plans, work orders, calibration, safety testing, downtime, incidents, recalls, spare parts, service providers, warranties, utilization, and disposal/transfer. |
+| Operations | Manage non-clinical facility work such as electrical, plumbing, water, power backup, HVAC/air-conditioning, general maintenance, safety checks, maintenance requests, and operational readiness. |
+| Housekeeping | Manage cleaning tasks, schedules, room/bed turnover, ward cleaning, sanitation readiness, laundry coordination, housekeeping requests, and cleanliness status. |
+| Mortuary | Manage deceased profiles, mortuary cases, storage units/slots, custody events, viewings, post-mortem requests, release authorization, and billable mortuary events. |
+| Notifications and communications | Manage in-app notifications, delivery state, unread indicators, conversations, messages, alerts, workflow reminders, and user-facing notification badges. |
+| Reports, dashboards, and audit | Provide dashboards, report definitions, report runs, scheduled reports, exports, audit logs, PHI access logs, data processing logs, compliance evidence, and activity review. |
+| Integrations | Manage API keys, integrations, integration logs, webhooks, interoperability configuration, and external system status. |
+| Demo and seed data | Provide safe development/demo data for tenant, facility, admins, departments, users, roles, permissions, subscriptions, modules, patients, operations, biomedical, mortuary, and clinical workflows. |
 
 ## Module Boundaries
+- Tenant and facility settings own organizational structure; modules should consume this structure instead of redefining it.
+- Users and permissions own account access; individual modules should only request permissions and display allowed actions.
+- OPD flow owns appointment arrival, queues, service movement, and outpatient completion.
 - OPD triage owns pre-consultation triage capture and routing decisions.
-- OPD/outpatient flow owns appointment arrival, queues, service routing, visit movement, and outpatient completion.
-- Clinical owns consultations, diagnoses, treatment plans, clinical orders, and provider review notes.
-- Nursing owns nursing observations, medication administration records, care tasks, and handovers.
-- Inpatient management owns admissions, bed assignment, ward rounds, inpatient progress, ward transfers, and inpatient coordination.
-- ICU owns ICU-specific admission, ICU bed assignment, intensive monitoring records, ICU rounds, and ICU transfer/discharge readiness.
-- Theater owns procedure scheduling, theater allocation, pre-theater checks, procedure status, and post-theater handover.
-- Discharge owns discharge summaries, discharge checks, instructions, and care episode closure.
-- Billing owns invoices, payments, refunds, cashier actions, and financial reconciliation.
+- Clinical owns provider consultation, diagnoses, procedures, care plans, treatment decisions, and clinical orders.
+- Nursing owns nursing observations, medication administration, care tasks, ward activity, and handover.
+- Inpatient owns admission, bed assignment, ward rounds, inpatient tracking, and ward transfer coordination.
+- ICU owns intensive-care stays, monitoring, critical alerts, ICU rounds, and ICU transfer/discharge readiness.
+- Theater owns procedure scheduling, theater allocation, anesthesia capture, intra/post-op tracking, and handover.
+- Physiotherapy owns therapy assessment, treatment sessions, exercise plans, attendance, and progress review.
+- Discharge owns discharge summary, discharge checks, instructions, and care episode closure.
+- Billing owns invoices, payments, refunds, receipts, cashier actions, and financial reconciliation.
 - Insurance and claims own coverage, pre-authorization, claim submission, review status, and follow-up.
-- Pharmacy owns medication stock visibility, pharmacy orders, dispensing, and medicine-related returns.
-- Facility settings own facility profile, departments, service units, branches, rooms, wards, and beds.
-- HR owns staff records, assignments, leave, shifts, rosters, and workforce planning.
+- Pharmacy owns medicine catalogs, stock visibility, dispensing, and medication-related returns.
+- HR owns staff records, assignments, shifts, rosters, leave, and workforce planning.
 - Biomedical owns clinical equipment lifecycle and technical maintenance workflows.
-- Operations owns non-clinical facility maintenance such as electrical, plumbing, water, power, HVAC, and safety readiness.
-- Housekeeping owns cleaning, turnover, sanitation, laundry coordination, and cleanliness readiness.
-- Reports and audit read from other modules but do not replace module-owned workflows.
+- Operations owns non-clinical maintenance such as electrical, plumbing, water, power, HVAC, and safety readiness.
+- Housekeeping owns cleaning, sanitation, turnover, laundry coordination, and cleanliness readiness.
+- Mortuary owns deceased custody, storage, viewing, post-mortem, release, and mortuary billing events.
+- Reports and audit read from modules but must not replace module-owned workflows.
+
+## Demo and Seed Data Expectations
+The system should support safe, repeatable demo seeding for development, testing, onboarding, and product demonstrations.
+
+Required demo data should include:
+- default tenant;
+- default facility;
+- default subscription plan, subscription, module subscriptions, and license state;
+- default platform admin;
+- default tenant admin;
+- default facility admin;
+- default admin/facility admin account for general setup;
+- default doctor account;
+- default nurse account;
+- default receptionist/front-office account;
+- default billing/cashier account;
+- default pharmacist account;
+- default laboratory account;
+- default radiology account where the module is enabled;
+- default HR account;
+- default biomedical account;
+- default operations account;
+- default housekeeping account;
+- default mortuary staff and mortuary manager accounts;
+- default ambulance/emergency account where the module is enabled;
+- default physiotherapy account when a dedicated physiotherapy role/API contract is available;
+- default department records, service units, rooms, wards, beds, patients, visits, clinical records, pharmacy records, billing records, claims records, operations records, housekeeping records, biomedical records, mortuary records, notifications, reports, and audit samples.
+
+Seed data must be clearly marked as demo data, must not run in production by accident, and must be safe to clear or recreate.
 
 ## Access Control Expectations
-- Every screen, menu item, button, and action must respect the logged-in user's roles and permissions.
+- Every screen, menu item, button, modal action, API call, report, export, and workflow transition must respect the logged-in user's role, permission, tenant scope, facility scope, and module entitlement.
 - Users may have more than one role.
 - Access checks must consider tenant, facility, department, unit, ward, room, bed, and action scope where applicable.
-- A user should only see actions they are allowed to perform.
-- Hidden or disabled actions must never be the only protection; backend authorization remains mandatory.
+- Users should only see actions they are allowed to perform.
+- Frontend hiding or disabling is not enough; backend authorization remains mandatory.
 
 ## UX Expectations
 - Each module should be easy to understand without training-heavy navigation.
@@ -88,14 +135,15 @@ This file defines product scope only: core functions, modules, and module respon
 - Short forms, quick edits, approvals, confirmations, and status updates should use modals where appropriate.
 - Full-page flows should be reserved for long, high-risk, or multi-step processes.
 - Screens should avoid congestion by separating lists, filters, details, and actions clearly.
-- Forms should be clean, validated, and grouped into logical sections.
-- Dashboards should show only useful summaries and direct workflow entry points.
+- Forms should be validated, grouped into logical sections, and kept short where possible.
+- Dashboards should show useful summaries and direct workflow entry points only.
 
 ## Product Completion Standard
-The system is ready when:
+HOSSPI HMS is ready when:
 - account creation leads naturally into tenant and facility setup;
-- facility admins can configure users, roles, permissions, facility profile, departments, rooms, wards, beds, and service units;
+- admins can configure tenant, facility, users, roles, permissions, subscriptions, modules, departments, rooms, wards, beds, and service units;
+- demo/seed data supports safe testing and product demonstrations;
 - staff can perform module-specific work without unnecessary navigation;
-- patient flow works from registration through OPD, triage, clinical care, nursing, pharmacy, billing, insurance, inpatient care, ICU, theater, and discharge where applicable;
-- operations, housekeeping, biomedical, HR, reports, notifications, audit, and settings support daily hospital work;
-- frontend menus, routes, forms, actions, and permissions match backend modules, permissions, and available APIs.
+- patient flow works from registration through OPD, triage, clinical care, nursing, pharmacy, lab/radiology, billing, insurance, inpatient care, ICU, theater, physiotherapy, mortuary, and discharge where applicable;
+- operations, housekeeping, biomedical, HR, reports, notifications, audit, integrations, and settings support daily hospital work;
+- frontend menus, routes, forms, actions, permissions, and module visibility match backend routes, permissions, feature flags, subscriptions, and APIs.
