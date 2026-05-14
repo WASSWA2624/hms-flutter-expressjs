@@ -1,0 +1,112 @@
+/**
+ * Canonical role catalog for HMS access control.
+ *
+ * Multiple role assignments are supported through `user_role`. These constants
+ * define canonical names used by backend authorization, seeds, and frontend
+ * alignment.
+ */
+const ROLES = Object.freeze({
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  TENANT_ADMIN: 'TENANT_ADMIN',
+  FACILITY_ADMIN: 'FACILITY_ADMIN',
+  DOCTOR: 'DOCTOR',
+  NURSE: 'NURSE',
+  LAB_TECH: 'LAB_TECH',
+  PHARMACIST: 'PHARMACIST',
+  RECEPTIONIST: 'RECEPTIONIST',
+  BILLING: 'BILLING',
+  OPERATIONS: 'OPERATIONS',
+  HR: 'HR',
+  BIOMED: 'BIOMED',
+  HOUSE_KEEPER: 'HOUSE_KEEPER',
+  AMBULANCE_OPERATOR: 'AMBULANCE_OPERATOR',
+  UNIT_MANAGER: 'UNIT_MANAGER',
+  WARD_MANAGER: 'WARD_MANAGER',
+  ICU_MANAGER: 'ICU_MANAGER',
+  THEATRE_MANAGER: 'THEATRE_MANAGER',
+  HOUSEKEEPING_MANAGER: 'HOUSEKEEPING_MANAGER',
+  BIOMED_MANAGER: 'BIOMED_MANAGER',
+  MORTUARY_STAFF: 'MORTUARY_STAFF',
+  MORTUARY_MANAGER: 'MORTUARY_MANAGER',
+  PATIENT: 'PATIENT',
+  OTHER: 'OTHER',
+});
+
+const ROLE_VALUES = Object.freeze(Object.values(ROLES));
+
+const LEGACY_ROLE_ALIASES = Object.freeze({
+  ADMIN: ROLES.TENANT_ADMIN,
+  APP_ADMIN: ROLES.SUPER_ADMIN,
+  OWNER: ROLES.TENANT_ADMIN,
+  SYSTEM_ADMIN: ROLES.SUPER_ADMIN,
+  PLATFORM_ADMIN: ROLES.SUPER_ADMIN,
+  FACILITY_MANAGER: ROLES.FACILITY_ADMIN,
+  HOSPITAL_ADMIN: ROLES.FACILITY_ADMIN,
+  HOSPITAL_MANAGER: ROLES.FACILITY_ADMIN,
+  AMBULANCE_DRIVER: ROLES.AMBULANCE_OPERATOR,
+  EMT: ROLES.AMBULANCE_OPERATOR,
+  PARAMEDIC: ROLES.AMBULANCE_OPERATOR,
+  WARD_IN_CHARGE: ROLES.WARD_MANAGER,
+  CHARGE_NURSE: ROLES.WARD_MANAGER,
+  MATRON: ROLES.WARD_MANAGER,
+  MORTUARY_OFFICER: ROLES.MORTUARY_STAFF,
+  MORGUE_ATTENDANT: ROLES.MORTUARY_STAFF,
+  HOUSEKEEPING_SUPERVISOR: ROLES.HOUSEKEEPING_MANAGER,
+  USER: ROLES.OTHER,
+  GUEST: ROLES.OTHER,
+});
+
+/**
+ * Normalize a role candidate to a canonical catalog value.
+ *
+ * @param {string | null | undefined} role
+ * @returns {string | null}
+ */
+const normalizeRoleName = (role) => {
+  const normalized = String(role || '').trim().toUpperCase();
+  if (!normalized) return null;
+  if (LEGACY_ROLE_ALIASES[normalized]) return LEGACY_ROLE_ALIASES[normalized];
+  if (ROLE_VALUES.includes(normalized)) return normalized;
+  return null;
+};
+
+const isCanonicalRole = (role) => normalizeRoleName(role) !== null;
+
+const ELEVATED_ROLES = Object.freeze([ROLES.SUPER_ADMIN]);
+
+const ROLE_HIERARCHY = Object.freeze({
+  [ROLES.OTHER]: 0,
+  [ROLES.PATIENT]: 1,
+  [ROLES.HOUSE_KEEPER]: 2,
+  [ROLES.RECEPTIONIST]: 3,
+  [ROLES.BILLING]: 4,
+  [ROLES.OPERATIONS]: 5,
+  [ROLES.AMBULANCE_OPERATOR]: 6,
+  [ROLES.LAB_TECH]: 7,
+  [ROLES.PHARMACIST]: 8,
+  [ROLES.BIOMED]: 9,
+  [ROLES.MORTUARY_STAFF]: 10,
+  [ROLES.NURSE]: 11,
+  [ROLES.DOCTOR]: 12,
+  [ROLES.HR]: 13,
+  [ROLES.UNIT_MANAGER]: 14,
+  [ROLES.WARD_MANAGER]: 15,
+  [ROLES.ICU_MANAGER]: 16,
+  [ROLES.THEATRE_MANAGER]: 17,
+  [ROLES.HOUSEKEEPING_MANAGER]: 18,
+  [ROLES.BIOMED_MANAGER]: 19,
+  [ROLES.MORTUARY_MANAGER]: 20,
+  [ROLES.FACILITY_ADMIN]: 21,
+  [ROLES.TENANT_ADMIN]: 22,
+  [ROLES.SUPER_ADMIN]: 23,
+});
+
+module.exports = {
+  ROLES,
+  ROLE_VALUES,
+  ROLE_HIERARCHY,
+  ELEVATED_ROLES,
+  LEGACY_ROLE_ALIASES,
+  normalizeRoleName,
+  isCanonicalRole,
+};

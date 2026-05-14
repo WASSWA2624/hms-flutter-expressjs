@@ -1,0 +1,38 @@
+const { ROLES, normalizeRoleName } = require('@config/roles');
+const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
+
+describe('permissions config', () => {
+  it('includes AMBULANCE_OPERATOR in the canonical role catalog', () => {
+    expect(ROLES.AMBULANCE_OPERATOR).toBe('AMBULANCE_OPERATOR');
+    expect(ROLE_PERMISSIONS[ROLES.AMBULANCE_OPERATOR]).toBeDefined();
+  });
+
+  it('grants emergency read/write and not emergency delete to AMBULANCE_OPERATOR', () => {
+    const permissions = ROLE_PERMISSIONS[ROLES.AMBULANCE_OPERATOR] || [];
+
+    expect(permissions).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.PROFILE_READ,
+        PERMISSIONS.EMERGENCY_READ,
+        PERMISSIONS.EMERGENCY_WRITE
+      ])
+    );
+    expect(permissions).not.toContain(PERMISSIONS.EMERGENCY_DELETE);
+  });
+
+  it('grants emergency delete to admin roles', () => {
+    const superAdminPermissions = ROLE_PERMISSIONS[ROLES.SUPER_ADMIN] || [];
+    const tenantAdminPermissions = ROLE_PERMISSIONS[ROLES.TENANT_ADMIN] || [];
+    const facilityAdminPermissions = ROLE_PERMISSIONS[ROLES.FACILITY_ADMIN] || [];
+
+    expect(superAdminPermissions).toContain(PERMISSIONS.EMERGENCY_DELETE);
+    expect(tenantAdminPermissions).toContain(PERMISSIONS.EMERGENCY_DELETE);
+    expect(facilityAdminPermissions).toContain(PERMISSIONS.EMERGENCY_DELETE);
+  });
+
+  it('normalizes ambulance legacy aliases to AMBULANCE_OPERATOR', () => {
+    expect(normalizeRoleName('ambulance_driver')).toBe(ROLES.AMBULANCE_OPERATOR);
+    expect(normalizeRoleName('EMT')).toBe(ROLES.AMBULANCE_OPERATOR);
+    expect(normalizeRoleName('paramedic')).toBe(ROLES.AMBULANCE_OPERATOR);
+  });
+});

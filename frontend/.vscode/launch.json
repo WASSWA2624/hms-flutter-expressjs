@@ -1,0 +1,71 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter: Web Chrome (development)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define-from-file=env/development.json.example"
+      ]
+    },
+    {
+      "name": "Flutter: Android (development)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "android",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define-from-file=env/development.json.example"
+      ]
+    },
+    {
+      "name": "Flutter: iOS (development)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "ios",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define-from-file=env/development.json.example"
+      ]
+    },
+    {
+      "name": "Flutter: macOS (development)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "macos",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define-from-file=env/development.json.example"
+      ]
+    },
+    {
+      "name": "Flutter: Windows (development)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "windows",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define-from-file=env/development.json.example"
+      ]
+    },
+    {
+      "name": "Flutter: Linux (development)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "linux",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--dart-define-from-file=env/development.json.example"
+      ]
+    }
+  ]
+}

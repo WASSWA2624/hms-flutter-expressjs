@@ -1,0 +1,7 @@
+{
+  "APP_ENV": "staging",
+  "API_BASE_URL": "https://staging-api.example.com",
+  "API_TIMEOUT_SECONDS": "30",
+  "LOG_LEVEL": "info",
+  "FEATURE_DEVELOPER_TOOLS_ENABLED": "false"
+}

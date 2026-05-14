@@ -1,0 +1,7 @@
+{
+  "APP_ENV": "production",
+  "API_BASE_URL": "https://api.example.com",
+  "API_TIMEOUT_SECONDS": "30",
+  "LOG_LEVEL": "warn",
+  "FEATURE_DEVELOPER_TOOLS_ENABLED": "false"
+}

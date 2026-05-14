@@ -1,0 +1,151 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_template/app/app.dart';
+import 'package:flutter_template/app/router/app_router.dart';
+import 'package:flutter_template/app/router/route_status_pages.dart';
+import 'package:flutter_template/app/startup/app_startup_state.dart';
+import 'package:flutter_template/app/startup/startup_providers.dart';
+import 'package:flutter_template/core/security/session_state.dart';
+import 'package:flutter_template/core/storage/storage_readiness.dart';
+import 'package:flutter_template/features/home/presentation/pages/home_page.dart';
+import 'package:flutter_template/l10n/app_localizations_x.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+
+void main() {
+  const Locale englishLocale = Locale('en');
+
+  testWidgets('renders the minimal template shell', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpAndSettle();
+
+    final l10n = tester.element(find.byType(HomePage)).l10n;
+
+    expect(find.text(l10n.appTitle), findsWidgets);
+    expect(find.text(l10n.appStatusOnlineLabel), findsOneWidget);
+    expect(find.text(l10n.homeReadyTitle), findsOneWidget);
+
+    for (final String platform in l10n.supportedStarterPlatforms) {
+      expect(find.text(platform), findsOneWidget);
+    }
+  });
+
+  testWidgets('renders the home screen at 320px width', (
+    WidgetTester tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 640);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpAndSettle();
+
+    final l10n = tester.element(find.byType(HomePage)).l10n;
+    final Scaffold scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+
+    expect(find.text(l10n.homeReadyTitle), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(scaffold.drawer, isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('renders the home screen at medium mobile width', (
+    WidgetTester tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 800);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpAndSettle();
+
+    final l10n = tester.element(find.byType(HomePage)).l10n;
+
+    expect(find.text(l10n.homeReadyTitle), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('navigates to settings and shows starter preferences', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpAndSettle();
+
+    final homeContext = tester.element(find.byType(HomePage));
+    final l10n = homeContext.l10n;
+
+    GoRouter.of(homeContext).go('/settings');
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.settingsTitle), findsWidgets);
+    expect(find.text(l10n.settingsBody), findsOneWidget);
+    expect(find.text(l10n.settingsLanguageFieldLabel), findsWidgets);
+    expect(find.text(l10n.settingsThemeModeFieldLabel), findsOneWidget);
+    expect(find.text(l10n.settingsLanguageEnglish), findsWidgets);
+  });
+
+  testWidgets('uses startup theme and locale providers', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appStartupStateProvider.overrideWithValue(
+            const AppStartupState(
+              themeMode: ThemeMode.dark,
+              locale: englishLocale,
+              storageReadiness: StorageReadiness.ready(),
+              sessionReadiness: SessionState.ready(),
+            ),
+          ),
+        ],
+        child: const TemplateApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+
+    expect(materialApp.themeMode, ThemeMode.dark);
+    expect(materialApp.locale, englishLocale);
+  });
+
+  testWidgets('shows localized not-found UI for unknown routes', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpAndSettle();
+
+    GoRouter.of(tester.element(find.byType(HomePage))).go('/missing-route');
+    await tester.pumpAndSettle();
+
+    final l10n = tester.element(find.byType(NotFoundPage)).l10n;
+
+    expect(find.text(l10n.routeNotFoundTitle), findsOneWidget);
+    expect(find.text(l10n.routeNotFoundBody), findsOneWidget);
+    expect(find.text('/missing-route'), findsOneWidget);
+  });
+
+  testWidgets('restores unknown initial locations to not-found UI', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appInitialLocationProvider.overrideWithValue('/missing-route'),
+        ],
+        child: const TemplateApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = tester.element(find.byType(NotFoundPage)).l10n;
+
+    expect(find.text(l10n.routeNotFoundTitle), findsOneWidget);
+    expect(find.text('/missing-route'), findsOneWidget);
+  });
+}

@@ -1,0 +1,6 @@
+-- No-op migration.
+-- The user_permission table is already created by:
+-- 20260314144500_add_user_permission_table
+--
+-- Keeping this migration folder preserves Prisma migration history while
+-- preventing duplicate CREATE TABLE failures in Prisma's shadow database.

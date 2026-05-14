@@ -1,0 +1,343 @@
+{
+  "@@locale": "en",
+  "appTitle": "Flutter Template",
+  "@appTitle": {
+    "description": "Application title shown in app bars and platform task lists."
+  },
+  "appShortTitle": "Template",
+  "@appShortTitle": {
+    "description": "Short application title shown in compact headers."
+  },
+  "startupLoadingTitle": "Starting app",
+  "@startupLoadingTitle": {
+    "description": "Title shown while startup dependencies initialize."
+  },
+  "startupLoadingBody": "Preparing local services.",
+  "@startupLoadingBody": {
+    "description": "Body text shown while startup dependencies initialize."
+  },
+  "startupErrorTitle": "The app could not start",
+  "@startupErrorTitle": {
+    "description": "Title shown when startup initialization fails."
+  },
+  "startupErrorBody": "Restart the app or try again.",
+  "@startupErrorBody": {
+    "description": "Safe user-facing startup error message."
+  },
+  "commonRetryActionLabel": "Try again",
+  "@commonRetryActionLabel": {
+    "description": "Label for actions that retry a failed operation."
+  },
+  "commonGoHomeActionLabel": "Go home",
+  "@commonGoHomeActionLabel": {
+    "description": "Label for actions that navigate back to the home route."
+  },
+  "appStatusOnlineLabel": "Online",
+  "@appStatusOnlineLabel": {
+    "description": "Label shown in the app header when network connectivity is available."
+  },
+  "appStatusOfflineLabel": "Offline",
+  "@appStatusOfflineLabel": {
+    "description": "Label shown in the app header when network connectivity is unavailable."
+  },
+  "appOpenNavigationMenuTooltip": "Open navigation menu",
+  "@appOpenNavigationMenuTooltip": {
+    "description": "Tooltip for the mobile navigation drawer open button."
+  },
+  "appCloseNavigationMenuTooltip": "Close navigation menu",
+  "@appCloseNavigationMenuTooltip": {
+    "description": "Tooltip for the mobile navigation drawer close button."
+  },
+  "appToggleSidebarTooltip": "Toggle sidebar",
+  "@appToggleSidebarTooltip": {
+    "description": "Tooltip for the desktop sidebar collapse and expand button."
+  },
+  "appAccountTooltip": "Account",
+  "@appAccountTooltip": {
+    "description": "Tooltip for the account avatar in the app header."
+  },
+  "navigationHomeLabel": "Home",
+  "@navigationHomeLabel": {
+    "description": "Navigation label for the home destination."
+  },
+  "navigationSettingsLabel": "Settings",
+  "@navigationSettingsLabel": {
+    "description": "Navigation label for the settings destination."
+  },
+  "homeReadyTitle": "Ready to build",
+  "@homeReadyTitle": {
+    "description": "Home page title for the starter template readiness state."
+  },
+  "homeReadyBody": "A compact starter shell with routing, settings, localization, and shared app services.",
+  "@homeReadyBody": {
+    "description": "Home page body for the starter template readiness state."
+  },
+  "homeStarterFeaturesLabel": "Starter features",
+  "@homeStarterFeaturesLabel": {
+    "description": "Heading for the starter template feature summary."
+  },
+  "homeFeatureResponsiveTitle": "Responsive layout",
+  "@homeFeatureResponsiveTitle": {
+    "description": "Feature summary title for responsive layout support."
+  },
+  "homeFeatureResponsiveBody": "One adaptive shell for mobile, tablet, desktop, and web.",
+  "@homeFeatureResponsiveBody": {
+    "description": "Feature summary body for responsive layout support."
+  },
+  "homeFeatureNavigationTitle": "Navigation",
+  "@homeFeatureNavigationTitle": {
+    "description": "Feature summary title for navigation support."
+  },
+  "homeFeatureNavigationBody": "Routes and menu items are centralized.",
+  "@homeFeatureNavigationBody": {
+    "description": "Feature summary body for navigation support."
+  },
+  "homeFeatureLocalizationTitle": "Localization",
+  "@homeFeatureLocalizationTitle": {
+    "description": "Feature summary title for localization support."
+  },
+  "homeFeatureLocalizationBody": "English is active. More locales can be added later.",
+  "@homeFeatureLocalizationBody": {
+    "description": "Feature summary body for localization support."
+  },
+  "homeFeatureSettingsTitle": "Settings",
+  "@homeFeatureSettingsTitle": {
+    "description": "Feature summary title for settings support."
+  },
+  "homeFeatureSettingsBody": "Theme and language preferences are persisted.",
+  "@homeFeatureSettingsBody": {
+    "description": "Feature summary body for settings support."
+  },
+  "homeLoadingTitle": "Preparing home",
+  "@homeLoadingTitle": {
+    "description": "Title shown while the home feature controller loads readiness state."
+  },
+  "homeLoadingBody": "Loading readiness.",
+  "@homeLoadingBody": {
+    "description": "Body shown while the home feature controller loads readiness state."
+  },
+  "homeLoadErrorTitle": "Home could not load",
+  "@homeLoadErrorTitle": {
+    "description": "Title shown when the home feature controller fails."
+  },
+  "homeLoadErrorBody": "Try the request again.",
+  "@homeLoadErrorBody": {
+    "description": "Body shown when the home feature controller fails."
+  },
+  "homeSupportedPlatformsLabel": "Supported targets",
+  "@homeSupportedPlatformsLabel": {
+    "description": "Heading for the list of starter target platforms."
+  },
+  "homeSupportedPlatformAndroid": "Android",
+  "@homeSupportedPlatformAndroid": {
+    "description": "Starter target platform label for Android."
+  },
+  "homeSupportedPlatformIos": "iOS",
+  "@homeSupportedPlatformIos": {
+    "description": "Starter target platform label for iOS."
+  },
+  "homeSupportedPlatformWeb": "Web",
+  "@homeSupportedPlatformWeb": {
+    "description": "Starter target platform label for web."
+  },
+  "homeSupportedPlatformWindowsDesktop": "Windows desktop",
+  "@homeSupportedPlatformWindowsDesktop": {
+    "description": "Starter target platform label for Windows desktop."
+  },
+  "homeSupportedPlatformMacosDesktop": "macOS desktop",
+  "@homeSupportedPlatformMacosDesktop": {
+    "description": "Starter target platform label for macOS desktop."
+  },
+  "homeSupportedPlatformLinuxDesktop": "Linux desktop",
+  "@homeSupportedPlatformLinuxDesktop": {
+    "description": "Starter target platform label for Linux desktop."
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Settings page title."
+  },
+  "settingsBody": "Set starter app preferences.",
+  "@settingsBody": {
+    "description": "Settings page intro body."
+  },
+  "settingsLanguageSectionTitle": "Language",
+  "@settingsLanguageSectionTitle": {
+    "description": "Settings section title for language preferences."
+  },
+  "settingsLanguageSectionBody": "English is included. Add more locales later.",
+  "@settingsLanguageSectionBody": {
+    "description": "Settings section body for language preferences."
+  },
+  "settingsLanguageFieldLabel": "App language",
+  "@settingsLanguageFieldLabel": {
+    "description": "Label for the language selection field."
+  },
+  "settingsLanguageEnglish": "English",
+  "@settingsLanguageEnglish": {
+    "description": "English language option label."
+  },
+  "settingsThemeSectionTitle": "Theme",
+  "@settingsThemeSectionTitle": {
+    "description": "Settings section title for theme preferences."
+  },
+  "settingsThemeSectionBody": "Use system, light, or dark mode.",
+  "@settingsThemeSectionBody": {
+    "description": "Settings section body for theme preferences."
+  },
+  "settingsThemeModeFieldLabel": "App theme",
+  "@settingsThemeModeFieldLabel": {
+    "description": "Label for the theme mode selection control."
+  },
+  "settingsThemeModeSystem": "System",
+  "@settingsThemeModeSystem": {
+    "description": "Theme option label for following the system setting."
+  },
+  "settingsThemeModeSystemDescription": "Follow the device setting.",
+  "@settingsThemeModeSystemDescription": {
+    "description": "Theme option description for following the system setting."
+  },
+  "settingsThemeModeLight": "Light",
+  "@settingsThemeModeLight": {
+    "description": "Theme option label for light mode."
+  },
+  "settingsThemeModeLightDescription": "Use the light color scheme.",
+  "@settingsThemeModeLightDescription": {
+    "description": "Theme option description for light mode."
+  },
+  "settingsThemeModeDark": "Dark",
+  "@settingsThemeModeDark": {
+    "description": "Theme option label for dark mode."
+  },
+  "settingsThemeModeDarkDescription": "Use the dark color scheme.",
+  "@settingsThemeModeDarkDescription": {
+    "description": "Theme option description for dark mode."
+  },
+  "settingsSaveErrorMessage": "The preference could not be saved.",
+  "@settingsSaveErrorMessage": {
+    "description": "Snackbar message shown when saving a setting fails."
+  },
+  "routeSessionRestoringTitle": "Checking session",
+  "@routeSessionRestoringTitle": {
+    "description": "Title shown while session restoration blocks a guarded route."
+  },
+  "routeSessionRestoringBody": "Finish session restore first.",
+  "@routeSessionRestoringBody": {
+    "description": "Body shown while session restoration blocks a guarded route."
+  },
+  "routeAuthRequiredTitle": "Sign-in required",
+  "@routeAuthRequiredTitle": {
+    "description": "Title shown when a route requires authentication."
+  },
+  "routeAuthRequiredBody": "Sign in to open this page.",
+  "@routeAuthRequiredBody": {
+    "description": "Body shown when a route requires authentication."
+  },
+  "routeForbiddenTitle": "Access denied",
+  "@routeForbiddenTitle": {
+    "description": "Title shown when a session lacks route permission."
+  },
+  "routeForbiddenBody": "You do not have access to this page.",
+  "@routeForbiddenBody": {
+    "description": "Body shown when a session lacks route permission."
+  },
+  "routeNotFoundTitle": "Page not found",
+  "@routeNotFoundTitle": {
+    "description": "Title shown when a route cannot be matched."
+  },
+  "routeNotFoundBody": "This route is not available.",
+  "@routeNotFoundBody": {
+    "description": "Body shown when a route cannot be matched."
+  },
+  "validationRequired": "This field is required.",
+  "@validationRequired": {
+    "description": "Generic required-field validation message for forms."
+  },
+  "errorNetworkTitle": "Connection problem",
+  "@errorNetworkTitle": {
+    "description": "Title for a generic network failure."
+  },
+  "errorNetworkMessage": "Check your connection and try again.",
+  "@errorNetworkMessage": {
+    "description": "Safe user-facing message for a generic network failure."
+  },
+  "errorTimeoutTitle": "Request timed out",
+  "@errorTimeoutTitle": {
+    "description": "Title for a timeout failure."
+  },
+  "errorTimeoutMessage": "The request took too long. Try again.",
+  "@errorTimeoutMessage": {
+    "description": "Safe user-facing message for a timeout failure."
+  },
+  "errorOfflineTitle": "No connection",
+  "@errorOfflineTitle": {
+    "description": "Title for an offline failure."
+  },
+  "errorOfflineMessage": "Connect to the internet and try again.",
+  "@errorOfflineMessage": {
+    "description": "Safe user-facing message for an offline failure."
+  },
+  "errorCancelledTitle": "Request cancelled",
+  "@errorCancelledTitle": {
+    "description": "Title for a cancelled request failure."
+  },
+  "errorCancelledMessage": "The request was cancelled.",
+  "@errorCancelledMessage": {
+    "description": "Safe user-facing message for a cancelled request failure."
+  },
+  "errorUnauthorizedTitle": "Sign-in required",
+  "@errorUnauthorizedTitle": {
+    "description": "Title for an unauthorized failure."
+  },
+  "errorUnauthorizedMessage": "Sign in again to continue.",
+  "@errorUnauthorizedMessage": {
+    "description": "Safe user-facing message for an unauthorized failure."
+  },
+  "errorForbiddenTitle": "Access denied",
+  "@errorForbiddenTitle": {
+    "description": "Title for a forbidden failure."
+  },
+  "errorForbiddenMessage": "You do not have permission.",
+  "@errorForbiddenMessage": {
+    "description": "Safe user-facing message for a forbidden failure."
+  },
+  "errorNotFoundTitle": "Not found",
+  "@errorNotFoundTitle": {
+    "description": "Title for a not-found failure."
+  },
+  "errorNotFoundMessage": "The item is not available.",
+  "@errorNotFoundMessage": {
+    "description": "Safe user-facing message for a not-found failure."
+  },
+  "errorValidationTitle": "Check the details",
+  "@errorValidationTitle": {
+    "description": "Title for a validation failure."
+  },
+  "errorValidationMessage": "Check the highlighted details.",
+  "@errorValidationMessage": {
+    "description": "Safe user-facing message for a validation failure."
+  },
+  "errorUnexpectedResponseTitle": "Unexpected response",
+  "@errorUnexpectedResponseTitle": {
+    "description": "Title for an unexpected API response failure."
+  },
+  "errorUnexpectedResponseMessage": "Try again later.",
+  "@errorUnexpectedResponseMessage": {
+    "description": "Safe user-facing message for an unexpected API response failure."
+  },
+  "errorStorageTitle": "Storage unavailable",
+  "@errorStorageTitle": {
+    "description": "Title for a local storage failure."
+  },
+  "errorStorageMessage": "Local data could not be accessed. Try again.",
+  "@errorStorageMessage": {
+    "description": "Safe user-facing message for a local storage failure."
+  },
+  "errorUnexpectedTitle": "Something went wrong",
+  "@errorUnexpectedTitle": {
+    "description": "Title for an unexpected failure."
+  },
+  "errorUnexpectedMessage": "Something went wrong. Try again.",
+  "@errorUnexpectedMessage": {
+    "description": "Generic safe error message for unexpected recoverable failures."
+  }
+}
