@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 
 void main() {
   const Locale englishLocale = Locale('en');
@@ -24,6 +25,7 @@ void main() {
     expect(find.text(l10n.appTitle), findsWidgets);
     expect(find.text(l10n.appStatusOnlineLabel), findsOneWidget);
     expect(find.text(l10n.homeReadyTitle), findsOneWidget);
+    expect(find.byType(AppLogo), findsOneWidget);
 
     for (final String serviceArea in l10n.homeServiceAreas) {
       expect(find.text(serviceArea), findsOneWidget);
@@ -84,6 +86,7 @@ void main() {
     expect(find.text(l10n.settingsLanguageFieldLabel), findsWidgets);
     expect(find.text(l10n.settingsThemeModeFieldLabel), findsOneWidget);
     expect(find.text(l10n.settingsLanguageEnglish), findsWidgets);
+    expect(find.byType(AppLogo), findsOneWidget);
   });
 
   testWidgets('uses startup theme and locale providers', (

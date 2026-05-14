@@ -43,32 +43,19 @@ class _HomeReadyContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final TextTheme textTheme = theme.textTheme;
     final AppSpacingTokens spacing = theme.spacing;
     final l10n = context.l10n;
 
-    return ResponsivePage(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          AppLogo(size: theme.appTokens.statusIconSize),
-          SizedBox(height: spacing.md),
-          Text(l10n.appTitle, style: textTheme.headlineMedium),
-          SizedBox(height: spacing.sm),
-          Text(l10n.homeReadyTitle, style: textTheme.titleLarge),
-          SizedBox(height: spacing.sm),
-          Text(
-            l10n.homeReadyBody,
-            style: textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: spacing.xl),
-          _HomeEntryPointGrid(entryPoints: _homeEntryPoints(l10n)),
-          SizedBox(height: spacing.md),
-          const _ServiceAreaList(),
-        ],
-      ),
+    return AppScreen(
+      title: l10n.appTitle,
+      subtitle: l10n.homeReadyTitle,
+      body: l10n.homeReadyBody,
+      maxWidth: PageMaxWidth.dashboard,
+      children: <Widget>[
+        _HomeEntryPointGrid(entryPoints: _homeEntryPoints(l10n)),
+        SizedBox(height: spacing.md),
+        const _ServiceAreaList(),
+      ],
     );
   }
 }

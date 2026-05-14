@@ -121,3 +121,151 @@ class ResponsivePage extends StatelessWidget {
     );
   }
 }
+
+class AppScreen extends StatelessWidget {
+  const AppScreen({
+    required this.title,
+    required this.children,
+    this.subtitle,
+    this.body,
+    this.headerActions,
+    this.maxWidth = PageMaxWidth.reading,
+    this.padding,
+    super.key,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? body;
+  final List<Widget> children;
+  final List<Widget>? headerActions;
+  final PageMaxWidth maxWidth;
+  final EdgeInsets? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return ResponsivePage(
+      maxWidth: maxWidth,
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          AppScreenHeader(
+            title: title,
+            subtitle: subtitle,
+            body: body,
+            actions: headerActions,
+          ),
+          if (children.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.xl),
+            ...children,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class AppScreenHeader extends StatelessWidget {
+  const AppScreenHeader({
+    required this.title,
+    this.subtitle,
+    this.body,
+    this.actions,
+    super.key,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? body;
+  final List<Widget>? actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextTheme textTheme = theme.textTheme;
+    final List<Widget> effectiveActions = actions ?? const <Widget>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(title, style: textTheme.headlineMedium),
+                  if (subtitle != null && subtitle!.isNotEmpty) ...<Widget>[
+                    SizedBox(height: theme.spacing.sm),
+                    Text(subtitle!, style: textTheme.titleLarge),
+                  ],
+                  if (body != null && body!.isNotEmpty) ...<Widget>[
+                    SizedBox(height: theme.spacing.sm),
+                    Text(
+                      body!,
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (effectiveActions.isNotEmpty) ...<Widget>[
+              SizedBox(width: theme.spacing.lg),
+              Wrap(spacing: theme.spacing.sm, children: effectiveActions),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class AppScreenSection extends StatelessWidget {
+  const AppScreenSection({
+    required this.title,
+    required this.body,
+    required this.child,
+    super.key,
+  });
+
+  final String title;
+  final String body;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(title, style: theme.textTheme.titleMedium),
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              body,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: theme.spacing.lg),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}

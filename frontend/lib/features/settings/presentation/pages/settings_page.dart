@@ -16,78 +16,76 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final AppSpacingTokens spacing = theme.spacing;
     final ThemeMode themeMode = ref.watch(appThemeModeProvider);
     final Locale selectedLocale =
         ref.watch(appLocaleProvider) ?? _englishLocale;
 
-    return ResponsivePage(
-      maxWidth: PageMaxWidth.form,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _SettingsHeader(title: l10n.settingsTitle, body: l10n.settingsBody),
-          SizedBox(height: spacing.xl),
-          _SettingsSection(
-            title: l10n.settingsLanguageSectionTitle,
-            body: l10n.settingsLanguageSectionBody,
-            child: AppSelectField<Locale>(
-              labelText: l10n.settingsLanguageFieldLabel,
-              value: selectedLocale,
-              options: <AppSelectOption<Locale>>[
-                AppSelectOption<Locale>(
-                  value: _englishLocale,
-                  label: l10n.settingsLanguageEnglish,
-                ),
-              ],
-              onChanged: (Locale? locale) {
-                if (locale == null) {
-                  return;
-                }
+    return AppScreen(
+      title: l10n.settingsTitle,
+      body: l10n.settingsBody,
+      maxWidth: PageMaxWidth.dashboard,
+      children: <Widget>[
+        _SettingsSectionGrid(
+          sections: <Widget>[
+            AppScreenSection(
+              title: l10n.settingsLanguageSectionTitle,
+              body: l10n.settingsLanguageSectionBody,
+              child: AppSelectField<Locale>(
+                labelText: l10n.settingsLanguageFieldLabel,
+                value: selectedLocale,
+                options: <AppSelectOption<Locale>>[
+                  AppSelectOption<Locale>(
+                    value: _englishLocale,
+                    label: l10n.settingsLanguageEnglish,
+                  ),
+                ],
+                onChanged: (Locale? locale) {
+                  if (locale == null) {
+                    return;
+                  }
 
-                unawaited(_setLocale(context, ref, locale));
-              },
+                  unawaited(_setLocale(context, ref, locale));
+                },
+              ),
             ),
-          ),
-          SizedBox(height: spacing.lg),
-          _SettingsSection(
-            title: l10n.settingsThemeSectionTitle,
-            body: l10n.settingsThemeSectionBody,
-            child: AppRadioGroup<ThemeMode>(
-              labelText: l10n.settingsThemeModeFieldLabel,
-              value: themeMode,
-              options: <AppRadioOption<ThemeMode>>[
-                AppRadioOption<ThemeMode>(
-                  value: ThemeMode.system,
-                  label: l10n.settingsThemeModeSystem,
-                  description: l10n.settingsThemeModeSystemDescription,
-                  secondary: const Icon(Icons.brightness_auto_outlined),
-                ),
-                AppRadioOption<ThemeMode>(
-                  value: ThemeMode.light,
-                  label: l10n.settingsThemeModeLight,
-                  description: l10n.settingsThemeModeLightDescription,
-                  secondary: const Icon(Icons.light_mode_outlined),
-                ),
-                AppRadioOption<ThemeMode>(
-                  value: ThemeMode.dark,
-                  label: l10n.settingsThemeModeDark,
-                  description: l10n.settingsThemeModeDarkDescription,
-                  secondary: const Icon(Icons.dark_mode_outlined),
-                ),
-              ],
-              onChanged: (ThemeMode? mode) {
-                if (mode == null) {
-                  return;
-                }
+            AppScreenSection(
+              title: l10n.settingsThemeSectionTitle,
+              body: l10n.settingsThemeSectionBody,
+              child: AppRadioGroup<ThemeMode>(
+                labelText: l10n.settingsThemeModeFieldLabel,
+                value: themeMode,
+                options: <AppRadioOption<ThemeMode>>[
+                  AppRadioOption<ThemeMode>(
+                    value: ThemeMode.system,
+                    label: l10n.settingsThemeModeSystem,
+                    description: l10n.settingsThemeModeSystemDescription,
+                    secondary: const Icon(Icons.brightness_auto_outlined),
+                  ),
+                  AppRadioOption<ThemeMode>(
+                    value: ThemeMode.light,
+                    label: l10n.settingsThemeModeLight,
+                    description: l10n.settingsThemeModeLightDescription,
+                    secondary: const Icon(Icons.light_mode_outlined),
+                  ),
+                  AppRadioOption<ThemeMode>(
+                    value: ThemeMode.dark,
+                    label: l10n.settingsThemeModeDark,
+                    description: l10n.settingsThemeModeDarkDescription,
+                    secondary: const Icon(Icons.dark_mode_outlined),
+                  ),
+                ],
+                onChanged: (ThemeMode? mode) {
+                  if (mode == null) {
+                    return;
+                  }
 
-                unawaited(_setThemeMode(context, ref, mode));
-              },
+                  unawaited(_setThemeMode(context, ref, mode));
+                },
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -128,57 +126,34 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
-class _SettingsHeader extends StatelessWidget {
-  const _SettingsHeader({required this.title, required this.body});
+class _SettingsSectionGrid extends StatelessWidget {
+  const _SettingsSectionGrid({required this.sections});
 
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        AppLogo(size: theme.appTokens.statusIconSize),
-        SizedBox(height: theme.spacing.md),
-        Text(title, style: theme.textTheme.headlineSmall),
-        SizedBox(height: theme.spacing.sm),
-        Text(body, style: theme.textTheme.bodyLarge),
-      ],
-    );
-  }
-}
-
-class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
-    required this.title,
-    required this.body,
-    required this.child,
-  });
-
-  final String title;
-  final String body;
-  final Widget child;
+  final List<Widget> sections;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Divider(height: theme.spacing.none),
-        SizedBox(height: theme.spacing.md),
-        Text(title, style: theme.textTheme.titleMedium),
-        SizedBox(height: theme.spacing.xs),
-        Text(body, style: theme.textTheme.bodyMedium),
-        SizedBox(height: theme.spacing.md),
-        child,
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool useTwoColumns = constraints.maxWidth >= _twoColumnMinWidth;
+        final double itemWidth = useTwoColumns
+            ? (constraints.maxWidth - theme.spacing.lg) / 2
+            : constraints.maxWidth;
+
+        return Wrap(
+          spacing: theme.spacing.lg,
+          runSpacing: theme.spacing.lg,
+          children: <Widget>[
+            for (final Widget section in sections)
+              SizedBox(width: itemWidth, child: section),
+          ],
+        );
+      },
     );
   }
 }
 
 const Locale _englishLocale = Locale('en');
+const double _twoColumnMinWidth = 920;
