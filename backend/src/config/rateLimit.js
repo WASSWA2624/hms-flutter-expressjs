@@ -25,7 +25,7 @@ const RateLimitConfig = {
     // Authentication endpoints (stricter limits)
     auth: {
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 5
+      max: NODE_ENV === 'development' ? 1000 : 20
     },
     
     // Registration endpoint
