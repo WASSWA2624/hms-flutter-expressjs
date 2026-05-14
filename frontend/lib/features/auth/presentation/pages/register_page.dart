@@ -44,44 +44,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final state = ref.watch(authControllerProvider);
     final theme = Theme.of(context);
 
-    if (state.registrationSubmitted) {
-      return Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(theme.spacing.lg),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    const Align(child: AppLogo(size: 48)),
-                    SizedBox(height: theme.spacing.lg),
-                    Text(
-                      l10n.authRegistrationSubmittedTitle,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineSmall,
-                    ),
-                    SizedBox(height: theme.spacing.sm),
-                    Text(
-                      l10n.authRegistrationSubmittedBody,
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: theme.spacing.lg),
-                    AppButton.primary(
-                      label: l10n.authBackToLoginActionLabel,
-                      onPressed: () => context.go(AppRoutes.login.location()),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -259,10 +221,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
 
     TextInput.finishAutofillContext();
-    await ref
+    final email = _emailController.text.trim().toLowerCase();
+    final registered = await ref
         .read(authControllerProvider.notifier)
         .register(
-          email: _emailController.text,
+          email: email,
           password: _passwordController.text,
           adminName: _adminNameController.text,
           facilityName: _facilityNameController.text,
@@ -270,5 +233,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           phone: _phoneController.text,
           location: _locationController.text,
         );
+
+    if (!mounted || !registered) {
+      return;
+    }
+
+    context.go(
+      AppRoutes.verifyEmail.location(
+        queryParameters: <String, String>{'email': email},
+      ),
+    );
   }
 }

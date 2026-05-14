@@ -83,7 +83,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return VerifyEmailPage(
             token: state.uri.queryParameters['token'],
             email: state.uri.queryParameters['email'],
-            next: state.uri.queryParameters['next'],
+            reason: state.uri.queryParameters['reason'],
           );
         },
       ),

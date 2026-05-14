@@ -577,7 +577,7 @@ abstract class AppLocalizations {
   /// Email verification form submit action label.
   ///
   /// In en, this message translates to:
-  /// **'Verify email'**
+  /// **'Verify'**
   String get authVerifyEmailActionLabel;
 
   /// Resend email verification code action label.
@@ -585,6 +585,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send new code'**
   String get authSendNewCodeActionLabel;
+
+  /// Email verification page title before verification succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email'**
+  String get authVerifyEmailTitle;
+
+  /// Email verification page title after verification succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Email verified'**
+  String get authEmailVerifiedTitle;
+
+  /// Email verification page body with target email.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the verification code sent to {email}.'**
+  String authVerifyEmailBody(String email);
+
+  /// Email verification page body after login is attempted with an unverified registered email.
+  ///
+  /// In en, this message translates to:
+  /// **'This email is already registered but has not been verified. Enter the verification code sent to {email}.'**
+  String authPendingVerificationBody(String email);
+
+  /// Email verification page body when no email is available.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the verification code sent to your email.'**
+  String get authVerifyEmailBodyNoEmail;
+
+  /// Email verification success body.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is verified. You can now sign in.'**
+  String get authEmailVerifiedBody;
+
+  /// Message shown after requesting a fresh email verification code.
+  ///
+  /// In en, this message translates to:
+  /// **'A new verification code has been sent.'**
+  String get authVerificationCodeResentMessage;
+
+  /// Email verification code input label.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get authVerificationCodeLabel;
+
+  /// Email verification code validation error.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit verification code.'**
+  String get authVerificationCodeInvalidMessage;
+
+  /// Login failure message when an email account exists but has not been verified.
+  ///
+  /// In en, this message translates to:
+  /// **'This email is already registered but has not been verified. Enter the email verification code we sent to continue.'**
+  String get authAccountPendingMessage;
 
   /// Facility administrator name field label.
   ///
@@ -655,7 +715,7 @@ abstract class AppLocalizations {
   /// Body shown after registration request succeeds.
   ///
   /// In en, this message translates to:
-  /// **'We sent a verification link before the workspace can be used.'**
+  /// **'We sent a verification code before the workspace can be used.'**
   String get authRegistrationSubmittedBody;
 
   /// Change password dialog title.

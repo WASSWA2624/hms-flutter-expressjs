@@ -325,13 +325,65 @@
   "@authBackToLoginActionLabel": {
     "description": "Navigate back to login action label."
   },
-  "authVerifyEmailActionLabel": "Verify email",
+  "authVerifyEmailActionLabel": "Verify",
   "@authVerifyEmailActionLabel": {
     "description": "Email verification form submit action label."
   },
   "authSendNewCodeActionLabel": "Send new code",
   "@authSendNewCodeActionLabel": {
     "description": "Resend email verification code action label."
+  },
+  "authVerifyEmailTitle": "Verify your email",
+  "@authVerifyEmailTitle": {
+    "description": "Email verification page title before verification succeeds."
+  },
+  "authEmailVerifiedTitle": "Email verified",
+  "@authEmailVerifiedTitle": {
+    "description": "Email verification page title after verification succeeds."
+  },
+  "authVerifyEmailBody": "Enter the verification code sent to {email}.",
+  "@authVerifyEmailBody": {
+    "description": "Email verification page body with target email.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "name@example.com"
+      }
+    }
+  },
+  "authPendingVerificationBody": "This email is already registered but has not been verified. Enter the verification code sent to {email}.",
+  "@authPendingVerificationBody": {
+    "description": "Email verification page body after login is attempted with an unverified registered email.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "name@example.com"
+      }
+    }
+  },
+  "authVerifyEmailBodyNoEmail": "Enter the verification code sent to your email.",
+  "@authVerifyEmailBodyNoEmail": {
+    "description": "Email verification page body when no email is available."
+  },
+  "authEmailVerifiedBody": "Your account is verified. You can now sign in.",
+  "@authEmailVerifiedBody": {
+    "description": "Email verification success body."
+  },
+  "authVerificationCodeResentMessage": "A new verification code has been sent.",
+  "@authVerificationCodeResentMessage": {
+    "description": "Message shown after requesting a fresh email verification code."
+  },
+  "authVerificationCodeLabel": "Verification code",
+  "@authVerificationCodeLabel": {
+    "description": "Email verification code input label."
+  },
+  "authVerificationCodeInvalidMessage": "Enter the 6-digit verification code.",
+  "@authVerificationCodeInvalidMessage": {
+    "description": "Email verification code validation error."
+  },
+  "authAccountPendingMessage": "This email is already registered but has not been verified. Enter the email verification code we sent to continue.",
+  "@authAccountPendingMessage": {
+    "description": "Login failure message when an email account exists but has not been verified."
   },
   "authAdminNameLabel": "Administrator name",
   "@authAdminNameLabel": {
@@ -377,7 +429,7 @@
   "@authRegistrationSubmittedTitle": {
     "description": "Title shown after registration request succeeds."
   },
-  "authRegistrationSubmittedBody": "We sent a verification link before the workspace can be used.",
+  "authRegistrationSubmittedBody": "We sent a verification code before the workspace can be used.",
   "@authRegistrationSubmittedBody": {
     "description": "Body shown after registration request succeeds."
   },

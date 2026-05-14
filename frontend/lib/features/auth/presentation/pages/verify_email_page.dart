@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_failure_text.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -15,13 +16,13 @@ class VerifyEmailPage extends ConsumerStatefulWidget {
   const VerifyEmailPage({
     required this.token,
     required this.email,
-    required this.next,
+    required this.reason,
     super.key,
   });
 
   final String? token;
   final String? email;
-  final String? next;
+  final String? reason;
 
   @override
   ConsumerState<VerifyEmailPage> createState() => _VerifyEmailPageState();
@@ -55,6 +56,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final email = _normalizedEmail;
+    final l10n = context.l10n;
 
     return Scaffold(
       body: SafeArea(
@@ -72,7 +74,9 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                     const Align(child: AppLogo(size: 48)),
                     SizedBox(height: theme.spacing.lg),
                     Text(
-                      _isVerified ? 'Email verified' : 'Verify your email',
+                      _isVerified
+                          ? l10n.authEmailVerifiedTitle
+                          : l10n.authVerifyEmailTitle,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
@@ -80,18 +84,14 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                     ),
                     SizedBox(height: theme.spacing.sm),
                     Text(
-                      _isVerified
-                          ? 'Your account is verified. You can now sign in.'
-                          : email == null
-                          ? 'Enter the verification code sent to your email.'
-                          : 'Enter the verification code sent to $email.',
+                      _bodyText(l10n, email),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium,
                     ),
                     if (_codeResent) ...<Widget>[
                       SizedBox(height: theme.spacing.md),
                       Text(
-                        'A new verification code has been sent.',
+                        l10n.authVerificationCodeResentMessage,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.primary,
@@ -106,7 +106,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                       SizedBox(height: theme.spacing.lg),
                       AppTextField(
                         controller: _codeController,
-                        labelText: 'Verification code',
+                        labelText: l10n.authVerificationCodeLabel,
                         keyboardType: TextInputType.number,
                         textInputAction: TextInputAction.done,
                         inputFormatters: <TextInputFormatter>[
@@ -119,7 +119,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                           ),
                           AppValidators.minLength(
                             6,
-                            'Enter the 6-digit verification code.',
+                            l10n.authVerificationCodeInvalidMessage,
                             allowEmpty: false,
                           ),
                         ]),
@@ -128,7 +128,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                       ),
                       SizedBox(height: theme.spacing.lg),
                       AppButton.primary(
-                        label: context.l10n.authVerifyEmailActionLabel,
+                        label: l10n.authVerifyEmailActionLabel,
                         leadingIcon: Icons.mark_email_read_outlined,
                         isLoading: _isSubmitting,
                         fullWidth: true,
@@ -136,7 +136,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                       ),
                       SizedBox(height: theme.spacing.sm),
                       AppButton.secondary(
-                        label: context.l10n.authSendNewCodeActionLabel,
+                        label: l10n.authSendNewCodeActionLabel,
                         leadingIcon: Icons.refresh,
                         isLoading: _isResending,
                         fullWidth: true,
@@ -147,7 +147,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                     ],
                     SizedBox(height: theme.spacing.sm),
                     AppButton.tertiary(
-                      label: context.l10n.authBackToLoginActionLabel,
+                      label: l10n.authBackToLoginActionLabel,
                       onPressed: _isSubmitting || _isResending
                           ? null
                           : () => context.go(AppRoutes.login.location()),
@@ -168,6 +168,22 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
       return null;
     }
     return email;
+  }
+
+  String _bodyText(AppLocalizations l10n, String? email) {
+    if (_isVerified) {
+      return l10n.authEmailVerifiedBody;
+    }
+
+    if (widget.reason == 'pending' && email != null) {
+      return l10n.authPendingVerificationBody(email);
+    }
+
+    if (email == null) {
+      return l10n.authVerifyEmailBodyNoEmail;
+    }
+
+    return l10n.authVerifyEmailBody(email);
   }
 
   Future<void> _verifyCode() async {

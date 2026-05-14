@@ -270,10 +270,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authBackToLoginActionLabel => 'Back to sign in';
 
   @override
-  String get authVerifyEmailActionLabel => 'Verify email';
+  String get authVerifyEmailActionLabel => 'Verify';
 
   @override
   String get authSendNewCodeActionLabel => 'Send new code';
+
+  @override
+  String get authVerifyEmailTitle => 'Verify your email';
+
+  @override
+  String get authEmailVerifiedTitle => 'Email verified';
+
+  @override
+  String authVerifyEmailBody(String email) {
+    return 'Enter the verification code sent to $email.';
+  }
+
+  @override
+  String authPendingVerificationBody(String email) {
+    return 'This email is already registered but has not been verified. Enter the verification code sent to $email.';
+  }
+
+  @override
+  String get authVerifyEmailBodyNoEmail =>
+      'Enter the verification code sent to your email.';
+
+  @override
+  String get authEmailVerifiedBody =>
+      'Your account is verified. You can now sign in.';
+
+  @override
+  String get authVerificationCodeResentMessage =>
+      'A new verification code has been sent.';
+
+  @override
+  String get authVerificationCodeLabel => 'Verification code';
+
+  @override
+  String get authVerificationCodeInvalidMessage =>
+      'Enter the 6-digit verification code.';
+
+  @override
+  String get authAccountPendingMessage =>
+      'This email is already registered but has not been verified. Enter the email verification code we sent to continue.';
 
   @override
   String get authAdminNameLabel => 'Administrator name';
@@ -310,7 +349,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authRegistrationSubmittedBody =>
-      'We sent a verification link before the workspace can be used.';
+      'We sent a verification code before the workspace can be used.';
 
   @override
   String get authChangePasswordTitle => 'Change password';

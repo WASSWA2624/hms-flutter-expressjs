@@ -109,7 +109,7 @@ final class AuthController extends Notifier<AuthControllerState> {
         state = state.copyWith(
           isSubmitting: false,
           clearFailure: true,
-          registrationSubmitted: true,
+          registrationSubmitted: false,
         );
         return true;
       },

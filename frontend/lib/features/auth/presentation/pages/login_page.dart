@@ -156,6 +156,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           AppRoutes.verifyEmail.location(
             queryParameters: <String, String>{
               if (identifier.contains('@')) 'email': identifier.toLowerCase(),
+              'reason': 'pending',
             },
           ),
         );
