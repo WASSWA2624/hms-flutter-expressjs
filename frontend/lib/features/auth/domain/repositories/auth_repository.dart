@@ -23,6 +23,8 @@ abstract interface class AuthRepository {
     String? interests,
   });
 
+  Future<Result<void>> verifyEmail({required String token, String? email});
+
   Future<Result<AuthSession>> refreshSession(SessionTokens tokens);
 
   Future<Result<void>> changePassword({

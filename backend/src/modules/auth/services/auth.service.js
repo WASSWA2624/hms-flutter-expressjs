@@ -107,20 +107,31 @@ const buildAuthUserPayload = (user = {}) => {
   };
 };
 
-const resolveFacilityTypeLabel = (facilityType, locale = 'en') => {
-  const normalized = String(facilityType || '').trim().toUpperCase();
-  if (normalized === 'HOSPITAL') return translate('labels.facility_type.hospital', locale);
-  if (normalized === 'CLINIC') return translate('labels.facility_type.clinic', locale);
-  if (normalized === 'LAB') return translate('labels.facility_type.lab', locale);
-  if (normalized === 'PHARMACY') return translate('labels.facility_type.pharmacy', locale);
-  return translate('labels.facility_type.other', locale);
+const getBaseAppUrl = (requestContext = {}) => {
+  const requestOrigin = String(requestContext.origin || '').trim();
+
+  if (env.NODE_ENV !== 'production' && requestOrigin) {
+    try {
+      const originUrl = new URL(requestOrigin);
+      if (originUrl.protocol === 'http:' || originUrl.protocol === 'https:') {
+        return originUrl.origin.replace(/\/+$/, '');
+      }
+    } catch {
+      // Fall back to the configured public URL.
+    }
+  }
+
+  return String(env.APP_PUBLIC_URL || '').replace(/\/+$/, '');
 };
 
-const getBaseAppUrl = () => String(env.APP_PUBLIC_URL || '').replace(/\/+$/, '');
-
-const buildVerifyEmailLink = (token, email, nextPath = '/setup') => {
+const buildVerifyEmailLink = (
+  token,
+  email,
+  nextPath = '/login',
+  requestContext = {}
+) => {
   const baseLink =
-    `${getBaseAppUrl()}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+    `${getBaseAppUrl(requestContext)}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
   const normalizedNextPath = String(nextPath || '').trim();
   if (!normalizedNextPath.startsWith('/')) return baseLink;
   return `${baseLink}&next=${encodeURIComponent(normalizedNextPath)}`;
@@ -239,7 +250,6 @@ const buildVerificationEmailMessage = ({
   email,
   adminName,
   facilityName,
-  facilityType,
   code,
   verifyLink,
   plainPassword,
@@ -254,7 +264,6 @@ const buildVerificationEmailMessage = ({
   const expiryAtFormatted = formatExpiryDateTime(resolvedExpiresAt, resolvedLocale);
   const safeAdminName = String(adminName || 'there').trim() || 'there';
   const safeFacilityName = String(facilityName || 'your facility').trim() || 'your facility';
-  const typeLabel = resolveFacilityTypeLabel(facilityType, resolvedLocale);
   const passwordLine = plainPassword
     ? `${translate('messages.auth.email_verification.password_notice', resolvedLocale)} ${plainPassword}\n`
     : '';
@@ -269,7 +278,6 @@ const buildVerificationEmailMessage = ({
   });
   const intro = translate('messages.auth.email_verification.intro', resolvedLocale, {
     facility: safeFacilityName,
-    facility_type: typeLabel,
     app_name: APP_DISPLAY_NAME,
   });
   const codeLabel = translate('messages.auth.email_verification.code_label', resolvedLocale);
@@ -302,8 +310,7 @@ const buildVerificationEmailMessage = ({
 
   const text =
     `${subject}\n\n` +
-    `${greeting}\n\n` +
-    `${intro}\n\n` +
+    `${greeting} ${intro}\n\n` +
     `${codeLabel}: ${code}\n` +
     `${expiryLine}\n` +
     `${expiryAtLine}\n\n` +
@@ -316,6 +323,7 @@ const buildVerificationEmailMessage = ({
 
   const safeGreeting = escapeHtml(greeting);
   const safeIntro = escapeHtml(intro);
+  const safeRegistrationMessage = `${safeGreeting} ${safeIntro}`;
   const safeCodeLabel = escapeHtml(codeLabel);
   const safeExpiryLine = escapeHtml(expiryLine);
   const safeExpiryAtLine = escapeHtml(expiryAtLine);
@@ -373,8 +381,7 @@ const buildVerificationEmailMessage = ({
                 <tr>
                   ${logoHeaderCell}
                   <td style="vertical-align:middle;">
-                    <p style="margin:0 0 10px;color:#dbeafe;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">${escapeHtml(APP_DISPLAY_NAME)}</p>
-                    <h1 style="margin:0;color:#ffffff;font-size:24px;line-height:1.3;font-weight:700;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">${escapeHtml(subject)}</h1>
+                    <h1 style="margin:0;color:#ffffff;font-size:24px;line-height:1.3;font-weight:700;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">${escapeHtml(APP_DISPLAY_NAME)}</h1>
                   </td>
                 </tr>
               </table>
@@ -382,8 +389,7 @@ const buildVerificationEmailMessage = ({
           </tr>
           <tr>
             <td style="padding:28px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#0f172a;">
-              <p style="margin:0 0 14px;font-size:18px;line-height:26px;font-weight:600;">${safeGreeting}</p>
-              <p style="margin:0 0 18px;font-size:15px;line-height:24px;color:#1e293b;">${safeIntro}</p>
+              <p style="margin:0 0 18px;font-size:15px;line-height:24px;color:#1e293b;">${safeRegistrationMessage}</p>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 20px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;">
                 <tr>
                   <td style="padding:14px 16px 6px;font-size:13px;line-height:18px;color:#1d4ed8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">
@@ -453,21 +459,20 @@ const sendVerificationEmail = async ({
   email,
   adminName,
   facilityName,
-  facilityType,
   code,
   linkToken,
   nextPath,
   plainPassword,
   expiresAt,
   locale,
+  requestContext,
 }) => {
-  const verifyLink = buildVerifyEmailLink(linkToken, email, nextPath);
+  const verifyLink = buildVerifyEmailLink(linkToken, email, nextPath, requestContext);
   const includePassword = Boolean(env.ALLOW_PLAINTEXT_PASSWORD_EMAIL);
   const payload = buildVerificationEmailMessage({
     email,
     adminName,
     facilityName,
-    facilityType,
     code,
     verifyLink,
     plainPassword: includePassword ? plainPassword : null,
@@ -775,7 +780,7 @@ const buildRegisterResponse = (
   normalizedEmail,
   verification = {},
   flow = 'NEW_REGISTRATION',
-  nextPath = '/setup'
+  nextPath = '/login'
 ) => {
   const { password_hash: _, ...userData } = user;
   return {
@@ -803,7 +808,7 @@ const handleExistingEmailRegistration = async ({
   user_agent,
   request_context,
 }) => {
-  const nextPath = accountAlreadyActive ? '/landing?mode=signin' : '/setup';
+  const nextPath = '/login';
   const facilityDetailsDiffer = hasFacilityDetailsDifference(
     user,
     facility_name,
@@ -814,13 +819,13 @@ const handleExistingEmailRegistration = async ({
     email: normalizedEmail,
     adminName: resolveAdminDisplayName(user, admin_name),
     facilityName: user.facility?.name || user.tenant?.name || facility_name,
-    facilityType: user.facility?.facility_type || facility_type || 'OTHER',
     code: verification.code,
     linkToken: verification.linkToken,
     nextPath,
     plainPassword: null,
     expiresAt: verification.expiresAt,
     locale: request_context?.locale,
+    requestContext: request_context,
   });
   ensureEmailDelivered(deliveryResult, 'register_existing_email');
 
@@ -1277,13 +1282,13 @@ const register = async (data) => {
     email: normalizedEmail,
     adminName: admin_name,
     facilityName: facility_name,
-    facilityType: facility_type,
     code: verification.code,
     linkToken: verification.linkToken,
-    nextPath: '/setup',
+    nextPath: '/login',
     plainPassword: password,
     expiresAt: verification.expiresAt,
     locale: request_context?.locale,
+    requestContext: request_context,
   });
   ensureEmailDelivered(deliveryResult, 'register_new_user');
 
@@ -1327,7 +1332,7 @@ const register = async (data) => {
     }
   });
 
-  return buildRegisterResponse(user, normalizedEmail, {}, 'NEW_REGISTRATION', '/setup');
+  return buildRegisterResponse(user, normalizedEmail, {}, 'NEW_REGISTRATION', '/login');
 };
 
 /**
@@ -1605,7 +1610,7 @@ const verifyEmail = async (data) => {
   return {
     message: 'messages.auth.email_verified.success',
     already_active: alreadyActive,
-    next_path: alreadyActive ? '/landing?mode=signin' : '/setup',
+    next_path: '/login',
   };
 };
 
@@ -1654,7 +1659,7 @@ const verifyPhone = async (data) => {
 
   return {
     message: 'messages.auth.phone_verified.success',
-    next_path: '/setup',
+    next_path: '/login',
   };
 };
 
@@ -1714,13 +1719,13 @@ const resendVerification = async (data) => {
         user.email ||
         'Admin',
       facilityName: user.facility?.name || user.tenant?.name || 'your facility',
-      facilityType: user.facility?.facility_type || 'OTHER',
       code: tokens.code,
       linkToken: tokens.linkToken,
-      nextPath: user.status === 'ACTIVE' ? '/landing?mode=signin' : '/setup',
+      nextPath: '/login',
       plainPassword: null,
       expiresAt: tokens.expiresAt,
       locale: request_context?.locale,
+      requestContext: request_context,
     });
     ensureEmailDelivered(deliveryResult, 'resend_verification');
   } else {

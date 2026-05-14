@@ -61,6 +61,11 @@ abstract final class AppRoutes {
     path: '/register',
   );
 
+  static const AppRouteData verifyEmail = AppRouteData(
+    name: 'verifyEmail',
+    path: '/verify-email',
+  );
+
   static const AppRouteData sessionRestoring = AppRouteData(
     name: 'sessionRestoring',
     path: '/session-restoring',
@@ -81,6 +86,7 @@ abstract final class AppRoutes {
     settings,
     login,
     register,
+    verifyEmail,
     sessionRestoring,
     authRequired,
     forbidden,

@@ -16,6 +16,8 @@ const CSRF_EXEMPT_ROUTES = new Set([
   'POST /api/v1/auth/identify',
   'POST /api/v1/auth/login',
   'POST /api/v1/auth/register',
+  'POST /api/v1/auth/logout',
+  'POST /api/v1/auth/change-password',
   'POST /api/v1/auth/verify-email',
   'POST /api/v1/auth/verify-phone',
   'POST /api/v1/auth/resend-verification',
@@ -46,7 +48,7 @@ const csrfMiddleware = () => {
       return next();
     }
 
-    // Public auth bootstrap routes must work before any CSRF session exists.
+    // Token-authenticated auth routes must work without a separate CSRF session.
     if (isCsrfExempt(req)) {
       return next();
     }

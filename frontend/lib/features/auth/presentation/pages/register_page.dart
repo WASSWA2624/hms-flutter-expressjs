@@ -168,40 +168,46 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       enabled: !state.isSubmitting,
                     ),
                     SizedBox(height: theme.spacing.md),
-                    DropdownButtonFormField<String>(
-                      initialValue: _facilityType,
-                      decoration: InputDecoration(
-                        labelText: l10n.authFacilityTypeLabel,
-                      ),
-                      items: <DropdownMenuItem<String>>[
-                        DropdownMenuItem(
+                    AppSelectField<String>(
+                      value: _facilityType,
+                      labelText: l10n.authFacilityTypeLabel,
+                      enabled: !state.isSubmitting,
+                      options: <AppSelectOption<String>>[
+                        AppSelectOption<String>(
                           value: 'HOSPITAL',
-                          child: Text(l10n.authFacilityTypeHospital),
+                          label: l10n.authFacilityTypeHospital,
+                          leadingIcon: const Icon(
+                            Icons.local_hospital_outlined,
+                          ),
                         ),
-                        DropdownMenuItem(
+                        AppSelectOption<String>(
                           value: 'CLINIC',
-                          child: Text(l10n.authFacilityTypeClinic),
+                          label: l10n.authFacilityTypeClinic,
+                          leadingIcon: const Icon(Icons.medical_services),
                         ),
-                        DropdownMenuItem(
+                        AppSelectOption<String>(
                           value: 'LAB',
-                          child: Text(l10n.authFacilityTypeLab),
+                          label: l10n.authFacilityTypeLab,
+                          leadingIcon: const Icon(Icons.biotech_outlined),
                         ),
-                        DropdownMenuItem(
+                        AppSelectOption<String>(
                           value: 'PHARMACY',
-                          child: Text(l10n.authFacilityTypePharmacy),
+                          label: l10n.authFacilityTypePharmacy,
+                          leadingIcon: const Icon(
+                            Icons.medication_liquid_outlined,
+                          ),
                         ),
-                        DropdownMenuItem(
+                        AppSelectOption<String>(
                           value: 'OTHER',
-                          child: Text(l10n.authFacilityTypeOther),
+                          label: l10n.authFacilityTypeOther,
+                          leadingIcon: const Icon(Icons.business_outlined),
                         ),
                       ],
-                      onChanged: state.isSubmitting
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => _facilityType = value);
-                              }
-                            },
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _facilityType = value);
+                        }
+                      },
                     ),
                     SizedBox(height: theme.spacing.md),
                     AppTextField(

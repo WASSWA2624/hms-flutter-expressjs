@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
+import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
@@ -74,6 +75,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.register.path,
         name: AppRoutes.register.name,
         builder: (_, _) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail.path,
+        name: AppRoutes.verifyEmail.name,
+        builder: (_, GoRouterState state) {
+          return VerifyEmailPage(
+            token: state.uri.queryParameters['token'],
+            email: state.uri.queryParameters['email'],
+            next: state.uri.queryParameters['next'],
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.sessionRestoring.path,

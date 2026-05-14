@@ -379,7 +379,10 @@ describe('Auth Service', () => {
         phone: '256701234567',
         interests: 'Billing; Telemedicine\nEMR',
         ip_address: '127.0.0.1',
-        user_agent: 'Mozilla'
+        user_agent: 'Mozilla',
+        request_context: {
+          origin: 'http://localhost:56036'
+        }
       };
 
       const mockUser = {
@@ -402,7 +405,7 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('user.id', 'user-123');
       expect(result).toHaveProperty('user.email', 'newuser@example.com');
       expect(result).toHaveProperty('flow', 'NEW_REGISTRATION');
-      expect(result).toHaveProperty('next_path', '/setup');
+      expect(result).toHaveProperty('next_path', '/login');
       expect(result).toHaveProperty('verification.expires_in_minutes', 15);
       expect(result.user).not.toHaveProperty('password_hash');
       expect(authRepository.registerFacilityOwner).toHaveBeenCalledWith(expect.objectContaining({
@@ -414,7 +417,10 @@ describe('Auth Service', () => {
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Fsetup'),
+        html: expect.stringContaining('http://localhost:56036/verify-email'),
+      }));
+      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+        html: expect.stringContaining('next=%2Flogin'),
       }));
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -461,7 +467,7 @@ describe('Auth Service', () => {
 
       expect(result).toHaveProperty('user.id', 'user-pending-123');
       expect(result).toHaveProperty('flow', 'EXISTING_PENDING_ACCOUNT');
-      expect(result).toHaveProperty('next_path', '/setup');
+      expect(result).toHaveProperty('next_path', '/login');
       expect(result).toHaveProperty('verification.email', 'pending@example.com');
       expect(result).toHaveProperty('verification.email_already_used', true);
       expect(result).toHaveProperty('verification.expires_in_minutes', 15);
@@ -470,7 +476,7 @@ describe('Auth Service', () => {
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Fsetup'),
+        html: expect.stringContaining('next=%2Flogin'),
       }));
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -510,7 +516,7 @@ describe('Auth Service', () => {
 
       expect(result).toHaveProperty('user.id', 'user-active-123');
       expect(result).toHaveProperty('flow', 'EXISTING_ACTIVE_ACCOUNT');
-      expect(result).toHaveProperty('next_path', '/landing?mode=signin');
+      expect(result).toHaveProperty('next_path', '/login');
       expect(result).toHaveProperty('verification.email_already_used', true);
       expect(result).toHaveProperty('verification.account_already_active', true);
       expect(result).toHaveProperty('verification.facility_details_differ', true);
@@ -519,7 +525,7 @@ describe('Auth Service', () => {
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Flanding%3Fmode%3Dsignin'),
+        html: expect.stringContaining('next=%2Flogin'),
       }));
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -800,7 +806,7 @@ describe('Auth Service', () => {
       const result = await authService.verifyEmail(verifyData);
 
       expect(result).toHaveProperty('message');
-      expect(result).toHaveProperty('next_path', '/setup');
+      expect(result).toHaveProperty('next_path', '/login');
       expect(authRepository.markTokenAsUsed).toHaveBeenCalledWith('token-123');
       expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-123', 'EMAIL_VERIFICATION');
       expect(authRepository.updateUserStatus).toHaveBeenCalledWith('user-123', 'ACTIVE');
@@ -845,7 +851,7 @@ describe('Auth Service', () => {
 
       expect(result).toHaveProperty('message');
       expect(result).toHaveProperty('already_active', true);
-      expect(result).toHaveProperty('next_path', '/landing?mode=signin');
+      expect(result).toHaveProperty('next_path', '/login');
       expect(authRepository.markTokenAsUsed).toHaveBeenCalledWith('token-active-123');
       expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-active-123', 'EMAIL_VERIFICATION');
       expect(authRepository.updateUserStatus).not.toHaveBeenCalled();
@@ -881,7 +887,7 @@ describe('Auth Service', () => {
       const result = await authService.verifyPhone(verifyData);
 
       expect(result).toHaveProperty('message');
-      expect(result).toHaveProperty('next_path', '/setup');
+      expect(result).toHaveProperty('next_path', '/login');
       expect(authRepository.markTokenAsUsed).toHaveBeenCalledWith('token-123');
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'PHONE_VERIFIED'
@@ -917,7 +923,7 @@ describe('Auth Service', () => {
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Fsetup'),
+        html: expect.stringContaining('next=%2Flogin'),
       }));
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'VERIFICATION_RESENT'
@@ -946,7 +952,7 @@ describe('Auth Service', () => {
       expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Flanding%3Fmode%3Dsignin'),
+        html: expect.stringContaining('next=%2Flogin'),
       }));
     });
 

@@ -75,7 +75,7 @@
   "messages.auth.email_verification.subject": "Confirm your {{app_name}} account",
   "messages.auth.email_verification.preheader": "Use your verification code to activate your account.",
   "messages.auth.email_verification.greeting": "Hello {{name}},",
-  "messages.auth.email_verification.intro": "Thanks for registering {{facility}} ({{facility_type}}) on {{app_name}}.",
+  "messages.auth.email_verification.intro": "thanks for registering {{facility}} on {{app_name}}.",
   "messages.auth.email_verification.code_label": "Your email verification code",
   "messages.auth.email_verification.code_expiry": "This code expires in {{countdown}}.",
   "messages.auth.email_verification.code_expiry_at": "Expires at {{expires_at}}.",
