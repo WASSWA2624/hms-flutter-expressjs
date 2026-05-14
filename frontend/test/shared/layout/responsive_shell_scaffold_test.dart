@@ -168,12 +168,10 @@ void main() {
         },
       );
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
+      for (var tabIndex = 0; tabIndex < 5; tabIndex += 1) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 

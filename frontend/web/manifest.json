@@ -1,11 +1,11 @@
 {
-    "name": "Flutter Template",
-    "short_name": "Template",
+    "name": "HOSSPI Hospital Management System",
+    "short_name": "HOSSPI HMS",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0F766E",
-    "theme_color": "#0F766E",
-    "description": "Reusable Flutter foundation for multi-platform apps.",
+    "background_color": "#1565C0",
+    "theme_color": "#1565C0",
+    "description": "HOSSPI Hospital Management System frontend.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

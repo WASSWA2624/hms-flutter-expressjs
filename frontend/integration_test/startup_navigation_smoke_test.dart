@@ -1,8 +1,8 @@
-import 'package:flutter_template/app/router/route_status_pages.dart';
-import 'package:flutter_template/features/home/presentation/pages/home_page.dart';
-import 'package:flutter_template/l10n/app_localizations_x.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/route_status_pages.dart';
+import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../test/helpers/test_harness.dart';
@@ -13,7 +13,7 @@ void main() {
   testWidgets('starts on home and navigates to not found without services', (
     WidgetTester tester,
   ) async {
-    await pumpTemplateApp(tester, overrides: testReadyAppOverrides());
+    await pumpHosspiHmsApp(tester, overrides: testReadyAppOverrides());
     await tester.pumpAndSettle();
 
     final homeContext = tester.element(find.byType(HomePage));
