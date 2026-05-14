@@ -220,6 +220,12 @@ abstract class AppLocalizations {
   /// **'Logout'**
   String get appUserMenuLogoutLabel;
 
+  /// Fallback account menu header label for authenticated users without profile details.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get appUserMenuSignedInLabel;
+
   /// Navigation label for the home destination.
   ///
   /// In en, this message translates to:
@@ -351,6 +357,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Billing, claims, subscriptions, reports, audit, and integrations'**
   String get homeServiceAreaAdministration;
+
+  /// User profile screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// User profile screen intro body.
+  ///
+  /// In en, this message translates to:
+  /// **'Review your account, role, and facility details.'**
+  String get profileBody;
+
+  /// User profile account section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get profileAccountSectionTitle;
+
+  /// User profile account section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Core identity and login information.'**
+  String get profileAccountSectionBody;
+
+  /// User profile professional details section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional details'**
+  String get profileProfessionalSectionTitle;
+
+  /// User profile professional details section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Role, title, user type, and facility context.'**
+  String get profileProfessionalSectionBody;
+
+  /// User profile name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get profileNameLabel;
+
+  /// User profile email field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get profileEmailLabel;
+
+  /// User profile phone field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get profilePhoneLabel;
+
+  /// User profile status field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get profileStatusLabel;
+
+  /// User profile professional title field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get profileTitleLabel;
+
+  /// User profile overall role field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall role'**
+  String get profileOverallRoleLabel;
+
+  /// User profile user type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'User type'**
+  String get profileUserTypeLabel;
+
+  /// User profile tenant field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant'**
+  String get profileTenantLabel;
+
+  /// User profile facility field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get profileFacilityLabel;
+
+  /// User profile facility type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility type'**
+  String get profileFacilityTypeLabel;
+
+  /// User profile staff number field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff number'**
+  String get profileStaffNumberLabel;
+
+  /// User profile user identifier field label.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID'**
+  String get profileUserIdLabel;
+
+  /// User profile direct permission count label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No direct permissions} =1{1 direct permission} other{{count} direct permissions}}'**
+  String profilePermissionCountLabel(int count);
+
+  /// Profile screen title when session profile data is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile unavailable'**
+  String get profileUnavailableTitle;
+
+  /// Profile screen body when session profile data is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again to reload your account details.'**
+  String get profileUnavailableBody;
+
+  /// Fallback value for unavailable profile fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get profileUnknownValue;
 
   /// Settings page title.
   ///

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 
@@ -5,12 +7,31 @@ final class AuthSession {
   AuthSession({
     required this.tokens,
     String? subject,
+    this.user,
     Iterable<AppPermission> permissions = const <AppPermission>[],
-  }) : subject = _normalizedSubject(subject),
+  }) : subject =
+           _normalizedSubject(subject) ??
+           _normalizedSubject(user?.email) ??
+           _normalizedSubject(user?.id),
        permissions = Set<AppPermission>.unmodifiable(permissions);
+
+  factory AuthSession.fromTokens(SessionTokens tokens) {
+    final Map<String, Object?>? payload = _tokenPayload(tokens.accessToken);
+    final profile = payload == null ? null : AuthUserProfile.fromToken(payload);
+
+    return AuthSession(
+      tokens: tokens,
+      subject:
+          profile?.email ??
+          _firstString(payload, const <String>['email', 'sub', 'userId']),
+      user: profile,
+      permissions: _permissionsFromPayload(payload),
+    );
+  }
 
   final SessionTokens tokens;
   final String? subject;
+  final AuthUserProfile? user;
   final Set<AppPermission> permissions;
 
   bool hasPermission(AppPermission permission) {
@@ -26,7 +47,8 @@ final class AuthSession {
     return 'AuthSession('
         'subject: ${subject ?? 'none'}, '
         'tokens: $tokens, '
-        'permissions: $permissions'
+        'permissions: $permissions, '
+        'hasUser: ${user != null}'
         ')';
   }
 
@@ -37,5 +59,239 @@ final class AuthSession {
     }
 
     return normalizedValue;
+  }
+
+  static Map<String, Object?>? _tokenPayload(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) {
+      return null;
+    }
+
+    try {
+      final normalized = base64Url.normalize(parts[1]);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final payload = jsonDecode(decoded);
+      return payload is Map<String, Object?> ? payload : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? _firstString(
+    Map<String, Object?>? payload,
+    Iterable<String> keys,
+  ) {
+    if (payload == null) {
+      return null;
+    }
+
+    for (final key in keys) {
+      final value = payload[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+
+    return null;
+  }
+
+  static List<AppPermission> _permissionsFromPayload(
+    Map<String, Object?>? payload,
+  ) {
+    final permissions = payload?['permissions'];
+    if (permissions is! Iterable<Object?>) {
+      return const <AppPermission>[];
+    }
+
+    return permissions
+        .whereType<String>()
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .map(AppPermission.new)
+        .toSet()
+        .toList(growable: false);
+  }
+}
+
+final class AuthUserProfile {
+  const AuthUserProfile({
+    this.id,
+    this.displayId,
+    this.email,
+    this.phone,
+    this.status,
+    this.positionTitle,
+    this.firstName,
+    this.middleName,
+    this.lastName,
+    this.gender,
+    this.tenantName,
+    this.facilityName,
+    this.facilityType,
+    this.staffNumber,
+    this.staffPosition,
+    this.practitionerType,
+    this.roles = const <String>[],
+  });
+
+  factory AuthUserProfile.fromToken(Map<String, Object?> payload) {
+    final roles = _strings(payload['roles']);
+
+    return AuthUserProfile(
+      id: _string(payload['userId']) ?? _string(payload['sub']),
+      email: _string(payload['email']),
+      roles: roles,
+    );
+  }
+
+  final String? id;
+  final String? displayId;
+  final String? email;
+  final String? phone;
+  final String? status;
+  final String? positionTitle;
+  final String? firstName;
+  final String? middleName;
+  final String? lastName;
+  final String? gender;
+  final String? tenantName;
+  final String? facilityName;
+  final String? facilityType;
+  final String? staffNumber;
+  final String? staffPosition;
+  final String? practitionerType;
+  final List<String> roles;
+
+  String? get fullName {
+    final parts = <String>[
+      if (_hasText(firstName)) firstName!.trim(),
+      if (_hasText(middleName)) middleName!.trim(),
+      if (_hasText(lastName)) lastName!.trim(),
+    ];
+
+    if (parts.isEmpty) {
+      return null;
+    }
+
+    return parts.join(' ');
+  }
+
+  String? get displayName {
+    return fullName ??
+        _string(email) ??
+        _formattedToken(positionTitle) ??
+        _string(displayId) ??
+        _string(id);
+  }
+
+  String? get effectiveTitle {
+    return _formattedToken(staffPosition) ?? _formattedToken(positionTitle);
+  }
+
+  String? get overallRole {
+    if (roles.isEmpty) {
+      return null;
+    }
+
+    return _formattedToken(roles.first);
+  }
+
+  String? get userType {
+    final practitioner = _formattedToken(practitionerType);
+    if (practitioner != null) {
+      return practitioner;
+    }
+
+    final normalizedValues = <String>[
+      ...roles,
+      if (_hasText(positionTitle)) positionTitle!,
+      if (_hasText(staffPosition)) staffPosition!,
+    ].map((value) => value.toUpperCase()).join(' ');
+
+    if (normalizedValues.contains('DOCTOR') ||
+        normalizedValues.contains('PHYSICIAN')) {
+      return 'Doctor';
+    }
+    if (normalizedValues.contains('NURSE')) {
+      return 'Nurse';
+    }
+    if (normalizedValues.contains('ADMIN') ||
+        normalizedValues.contains('OWNER')) {
+      return 'Administrator';
+    }
+    if (normalizedValues.contains('PHARM')) {
+      return 'Pharmacy';
+    }
+    if (normalizedValues.contains('LAB')) {
+      return 'Laboratory';
+    }
+
+    return overallRole ?? effectiveTitle;
+  }
+
+  String get initials {
+    final source = displayName ?? email ?? id ?? '';
+    final words = source
+        .replaceAll(RegExp(r'[@._-]+'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList(growable: false);
+
+    if (words.isEmpty) {
+      return '?';
+    }
+
+    if (words.length == 1) {
+      return words.first.substring(0, 1).toUpperCase();
+    }
+
+    return <String>[
+      words.first.substring(0, 1),
+      words.last.substring(0, 1),
+    ].join().toUpperCase();
+  }
+
+  static bool _hasText(String? value) {
+    return value != null && value.trim().isNotEmpty;
+  }
+
+  static String? _string(Object? value) {
+    if (value is! String || value.trim().isEmpty) {
+      return null;
+    }
+
+    return value.trim();
+  }
+
+  static List<String> _strings(Object? value) {
+    if (value is! Iterable<Object?>) {
+      return const <String>[];
+    }
+
+    return value
+        .whereType<String>()
+        .map((entry) => entry.trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
+  static String? _formattedToken(String? value) {
+    final normalized = _string(value);
+    if (normalized == null) {
+      return null;
+    }
+
+    final words = normalized
+        .replaceAll(RegExp(r'[_-]+'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .map((word) {
+          final lower = word.toLowerCase();
+          return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+        })
+        .join(' ');
+
+    return words.isEmpty ? null : words;
   }
 }

@@ -12,6 +12,15 @@ const crypto = require('crypto');
 
 const userInclude = {
   profile: true,
+  staff_profile: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      staff_number: true,
+      position: true,
+      practitioner_type: true,
+    },
+  },
   permissions: {
     where: { deleted_at: null },
     include: {

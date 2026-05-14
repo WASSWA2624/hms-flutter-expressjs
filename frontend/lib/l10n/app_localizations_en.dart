@@ -81,6 +81,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appUserMenuLogoutLabel => 'Logout';
 
   @override
+  String get appUserMenuSignedInLabel => 'Signed in';
+
+  @override
   String get navigationHomeLabel => 'Home';
 
   @override
@@ -154,6 +157,84 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homeServiceAreaAdministration =>
       'Billing, claims, subscriptions, reports, audit, and integrations';
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get profileBody => 'Review your account, role, and facility details.';
+
+  @override
+  String get profileAccountSectionTitle => 'Account';
+
+  @override
+  String get profileAccountSectionBody =>
+      'Core identity and login information.';
+
+  @override
+  String get profileProfessionalSectionTitle => 'Professional details';
+
+  @override
+  String get profileProfessionalSectionBody =>
+      'Role, title, user type, and facility context.';
+
+  @override
+  String get profileNameLabel => 'Name';
+
+  @override
+  String get profileEmailLabel => 'Email';
+
+  @override
+  String get profilePhoneLabel => 'Phone';
+
+  @override
+  String get profileStatusLabel => 'Status';
+
+  @override
+  String get profileTitleLabel => 'Title';
+
+  @override
+  String get profileOverallRoleLabel => 'Overall role';
+
+  @override
+  String get profileUserTypeLabel => 'User type';
+
+  @override
+  String get profileTenantLabel => 'Tenant';
+
+  @override
+  String get profileFacilityLabel => 'Facility';
+
+  @override
+  String get profileFacilityTypeLabel => 'Facility type';
+
+  @override
+  String get profileStaffNumberLabel => 'Staff number';
+
+  @override
+  String get profileUserIdLabel => 'User ID';
+
+  @override
+  String profilePermissionCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count direct permissions',
+      one: '1 direct permission',
+      zero: 'No direct permissions',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileUnavailableTitle => 'Profile unavailable';
+
+  @override
+  String get profileUnavailableBody =>
+      'Sign in again to reload your account details.';
+
+  @override
+  String get profileUnknownValue => 'Not available';
 
   @override
   String get settingsTitle => 'Settings';

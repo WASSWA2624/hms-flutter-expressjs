@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/router/route_refresh_listenable.dart';
 import 'package:hosspi_hms/app/router/route_status_pages.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
@@ -14,6 +15,7 @@ import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -61,6 +63,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.settings.path,
             name: AppRoutes.settings.name,
             builder: (_, _) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.profile.path,
+            name: AppRoutes.profile.name,
+            builder: (_, _) => const UserProfilePage(),
           ),
         ],
       ),
@@ -157,6 +164,9 @@ class _AppShell extends ConsumerWidget {
       location.path,
       shellDestinations,
     );
+    final AuthSession? session = ref.watch(
+      sessionStateProvider.select((state) => state.session),
+    );
     final AppConnectivityStatus connectivityStatus = ref
         .watch(appConnectivityStatusProvider)
         .when(
@@ -181,12 +191,12 @@ class _AppShell extends ConsumerWidget {
       settingsLabel: l10n.appUserMenuSettingsLabel,
       changePasswordLabel: l10n.appUserMenuChangePasswordLabel,
       logoutLabel: l10n.appUserMenuLogoutLabel,
-      showUserAvatar: ref.watch(
-        sessionStateProvider.select((state) => state.isAuthenticated),
-      ),
+      signedInLabel: l10n.appUserMenuSignedInLabel,
+      userProfile: _userMenuProfile(session),
+      showUserAvatar: session != null,
       onProfileSelected: () {
-        if (!AppRoutes.settings.matchesPath(location.path)) {
-          context.go(AppRoutes.settings.location());
+        if (!AppRoutes.profile.matchesPath(location.path)) {
+          context.go(AppRoutes.profile.location());
         }
       },
       onSettingsSelected: () {
@@ -242,4 +252,81 @@ class _AppShell extends ConsumerWidget {
 
     return index < 0 ? 0 : index;
   }
+}
+
+UserMenuProfileData? _userMenuProfile(AuthSession? session) {
+  if (session == null) {
+    return null;
+  }
+
+  final AuthUserProfile? user = session.user;
+  final String? subject = _nonEmpty(session.subject);
+  final String? email = _nonEmpty(user?.email) ?? _emailFromSubject(subject);
+  final String? name =
+      _nonEmpty(user?.fullName) ??
+      _nonEmpty(user?.effectiveTitle) ??
+      _distinct(subject, email) ??
+      email;
+  final String? initials =
+      _nonEmpty(user?.initials) ?? _initialsFrom(name ?? email);
+
+  return UserMenuProfileData(
+    name: name,
+    email: email,
+    title: _distinct(user?.effectiveTitle, name),
+    overallRole: user?.overallRole,
+    userType: user?.userType,
+    initials: initials,
+  );
+}
+
+String? _emailFromSubject(String? subject) {
+  if (subject == null || !subject.contains('@')) {
+    return null;
+  }
+
+  return subject;
+}
+
+String? _initialsFrom(String? value) {
+  final String? normalized = _nonEmpty(value);
+  if (normalized == null) {
+    return null;
+  }
+
+  final List<String> words = normalized
+      .replaceAll(RegExp(r'[@._-]+'), ' ')
+      .split(RegExp(r'\s+'))
+      .where((String word) => word.isNotEmpty)
+      .toList(growable: false);
+  if (words.isEmpty) {
+    return null;
+  }
+  if (words.length == 1) {
+    return words.first.substring(0, 1).toUpperCase();
+  }
+
+  return <String>[
+    words.first.substring(0, 1),
+    words.last.substring(0, 1),
+  ].join().toUpperCase();
+}
+
+String? _distinct(String? value, String? other) {
+  final String? normalized = _nonEmpty(value);
+  final String? normalizedOther = _nonEmpty(other);
+  if (normalized == null) {
+    return null;
+  }
+  if (normalizedOther != null &&
+      normalized.toLowerCase() == normalizedOther.toLowerCase()) {
+    return null;
+  }
+
+  return normalized;
+}
+
+String? _nonEmpty(String? value) {
+  final String? normalized = value?.trim();
+  return normalized == null || normalized.isEmpty ? null : normalized;
 }

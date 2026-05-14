@@ -31,7 +31,7 @@ final class SessionManager {
       return const SessionState.expired();
     }
 
-    return SessionState.authenticated(session: AuthSession(tokens: tokens));
+    return SessionState.authenticated(session: AuthSession.fromTokens(tokens));
   }
 
   Future<SessionTokens?> readTokens() {

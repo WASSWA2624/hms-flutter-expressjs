@@ -39,7 +39,7 @@ final class SessionController extends Notifier<SessionState> {
   }
 
   Future<void> persistTokens(SessionTokens tokens) async {
-    await persistSession(AuthSession(tokens: tokens));
+    await persistSession(AuthSession.fromTokens(tokens));
   }
 
   Future<void> logout() async {

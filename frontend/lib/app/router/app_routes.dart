@@ -53,6 +53,11 @@ abstract final class AppRoutes {
     path: '/settings',
     access: AppRouteAccess.authenticated,
   );
+  static const AppRouteData profile = AppRouteData(
+    name: 'profile',
+    path: '/profile',
+    access: AppRouteAccess.authenticated,
+  );
 
   static const AppRouteData login = AppRouteData(name: 'login', path: '/login');
 
@@ -84,6 +89,7 @@ abstract final class AppRoutes {
   static const List<AppRouteData> all = <AppRouteData>[
     home,
     settings,
+    profile,
     login,
     register,
     verifyEmail,
@@ -92,7 +98,11 @@ abstract final class AppRoutes {
     forbidden,
   ];
 
-  static const List<AppRouteData> shellRoutes = <AppRouteData>[home, settings];
+  static const List<AppRouteData> shellRoutes = <AppRouteData>[
+    home,
+    settings,
+    profile,
+  ];
 
   static AppRouteData? matchPath(String locationPath) {
     for (final AppRouteData route in all) {

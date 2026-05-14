@@ -9,6 +9,7 @@ final class AuthSessionDto {
     required this.accessToken,
     this.refreshToken,
     this.subject,
+    this.user,
     this.permissions = const <AppPermission>[],
   });
 
@@ -28,6 +29,9 @@ final class AuthSessionDto {
       subject: user is Map<String, Object?>
           ? _userSubject(user)
           : _subjectFromToken(_requiredString(json, 'access_token')),
+      user: user is Map<String, Object?>
+          ? _userProfileFromUser(user)
+          : _userProfileFromToken(_requiredString(json, 'access_token')),
       permissions: user is Map<String, Object?>
           ? _permissionsFromUser(user)
           : _permissionsFromToken(_requiredString(json, 'access_token')),
@@ -37,6 +41,7 @@ final class AuthSessionDto {
   final String accessToken;
   final String? refreshToken;
   final String? subject;
+  final AuthUserProfile? user;
   final List<AppPermission> permissions;
 
   AuthSession toEntity() {
@@ -47,6 +52,7 @@ final class AuthSessionDto {
         accessTokenExpiresAt: _expiresAtFromToken(accessToken),
       ),
       subject: subject,
+      user: user,
       permissions: permissions,
     );
   }
@@ -90,6 +96,78 @@ final class AuthSessionDto {
     }
 
     return List<AppPermission>.unmodifiable(permissions.toSet());
+  }
+
+  static AuthUserProfile? _userProfileFromUser(Map<String, Object?> user) {
+    final profile = _map(user['profile']);
+    final tenant = _map(user['tenant']);
+    final facility = _map(user['facility']);
+    final staffProfile = _map(user['staff_profile']);
+    final parsedProfile = AuthUserProfile(
+      id: _optionalString(user, 'id'),
+      displayId: _optionalString(user, 'human_friendly_id'),
+      email: _optionalString(user, 'email'),
+      phone: _optionalString(user, 'phone'),
+      status: _optionalString(user, 'status'),
+      positionTitle: _optionalString(user, 'position_title'),
+      firstName: _optionalString(profile, 'first_name'),
+      middleName: _optionalString(profile, 'middle_name'),
+      lastName: _optionalString(profile, 'last_name'),
+      gender: _optionalString(profile, 'gender'),
+      tenantName: _optionalString(tenant, 'name'),
+      facilityName: _optionalString(facility, 'name'),
+      facilityType: _optionalString(facility, 'facility_type'),
+      staffNumber: _optionalString(staffProfile, 'staff_number'),
+      staffPosition: _optionalString(staffProfile, 'position'),
+      practitionerType: _optionalString(staffProfile, 'practitioner_type'),
+      roles: _roleNames(user['roles']),
+    );
+
+    return parsedProfile.displayName == null &&
+            parsedProfile.email == null &&
+            parsedProfile.id == null
+        ? null
+        : parsedProfile;
+  }
+
+  static AuthUserProfile? _userProfileFromToken(String token) {
+    final payload = _tokenPayload(token);
+    return payload == null ? null : AuthUserProfile.fromToken(payload);
+  }
+
+  static Map<String, Object?> _map(Object? value) {
+    return value is Map<String, Object?> ? value : const <String, Object?>{};
+  }
+
+  static List<String> _roleNames(Object? value) {
+    if (value is! Iterable<Object?>) {
+      return const <String>[];
+    }
+
+    final names = <String>{};
+    for (final entry in value) {
+      if (entry is String && entry.trim().isNotEmpty) {
+        names.add(entry.trim());
+        continue;
+      }
+
+      if (entry is Map<String, Object?>) {
+        final directName = _optionalString(entry, 'name');
+        if (directName != null) {
+          names.add(directName);
+        }
+
+        final role = entry['role'];
+        if (role is Map<String, Object?>) {
+          final roleName = _optionalString(role, 'name');
+          if (roleName != null) {
+            names.add(roleName);
+          }
+        }
+      }
+    }
+
+    return names.toList(growable: false);
   }
 
   static List<AppPermission> _permissionsFromToken(String token) {

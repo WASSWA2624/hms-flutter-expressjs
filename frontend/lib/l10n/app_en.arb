@@ -89,6 +89,10 @@
   "@appUserMenuLogoutLabel": {
     "description": "Account menu logout action label."
   },
+  "appUserMenuSignedInLabel": "Signed in",
+  "@appUserMenuSignedInLabel": {
+    "description": "Fallback account menu header label for authenticated users without profile details."
+  },
   "navigationHomeLabel": "Home",
   "@navigationHomeLabel": {
     "description": "Navigation label for the home destination."
@@ -176,6 +180,99 @@
   "homeServiceAreaAdministration": "Billing, claims, subscriptions, reports, audit, and integrations",
   "@homeServiceAreaAdministration": {
     "description": "HMS service area label for administration workflows."
+  },
+  "profileTitle": "Profile",
+  "@profileTitle": {
+    "description": "User profile screen title."
+  },
+  "profileBody": "Review your account, role, and facility details.",
+  "@profileBody": {
+    "description": "User profile screen intro body."
+  },
+  "profileAccountSectionTitle": "Account",
+  "@profileAccountSectionTitle": {
+    "description": "User profile account section title."
+  },
+  "profileAccountSectionBody": "Core identity and login information.",
+  "@profileAccountSectionBody": {
+    "description": "User profile account section body."
+  },
+  "profileProfessionalSectionTitle": "Professional details",
+  "@profileProfessionalSectionTitle": {
+    "description": "User profile professional details section title."
+  },
+  "profileProfessionalSectionBody": "Role, title, user type, and facility context.",
+  "@profileProfessionalSectionBody": {
+    "description": "User profile professional details section body."
+  },
+  "profileNameLabel": "Name",
+  "@profileNameLabel": {
+    "description": "User profile name field label."
+  },
+  "profileEmailLabel": "Email",
+  "@profileEmailLabel": {
+    "description": "User profile email field label."
+  },
+  "profilePhoneLabel": "Phone",
+  "@profilePhoneLabel": {
+    "description": "User profile phone field label."
+  },
+  "profileStatusLabel": "Status",
+  "@profileStatusLabel": {
+    "description": "User profile status field label."
+  },
+  "profileTitleLabel": "Title",
+  "@profileTitleLabel": {
+    "description": "User profile professional title field label."
+  },
+  "profileOverallRoleLabel": "Overall role",
+  "@profileOverallRoleLabel": {
+    "description": "User profile overall role field label."
+  },
+  "profileUserTypeLabel": "User type",
+  "@profileUserTypeLabel": {
+    "description": "User profile user type field label."
+  },
+  "profileTenantLabel": "Tenant",
+  "@profileTenantLabel": {
+    "description": "User profile tenant field label."
+  },
+  "profileFacilityLabel": "Facility",
+  "@profileFacilityLabel": {
+    "description": "User profile facility field label."
+  },
+  "profileFacilityTypeLabel": "Facility type",
+  "@profileFacilityTypeLabel": {
+    "description": "User profile facility type field label."
+  },
+  "profileStaffNumberLabel": "Staff number",
+  "@profileStaffNumberLabel": {
+    "description": "User profile staff number field label."
+  },
+  "profileUserIdLabel": "User ID",
+  "@profileUserIdLabel": {
+    "description": "User profile user identifier field label."
+  },
+  "profilePermissionCountLabel": "{count, plural, =0{No direct permissions} =1{1 direct permission} other{{count} direct permissions}}",
+  "@profilePermissionCountLabel": {
+    "description": "User profile direct permission count label.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileUnavailableTitle": "Profile unavailable",
+  "@profileUnavailableTitle": {
+    "description": "Profile screen title when session profile data is missing."
+  },
+  "profileUnavailableBody": "Sign in again to reload your account details.",
+  "@profileUnavailableBody": {
+    "description": "Profile screen body when session profile data is missing."
+  },
+  "profileUnknownValue": "Not available",
+  "@profileUnknownValue": {
+    "description": "Fallback value for unavailable profile fields."
   },
   "settingsTitle": "Settings",
   "@settingsTitle": {

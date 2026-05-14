@@ -22,6 +22,20 @@ void main() {
     session: AuthSession(
       tokens: SessionTokens(accessToken: 'test-access-token'),
       subject: 'admin@example.com',
+      user: const AuthUserProfile(
+        id: 'user-123',
+        displayId: 'USR-123',
+        email: 'admin@example.com',
+        firstName: 'Wilson',
+        lastName: 'Admin',
+        tenantName: 'IHK Hospital',
+        facilityName: 'IHK Hospital',
+        facilityType: 'hospital',
+        positionTitle: 'tenant_admin',
+        staffNumber: 'STF-001',
+        staffPosition: 'administrator',
+        roles: <String>['tenant_admin'],
+      ),
     ),
   );
 
@@ -132,6 +146,37 @@ void main() {
     expect(find.text(l10n.settingsThemeModeFieldLabel), findsOneWidget);
     expect(find.text(l10n.settingsLanguageEnglish), findsWidgets);
     expect(find.byType(AppLogo), findsOneWidget);
+  });
+
+  testWidgets('opens the profile screen from the account menu', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: authenticatedOverrides().cast(),
+        child: const HosspiHmsApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final homeContext = tester.element(find.byType(HomePage));
+    final l10n = homeContext.l10n;
+
+    await tester.tap(find.byTooltip(l10n.appAccountTooltip));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Wilson Admin'), findsOneWidget);
+    expect(find.text('admin@example.com'), findsWidgets);
+    expect(find.text('Tenant Admin'), findsWidgets);
+    expect(find.text('Administrator'), findsWidgets);
+
+    await tester.tap(find.text(l10n.appUserMenuProfileLabel));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.profileTitle), findsWidgets);
+    expect(find.text(l10n.profileEmailLabel), findsOneWidget);
+    expect(find.text('USR-123'), findsOneWidget);
+    expect(find.text('STF-001'), findsOneWidget);
   });
 
   testWidgets('uses startup theme and locale providers', (

@@ -17,6 +17,36 @@ final class ResponsiveShellDestination {
   final IconData selectedIcon;
 }
 
+final class UserMenuProfileData {
+  const UserMenuProfileData({
+    this.name,
+    this.email,
+    this.title,
+    this.overallRole,
+    this.userType,
+    this.initials,
+  });
+
+  final String? name;
+  final String? email;
+  final String? title;
+  final String? overallRole;
+  final String? userType;
+  final String? initials;
+
+  bool get hasDetails {
+    return _hasText(name) ||
+        _hasText(email) ||
+        _hasText(title) ||
+        _hasText(overallRole) ||
+        _hasText(userType);
+  }
+
+  static bool _hasText(String? value) {
+    return value != null && value.trim().isNotEmpty;
+  }
+}
+
 class ResponsiveAppShell extends ResponsiveShellScaffold {
   const ResponsiveAppShell({
     required super.title,
@@ -39,6 +69,8 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.settingsLabel,
     super.changePasswordLabel,
     super.logoutLabel,
+    super.signedInLabel,
+    super.userProfile,
     super.unreadNotificationCount,
     super.onProfileSelected,
     super.onSettingsSelected,
@@ -70,6 +102,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.settingsLabel = 'Settings',
     this.changePasswordLabel = 'Change password',
     this.logoutLabel = 'Logout',
+    this.signedInLabel = 'Signed in',
+    this.userProfile,
     this.unreadNotificationCount = 0,
     this.onProfileSelected,
     this.onSettingsSelected,
@@ -97,6 +131,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final String settingsLabel;
   final String changePasswordLabel;
   final String logoutLabel;
+  final String signedInLabel;
+  final UserMenuProfileData? userProfile;
   final int unreadNotificationCount;
   final VoidCallback? onProfileSelected;
   final VoidCallback? onSettingsSelected;
@@ -157,6 +193,8 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   settingsLabel: widget.settingsLabel,
                   changePasswordLabel: widget.changePasswordLabel,
                   logoutLabel: widget.logoutLabel,
+                  signedInLabel: widget.signedInLabel,
+                  userProfile: widget.userProfile,
                   unreadNotificationCount: widget.unreadNotificationCount,
                   onProfileSelected: widget.onProfileSelected,
                   onSettingsSelected: widget.onSettingsSelected,
@@ -241,6 +279,7 @@ class AppMenuBar extends StatelessWidget {
     required this.settingsLabel,
     required this.changePasswordLabel,
     required this.logoutLabel,
+    required this.signedInLabel,
     required this.unreadNotificationCount,
     required this.toggleTooltip,
     required this.onToggleNavigation,
@@ -249,6 +288,7 @@ class AppMenuBar extends StatelessWidget {
     this.onSettingsSelected,
     this.onChangePasswordSelected,
     this.onLogoutSelected,
+    this.userProfile,
     super.key,
   });
 
@@ -266,6 +306,7 @@ class AppMenuBar extends StatelessWidget {
   final String settingsLabel;
   final String changePasswordLabel;
   final String logoutLabel;
+  final String signedInLabel;
   final int unreadNotificationCount;
   final String toggleTooltip;
   final VoidCallback onToggleNavigation;
@@ -273,6 +314,7 @@ class AppMenuBar extends StatelessWidget {
   final VoidCallback? onSettingsSelected;
   final VoidCallback? onChangePasswordSelected;
   final VoidCallback? onLogoutSelected;
+  final UserMenuProfileData? userProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -340,6 +382,8 @@ class AppMenuBar extends StatelessWidget {
                   settingsLabel: settingsLabel,
                   changePasswordLabel: changePasswordLabel,
                   logoutLabel: logoutLabel,
+                  signedInLabel: signedInLabel,
+                  profile: userProfile,
                   onProfileSelected: onProfileSelected,
                   onSettingsSelected: onSettingsSelected,
                   onChangePasswordSelected: onChangePasswordSelected,
@@ -349,6 +393,7 @@ class AppMenuBar extends StatelessWidget {
                     showStatusDot: isMobile,
                     onlineLabel: onlineLabel,
                     offlineLabel: offlineLabel,
+                    profile: userProfile,
                   ),
                 ),
               ],
@@ -405,11 +450,13 @@ class _UserMenuButton extends StatelessWidget {
     required this.settingsLabel,
     required this.changePasswordLabel,
     required this.logoutLabel,
+    required this.signedInLabel,
     required this.child,
     this.onProfileSelected,
     this.onSettingsSelected,
     this.onChangePasswordSelected,
     this.onLogoutSelected,
+    this.profile,
   });
 
   final String tooltip;
@@ -417,16 +464,28 @@ class _UserMenuButton extends StatelessWidget {
   final String settingsLabel;
   final String changePasswordLabel;
   final String logoutLabel;
+  final String signedInLabel;
   final Widget child;
   final VoidCallback? onProfileSelected;
   final VoidCallback? onSettingsSelected;
   final VoidCallback? onChangePasswordSelected;
   final VoidCallback? onLogoutSelected;
+  final UserMenuProfileData? profile;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return PopupMenuButton<_UserMenuAction>(
       tooltip: tooltip,
+      position: PopupMenuPosition.under,
+      constraints: const BoxConstraints(minWidth: 320, maxWidth: 360),
+      color: colorScheme.surface,
+      surfaceTintColor: colorScheme.surfaceTint,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
       onSelected: (_UserMenuAction action) {
         switch (action) {
           case _UserMenuAction.profile:
@@ -445,9 +504,12 @@ class _UserMenuButton extends StatelessWidget {
       },
       itemBuilder: (BuildContext context) {
         return <PopupMenuEntry<_UserMenuAction>>[
+          _UserMenuHeaderEntry(profile: profile, signedInLabel: signedInLabel),
+          PopupMenuDivider(height: theme.spacing.xs),
           PopupMenuItem<_UserMenuAction>(
             value: _UserMenuAction.profile,
             enabled: onProfileSelected != null,
+            padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
             child: _UserMenuItemLabel(
               icon: Icons.person_outline,
               label: profileLabel,
@@ -455,6 +517,7 @@ class _UserMenuButton extends StatelessWidget {
           ),
           PopupMenuItem<_UserMenuAction>(
             value: _UserMenuAction.settings,
+            padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
             child: _UserMenuItemLabel(
               icon: Icons.settings_outlined,
               label: settingsLabel,
@@ -463,6 +526,7 @@ class _UserMenuButton extends StatelessWidget {
           PopupMenuItem<_UserMenuAction>(
             value: _UserMenuAction.changePassword,
             enabled: onChangePasswordSelected != null,
+            padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
             child: _UserMenuItemLabel(
               icon: Icons.lock_reset_outlined,
               label: changePasswordLabel,
@@ -472,6 +536,7 @@ class _UserMenuButton extends StatelessWidget {
           PopupMenuItem<_UserMenuAction>(
             value: _UserMenuAction.logout,
             enabled: onLogoutSelected != null,
+            padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
             child: _UserMenuItemLabel(
               icon: Icons.logout_outlined,
               label: logoutLabel,
@@ -480,6 +545,161 @@ class _UserMenuButton extends StatelessWidget {
         ];
       },
       child: Semantics(button: true, label: tooltip, child: child),
+    );
+  }
+}
+
+class _UserMenuHeaderEntry extends PopupMenuEntry<_UserMenuAction> {
+  const _UserMenuHeaderEntry({required this.signedInLabel, this.profile});
+
+  final UserMenuProfileData? profile;
+  final String signedInLabel;
+
+  @override
+  double get height => 134;
+
+  @override
+  bool represents(_UserMenuAction? value) => false;
+
+  @override
+  State<_UserMenuHeaderEntry> createState() => _UserMenuHeaderEntryState();
+}
+
+class _UserMenuHeaderEntryState extends State<_UserMenuHeaderEntry> {
+  @override
+  Widget build(BuildContext context) {
+    return _UserMenuHeader(
+      profile: widget.profile,
+      signedInLabel: widget.signedInLabel,
+    );
+  }
+}
+
+class _UserMenuHeader extends StatelessWidget {
+  const _UserMenuHeader({required this.signedInLabel, this.profile});
+
+  final UserMenuProfileData? profile;
+  final String signedInLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String name = _textOrFallback(profile?.name, signedInLabel);
+    final String? email = _nonEmpty(profile?.email);
+    final String? title = _nonEmpty(profile?.title);
+    final List<String> chips = <String>{
+      if (_nonEmpty(profile?.overallRole) case final String role) role,
+      if (_nonEmpty(profile?.userType) case final String userType) userType,
+    }.toList(growable: false);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.md,
+        theme.spacing.md,
+        theme.spacing.md,
+        theme.spacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: colorScheme.primaryContainer,
+                foregroundColor: colorScheme.onPrimaryContainer,
+                child: _AvatarInitialsText(
+                  initials: _avatarInitials(profile),
+                  size: 15,
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (email != null) ...<Widget>[
+                      SizedBox(height: theme.spacing.xs / 2),
+                      Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                    if (title != null) ...<Widget>[
+                      SizedBox(height: theme.spacing.xs / 2),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (chips.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                for (final String chip in chips) _UserMenuChip(label: chip),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _UserMenuChip extends StatelessWidget {
+  const _UserMenuChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.xs,
+          vertical: 2,
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colorScheme.onSecondaryContainer,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -493,13 +713,27 @@ class _UserMenuItemLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Icon(icon, size: theme.appTokens.listIconSize),
+        SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(
+            icon,
+            size: theme.appTokens.listIconSize,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
         SizedBox(width: theme.spacing.sm),
-        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+        Expanded(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyLarge,
+          ),
+        ),
       ],
     );
   }
@@ -565,22 +799,31 @@ class _UserAvatar extends StatelessWidget {
     required this.showStatusDot,
     required this.onlineLabel,
     required this.offlineLabel,
+    this.profile,
   });
 
   final AppConnectivityStatus status;
   final bool showStatusDot;
   final String onlineLabel;
   final String offlineLabel;
+  final UserMenuProfileData? profile;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final String initials = _avatarInitials(profile);
     final Widget avatar = CircleAvatar(
       radius: _avatarRadius,
-      backgroundColor: colorScheme.surfaceContainerHighest,
-      foregroundColor: colorScheme.onSurfaceVariant,
-      child: const Icon(Icons.person_outline, size: _avatarIconSize),
+      backgroundColor: initials == '?'
+          ? colorScheme.surfaceContainerHighest
+          : colorScheme.primaryContainer,
+      foregroundColor: initials == '?'
+          ? colorScheme.onSurfaceVariant
+          : colorScheme.onPrimaryContainer,
+      child: initials == '?'
+          ? const Icon(Icons.person_outline, size: _avatarIconSize)
+          : _AvatarInitialsText(initials: initials, size: 13),
     );
 
     if (!showStatusDot) {
@@ -623,6 +866,66 @@ class _UserAvatar extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AvatarInitialsText extends StatelessWidget {
+  const _AvatarInitialsText({required this.initials, required this.size});
+
+  final String initials;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      initials,
+      maxLines: 1,
+      overflow: TextOverflow.clip,
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        fontSize: size,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
+String _avatarInitials(UserMenuProfileData? profile) {
+  final String? explicitInitials = _nonEmpty(profile?.initials);
+  if (explicitInitials != null) {
+    return explicitInitials.length > 2
+        ? explicitInitials.substring(0, 2).toUpperCase()
+        : explicitInitials.toUpperCase();
+  }
+
+  final String? source = _nonEmpty(profile?.name) ?? _nonEmpty(profile?.email);
+  if (source == null) {
+    return '?';
+  }
+
+  final List<String> words = source
+      .replaceAll(RegExp(r'[@._-]+'), ' ')
+      .split(RegExp(r'\s+'))
+      .where((String word) => word.isNotEmpty)
+      .toList(growable: false);
+  if (words.isEmpty) {
+    return '?';
+  }
+  if (words.length == 1) {
+    return words.first.substring(0, 1).toUpperCase();
+  }
+
+  return <String>[
+    words.first.substring(0, 1),
+    words.last.substring(0, 1),
+  ].join().toUpperCase();
+}
+
+String _textOrFallback(String? value, String fallback) {
+  return _nonEmpty(value) ?? fallback;
+}
+
+String? _nonEmpty(String? value) {
+  final String? normalized = value?.trim();
+  return normalized == null || normalized.isEmpty ? null : normalized;
 }
 
 class _MobileShellDrawer extends StatelessWidget {

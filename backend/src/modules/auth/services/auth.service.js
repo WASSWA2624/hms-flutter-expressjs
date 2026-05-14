@@ -1242,7 +1242,8 @@ const refresh = async (data) => {
 
   return {
     access_token: accessToken,
-    refresh_token: newRefreshToken
+    refresh_token: newRefreshToken,
+    user: buildAuthUserPayload(session.user),
   };
 };
 
