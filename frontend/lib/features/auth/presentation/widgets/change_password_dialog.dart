@@ -158,7 +158,9 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
   }
 
   void _handleFieldFocusChanged(bool hasFocus) {
-    _clearFormFeedback();
+    if (hasFocus) {
+      _clearFormFeedback();
+    }
     _resetValidationFeedback();
   }
 

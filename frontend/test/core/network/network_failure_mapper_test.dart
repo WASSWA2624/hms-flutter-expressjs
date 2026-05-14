@@ -109,6 +109,27 @@ void main() {
       expect(notFoundFailure.category, AppFailureCategory.notFound);
     });
 
+    test('maps rate limited responses to retryable network failures', () {
+      final requestOptions = RequestOptions(path: '/auth/login');
+      final failure = mapper.map(
+        DioException(
+          requestOptions: requestOptions,
+          response: Response<Object?>(
+            requestOptions: requestOptions,
+            statusCode: 429,
+            data: <String, Object?>{'code': 'EXCEEDED'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+        StackTrace.empty,
+      );
+
+      expect(failure.category, AppFailureCategory.network);
+      expect(failure.code, 'network.rate_limited');
+      expect(failure.statusCode, 429);
+      expect(failure.isRetryable, isTrue);
+    });
+
     test(
       'preserves pending account forbidden responses for verification flow',
       () {

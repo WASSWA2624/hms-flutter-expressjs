@@ -82,6 +82,13 @@ final class NetworkFailureMapper {
       return AppFailure.notFound(statusCode: statusCode);
     }
 
+    if (statusCode == 429) {
+      return AppFailure.network(
+        code: 'network.rate_limited',
+        statusCode: statusCode,
+      );
+    }
+
     if (statusCode >= 500) {
       return AppFailure.network(
         code: 'network.server_error',

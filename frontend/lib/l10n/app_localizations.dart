@@ -988,6 +988,12 @@ abstract class AppLocalizations {
   /// **'The password is incorrect for this account.'**
   String get authWrongPasswordMessage;
 
+  /// Auth failure message when the server temporarily rate limits repeated auth attempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many sign-in attempts. Please wait a moment and try again.'**
+  String get authRateLimitedMessage;
+
   /// Safe auth forbidden failure message.
   ///
   /// In en, this message translates to:

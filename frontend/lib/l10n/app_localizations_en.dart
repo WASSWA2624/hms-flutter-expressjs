@@ -507,6 +507,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The password is incorrect for this account.';
 
   @override
+  String get authRateLimitedMessage =>
+      'Too many sign-in attempts. Please wait a moment and try again.';
+
+  @override
   String get authForbiddenMessage =>
       'This account cannot complete that action.';
 

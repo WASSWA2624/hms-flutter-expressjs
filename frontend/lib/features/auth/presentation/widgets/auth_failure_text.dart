@@ -28,6 +28,9 @@ class AuthFailureText extends StatelessWidget {
     if (failure.code == 'auth.wrong_password') {
       return l10n.authWrongPasswordMessage;
     }
+    if (failure.code == 'network.rate_limited') {
+      return l10n.authRateLimitedMessage;
+    }
 
     return switch (failure.category) {
       AppFailureCategory.unauthorized => l10n.authInvalidCredentialsMessage,

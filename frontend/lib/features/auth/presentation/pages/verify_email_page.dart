@@ -270,7 +270,9 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   }
 
   void _handleFieldFocusChanged(bool hasFocus) {
-    _clearFormFeedback();
+    if (hasFocus) {
+      _clearFormFeedback();
+    }
     _resetValidationFeedback();
   }
 

@@ -38,4 +38,20 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('shows a rate limited auth message', (WidgetTester tester) async {
+    await pumpLocalizedWidget(
+      tester,
+      const AuthFailureText(
+        failure: AppFailure.network(code: 'network.rate_limited'),
+      ),
+    );
+
+    expect(
+      find.text(
+        'Too many sign-in attempts. Please wait a moment and try again.',
+      ),
+      findsOneWidget,
+    );
+  });
 }

@@ -282,7 +282,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   void _handleFieldFocusChanged(bool hasFocus) {
-    _clearFormFeedback();
+    if (hasFocus) {
+      _clearFormFeedback();
+    }
     _resetValidationFeedback();
   }
 
