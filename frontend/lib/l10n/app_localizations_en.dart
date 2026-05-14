@@ -450,6 +450,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilitySaveFacilityAction => 'Save facility';
 
   @override
+  String get tenantFacilityFacilitySelectLabel => 'Facility';
+
+  @override
+  String get tenantFacilityCreateAction => 'Create';
+
+  @override
+  String get tenantFacilitySaveAction => 'Save';
+
+  @override
+  String get tenantFacilityEditAction => 'Edit';
+
+  @override
+  String get tenantFacilityDeleteAction => 'Delete';
+
+  @override
+  String get tenantFacilityDeleteConfirmAction => 'Delete';
+
+  @override
+  String get tenantFacilityDeleteConfirmationTitle => 'Delete record';
+
+  @override
+  String get tenantFacilityDeleteConfirmationBody =>
+      'This setup record will be removed.';
+
+  @override
+  String get tenantFacilityNoSelectionLabel => 'None';
+
+  @override
+  String get tenantFacilityStatusActive => 'Active';
+
+  @override
+  String get tenantFacilityStatusInactive => 'Inactive';
+
+  @override
   String get tenantFacilityBranchesSectionTitle => 'Branches';
 
   @override
@@ -463,7 +497,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityBranchNameLabel => 'Branch name';
 
   @override
+  String get tenantFacilityBranchesListTitle => 'Branch records';
+
+  @override
   String get tenantFacilityAddBranchAction => 'Add branch';
+
+  @override
+  String get tenantFacilityAddBranchTitle => 'Add branch';
+
+  @override
+  String get tenantFacilityEditBranchTitle => 'Edit branch';
 
   @override
   String get tenantFacilityDepartmentsSectionTitle => 'Departments and units';
@@ -479,6 +522,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityNoUnits => 'No units have been added.';
 
   @override
+  String get tenantFacilityDepartmentsListTitle => 'Departments';
+
+  @override
+  String get tenantFacilityUnitsListTitle => 'Units';
+
+  @override
   String get tenantFacilityDepartmentNameLabel => 'Department name';
 
   @override
@@ -486,6 +535,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityDepartmentTypeLabel => 'Department type';
+
+  @override
+  String get tenantFacilityDepartmentBranchLabel => 'Branch';
 
   @override
   String get tenantFacilityDepartmentTypeClinical => 'Clinical';
@@ -506,6 +558,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityAddDepartmentAction => 'Add department';
 
   @override
+  String get tenantFacilityAddDepartmentTitle => 'Add department';
+
+  @override
+  String get tenantFacilityEditDepartmentTitle => 'Edit department';
+
+  @override
   String get tenantFacilityUnitNameLabel => 'Unit name';
 
   @override
@@ -513,6 +571,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityAddUnitAction => 'Add unit';
+
+  @override
+  String get tenantFacilityAddUnitTitle => 'Add unit';
+
+  @override
+  String get tenantFacilityEditUnitTitle => 'Edit unit';
 
   @override
   String get tenantFacilityLocationsSectionTitle => 'Rooms, wards, and beds';
@@ -529,6 +593,102 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityBedsLabel => 'Beds';
+
+  @override
+  String get tenantFacilityNoWards => 'No wards have been added.';
+
+  @override
+  String get tenantFacilityNoRooms => 'No rooms have been added.';
+
+  @override
+  String get tenantFacilityNoBeds => 'No beds have been added.';
+
+  @override
+  String get tenantFacilityAddWardAction => 'Add ward';
+
+  @override
+  String get tenantFacilityAddWardTitle => 'Add ward';
+
+  @override
+  String get tenantFacilityEditWardTitle => 'Edit ward';
+
+  @override
+  String get tenantFacilityWardNameLabel => 'Ward name';
+
+  @override
+  String get tenantFacilityWardTypeLabel => 'Ward type';
+
+  @override
+  String get tenantFacilityWardDepartmentLabel => 'Department';
+
+  @override
+  String get tenantFacilityWardTypeGeneral => 'General';
+
+  @override
+  String get tenantFacilityWardTypeIcu => 'ICU';
+
+  @override
+  String get tenantFacilityWardTypeMaternity => 'Maternity';
+
+  @override
+  String get tenantFacilityWardTypePediatric => 'Pediatric';
+
+  @override
+  String get tenantFacilityWardTypeSurgical => 'Surgical';
+
+  @override
+  String get tenantFacilityWardTypeOther => 'Other';
+
+  @override
+  String get tenantFacilityAddRoomAction => 'Add room';
+
+  @override
+  String get tenantFacilityAddRoomTitle => 'Add room';
+
+  @override
+  String get tenantFacilityEditRoomTitle => 'Edit room';
+
+  @override
+  String get tenantFacilityRoomNameLabel => 'Room name';
+
+  @override
+  String get tenantFacilityRoomWardLabel => 'Ward';
+
+  @override
+  String get tenantFacilityRoomFloorLabel => 'Floor';
+
+  @override
+  String get tenantFacilityAddBedAction => 'Add bed';
+
+  @override
+  String get tenantFacilityAddBedTitle => 'Add bed';
+
+  @override
+  String get tenantFacilityEditBedTitle => 'Edit bed';
+
+  @override
+  String get tenantFacilityBedLabelLabel => 'Bed label';
+
+  @override
+  String get tenantFacilityBedWardLabel => 'Ward';
+
+  @override
+  String get tenantFacilityBedRoomLabel => 'Room';
+
+  @override
+  String get tenantFacilityBedStatusLabel => 'Bed status';
+
+  @override
+  String get tenantFacilityBedStatusAvailable => 'Available';
+
+  @override
+  String get tenantFacilityBedStatusOccupied => 'Occupied';
+
+  @override
+  String get tenantFacilityBedStatusReserved => 'Reserved';
+
+  @override
+  String get tenantFacilityBedStatusOutOfService => 'Out of service';
 
   @override
   String get tenantFacilitySavedMessage => 'Setup changes saved.';

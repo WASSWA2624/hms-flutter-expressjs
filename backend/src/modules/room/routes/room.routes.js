@@ -11,13 +11,27 @@ const express = require('express');
 const router = express.Router();
 const roomController = require('@controllers/room/room.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createRoomSchema,
   updateRoomSchema,
   roomIdParamsSchema,
   listRoomsQuerySchema
 } = require('@validations/room/room.schema');
+
+const BED_MANAGEMENT_READ_SCOPES = [
+  PERMISSIONS.CLINICAL_READ,
+  PERMISSIONS.OPERATIONS_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const BED_MANAGEMENT_ADMIN_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List rooms with pagination and filters
@@ -42,6 +56,7 @@ router.get(
   '/',  validateRequest({ query: listRoomsQuerySchema }),
 
   authenticate(),
+  authorize(BED_MANAGEMENT_READ_SCOPES, 'permission'),
   roomController.listRooms
 );
 
@@ -62,6 +77,7 @@ router.get(
   '/:id',  validateRequest({ params: roomIdParamsSchema }),
 
   authenticate(),
+  authorize(BED_MANAGEMENT_READ_SCOPES, 'permission'),
   roomController.getRoomById
 );
 
@@ -87,6 +103,7 @@ router.post(
   '/',  validateRequest({ body: createRoomSchema }),
 
   authenticate(),
+  authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
   roomController.createRoom
 );
 
@@ -112,6 +129,7 @@ router.put(
   '/:id',  validateRequest({ params: roomIdParamsSchema, body: updateRoomSchema }),
 
   authenticate(),
+  authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
   roomController.updateRoom
 );
 
@@ -132,6 +150,7 @@ router.delete(
   '/:id',  validateRequest({ params: roomIdParamsSchema }),
 
   authenticate(),
+  authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
   roomController.deleteRoom
 );
 

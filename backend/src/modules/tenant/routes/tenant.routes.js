@@ -11,13 +11,24 @@ const express = require('express');
 const router = express.Router();
 const tenantController = require('@controllers/tenant/tenant.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createTenantSchema,
   updateTenantSchema,
   tenantIdParamsSchema,
   listTenantsQuerySchema
 } = require('@validations/tenant/tenant.schema');
+
+const TENANT_READ_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const TENANT_ADMIN_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List tenants with pagination and filters
@@ -40,6 +51,7 @@ router.get(
   '/',  validateRequest({ query: listTenantsQuerySchema }),
 
   authenticate(),
+  authorize(TENANT_READ_SCOPES, 'permission'),
   tenantController.listTenants
 );
 
@@ -60,6 +72,7 @@ router.get(
   '/:id',  validateRequest({ params: tenantIdParamsSchema }),
 
   authenticate(),
+  authorize(TENANT_READ_SCOPES, 'permission'),
   tenantController.getTenantById
 );
 
@@ -83,6 +96,7 @@ router.post(
   '/',  validateRequest({ body: createTenantSchema }),
 
   authenticate(),
+  authorize(TENANT_ADMIN_SCOPES, 'permission'),
   tenantController.createTenant
 );
 
@@ -107,6 +121,7 @@ router.put(
   '/:id',  validateRequest({ params: tenantIdParamsSchema, body: updateTenantSchema }),
 
   authenticate(),
+  authorize(TENANT_ADMIN_SCOPES, 'permission'),
   tenantController.updateTenant
 );
 
@@ -127,6 +142,7 @@ router.delete(
   '/:id',  validateRequest({ params: tenantIdParamsSchema }),
 
   authenticate(),
+  authorize(TENANT_ADMIN_SCOPES, 'permission'),
   tenantController.deleteTenant
 );
 

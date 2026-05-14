@@ -874,6 +874,72 @@ abstract class AppLocalizations {
   /// **'Save facility'**
   String get tenantFacilitySaveFacilityAction;
 
+  /// Searchable facility selector label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get tenantFacilityFacilitySelectLabel;
+
+  /// Create setup record button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get tenantFacilityCreateAction;
+
+  /// Save setup record button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get tenantFacilitySaveAction;
+
+  /// Edit setup record action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get tenantFacilityEditAction;
+
+  /// Delete setup record action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get tenantFacilityDeleteAction;
+
+  /// Confirm delete setup record button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get tenantFacilityDeleteConfirmAction;
+
+  /// Setup record deletion confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete record'**
+  String get tenantFacilityDeleteConfirmationTitle;
+
+  /// Setup record deletion confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'This setup record will be removed.'**
+  String get tenantFacilityDeleteConfirmationBody;
+
+  /// Optional select empty value label.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get tenantFacilityNoSelectionLabel;
+
+  /// Active status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get tenantFacilityStatusActive;
+
+  /// Inactive status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get tenantFacilityStatusInactive;
+
   /// Branches setup section title.
   ///
   /// In en, this message translates to:
@@ -898,11 +964,29 @@ abstract class AppLocalizations {
   /// **'Branch name'**
   String get tenantFacilityBranchNameLabel;
 
+  /// Branches list subheading.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch records'**
+  String get tenantFacilityBranchesListTitle;
+
   /// Add branch button label.
   ///
   /// In en, this message translates to:
   /// **'Add branch'**
   String get tenantFacilityAddBranchAction;
+
+  /// Add branch modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add branch'**
+  String get tenantFacilityAddBranchTitle;
+
+  /// Edit branch modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit branch'**
+  String get tenantFacilityEditBranchTitle;
 
   /// Departments and units setup section title.
   ///
@@ -928,6 +1012,18 @@ abstract class AppLocalizations {
   /// **'No units have been added.'**
   String get tenantFacilityNoUnits;
 
+  /// Departments list subheading.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments'**
+  String get tenantFacilityDepartmentsListTitle;
+
+  /// Units list subheading.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get tenantFacilityUnitsListTitle;
+
   /// Department name field label.
   ///
   /// In en, this message translates to:
@@ -945,6 +1041,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Department type'**
   String get tenantFacilityDepartmentTypeLabel;
+
+  /// Department branch selection field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get tenantFacilityDepartmentBranchLabel;
 
   /// Clinical department type label.
   ///
@@ -982,6 +1084,18 @@ abstract class AppLocalizations {
   /// **'Add department'**
   String get tenantFacilityAddDepartmentAction;
 
+  /// Add department modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add department'**
+  String get tenantFacilityAddDepartmentTitle;
+
+  /// Edit department modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit department'**
+  String get tenantFacilityEditDepartmentTitle;
+
   /// Unit name field label.
   ///
   /// In en, this message translates to:
@@ -999,6 +1113,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add unit'**
   String get tenantFacilityAddUnitAction;
+
+  /// Add unit modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add unit'**
+  String get tenantFacilityAddUnitTitle;
+
+  /// Edit unit modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit unit'**
+  String get tenantFacilityEditUnitTitle;
 
   /// Rooms wards and beds section title.
   ///
@@ -1029,6 +1155,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Beds'**
   String get tenantFacilityBedsLabel;
+
+  /// Empty ward list label.
+  ///
+  /// In en, this message translates to:
+  /// **'No wards have been added.'**
+  String get tenantFacilityNoWards;
+
+  /// Empty room list label.
+  ///
+  /// In en, this message translates to:
+  /// **'No rooms have been added.'**
+  String get tenantFacilityNoRooms;
+
+  /// Empty bed list label.
+  ///
+  /// In en, this message translates to:
+  /// **'No beds have been added.'**
+  String get tenantFacilityNoBeds;
+
+  /// Add ward button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ward'**
+  String get tenantFacilityAddWardAction;
+
+  /// Add ward modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ward'**
+  String get tenantFacilityAddWardTitle;
+
+  /// Edit ward modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit ward'**
+  String get tenantFacilityEditWardTitle;
+
+  /// Ward name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward name'**
+  String get tenantFacilityWardNameLabel;
+
+  /// Ward type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward type'**
+  String get tenantFacilityWardTypeLabel;
+
+  /// Ward department selection field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get tenantFacilityWardDepartmentLabel;
+
+  /// General ward type label.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get tenantFacilityWardTypeGeneral;
+
+  /// ICU ward type label.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU'**
+  String get tenantFacilityWardTypeIcu;
+
+  /// Maternity ward type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Maternity'**
+  String get tenantFacilityWardTypeMaternity;
+
+  /// Pediatric ward type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pediatric'**
+  String get tenantFacilityWardTypePediatric;
+
+  /// Surgical ward type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Surgical'**
+  String get tenantFacilityWardTypeSurgical;
+
+  /// Other ward type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get tenantFacilityWardTypeOther;
+
+  /// Add room button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add room'**
+  String get tenantFacilityAddRoomAction;
+
+  /// Add room modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add room'**
+  String get tenantFacilityAddRoomTitle;
+
+  /// Edit room modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit room'**
+  String get tenantFacilityEditRoomTitle;
+
+  /// Room name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Room name'**
+  String get tenantFacilityRoomNameLabel;
+
+  /// Room ward selection field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get tenantFacilityRoomWardLabel;
+
+  /// Room floor field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Floor'**
+  String get tenantFacilityRoomFloorLabel;
+
+  /// Add bed button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add bed'**
+  String get tenantFacilityAddBedAction;
+
+  /// Add bed modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add bed'**
+  String get tenantFacilityAddBedTitle;
+
+  /// Edit bed modal title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit bed'**
+  String get tenantFacilityEditBedTitle;
+
+  /// Bed label field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed label'**
+  String get tenantFacilityBedLabelLabel;
+
+  /// Bed ward selection field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get tenantFacilityBedWardLabel;
+
+  /// Bed room selection field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get tenantFacilityBedRoomLabel;
+
+  /// Bed status field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed status'**
+  String get tenantFacilityBedStatusLabel;
+
+  /// Available bed status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get tenantFacilityBedStatusAvailable;
+
+  /// Occupied bed status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupied'**
+  String get tenantFacilityBedStatusOccupied;
+
+  /// Reserved bed status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserved'**
+  String get tenantFacilityBedStatusReserved;
+
+  /// Out of service bed status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of service'**
+  String get tenantFacilityBedStatusOutOfService;
 
   /// Snackbar shown after setup changes are saved.
   ///

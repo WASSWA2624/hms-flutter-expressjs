@@ -11,13 +11,38 @@ const express = require('express');
 const router = express.Router();
 const contactController = require('@controllers/contact/contact.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createContactSchema,
   updateContactSchema,
   contactIdParamsSchema,
   listContactsQuerySchema
 } = require('@validations/contact/contact.schema');
+
+const CONTACT_READ_SCOPES = [
+  PERMISSIONS.PROFILE_READ,
+  PERMISSIONS.PATIENT_READ,
+  PERMISSIONS.OPERATIONS_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const CONTACT_WRITE_SCOPES = [
+  PERMISSIONS.PROFILE_UPDATE,
+  PERMISSIONS.PATIENT_WRITE,
+  PERMISSIONS.OPERATIONS_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const CONTACT_DELETE_SCOPES = [
+  PERMISSIONS.PATIENT_DELETE,
+  PERMISSIONS.OPERATIONS_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List contacts with pagination and filters
@@ -48,6 +73,7 @@ router.get(
   '/',  validateRequest({ query: listContactsQuerySchema }),
 
   authenticate(),
+  authorize(CONTACT_READ_SCOPES, 'permission'),
   contactController.listContacts
 );
 
@@ -68,6 +94,7 @@ router.get(
   '/:id',  validateRequest({ params: contactIdParamsSchema }),
 
   authenticate(),
+  authorize(CONTACT_READ_SCOPES, 'permission'),
   contactController.getContactById
 );
 
@@ -98,6 +125,7 @@ router.post(
   '/',  validateRequest({ body: createContactSchema }),
 
   authenticate(),
+  authorize(CONTACT_WRITE_SCOPES, 'permission'),
   contactController.createContact
 );
 
@@ -128,6 +156,7 @@ router.put(
   '/:id',  validateRequest({ params: contactIdParamsSchema, body: updateContactSchema }),
 
   authenticate(),
+  authorize(CONTACT_WRITE_SCOPES, 'permission'),
   contactController.updateContact
 );
 
@@ -148,6 +177,7 @@ router.delete(
   '/:id',  validateRequest({ params: contactIdParamsSchema }),
 
   authenticate(),
+  authorize(CONTACT_DELETE_SCOPES, 'permission'),
   contactController.deleteContact
 );
 

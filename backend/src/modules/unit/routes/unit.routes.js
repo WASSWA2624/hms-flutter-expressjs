@@ -11,13 +11,27 @@ const express = require('express');
 const router = express.Router();
 const unitController = require('@controllers/unit/unit.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createUnitSchema,
   updateUnitSchema,
   unitIdParamsSchema,
   listUnitsQuerySchema
 } = require('@validations/unit/unit.schema');
+
+const SETUP_READ_SCOPES = [
+  PERMISSIONS.CLINICAL_READ,
+  PERMISSIONS.OPERATIONS_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const SETUP_ADMIN_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List units with pagination and filters
@@ -43,6 +57,7 @@ router.get(
   '/',  validateRequest({ query: listUnitsQuerySchema }),
 
   authenticate(),
+  authorize(SETUP_READ_SCOPES, 'permission'),
   unitController.listUnits
 );
 
@@ -63,6 +78,7 @@ router.get(
   '/:id',  validateRequest({ params: unitIdParamsSchema }),
 
   authenticate(),
+  authorize(SETUP_READ_SCOPES, 'permission'),
   unitController.getUnitById
 );
 
@@ -88,6 +104,7 @@ router.post(
   '/',  validateRequest({ body: createUnitSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   unitController.createUnit
 );
 
@@ -113,6 +130,7 @@ router.put(
   '/:id',  validateRequest({ params: unitIdParamsSchema, body: updateUnitSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   unitController.updateUnit
 );
 
@@ -133,6 +151,7 @@ router.delete(
   '/:id',  validateRequest({ params: unitIdParamsSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   unitController.deleteUnit
 );
 

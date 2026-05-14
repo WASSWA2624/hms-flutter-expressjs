@@ -66,7 +66,10 @@ const listRooms = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
   if (wardId !== undefined) repoFilters.ward_id = wardId;
 
   if (filters.search) {
-    repoFilters.name = { contains: String(filters.search || '').trim() };
+    repoFilters.name = {
+      contains: String(filters.search || '').trim(),
+      mode: 'insensitive',
+    };
   }
 
   const skip = (page - 1) * limit;

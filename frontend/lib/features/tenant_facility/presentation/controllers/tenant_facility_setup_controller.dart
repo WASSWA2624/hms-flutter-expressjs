@@ -19,16 +19,27 @@ final tenantFacilitySetupSubmissionProvider =
 
 final class TenantFacilitySetupController
     extends AsyncNotifier<Result<FacilitySetupSnapshot>> {
+  String? _selectedFacilityId;
+
   @override
   Future<Result<FacilitySetupSnapshot>> build() {
-    return ref.read(tenantFacilityRepositoryProvider).loadSetup();
+    return ref
+        .read(tenantFacilityRepositoryProvider)
+        .loadSetup(facilityId: _selectedFacilityId);
   }
 
   Future<void> refresh() async {
     state = const AsyncValue<Result<FacilitySetupSnapshot>>.loading();
     state = await AsyncValue.guard(
-      () => ref.read(tenantFacilityRepositoryProvider).loadSetup(),
+      () => ref
+          .read(tenantFacilityRepositoryProvider)
+          .loadSetup(facilityId: _selectedFacilityId),
     );
+  }
+
+  Future<void> selectFacility(String facilityId) async {
+    _selectedFacilityId = facilityId;
+    await refresh();
   }
 }
 
@@ -116,14 +127,16 @@ final class TenantFacilitySetupSubmissionController
     });
   }
 
-  Future<bool> createBranch({
+  Future<bool> saveBranch({
+    String? id,
     required String tenantId,
     required String facilityId,
     required String name,
     required bool isActive,
   }) {
     return _submit(
-      () => _repository.createBranch(
+      () => _repository.saveBranch(
+        id: id,
         tenantId: tenantId,
         facilityId: facilityId,
         name: name,
@@ -132,27 +145,40 @@ final class TenantFacilitySetupSubmissionController
     );
   }
 
-  Future<bool> createDepartment({
+  Future<bool> deleteBranch(String id) {
+    return _submit(() => _repository.deleteBranch(id));
+  }
+
+  Future<bool> saveDepartment({
+    String? id,
     required String tenantId,
     required String facilityId,
     required String name,
     String? shortName,
+    String? branchId,
     required DepartmentSetupType type,
     required bool isActive,
   }) {
     return _submit(
-      () => _repository.createDepartment(
+      () => _repository.saveDepartment(
+        id: id,
         tenantId: tenantId,
         facilityId: facilityId,
         name: name,
         shortName: shortName,
+        branchId: branchId,
         type: type,
         isActive: isActive,
       ),
     );
   }
 
-  Future<bool> createUnit({
+  Future<bool> deleteDepartment(String id) {
+    return _submit(() => _repository.deleteDepartment(id));
+  }
+
+  Future<bool> saveUnit({
+    String? id,
     required String tenantId,
     required String facilityId,
     required String name,
@@ -160,7 +186,8 @@ final class TenantFacilitySetupSubmissionController
     required bool isActive,
   }) {
     return _submit(
-      () => _repository.createUnit(
+      () => _repository.saveUnit(
+        id: id,
         tenantId: tenantId,
         facilityId: facilityId,
         name: name,
@@ -168,6 +195,86 @@ final class TenantFacilitySetupSubmissionController
         isActive: isActive,
       ),
     );
+  }
+
+  Future<bool> deleteUnit(String id) {
+    return _submit(() => _repository.deleteUnit(id));
+  }
+
+  Future<bool> saveWard({
+    String? id,
+    required String tenantId,
+    required String facilityId,
+    required String name,
+    required WardSetupType type,
+    String? departmentId,
+    required bool isActive,
+  }) {
+    return _submit(
+      () => _repository.saveWard(
+        id: id,
+        tenantId: tenantId,
+        facilityId: facilityId,
+        name: name,
+        type: type,
+        departmentId: departmentId,
+        isActive: isActive,
+      ),
+    );
+  }
+
+  Future<bool> deleteWard(String id) {
+    return _submit(() => _repository.deleteWard(id));
+  }
+
+  Future<bool> saveRoom({
+    String? id,
+    required String tenantId,
+    required String facilityId,
+    required String name,
+    String? wardId,
+    String? floor,
+  }) {
+    return _submit(
+      () => _repository.saveRoom(
+        id: id,
+        tenantId: tenantId,
+        facilityId: facilityId,
+        name: name,
+        wardId: wardId,
+        floor: floor,
+      ),
+    );
+  }
+
+  Future<bool> deleteRoom(String id) {
+    return _submit(() => _repository.deleteRoom(id));
+  }
+
+  Future<bool> saveBed({
+    String? id,
+    required String tenantId,
+    required String facilityId,
+    required String wardId,
+    required String label,
+    required BedSetupStatus status,
+    String? roomId,
+  }) {
+    return _submit(
+      () => _repository.saveBed(
+        id: id,
+        tenantId: tenantId,
+        facilityId: facilityId,
+        wardId: wardId,
+        label: label,
+        status: status,
+        roomId: roomId,
+      ),
+    );
+  }
+
+  Future<bool> deleteBed(String id) {
+    return _submit(() => _repository.deleteBed(id));
   }
 
   TenantFacilityRepository get _repository {

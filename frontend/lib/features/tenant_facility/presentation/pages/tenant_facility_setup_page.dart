@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -86,7 +84,10 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
               snapshot: snapshot,
               canSubmit: canManageFacility && snapshot.facility != null,
             ),
-            _RoomsWardsBedsSection(snapshot: snapshot),
+            _RoomsWardsBedsSection(
+              snapshot: snapshot,
+              canSubmit: canManageFacility && snapshot.facility != null,
+            ),
           ],
         ),
       ],
@@ -444,6 +445,29 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
+            if (widget.snapshot.facilities.length > 1)
+              AppSelectField<String>.searchable(
+                value: widget.snapshot.facility?.id,
+                enabled: !submission.isSubmitting,
+                labelText: l10n.tenantFacilityFacilitySelectLabel,
+                menuHeight: 320,
+                options: <AppSelectOption<String>>[
+                  for (final FacilityProfile facility
+                      in widget.snapshot.facilities)
+                    AppSelectOption<String>(
+                      value: facility.id,
+                      label: facility.name,
+                    ),
+                ],
+                onChanged: (String? value) {
+                  if (value == null || value == widget.snapshot.facility?.id) {
+                    return;
+                  }
+                  ref
+                      .read(tenantFacilitySetupControllerProvider.notifier)
+                      .selectFacility(value);
+                },
+              ),
             AppTextField(
               controller: _nameController,
               enabled: canEdit,
@@ -564,112 +588,47 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   }
 }
 
-class _BranchSetupSection extends ConsumerStatefulWidget {
+const String _noneSelection = '__none__';
+
+class _BranchSetupSection extends ConsumerWidget {
   const _BranchSetupSection({required this.snapshot, required this.canSubmit});
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
 
   @override
-  ConsumerState<_BranchSetupSection> createState() =>
-      _BranchSetupSectionState();
-}
-
-class _BranchSetupSectionState extends ConsumerState<_BranchSetupSection> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  bool _isActive = true;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit = widget.canSubmit && !submission.isSubmitting;
+    final bool canEdit = canSubmit && !submission.isSubmitting;
 
     return AppScreenSection(
       title: l10n.tenantFacilityBranchesSectionTitle,
       body: l10n.tenantFacilityBranchesSectionBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _InlineList(
-            emptyLabel: l10n.tenantFacilityNoBranches,
-            labels: widget.snapshot.branches
-                .map((BranchProfile branch) => branch.name)
-                .toList(growable: false),
-          ),
-          SizedBox(height: Theme.of(context).spacing.lg),
-          Form(
-            key: _formKey,
-            child: AppFormSection(
-              density: AppFormSectionDensity.compact,
-              children: <Widget>[
-                AppTextField(
-                  controller: _nameController,
-                  enabled: canEdit,
-                  labelText: l10n.tenantFacilityBranchNameLabel,
-                  textCapitalization: TextCapitalization.words,
-                  validator: AppValidators.requiredText(
-                    l10n.validationRequired,
-                  ),
-                ),
-                AppSwitchField(
-                  title: l10n.tenantFacilityActiveLabel,
-                  value: _isActive,
-                  enabled: canEdit,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
-                ),
-                _SubmitButton(
-                  enabled: widget.canSubmit,
-                  isLoading: submission.isSubmitting,
-                  label: l10n.tenantFacilityAddBranchAction,
-                  onPressed: _submit,
-                ),
-              ],
-            ),
-          ),
-        ],
+      child: _EntityGroup<BranchProfile>(
+        title: l10n.tenantFacilityBranchesListTitle,
+        items: snapshot.branches,
+        emptyLabel: l10n.tenantFacilityNoBranches,
+        addLabel: l10n.tenantFacilityAddBranchAction,
+        canEdit: canEdit,
+        onAdd: () => _openBranchDialog(context, snapshot),
+        titleBuilder: (BranchProfile branch) => branch.name,
+        subtitleBuilder: (BranchProfile branch) =>
+            _activeStatusLabel(l10n, branch.isActive),
+        onEdit: (BranchProfile branch) =>
+            _openBranchDialog(context, snapshot, branch: branch),
+        onDelete: (BranchProfile branch) => _deleteEntity(
+          context: context,
+          deleteAction: () => ref
+              .read(tenantFacilitySetupSubmissionProvider.notifier)
+              .deleteBranch(branch.id),
+        ),
       ),
     );
   }
-
-  Future<void> _submit() async {
-    if (_formKey.currentState?.validate() != true) {
-      return;
-    }
-
-    final TenantProfile? tenant = widget.snapshot.tenant;
-    final FacilityProfile? facility = widget.snapshot.facility;
-    if (tenant == null || facility == null) {
-      return;
-    }
-
-    final bool saved = await ref
-        .read(tenantFacilitySetupSubmissionProvider.notifier)
-        .createBranch(
-          tenantId: tenant.id,
-          facilityId: facility.id,
-          name: _nameController.text,
-          isActive: _isActive,
-        );
-    if (saved && mounted) {
-      _nameController.clear();
-      _showSaved(context);
-    }
-  }
 }
 
-class _DepartmentUnitSection extends ConsumerStatefulWidget {
+class _DepartmentUnitSection extends ConsumerWidget {
   const _DepartmentUnitSection({
     required this.snapshot,
     required this.canSubmit,
@@ -679,228 +638,155 @@ class _DepartmentUnitSection extends ConsumerStatefulWidget {
   final bool canSubmit;
 
   @override
-  ConsumerState<_DepartmentUnitSection> createState() =>
-      _DepartmentUnitSectionState();
-}
-
-class _DepartmentUnitSectionState
-    extends ConsumerState<_DepartmentUnitSection> {
-  final _departmentFormKey = GlobalKey<FormState>();
-  final _unitFormKey = GlobalKey<FormState>();
-  final _departmentNameController = TextEditingController();
-  final _departmentShortNameController = TextEditingController();
-  final _unitNameController = TextEditingController();
-  DepartmentSetupType _departmentType = DepartmentSetupType.clinical;
-  String? _unitDepartmentId;
-  bool _departmentActive = true;
-  bool _unitActive = true;
-
-  @override
-  void dispose() {
-    _departmentNameController.dispose();
-    _departmentShortNameController.dispose();
-    _unitNameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit = widget.canSubmit && !submission.isSubmitting;
+    final bool canEdit = canSubmit && !submission.isSubmitting;
 
     return AppScreenSection(
       title: l10n.tenantFacilityDepartmentsSectionTitle,
       body: l10n.tenantFacilityDepartmentsSectionBody,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _InlineList(
+          _EntityGroup<DepartmentProfile>(
+            title: l10n.tenantFacilityDepartmentsListTitle,
+            items: snapshot.departments,
             emptyLabel: l10n.tenantFacilityNoDepartments,
-            labels: widget.snapshot.departments
-                .map((DepartmentProfile department) => department.name)
-                .toList(growable: false),
-          ),
-          SizedBox(height: theme.spacing.lg),
-          Form(
-            key: _departmentFormKey,
-            child: AppFormSection(
-              density: AppFormSectionDensity.compact,
-              children: <Widget>[
-                AppTextField(
-                  controller: _departmentNameController,
-                  enabled: canEdit,
-                  labelText: l10n.tenantFacilityDepartmentNameLabel,
-                  textCapitalization: TextCapitalization.words,
-                  validator: AppValidators.requiredText(
-                    l10n.validationRequired,
-                  ),
-                ),
-                AppTextField(
-                  controller: _departmentShortNameController,
-                  enabled: canEdit,
-                  labelText: l10n.tenantFacilityDepartmentShortNameLabel,
-                ),
-                AppSelectField<DepartmentSetupType>(
-                  value: _departmentType,
-                  enabled: canEdit,
-                  labelText: l10n.tenantFacilityDepartmentTypeLabel,
-                  options: <AppSelectOption<DepartmentSetupType>>[
-                    for (final type in DepartmentSetupType.values)
-                      AppSelectOption<DepartmentSetupType>(
-                        value: type,
-                        label: _departmentTypeLabel(l10n, type),
-                      ),
-                  ],
-                  onChanged: (DepartmentSetupType? value) {
-                    if (value != null) {
-                      setState(() {
-                        _departmentType = value;
-                      });
-                    }
-                  },
-                ),
-                AppSwitchField(
-                  title: l10n.tenantFacilityActiveLabel,
-                  value: _departmentActive,
-                  enabled: canEdit,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _departmentActive = value;
-                    });
-                  },
-                ),
-                _SubmitButton(
-                  enabled: widget.canSubmit,
-                  isLoading: submission.isSubmitting,
-                  label: l10n.tenantFacilityAddDepartmentAction,
-                  onPressed: _submitDepartment,
-                ),
-              ],
+            addLabel: l10n.tenantFacilityAddDepartmentAction,
+            canEdit: canEdit,
+            onAdd: () => _openDepartmentDialog(context, snapshot),
+            titleBuilder: (DepartmentProfile department) => department.name,
+            subtitleBuilder: (DepartmentProfile department) =>
+                _departmentSubtitle(l10n, snapshot, department),
+            onEdit: (DepartmentProfile department) => _openDepartmentDialog(
+              context,
+              snapshot,
+              department: department,
+            ),
+            onDelete: (DepartmentProfile department) => _deleteEntity(
+              context: context,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteDepartment(department.id),
             ),
           ),
-          SizedBox(height: theme.spacing.xl),
-          _InlineList(
-            emptyLabel: l10n.tenantFacilityNoUnits,
-            labels: widget.snapshot.units
-                .map((UnitProfile unit) => unit.name)
-                .toList(growable: false),
-          ),
           SizedBox(height: theme.spacing.lg),
-          Form(
-            key: _unitFormKey,
-            child: AppFormSection(
-              density: AppFormSectionDensity.compact,
-              children: <Widget>[
-                AppTextField(
-                  controller: _unitNameController,
-                  enabled: canEdit,
-                  labelText: l10n.tenantFacilityUnitNameLabel,
-                  textCapitalization: TextCapitalization.words,
-                  validator: AppValidators.requiredText(
-                    l10n.validationRequired,
-                  ),
-                ),
-                AppSelectField<String>(
-                  value: _unitDepartmentId,
-                  enabled: canEdit && widget.snapshot.departments.isNotEmpty,
-                  labelText: l10n.tenantFacilityUnitDepartmentLabel,
-                  options: <AppSelectOption<String>>[
-                    for (final DepartmentProfile department
-                        in widget.snapshot.departments)
-                      AppSelectOption<String>(
-                        value: department.id,
-                        label: department.name,
-                      ),
-                  ],
-                  onChanged: (String? value) {
-                    setState(() {
-                      _unitDepartmentId = value;
-                    });
-                  },
-                ),
-                AppSwitchField(
-                  title: l10n.tenantFacilityActiveLabel,
-                  value: _unitActive,
-                  enabled: canEdit,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _unitActive = value;
-                    });
-                  },
-                ),
-                _SubmitButton(
-                  enabled: widget.canSubmit,
-                  isLoading: submission.isSubmitting,
-                  label: l10n.tenantFacilityAddUnitAction,
-                  onPressed: _submitUnit,
-                ),
-              ],
+          _EntityGroup<UnitProfile>(
+            title: l10n.tenantFacilityUnitsListTitle,
+            items: snapshot.units,
+            emptyLabel: l10n.tenantFacilityNoUnits,
+            addLabel: l10n.tenantFacilityAddUnitAction,
+            canEdit: canEdit,
+            onAdd: () => _openUnitDialog(context, snapshot),
+            titleBuilder: (UnitProfile unit) => unit.name,
+            subtitleBuilder: (UnitProfile unit) =>
+                _unitSubtitle(l10n, snapshot, unit),
+            onEdit: (UnitProfile unit) =>
+                _openUnitDialog(context, snapshot, unit: unit),
+            onDelete: (UnitProfile unit) => _deleteEntity(
+              context: context,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteUnit(unit.id),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Future<void> _submitDepartment() async {
-    if (_departmentFormKey.currentState?.validate() != true) {
-      return;
-    }
+class _RoomsWardsBedsSection extends ConsumerWidget {
+  const _RoomsWardsBedsSection({
+    required this.snapshot,
+    required this.canSubmit,
+  });
 
-    final TenantProfile? tenant = widget.snapshot.tenant;
-    final FacilityProfile? facility = widget.snapshot.facility;
-    if (tenant == null || facility == null) {
-      return;
-    }
+  final FacilitySetupSnapshot snapshot;
+  final bool canSubmit;
 
-    final bool saved = await ref
-        .read(tenantFacilitySetupSubmissionProvider.notifier)
-        .createDepartment(
-          tenantId: tenant.id,
-          facilityId: facility.id,
-          name: _departmentNameController.text,
-          shortName: _departmentShortNameController.text,
-          type: _departmentType,
-          isActive: _departmentActive,
-        );
-    if (saved && mounted) {
-      _departmentNameController.clear();
-      _departmentShortNameController.clear();
-      _showSaved(context);
-    }
-  }
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool canEdit = canSubmit && !submission.isSubmitting;
 
-  Future<void> _submitUnit() async {
-    if (_unitFormKey.currentState?.validate() != true) {
-      return;
-    }
-
-    final TenantProfile? tenant = widget.snapshot.tenant;
-    final FacilityProfile? facility = widget.snapshot.facility;
-    if (tenant == null || facility == null) {
-      return;
-    }
-
-    final bool saved = await ref
-        .read(tenantFacilitySetupSubmissionProvider.notifier)
-        .createUnit(
-          tenantId: tenant.id,
-          facilityId: facility.id,
-          name: _unitNameController.text,
-          departmentId: _unitDepartmentId,
-          isActive: _unitActive,
-        );
-    if (saved && mounted) {
-      _unitNameController.clear();
-      _showSaved(context);
-    }
+    return AppScreenSection(
+      title: l10n.tenantFacilityLocationsSectionTitle,
+      body: l10n.tenantFacilityLocationsSectionBody,
+      child: Column(
+        children: <Widget>[
+          _CountSummary(snapshot: snapshot),
+          SizedBox(height: theme.spacing.lg),
+          _EntityGroup<WardProfile>(
+            title: l10n.tenantFacilityWardsLabel,
+            items: snapshot.wards,
+            emptyLabel: l10n.tenantFacilityNoWards,
+            addLabel: l10n.tenantFacilityAddWardAction,
+            canEdit: canEdit,
+            onAdd: () => _openWardDialog(context, snapshot),
+            titleBuilder: (WardProfile ward) => ward.name,
+            subtitleBuilder: (WardProfile ward) =>
+                _wardSubtitle(l10n, snapshot, ward),
+            onEdit: (WardProfile ward) =>
+                _openWardDialog(context, snapshot, ward: ward),
+            onDelete: (WardProfile ward) => _deleteEntity(
+              context: context,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteWard(ward.id),
+            ),
+          ),
+          SizedBox(height: theme.spacing.lg),
+          _EntityGroup<RoomProfile>(
+            title: l10n.tenantFacilityRoomsLabel,
+            items: snapshot.rooms,
+            emptyLabel: l10n.tenantFacilityNoRooms,
+            addLabel: l10n.tenantFacilityAddRoomAction,
+            canEdit: canEdit && snapshot.wards.isNotEmpty,
+            onAdd: () => _openRoomDialog(context, snapshot),
+            titleBuilder: (RoomProfile room) => room.name,
+            subtitleBuilder: (RoomProfile room) =>
+                _roomSubtitle(l10n, snapshot, room),
+            onEdit: (RoomProfile room) =>
+                _openRoomDialog(context, snapshot, room: room),
+            onDelete: (RoomProfile room) => _deleteEntity(
+              context: context,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteRoom(room.id),
+            ),
+          ),
+          SizedBox(height: theme.spacing.lg),
+          _EntityGroup<BedProfile>(
+            title: l10n.tenantFacilityBedsLabel,
+            items: snapshot.beds,
+            emptyLabel: l10n.tenantFacilityNoBeds,
+            addLabel: l10n.tenantFacilityAddBedAction,
+            canEdit: canEdit && snapshot.wards.isNotEmpty,
+            onAdd: () => _openBedDialog(context, snapshot),
+            titleBuilder: (BedProfile bed) => bed.label,
+            subtitleBuilder: (BedProfile bed) =>
+                _bedSubtitle(l10n, snapshot, bed),
+            onEdit: (BedProfile bed) =>
+                _openBedDialog(context, snapshot, bed: bed),
+            onDelete: (BedProfile bed) => _deleteEntity(
+              context: context,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteBed(bed.id),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _RoomsWardsBedsSection extends StatelessWidget {
-  const _RoomsWardsBedsSection({required this.snapshot});
+class _CountSummary extends StatelessWidget {
+  const _CountSummary({required this.snapshot});
 
   final FacilitySetupSnapshot snapshot;
 
@@ -908,27 +794,23 @@ class _RoomsWardsBedsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
 
-    return AppScreenSection(
-      title: l10n.tenantFacilityLocationsSectionTitle,
-      body: l10n.tenantFacilityLocationsSectionBody,
-      child: Wrap(
-        spacing: Theme.of(context).spacing.sm,
-        runSpacing: Theme.of(context).spacing.sm,
-        children: <Widget>[
-          _CountTile(
-            label: l10n.tenantFacilityRoomsLabel,
-            count: snapshot.roomsCount,
-          ),
-          _CountTile(
-            label: l10n.tenantFacilityWardsLabel,
-            count: snapshot.wardsCount,
-          ),
-          _CountTile(
-            label: l10n.tenantFacilityBedsLabel,
-            count: snapshot.bedsCount,
-          ),
-        ],
-      ),
+    return Wrap(
+      spacing: Theme.of(context).spacing.sm,
+      runSpacing: Theme.of(context).spacing.sm,
+      children: <Widget>[
+        _CountTile(
+          label: l10n.tenantFacilityRoomsLabel,
+          count: snapshot.roomsCount,
+        ),
+        _CountTile(
+          label: l10n.tenantFacilityWardsLabel,
+          count: snapshot.wardsCount,
+        ),
+        _CountTile(
+          label: l10n.tenantFacilityBedsLabel,
+          count: snapshot.bedsCount,
+        ),
+      ],
     );
   }
 }
@@ -972,59 +854,1286 @@ class _CountTile extends StatelessWidget {
   }
 }
 
-class _InlineList extends StatelessWidget {
-  const _InlineList({required this.emptyLabel, required this.labels});
+class _EntityGroup<T> extends StatelessWidget {
+  const _EntityGroup({
+    required this.title,
+    required this.items,
+    required this.emptyLabel,
+    required this.addLabel,
+    required this.canEdit,
+    required this.onAdd,
+    required this.titleBuilder,
+    required this.subtitleBuilder,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
+  final String title;
+  final List<T> items;
   final String emptyLabel;
-  final List<String> labels;
+  final String addLabel;
+  final bool canEdit;
+  final VoidCallback onAdd;
+  final String Function(T item) titleBuilder;
+  final String Function(T item) subtitleBuilder;
+  final ValueChanged<T> onEdit;
+  final ValueChanged<T> onDelete;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final double maxChipWidth = switch (breakpoint) {
-      AppBreakpoint.xs => double.infinity,
-      AppBreakpoint.sm => 220,
-      _ => 260,
-    };
 
-    if (labels.isEmpty) {
-      return Text(
-        emptyLabel,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      );
-    }
-
-    return Wrap(
-      spacing: theme.spacing.xs,
-      runSpacing: theme.spacing.xs,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        for (final String label in labels.take(6))
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxChipWidth),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.outlineVariant),
+        Row(
+          children: <Widget>[
+            Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
+            if (canEdit)
+              AppButton.secondary(
+                label: addLabel,
+                leadingIcon: Icons.add,
+                onPressed: onAdd,
               ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.xs,
-                ),
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge,
-                ),
-              ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.sm),
+        if (items.isEmpty)
+          Text(
+            emptyLabel,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
+          )
+        else
+          Column(
+            children: <Widget>[
+              for (final T item in items) ...<Widget>[
+                _EntityRow(
+                  title: titleBuilder(item),
+                  subtitle: subtitleBuilder(item),
+                  canEdit: canEdit,
+                  onEdit: () => onEdit(item),
+                  onDelete: () => onDelete(item),
+                ),
+                if (item != items.last) const Divider(height: 1),
+              ],
+            ],
           ),
       ],
     );
   }
+}
+
+class _EntityRow extends StatelessWidget {
+  const _EntityRow({
+    required this.title,
+    required this.subtitle,
+    required this.canEdit,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool canEdit;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title, style: theme.textTheme.titleSmall),
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (canEdit) ...<Widget>[
+            SizedBox(width: theme.spacing.sm),
+            AppIconButton(
+              icon: Icons.edit_outlined,
+              semanticLabel: l10n.tenantFacilityEditAction,
+              onPressed: onEdit,
+            ),
+            AppIconButton(
+              icon: Icons.delete_outline,
+              semanticLabel: l10n.tenantFacilityDeleteAction,
+              onPressed: onDelete,
+              color: theme.statusColors.error,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BranchFormDialog extends ConsumerStatefulWidget {
+  const _BranchFormDialog({required this.snapshot, this.branch});
+
+  final FacilitySetupSnapshot snapshot;
+  final BranchProfile? branch;
+
+  @override
+  ConsumerState<_BranchFormDialog> createState() => _BranchFormDialogState();
+}
+
+class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late bool _isActive;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.branch?.name);
+    _isActive = widget.branch?.isActive ?? true;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isEditing = widget.branch != null;
+    final bool canEdit = !submission.isSubmitting;
+
+    return AppDialog(
+      title: Text(
+        isEditing
+            ? l10n.tenantFacilityEditBranchTitle
+            : l10n.tenantFacilityAddBranchTitle,
+      ),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppTextField(
+              controller: _nameController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityBranchNameLabel,
+              textCapitalization: TextCapitalization.words,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppSwitchField(
+              title: l10n.tenantFacilityActiveLabel,
+              value: _isActive,
+              enabled: canEdit,
+              onChanged: (bool value) {
+                setState(() {
+                  _isActive = value;
+                });
+              },
+            ),
+            _SubmissionFailureText(),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: canEdit,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: isEditing
+              ? l10n.tenantFacilitySaveAction
+              : l10n.tenantFacilityCreateAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: submission.isSubmitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    final TenantProfile? tenant = widget.snapshot.tenant;
+    final FacilityProfile? facility = widget.snapshot.facility;
+    if (tenant == null || facility == null) {
+      return;
+    }
+
+    final bool saved = await ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveBranch(
+          id: widget.branch?.id,
+          tenantId: tenant.id,
+          facilityId: facility.id,
+          name: _nameController.text,
+          isActive: _isActive,
+        );
+    if (saved && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+class _DepartmentFormDialog extends ConsumerStatefulWidget {
+  const _DepartmentFormDialog({required this.snapshot, this.department});
+
+  final FacilitySetupSnapshot snapshot;
+  final DepartmentProfile? department;
+
+  @override
+  ConsumerState<_DepartmentFormDialog> createState() =>
+      _DepartmentFormDialogState();
+}
+
+class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _shortNameController;
+  late DepartmentSetupType _type;
+  late String _branchId;
+  late bool _isActive;
+
+  @override
+  void initState() {
+    super.initState();
+    final DepartmentProfile? department = widget.department;
+    _nameController = TextEditingController(text: department?.name);
+    _shortNameController = TextEditingController(text: department?.shortName);
+    _type = department?.type ?? DepartmentSetupType.clinical;
+    _branchId = department?.branchId ?? _noneSelection;
+    _isActive = department?.isActive ?? true;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _shortNameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isEditing = widget.department != null;
+    final bool canEdit = !submission.isSubmitting;
+
+    return AppDialog(
+      title: Text(
+        isEditing
+            ? l10n.tenantFacilityEditDepartmentTitle
+            : l10n.tenantFacilityAddDepartmentTitle,
+      ),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppTextField(
+              controller: _nameController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityDepartmentNameLabel,
+              textCapitalization: TextCapitalization.words,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppTextField(
+              controller: _shortNameController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityDepartmentShortNameLabel,
+            ),
+            AppSelectField<DepartmentSetupType>(
+              value: _type,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityDepartmentTypeLabel,
+              options: <AppSelectOption<DepartmentSetupType>>[
+                for (final type in DepartmentSetupType.values)
+                  AppSelectOption<DepartmentSetupType>(
+                    value: type,
+                    label: _departmentTypeLabel(l10n, type),
+                  ),
+              ],
+              onChanged: (DepartmentSetupType? value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() {
+                  _type = value;
+                });
+              },
+            ),
+            AppSelectField<String>.searchable(
+              value: _branchId,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityDepartmentBranchLabel,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: _noneSelection,
+                  label: l10n.tenantFacilityNoSelectionLabel,
+                ),
+                for (final BranchProfile branch in widget.snapshot.branches)
+                  AppSelectOption<String>(value: branch.id, label: branch.name),
+              ],
+              onChanged: (String? value) {
+                setState(() {
+                  _branchId = value ?? _noneSelection;
+                });
+              },
+            ),
+            AppSwitchField(
+              title: l10n.tenantFacilityActiveLabel,
+              value: _isActive,
+              enabled: canEdit,
+              onChanged: (bool value) {
+                setState(() {
+                  _isActive = value;
+                });
+              },
+            ),
+            _SubmissionFailureText(),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: canEdit,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: isEditing
+              ? l10n.tenantFacilitySaveAction
+              : l10n.tenantFacilityCreateAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: submission.isSubmitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    final TenantProfile? tenant = widget.snapshot.tenant;
+    final FacilityProfile? facility = widget.snapshot.facility;
+    if (tenant == null || facility == null) {
+      return;
+    }
+
+    final bool saved = await ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveDepartment(
+          id: widget.department?.id,
+          tenantId: tenant.id,
+          facilityId: facility.id,
+          name: _nameController.text,
+          shortName: _shortNameController.text,
+          branchId: _optionalSelection(_branchId),
+          type: _type,
+          isActive: _isActive,
+        );
+    if (saved && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+class _UnitFormDialog extends ConsumerStatefulWidget {
+  const _UnitFormDialog({required this.snapshot, this.unit});
+
+  final FacilitySetupSnapshot snapshot;
+  final UnitProfile? unit;
+
+  @override
+  ConsumerState<_UnitFormDialog> createState() => _UnitFormDialogState();
+}
+
+class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late String _departmentId;
+  late bool _isActive;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.unit?.name);
+    _departmentId = widget.unit?.departmentId ?? _noneSelection;
+    _isActive = widget.unit?.isActive ?? true;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isEditing = widget.unit != null;
+    final bool canEdit = !submission.isSubmitting;
+
+    return AppDialog(
+      title: Text(
+        isEditing
+            ? l10n.tenantFacilityEditUnitTitle
+            : l10n.tenantFacilityAddUnitTitle,
+      ),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppTextField(
+              controller: _nameController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityUnitNameLabel,
+              textCapitalization: TextCapitalization.words,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppSelectField<String>.searchable(
+              value: _departmentId,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityUnitDepartmentLabel,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: _noneSelection,
+                  label: l10n.tenantFacilityNoSelectionLabel,
+                ),
+                for (final DepartmentProfile department
+                    in widget.snapshot.departments)
+                  AppSelectOption<String>(
+                    value: department.id,
+                    label: department.name,
+                  ),
+              ],
+              onChanged: (String? value) {
+                setState(() {
+                  _departmentId = value ?? _noneSelection;
+                });
+              },
+            ),
+            AppSwitchField(
+              title: l10n.tenantFacilityActiveLabel,
+              value: _isActive,
+              enabled: canEdit,
+              onChanged: (bool value) {
+                setState(() {
+                  _isActive = value;
+                });
+              },
+            ),
+            _SubmissionFailureText(),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: canEdit,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: isEditing
+              ? l10n.tenantFacilitySaveAction
+              : l10n.tenantFacilityCreateAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: submission.isSubmitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    final TenantProfile? tenant = widget.snapshot.tenant;
+    final FacilityProfile? facility = widget.snapshot.facility;
+    if (tenant == null || facility == null) {
+      return;
+    }
+
+    final bool saved = await ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveUnit(
+          id: widget.unit?.id,
+          tenantId: tenant.id,
+          facilityId: facility.id,
+          name: _nameController.text,
+          departmentId: _optionalSelection(_departmentId),
+          isActive: _isActive,
+        );
+    if (saved && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+class _WardFormDialog extends ConsumerStatefulWidget {
+  const _WardFormDialog({required this.snapshot, this.ward});
+
+  final FacilitySetupSnapshot snapshot;
+  final WardProfile? ward;
+
+  @override
+  ConsumerState<_WardFormDialog> createState() => _WardFormDialogState();
+}
+
+class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late WardSetupType _type;
+  late String _departmentId;
+  late bool _isActive;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.ward?.name);
+    _type = widget.ward?.type ?? WardSetupType.general;
+    _departmentId = widget.ward?.departmentId ?? _noneSelection;
+    _isActive = widget.ward?.isActive ?? true;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isEditing = widget.ward != null;
+    final bool canEdit = !submission.isSubmitting;
+
+    return AppDialog(
+      title: Text(
+        isEditing
+            ? l10n.tenantFacilityEditWardTitle
+            : l10n.tenantFacilityAddWardTitle,
+      ),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppTextField(
+              controller: _nameController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityWardNameLabel,
+              textCapitalization: TextCapitalization.words,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppSelectField<WardSetupType>(
+              value: _type,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityWardTypeLabel,
+              options: <AppSelectOption<WardSetupType>>[
+                for (final type in WardSetupType.values)
+                  AppSelectOption<WardSetupType>(
+                    value: type,
+                    label: _wardTypeLabel(l10n, type),
+                  ),
+              ],
+              onChanged: (WardSetupType? value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() {
+                  _type = value;
+                });
+              },
+            ),
+            AppSelectField<String>.searchable(
+              value: _departmentId,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityWardDepartmentLabel,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: _noneSelection,
+                  label: l10n.tenantFacilityNoSelectionLabel,
+                ),
+                for (final DepartmentProfile department
+                    in widget.snapshot.departments)
+                  AppSelectOption<String>(
+                    value: department.id,
+                    label: department.name,
+                  ),
+              ],
+              onChanged: (String? value) {
+                setState(() {
+                  _departmentId = value ?? _noneSelection;
+                });
+              },
+            ),
+            AppSwitchField(
+              title: l10n.tenantFacilityActiveLabel,
+              value: _isActive,
+              enabled: canEdit,
+              onChanged: (bool value) {
+                setState(() {
+                  _isActive = value;
+                });
+              },
+            ),
+            _SubmissionFailureText(),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: canEdit,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: isEditing
+              ? l10n.tenantFacilitySaveAction
+              : l10n.tenantFacilityCreateAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: submission.isSubmitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    final TenantProfile? tenant = widget.snapshot.tenant;
+    final FacilityProfile? facility = widget.snapshot.facility;
+    if (tenant == null || facility == null) {
+      return;
+    }
+
+    final bool saved = await ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveWard(
+          id: widget.ward?.id,
+          tenantId: tenant.id,
+          facilityId: facility.id,
+          name: _nameController.text,
+          type: _type,
+          departmentId: _optionalSelection(_departmentId),
+          isActive: _isActive,
+        );
+    if (saved && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+class _RoomFormDialog extends ConsumerStatefulWidget {
+  const _RoomFormDialog({required this.snapshot, this.room});
+
+  final FacilitySetupSnapshot snapshot;
+  final RoomProfile? room;
+
+  @override
+  ConsumerState<_RoomFormDialog> createState() => _RoomFormDialogState();
+}
+
+class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _floorController;
+  late String _wardId;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.room?.name);
+    _floorController = TextEditingController(text: widget.room?.floor);
+    _wardId = widget.room?.wardId ?? _noneSelection;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _floorController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isEditing = widget.room != null;
+    final bool canEdit = !submission.isSubmitting;
+
+    return AppDialog(
+      title: Text(
+        isEditing
+            ? l10n.tenantFacilityEditRoomTitle
+            : l10n.tenantFacilityAddRoomTitle,
+      ),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppTextField(
+              controller: _nameController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityRoomNameLabel,
+              textCapitalization: TextCapitalization.words,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppSelectField<String>.searchable(
+              value: _wardId,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityRoomWardLabel,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: _noneSelection,
+                  label: l10n.tenantFacilityNoSelectionLabel,
+                ),
+                for (final WardProfile ward in widget.snapshot.wards)
+                  AppSelectOption<String>(value: ward.id, label: ward.name),
+              ],
+              validator: _requiredSelection(l10n),
+              onChanged: (String? value) {
+                setState(() {
+                  _wardId = value ?? _noneSelection;
+                });
+              },
+            ),
+            AppTextField(
+              controller: _floorController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityRoomFloorLabel,
+            ),
+            _SubmissionFailureText(),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: canEdit,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: isEditing
+              ? l10n.tenantFacilitySaveAction
+              : l10n.tenantFacilityCreateAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: submission.isSubmitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    final TenantProfile? tenant = widget.snapshot.tenant;
+    final FacilityProfile? facility = widget.snapshot.facility;
+    if (tenant == null || facility == null) {
+      return;
+    }
+
+    final bool saved = await ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveRoom(
+          id: widget.room?.id,
+          tenantId: tenant.id,
+          facilityId: facility.id,
+          name: _nameController.text,
+          wardId: _optionalSelection(_wardId),
+          floor: _floorController.text,
+        );
+    if (saved && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+class _BedFormDialog extends ConsumerStatefulWidget {
+  const _BedFormDialog({required this.snapshot, this.bed});
+
+  final FacilitySetupSnapshot snapshot;
+  final BedProfile? bed;
+
+  @override
+  ConsumerState<_BedFormDialog> createState() => _BedFormDialogState();
+}
+
+class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _labelController;
+  late String _wardId;
+  late String _roomId;
+  late BedSetupStatus _status;
+
+  @override
+  void initState() {
+    super.initState();
+    _labelController = TextEditingController(text: widget.bed?.label);
+    _wardId = widget.bed?.wardId ?? _noneSelection;
+    _roomId = widget.bed?.roomId ?? _noneSelection;
+    _status = widget.bed?.status ?? BedSetupStatus.available;
+  }
+
+  @override
+  void dispose() {
+    _labelController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool isEditing = widget.bed != null;
+    final bool canEdit = !submission.isSubmitting;
+    final List<RoomProfile> rooms = _optionalSelection(_wardId) == null
+        ? widget.snapshot.rooms
+        : widget.snapshot.rooms
+              .where((RoomProfile room) => room.wardId == _wardId)
+              .toList(growable: false);
+
+    return AppDialog(
+      title: Text(
+        isEditing
+            ? l10n.tenantFacilityEditBedTitle
+            : l10n.tenantFacilityAddBedTitle,
+      ),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppTextField(
+              controller: _labelController,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityBedLabelLabel,
+              textCapitalization: TextCapitalization.characters,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppSelectField<String>.searchable(
+              value: _wardId,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityBedWardLabel,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: _noneSelection,
+                  label: l10n.tenantFacilityNoSelectionLabel,
+                ),
+                for (final WardProfile ward in widget.snapshot.wards)
+                  AppSelectOption<String>(value: ward.id, label: ward.name),
+              ],
+              validator: _requiredSelection(l10n),
+              onChanged: (String? value) {
+                final String nextWardId = value ?? _noneSelection;
+                final List<RoomProfile> nextRooms =
+                    _optionalSelection(nextWardId) == null
+                    ? widget.snapshot.rooms
+                    : widget.snapshot.rooms
+                          .where(
+                            (RoomProfile room) => room.wardId == nextWardId,
+                          )
+                          .toList(growable: false);
+                setState(() {
+                  _wardId = nextWardId;
+                  if (nextRooms.every(
+                    (RoomProfile room) => room.id != _roomId,
+                  )) {
+                    _roomId = _noneSelection;
+                  }
+                });
+              },
+            ),
+            AppSelectField<String>.searchable(
+              value: _roomId,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityBedRoomLabel,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: _noneSelection,
+                  label: l10n.tenantFacilityNoSelectionLabel,
+                ),
+                for (final RoomProfile room in rooms)
+                  AppSelectOption<String>(value: room.id, label: room.name),
+              ],
+              onChanged: (String? value) {
+                setState(() {
+                  _roomId = value ?? _noneSelection;
+                });
+              },
+            ),
+            AppSelectField<BedSetupStatus>(
+              value: _status,
+              enabled: canEdit,
+              labelText: l10n.tenantFacilityBedStatusLabel,
+              options: <AppSelectOption<BedSetupStatus>>[
+                for (final status in BedSetupStatus.values)
+                  AppSelectOption<BedSetupStatus>(
+                    value: status,
+                    label: _bedStatusLabel(l10n, status),
+                  ),
+              ],
+              onChanged: (BedSetupStatus? value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() {
+                  _status = value;
+                });
+              },
+            ),
+            _SubmissionFailureText(),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: canEdit,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: isEditing
+              ? l10n.tenantFacilitySaveAction
+              : l10n.tenantFacilityCreateAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: submission.isSubmitting,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState?.validate() != true) {
+      return;
+    }
+
+    final TenantProfile? tenant = widget.snapshot.tenant;
+    final FacilityProfile? facility = widget.snapshot.facility;
+    final String? wardId = _optionalSelection(_wardId);
+    if (tenant == null || facility == null || wardId == null) {
+      return;
+    }
+
+    final bool saved = await ref
+        .read(tenantFacilitySetupSubmissionProvider.notifier)
+        .saveBed(
+          id: widget.bed?.id,
+          tenantId: tenant.id,
+          facilityId: facility.id,
+          wardId: wardId,
+          label: _labelController.text,
+          status: _status,
+          roomId: _optionalSelection(_roomId),
+        );
+    if (saved && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+class _SubmissionFailureText extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final failure = ref.watch(
+      tenantFacilitySetupSubmissionProvider.select((state) => state.failure),
+    );
+    if (failure == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Text(
+      context.l10n.failureMessage(failure),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).statusColors.error,
+      ),
+    );
+  }
+}
+
+Future<void> _openBranchDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  BranchProfile? branch,
+}) async {
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _BranchFormDialog(snapshot: snapshot, branch: branch),
+  );
+  if (saved == true && context.mounted) {
+    _showSaved(context);
+  }
+}
+
+Future<void> _openDepartmentDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  DepartmentProfile? department,
+}) async {
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) =>
+        _DepartmentFormDialog(snapshot: snapshot, department: department),
+  );
+  if (saved == true && context.mounted) {
+    _showSaved(context);
+  }
+}
+
+Future<void> _openUnitDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  UnitProfile? unit,
+}) async {
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _UnitFormDialog(snapshot: snapshot, unit: unit),
+  );
+  if (saved == true && context.mounted) {
+    _showSaved(context);
+  }
+}
+
+Future<void> _openWardDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  WardProfile? ward,
+}) async {
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _WardFormDialog(snapshot: snapshot, ward: ward),
+  );
+  if (saved == true && context.mounted) {
+    _showSaved(context);
+  }
+}
+
+Future<void> _openRoomDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  RoomProfile? room,
+}) async {
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _RoomFormDialog(snapshot: snapshot, room: room),
+  );
+  if (saved == true && context.mounted) {
+    _showSaved(context);
+  }
+}
+
+Future<void> _openBedDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  BedProfile? bed,
+}) async {
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _BedFormDialog(snapshot: snapshot, bed: bed),
+  );
+  if (saved == true && context.mounted) {
+    _showSaved(context);
+  }
+}
+
+Future<void> _deleteEntity({
+  required BuildContext context,
+  required Future<bool> Function() deleteAction,
+}) async {
+  final AppLocalizations l10n = context.l10n;
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(l10n.tenantFacilityDeleteConfirmationTitle),
+      content: Text(l10n.tenantFacilityDeleteConfirmationBody),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.tenantFacilityDeleteConfirmAction,
+          leadingIcon: Icons.delete_outline,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) {
+    return;
+  }
+
+  final bool deleted = await deleteAction();
+  if (deleted && context.mounted) {
+    _showSaved(context);
+  }
+}
+
+FormFieldValidator<String> _requiredSelection(AppLocalizations l10n) {
+  return (String? value) =>
+      _optionalSelection(value) == null ? l10n.validationRequired : null;
+}
+
+String? _optionalSelection(String? value) {
+  if (value == null || value == _noneSelection) {
+    return null;
+  }
+
+  return value;
+}
+
+String _activeStatusLabel(AppLocalizations l10n, bool isActive) {
+  return isActive
+      ? l10n.tenantFacilityStatusActive
+      : l10n.tenantFacilityStatusInactive;
+}
+
+String _departmentSubtitle(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  DepartmentProfile department,
+) {
+  return _joinParts(<String?>[
+    _departmentTypeLabel(l10n, department.type),
+    if (department.shortName != null) department.shortName!,
+    _branchName(snapshot, department.branchId),
+    _activeStatusLabel(l10n, department.isActive),
+  ]);
+}
+
+String _unitSubtitle(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  UnitProfile unit,
+) {
+  return _joinParts(<String?>[
+    _departmentName(snapshot, unit.departmentId),
+    _activeStatusLabel(l10n, unit.isActive),
+  ]);
+}
+
+String _wardSubtitle(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  WardProfile ward,
+) {
+  return _joinParts(<String?>[
+    _wardTypeLabel(l10n, ward.type),
+    _departmentName(snapshot, ward.departmentId),
+    _activeStatusLabel(l10n, ward.isActive),
+  ]);
+}
+
+String _roomSubtitle(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  RoomProfile room,
+) {
+  return _joinParts(<String?>[
+    _wardName(snapshot, room.wardId),
+    if (room.floor != null) room.floor!,
+    l10n.tenantFacilityRoomsLabel,
+  ]);
+}
+
+String _bedSubtitle(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  BedProfile bed,
+) {
+  return _joinParts(<String?>[
+    _wardName(snapshot, bed.wardId),
+    _roomName(snapshot, bed.roomId),
+    _bedStatusLabel(l10n, bed.status),
+  ]);
+}
+
+String _joinParts(List<String?> parts) {
+  return parts
+      .whereType<String>()
+      .map((String part) => part.trim())
+      .where((String part) => part.isNotEmpty)
+      .join(', ');
+}
+
+String? _branchName(FacilitySetupSnapshot snapshot, String? branchId) {
+  return snapshot.branches
+      .where((BranchProfile branch) => branch.id == branchId)
+      .firstOrNull
+      ?.name;
+}
+
+String? _departmentName(FacilitySetupSnapshot snapshot, String? departmentId) {
+  return snapshot.departments
+      .where((DepartmentProfile department) => department.id == departmentId)
+      .firstOrNull
+      ?.name;
+}
+
+String? _wardName(FacilitySetupSnapshot snapshot, String? wardId) {
+  return snapshot.wards
+      .where((WardProfile ward) => ward.id == wardId)
+      .firstOrNull
+      ?.name;
+}
+
+String? _roomName(FacilitySetupSnapshot snapshot, String? roomId) {
+  return snapshot.rooms
+      .where((RoomProfile room) => room.id == roomId)
+      .firstOrNull
+      ?.name;
 }
 
 class _TwoColumnFields extends StatelessWidget {
@@ -1168,6 +2277,26 @@ String _departmentTypeLabel(AppLocalizations l10n, DepartmentSetupType type) {
     DepartmentSetupType.diagnostics =>
       l10n.tenantFacilityDepartmentTypeDiagnostics,
     DepartmentSetupType.other => l10n.tenantFacilityDepartmentTypeOther,
+  };
+}
+
+String _wardTypeLabel(AppLocalizations l10n, WardSetupType type) {
+  return switch (type) {
+    WardSetupType.general => l10n.tenantFacilityWardTypeGeneral,
+    WardSetupType.icu => l10n.tenantFacilityWardTypeIcu,
+    WardSetupType.maternity => l10n.tenantFacilityWardTypeMaternity,
+    WardSetupType.pediatric => l10n.tenantFacilityWardTypePediatric,
+    WardSetupType.surgical => l10n.tenantFacilityWardTypeSurgical,
+    WardSetupType.other => l10n.tenantFacilityWardTypeOther,
+  };
+}
+
+String _bedStatusLabel(AppLocalizations l10n, BedSetupStatus status) {
+  return switch (status) {
+    BedSetupStatus.available => l10n.tenantFacilityBedStatusAvailable,
+    BedSetupStatus.occupied => l10n.tenantFacilityBedStatusOccupied,
+    BedSetupStatus.reserved => l10n.tenantFacilityBedStatusReserved,
+    BedSetupStatus.outOfService => l10n.tenantFacilityBedStatusOutOfService,
   };
 }
 

@@ -11,7 +11,8 @@ const express = require('express');
 const router = express.Router();
 const facilityController = require('@controllers/facility/facility.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createFacilitySchema,
   updateFacilitySchema,
@@ -19,6 +20,19 @@ const {
   listFacilitiesQuerySchema
 } = require('@validations/facility/facility.schema');
 const { listQuerySchema } = require('@lib/validation/zod');
+
+const FACILITY_READ_SCOPES = [
+  PERMISSIONS.CLINICAL_READ,
+  PERMISSIONS.OPERATIONS_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const FACILITY_ADMIN_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List facilities with pagination and filters
@@ -43,6 +57,7 @@ router.get(
   '/',  validateRequest({ query: listFacilitiesQuerySchema }),
 
   authenticate(),
+  authorize(FACILITY_READ_SCOPES, 'permission'),
   facilityController.listFacilities
 );
 
@@ -63,6 +78,7 @@ router.get(
   '/:id',  validateRequest({ params: facilityIdParamsSchema }),
 
   authenticate(),
+  authorize(FACILITY_READ_SCOPES, 'permission'),
   facilityController.getFacilityById
 );
 
@@ -87,6 +103,7 @@ router.post(
   '/',  validateRequest({ body: createFacilitySchema }),
 
   authenticate(),
+  authorize(FACILITY_ADMIN_SCOPES, 'permission'),
   facilityController.createFacility
 );
 
@@ -111,6 +128,7 @@ router.put(
   '/:id',  validateRequest({ params: facilityIdParamsSchema, body: updateFacilitySchema }),
 
   authenticate(),
+  authorize(FACILITY_ADMIN_SCOPES, 'permission'),
   facilityController.updateFacility
 );
 
@@ -131,6 +149,7 @@ router.delete(
   '/:id',  validateRequest({ params: facilityIdParamsSchema }),
 
   authenticate(),
+  authorize(FACILITY_ADMIN_SCOPES, 'permission'),
   facilityController.deleteFacility
 );
 
@@ -157,6 +176,7 @@ router.get(
     query: listQuerySchema 
   }),
   authenticate(),
+  authorize(FACILITY_READ_SCOPES, 'permission'),
   facilityController.getFacilityBranches
 );
 

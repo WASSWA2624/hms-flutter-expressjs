@@ -538,6 +538,50 @@
   "@tenantFacilitySaveFacilityAction": {
     "description": "Save facility button label."
   },
+  "tenantFacilityFacilitySelectLabel": "Facility",
+  "@tenantFacilityFacilitySelectLabel": {
+    "description": "Searchable facility selector label."
+  },
+  "tenantFacilityCreateAction": "Create",
+  "@tenantFacilityCreateAction": {
+    "description": "Create setup record button label."
+  },
+  "tenantFacilitySaveAction": "Save",
+  "@tenantFacilitySaveAction": {
+    "description": "Save setup record button label."
+  },
+  "tenantFacilityEditAction": "Edit",
+  "@tenantFacilityEditAction": {
+    "description": "Edit setup record action label."
+  },
+  "tenantFacilityDeleteAction": "Delete",
+  "@tenantFacilityDeleteAction": {
+    "description": "Delete setup record action label."
+  },
+  "tenantFacilityDeleteConfirmAction": "Delete",
+  "@tenantFacilityDeleteConfirmAction": {
+    "description": "Confirm delete setup record button label."
+  },
+  "tenantFacilityDeleteConfirmationTitle": "Delete record",
+  "@tenantFacilityDeleteConfirmationTitle": {
+    "description": "Setup record deletion confirmation title."
+  },
+  "tenantFacilityDeleteConfirmationBody": "This setup record will be removed.",
+  "@tenantFacilityDeleteConfirmationBody": {
+    "description": "Setup record deletion confirmation body."
+  },
+  "tenantFacilityNoSelectionLabel": "None",
+  "@tenantFacilityNoSelectionLabel": {
+    "description": "Optional select empty value label."
+  },
+  "tenantFacilityStatusActive": "Active",
+  "@tenantFacilityStatusActive": {
+    "description": "Active status label."
+  },
+  "tenantFacilityStatusInactive": "Inactive",
+  "@tenantFacilityStatusInactive": {
+    "description": "Inactive status label."
+  },
   "tenantFacilityBranchesSectionTitle": "Branches",
   "@tenantFacilityBranchesSectionTitle": {
     "description": "Branches setup section title."
@@ -554,9 +598,21 @@
   "@tenantFacilityBranchNameLabel": {
     "description": "Branch name field label."
   },
+  "tenantFacilityBranchesListTitle": "Branch records",
+  "@tenantFacilityBranchesListTitle": {
+    "description": "Branches list subheading."
+  },
   "tenantFacilityAddBranchAction": "Add branch",
   "@tenantFacilityAddBranchAction": {
     "description": "Add branch button label."
+  },
+  "tenantFacilityAddBranchTitle": "Add branch",
+  "@tenantFacilityAddBranchTitle": {
+    "description": "Add branch modal title."
+  },
+  "tenantFacilityEditBranchTitle": "Edit branch",
+  "@tenantFacilityEditBranchTitle": {
+    "description": "Edit branch modal title."
   },
   "tenantFacilityDepartmentsSectionTitle": "Departments and units",
   "@tenantFacilityDepartmentsSectionTitle": {
@@ -574,6 +630,14 @@
   "@tenantFacilityNoUnits": {
     "description": "Empty unit list label."
   },
+  "tenantFacilityDepartmentsListTitle": "Departments",
+  "@tenantFacilityDepartmentsListTitle": {
+    "description": "Departments list subheading."
+  },
+  "tenantFacilityUnitsListTitle": "Units",
+  "@tenantFacilityUnitsListTitle": {
+    "description": "Units list subheading."
+  },
   "tenantFacilityDepartmentNameLabel": "Department name",
   "@tenantFacilityDepartmentNameLabel": {
     "description": "Department name field label."
@@ -585,6 +649,10 @@
   "tenantFacilityDepartmentTypeLabel": "Department type",
   "@tenantFacilityDepartmentTypeLabel": {
     "description": "Department type field label."
+  },
+  "tenantFacilityDepartmentBranchLabel": "Branch",
+  "@tenantFacilityDepartmentBranchLabel": {
+    "description": "Department branch selection field label."
   },
   "tenantFacilityDepartmentTypeClinical": "Clinical",
   "@tenantFacilityDepartmentTypeClinical": {
@@ -610,6 +678,14 @@
   "@tenantFacilityAddDepartmentAction": {
     "description": "Add department button label."
   },
+  "tenantFacilityAddDepartmentTitle": "Add department",
+  "@tenantFacilityAddDepartmentTitle": {
+    "description": "Add department modal title."
+  },
+  "tenantFacilityEditDepartmentTitle": "Edit department",
+  "@tenantFacilityEditDepartmentTitle": {
+    "description": "Edit department modal title."
+  },
   "tenantFacilityUnitNameLabel": "Unit name",
   "@tenantFacilityUnitNameLabel": {
     "description": "Unit name field label."
@@ -621,6 +697,14 @@
   "tenantFacilityAddUnitAction": "Add unit",
   "@tenantFacilityAddUnitAction": {
     "description": "Add unit button label."
+  },
+  "tenantFacilityAddUnitTitle": "Add unit",
+  "@tenantFacilityAddUnitTitle": {
+    "description": "Add unit modal title."
+  },
+  "tenantFacilityEditUnitTitle": "Edit unit",
+  "@tenantFacilityEditUnitTitle": {
+    "description": "Edit unit modal title."
   },
   "tenantFacilityLocationsSectionTitle": "Rooms, wards, and beds",
   "@tenantFacilityLocationsSectionTitle": {
@@ -641,6 +725,134 @@
   "tenantFacilityBedsLabel": "Beds",
   "@tenantFacilityBedsLabel": {
     "description": "Beds count label."
+  },
+  "tenantFacilityNoWards": "No wards have been added.",
+  "@tenantFacilityNoWards": {
+    "description": "Empty ward list label."
+  },
+  "tenantFacilityNoRooms": "No rooms have been added.",
+  "@tenantFacilityNoRooms": {
+    "description": "Empty room list label."
+  },
+  "tenantFacilityNoBeds": "No beds have been added.",
+  "@tenantFacilityNoBeds": {
+    "description": "Empty bed list label."
+  },
+  "tenantFacilityAddWardAction": "Add ward",
+  "@tenantFacilityAddWardAction": {
+    "description": "Add ward button label."
+  },
+  "tenantFacilityAddWardTitle": "Add ward",
+  "@tenantFacilityAddWardTitle": {
+    "description": "Add ward modal title."
+  },
+  "tenantFacilityEditWardTitle": "Edit ward",
+  "@tenantFacilityEditWardTitle": {
+    "description": "Edit ward modal title."
+  },
+  "tenantFacilityWardNameLabel": "Ward name",
+  "@tenantFacilityWardNameLabel": {
+    "description": "Ward name field label."
+  },
+  "tenantFacilityWardTypeLabel": "Ward type",
+  "@tenantFacilityWardTypeLabel": {
+    "description": "Ward type field label."
+  },
+  "tenantFacilityWardDepartmentLabel": "Department",
+  "@tenantFacilityWardDepartmentLabel": {
+    "description": "Ward department selection field label."
+  },
+  "tenantFacilityWardTypeGeneral": "General",
+  "@tenantFacilityWardTypeGeneral": {
+    "description": "General ward type label."
+  },
+  "tenantFacilityWardTypeIcu": "ICU",
+  "@tenantFacilityWardTypeIcu": {
+    "description": "ICU ward type label."
+  },
+  "tenantFacilityWardTypeMaternity": "Maternity",
+  "@tenantFacilityWardTypeMaternity": {
+    "description": "Maternity ward type label."
+  },
+  "tenantFacilityWardTypePediatric": "Pediatric",
+  "@tenantFacilityWardTypePediatric": {
+    "description": "Pediatric ward type label."
+  },
+  "tenantFacilityWardTypeSurgical": "Surgical",
+  "@tenantFacilityWardTypeSurgical": {
+    "description": "Surgical ward type label."
+  },
+  "tenantFacilityWardTypeOther": "Other",
+  "@tenantFacilityWardTypeOther": {
+    "description": "Other ward type label."
+  },
+  "tenantFacilityAddRoomAction": "Add room",
+  "@tenantFacilityAddRoomAction": {
+    "description": "Add room button label."
+  },
+  "tenantFacilityAddRoomTitle": "Add room",
+  "@tenantFacilityAddRoomTitle": {
+    "description": "Add room modal title."
+  },
+  "tenantFacilityEditRoomTitle": "Edit room",
+  "@tenantFacilityEditRoomTitle": {
+    "description": "Edit room modal title."
+  },
+  "tenantFacilityRoomNameLabel": "Room name",
+  "@tenantFacilityRoomNameLabel": {
+    "description": "Room name field label."
+  },
+  "tenantFacilityRoomWardLabel": "Ward",
+  "@tenantFacilityRoomWardLabel": {
+    "description": "Room ward selection field label."
+  },
+  "tenantFacilityRoomFloorLabel": "Floor",
+  "@tenantFacilityRoomFloorLabel": {
+    "description": "Room floor field label."
+  },
+  "tenantFacilityAddBedAction": "Add bed",
+  "@tenantFacilityAddBedAction": {
+    "description": "Add bed button label."
+  },
+  "tenantFacilityAddBedTitle": "Add bed",
+  "@tenantFacilityAddBedTitle": {
+    "description": "Add bed modal title."
+  },
+  "tenantFacilityEditBedTitle": "Edit bed",
+  "@tenantFacilityEditBedTitle": {
+    "description": "Edit bed modal title."
+  },
+  "tenantFacilityBedLabelLabel": "Bed label",
+  "@tenantFacilityBedLabelLabel": {
+    "description": "Bed label field label."
+  },
+  "tenantFacilityBedWardLabel": "Ward",
+  "@tenantFacilityBedWardLabel": {
+    "description": "Bed ward selection field label."
+  },
+  "tenantFacilityBedRoomLabel": "Room",
+  "@tenantFacilityBedRoomLabel": {
+    "description": "Bed room selection field label."
+  },
+  "tenantFacilityBedStatusLabel": "Bed status",
+  "@tenantFacilityBedStatusLabel": {
+    "description": "Bed status field label."
+  },
+  "tenantFacilityBedStatusAvailable": "Available",
+  "@tenantFacilityBedStatusAvailable": {
+    "description": "Available bed status label."
+  },
+  "tenantFacilityBedStatusOccupied": "Occupied",
+  "@tenantFacilityBedStatusOccupied": {
+    "description": "Occupied bed status label."
+  },
+  "tenantFacilityBedStatusReserved": "Reserved",
+  "@tenantFacilityBedStatusReserved": {
+    "description": "Reserved bed status label."
+  },
+  "tenantFacilityBedStatusOutOfService": "Out of service",
+  "@tenantFacilityBedStatusOutOfService": {
+    "description": "Out of service bed status label."
   },
   "tenantFacilitySavedMessage": "Setup changes saved.",
   "@tenantFacilitySavedMessage": {

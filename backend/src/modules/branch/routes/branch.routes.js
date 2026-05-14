@@ -11,13 +11,27 @@ const express = require('express');
 const router = express.Router();
 const branchController = require('@controllers/branch/branch.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createBranchSchema,
   updateBranchSchema,
   branchIdParamsSchema,
   listBranchesQuerySchema
 } = require('@validations/branch/branch.schema');
+
+const SETUP_READ_SCOPES = [
+  PERMISSIONS.CLINICAL_READ,
+  PERMISSIONS.OPERATIONS_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const SETUP_ADMIN_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List branches with pagination and filters
@@ -42,6 +56,7 @@ router.get(
   '/',  validateRequest({ query: listBranchesQuerySchema }),
 
   authenticate(),
+  authorize(SETUP_READ_SCOPES, 'permission'),
   branchController.listBranches
 );
 
@@ -62,6 +77,7 @@ router.get(
   '/:id',  validateRequest({ params: branchIdParamsSchema }),
 
   authenticate(),
+  authorize(SETUP_READ_SCOPES, 'permission'),
   branchController.getBranchById
 );
 
@@ -86,6 +102,7 @@ router.post(
   '/',  validateRequest({ body: createBranchSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   branchController.createBranch
 );
 
@@ -110,6 +127,7 @@ router.put(
   '/:id',  validateRequest({ params: branchIdParamsSchema, body: updateBranchSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   branchController.updateBranch
 );
 
@@ -130,6 +148,7 @@ router.delete(
   '/:id',  validateRequest({ params: branchIdParamsSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   branchController.deleteBranch
 );
 

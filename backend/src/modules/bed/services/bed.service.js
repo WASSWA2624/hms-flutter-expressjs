@@ -76,7 +76,10 @@ const listBeds = async (filters = {}, page = 1, limit = 20, sort_by = 'created_a
   }
 
   if (filters.search) {
-    repoFilters.label = { contains: String(filters.search || '').trim() };
+    repoFilters.label = {
+      contains: String(filters.search || '').trim(),
+      mode: 'insensitive',
+    };
   }
 
   const skip = (page - 1) * limit;

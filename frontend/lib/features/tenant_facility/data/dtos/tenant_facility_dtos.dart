@@ -198,6 +198,134 @@ final class UnitProfileDto {
   }
 }
 
+final class WardProfileDto {
+  const WardProfileDto({
+    required this.id,
+    required this.tenantId,
+    required this.facilityId,
+    required this.name,
+    required this.type,
+    this.departmentId,
+    required this.isActive,
+  });
+
+  factory WardProfileDto.fromJson(JsonMap json) {
+    return WardProfileDto(
+      id: _requiredString(json, 'id'),
+      tenantId: _requiredString(json, 'tenant_id'),
+      facilityId: _requiredString(json, 'facility_id'),
+      name: _requiredString(json, 'name'),
+      type: WardSetupTypeX.fromApiValue(_optionalString(json, 'ward_type')),
+      departmentId: _optionalString(json, 'department_id'),
+      isActive: _optionalBool(json, 'is_active') ?? true,
+    );
+  }
+
+  final String id;
+  final String tenantId;
+  final String facilityId;
+  final String name;
+  final WardSetupType type;
+  final String? departmentId;
+  final bool isActive;
+
+  WardProfile toEntity() {
+    return WardProfile(
+      id: id,
+      tenantId: tenantId,
+      facilityId: facilityId,
+      name: name,
+      type: type,
+      departmentId: departmentId,
+      isActive: isActive,
+    );
+  }
+}
+
+final class RoomProfileDto {
+  const RoomProfileDto({
+    required this.id,
+    required this.tenantId,
+    required this.facilityId,
+    required this.name,
+    this.wardId,
+    this.floor,
+  });
+
+  factory RoomProfileDto.fromJson(JsonMap json) {
+    return RoomProfileDto(
+      id: _requiredString(json, 'id'),
+      tenantId: _requiredString(json, 'tenant_id'),
+      facilityId: _requiredString(json, 'facility_id'),
+      name: _requiredString(json, 'name'),
+      wardId: _optionalString(json, 'ward_id'),
+      floor: _optionalString(json, 'floor'),
+    );
+  }
+
+  final String id;
+  final String tenantId;
+  final String facilityId;
+  final String name;
+  final String? wardId;
+  final String? floor;
+
+  RoomProfile toEntity() {
+    return RoomProfile(
+      id: id,
+      tenantId: tenantId,
+      facilityId: facilityId,
+      name: name,
+      wardId: wardId,
+      floor: floor,
+    );
+  }
+}
+
+final class BedProfileDto {
+  const BedProfileDto({
+    required this.id,
+    required this.tenantId,
+    required this.facilityId,
+    required this.wardId,
+    required this.label,
+    required this.status,
+    this.roomId,
+  });
+
+  factory BedProfileDto.fromJson(JsonMap json) {
+    return BedProfileDto(
+      id: _requiredString(json, 'id'),
+      tenantId: _requiredString(json, 'tenant_id'),
+      facilityId: _requiredString(json, 'facility_id'),
+      wardId: _requiredString(json, 'ward_id'),
+      label: _requiredString(json, 'label'),
+      status: BedSetupStatusX.fromApiValue(_optionalString(json, 'status')),
+      roomId: _optionalString(json, 'room_id'),
+    );
+  }
+
+  final String id;
+  final String tenantId;
+  final String facilityId;
+  final String wardId;
+  final String label;
+  final BedSetupStatus status;
+  final String? roomId;
+
+  BedProfile toEntity() {
+    return BedProfile(
+      id: id,
+      tenantId: tenantId,
+      facilityId: facilityId,
+      wardId: wardId,
+      label: label,
+      status: status,
+      roomId: roomId,
+    );
+  }
+}
+
 final class ContactDto {
   const ContactDto({required this.id, required this.type, required this.value});
 

@@ -11,13 +11,27 @@ const express = require('express');
 const router = express.Router();
 const departmentController = require('@controllers/department/department.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createDepartmentSchema,
   updateDepartmentSchema,
   departmentIdParamsSchema,
   listDepartmentsQuerySchema
 } = require('@validations/department/department.schema');
+
+const SETUP_READ_SCOPES = [
+  PERMISSIONS.CLINICAL_READ,
+  PERMISSIONS.OPERATIONS_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const SETUP_ADMIN_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List departments with pagination and filters
@@ -44,6 +58,7 @@ router.get(
   '/',  validateRequest({ query: listDepartmentsQuerySchema }),
 
   authenticate(),
+  authorize(SETUP_READ_SCOPES, 'permission'),
   departmentController.listDepartments
 );
 
@@ -64,6 +79,7 @@ router.get(
   '/:id',  validateRequest({ params: departmentIdParamsSchema }),
 
   authenticate(),
+  authorize(SETUP_READ_SCOPES, 'permission'),
   departmentController.getDepartmentById
 );
 
@@ -90,6 +106,7 @@ router.post(
   '/',  validateRequest({ body: createDepartmentSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   departmentController.createDepartment
 );
 
@@ -116,6 +133,7 @@ router.put(
   '/:id',  validateRequest({ params: departmentIdParamsSchema, body: updateDepartmentSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   departmentController.updateDepartment
 );
 
@@ -136,6 +154,7 @@ router.delete(
   '/:id',  validateRequest({ params: departmentIdParamsSchema }),
 
   authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
   departmentController.deleteDepartment
 );
 
@@ -157,6 +176,7 @@ router.get(
   '/:id/units',  validateRequest({ params: departmentIdParamsSchema }),
 
   authenticate(),
+  authorize(SETUP_READ_SCOPES, 'permission'),
   departmentController.getDepartmentUnits
 );
 

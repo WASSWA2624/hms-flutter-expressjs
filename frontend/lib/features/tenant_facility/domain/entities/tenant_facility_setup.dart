@@ -23,6 +23,10 @@ enum DepartmentSetupType {
   other,
 }
 
+enum WardSetupType { general, icu, maternity, pediatric, surgical, other }
+
+enum BedSetupStatus { available, occupied, reserved, outOfService }
+
 final class TenantProfile {
   const TenantProfile({
     required this.id,
@@ -111,6 +115,64 @@ final class UnitProfile {
   final bool isActive;
 }
 
+final class WardProfile {
+  const WardProfile({
+    required this.id,
+    required this.tenantId,
+    required this.facilityId,
+    required this.name,
+    required this.type,
+    this.departmentId,
+    this.isActive = true,
+  });
+
+  final String id;
+  final String tenantId;
+  final String facilityId;
+  final String name;
+  final WardSetupType type;
+  final String? departmentId;
+  final bool isActive;
+}
+
+final class RoomProfile {
+  const RoomProfile({
+    required this.id,
+    required this.tenantId,
+    required this.facilityId,
+    required this.name,
+    this.wardId,
+    this.floor,
+  });
+
+  final String id;
+  final String tenantId;
+  final String facilityId;
+  final String name;
+  final String? wardId;
+  final String? floor;
+}
+
+final class BedProfile {
+  const BedProfile({
+    required this.id,
+    required this.tenantId,
+    required this.facilityId,
+    required this.wardId,
+    required this.label,
+    required this.status,
+    this.roomId,
+  });
+
+  final String id;
+  final String tenantId;
+  final String facilityId;
+  final String wardId;
+  final String label;
+  final BedSetupStatus status;
+  final String? roomId;
+}
+
 final class FacilityContactAddress {
   const FacilityContactAddress({
     this.phone,
@@ -131,28 +193,33 @@ final class FacilitySetupSnapshot {
   const FacilitySetupSnapshot({
     this.tenant,
     this.facility,
+    this.facilities = const <FacilityProfile>[],
     this.contactAddress = const FacilityContactAddress(),
     this.branches = const <BranchProfile>[],
     this.departments = const <DepartmentProfile>[],
     this.units = const <UnitProfile>[],
-    this.roomsCount = 0,
-    this.wardsCount = 0,
-    this.bedsCount = 0,
+    this.wards = const <WardProfile>[],
+    this.rooms = const <RoomProfile>[],
+    this.beds = const <BedProfile>[],
   });
 
   final TenantProfile? tenant;
   final FacilityProfile? facility;
+  final List<FacilityProfile> facilities;
   final FacilityContactAddress contactAddress;
   final List<BranchProfile> branches;
   final List<DepartmentProfile> departments;
   final List<UnitProfile> units;
-  final int roomsCount;
-  final int wardsCount;
-  final int bedsCount;
+  final List<WardProfile> wards;
+  final List<RoomProfile> rooms;
+  final List<BedProfile> beds;
 
   bool get hasTenant => tenant != null;
   bool get hasFacility => facility != null;
   bool get hasDepartmentsAndUnits => departments.isNotEmpty && units.isNotEmpty;
+  int get roomsCount => rooms.length;
+  int get wardsCount => wards.length;
+  int get bedsCount => beds.length;
   bool get hasFacilityIdentity {
     final FacilityProfile? currentFacility = facility;
     if (currentFacility == null) {
@@ -168,7 +235,7 @@ final class FacilitySetupSnapshot {
       hasTenant,
       hasFacilityIdentity,
       hasDepartmentsAndUnits,
-      roomsCount > 0 || wardsCount > 0 || bedsCount > 0,
+      wards.isNotEmpty || rooms.isNotEmpty || beds.isNotEmpty,
     ].where((bool completed) => completed).length;
   }
 }
@@ -213,6 +280,50 @@ extension DepartmentSetupTypeX on DepartmentSetupType {
       'DIAGNOSTICS' => DepartmentSetupType.diagnostics,
       'OTHER' => DepartmentSetupType.other,
       _ => DepartmentSetupType.clinical,
+    };
+  }
+}
+
+extension WardSetupTypeX on WardSetupType {
+  String get apiValue {
+    return switch (this) {
+      WardSetupType.general => 'GENERAL',
+      WardSetupType.icu => 'ICU',
+      WardSetupType.maternity => 'MATERNITY',
+      WardSetupType.pediatric => 'PEDIATRIC',
+      WardSetupType.surgical => 'SURGICAL',
+      WardSetupType.other => 'OTHER',
+    };
+  }
+
+  static WardSetupType fromApiValue(String? value) {
+    return switch (value?.trim().toUpperCase()) {
+      'ICU' => WardSetupType.icu,
+      'MATERNITY' => WardSetupType.maternity,
+      'PEDIATRIC' => WardSetupType.pediatric,
+      'SURGICAL' => WardSetupType.surgical,
+      'OTHER' => WardSetupType.other,
+      _ => WardSetupType.general,
+    };
+  }
+}
+
+extension BedSetupStatusX on BedSetupStatus {
+  String get apiValue {
+    return switch (this) {
+      BedSetupStatus.available => 'AVAILABLE',
+      BedSetupStatus.occupied => 'OCCUPIED',
+      BedSetupStatus.reserved => 'RESERVED',
+      BedSetupStatus.outOfService => 'OUT_OF_SERVICE',
+    };
+  }
+
+  static BedSetupStatus fromApiValue(String? value) {
+    return switch (value?.trim().toUpperCase()) {
+      'OCCUPIED' => BedSetupStatus.occupied,
+      'RESERVED' => BedSetupStatus.reserved,
+      'OUT_OF_SERVICE' => BedSetupStatus.outOfService,
+      _ => BedSetupStatus.available,
     };
   }
 }

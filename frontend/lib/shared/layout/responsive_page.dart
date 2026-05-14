@@ -154,20 +154,23 @@ class AppScreen extends StatelessWidget {
     return ResponsivePage(
       maxWidth: maxWidth,
       padding: padding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          AppScreenHeader(
-            title: title,
-            subtitle: subtitle,
-            body: body,
-            actions: headerActions,
-          ),
-          if (children.isNotEmpty) ...<Widget>[
-            SizedBox(height: contentGap),
-            ...children,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            AppScreenHeader(
+              title: title,
+              subtitle: subtitle,
+              body: body,
+              actions: headerActions,
+            ),
+            if (children.isNotEmpty) ...<Widget>[
+              SizedBox(height: contentGap),
+              ...children,
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

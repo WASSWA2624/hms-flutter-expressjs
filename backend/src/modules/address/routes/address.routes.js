@@ -11,13 +11,38 @@ const express = require('express');
 const router = express.Router();
 const addressController = require('@controllers/address/address.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createAddressSchema,
   updateAddressSchema,
   addressIdParamsSchema,
   listAddressesQuerySchema
 } = require('@validations/address/address.schema');
+
+const ADDRESS_READ_SCOPES = [
+  PERMISSIONS.PROFILE_READ,
+  PERMISSIONS.PATIENT_READ,
+  PERMISSIONS.OPERATIONS_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const ADDRESS_WRITE_SCOPES = [
+  PERMISSIONS.PROFILE_UPDATE,
+  PERMISSIONS.PATIENT_WRITE,
+  PERMISSIONS.OPERATIONS_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const ADDRESS_DELETE_SCOPES = [
+  PERMISSIONS.PATIENT_DELETE,
+  PERMISSIONS.OPERATIONS_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List addresses with pagination and filters
@@ -50,6 +75,7 @@ router.get(
   '/',  validateRequest({ query: listAddressesQuerySchema }),
 
   authenticate(),
+  authorize(ADDRESS_READ_SCOPES, 'permission'),
   addressController.listAddresses
 );
 
@@ -70,6 +96,7 @@ router.get(
   '/:id',  validateRequest({ params: addressIdParamsSchema }),
 
   authenticate(),
+  authorize(ADDRESS_READ_SCOPES, 'permission'),
   addressController.getAddressById
 );
 
@@ -106,6 +133,7 @@ router.post(
   '/',  validateRequest({ body: createAddressSchema }),
 
   authenticate(),
+  authorize(ADDRESS_WRITE_SCOPES, 'permission'),
   addressController.createAddress
 );
 
@@ -142,6 +170,7 @@ router.put(
   '/:id',  validateRequest({ params: addressIdParamsSchema, body: updateAddressSchema }),
 
   authenticate(),
+  authorize(ADDRESS_WRITE_SCOPES, 'permission'),
   addressController.updateAddress
 );
 
@@ -162,6 +191,7 @@ router.delete(
   '/:id',  validateRequest({ params: addressIdParamsSchema }),
 
   authenticate(),
+  authorize(ADDRESS_DELETE_SCOPES, 'permission'),
   addressController.deleteAddress
 );
 
