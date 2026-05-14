@@ -37,6 +37,7 @@ class SettingsPage extends ConsumerWidget {
                   AppSelectOption<Locale>(
                     value: _englishLocale,
                     label: l10n.settingsLanguageEnglish,
+                    leadingIcon: const _LanguageFlag('🇬🇧'),
                   ),
                 ],
                 onChanged: (Locale? locale) {
@@ -123,6 +124,19 @@ class SettingsPage extends ConsumerWidget {
       ..showSnackBar(
         SnackBar(content: Text(context.l10n.settingsSaveErrorMessage)),
       );
+  }
+}
+
+class _LanguageFlag extends StatelessWidget {
+  const _LanguageFlag(this.flag);
+
+  final String flag;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Text(flag, style: Theme.of(context).textTheme.titleMedium),
+    );
   }
 }
 
