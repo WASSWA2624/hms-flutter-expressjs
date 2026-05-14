@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/locale/app_locale_controller.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_mode_controller.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -28,60 +31,101 @@ class SettingsPage extends ConsumerWidget {
         _SettingsSectionGrid(
           sections: <Widget>[
             AppScreenSection(
-              title: l10n.settingsLanguageSectionTitle,
-              body: l10n.settingsLanguageSectionBody,
-              child: AppSelectField<Locale>(
-                labelText: l10n.settingsLanguageFieldLabel,
-                value: selectedLocale,
-                options: <AppSelectOption<Locale>>[
-                  AppSelectOption<Locale>(
-                    value: _englishLocale,
-                    label: l10n.settingsLanguageEnglish,
-                    leadingIcon: const _LanguageFlag('🇬🇧'),
+              title: l10n.settingsPreferencesSectionTitle,
+              body: l10n.settingsPreferencesSectionBody,
+              child: Column(
+                children: <Widget>[
+                  AppSelectField<Locale>(
+                    labelText: l10n.settingsLanguageFieldLabel,
+                    value: selectedLocale,
+                    options: <AppSelectOption<Locale>>[
+                      AppSelectOption<Locale>(
+                        value: _englishLocale,
+                        label: l10n.settingsLanguageEnglish,
+                        leadingIcon: const _LanguageFlag('EN'),
+                      ),
+                    ],
+                    onChanged: (Locale? locale) {
+                      if (locale == null) {
+                        return;
+                      }
+
+                      unawaited(_setLocale(context, ref, locale));
+                    },
+                  ),
+                  SizedBox(height: Theme.of(context).spacing.lg),
+                  AppRadioGroup<ThemeMode>(
+                    labelText: l10n.settingsThemeModeFieldLabel,
+                    value: themeMode,
+                    options: <AppRadioOption<ThemeMode>>[
+                      AppRadioOption<ThemeMode>(
+                        value: ThemeMode.system,
+                        label: l10n.settingsThemeModeSystem,
+                        description: l10n.settingsThemeModeSystemDescription,
+                        secondary: const Icon(Icons.brightness_auto_outlined),
+                      ),
+                      AppRadioOption<ThemeMode>(
+                        value: ThemeMode.light,
+                        label: l10n.settingsThemeModeLight,
+                        description: l10n.settingsThemeModeLightDescription,
+                        secondary: const Icon(Icons.light_mode_outlined),
+                      ),
+                      AppRadioOption<ThemeMode>(
+                        value: ThemeMode.dark,
+                        label: l10n.settingsThemeModeDark,
+                        description: l10n.settingsThemeModeDarkDescription,
+                        secondary: const Icon(Icons.dark_mode_outlined),
+                      ),
+                    ],
+                    onChanged: (ThemeMode? mode) {
+                      if (mode == null) {
+                        return;
+                      }
+
+                      unawaited(_setThemeMode(context, ref, mode));
+                    },
                   ),
                 ],
-                onChanged: (Locale? locale) {
-                  if (locale == null) {
-                    return;
-                  }
-
-                  unawaited(_setLocale(context, ref, locale));
-                },
               ),
             ),
             AppScreenSection(
-              title: l10n.settingsThemeSectionTitle,
-              body: l10n.settingsThemeSectionBody,
-              child: AppRadioGroup<ThemeMode>(
-                labelText: l10n.settingsThemeModeFieldLabel,
-                value: themeMode,
-                options: <AppRadioOption<ThemeMode>>[
-                  AppRadioOption<ThemeMode>(
-                    value: ThemeMode.system,
-                    label: l10n.settingsThemeModeSystem,
-                    description: l10n.settingsThemeModeSystemDescription,
-                    secondary: const Icon(Icons.brightness_auto_outlined),
+              title: l10n.settingsAccountSectionTitle,
+              body: l10n.settingsAccountSectionBody,
+              child: _SettingsActionList(
+                actions: <_SettingsAction>[
+                  _SettingsAction(
+                    icon: Icons.person_outline,
+                    title: l10n.settingsProfileActionTitle,
+                    body: l10n.settingsProfileActionBody,
+                    onTap: () => context.go(AppRoutes.profile.location()),
                   ),
-                  AppRadioOption<ThemeMode>(
-                    value: ThemeMode.light,
-                    label: l10n.settingsThemeModeLight,
-                    description: l10n.settingsThemeModeLightDescription,
-                    secondary: const Icon(Icons.light_mode_outlined),
-                  ),
-                  AppRadioOption<ThemeMode>(
-                    value: ThemeMode.dark,
-                    label: l10n.settingsThemeModeDark,
-                    description: l10n.settingsThemeModeDarkDescription,
-                    secondary: const Icon(Icons.dark_mode_outlined),
+                  _SettingsAction(
+                    icon: Icons.lock_reset_outlined,
+                    title: l10n.settingsChangePasswordActionTitle,
+                    body: l10n.settingsChangePasswordActionBody,
+                    onTap: () => unawaited(_changePassword(context)),
                   ),
                 ],
-                onChanged: (ThemeMode? mode) {
-                  if (mode == null) {
-                    return;
-                  }
-
-                  unawaited(_setThemeMode(context, ref, mode));
-                },
+              ),
+            ),
+            AppScreenSection(
+              title: l10n.settingsAdministrationSectionTitle,
+              body: l10n.settingsAdministrationSectionBody,
+              child: _SettingsBoundaryList(
+                items: <_SettingsBoundaryItem>[
+                  _SettingsBoundaryItem(
+                    icon: Icons.business_outlined,
+                    label: l10n.settingsTenantBoundaryLabel,
+                  ),
+                  _SettingsBoundaryItem(
+                    icon: Icons.local_hospital_outlined,
+                    label: l10n.settingsFacilityBoundaryLabel,
+                  ),
+                  _SettingsBoundaryItem(
+                    icon: Icons.admin_panel_settings_outlined,
+                    label: l10n.settingsSecurityBoundaryLabel,
+                  ),
+                ],
               ),
             ),
           ],
@@ -118,12 +162,176 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _changePassword(BuildContext context) async {
+    final changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const ChangePasswordDialog(),
+    );
+
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.authPasswordChangedMessage)),
+      );
+      context.go(AppRoutes.login.location());
+    }
+  }
+
   void _showSaveError(BuildContext context) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(content: Text(context.l10n.settingsSaveErrorMessage)),
       );
+  }
+}
+
+final class _SettingsAction {
+  const _SettingsAction({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final VoidCallback onTap;
+}
+
+class _SettingsActionList extends StatelessWidget {
+  const _SettingsActionList({required this.actions});
+
+  final List<_SettingsAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        for (var index = 0; index < actions.length; index += 1) ...<Widget>[
+          _SettingsActionTile(action: actions[index]),
+          if (index < actions.length - 1) const Divider(height: 1),
+        ],
+      ],
+    );
+  }
+}
+
+class _SettingsActionTile extends StatelessWidget {
+  const _SettingsActionTile({required this.action});
+
+  final _SettingsAction action;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: action.onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+          child: Row(
+            children: <Widget>[
+              Icon(
+                action.icon,
+                size: theme.appTokens.listIconSize,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(action.title, style: theme.textTheme.titleSmall),
+                    SizedBox(height: theme.spacing.xs / 2),
+                    Text(
+                      action.body,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Icon(
+                Icons.chevron_right,
+                size: theme.appTokens.listIconSize,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+final class _SettingsBoundaryItem {
+  const _SettingsBoundaryItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+}
+
+class _SettingsBoundaryList extends StatelessWidget {
+  const _SettingsBoundaryList({required this.items});
+
+  final List<_SettingsBoundaryItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.sm,
+      children: <Widget>[
+        for (final _SettingsBoundaryItem item in items)
+          _SettingsBoundaryChip(item: item),
+      ],
+    );
+  }
+}
+
+class _SettingsBoundaryChip extends StatelessWidget {
+  const _SettingsBoundaryChip({required this.item});
+
+  final _SettingsBoundaryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              item.icon,
+              size: theme.appTokens.listIconSize,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Text(item.label, style: theme.textTheme.labelLarge),
+          ],
+        ),
+      ),
+    );
   }
 }
 

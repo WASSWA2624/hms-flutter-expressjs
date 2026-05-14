@@ -502,6 +502,18 @@ abstract class AppLocalizations {
   /// **'Set HOSSPI HMS preferences.'**
   String get settingsBody;
 
+  /// Settings section title for personal app preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsPreferencesSectionTitle;
+
+  /// Settings section body for personal app preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme, language, and local display choices.'**
+  String get settingsPreferencesSectionBody;
+
   /// Settings section title for language preferences.
   ///
   /// In en, this message translates to:
@@ -585,6 +597,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The preference could not be saved.'**
   String get settingsSaveErrorMessage;
+
+  /// Settings section title for account and security entry points.
+  ///
+  /// In en, this message translates to:
+  /// **'Account and security'**
+  String get settingsAccountSectionTitle;
+
+  /// Settings section body for account and security entry points.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile and sign-in controls stay with the user account.'**
+  String get settingsAccountSectionBody;
+
+  /// Settings action title for opening the user profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get settingsProfileActionTitle;
+
+  /// Settings action body for opening the user profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Review identity, role, and facility context.'**
+  String get settingsProfileActionBody;
+
+  /// Settings action title for opening change password.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get settingsChangePasswordActionTitle;
+
+  /// Settings action body for opening change password.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your password and restart the session.'**
+  String get settingsChangePasswordActionBody;
+
+  /// Settings section title for admin settings boundaries.
+  ///
+  /// In en, this message translates to:
+  /// **'Administration boundaries'**
+  String get settingsAdministrationSectionTitle;
+
+  /// Settings section body for admin settings boundaries.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace administration stays in dedicated modules.'**
+  String get settingsAdministrationSectionBody;
+
+  /// Boundary label for tenant administration.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant settings'**
+  String get settingsTenantBoundaryLabel;
+
+  /// Boundary label for facility administration.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility settings'**
+  String get settingsFacilityBoundaryLabel;
+
+  /// Boundary label for user and security administration.
+  ///
+  /// In en, this message translates to:
+  /// **'User and security settings'**
+  String get settingsSecurityBoundaryLabel;
 
   /// Title shown while session restoration blocks a guarded route.
   ///

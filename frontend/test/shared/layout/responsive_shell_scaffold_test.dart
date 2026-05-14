@@ -115,10 +115,46 @@ void main() {
       expect(find.byType(SideNavigation), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
       expect(find.byType(NavigationRail), findsNothing);
+      expect(find.byIcon(Icons.notifications_none_outlined), findsNothing);
       expect(find.text('Template'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'shows notification control only when notifications are wired',
+      (WidgetTester tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(1200, 900);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ResponsiveAppShell(
+              title: 'Template',
+              compactTitle: 'App',
+              destinations: const <ResponsiveShellDestination>[
+                ResponsiveShellDestination(
+                  label: 'Home',
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home,
+                ),
+              ],
+              selectedIndex: 0,
+              unreadNotificationCount: 3,
+              onNotificationsSelected: () {},
+              onDestinationSelected: (_) {},
+              child: const Text('Body'),
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.notifications_none_outlined), findsOneWidget);
+        expect(find.text('3'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('collapses desktop sidebar labels from the header toggle', (
       WidgetTester tester,
@@ -168,7 +204,7 @@ void main() {
         },
       );
 
-      for (var tabIndex = 0; tabIndex < 5; tabIndex += 1) {
+      for (var tabIndex = 0; tabIndex < 4; tabIndex += 1) {
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
         await tester.pump();
       }

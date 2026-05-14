@@ -243,6 +243,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsBody => 'Set HOSSPI HMS preferences.';
 
   @override
+  String get settingsPreferencesSectionTitle => 'Preferences';
+
+  @override
+  String get settingsPreferencesSectionBody =>
+      'Theme, language, and local display choices.';
+
+  @override
   String get settingsLanguageSectionTitle => 'Language';
 
   @override
@@ -284,6 +291,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSaveErrorMessage => 'The preference could not be saved.';
+
+  @override
+  String get settingsAccountSectionTitle => 'Account and security';
+
+  @override
+  String get settingsAccountSectionBody =>
+      'Profile and sign-in controls stay with the user account.';
+
+  @override
+  String get settingsProfileActionTitle => 'Profile';
+
+  @override
+  String get settingsProfileActionBody =>
+      'Review identity, role, and facility context.';
+
+  @override
+  String get settingsChangePasswordActionTitle => 'Change password';
+
+  @override
+  String get settingsChangePasswordActionBody =>
+      'Update your password and restart the session.';
+
+  @override
+  String get settingsAdministrationSectionTitle => 'Administration boundaries';
+
+  @override
+  String get settingsAdministrationSectionBody =>
+      'Workspace administration stays in dedicated modules.';
+
+  @override
+  String get settingsTenantBoundaryLabel => 'Tenant settings';
+
+  @override
+  String get settingsFacilityBoundaryLabel => 'Facility settings';
+
+  @override
+  String get settingsSecurityBoundaryLabel => 'User and security settings';
 
   @override
   String get routeSessionRestoringTitle => 'Checking session';

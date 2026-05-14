@@ -282,6 +282,14 @@
   "@settingsBody": {
     "description": "Settings page intro body."
   },
+  "settingsPreferencesSectionTitle": "Preferences",
+  "@settingsPreferencesSectionTitle": {
+    "description": "Settings section title for personal app preferences."
+  },
+  "settingsPreferencesSectionBody": "Theme, language, and local display choices.",
+  "@settingsPreferencesSectionBody": {
+    "description": "Settings section body for personal app preferences."
+  },
   "settingsLanguageSectionTitle": "Language",
   "@settingsLanguageSectionTitle": {
     "description": "Settings section title for language preferences."
@@ -337,6 +345,50 @@
   "settingsSaveErrorMessage": "The preference could not be saved.",
   "@settingsSaveErrorMessage": {
     "description": "Snackbar message shown when saving a setting fails."
+  },
+  "settingsAccountSectionTitle": "Account and security",
+  "@settingsAccountSectionTitle": {
+    "description": "Settings section title for account and security entry points."
+  },
+  "settingsAccountSectionBody": "Profile and sign-in controls stay with the user account.",
+  "@settingsAccountSectionBody": {
+    "description": "Settings section body for account and security entry points."
+  },
+  "settingsProfileActionTitle": "Profile",
+  "@settingsProfileActionTitle": {
+    "description": "Settings action title for opening the user profile."
+  },
+  "settingsProfileActionBody": "Review identity, role, and facility context.",
+  "@settingsProfileActionBody": {
+    "description": "Settings action body for opening the user profile."
+  },
+  "settingsChangePasswordActionTitle": "Change password",
+  "@settingsChangePasswordActionTitle": {
+    "description": "Settings action title for opening change password."
+  },
+  "settingsChangePasswordActionBody": "Update your password and restart the session.",
+  "@settingsChangePasswordActionBody": {
+    "description": "Settings action body for opening change password."
+  },
+  "settingsAdministrationSectionTitle": "Administration boundaries",
+  "@settingsAdministrationSectionTitle": {
+    "description": "Settings section title for admin settings boundaries."
+  },
+  "settingsAdministrationSectionBody": "Workspace administration stays in dedicated modules.",
+  "@settingsAdministrationSectionBody": {
+    "description": "Settings section body for admin settings boundaries."
+  },
+  "settingsTenantBoundaryLabel": "Tenant settings",
+  "@settingsTenantBoundaryLabel": {
+    "description": "Boundary label for tenant administration."
+  },
+  "settingsFacilityBoundaryLabel": "Facility settings",
+  "@settingsFacilityBoundaryLabel": {
+    "description": "Boundary label for facility administration."
+  },
+  "settingsSecurityBoundaryLabel": "User and security settings",
+  "@settingsSecurityBoundaryLabel": {
+    "description": "Boundary label for user and security administration."
   },
   "routeSessionRestoringTitle": "Checking session",
   "@routeSessionRestoringTitle": {

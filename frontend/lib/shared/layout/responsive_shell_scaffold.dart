@@ -47,6 +47,20 @@ final class UserMenuProfileData {
   }
 }
 
+enum ShellSystemIndicatorSeverity { info, warning, error }
+
+final class ShellSystemIndicator {
+  const ShellSystemIndicator({
+    required this.label,
+    required this.icon,
+    this.severity = ShellSystemIndicatorSeverity.warning,
+  });
+
+  final String label;
+  final IconData icon;
+  final ShellSystemIndicatorSeverity severity;
+}
+
 class ResponsiveAppShell extends ResponsiveShellScaffold {
   const ResponsiveAppShell({
     required super.title,
@@ -72,6 +86,8 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.signedInLabel,
     super.userProfile,
     super.unreadNotificationCount,
+    super.systemIndicators,
+    super.onNotificationsSelected,
     super.onProfileSelected,
     super.onSettingsSelected,
     super.onChangePasswordSelected,
@@ -105,6 +121,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.signedInLabel = 'Signed in',
     this.userProfile,
     this.unreadNotificationCount = 0,
+    this.systemIndicators = const <ShellSystemIndicator>[],
+    this.onNotificationsSelected,
     this.onProfileSelected,
     this.onSettingsSelected,
     this.onChangePasswordSelected,
@@ -134,6 +152,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final String signedInLabel;
   final UserMenuProfileData? userProfile;
   final int unreadNotificationCount;
+  final List<ShellSystemIndicator> systemIndicators;
+  final VoidCallback? onNotificationsSelected;
   final VoidCallback? onProfileSelected;
   final VoidCallback? onSettingsSelected;
   final VoidCallback? onChangePasswordSelected;
@@ -196,6 +216,8 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   signedInLabel: widget.signedInLabel,
                   userProfile: widget.userProfile,
                   unreadNotificationCount: widget.unreadNotificationCount,
+                  systemIndicators: widget.systemIndicators,
+                  onNotificationsSelected: widget.onNotificationsSelected,
                   onProfileSelected: widget.onProfileSelected,
                   onSettingsSelected: widget.onSettingsSelected,
                   onChangePasswordSelected: widget.onChangePasswordSelected,
@@ -281,8 +303,10 @@ class AppMenuBar extends StatelessWidget {
     required this.logoutLabel,
     required this.signedInLabel,
     required this.unreadNotificationCount,
+    required this.systemIndicators,
     required this.toggleTooltip,
     required this.onToggleNavigation,
+    this.onNotificationsSelected,
     this.compactTitle,
     this.onProfileSelected,
     this.onSettingsSelected,
@@ -308,8 +332,10 @@ class AppMenuBar extends StatelessWidget {
   final String logoutLabel;
   final String signedInLabel;
   final int unreadNotificationCount;
+  final List<ShellSystemIndicator> systemIndicators;
   final String toggleTooltip;
   final VoidCallback onToggleNavigation;
+  final VoidCallback? onNotificationsSelected;
   final VoidCallback? onProfileSelected;
   final VoidCallback? onSettingsSelected;
   final VoidCallback? onChangePasswordSelected;
@@ -368,12 +394,19 @@ class AppMenuBar extends StatelessWidget {
                   onlineLabel: onlineLabel,
                   offlineLabel: offlineLabel,
                 ),
+              if (!isMobile && systemIndicators.isNotEmpty) ...<Widget>[
+                SizedBox(width: theme.spacing.xs),
+                _SystemIndicatorsBar(indicators: systemIndicators),
+              ],
               SizedBox(width: theme.spacing.xs),
-              _NotificationButton(
-                tooltip: notificationsTooltip,
-                unreadLabel: notificationsUnreadLabel,
-                unreadCount: unreadNotificationCount,
-              ),
+              if (onNotificationsSelected != null ||
+                  unreadNotificationCount > 0)
+                _NotificationButton(
+                  tooltip: notificationsTooltip,
+                  unreadLabel: notificationsUnreadLabel,
+                  unreadCount: unreadNotificationCount,
+                  onPressed: onNotificationsSelected,
+                ),
               if (showUserAvatar) ...<Widget>[
                 SizedBox(width: theme.spacing.xs),
                 _UserMenuButton(
@@ -405,16 +438,107 @@ class AppMenuBar extends StatelessWidget {
   }
 }
 
+class _SystemIndicatorsBar extends StatelessWidget {
+  const _SystemIndicatorsBar({required this.indicators});
+
+  final List<ShellSystemIndicator> indicators;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        for (var index = 0; index < indicators.length; index += 1) ...<Widget>[
+          _SystemIndicatorBadge(indicator: indicators[index]),
+          if (index < indicators.length - 1) SizedBox(width: theme.spacing.xs),
+        ],
+      ],
+    );
+  }
+}
+
+class _SystemIndicatorBadge extends StatelessWidget {
+  const _SystemIndicatorBadge({required this.indicator});
+
+  final ShellSystemIndicator indicator;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final _SystemIndicatorColors colors = _systemIndicatorColors(
+      theme,
+      indicator.severity,
+    );
+
+    return Tooltip(
+      message: indicator.label,
+      child: Semantics(
+        label: indicator.label,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.background,
+            border: Border.all(color: colors.foreground),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.xs),
+            child: Icon(
+              indicator.icon,
+              size: theme.appTokens.listIconSize,
+              color: colors.foreground,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+final class _SystemIndicatorColors {
+  const _SystemIndicatorColors({
+    required this.foreground,
+    required this.background,
+  });
+
+  final Color foreground;
+  final Color background;
+}
+
+_SystemIndicatorColors _systemIndicatorColors(
+  ThemeData theme,
+  ShellSystemIndicatorSeverity severity,
+) {
+  final ColorScheme colorScheme = theme.colorScheme;
+
+  return switch (severity) {
+    ShellSystemIndicatorSeverity.info => _SystemIndicatorColors(
+      foreground: colorScheme.primary,
+      background: colorScheme.primaryContainer,
+    ),
+    ShellSystemIndicatorSeverity.warning => _SystemIndicatorColors(
+      foreground: colorScheme.tertiary,
+      background: colorScheme.tertiaryContainer,
+    ),
+    ShellSystemIndicatorSeverity.error => _SystemIndicatorColors(
+      foreground: colorScheme.error,
+      background: colorScheme.errorContainer,
+    ),
+  };
+}
+
 class _NotificationButton extends StatelessWidget {
   const _NotificationButton({
     required this.tooltip,
     required this.unreadLabel,
     required this.unreadCount,
+    required this.onPressed,
   });
 
   final String tooltip;
   final String unreadLabel;
   final int unreadCount;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -428,7 +552,7 @@ class _NotificationButton extends StatelessWidget {
       child: Tooltip(
         message: tooltip,
         child: IconButton(
-          onPressed: () {},
+          onPressed: onPressed,
           iconSize: theme.appTokens.listIconSize,
           icon: Badge(
             isLabelVisible: hasUnread,
