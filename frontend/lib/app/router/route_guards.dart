@@ -1,6 +1,6 @@
-import 'package:flutter_template/app/router/app_routes.dart';
-import 'package:flutter_template/core/permissions/app_permission.dart';
-import 'package:flutter_template/core/security/session_state.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 
 final class AppRouteGuardRequest {
   const AppRouteGuardRequest({

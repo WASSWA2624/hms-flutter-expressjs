@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/app.dart';
-import 'package:flutter_template/app/router/url_strategy.dart';
-import 'package:flutter_template/app/startup/app_startup_initializer.dart';
-import 'package:flutter_template/app/startup/startup_shell.dart';
-import 'package:flutter_template/core/config/app_config.dart';
-import 'package:flutter_template/core/logging/app_logger.dart';
+import 'package:hosspi_hms/app/app.dart';
+import 'package:hosspi_hms/app/router/url_strategy.dart';
+import 'package:hosspi_hms/app/startup/app_startup_initializer.dart';
+import 'package:hosspi_hms/app/startup/startup_shell.dart';
+import 'package:hosspi_hms/core/config/app_config.dart';
+import 'package:hosspi_hms/core/logging/app_logger.dart';
 
 Future<void> bootstrap({
   AppConfig? config,
@@ -28,7 +28,7 @@ Future<void> bootstrap({
         overrides: startupResult
             .providerOverrides(initialLocation: initialLocation)
             .cast(),
-        child: const TemplateApp(),
+        child: const HosspiHmsApp(),
       ),
     );
   } catch (error, stackTrace) {

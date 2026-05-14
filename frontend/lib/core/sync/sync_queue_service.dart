@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/storage/database/app_database.dart';
-import 'package:flutter_template/core/storage/storage_providers.dart';
-import 'package:flutter_template/core/sync/sync_queue_entry.dart';
+import 'package:hosspi_hms/core/storage/database/app_database.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/core/sync/sync_queue_entry.dart';
 
 typedef DateTimeReader = DateTime Function();
 

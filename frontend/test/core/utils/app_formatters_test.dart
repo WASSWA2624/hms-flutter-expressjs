@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:flutter_template/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 

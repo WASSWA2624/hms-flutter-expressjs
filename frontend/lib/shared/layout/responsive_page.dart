@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_template/app/theme/app_theme_extensions.dart';
-import 'package:flutter_template/core/responsive/app_breakpoints.dart';
-import 'package:flutter_template/shared/layout/responsive_spacing.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/layout/responsive_spacing.dart';
 
 enum PageMaxWidth {
   authForm(520),

@@ -1,5 +1,5 @@
-import 'package:flutter_template/core/storage/database/app_database.dart';
-import 'package:flutter_template/features/example/domain/entities/example_resource.dart';
+import 'package:hosspi_hms/core/storage/database/app_database.dart';
+import 'package:hosspi_hms/features/example/domain/entities/example_resource.dart';
 
 extension ExampleResourceCacheEntryMapper on ExampleResourceCacheEntry {
   ExampleResource toEntity() {

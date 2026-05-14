@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_template/app/theme/app_theme_extensions.dart';
-import 'package:flutter_template/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 
 abstract final class ResponsiveSpacing {
   static EdgeInsets pagePaddingFor(

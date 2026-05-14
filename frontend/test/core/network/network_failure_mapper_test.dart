@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_template/core/errors/app_failure.dart';
-import 'package:flutter_template/core/network/network_failure_mapper.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

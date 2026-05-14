@@ -1,6 +1,6 @@
-import 'package:flutter_template/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 
-export 'package:flutter_template/core/security/session_state.dart'
+export 'package:hosspi_hms/core/security/session_state.dart'
     show SessionState, SessionStatus;
 
 @Deprecated('Use SessionState instead.')

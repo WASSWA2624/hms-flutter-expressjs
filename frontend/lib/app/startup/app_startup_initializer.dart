@@ -1,19 +1,19 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_template/app/router/app_router.dart';
-import 'package:flutter_template/app/startup/app_preferences_restorer.dart';
-import 'package:flutter_template/app/startup/app_startup_state.dart';
-import 'package:flutter_template/app/startup/startup_providers.dart';
-import 'package:flutter_template/core/config/app_config.dart';
-import 'package:flutter_template/core/config/app_config_provider.dart';
-import 'package:flutter_template/core/logging/app_logger.dart';
-import 'package:flutter_template/core/security/secure_session_storage.dart';
-import 'package:flutter_template/core/security/session_controller.dart';
-import 'package:flutter_template/core/security/session_manager.dart';
-import 'package:flutter_template/core/storage/secure/app_secure_storage.dart';
-import 'package:flutter_template/core/storage/storage_providers.dart';
-import 'package:flutter_template/core/storage/storage_readiness.dart';
+import 'package:hosspi_hms/app/router/app_router.dart';
+import 'package:hosspi_hms/app/startup/app_preferences_restorer.dart';
+import 'package:hosspi_hms/app/startup/app_startup_state.dart';
+import 'package:hosspi_hms/app/startup/startup_providers.dart';
+import 'package:hosspi_hms/core/config/app_config.dart';
+import 'package:hosspi_hms/core/config/app_config_provider.dart';
+import 'package:hosspi_hms/core/logging/app_logger.dart';
+import 'package:hosspi_hms/core/security/secure_session_storage.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_manager.dart';
+import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final class AppStartupInitializer {

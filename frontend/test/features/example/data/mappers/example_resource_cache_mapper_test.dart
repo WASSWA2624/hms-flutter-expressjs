@@ -1,6 +1,6 @@
-import 'package:flutter_template/core/storage/database/app_database.dart';
-import 'package:flutter_template/features/example/data/mappers/example_resource_cache_mapper.dart';
-import 'package:flutter_template/features/example/domain/entities/example_resource.dart';
+import 'package:hosspi_hms/core/storage/database/app_database.dart';
+import 'package:hosspi_hms/features/example/data/mappers/example_resource_cache_mapper.dart';
+import 'package:hosspi_hms/features/example/domain/entities/example_resource.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/core/security/session_state.dart';
-import 'package:flutter_template/core/storage/storage_readiness.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 
 final class AppStartupState {
   const AppStartupState({

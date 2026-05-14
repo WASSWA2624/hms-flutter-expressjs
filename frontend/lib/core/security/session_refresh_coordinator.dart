@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/errors/result.dart';
-import 'package:flutter_template/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 
 typedef SessionRefreshOperation = Future<Result<AuthSession>> Function();
 

@@ -1,5 +1,5 @@
-name: flutter_template
-description: Reusable Flutter foundation for multi-platform apps.
+name: hosspi_hms
+description: HOSSPI Hospital Management System frontend.
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -38,3 +38,7 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/logos/logo.png
+    - assets/logos/favicon.png
+    - assets/logos/splash.png

@@ -1,5 +1,5 @@
-import 'package:flutter_template/core/permissions/app_permission.dart';
-import 'package:flutter_template/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 
 final class AuthSession {
   AuthSession({

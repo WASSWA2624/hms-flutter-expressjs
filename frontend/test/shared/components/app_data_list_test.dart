@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_template/shared/components/components.dart';
-import 'package:flutter_template/shared/data/data.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'component_test_app.dart';

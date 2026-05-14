@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 
 class AppSelectOption<T> {
   const AppSelectOption({

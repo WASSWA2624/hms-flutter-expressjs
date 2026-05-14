@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/locale/app_locale_controller.dart';
-import 'package:flutter_template/app/theme/app_theme_extensions.dart';
-import 'package:flutter_template/app/theme/app_theme_mode_controller.dart';
-import 'package:flutter_template/l10n/app_localizations.dart';
-import 'package:flutter_template/l10n/app_localizations_x.dart';
-import 'package:flutter_template/shared/components/components.dart';
-import 'package:flutter_template/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/app/locale/app_locale_controller.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/app/theme/app_theme_mode_controller.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});

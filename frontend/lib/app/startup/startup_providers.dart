@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/startup/app_startup_state.dart';
-import 'package:flutter_template/core/security/session_controller.dart';
-import 'package:flutter_template/core/security/session_state.dart';
-import 'package:flutter_template/core/storage/storage_readiness.dart';
+import 'package:hosspi_hms/app/startup/app_startup_state.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/storage/storage_readiness.dart';
 
 final appStartupStateProvider = Provider<AppStartupState>((ref) {
   return const AppStartupState.defaults();

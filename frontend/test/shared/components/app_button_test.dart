@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/shared/components/components.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'component_test_app.dart';

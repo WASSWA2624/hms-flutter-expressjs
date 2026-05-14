@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_template/core/logging/app_logger.dart';
+import 'package:hosspi_hms/core/logging/app_logger.dart';
 
 typedef AuthTokenReader = Future<String?> Function();
 typedef UnauthorizedResponseHandler = Future<void> Function();

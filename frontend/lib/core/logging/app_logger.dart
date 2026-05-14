@@ -1,7 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_template/core/config/app_config.dart';
+import 'package:hosspi_hms/core/config/app_config.dart';
 
 typedef AppLogSink = void Function(AppLogRecord record);
 
@@ -104,7 +104,7 @@ abstract final class AppLogger {
       FlutterErrorDetails(
         exception: SafeLoggedException(record.errorType ?? 'Error'),
         stack: stackTrace,
-        library: 'flutter_template',
+        library: 'hosspi_hms',
         context: ErrorDescription(record.message),
       ),
     );
@@ -164,7 +164,7 @@ abstract final class AppLogger {
           ? null
           : SafeLoggedException(record.errorType!),
       stackTrace: record.stackTrace,
-      name: 'flutter_template',
+      name: 'hosspi_hms',
     );
   }
 

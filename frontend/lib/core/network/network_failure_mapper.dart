@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_template/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 
 AppFailure mapToFailure(Object error, StackTrace stackTrace) {
   return const NetworkFailureMapper().map(error, stackTrace);

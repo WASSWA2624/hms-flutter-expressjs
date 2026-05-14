@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/theme/app_theme_extensions.dart';
-import 'package:flutter_template/core/responsive/app_breakpoints.dart';
-import 'package:flutter_template/features/home/domain/entities/home_readiness_snapshot.dart';
-import 'package:flutter_template/features/home/presentation/controllers/home_controller.dart';
-import 'package:flutter_template/l10n/app_localizations.dart';
-import 'package:flutter_template/l10n/app_localizations_x.dart';
-import 'package:flutter_template/shared/components/components.dart';
-import 'package:flutter_template/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_readiness_snapshot.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -64,19 +64,19 @@ class _HomeReadyContent extends StatelessWidget {
             ),
           ),
           SizedBox(height: spacing.xl),
-          _StarterFeatureGrid(features: _starterFeatures(l10n)),
+          _HomeEntryPointGrid(entryPoints: _homeEntryPoints(l10n)),
           SizedBox(height: spacing.md),
-          const _SupportedPlatformList(),
+          const _ServiceAreaList(),
         ],
       ),
     );
   }
 }
 
-class _StarterFeatureGrid extends StatelessWidget {
-  const _StarterFeatureGrid({required this.features});
+class _HomeEntryPointGrid extends StatelessWidget {
+  const _HomeEntryPointGrid({required this.entryPoints});
 
-  final List<_StarterFeature> features;
+  final List<_HomeEntryPoint> entryPoints;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +87,7 @@ class _StarterFeatureGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          context.l10n.homeStarterFeaturesLabel,
+          context.l10n.homeEntryPointsLabel,
           style: theme.textTheme.titleMedium,
         ),
         SizedBox(height: spacing.md),
@@ -105,10 +105,10 @@ class _StarterFeatureGrid extends StatelessWidget {
                   spacing: spacing.md,
                   runSpacing: spacing.md,
                   children: <Widget>[
-                    for (final _StarterFeature feature in features)
+                    for (final _HomeEntryPoint entryPoint in entryPoints)
                       SizedBox(
                         width: itemWidth,
-                        child: _StarterFeatureItem(feature: feature),
+                        child: _HomeEntryPointItem(entryPoint: entryPoint),
                       ),
                   ],
                 );
@@ -121,10 +121,10 @@ class _StarterFeatureGrid extends StatelessWidget {
   }
 }
 
-class _StarterFeatureItem extends StatelessWidget {
-  const _StarterFeatureItem({required this.feature});
+class _HomeEntryPointItem extends StatelessWidget {
+  const _HomeEntryPointItem({required this.entryPoint});
 
-  final _StarterFeature feature;
+  final _HomeEntryPoint entryPoint;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +141,7 @@ class _StarterFeatureItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Icon(
-              feature.icon,
+              entryPoint.icon,
               color: colorScheme.primary,
               size: theme.appTokens.listIconSize,
             ),
@@ -153,7 +153,7 @@ class _StarterFeatureItem extends StatelessWidget {
                   Text(feature.title, style: theme.textTheme.titleSmall),
                   SizedBox(height: theme.spacing.xs),
                   Text(
-                    feature.body,
+                    entryPoint.body,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -187,33 +187,33 @@ class _HomeLoadingView extends StatelessWidget {
   }
 }
 
-List<_StarterFeature> _starterFeatures(AppLocalizations l10n) {
-  return <_StarterFeature>[
-    _StarterFeature(
-      icon: Icons.devices_outlined,
+List<_HomeEntryPoint> _homeEntryPoints(AppLocalizations l10n) {
+  return <_HomeEntryPoint>[
+    _HomeEntryPoint(
+      icon: Icons.assignment_ind_outlined,
       title: l10n.homeFeatureResponsiveTitle,
       body: l10n.homeFeatureResponsiveBody,
     ),
-    _StarterFeature(
-      icon: Icons.route_outlined,
+    _HomeEntryPoint(
+      icon: Icons.medical_services_outlined,
       title: l10n.homeFeatureNavigationTitle,
       body: l10n.homeFeatureNavigationBody,
     ),
-    _StarterFeature(
-      icon: Icons.translate_outlined,
+    _HomeEntryPoint(
+      icon: Icons.receipt_long_outlined,
       title: l10n.homeFeatureLocalizationTitle,
       body: l10n.homeFeatureLocalizationBody,
     ),
-    _StarterFeature(
-      icon: Icons.tune_outlined,
+    _HomeEntryPoint(
+      icon: Icons.business_outlined,
       title: l10n.homeFeatureSettingsTitle,
       body: l10n.homeFeatureSettingsBody,
     ),
   ];
 }
 
-final class _StarterFeature {
-  const _StarterFeature({
+final class _HomeEntryPoint {
+  const _HomeEntryPoint({
     required this.icon,
     required this.title,
     required this.body,
@@ -224,8 +224,8 @@ final class _StarterFeature {
   final String body;
 }
 
-class _SupportedPlatformList extends StatelessWidget {
-  const _SupportedPlatformList();
+class _ServiceAreaList extends StatelessWidget {
+  const _ServiceAreaList();
 
   @override
   Widget build(BuildContext context) {
@@ -238,9 +238,9 @@ class _SupportedPlatformList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(l10n.homeSupportedPlatformsLabel, style: textTheme.titleMedium),
+        Text(l10n.homeServiceAreasLabel, style: textTheme.titleMedium),
         SizedBox(height: spacing.sm),
-        for (final String platform in l10n.supportedStarterPlatforms)
+        for (final String serviceArea in l10n.homeServiceAreas)
           Padding(
             padding: EdgeInsets.only(bottom: spacing.xs),
             child: Row(
@@ -251,7 +251,7 @@ class _SupportedPlatformList extends StatelessWidget {
                   size: appTokens.listIconSize,
                 ),
                 SizedBox(width: spacing.xs),
-                Expanded(child: Text(platform, style: textTheme.bodyMedium)),
+                Expanded(child: Text(serviceArea, style: textTheme.bodyMedium)),
               ],
             ),
           ),

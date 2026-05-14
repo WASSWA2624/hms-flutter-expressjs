@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/theme/app_theme_extensions.dart';
-import 'package:flutter_template/core/errors/app_failure.dart';
-import 'package:flutter_template/core/errors/result.dart';
-import 'package:flutter_template/l10n/app_localizations_x.dart';
-import 'package:flutter_template/shared/components/app_button.dart';
-import 'package:flutter_template/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
 enum AppStateViewVariant { loading, empty, error, success, info }
 

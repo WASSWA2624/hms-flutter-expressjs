@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/storage/database/app_database.dart';
-import 'package:flutter_template/core/storage/storage_providers.dart';
-import 'package:flutter_template/features/example/data/mappers/example_resource_cache_mapper.dart';
-import 'package:flutter_template/features/example/domain/entities/example_resource.dart';
+import 'package:hosspi_hms/core/storage/database/app_database.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/example/data/mappers/example_resource_cache_mapper.dart';
+import 'package:hosspi_hms/features/example/domain/entities/example_resource.dart';
 
 typedef ExampleResourceClock = DateTime Function();
 

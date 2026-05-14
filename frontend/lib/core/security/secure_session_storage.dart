@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/security/session_tokens.dart';
-import 'package:flutter_template/core/storage/secure/app_secure_storage.dart';
-import 'package:flutter_template/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
 
 final secureSessionStorageProvider = Provider<SecureSessionStorage>((ref) {
   return SecureAppSessionStorage(ref.watch(appSecureStorageProvider));

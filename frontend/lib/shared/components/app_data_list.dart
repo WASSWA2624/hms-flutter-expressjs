@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_template/app/theme/app_theme_extensions.dart';
-import 'package:flutter_template/core/responsive/app_breakpoints.dart';
-import 'package:flutter_template/shared/components/app_icon_button.dart';
-import 'package:flutter_template/shared/data/data.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 typedef AppDataCellBuilder<T> = Widget Function(BuildContext context, T item);
 typedef AppDataMobileItemBuilder<T> =

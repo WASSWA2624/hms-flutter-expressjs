@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_template/core/network/api_client.dart';
-import 'package:flutter_template/core/network/api_endpoints.dart';
-import 'package:flutter_template/core/network/api_result.dart';
-import 'package:flutter_template/features/example/data/dtos/example_resource_dto.dart';
+import 'package:hosspi_hms/core/network/api_client.dart';
+import 'package:hosspi_hms/core/network/api_endpoints.dart';
+import 'package:hosspi_hms/core/network/api_result.dart';
+import 'package:hosspi_hms/features/example/data/dtos/example_resource_dto.dart';
 
 abstract interface class ExampleResourceRemoteDataSource {
   Future<ApiResult<ExampleResourceDto>> fetchById(

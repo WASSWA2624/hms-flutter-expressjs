@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/example/domain/entities/example_resource.dart';
+import 'package:hosspi_hms/features/example/domain/entities/example_resource.dart';
 
 final class ExampleResourceDto {
   const ExampleResourceDto({required this.id, required this.title});

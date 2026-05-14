@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/security/auth_session.dart';
-import 'package:flutter_template/core/security/secure_session_storage.dart';
-import 'package:flutter_template/core/security/session_state.dart';
-import 'package:flutter_template/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/secure_session_storage.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 
 final sessionManagerProvider = Provider<SessionManager>((ref) {
   return SessionManager(

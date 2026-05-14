@@ -1,4 +1,4 @@
-import 'package:flutter_template/features/example/data/dtos/example_resource_dto.dart';
+import 'package:hosspi_hms/features/example/data/dtos/example_resource_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

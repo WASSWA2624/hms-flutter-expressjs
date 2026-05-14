@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/errors/app_failure.dart';
-import 'package:flutter_template/core/errors/result.dart';
-import 'package:flutter_template/shared/components/components.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'component_test_app.dart';

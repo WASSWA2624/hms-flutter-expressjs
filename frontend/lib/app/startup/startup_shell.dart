@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/app/theme/app_theme.dart';
-import 'package:flutter_template/l10n/app_localizations.dart';
-import 'package:flutter_template/l10n/app_localizations_x.dart';
-import 'package:flutter_template/shared/components/components.dart';
+import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 
 typedef _StartupContentBuilder =
     Widget Function(BuildContext context, AppLocalizations l10n);

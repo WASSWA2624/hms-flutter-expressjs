@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/config/app_config.dart';
-import 'package:flutter_template/core/config/app_config_provider.dart';
-import 'package:flutter_template/core/network/api_client.dart';
-import 'package:flutter_template/core/network/api_interceptors.dart';
-import 'package:flutter_template/core/network/network_failure_mapper.dart';
-import 'package:flutter_template/core/security/session_controller.dart';
-import 'package:flutter_template/core/security/session_manager.dart';
+import 'package:hosspi_hms/core/config/app_config.dart';
+import 'package:hosspi_hms/core/config/app_config_provider.dart';
+import 'package:hosspi_hms/core/network/api_client.dart';
+import 'package:hosspi_hms/core/network/api_interceptors.dart';
+import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_manager.dart';
 
 final networkFailureMapperProvider = Provider<NetworkFailureMapper>((ref) {
   return const NetworkFailureMapper();

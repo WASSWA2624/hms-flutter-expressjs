@@ -1,4 +1,4 @@
-import 'package:flutter_template/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 
 enum AppRouteAccess { public, authenticated }
 

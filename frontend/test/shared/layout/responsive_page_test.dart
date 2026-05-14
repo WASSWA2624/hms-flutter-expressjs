@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/app/theme/app_theme.dart';
-import 'package:flutter_template/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

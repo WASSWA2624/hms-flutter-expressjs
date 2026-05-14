@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/startup/app_preferences_restorer.dart';
-import 'package:flutter_template/app/startup/app_startup_state.dart';
-import 'package:flutter_template/app/startup/startup_providers.dart';
-import 'package:flutter_template/app/theme/app_theme_mode_controller.dart';
-import 'package:flutter_template/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/app/startup/app_preferences_restorer.dart';
+import 'package:hosspi_hms/app/startup/app_startup_state.dart';
+import 'package:hosspi_hms/app/startup/startup_providers.dart';
+import 'package:hosspi_hms/app/theme/app_theme_mode_controller.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_template/shared/layout/responsive_shell_scaffold.dart';
+import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

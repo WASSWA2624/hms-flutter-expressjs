@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_template/core/network/api_result.dart';
-import 'package:flutter_template/core/network/network_failure_mapper.dart';
+import 'package:hosspi_hms/core/network/api_result.dart';
+import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 
 typedef ApiResponseDecoder<T> = T Function(Object? data);
 

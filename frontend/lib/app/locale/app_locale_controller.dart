@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/startup/app_preferences_restorer.dart';
-import 'package:flutter_template/app/startup/startup_providers.dart';
-import 'package:flutter_template/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/app/startup/app_preferences_restorer.dart';
+import 'package:hosspi_hms/app/startup/startup_providers.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
 
 final appLocaleProvider = NotifierProvider<AppLocaleController, Locale?>(
   AppLocaleController.new,

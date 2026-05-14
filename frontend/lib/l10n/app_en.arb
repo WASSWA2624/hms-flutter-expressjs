@@ -1,10 +1,10 @@
 {
   "@@locale": "en",
-  "appTitle": "Flutter Template",
+  "appTitle": "HOSSPI Hospital Management System",
   "@appTitle": {
     "description": "Application title shown in app bars and platform task lists."
   },
-  "appShortTitle": "Template",
+  "appShortTitle": "HOSSPI HMS",
   "@appShortTitle": {
     "description": "Short application title shown in compact headers."
   },
@@ -56,6 +56,35 @@
   "@appAccountTooltip": {
     "description": "Tooltip for the account avatar in the app header."
   },
+  "appNotificationsTooltip": "Notifications",
+  "@appNotificationsTooltip": {
+    "description": "Tooltip for the app header notifications button."
+  },
+  "appNotificationsUnreadLabel": "{count, plural, =0{No unread notifications} =1{1 unread notification} other{{count} unread notifications}}",
+  "@appNotificationsUnreadLabel": {
+    "description": "Accessibility label for unread notification count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "appUserMenuProfileLabel": "Profile",
+  "@appUserMenuProfileLabel": {
+    "description": "Account menu profile action label."
+  },
+  "appUserMenuSettingsLabel": "Settings",
+  "@appUserMenuSettingsLabel": {
+    "description": "Account menu settings action label."
+  },
+  "appUserMenuChangePasswordLabel": "Change password",
+  "@appUserMenuChangePasswordLabel": {
+    "description": "Account menu change password action label."
+  },
+  "appUserMenuLogoutLabel": "Logout",
+  "@appUserMenuLogoutLabel": {
+    "description": "Account menu logout action label."
+  },
   "navigationHomeLabel": "Home",
   "@navigationHomeLabel": {
     "description": "Navigation label for the home destination."
@@ -64,47 +93,47 @@
   "@navigationSettingsLabel": {
     "description": "Navigation label for the settings destination."
   },
-  "homeReadyTitle": "Ready to build",
+  "homeReadyTitle": "Hospital operations workspace",
   "@homeReadyTitle": {
-    "description": "Home page title for the starter template readiness state."
+    "description": "Home page title for the HMS overview state."
   },
-  "homeReadyBody": "A compact starter shell with routing, settings, localization, and shared app services.",
+  "homeReadyBody": "Coordinate patient registration, clinical care, pharmacy, billing, diagnostics, operations, and compliance from one responsive HMS shell.",
   "@homeReadyBody": {
-    "description": "Home page body for the starter template readiness state."
+    "description": "Home page body for the HMS overview state."
   },
-  "homeStarterFeaturesLabel": "Starter features",
-  "@homeStarterFeaturesLabel": {
-    "description": "Heading for the starter template feature summary."
+  "homeEntryPointsLabel": "Core entry points",
+  "@homeEntryPointsLabel": {
+    "description": "Heading for the HMS module entry point summary."
   },
-  "homeFeatureResponsiveTitle": "Responsive layout",
+  "homeFeatureResponsiveTitle": "Patient front desk",
   "@homeFeatureResponsiveTitle": {
     "description": "Feature summary title for responsive layout support."
   },
-  "homeFeatureResponsiveBody": "One adaptive shell for mobile, tablet, desktop, and web.",
+  "homeFeatureResponsiveBody": "Register patients, book appointments, and manage queues for OPD and emergency intake.",
   "@homeFeatureResponsiveBody": {
     "description": "Feature summary body for responsive layout support."
   },
-  "homeFeatureNavigationTitle": "Navigation",
+  "homeFeatureNavigationTitle": "Clinical workspace",
   "@homeFeatureNavigationTitle": {
     "description": "Feature summary title for navigation support."
   },
-  "homeFeatureNavigationBody": "Routes and menu items are centralized.",
+  "homeFeatureNavigationBody": "Open encounters, clinical notes, diagnoses, care plans, orders, and inpatient handovers.",
   "@homeFeatureNavigationBody": {
     "description": "Feature summary body for navigation support."
   },
-  "homeFeatureLocalizationTitle": "Localization",
+  "homeFeatureLocalizationTitle": "Revenue cycle",
   "@homeFeatureLocalizationTitle": {
     "description": "Feature summary title for localization support."
   },
-  "homeFeatureLocalizationBody": "English is active. More locales can be added later.",
+  "homeFeatureLocalizationBody": "Track invoices, cashier payments, refunds, coverage, pre-authorizations, and claims.",
   "@homeFeatureLocalizationBody": {
     "description": "Feature summary body for localization support."
   },
-  "homeFeatureSettingsTitle": "Settings",
+  "homeFeatureSettingsTitle": "Facility operations",
   "@homeFeatureSettingsTitle": {
     "description": "Feature summary title for settings support."
   },
-  "homeFeatureSettingsBody": "Theme and language preferences are persisted.",
+  "homeFeatureSettingsBody": "Coordinate wards, beds, departments, equipment, housekeeping, maintenance, and staff rosters.",
   "@homeFeatureSettingsBody": {
     "description": "Feature summary body for settings support."
   },
@@ -124,39 +153,31 @@
   "@homeLoadErrorBody": {
     "description": "Body shown when the home feature controller fails."
   },
-  "homeSupportedPlatformsLabel": "Supported targets",
-  "@homeSupportedPlatformsLabel": {
-    "description": "Heading for the list of starter target platforms."
+  "homeServiceAreasLabel": "Service areas",
+  "@homeServiceAreasLabel": {
+    "description": "Heading for the list of HMS service areas."
   },
-  "homeSupportedPlatformAndroid": "Android",
-  "@homeSupportedPlatformAndroid": {
-    "description": "Starter target platform label for Android."
+  "homeServiceAreaOutpatient": "Outpatient, triage, emergency, and ambulance",
+  "@homeServiceAreaOutpatient": {
+    "description": "HMS service area label for outpatient and emergency workflows."
   },
-  "homeSupportedPlatformIos": "iOS",
-  "@homeSupportedPlatformIos": {
-    "description": "Starter target platform label for iOS."
+  "homeServiceAreaInpatient": "Inpatient, ICU, theater, nursing, and discharge",
+  "@homeServiceAreaInpatient": {
+    "description": "HMS service area label for inpatient workflows."
   },
-  "homeSupportedPlatformWeb": "Web",
-  "@homeSupportedPlatformWeb": {
-    "description": "Starter target platform label for web."
+  "homeServiceAreaDiagnostics": "Laboratory, radiology, pharmacy, and medication dispensing",
+  "@homeServiceAreaDiagnostics": {
+    "description": "HMS service area label for diagnostics and pharmacy workflows."
   },
-  "homeSupportedPlatformWindowsDesktop": "Windows desktop",
-  "@homeSupportedPlatformWindowsDesktop": {
-    "description": "Starter target platform label for Windows desktop."
-  },
-  "homeSupportedPlatformMacosDesktop": "macOS desktop",
-  "@homeSupportedPlatformMacosDesktop": {
-    "description": "Starter target platform label for macOS desktop."
-  },
-  "homeSupportedPlatformLinuxDesktop": "Linux desktop",
-  "@homeSupportedPlatformLinuxDesktop": {
-    "description": "Starter target platform label for Linux desktop."
+  "homeServiceAreaAdministration": "Billing, claims, subscriptions, reports, audit, and integrations",
+  "@homeServiceAreaAdministration": {
+    "description": "HMS service area label for administration workflows."
   },
   "settingsTitle": "Settings",
   "@settingsTitle": {
     "description": "Settings page title."
   },
-  "settingsBody": "Set starter app preferences.",
+  "settingsBody": "Set HOSSPI HMS preferences.",
   "@settingsBody": {
     "description": "Settings page intro body."
   },

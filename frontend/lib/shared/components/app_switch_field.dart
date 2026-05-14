@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/app/theme/app_theme_extensions.dart';
-import 'package:flutter_template/shared/components/src/app_field_error_text.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/src/app_field_error_text.dart';
 
 class AppSwitchField extends StatelessWidget {
   const AppSwitchField({

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/router/app_routes.dart';
-import 'package:flutter_template/app/router/route_guards.dart';
-import 'package:flutter_template/app/router/route_refresh_listenable.dart';
-import 'package:flutter_template/app/router/route_status_pages.dart';
-import 'package:flutter_template/core/network/app_connectivity_status.dart';
-import 'package:flutter_template/core/permissions/permission_providers.dart';
-import 'package:flutter_template/core/security/session_controller.dart';
-import 'package:flutter_template/features/home/presentation/pages/home_page.dart';
-import 'package:flutter_template/features/settings/presentation/pages/settings_page.dart';
-import 'package:flutter_template/l10n/app_localizations.dart';
-import 'package:flutter_template/l10n/app_localizations_x.dart';
-import 'package:flutter_template/shared/layout/responsive_shell_scaffold.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/router/route_guards.dart';
+import 'package:hosspi_hms/app/router/route_refresh_listenable.dart';
+import 'package:hosspi_hms/app/router/route_status_pages.dart';
+import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
 import 'package:go_router/go_router.dart';
 
 final appInitialLocationProvider = Provider<String?>((ref) {

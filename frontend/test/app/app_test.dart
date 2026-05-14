@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/app/app.dart';
-import 'package:flutter_template/app/router/app_router.dart';
-import 'package:flutter_template/app/router/route_status_pages.dart';
-import 'package:flutter_template/app/startup/app_startup_state.dart';
-import 'package:flutter_template/app/startup/startup_providers.dart';
-import 'package:flutter_template/core/security/session_state.dart';
-import 'package:flutter_template/core/storage/storage_readiness.dart';
-import 'package:flutter_template/features/home/presentation/pages/home_page.dart';
-import 'package:flutter_template/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/app/app.dart';
+import 'package:hosspi_hms/app/router/app_router.dart';
+import 'package:hosspi_hms/app/router/route_status_pages.dart';
+import 'package:hosspi_hms/app/startup/app_startup_state.dart';
+import 'package:hosspi_hms/app/startup/startup_providers.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/storage/storage_readiness.dart';
+import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,7 +18,7 @@ void main() {
   testWidgets('renders the minimal template shell', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
     await tester.pumpAndSettle();
 
     final l10n = tester.element(find.byType(HomePage)).l10n;
@@ -40,7 +40,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
     await tester.pumpAndSettle();
 
     final l10n = tester.element(find.byType(HomePage)).l10n;
@@ -60,7 +60,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
     await tester.pumpAndSettle();
 
     final l10n = tester.element(find.byType(HomePage)).l10n;
@@ -72,7 +72,7 @@ void main() {
   testWidgets('navigates to settings and shows starter preferences', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
     await tester.pumpAndSettle();
 
     final homeContext = tester.element(find.byType(HomePage));
@@ -103,7 +103,7 @@ void main() {
             ),
           ),
         ],
-        child: const TemplateApp(),
+        child: const HosspiHmsApp(),
       ),
     );
     await tester.pumpAndSettle();
@@ -117,7 +117,7 @@ void main() {
   testWidgets('shows localized not-found UI for unknown routes', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const ProviderScope(child: TemplateApp()));
+    await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
     await tester.pumpAndSettle();
 
     GoRouter.of(tester.element(find.byType(HomePage))).go('/missing-route');
@@ -138,7 +138,7 @@ void main() {
         overrides: [
           appInitialLocationProvider.overrideWithValue('/missing-route'),
         ],
-        child: const TemplateApp(),
+        child: const HosspiHmsApp(),
       ),
     );
     await tester.pumpAndSettle();

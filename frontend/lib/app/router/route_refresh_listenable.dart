@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/permissions/permission_providers.dart';
-import 'package:flutter_template/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 
 final routeRefreshListenableProvider = Provider<RouteRefreshListenable>((ref) {
   final RouteRefreshListenable listenable = RouteRefreshListenable();

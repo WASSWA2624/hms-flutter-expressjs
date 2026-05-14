@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_template/app/app.dart';
-import 'package:flutter_template/app/startup/app_preferences_restorer.dart';
-import 'package:flutter_template/app/startup/app_startup_initializer.dart';
-import 'package:flutter_template/app/startup/startup_providers.dart';
-import 'package:flutter_template/app/startup/startup_shell.dart';
-import 'package:flutter_template/core/config/app_config.dart';
-import 'package:flutter_template/core/security/session_controller.dart';
-import 'package:flutter_template/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/app/app.dart';
+import 'package:hosspi_hms/app/startup/app_preferences_restorer.dart';
+import 'package:hosspi_hms/app/startup/app_startup_initializer.dart';
+import 'package:hosspi_hms/app/startup/startup_providers.dart';
+import 'package:hosspi_hms/app/startup/startup_shell.dart';
+import 'package:hosspi_hms/core/config/app_config.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -59,7 +59,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        result.buildProviderScope(child: const TemplateApp()),
+        result.buildProviderScope(child: const HosspiHmsApp()),
       );
       await tester.pumpAndSettle();
 

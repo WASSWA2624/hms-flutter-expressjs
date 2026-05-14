@@ -1,4 +1,4 @@
-import 'package:flutter_template/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 
 sealed class Result<T> {
   const Result();

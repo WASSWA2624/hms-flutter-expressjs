@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_template/shared/data/data.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 enum AppSortDirection { ascending, descending }
 

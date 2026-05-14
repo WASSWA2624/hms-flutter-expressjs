@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_template/core/errors/app_failure.dart';
-import 'package:flutter_template/core/errors/result.dart';
-import 'package:flutter_template/core/network/network_failure_mapper.dart';
-import 'package:flutter_template/core/network/network_providers.dart';
-import 'package:flutter_template/features/example/data/datasources/example_resource_remote_data_source.dart';
-import 'package:flutter_template/features/example/domain/entities/example_resource.dart';
-import 'package:flutter_template/features/example/domain/repositories/example_resource_repository.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
+import 'package:hosspi_hms/core/network/network_providers.dart';
+import 'package:hosspi_hms/features/example/data/datasources/example_resource_remote_data_source.dart';
+import 'package:hosspi_hms/features/example/domain/entities/example_resource.dart';
+import 'package:hosspi_hms/features/example/domain/repositories/example_resource_repository.dart';
 
 final exampleResourceRemoteDataSourceProvider =
     Provider<ExampleResourceRemoteDataSource>((ref) {

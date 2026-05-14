@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_template/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 abstract final class AppPreferenceKeys {

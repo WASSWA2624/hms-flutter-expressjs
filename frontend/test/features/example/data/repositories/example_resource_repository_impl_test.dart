@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_template/core/network/api_result.dart';
-import 'package:flutter_template/features/example/data/datasources/example_resource_remote_data_source.dart';
-import 'package:flutter_template/features/example/data/dtos/example_resource_dto.dart';
-import 'package:flutter_template/features/example/data/repositories/example_resource_repository_impl.dart';
+import 'package:hosspi_hms/core/network/api_result.dart';
+import 'package:hosspi_hms/features/example/data/datasources/example_resource_remote_data_source.dart';
+import 'package:hosspi_hms/features/example/data/dtos/example_resource_dto.dart';
+import 'package:hosspi_hms/features/example/data/repositories/example_resource_repository_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
