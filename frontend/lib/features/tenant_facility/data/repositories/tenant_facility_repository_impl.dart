@@ -97,12 +97,26 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
               ),
             );
           },
-          failure: (AppFailure failure) =>
-              Result<FacilitySetupSnapshot>.failure(failure),
+          failure: (AppFailure failure) {
+            if (_isForbidden(failure)) {
+              return Result<FacilitySetupSnapshot>.success(
+                FacilitySetupSnapshot(tenant: tenant),
+              );
+            }
+
+            return Result<FacilitySetupSnapshot>.failure(failure);
+          },
         );
       },
-      failure: (AppFailure failure) =>
-          Result<FacilitySetupSnapshot>.failure(failure),
+      failure: (AppFailure failure) {
+        if (_isForbidden(failure)) {
+          return const Result<FacilitySetupSnapshot>.success(
+            FacilitySetupSnapshot(),
+          );
+        }
+
+        return Result<FacilitySetupSnapshot>.failure(failure);
+      },
     );
   }
 
@@ -319,8 +333,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   Future<Result<List<BranchProfile>>> _listBranches(
     String tenantId,
     String facilityId,
-  ) {
-    return _apiClient.get<List<BranchProfile>>(
+  ) async {
+    final result = await _apiClient.get<List<BranchProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.branches,
         queryParameters: <String, String>{
@@ -337,13 +351,15 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
         ).map((dto) => dto.toEntity()).toList(growable: false),
       ),
     );
+
+    return _emptyListOnForbidden(result);
   }
 
   Future<Result<List<DepartmentProfile>>> _listDepartments(
     String tenantId,
     String facilityId,
-  ) {
-    return _apiClient.get<List<DepartmentProfile>>(
+  ) async {
+    final result = await _apiClient.get<List<DepartmentProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.departments,
         queryParameters: <String, String>{
@@ -361,13 +377,15 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
             ).map((dto) => dto.toEntity()).toList(growable: false),
           ),
     );
+
+    return _emptyListOnForbidden(result);
   }
 
   Future<Result<List<UnitProfile>>> _listUnits(
     String tenantId,
     String facilityId,
-  ) {
-    return _apiClient.get<List<UnitProfile>>(
+  ) async {
+    final result = await _apiClient.get<List<UnitProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.units,
         queryParameters: <String, String>{
@@ -384,6 +402,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
         ).map((dto) => dto.toEntity()).toList(growable: false),
       ),
     );
+
+    return _emptyListOnForbidden(result);
   }
 
   Future<Result<FacilityContactAddress>> _facilityContactAddress(
@@ -425,8 +445,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String tenantId,
     String facilityId, {
     String? type,
-  }) {
-    return _apiClient.get<List<ContactDto>>(
+  }) async {
+    final result = await _apiClient.get<List<ContactDto>>(
       ApiEndpoints.collection(
         HmsApiResource.contacts,
         queryParameters: <String, String>{
@@ -442,13 +462,15 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
             decodeList<ContactDto>(payload, ContactDto.fromJson),
       ),
     );
+
+    return _emptyListOnForbidden(result);
   }
 
   Future<Result<List<AddressDto>>> _listAddresses(
     String tenantId,
     String facilityId,
-  ) {
-    return _apiClient.get<List<AddressDto>>(
+  ) async {
+    final result = await _apiClient.get<List<AddressDto>>(
       ApiEndpoints.collection(
         HmsApiResource.addresses,
         queryParameters: <String, String>{
@@ -463,6 +485,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
             decodeList<AddressDto>(payload, AddressDto.fromJson),
       ),
     );
+
+    return _emptyListOnForbidden(result);
   }
 
   Future<Result<void>> _upsertContact({
@@ -639,6 +663,10 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   static AppFailure? _firstFailure(Iterable<Result<Object?>> results) {
     for (final result in results) {
       if (result case ResultFailure<Object?>(:final failure)) {
+        if (_isForbidden(failure)) {
+          continue;
+        }
+
         return failure;
       }
     }
@@ -648,5 +676,22 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   static T _value<T>(Result<Object> result) {
     return (result as ResultSuccess<Object>).value as T;
+  }
+
+  static Result<List<T>> _emptyListOnForbidden<T>(Result<List<T>> result) {
+    return result.when(
+      success: (List<T> value) => Result<List<T>>.success(value),
+      failure: (AppFailure failure) {
+        if (_isForbidden(failure)) {
+          return Result<List<T>>.success(<T>[]);
+        }
+
+        return Result<List<T>>.failure(failure);
+      },
+    );
+  }
+
+  static bool _isForbidden(AppFailure failure) {
+    return failure.category == AppFailureCategory.forbidden;
   }
 }
