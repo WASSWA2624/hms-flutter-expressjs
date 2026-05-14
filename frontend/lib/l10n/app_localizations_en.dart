@@ -9,10 +9,10 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Flutter Template';
+  String get appTitle => 'HOSSPI Hospital Management System';
 
   @override
-  String get appShortTitle => 'Template';
+  String get appShortTitle => 'HOSSPI HMS';
 
   @override
   String get startupLoadingTitle => 'Starting app';
@@ -51,48 +51,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appAccountTooltip => 'Account';
 
   @override
+  String get appNotificationsTooltip => 'Notifications';
+
+  @override
+  String appNotificationsUnreadLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+      zero: 'No unread notifications',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get appUserMenuProfileLabel => 'Profile';
+
+  @override
+  String get appUserMenuSettingsLabel => 'Settings';
+
+  @override
+  String get appUserMenuChangePasswordLabel => 'Change password';
+
+  @override
+  String get appUserMenuLogoutLabel => 'Logout';
+
+  @override
   String get navigationHomeLabel => 'Home';
 
   @override
   String get navigationSettingsLabel => 'Settings';
 
   @override
-  String get homeReadyTitle => 'Ready to build';
+  String get homeReadyTitle => 'Hospital operations workspace';
 
   @override
   String get homeReadyBody =>
-      'A compact starter shell with routing, settings, localization, and shared app services.';
+      'Coordinate patient registration, clinical care, pharmacy, billing, diagnostics, operations, and compliance from one responsive HMS shell.';
 
   @override
-  String get homeStarterFeaturesLabel => 'Starter features';
+  String get homeEntryPointsLabel => 'Core entry points';
 
   @override
-  String get homeFeatureResponsiveTitle => 'Responsive layout';
+  String get homeFeatureResponsiveTitle => 'Patient front desk';
 
   @override
   String get homeFeatureResponsiveBody =>
-      'One adaptive shell for mobile, tablet, desktop, and web.';
+      'Register patients, book appointments, and manage queues for OPD and emergency intake.';
 
   @override
-  String get homeFeatureNavigationTitle => 'Navigation';
+  String get homeFeatureNavigationTitle => 'Clinical workspace';
 
   @override
   String get homeFeatureNavigationBody =>
-      'Routes and menu items are centralized.';
+      'Open encounters, clinical notes, diagnoses, care plans, orders, and inpatient handovers.';
 
   @override
-  String get homeFeatureLocalizationTitle => 'Localization';
+  String get homeFeatureLocalizationTitle => 'Revenue cycle';
 
   @override
   String get homeFeatureLocalizationBody =>
-      'English is active. More locales can be added later.';
+      'Track invoices, cashier payments, refunds, coverage, pre-authorizations, and claims.';
 
   @override
-  String get homeFeatureSettingsTitle => 'Settings';
+  String get homeFeatureSettingsTitle => 'Facility operations';
 
   @override
   String get homeFeatureSettingsBody =>
-      'Theme and language preferences are persisted.';
+      'Coordinate wards, beds, departments, equipment, housekeeping, maintenance, and staff rosters.';
 
   @override
   String get homeLoadingTitle => 'Preparing home';
@@ -107,31 +134,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeLoadErrorBody => 'Try the request again.';
 
   @override
-  String get homeSupportedPlatformsLabel => 'Supported targets';
+  String get homeServiceAreasLabel => 'Service areas';
 
   @override
-  String get homeSupportedPlatformAndroid => 'Android';
+  String get homeServiceAreaOutpatient =>
+      'Outpatient, triage, emergency, and ambulance';
 
   @override
-  String get homeSupportedPlatformIos => 'iOS';
+  String get homeServiceAreaInpatient =>
+      'Inpatient, ICU, theater, nursing, and discharge';
 
   @override
-  String get homeSupportedPlatformWeb => 'Web';
+  String get homeServiceAreaDiagnostics =>
+      'Laboratory, radiology, pharmacy, and medication dispensing';
 
   @override
-  String get homeSupportedPlatformWindowsDesktop => 'Windows desktop';
-
-  @override
-  String get homeSupportedPlatformMacosDesktop => 'macOS desktop';
-
-  @override
-  String get homeSupportedPlatformLinuxDesktop => 'Linux desktop';
+  String get homeServiceAreaAdministration =>
+      'Billing, claims, subscriptions, reports, audit, and integrations';
 
   @override
   String get settingsTitle => 'Settings';
 
   @override
-  String get settingsBody => 'Set starter app preferences.';
+  String get settingsBody => 'Set HOSSPI HMS preferences.';
 
   @override
   String get settingsLanguageSectionTitle => 'Language';

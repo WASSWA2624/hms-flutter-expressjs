@@ -15,9 +15,7 @@ import 'package:go_router/go_router.dart';
 void main() {
   const Locale englishLocale = Locale('en');
 
-  testWidgets('renders the minimal template shell', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('renders the HOSSPI HMS shell', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));
     await tester.pumpAndSettle();
 
@@ -27,8 +25,8 @@ void main() {
     expect(find.text(l10n.appStatusOnlineLabel), findsOneWidget);
     expect(find.text(l10n.homeReadyTitle), findsOneWidget);
 
-    for (final String platform in l10n.supportedStarterPlatforms) {
-      expect(find.text(platform), findsOneWidget);
+    for (final String serviceArea in l10n.homeServiceAreas) {
+      expect(find.text(serviceArea), findsOneWidget);
     }
   });
 
@@ -69,7 +67,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('navigates to settings and shows starter preferences', (
+  testWidgets('navigates to settings and shows HMS preferences', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const ProviderScope(child: HosspiHmsApp()));

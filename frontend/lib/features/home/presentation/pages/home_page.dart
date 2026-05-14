@@ -150,7 +150,7 @@ class _HomeEntryPointItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(feature.title, style: theme.textTheme.titleSmall),
+                  Text(entryPoint.title, style: theme.textTheme.titleSmall),
                   SizedBox(height: theme.spacing.xs),
                   Text(
                     entryPoint.body,

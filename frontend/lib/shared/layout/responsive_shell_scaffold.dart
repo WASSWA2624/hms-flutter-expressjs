@@ -33,6 +33,14 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.closeDrawerTooltip,
     super.toggleSidebarTooltip,
     super.accountTooltip,
+    super.notificationsTooltip,
+    super.notificationsUnreadLabel,
+    super.profileLabel,
+    super.settingsLabel,
+    super.changePasswordLabel,
+    super.logoutLabel,
+    super.unreadNotificationCount,
+    super.onSettingsSelected,
     super.key,
   });
 }
@@ -53,6 +61,14 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.closeDrawerTooltip = 'Close navigation menu',
     this.toggleSidebarTooltip = 'Toggle sidebar',
     this.accountTooltip = 'Account',
+    this.notificationsTooltip = 'Notifications',
+    this.notificationsUnreadLabel = 'No unread notifications',
+    this.profileLabel = 'Profile',
+    this.settingsLabel = 'Settings',
+    this.changePasswordLabel = 'Change password',
+    this.logoutLabel = 'Logout',
+    this.unreadNotificationCount = 0,
+    this.onSettingsSelected,
     super.key,
   });
 
@@ -69,6 +85,14 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final String closeDrawerTooltip;
   final String toggleSidebarTooltip;
   final String accountTooltip;
+  final String notificationsTooltip;
+  final String notificationsUnreadLabel;
+  final String profileLabel;
+  final String settingsLabel;
+  final String changePasswordLabel;
+  final String logoutLabel;
+  final int unreadNotificationCount;
+  final VoidCallback? onSettingsSelected;
   final Widget child;
 
   @override
@@ -118,6 +142,14 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   offlineLabel: widget.offlineLabel,
                   showUserAvatar: widget.showUserAvatar,
                   accountTooltip: widget.accountTooltip,
+                  notificationsTooltip: widget.notificationsTooltip,
+                  notificationsUnreadLabel: widget.notificationsUnreadLabel,
+                  profileLabel: widget.profileLabel,
+                  settingsLabel: widget.settingsLabel,
+                  changePasswordLabel: widget.changePasswordLabel,
+                  logoutLabel: widget.logoutLabel,
+                  unreadNotificationCount: widget.unreadNotificationCount,
+                  onSettingsSelected: widget.onSettingsSelected,
                   toggleTooltip: isMobile
                       ? widget.openMenuTooltip
                       : widget.toggleSidebarTooltip,
@@ -191,9 +223,17 @@ class AppMenuBar extends StatelessWidget {
     required this.offlineLabel,
     required this.showUserAvatar,
     required this.accountTooltip,
+    required this.notificationsTooltip,
+    required this.notificationsUnreadLabel,
+    required this.profileLabel,
+    required this.settingsLabel,
+    required this.changePasswordLabel,
+    required this.logoutLabel,
+    required this.unreadNotificationCount,
     required this.toggleTooltip,
     required this.onToggleNavigation,
     this.compactTitle,
+    this.onSettingsSelected,
     super.key,
   });
 
@@ -205,8 +245,16 @@ class AppMenuBar extends StatelessWidget {
   final String offlineLabel;
   final bool showUserAvatar;
   final String accountTooltip;
+  final String notificationsTooltip;
+  final String notificationsUnreadLabel;
+  final String profileLabel;
+  final String settingsLabel;
+  final String changePasswordLabel;
+  final String logoutLabel;
+  final int unreadNotificationCount;
   final String toggleTooltip;
   final VoidCallback onToggleNavigation;
+  final VoidCallback? onSettingsSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -260,10 +308,21 @@ class AppMenuBar extends StatelessWidget {
                   onlineLabel: onlineLabel,
                   offlineLabel: offlineLabel,
                 ),
+              SizedBox(width: theme.spacing.xs),
+              _NotificationButton(
+                tooltip: notificationsTooltip,
+                unreadLabel: notificationsUnreadLabel,
+                unreadCount: unreadNotificationCount,
+              ),
               if (showUserAvatar) ...<Widget>[
-                SizedBox(width: theme.spacing.sm),
-                Tooltip(
-                  message: accountTooltip,
+                SizedBox(width: theme.spacing.xs),
+                _UserMenuButton(
+                  tooltip: accountTooltip,
+                  profileLabel: profileLabel,
+                  settingsLabel: settingsLabel,
+                  changePasswordLabel: changePasswordLabel,
+                  logoutLabel: logoutLabel,
+                  onSettingsSelected: onSettingsSelected,
                   child: _UserAvatar(
                     status: connectivityStatus,
                     showStatusDot: isMobile,
@@ -279,6 +338,142 @@ class AppMenuBar extends StatelessWidget {
     );
   }
 }
+
+class _NotificationButton extends StatelessWidget {
+  const _NotificationButton({
+    required this.tooltip,
+    required this.unreadLabel,
+    required this.unreadCount,
+  });
+
+  final String tooltip;
+  final String unreadLabel;
+  final int unreadCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool hasUnread = unreadCount > 0;
+
+    return Semantics(
+      button: true,
+      label: unreadLabel,
+      child: Tooltip(
+        message: tooltip,
+        child: IconButton(
+          onPressed: () {},
+          iconSize: theme.appTokens.listIconSize,
+          icon: Badge(
+            isLabelVisible: hasUnread,
+            label: Text(unreadCount > 99 ? '99+' : unreadCount.toString()),
+            backgroundColor: colorScheme.error,
+            textColor: colorScheme.onError,
+            child: const Icon(Icons.notifications_none_outlined),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UserMenuButton extends StatelessWidget {
+  const _UserMenuButton({
+    required this.tooltip,
+    required this.profileLabel,
+    required this.settingsLabel,
+    required this.changePasswordLabel,
+    required this.logoutLabel,
+    required this.child,
+    this.onSettingsSelected,
+  });
+
+  final String tooltip;
+  final String profileLabel;
+  final String settingsLabel;
+  final String changePasswordLabel;
+  final String logoutLabel;
+  final Widget child;
+  final VoidCallback? onSettingsSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_UserMenuAction>(
+      tooltip: tooltip,
+      onSelected: (_UserMenuAction action) {
+        switch (action) {
+          case _UserMenuAction.settings:
+            onSettingsSelected?.call();
+            break;
+          case _UserMenuAction.profile:
+          case _UserMenuAction.changePassword:
+          case _UserMenuAction.logout:
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) {
+        return <PopupMenuEntry<_UserMenuAction>>[
+          PopupMenuItem<_UserMenuAction>(
+            value: _UserMenuAction.profile,
+            enabled: false,
+            child: _UserMenuItemLabel(
+              icon: Icons.person_outline,
+              label: profileLabel,
+            ),
+          ),
+          PopupMenuItem<_UserMenuAction>(
+            value: _UserMenuAction.settings,
+            child: _UserMenuItemLabel(
+              icon: Icons.settings_outlined,
+              label: settingsLabel,
+            ),
+          ),
+          PopupMenuItem<_UserMenuAction>(
+            value: _UserMenuAction.changePassword,
+            enabled: false,
+            child: _UserMenuItemLabel(
+              icon: Icons.lock_reset_outlined,
+              label: changePasswordLabel,
+            ),
+          ),
+          const PopupMenuDivider(),
+          PopupMenuItem<_UserMenuAction>(
+            value: _UserMenuAction.logout,
+            enabled: false,
+            child: _UserMenuItemLabel(
+              icon: Icons.logout_outlined,
+              label: logoutLabel,
+            ),
+          ),
+        ];
+      },
+      child: Semantics(button: true, label: tooltip, child: child),
+    );
+  }
+}
+
+class _UserMenuItemLabel extends StatelessWidget {
+  const _UserMenuItemLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: theme.appTokens.listIconSize),
+        SizedBox(width: theme.spacing.sm),
+        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+      ],
+    );
+  }
+}
+
+enum _UserMenuAction { profile, settings, changePassword, logout }
 
 class _ConnectivityBadge extends StatelessWidget {
   const _ConnectivityBadge({

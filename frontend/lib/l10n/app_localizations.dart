@@ -97,13 +97,13 @@ abstract class AppLocalizations {
   /// Application title shown in app bars and platform task lists.
   ///
   /// In en, this message translates to:
-  /// **'Flutter Template'**
+  /// **'HOSSPI Hospital Management System'**
   String get appTitle;
 
   /// Short application title shown in compact headers.
   ///
   /// In en, this message translates to:
-  /// **'Template'**
+  /// **'HOSSPI HMS'**
   String get appShortTitle;
 
   /// Title shown while startup dependencies initialize.
@@ -178,6 +178,42 @@ abstract class AppLocalizations {
   /// **'Account'**
   String get appAccountTooltip;
 
+  /// Tooltip for the app header notifications button.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get appNotificationsTooltip;
+
+  /// Accessibility label for unread notification count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No unread notifications} =1{1 unread notification} other{{count} unread notifications}}'**
+  String appNotificationsUnreadLabel(int count);
+
+  /// Account menu profile action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get appUserMenuProfileLabel;
+
+  /// Account menu settings action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get appUserMenuSettingsLabel;
+
+  /// Account menu change password action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get appUserMenuChangePasswordLabel;
+
+  /// Account menu logout action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get appUserMenuLogoutLabel;
+
   /// Navigation label for the home destination.
   ///
   /// In en, this message translates to:
@@ -190,70 +226,70 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get navigationSettingsLabel;
 
-  /// Home page title for the starter template readiness state.
+  /// Home page title for the HMS overview state.
   ///
   /// In en, this message translates to:
-  /// **'Ready to build'**
+  /// **'Hospital operations workspace'**
   String get homeReadyTitle;
 
-  /// Home page body for the starter template readiness state.
+  /// Home page body for the HMS overview state.
   ///
   /// In en, this message translates to:
-  /// **'A compact starter shell with routing, settings, localization, and shared app services.'**
+  /// **'Coordinate patient registration, clinical care, pharmacy, billing, diagnostics, operations, and compliance from one responsive HMS shell.'**
   String get homeReadyBody;
 
-  /// Heading for the starter template feature summary.
+  /// Heading for the HMS module entry point summary.
   ///
   /// In en, this message translates to:
-  /// **'Starter features'**
-  String get homeStarterFeaturesLabel;
+  /// **'Core entry points'**
+  String get homeEntryPointsLabel;
 
   /// Feature summary title for responsive layout support.
   ///
   /// In en, this message translates to:
-  /// **'Responsive layout'**
+  /// **'Patient front desk'**
   String get homeFeatureResponsiveTitle;
 
   /// Feature summary body for responsive layout support.
   ///
   /// In en, this message translates to:
-  /// **'One adaptive shell for mobile, tablet, desktop, and web.'**
+  /// **'Register patients, book appointments, and manage queues for OPD and emergency intake.'**
   String get homeFeatureResponsiveBody;
 
   /// Feature summary title for navigation support.
   ///
   /// In en, this message translates to:
-  /// **'Navigation'**
+  /// **'Clinical workspace'**
   String get homeFeatureNavigationTitle;
 
   /// Feature summary body for navigation support.
   ///
   /// In en, this message translates to:
-  /// **'Routes and menu items are centralized.'**
+  /// **'Open encounters, clinical notes, diagnoses, care plans, orders, and inpatient handovers.'**
   String get homeFeatureNavigationBody;
 
   /// Feature summary title for localization support.
   ///
   /// In en, this message translates to:
-  /// **'Localization'**
+  /// **'Revenue cycle'**
   String get homeFeatureLocalizationTitle;
 
   /// Feature summary body for localization support.
   ///
   /// In en, this message translates to:
-  /// **'English is active. More locales can be added later.'**
+  /// **'Track invoices, cashier payments, refunds, coverage, pre-authorizations, and claims.'**
   String get homeFeatureLocalizationBody;
 
   /// Feature summary title for settings support.
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
+  /// **'Facility operations'**
   String get homeFeatureSettingsTitle;
 
   /// Feature summary body for settings support.
   ///
   /// In en, this message translates to:
-  /// **'Theme and language preferences are persisted.'**
+  /// **'Coordinate wards, beds, departments, equipment, housekeeping, maintenance, and staff rosters.'**
   String get homeFeatureSettingsBody;
 
   /// Title shown while the home feature controller loads readiness state.
@@ -280,47 +316,35 @@ abstract class AppLocalizations {
   /// **'Try the request again.'**
   String get homeLoadErrorBody;
 
-  /// Heading for the list of starter target platforms.
+  /// Heading for the list of HMS service areas.
   ///
   /// In en, this message translates to:
-  /// **'Supported targets'**
-  String get homeSupportedPlatformsLabel;
+  /// **'Service areas'**
+  String get homeServiceAreasLabel;
 
-  /// Starter target platform label for Android.
+  /// HMS service area label for outpatient and emergency workflows.
   ///
   /// In en, this message translates to:
-  /// **'Android'**
-  String get homeSupportedPlatformAndroid;
+  /// **'Outpatient, triage, emergency, and ambulance'**
+  String get homeServiceAreaOutpatient;
 
-  /// Starter target platform label for iOS.
+  /// HMS service area label for inpatient workflows.
   ///
   /// In en, this message translates to:
-  /// **'iOS'**
-  String get homeSupportedPlatformIos;
+  /// **'Inpatient, ICU, theater, nursing, and discharge'**
+  String get homeServiceAreaInpatient;
 
-  /// Starter target platform label for web.
+  /// HMS service area label for diagnostics and pharmacy workflows.
   ///
   /// In en, this message translates to:
-  /// **'Web'**
-  String get homeSupportedPlatformWeb;
+  /// **'Laboratory, radiology, pharmacy, and medication dispensing'**
+  String get homeServiceAreaDiagnostics;
 
-  /// Starter target platform label for Windows desktop.
+  /// HMS service area label for administration workflows.
   ///
   /// In en, this message translates to:
-  /// **'Windows desktop'**
-  String get homeSupportedPlatformWindowsDesktop;
-
-  /// Starter target platform label for macOS desktop.
-  ///
-  /// In en, this message translates to:
-  /// **'macOS desktop'**
-  String get homeSupportedPlatformMacosDesktop;
-
-  /// Starter target platform label for Linux desktop.
-  ///
-  /// In en, this message translates to:
-  /// **'Linux desktop'**
-  String get homeSupportedPlatformLinuxDesktop;
+  /// **'Billing, claims, subscriptions, reports, audit, and integrations'**
+  String get homeServiceAreaAdministration;
 
   /// Settings page title.
   ///
@@ -331,7 +355,7 @@ abstract class AppLocalizations {
   /// Settings page intro body.
   ///
   /// In en, this message translates to:
-  /// **'Set starter app preferences.'**
+  /// **'Set HOSSPI HMS preferences.'**
   String get settingsBody;
 
   /// Settings section title for language preferences.

@@ -146,6 +146,17 @@ class _AppShell extends ConsumerWidget {
       closeDrawerTooltip: l10n.appCloseNavigationMenuTooltip,
       toggleSidebarTooltip: l10n.appToggleSidebarTooltip,
       accountTooltip: l10n.appAccountTooltip,
+      notificationsTooltip: l10n.appNotificationsTooltip,
+      notificationsUnreadLabel: l10n.appNotificationsUnreadLabel(0),
+      profileLabel: l10n.appUserMenuProfileLabel,
+      settingsLabel: l10n.appUserMenuSettingsLabel,
+      changePasswordLabel: l10n.appUserMenuChangePasswordLabel,
+      logoutLabel: l10n.appUserMenuLogoutLabel,
+      onSettingsSelected: () {
+        if (!AppRoutes.settings.matchesPath(location.path)) {
+          context.go(AppRoutes.settings.location());
+        }
+      },
       destinations: <ResponsiveShellDestination>[
         for (final _ShellDestinationRoute destination in shellDestinations)
           destination.destination,
