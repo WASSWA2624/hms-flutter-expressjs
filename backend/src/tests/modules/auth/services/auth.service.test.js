@@ -380,9 +380,6 @@ describe('Auth Service', () => {
         interests: 'Billing; Telemedicine\nEMR',
         ip_address: '127.0.0.1',
         user_agent: 'Mozilla',
-        request_context: {
-          origin: 'http://localhost:56036'
-        }
       };
 
       const mockUser = {
@@ -414,13 +411,10 @@ describe('Auth Service', () => {
         facility_type: 'CLINIC',
         status: 'PENDING'
       }));
-      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
+      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('http://localhost:56036/verify-email'),
-      }));
-      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Flogin'),
+        html: expect.not.stringContaining('/verify-email?token='),
       }));
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -473,10 +467,10 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('verification.expires_in_minutes', 15);
       expect(hashPassword).not.toHaveBeenCalled();
       expect(authRepository.registerFacilityOwner).not.toHaveBeenCalled();
-      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
+      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Flogin'),
+        html: expect.not.stringContaining('/verify-email?token='),
       }));
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -522,10 +516,10 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('verification.facility_details_differ', true);
       expect(hashPassword).not.toHaveBeenCalled();
       expect(authRepository.registerFacilityOwner).not.toHaveBeenCalled();
-      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
+      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Flogin'),
+        html: expect.not.stringContaining('/verify-email?token='),
       }));
       expect(authRepository.upsertRegistrationFollowUp).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -920,10 +914,10 @@ describe('Auth Service', () => {
       const result = await authService.resendVerification(resendData);
 
       expect(result).toHaveProperty('message');
-      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
+      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Flogin'),
+        html: expect.not.stringContaining('/verify-email?token='),
       }));
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'VERIFICATION_RESENT'
@@ -949,10 +943,10 @@ describe('Auth Service', () => {
       const result = await authService.resendVerification({ email: 'test@example.com', type: 'email' });
 
       expect(result).toHaveProperty('message');
-      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(2);
+      expect(authRepository.createVerificationToken).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        html: expect.stringContaining('next=%2Flogin'),
+        html: expect.not.stringContaining('/verify-email?token='),
       }));
     });
 

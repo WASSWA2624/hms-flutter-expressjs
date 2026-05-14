@@ -19,6 +19,10 @@ class AuthFailureText extends StatelessWidget {
   }
 
   static String _messageFor(AppLocalizations l10n, AppFailure failure) {
+    if (failure.code == 'auth.account_pending') {
+      return 'This account has not been verified yet. Enter the email verification code we sent to continue.';
+    }
+
     return switch (failure.category) {
       AppFailureCategory.unauthorized => l10n.authInvalidCredentialsMessage,
       AppFailureCategory.forbidden => l10n.authForbiddenMessage,

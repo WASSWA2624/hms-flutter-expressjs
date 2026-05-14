@@ -144,7 +144,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           password: _passwordController.text,
         );
 
-    if (!mounted || !success) {
+    if (!mounted) {
+      return;
+    }
+
+    if (!success) {
+      final failure = ref.read(authControllerProvider).failure;
+      if (failure?.code == 'auth.account_pending') {
+        final identifier = _identifierController.text.trim();
+        context.go(
+          AppRoutes.verifyEmail.location(
+            queryParameters: <String, String>{
+              if (identifier.contains('@')) 'email': identifier.toLowerCase(),
+            },
+          ),
+        );
+      }
       return;
     }
 

@@ -270,6 +270,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authBackToLoginActionLabel => 'Back to sign in';
 
   @override
+  String get authVerifyEmailActionLabel => 'Verify email';
+
+  @override
+  String get authSendNewCodeActionLabel => 'Send new code';
+
+  @override
   String get authAdminNameLabel => 'Administrator name';
 
   @override

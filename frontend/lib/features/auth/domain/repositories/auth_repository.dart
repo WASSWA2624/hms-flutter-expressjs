@@ -25,6 +25,8 @@ abstract interface class AuthRepository {
 
   Future<Result<void>> verifyEmail({required String token, String? email});
 
+  Future<Result<void>> resendEmailVerification({required String email});
+
   Future<Result<AuthSession>> refreshSession(SessionTokens tokens);
 
   Future<Result<void>> changePassword({

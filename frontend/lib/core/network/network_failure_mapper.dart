@@ -65,6 +65,13 @@ final class NetworkFailureMapper {
     }
 
     if (statusCode == 403) {
+      final code = _responseCode(response?.data);
+      if (code == 'ACCOUNT_PENDING') {
+        return AppFailure.forbidden(
+          code: 'auth.account_pending',
+          statusCode: statusCode,
+        );
+      }
       return AppFailure.forbidden(statusCode: statusCode);
     }
 
@@ -111,5 +118,18 @@ final class NetworkFailureMapper {
         .map((field) => field.trim())
         .where((field) => field.isNotEmpty)
         .toSet();
+  }
+
+  String? _responseCode(Object? data) {
+    if (data is! Map<Object?, Object?>) {
+      return null;
+    }
+
+    final code = data['code'];
+    if (code == null) {
+      return null;
+    }
+
+    return code.toString().trim().toUpperCase();
   }
 }

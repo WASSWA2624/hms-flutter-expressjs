@@ -574,6 +574,18 @@ abstract class AppLocalizations {
   /// **'Back to sign in'**
   String get authBackToLoginActionLabel;
 
+  /// Email verification form submit action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify email'**
+  String get authVerifyEmailActionLabel;
+
+  /// Resend email verification code action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Send new code'**
+  String get authSendNewCodeActionLabel;
+
   /// Facility administrator name field label.
   ///
   /// In en, this message translates to:

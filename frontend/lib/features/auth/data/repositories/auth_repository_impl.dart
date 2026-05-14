@@ -161,6 +161,28 @@ final class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<void>> resendEmailVerification({required String email}) {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty) {
+      return Future.value(
+        Result<void>.failure(
+          AppFailure.validation(
+            code: 'auth.resend_verification.invalid_email',
+            validationFields: const <String>{'email'},
+          ),
+        ),
+      );
+    }
+
+    return _apiClient.post<void>(
+      ApiEndpoints.auth(AuthEndpoint.resendVerification),
+      data: <String, Object?>{'email': normalizedEmail, 'type': 'email'},
+      decoder: (data) =>
+          ApiResponseEnvelope.decodeData<void>(data, decoder: (_) {}),
+    );
+  }
+
+  @override
   Future<Result<AuthSession>> refreshSession(SessionTokens tokens) {
     final refreshToken = tokens.refreshToken;
     if (refreshToken == null) {

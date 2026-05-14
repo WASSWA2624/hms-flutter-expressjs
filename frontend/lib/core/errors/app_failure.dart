@@ -37,7 +37,8 @@ sealed class AppFailure {
   const factory AppFailure.unauthorized({int? statusCode}) =
       UnauthorizedFailure;
 
-  const factory AppFailure.forbidden({int? statusCode}) = ForbiddenFailure;
+  const factory AppFailure.forbidden({String code, int? statusCode}) =
+      ForbiddenFailure;
 
   const factory AppFailure.notFound({int? statusCode}) = NotFoundFailure;
 
@@ -162,10 +163,9 @@ final class UnauthorizedFailure extends AppFailure {
 }
 
 final class ForbiddenFailure extends AppFailure {
-  const ForbiddenFailure({super.statusCode})
+  const ForbiddenFailure({super.code = 'auth.forbidden', super.statusCode})
     : super._(
         category: AppFailureCategory.forbidden,
-        code: 'auth.forbidden',
         messageKey: 'errors.forbidden',
         isRetryable: false,
       );

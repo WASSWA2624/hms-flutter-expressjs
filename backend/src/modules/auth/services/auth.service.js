@@ -124,48 +124,23 @@ const getBaseAppUrl = (requestContext = {}) => {
   return String(env.APP_PUBLIC_URL || '').replace(/\/+$/, '');
 };
 
-const buildVerifyEmailLink = (
-  token,
-  email,
-  nextPath = '/login',
-  requestContext = {}
-) => {
-  const baseLink =
-    `${getBaseAppUrl(requestContext)}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-  const normalizedNextPath = String(nextPath || '').trim();
-  if (!normalizedNextPath.startsWith('/')) return baseLink;
-  return `${baseLink}&next=${encodeURIComponent(normalizedNextPath)}`;
-};
-
 const buildResetPasswordLink = (token, email) =>
   `${getBaseAppUrl()}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-
-const buildCopyHelperLink = ({ email, action, value }) =>
-  `${getBaseAppUrl()}/verify-email?email=${encodeURIComponent(email)}&reason=pending_verification&copy_action=${encodeURIComponent(action)}&copy_value=${encodeURIComponent(value)}`;
 
 const createEmailVerificationTokens = async (userId) => {
   await authRepository.deleteExpiredTokens(userId, EMAIL_VERIFICATION_TOKEN_TYPE);
 
   const code = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
-  const linkToken = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_MINUTES * 60 * 1000);
 
-  await Promise.all([
-    authRepository.createVerificationToken({
-      user_id: userId,
-      token_hash: hashToken(code),
-      type: EMAIL_VERIFICATION_TOKEN_TYPE,
-      expires_at: expiresAt,
-    }),
-    authRepository.createVerificationToken({
-      user_id: userId,
-      token_hash: hashToken(linkToken),
-      type: EMAIL_VERIFICATION_TOKEN_TYPE,
-      expires_at: expiresAt,
-    }),
-  ]);
+  await authRepository.createVerificationToken({
+    user_id: userId,
+    token_hash: hashToken(code),
+    type: EMAIL_VERIFICATION_TOKEN_TYPE,
+    expires_at: expiresAt,
+  });
 
-  return { code, linkToken, expiresAt };
+  return { code, expiresAt };
 };
 
 const escapeHtml = (value) =>
@@ -251,7 +226,6 @@ const buildVerificationEmailMessage = ({
   adminName,
   facilityName,
   code,
-  verifyLink,
   plainPassword,
   expiresAt,
   locale,
@@ -288,16 +262,6 @@ const buildVerificationEmailMessage = ({
   const expiryAtLine = translate('messages.auth.email_verification.code_expiry_at', resolvedLocale, {
     expires_at: expiryAtFormatted,
   });
-  const actionLabel = translate('messages.auth.email_verification.action', resolvedLocale);
-  const copyCodeActionLabel = translate(
-    'messages.auth.email_verification.copy_code_action',
-    resolvedLocale
-  );
-  const copyLinkActionLabel = translate(
-    'messages.auth.email_verification.copy_link_action',
-    resolvedLocale
-  );
-  const fallbackLabel = translate('messages.auth.email_verification.fallback', resolvedLocale);
   const ignoreLine = translate('messages.auth.email_verification.ignore', resolvedLocale);
   const noReplyLine = translate('messages.auth.email_verification.no_reply', resolvedLocale);
   const signature = translate('messages.auth.email_verification.signature', resolvedLocale, {
@@ -314,8 +278,6 @@ const buildVerificationEmailMessage = ({
     `${codeLabel}: ${code}\n` +
     `${expiryLine}\n` +
     `${expiryAtLine}\n\n` +
-    `${actionLabel}: ${verifyLink}\n\n` +
-    `${fallbackLabel}: ${verifyLink}\n\n` +
     `${ignoreLine}\n` +
     `${noReplyLine}\n\n` +
     passwordLine +
@@ -327,8 +289,6 @@ const buildVerificationEmailMessage = ({
   const safeCodeLabel = escapeHtml(codeLabel);
   const safeExpiryLine = escapeHtml(expiryLine);
   const safeExpiryAtLine = escapeHtml(expiryAtLine);
-  const safeActionLabel = escapeHtml(actionLabel);
-  const safeFallbackLabel = escapeHtml(fallbackLabel);
   const safeIgnoreLine = escapeHtml(ignoreLine);
   const safeNoReplyLine = escapeHtml(noReplyLine);
   const safeSignature = escapeHtml(signature);
@@ -341,21 +301,6 @@ const buildVerificationEmailMessage = ({
       </td>`
     : '';
   const safeCode = escapeHtml(code);
-  const safeLink = escapeHtml(verifyLink);
-  const copyCodeLink = buildCopyHelperLink({
-    email,
-    action: 'code',
-    value: code,
-  });
-  const copyLinkLink = buildCopyHelperLink({
-    email,
-    action: 'link',
-    value: verifyLink,
-  });
-  const safeCopyCodeLink = escapeHtml(copyCodeLink);
-  const safeCopyLinkLink = escapeHtml(copyLinkLink);
-  const safeCopyCodeActionLabel = escapeHtml(copyCodeActionLabel);
-  const safeCopyLinkActionLabel = escapeHtml(copyLinkActionLabel);
   const htmlPasswordLine = plainPassword
     ? `<p style="margin:0 0 20px;font-size:13px;line-height:20px;color:#b45309;background:#fff8eb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;"><strong>${escapeHtml(translate('messages.auth.email_verification.password_notice', resolvedLocale))}</strong> <code style="font-family:Consolas,Monaco,'Courier New',monospace;">${escapeHtml(plainPassword)}</code></p>`
     : '';
@@ -412,33 +357,6 @@ const buildVerificationEmailMessage = ({
                   </td>
                 </tr>
               </table>
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 18px;">
-                <tr>
-                  <td align="center" bgcolor="#0b88e6" style="border-radius:10px;">
-                    <a href="${safeLink}" style="display:inline-block;padding:12px 18px;font-size:14px;font-weight:700;line-height:20px;color:#ffffff;text-decoration:none;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">
-                      ${safeActionLabel}
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 18px;">
-                <tr>
-                  <td align="center" style="padding:0 8px 8px 0;">
-                    <a href="${safeCopyCodeLink}" style="display:inline-block;padding:10px 14px;font-size:13px;font-weight:700;line-height:18px;color:#0b66c3;text-decoration:none;font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#e6f2ff;border:1px solid #93c5fd;border-radius:8px;">
-                      ${safeCopyCodeActionLabel}
-                    </a>
-                  </td>
-                  <td align="center" style="padding:0 0 8px 8px;">
-                    <a href="${safeCopyLinkLink}" style="display:inline-block;padding:10px 14px;font-size:13px;font-weight:700;line-height:18px;color:#0b66c3;text-decoration:none;font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#e6f2ff;border:1px solid #93c5fd;border-radius:8px;">
-                      ${safeCopyLinkActionLabel}
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:0 0 16px;font-size:13px;line-height:20px;color:#334155;">
-                ${safeFallbackLabel}<br />
-                <a href="${safeLink}" style="color:#0b66c3;word-break:break-word;">${safeLink}</a>
-              </p>
               <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#475569;">${safeIgnoreLine}</p>
               <p style="margin:0 0 20px;font-size:13px;line-height:20px;color:#64748b;">${safeNoReplyLine}</p>
               ${htmlPasswordLine}
@@ -460,21 +378,16 @@ const sendVerificationEmail = async ({
   adminName,
   facilityName,
   code,
-  linkToken,
-  nextPath,
   plainPassword,
   expiresAt,
   locale,
-  requestContext,
 }) => {
-  const verifyLink = buildVerifyEmailLink(linkToken, email, nextPath, requestContext);
   const includePassword = Boolean(env.ALLOW_PLAINTEXT_PASSWORD_EMAIL);
   const payload = buildVerificationEmailMessage({
     email,
     adminName,
     facilityName,
     code,
-    verifyLink,
     plainPassword: includePassword ? plainPassword : null,
     expiresAt,
     locale,
@@ -820,12 +733,9 @@ const handleExistingEmailRegistration = async ({
     adminName: resolveAdminDisplayName(user, admin_name),
     facilityName: user.facility?.name || user.tenant?.name || facility_name,
     code: verification.code,
-    linkToken: verification.linkToken,
-    nextPath,
     plainPassword: null,
     expiresAt: verification.expiresAt,
     locale: request_context?.locale,
-    requestContext: request_context,
   });
   ensureEmailDelivered(deliveryResult, 'register_existing_email');
 
@@ -1041,7 +951,15 @@ const login = async (data) => {
 
   // Check if user is active
   if (user.status !== 'ACTIVE') {
-    throw new HttpError(resolveAccountStatusErrorKey(user.status), 403);
+    const errorKey = resolveAccountStatusErrorKey(user.status);
+    const details = user.status === 'PENDING'
+      ? [{
+          reason: 'email_verification_required',
+          identifier_type: email ? 'email' : 'phone',
+          email: user.email || email || null,
+        }]
+      : [];
+    throw new HttpError(errorKey, 403, details);
   }
 
   // Verify password
@@ -1283,12 +1201,9 @@ const register = async (data) => {
     adminName: admin_name,
     facilityName: facility_name,
     code: verification.code,
-    linkToken: verification.linkToken,
-    nextPath: '/login',
     plainPassword: password,
     expiresAt: verification.expiresAt,
     locale: request_context?.locale,
-    requestContext: request_context,
   });
   ensureEmailDelivered(deliveryResult, 'register_new_user');
 
@@ -1720,12 +1635,9 @@ const resendVerification = async (data) => {
         'Admin',
       facilityName: user.facility?.name || user.tenant?.name || 'your facility',
       code: tokens.code,
-      linkToken: tokens.linkToken,
-      nextPath: '/login',
       plainPassword: null,
       expiresAt: tokens.expiresAt,
       locale: request_context?.locale,
-      requestContext: request_context,
     });
     ensureEmailDelivered(deliveryResult, 'resend_verification');
   } else {

@@ -325,6 +325,14 @@
   "@authBackToLoginActionLabel": {
     "description": "Navigate back to login action label."
   },
+  "authVerifyEmailActionLabel": "Verify email",
+  "@authVerifyEmailActionLabel": {
+    "description": "Email verification form submit action label."
+  },
+  "authSendNewCodeActionLabel": "Send new code",
+  "@authSendNewCodeActionLabel": {
+    "description": "Resend email verification code action label."
+  },
   "authAdminNameLabel": "Administrator name",
   "@authAdminNameLabel": {
     "description": "Facility administrator name field label."
