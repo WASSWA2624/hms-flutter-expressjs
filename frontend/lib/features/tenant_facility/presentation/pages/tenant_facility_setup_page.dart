@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -206,20 +207,32 @@ class _PermissionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool compact = breakpoint.isMobile;
 
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.xs),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(
-            allowed ? Icons.lock_open_outlined : Icons.lock_outline,
-            color: allowed
-                ? theme.statusColors.success
-                : theme.colorScheme.onSurfaceVariant,
-            size: theme.appTokens.listIconSize,
+          Padding(
+            padding: EdgeInsets.only(top: compact ? 2 : 0),
+            child: Icon(
+              allowed ? Icons.lock_open_outlined : Icons.lock_outline,
+              color: allowed
+                  ? theme.statusColors.success
+                  : theme.colorScheme.onSurfaceVariant,
+              size: theme.appTokens.listIconSize,
+            ),
           ),
           SizedBox(width: theme.spacing.xs),
-          Expanded(child: Text(label)),
+          Expanded(
+            child: Text(
+              label,
+              style: compact ? theme.textTheme.bodyMedium : null,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
           Text(
             allowed
                 ? l10n.tenantFacilityPermissionAllowed
@@ -929,15 +942,22 @@ class _CountTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool compact = breakpoint.isMobile;
+    final double tileWidth = switch (breakpoint) {
+      AppBreakpoint.xs => double.infinity,
+      AppBreakpoint.sm => 132,
+      _ => 120,
+    };
 
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
+        padding: EdgeInsets.all(compact ? theme.spacing.sm : theme.spacing.md),
         child: SizedBox(
-          width: 120,
+          width: tileWidth,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -961,6 +981,12 @@ class _InlineList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final double maxChipWidth = switch (breakpoint) {
+      AppBreakpoint.xs => double.infinity,
+      AppBreakpoint.sm => 220,
+      _ => 260,
+    };
 
     if (labels.isEmpty) {
       return Text(
@@ -976,16 +1002,24 @@ class _InlineList extends StatelessWidget {
       runSpacing: theme.spacing.xs,
       children: <Widget>[
         for (final String label in labels.take(6))
-          DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.sm,
-                vertical: theme.spacing.xs,
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxChipWidth),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
-              child: Text(label, style: theme.textTheme.labelLarge),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.sm,
+                  vertical: theme.spacing.xs,
+                ),
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge,
+                ),
+              ),
             ),
           ),
       ],
@@ -1040,13 +1074,15 @@ class _SetupGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool useTwoColumns = constraints.maxWidth >= 1000;
+        final bool compact = constraints.maxWidth < AppBreakpoints.sm;
+        final double gap = compact ? theme.spacing.md : theme.spacing.lg;
         final double itemWidth = useTwoColumns
-            ? (constraints.maxWidth - theme.spacing.lg) / 2
+            ? (constraints.maxWidth - gap) / 2
             : constraints.maxWidth;
 
         return Wrap(
-          spacing: theme.spacing.lg,
-          runSpacing: theme.spacing.lg,
+          spacing: gap,
+          runSpacing: gap,
           children: <Widget>[
             for (final Widget child in children)
               SizedBox(width: itemWidth, child: child),
@@ -1073,6 +1109,8 @@ class _SubmitButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool fullWidth = breakpoint.isMobile;
     final failure = ref.watch(
       tenantFacilitySetupSubmissionProvider.select((state) => state.failure),
     );
@@ -1085,6 +1123,7 @@ class _SubmitButton extends ConsumerWidget {
           leadingIcon: Icons.save_outlined,
           isLoading: isLoading,
           enabled: enabled,
+          fullWidth: fullWidth,
           onPressed: onPressed,
         ),
         if (!enabled) ...<Widget>[

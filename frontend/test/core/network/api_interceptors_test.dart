@@ -49,6 +49,96 @@ void main() {
     });
   });
 
+  group('CsrfInterceptor', () {
+    test('adds CSRF tokens to state-changing requests', () async {
+      final tokenAdapter = _StaticHttpClientAdapter(
+        (_) => ResponseBody.fromString(
+          '{"data":{"token":"csrf-token"}}',
+          200,
+          headers: <String, List<String>>{
+            Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+          },
+        ),
+      );
+      final requestAdapter = _StaticHttpClientAdapter(
+        (_) => ResponseBody.fromString('{}', 200),
+      );
+      final tokenDio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = tokenAdapter;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = requestAdapter
+        ..interceptors.add(CsrfInterceptor(tokenDio: tokenDio));
+
+      await dio.post<Object?>('/api/v1/branches');
+
+      expect(requestAdapter.lastOptions?.headers[csrfHeaderName], 'csrf-token');
+      expect(tokenAdapter.lastOptions?.path, '/api/v1/auth/csrf-token');
+    });
+
+    test('does not add CSRF tokens to exempt auth requests', () async {
+      final tokenAdapter = _StaticHttpClientAdapter(
+        (_) => ResponseBody.fromString('{"data":{"token":"csrf-token"}}', 200),
+      );
+      final requestAdapter = _StaticHttpClientAdapter(
+        (_) => ResponseBody.fromString('{}', 200),
+      );
+      final tokenDio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = tokenAdapter;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = requestAdapter
+        ..interceptors.add(CsrfInterceptor(tokenDio: tokenDio));
+
+      await dio.post<Object?>('/api/v1/auth/login');
+
+      expect(requestAdapter.lastOptions?.headers[csrfHeaderName], isNull);
+      expect(tokenAdapter.lastOptions, isNull);
+    });
+
+    test('refreshes token after CSRF failure responses', () async {
+      var tokenRequestCount = 0;
+      final tokenAdapter = _StaticHttpClientAdapter((_) {
+        tokenRequestCount += 1;
+        return ResponseBody.fromString(
+          '{"data":{"token":"csrf-token-$tokenRequestCount"}}',
+          200,
+          headers: <String, List<String>>{
+            Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+          },
+        );
+      });
+      var requestCount = 0;
+      final sentTokens = <Object?>[];
+      final requestAdapter = _StaticHttpClientAdapter((options) {
+        requestCount += 1;
+        sentTokens.add(options.headers[csrfHeaderName]);
+        if (requestCount == 1) {
+          return ResponseBody.fromString(
+            '{"code":"INVALID"}',
+            403,
+            headers: <String, List<String>>{
+              Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+            },
+          );
+        }
+
+        return ResponseBody.fromString('{}', 200);
+      });
+      final tokenDio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = tokenAdapter;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = requestAdapter
+        ..interceptors.add(CsrfInterceptor(tokenDio: tokenDio));
+
+      await expectLater(
+        dio.post<Object?>('/api/v1/branches'),
+        throwsA(isA<DioException>()),
+      );
+      await dio.post<Object?>('/api/v1/branches');
+
+      expect(sentTokens, <Object?>['csrf-token-1', 'csrf-token-2']);
+    });
+  });
+
   group('SafeDiagnosticsInterceptor', () {
     test(
       'logs safe request metadata without query, header, or body values',

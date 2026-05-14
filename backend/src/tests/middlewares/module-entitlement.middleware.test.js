@@ -43,6 +43,21 @@ describe('module entitlement middleware', () => {
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
+  test('allows branch endpoints as free-core without singularizing to branche', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/branches',
+      user: { tenant_id: 'tenant-free', roles: ['SUPER_ADMIN'] }
+    };
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(subscriptionRepository.count).not.toHaveBeenCalled();
+    expect(moduleRepository.count).not.toHaveBeenCalled();
+    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
+  });
+
   test('allows dashboard workspace without subscription lookup because it is free-core', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {

@@ -98,6 +98,7 @@ const FREE_CORE_MODULES = new Set([
 ]);
 
 const IRREGULAR_PATH_SEGMENTS = {
+  branches: 'branch',
   diagnoses: 'diagnosis'
 };
 

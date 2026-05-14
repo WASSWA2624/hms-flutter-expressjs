@@ -145,6 +145,11 @@ class AppScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final double contentGap = ResponsiveSpacing.contentGapFor(
+      breakpoint,
+      spacing: theme.spacing,
+    );
 
     return ResponsivePage(
       maxWidth: maxWidth,
@@ -159,7 +164,7 @@ class AppScreen extends StatelessWidget {
             actions: headerActions,
           ),
           if (children.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.xl),
+            SizedBox(height: contentGap),
             ...children,
           ],
         ],
@@ -188,40 +193,102 @@ class AppScreenHeader extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final TextTheme textTheme = theme.textTheme;
     final List<Widget> effectiveActions = actions ?? const <Widget>[];
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool stackActions = breakpoint.isMobile;
+    final TextStyle? titleStyle = switch (breakpoint) {
+      AppBreakpoint.xs => textTheme.headlineSmall,
+      AppBreakpoint.sm => textTheme.headlineSmall,
+      _ => textTheme.headlineMedium,
+    };
+    final TextStyle? subtitleStyle = switch (breakpoint) {
+      AppBreakpoint.xs => textTheme.titleMedium,
+      AppBreakpoint.sm => textTheme.titleMedium,
+      _ => textTheme.titleLarge,
+    };
+    final TextStyle? bodyStyle = switch (breakpoint) {
+      AppBreakpoint.xs => textTheme.bodyMedium,
+      AppBreakpoint.sm => textTheme.bodyMedium,
+      _ => textTheme.bodyLarge,
+    }?.copyWith(color: colorScheme.onSurfaceVariant);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(title, style: textTheme.headlineMedium),
-                  if (subtitle != null && subtitle!.isNotEmpty) ...<Widget>[
-                    SizedBox(height: theme.spacing.sm),
-                    Text(subtitle!, style: textTheme.titleLarge),
-                  ],
-                  if (body != null && body!.isNotEmpty) ...<Widget>[
-                    SizedBox(height: theme.spacing.sm),
-                    Text(
-                      body!,
-                      style: textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
+        if (stackActions)
+          _HeaderText(
+            title: title,
+            subtitle: subtitle,
+            body: body,
+            titleStyle: titleStyle,
+            subtitleStyle: subtitleStyle,
+            bodyStyle: bodyStyle,
+          )
+        else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: _HeaderText(
+                  title: title,
+                  subtitle: subtitle,
+                  body: body,
+                  titleStyle: titleStyle,
+                  subtitleStyle: subtitleStyle,
+                  bodyStyle: bodyStyle,
+                ),
               ),
-            ),
-            if (effectiveActions.isNotEmpty) ...<Widget>[
-              SizedBox(width: theme.spacing.lg),
-              Wrap(spacing: theme.spacing.sm, children: effectiveActions),
+              if (effectiveActions.isNotEmpty) ...<Widget>[
+                SizedBox(width: theme.spacing.lg),
+                Wrap(spacing: theme.spacing.sm, children: effectiveActions),
+              ],
             ],
-          ],
-        ),
+          ),
+        if (stackActions && effectiveActions.isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
+            children: effectiveActions,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _HeaderText extends StatelessWidget {
+  const _HeaderText({
+    required this.title,
+    required this.titleStyle,
+    required this.subtitleStyle,
+    required this.bodyStyle,
+    this.subtitle,
+    this.body,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? body;
+  final TextStyle? titleStyle;
+  final TextStyle? subtitleStyle;
+  final TextStyle? bodyStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(title, style: titleStyle),
+        if (subtitle != null && subtitle!.isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.sm),
+          Text(subtitle!, style: subtitleStyle),
+        ],
+        if (body != null && body!.isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.sm),
+          Text(body!, style: bodyStyle),
+        ],
       ],
     );
   }
@@ -243,13 +310,17 @@ class AppScreenSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool compact = breakpoint.isMobile;
+    final double padding = compact ? theme.spacing.md : theme.spacing.lg;
+    final double headingGap = compact ? theme.spacing.xs : theme.spacing.lg;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.lg),
+        padding: EdgeInsets.all(padding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -261,7 +332,7 @@ class AppScreenSection extends StatelessWidget {
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-            SizedBox(height: theme.spacing.lg),
+            SizedBox(height: headingGap),
             child,
           ],
         ),
