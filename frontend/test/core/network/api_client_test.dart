@@ -10,8 +10,29 @@ void main() {
   group('ApiClient', () {
     test('keeps endpoint path segments URL encoded', () {
       expect(
-        ApiEndpoints.exampleResource('example 1').toString(),
-        '/example-resources/example%201',
+        ApiEndpoints.byId(HmsApiResource.patients, 'patient 1').toString(),
+        '/api/v1/patients/patient%201',
+      );
+    });
+
+    test('centralizes root and module API endpoints', () {
+      expect(ApiEndpoints.health.toString(), '/health');
+      expect(ApiEndpoints.readiness.toString(), '/ready');
+      expect(ApiEndpoints.liveness.toString(), '/live');
+      expect(
+        ApiEndpoints.auth(AuthEndpoint.login).toString(),
+        '/api/v1/auth/login',
+      );
+      expect(
+        ApiEndpoints.collection(
+          HmsApiResource.appointments,
+          queryParameters: <String, String>{'status': 'booked'},
+        ).toString(),
+        '/api/v1/appointments?status=booked',
+      );
+      expect(
+        HmsApiResource.pharmacy.group,
+        HmsApiEndpointGroup.diagnosticsPharmacyBilling,
       );
     });
 

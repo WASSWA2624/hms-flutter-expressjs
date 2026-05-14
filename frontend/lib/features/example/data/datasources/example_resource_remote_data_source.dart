@@ -24,7 +24,7 @@ final class DioExampleResourceRemoteDataSource
     CancelToken? cancelToken,
   }) {
     return _apiClient.get<ExampleResourceDto>(
-      ApiEndpoints.exampleResource(id),
+      ApiEndpoints.byId(HmsApiResource.public, id),
       decoder: ExampleResourceDto.fromResponseData,
       cancelToken: cancelToken,
     );
