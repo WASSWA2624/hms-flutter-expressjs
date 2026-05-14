@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "predev": "node scripts/release-port.js 3000",
     "start": "node src/server.js",
+    "prestart": "node scripts/release-port.js 3000",
     "postinstall": "prisma generate",
     "test": "npm run test:backend",
     "test:watch": "npm run test:backend:watch",
