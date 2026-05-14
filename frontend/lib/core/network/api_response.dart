@@ -31,11 +31,8 @@ final class ApiResponseEnvelope<T> {
       throw const FormatException('Expected an API response object.');
     }
 
-    final Object? successValue = responseData['success'];
-    if (successValue is! bool) {
-      throw const FormatException('Expected an API success flag.');
-    }
-    if (!successValue) {
+    final bool isSuccessful = _isSuccessfulResponse(responseData);
+    if (!isSuccessful) {
       throw const FormatException('Expected a successful API response.');
     }
     if (!responseData.containsKey('data')) {
@@ -44,9 +41,23 @@ final class ApiResponseEnvelope<T> {
 
     final Object? metaValue = responseData['meta'];
     return ApiResponseEnvelope<T>(
-      success: successValue,
+      success: isSuccessful,
       data: decoder(responseData['data']),
       meta: metaValue is JsonMap ? metaValue : null,
     );
+  }
+
+  static bool _isSuccessfulResponse(JsonMap responseData) {
+    final Object? successValue = responseData['success'];
+    if (successValue is bool) {
+      return successValue;
+    }
+
+    final Object? statusValue = responseData['status'];
+    if (statusValue is int) {
+      return statusValue >= 200 && statusValue < 300;
+    }
+
+    return false;
   }
 }

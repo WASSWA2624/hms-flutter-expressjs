@@ -31,6 +31,24 @@ abstract final class AppTheme {
         colorScheme: colorScheme,
       ).white,
     };
+    final OutlineInputBorder inputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.zero,
+      borderSide: BorderSide(
+        color: colorScheme.outlineVariant,
+        width: appTokens.dividerThickness,
+      ),
+    );
+    final OutlineInputBorder focusedInputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.zero,
+      borderSide: BorderSide(color: colorScheme.primary, width: 1.2),
+    );
+    final OutlineInputBorder errorInputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.zero,
+      borderSide: BorderSide(
+        color: statusColors.error,
+        width: appTokens.dividerThickness,
+      ),
+    );
 
     return ThemeData(
       useMaterial3: true,
@@ -115,37 +133,38 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         isDense: true,
+        filled: true,
+        fillColor: colorScheme.surface,
+        hoverColor: colorScheme.surfaceContainerHighest,
         contentPadding: EdgeInsets.symmetric(
-          horizontal: spacing.md,
-          vertical: spacing.sm,
+          horizontal: spacing.lg,
+          vertical: 13,
         ),
-        constraints: BoxConstraints(
-          minHeight: appTokens.minInteractiveDimension,
-        ),
+        constraints: const BoxConstraints(minHeight: 48),
         prefixIconConstraints: const BoxConstraints(
-          minWidth: 34,
-          minHeight: 34,
+          minWidth: 40,
+          minHeight: 40,
         ),
         suffixIconConstraints: const BoxConstraints(
-          minWidth: 34,
-          minHeight: 34,
+          minWidth: 40,
+          minHeight: 40,
         ),
-        border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
-        enabledBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+        border: inputBorder,
+        enabledBorder: inputBorder,
+        disabledBorder: inputBorder.copyWith(
+          borderSide: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+            width: appTokens.dividerThickness,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: colorScheme.primary),
+        focusedBorder: focusedInputBorder,
+        errorBorder: errorInputBorder,
+        focusedErrorBorder: errorInputBorder.copyWith(
+          borderSide: BorderSide(color: statusColors.error, width: 1.2),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: statusColors.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: statusColors.error),
-        ),
+        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        floatingLabelStyle: TextStyle(color: colorScheme.primary),
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
       ),
       navigationBarTheme: const NavigationBarThemeData(
         indicatorShape: rectangularShape,
