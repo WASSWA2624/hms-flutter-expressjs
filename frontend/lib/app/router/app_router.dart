@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_di
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -63,6 +64,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.settings.path,
             name: AppRoutes.settings.name,
             builder: (_, _) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.tenantFacilitySetup.path,
+            name: AppRoutes.tenantFacilitySetup.name,
+            builder: (_, _) => const TenantFacilitySetupPage(),
           ),
           GoRoute(
             path: AppRoutes.profile.path,
@@ -144,6 +150,14 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         label: l10n.navigationSettingsLabel,
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.tenantFacilitySetup,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationSetupLabel,
+        icon: Icons.domain_add_outlined,
+        selectedIcon: Icons.domain,
       ),
     ),
   ];

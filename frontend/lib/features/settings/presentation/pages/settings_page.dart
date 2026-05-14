@@ -111,19 +111,21 @@ class SettingsPage extends ConsumerWidget {
             AppScreenSection(
               title: l10n.settingsAdministrationSectionTitle,
               body: l10n.settingsAdministrationSectionBody,
-              child: _SettingsBoundaryList(
-                items: <_SettingsBoundaryItem>[
-                  _SettingsBoundaryItem(
-                    icon: Icons.business_outlined,
-                    label: l10n.settingsTenantBoundaryLabel,
+              child: _SettingsActionList(
+                actions: <_SettingsAction>[
+                  _SettingsAction(
+                    icon: Icons.domain_add_outlined,
+                    title: l10n.settingsTenantFacilitySetupActionTitle,
+                    body: l10n.settingsTenantFacilitySetupActionBody,
+                    onTap: () =>
+                        context.go(AppRoutes.tenantFacilitySetup.location()),
                   ),
-                  _SettingsBoundaryItem(
-                    icon: Icons.local_hospital_outlined,
-                    label: l10n.settingsFacilityBoundaryLabel,
-                  ),
-                  _SettingsBoundaryItem(
+                  _SettingsAction(
                     icon: Icons.admin_panel_settings_outlined,
-                    label: l10n.settingsSecurityBoundaryLabel,
+                    title: l10n.settingsSecurityBoundaryLabel,
+                    body: l10n.settingsSecurityBoundaryBody,
+                    onTap: () =>
+                        context.go(AppRoutes.tenantFacilitySetup.location()),
                   ),
                 ],
               ),
@@ -265,70 +267,6 @@ class _SettingsActionTile extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-final class _SettingsBoundaryItem {
-  const _SettingsBoundaryItem({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-}
-
-class _SettingsBoundaryList extends StatelessWidget {
-  const _SettingsBoundaryList({required this.items});
-
-  final List<_SettingsBoundaryItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Wrap(
-      spacing: theme.spacing.sm,
-      runSpacing: theme.spacing.sm,
-      children: <Widget>[
-        for (final _SettingsBoundaryItem item in items)
-          _SettingsBoundaryChip(item: item),
-      ],
-    );
-  }
-}
-
-class _SettingsBoundaryChip extends StatelessWidget {
-  const _SettingsBoundaryChip({required this.item});
-
-  final _SettingsBoundaryItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              item.icon,
-              size: theme.appTokens.listIconSize,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Text(item.label, style: theme.textTheme.labelLarge),
-          ],
         ),
       ),
     );

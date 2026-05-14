@@ -53,6 +53,11 @@ abstract final class AppRoutes {
     path: '/settings',
     access: AppRouteAccess.authenticated,
   );
+  static const AppRouteData tenantFacilitySetup = AppRouteData(
+    name: 'tenantFacilitySetup',
+    path: '/admin/setup',
+    access: AppRouteAccess.authenticated,
+  );
   static const AppRouteData profile = AppRouteData(
     name: 'profile',
     path: '/profile',
@@ -89,6 +94,7 @@ abstract final class AppRoutes {
   static const List<AppRouteData> all = <AppRouteData>[
     home,
     settings,
+    tenantFacilitySetup,
     profile,
     login,
     register,
@@ -101,6 +107,7 @@ abstract final class AppRoutes {
   static const List<AppRouteData> shellRoutes = <AppRouteData>[
     home,
     settings,
+    tenantFacilitySetup,
     profile,
   ];
 

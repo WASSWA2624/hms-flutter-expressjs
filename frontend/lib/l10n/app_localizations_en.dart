@@ -90,6 +90,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationSettingsLabel => 'Settings';
 
   @override
+  String get navigationSetupLabel => 'Setup';
+
+  @override
   String get homeReadyTitle => 'Hospital operations workspace';
 
   @override
@@ -328,6 +331,207 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSecurityBoundaryLabel => 'User and security settings';
+
+  @override
+  String get settingsSecurityBoundaryBody =>
+      'Review administrator access before opening user management.';
+
+  @override
+  String get settingsTenantFacilitySetupActionTitle =>
+      'Tenant and facility setup';
+
+  @override
+  String get settingsTenantFacilitySetupActionBody =>
+      'Configure organization identity, facility profile, departments, units, and physical locations.';
+
+  @override
+  String get tenantFacilitySetupTitle => 'Tenant and facility setup';
+
+  @override
+  String get tenantFacilitySetupBody =>
+      'Prepare the organization and facility before daily hospital operations begin.';
+
+  @override
+  String get tenantFacilitySetupLoadingTitle => 'Loading setup';
+
+  @override
+  String get tenantFacilitySetupLoadingBody =>
+      'Loading organization and facility configuration.';
+
+  @override
+  String get tenantFacilityChecklistTitle => 'First-run checklist';
+
+  @override
+  String tenantFacilityChecklistBody(int completed, int total) {
+    return '$completed of $total setup areas complete.';
+  }
+
+  @override
+  String get tenantFacilityChecklistTenant => 'Tenant profile is configured';
+
+  @override
+  String get tenantFacilityChecklistIdentity =>
+      'Facility identity and contacts are configured';
+
+  @override
+  String get tenantFacilityChecklistDepartments =>
+      'Departments and units are configured';
+
+  @override
+  String get tenantFacilityChecklistLocations =>
+      'Rooms, wards, or beds are configured';
+
+  @override
+  String get tenantFacilityPermissionsTitle => 'Permission gates';
+
+  @override
+  String get tenantFacilityPermissionsBody =>
+      'Write actions require tenant or facility administrator permissions.';
+
+  @override
+  String get tenantFacilityTenantAdminPermission => 'Tenant administrator';
+
+  @override
+  String get tenantFacilityFacilityAdminPermission => 'Facility administrator';
+
+  @override
+  String get tenantFacilityPermissionAllowed => 'Allowed';
+
+  @override
+  String get tenantFacilityPermissionDenied => 'Denied';
+
+  @override
+  String get tenantFacilityPermissionRequired =>
+      'Administrator permission is required for this action.';
+
+  @override
+  String get tenantFacilityTenantSectionTitle => 'Tenant profile';
+
+  @override
+  String get tenantFacilityTenantSectionBody =>
+      'Organization details shared across facilities.';
+
+  @override
+  String get tenantFacilityTenantNameLabel => 'Tenant name';
+
+  @override
+  String get tenantFacilityTenantSlugLabel => 'Tenant slug';
+
+  @override
+  String get tenantFacilityActiveLabel => 'Active';
+
+  @override
+  String get tenantFacilitySaveTenantAction => 'Save tenant';
+
+  @override
+  String get tenantFacilityFacilitySectionTitle => 'Facility profile';
+
+  @override
+  String get tenantFacilityFacilitySectionBody =>
+      'Facility name, logo reference, contact details, address, type, and active state.';
+
+  @override
+  String get tenantFacilityLogoUrlLabel => 'Logo storage URL';
+
+  @override
+  String get tenantFacilityLogoUrlHelper =>
+      'Use a URL created by the approved storage service.';
+
+  @override
+  String get tenantFacilityAddressLineLabel => 'Address line';
+
+  @override
+  String get tenantFacilityCityLabel => 'City';
+
+  @override
+  String get tenantFacilityCountryLabel => 'Country';
+
+  @override
+  String get tenantFacilitySaveFacilityAction => 'Save facility';
+
+  @override
+  String get tenantFacilityBranchesSectionTitle => 'Branches';
+
+  @override
+  String get tenantFacilityBranchesSectionBody =>
+      'Add branch entry points for facilities that operate across sites.';
+
+  @override
+  String get tenantFacilityNoBranches => 'No branches have been added.';
+
+  @override
+  String get tenantFacilityBranchNameLabel => 'Branch name';
+
+  @override
+  String get tenantFacilityAddBranchAction => 'Add branch';
+
+  @override
+  String get tenantFacilityDepartmentsSectionTitle => 'Departments and units';
+
+  @override
+  String get tenantFacilityDepartmentsSectionBody =>
+      'Create departments first, then add units under the facility.';
+
+  @override
+  String get tenantFacilityNoDepartments => 'No departments have been added.';
+
+  @override
+  String get tenantFacilityNoUnits => 'No units have been added.';
+
+  @override
+  String get tenantFacilityDepartmentNameLabel => 'Department name';
+
+  @override
+  String get tenantFacilityDepartmentShortNameLabel => 'Short name';
+
+  @override
+  String get tenantFacilityDepartmentTypeLabel => 'Department type';
+
+  @override
+  String get tenantFacilityDepartmentTypeClinical => 'Clinical';
+
+  @override
+  String get tenantFacilityDepartmentTypeAdministrative => 'Administrative';
+
+  @override
+  String get tenantFacilityDepartmentTypeSupport => 'Support';
+
+  @override
+  String get tenantFacilityDepartmentTypeDiagnostics => 'Diagnostics';
+
+  @override
+  String get tenantFacilityDepartmentTypeOther => 'Other';
+
+  @override
+  String get tenantFacilityAddDepartmentAction => 'Add department';
+
+  @override
+  String get tenantFacilityUnitNameLabel => 'Unit name';
+
+  @override
+  String get tenantFacilityUnitDepartmentLabel => 'Department';
+
+  @override
+  String get tenantFacilityAddUnitAction => 'Add unit';
+
+  @override
+  String get tenantFacilityLocationsSectionTitle => 'Rooms, wards, and beds';
+
+  @override
+  String get tenantFacilityLocationsSectionBody =>
+      'Use the location setup entry points after facility identity and departments are in place.';
+
+  @override
+  String get tenantFacilityRoomsLabel => 'Rooms';
+
+  @override
+  String get tenantFacilityWardsLabel => 'Wards';
+
+  @override
+  String get tenantFacilityBedsLabel => 'Beds';
+
+  @override
+  String get tenantFacilitySavedMessage => 'Setup changes saved.';
 
   @override
   String get routeSessionRestoringTitle => 'Checking session';

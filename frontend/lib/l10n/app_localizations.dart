@@ -238,6 +238,12 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get navigationSettingsLabel;
 
+  /// Navigation label for tenant and facility setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup'**
+  String get navigationSetupLabel;
+
   /// Home page title for the HMS overview state.
   ///
   /// In en, this message translates to:
@@ -663,6 +669,372 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User and security settings'**
   String get settingsSecurityBoundaryLabel;
+
+  /// Settings action body for security administration entry point.
+  ///
+  /// In en, this message translates to:
+  /// **'Review administrator access before opening user management.'**
+  String get settingsSecurityBoundaryBody;
+
+  /// Settings action title for opening tenant and facility setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant and facility setup'**
+  String get settingsTenantFacilitySetupActionTitle;
+
+  /// Settings action body for opening tenant and facility setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure organization identity, facility profile, departments, units, and physical locations.'**
+  String get settingsTenantFacilitySetupActionBody;
+
+  /// Tenant and facility setup screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant and facility setup'**
+  String get tenantFacilitySetupTitle;
+
+  /// Tenant and facility setup screen body.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare the organization and facility before daily hospital operations begin.'**
+  String get tenantFacilitySetupBody;
+
+  /// Title while tenant and facility setup loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading setup'**
+  String get tenantFacilitySetupLoadingTitle;
+
+  /// Body while tenant and facility setup loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading organization and facility configuration.'**
+  String get tenantFacilitySetupLoadingBody;
+
+  /// Setup checklist section title.
+  ///
+  /// In en, this message translates to:
+  /// **'First-run checklist'**
+  String get tenantFacilityChecklistTitle;
+
+  /// Setup checklist completion summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total} setup areas complete.'**
+  String tenantFacilityChecklistBody(int completed, int total);
+
+  /// Checklist item for tenant profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant profile is configured'**
+  String get tenantFacilityChecklistTenant;
+
+  /// Checklist item for facility identity.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility identity and contacts are configured'**
+  String get tenantFacilityChecklistIdentity;
+
+  /// Checklist item for departments and units.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments and units are configured'**
+  String get tenantFacilityChecklistDepartments;
+
+  /// Checklist item for physical locations.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms, wards, or beds are configured'**
+  String get tenantFacilityChecklistLocations;
+
+  /// Permission summary section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission gates'**
+  String get tenantFacilityPermissionsTitle;
+
+  /// Permission summary section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Write actions require tenant or facility administrator permissions.'**
+  String get tenantFacilityPermissionsBody;
+
+  /// Tenant admin permission label.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant administrator'**
+  String get tenantFacilityTenantAdminPermission;
+
+  /// Facility admin permission label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility administrator'**
+  String get tenantFacilityFacilityAdminPermission;
+
+  /// Allowed permission status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get tenantFacilityPermissionAllowed;
+
+  /// Denied permission status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get tenantFacilityPermissionDenied;
+
+  /// Message shown when a setup action is disabled by permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator permission is required for this action.'**
+  String get tenantFacilityPermissionRequired;
+
+  /// Tenant profile form section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant profile'**
+  String get tenantFacilityTenantSectionTitle;
+
+  /// Tenant profile form section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization details shared across facilities.'**
+  String get tenantFacilityTenantSectionBody;
+
+  /// Tenant name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant name'**
+  String get tenantFacilityTenantNameLabel;
+
+  /// Tenant slug field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant slug'**
+  String get tenantFacilityTenantSlugLabel;
+
+  /// Active status switch label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get tenantFacilityActiveLabel;
+
+  /// Save tenant button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Save tenant'**
+  String get tenantFacilitySaveTenantAction;
+
+  /// Facility profile form section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility profile'**
+  String get tenantFacilityFacilitySectionTitle;
+
+  /// Facility profile form section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility name, logo reference, contact details, address, type, and active state.'**
+  String get tenantFacilityFacilitySectionBody;
+
+  /// Facility logo URL field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Logo storage URL'**
+  String get tenantFacilityLogoUrlLabel;
+
+  /// Facility logo URL helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a URL created by the approved storage service.'**
+  String get tenantFacilityLogoUrlHelper;
+
+  /// Facility address line field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Address line'**
+  String get tenantFacilityAddressLineLabel;
+
+  /// Facility city field label.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get tenantFacilityCityLabel;
+
+  /// Facility country field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get tenantFacilityCountryLabel;
+
+  /// Save facility button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Save facility'**
+  String get tenantFacilitySaveFacilityAction;
+
+  /// Branches setup section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get tenantFacilityBranchesSectionTitle;
+
+  /// Branches setup section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Add branch entry points for facilities that operate across sites.'**
+  String get tenantFacilityBranchesSectionBody;
+
+  /// Empty branch list label.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches have been added.'**
+  String get tenantFacilityNoBranches;
+
+  /// Branch name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch name'**
+  String get tenantFacilityBranchNameLabel;
+
+  /// Add branch button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add branch'**
+  String get tenantFacilityAddBranchAction;
+
+  /// Departments and units setup section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments and units'**
+  String get tenantFacilityDepartmentsSectionTitle;
+
+  /// Departments and units setup section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create departments first, then add units under the facility.'**
+  String get tenantFacilityDepartmentsSectionBody;
+
+  /// Empty department list label.
+  ///
+  /// In en, this message translates to:
+  /// **'No departments have been added.'**
+  String get tenantFacilityNoDepartments;
+
+  /// Empty unit list label.
+  ///
+  /// In en, this message translates to:
+  /// **'No units have been added.'**
+  String get tenantFacilityNoUnits;
+
+  /// Department name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Department name'**
+  String get tenantFacilityDepartmentNameLabel;
+
+  /// Department short name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Short name'**
+  String get tenantFacilityDepartmentShortNameLabel;
+
+  /// Department type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Department type'**
+  String get tenantFacilityDepartmentTypeLabel;
+
+  /// Clinical department type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical'**
+  String get tenantFacilityDepartmentTypeClinical;
+
+  /// Administrative department type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrative'**
+  String get tenantFacilityDepartmentTypeAdministrative;
+
+  /// Support department type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get tenantFacilityDepartmentTypeSupport;
+
+  /// Diagnostics department type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get tenantFacilityDepartmentTypeDiagnostics;
+
+  /// Other department type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get tenantFacilityDepartmentTypeOther;
+
+  /// Add department button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add department'**
+  String get tenantFacilityAddDepartmentAction;
+
+  /// Unit name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit name'**
+  String get tenantFacilityUnitNameLabel;
+
+  /// Unit department selection field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get tenantFacilityUnitDepartmentLabel;
+
+  /// Add unit button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add unit'**
+  String get tenantFacilityAddUnitAction;
+
+  /// Rooms wards and beds section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms, wards, and beds'**
+  String get tenantFacilityLocationsSectionTitle;
+
+  /// Rooms wards and beds section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the location setup entry points after facility identity and departments are in place.'**
+  String get tenantFacilityLocationsSectionBody;
+
+  /// Rooms count label.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms'**
+  String get tenantFacilityRoomsLabel;
+
+  /// Wards count label.
+  ///
+  /// In en, this message translates to:
+  /// **'Wards'**
+  String get tenantFacilityWardsLabel;
+
+  /// Beds count label.
+  ///
+  /// In en, this message translates to:
+  /// **'Beds'**
+  String get tenantFacilityBedsLabel;
+
+  /// Snackbar shown after setup changes are saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup changes saved.'**
+  String get tenantFacilitySavedMessage;
 
   /// Title shown while session restoration blocks a guarded route.
   ///

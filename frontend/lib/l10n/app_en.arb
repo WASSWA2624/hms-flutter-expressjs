@@ -101,6 +101,10 @@
   "@navigationSettingsLabel": {
     "description": "Navigation label for the settings destination."
   },
+  "navigationSetupLabel": "Setup",
+  "@navigationSetupLabel": {
+    "description": "Navigation label for tenant and facility setup."
+  },
   "homeReadyTitle": "Hospital operations workspace",
   "@homeReadyTitle": {
     "description": "Home page title for the HMS overview state."
@@ -389,6 +393,258 @@
   "settingsSecurityBoundaryLabel": "User and security settings",
   "@settingsSecurityBoundaryLabel": {
     "description": "Boundary label for user and security administration."
+  },
+  "settingsSecurityBoundaryBody": "Review administrator access before opening user management.",
+  "@settingsSecurityBoundaryBody": {
+    "description": "Settings action body for security administration entry point."
+  },
+  "settingsTenantFacilitySetupActionTitle": "Tenant and facility setup",
+  "@settingsTenantFacilitySetupActionTitle": {
+    "description": "Settings action title for opening tenant and facility setup."
+  },
+  "settingsTenantFacilitySetupActionBody": "Configure organization identity, facility profile, departments, units, and physical locations.",
+  "@settingsTenantFacilitySetupActionBody": {
+    "description": "Settings action body for opening tenant and facility setup."
+  },
+  "tenantFacilitySetupTitle": "Tenant and facility setup",
+  "@tenantFacilitySetupTitle": {
+    "description": "Tenant and facility setup screen title."
+  },
+  "tenantFacilitySetupBody": "Prepare the organization and facility before daily hospital operations begin.",
+  "@tenantFacilitySetupBody": {
+    "description": "Tenant and facility setup screen body."
+  },
+  "tenantFacilitySetupLoadingTitle": "Loading setup",
+  "@tenantFacilitySetupLoadingTitle": {
+    "description": "Title while tenant and facility setup loads."
+  },
+  "tenantFacilitySetupLoadingBody": "Loading organization and facility configuration.",
+  "@tenantFacilitySetupLoadingBody": {
+    "description": "Body while tenant and facility setup loads."
+  },
+  "tenantFacilityChecklistTitle": "First-run checklist",
+  "@tenantFacilityChecklistTitle": {
+    "description": "Setup checklist section title."
+  },
+  "tenantFacilityChecklistBody": "{completed} of {total} setup areas complete.",
+  "@tenantFacilityChecklistBody": {
+    "description": "Setup checklist completion summary.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilityChecklistTenant": "Tenant profile is configured",
+  "@tenantFacilityChecklistTenant": {
+    "description": "Checklist item for tenant profile."
+  },
+  "tenantFacilityChecklistIdentity": "Facility identity and contacts are configured",
+  "@tenantFacilityChecklistIdentity": {
+    "description": "Checklist item for facility identity."
+  },
+  "tenantFacilityChecklistDepartments": "Departments and units are configured",
+  "@tenantFacilityChecklistDepartments": {
+    "description": "Checklist item for departments and units."
+  },
+  "tenantFacilityChecklistLocations": "Rooms, wards, or beds are configured",
+  "@tenantFacilityChecklistLocations": {
+    "description": "Checklist item for physical locations."
+  },
+  "tenantFacilityPermissionsTitle": "Permission gates",
+  "@tenantFacilityPermissionsTitle": {
+    "description": "Permission summary section title."
+  },
+  "tenantFacilityPermissionsBody": "Write actions require tenant or facility administrator permissions.",
+  "@tenantFacilityPermissionsBody": {
+    "description": "Permission summary section body."
+  },
+  "tenantFacilityTenantAdminPermission": "Tenant administrator",
+  "@tenantFacilityTenantAdminPermission": {
+    "description": "Tenant admin permission label."
+  },
+  "tenantFacilityFacilityAdminPermission": "Facility administrator",
+  "@tenantFacilityFacilityAdminPermission": {
+    "description": "Facility admin permission label."
+  },
+  "tenantFacilityPermissionAllowed": "Allowed",
+  "@tenantFacilityPermissionAllowed": {
+    "description": "Allowed permission status label."
+  },
+  "tenantFacilityPermissionDenied": "Denied",
+  "@tenantFacilityPermissionDenied": {
+    "description": "Denied permission status label."
+  },
+  "tenantFacilityPermissionRequired": "Administrator permission is required for this action.",
+  "@tenantFacilityPermissionRequired": {
+    "description": "Message shown when a setup action is disabled by permissions."
+  },
+  "tenantFacilityTenantSectionTitle": "Tenant profile",
+  "@tenantFacilityTenantSectionTitle": {
+    "description": "Tenant profile form section title."
+  },
+  "tenantFacilityTenantSectionBody": "Organization details shared across facilities.",
+  "@tenantFacilityTenantSectionBody": {
+    "description": "Tenant profile form section body."
+  },
+  "tenantFacilityTenantNameLabel": "Tenant name",
+  "@tenantFacilityTenantNameLabel": {
+    "description": "Tenant name field label."
+  },
+  "tenantFacilityTenantSlugLabel": "Tenant slug",
+  "@tenantFacilityTenantSlugLabel": {
+    "description": "Tenant slug field label."
+  },
+  "tenantFacilityActiveLabel": "Active",
+  "@tenantFacilityActiveLabel": {
+    "description": "Active status switch label."
+  },
+  "tenantFacilitySaveTenantAction": "Save tenant",
+  "@tenantFacilitySaveTenantAction": {
+    "description": "Save tenant button label."
+  },
+  "tenantFacilityFacilitySectionTitle": "Facility profile",
+  "@tenantFacilityFacilitySectionTitle": {
+    "description": "Facility profile form section title."
+  },
+  "tenantFacilityFacilitySectionBody": "Facility name, logo reference, contact details, address, type, and active state.",
+  "@tenantFacilityFacilitySectionBody": {
+    "description": "Facility profile form section body."
+  },
+  "tenantFacilityLogoUrlLabel": "Logo storage URL",
+  "@tenantFacilityLogoUrlLabel": {
+    "description": "Facility logo URL field label."
+  },
+  "tenantFacilityLogoUrlHelper": "Use a URL created by the approved storage service.",
+  "@tenantFacilityLogoUrlHelper": {
+    "description": "Facility logo URL helper text."
+  },
+  "tenantFacilityAddressLineLabel": "Address line",
+  "@tenantFacilityAddressLineLabel": {
+    "description": "Facility address line field label."
+  },
+  "tenantFacilityCityLabel": "City",
+  "@tenantFacilityCityLabel": {
+    "description": "Facility city field label."
+  },
+  "tenantFacilityCountryLabel": "Country",
+  "@tenantFacilityCountryLabel": {
+    "description": "Facility country field label."
+  },
+  "tenantFacilitySaveFacilityAction": "Save facility",
+  "@tenantFacilitySaveFacilityAction": {
+    "description": "Save facility button label."
+  },
+  "tenantFacilityBranchesSectionTitle": "Branches",
+  "@tenantFacilityBranchesSectionTitle": {
+    "description": "Branches setup section title."
+  },
+  "tenantFacilityBranchesSectionBody": "Add branch entry points for facilities that operate across sites.",
+  "@tenantFacilityBranchesSectionBody": {
+    "description": "Branches setup section body."
+  },
+  "tenantFacilityNoBranches": "No branches have been added.",
+  "@tenantFacilityNoBranches": {
+    "description": "Empty branch list label."
+  },
+  "tenantFacilityBranchNameLabel": "Branch name",
+  "@tenantFacilityBranchNameLabel": {
+    "description": "Branch name field label."
+  },
+  "tenantFacilityAddBranchAction": "Add branch",
+  "@tenantFacilityAddBranchAction": {
+    "description": "Add branch button label."
+  },
+  "tenantFacilityDepartmentsSectionTitle": "Departments and units",
+  "@tenantFacilityDepartmentsSectionTitle": {
+    "description": "Departments and units setup section title."
+  },
+  "tenantFacilityDepartmentsSectionBody": "Create departments first, then add units under the facility.",
+  "@tenantFacilityDepartmentsSectionBody": {
+    "description": "Departments and units setup section body."
+  },
+  "tenantFacilityNoDepartments": "No departments have been added.",
+  "@tenantFacilityNoDepartments": {
+    "description": "Empty department list label."
+  },
+  "tenantFacilityNoUnits": "No units have been added.",
+  "@tenantFacilityNoUnits": {
+    "description": "Empty unit list label."
+  },
+  "tenantFacilityDepartmentNameLabel": "Department name",
+  "@tenantFacilityDepartmentNameLabel": {
+    "description": "Department name field label."
+  },
+  "tenantFacilityDepartmentShortNameLabel": "Short name",
+  "@tenantFacilityDepartmentShortNameLabel": {
+    "description": "Department short name field label."
+  },
+  "tenantFacilityDepartmentTypeLabel": "Department type",
+  "@tenantFacilityDepartmentTypeLabel": {
+    "description": "Department type field label."
+  },
+  "tenantFacilityDepartmentTypeClinical": "Clinical",
+  "@tenantFacilityDepartmentTypeClinical": {
+    "description": "Clinical department type label."
+  },
+  "tenantFacilityDepartmentTypeAdministrative": "Administrative",
+  "@tenantFacilityDepartmentTypeAdministrative": {
+    "description": "Administrative department type label."
+  },
+  "tenantFacilityDepartmentTypeSupport": "Support",
+  "@tenantFacilityDepartmentTypeSupport": {
+    "description": "Support department type label."
+  },
+  "tenantFacilityDepartmentTypeDiagnostics": "Diagnostics",
+  "@tenantFacilityDepartmentTypeDiagnostics": {
+    "description": "Diagnostics department type label."
+  },
+  "tenantFacilityDepartmentTypeOther": "Other",
+  "@tenantFacilityDepartmentTypeOther": {
+    "description": "Other department type label."
+  },
+  "tenantFacilityAddDepartmentAction": "Add department",
+  "@tenantFacilityAddDepartmentAction": {
+    "description": "Add department button label."
+  },
+  "tenantFacilityUnitNameLabel": "Unit name",
+  "@tenantFacilityUnitNameLabel": {
+    "description": "Unit name field label."
+  },
+  "tenantFacilityUnitDepartmentLabel": "Department",
+  "@tenantFacilityUnitDepartmentLabel": {
+    "description": "Unit department selection field label."
+  },
+  "tenantFacilityAddUnitAction": "Add unit",
+  "@tenantFacilityAddUnitAction": {
+    "description": "Add unit button label."
+  },
+  "tenantFacilityLocationsSectionTitle": "Rooms, wards, and beds",
+  "@tenantFacilityLocationsSectionTitle": {
+    "description": "Rooms wards and beds section title."
+  },
+  "tenantFacilityLocationsSectionBody": "Use the location setup entry points after facility identity and departments are in place.",
+  "@tenantFacilityLocationsSectionBody": {
+    "description": "Rooms wards and beds section body."
+  },
+  "tenantFacilityRoomsLabel": "Rooms",
+  "@tenantFacilityRoomsLabel": {
+    "description": "Rooms count label."
+  },
+  "tenantFacilityWardsLabel": "Wards",
+  "@tenantFacilityWardsLabel": {
+    "description": "Wards count label."
+  },
+  "tenantFacilityBedsLabel": "Beds",
+  "@tenantFacilityBedsLabel": {
+    "description": "Beds count label."
+  },
+  "tenantFacilitySavedMessage": "Setup changes saved.",
+  "@tenantFacilitySavedMessage": {
+    "description": "Snackbar shown after setup changes are saved."
   },
   "routeSessionRestoringTitle": "Checking session",
   "@routeSessionRestoringTitle": {
