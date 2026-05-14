@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/router/route_guards.dart';
 import 'package:hosspi_hms/app/router/route_refresh_listenable.dart';
@@ -12,7 +13,6 @@ import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.da
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
-import 'package:go_router/go_router.dart';
 
 final appInitialLocationProvider = Provider<String?>((ref) {
   return null;

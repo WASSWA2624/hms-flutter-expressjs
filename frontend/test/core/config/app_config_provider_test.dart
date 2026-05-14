@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/config/app_config_provider.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('allows tests to override app configuration', () {

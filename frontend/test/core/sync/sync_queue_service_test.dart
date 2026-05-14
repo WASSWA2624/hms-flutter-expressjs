@@ -1,8 +1,8 @@
 import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/storage/database/app_database.dart';
 import 'package:hosspi_hms/core/sync/sync_queue_entry.dart';
 import 'package:hosspi_hms/core/sync/sync_queue_service.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('DriftSyncQueueService', () {

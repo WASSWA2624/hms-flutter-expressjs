@@ -1,7 +1,7 @@
+import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations_en.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AppFailureLocalizations', () {

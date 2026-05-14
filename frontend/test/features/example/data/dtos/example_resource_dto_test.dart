@@ -1,5 +1,5 @@
-import 'package:hosspi_hms/features/example/data/dtos/example_resource_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/features/example/data/dtos/example_resource_dto.dart';
 
 void main() {
   group('ExampleResourceDto', () {

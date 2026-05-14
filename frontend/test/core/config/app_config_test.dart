@@ -1,5 +1,5 @@
-import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/config/app_config.dart';
 
 void main() {
   group('AppConfig', () {
