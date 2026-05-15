@@ -103,7 +103,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsBody =>
-      'Find, register, and maintain patient records for front desk, clinical, and administrative workflows.';
+      'Find, register, and maintain patient records across front desk and care workflows.';
 
   @override
   String get patientsLoadingTitle => 'Loading patients';
@@ -186,6 +186,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsClearFiltersAction => 'Clear';
+
+  @override
+  String get patientsAdvancedFiltersAction => 'Advanced filters';
+
+  @override
+  String get patientsAdvancedFiltersTitle => 'Advanced filters';
+
+  @override
+  String get patientsSummaryLoadingTitle => 'Loading patients';
+
+  @override
+  String get patientsSummaryLoadingBody => 'Loading related patient records.';
 
   @override
   String get patientsActiveFilter => 'Active';

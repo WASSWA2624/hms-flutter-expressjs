@@ -117,7 +117,7 @@
   "@patientsTitle": {
     "description": "Patient registry screen title."
   },
-  "patientsBody": "Find, register, and maintain patient records for front desk, clinical, and administrative workflows.",
+  "patientsBody": "Find, register, and maintain patient records across front desk and care workflows.",
   "@patientsBody": {
     "description": "Patient registry screen body."
   },
@@ -224,6 +224,22 @@
   "patientsClearFiltersAction": "Clear",
   "@patientsClearFiltersAction": {
     "description": "Clear patient registry filters action label."
+  },
+  "patientsAdvancedFiltersAction": "Advanced filters",
+  "@patientsAdvancedFiltersAction": {
+    "description": "Open patient registry advanced filters action label."
+  },
+  "patientsAdvancedFiltersTitle": "Advanced filters",
+  "@patientsAdvancedFiltersTitle": {
+    "description": "Patient registry advanced filters dialog title."
+  },
+  "patientsSummaryLoadingTitle": "Loading patients",
+  "@patientsSummaryLoadingTitle": {
+    "description": "Patient summary modal loading title."
+  },
+  "patientsSummaryLoadingBody": "Loading related patient records.",
+  "@patientsSummaryLoadingBody": {
+    "description": "Patient summary modal loading body."
   },
   "patientsActiveFilter": "Active",
   "@patientsActiveFilter": {

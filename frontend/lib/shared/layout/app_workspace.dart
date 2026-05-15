@@ -151,40 +151,40 @@ class AppWorkspaceHeader extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final List<Widget> actions = <Widget>[...secondaryActions, ?primaryAction];
-    final Widget text = _WorkspaceHeaderText(
+    final Widget titleBlock = _WorkspaceHeaderText(
       title: title,
       description: description,
       status: status,
     );
     final Widget actionBar = _WorkspaceHeaderActions(actions: actions);
+    final bool compact = breakpoint.isMobile;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
       ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: theme.spacing.lg),
-        child: breakpoint.isMobile
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  text,
-                  if (actions.isNotEmpty) ...<Widget>[
-                    SizedBox(height: theme.spacing.md),
-                    actionBar,
-                  ],
-                ],
-              )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: text),
-                  if (actions.isNotEmpty) ...<Widget>[
-                    SizedBox(width: theme.spacing.lg),
-                    Flexible(child: actionBar),
-                  ],
-                ],
-              ),
+        padding: EdgeInsets.only(bottom: theme.spacing.md),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double titleWidth = compact
+                ? constraints.maxWidth
+                : constraints.maxWidth.clamp(320, 760).toDouble();
+
+            return Wrap(
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.sm,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              alignment: compact
+                  ? WrapAlignment.start
+                  : WrapAlignment.spaceBetween,
+              children: <Widget>[
+                SizedBox(width: titleWidth, child: titleBlock),
+                if (actions.isNotEmpty) actionBar,
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -257,8 +257,8 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
           maxColumns,
         );
         final double gap = constraints.maxWidth < AppBreakpoints.md
-            ? theme.spacing.md
-            : theme.spacing.lg;
+            ? theme.spacing.sm
+            : theme.spacing.md;
         final double itemWidth =
             (constraints.maxWidth - (gap * (columns - 1))) / columns;
 
@@ -298,55 +298,66 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Widget cardBody = Padding(
-      padding: EdgeInsets.all(theme.spacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.md,
+        vertical: theme.spacing.sm,
+      ),
+      child: Row(
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (icon != null) ...<Widget>[
-                Icon(
-                  icon,
-                  color: colorScheme.primary,
-                  size: theme.appTokens.listIconSize,
-                ),
-                SizedBox(width: theme.spacing.sm),
-              ],
-              Expanded(child: Text(label, style: theme.textTheme.titleSmall)),
-              if (onPressed != null) ...<Widget>[
-                SizedBox(width: theme.spacing.sm),
-                Icon(
-                  Icons.chevron_right,
-                  color: colorScheme.primary,
-                  size: theme.appTokens.listIconSize,
-                ),
-              ],
-            ],
-          ),
-          SizedBox(height: theme.spacing.md),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+          if (icon != null) ...<Widget>[
+            Icon(
+              icon,
+              color: colorScheme.primary,
+              size: theme.appTokens.listIconSize,
             ),
-          ),
-          if (description != null && description!.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            Text(
-              description!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
+            SizedBox(width: theme.spacing.sm),
           ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (description != null && description!.isNotEmpty)
+                  Text(
+                    description!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
           if (status != null) ...<Widget>[
-            SizedBox(height: theme.spacing.md),
+            SizedBox(width: theme.spacing.sm),
             AppWorkspaceStatusBadge(status: status!),
+          ],
+          if (onPressed != null) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            Icon(
+              Icons.chevron_right,
+              color: colorScheme.primary,
+              size: theme.appTokens.listIconSize,
+            ),
           ],
         ],
       ),
@@ -394,7 +405,10 @@ class AppWorkspaceFilterBar extends StatelessWidget {
           border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Padding(
-          padding: EdgeInsets.all(theme.spacing.md),
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.xs,
+          ),
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               if (constraints.maxWidth < AppBreakpoints.md) {
@@ -1009,26 +1023,48 @@ class _WorkspaceHeaderText extends StatelessWidget {
     final TextTheme textTheme = theme.textTheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final TextStyle? titleStyle = switch (breakpoint) {
-      AppBreakpoint.xs || AppBreakpoint.sm => textTheme.headlineSmall,
-      _ => textTheme.headlineMedium,
+      AppBreakpoint.xs || AppBreakpoint.sm => textTheme.titleLarge,
+      _ => textTheme.headlineSmall,
     };
+    final TextStyle? descriptionStyle = textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(title, style: titleStyle),
-        SizedBox(height: theme.spacing.sm),
-        Text(
-          description,
-          style: textTheme.bodyLarge?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        if (status != null) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          AppWorkspaceStatusBadge(status: status!),
-        ],
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool narrow = constraints.maxWidth < AppBreakpoints.sm;
+        final double descriptionWidth = narrow
+            ? constraints.maxWidth
+            : (constraints.maxWidth * 0.62).clamp(240, 520).toDouble();
+
+        return Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: titleStyle?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            if (description.isNotEmpty)
+              SizedBox(
+                width: descriptionWidth,
+                child: Text(
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: descriptionStyle,
+                ),
+              ),
+            if (status != null) AppWorkspaceStatusBadge(status: status!),
+          ],
+        );
+      },
     );
   }
 }
@@ -1374,6 +1410,6 @@ Future<T?> showAppWorkspaceDetailDrawer<T>({
   return result;
 }
 
-const double _searchWidth = 320;
+const double _searchWidth = 280;
 const double _filterWidth = 220;
 const double _defaultDrawerWidth = 480;

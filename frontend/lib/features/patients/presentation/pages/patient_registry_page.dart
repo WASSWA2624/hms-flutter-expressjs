@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -92,9 +94,10 @@ class _PatientRegistryContent extends ConsumerWidget {
         ),
       ),
       secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
+        AppIconButton(
+          icon: Icons.refresh,
+          semanticLabel: l10n.commonRefreshActionLabel,
+          tooltip: l10n.commonRefreshActionLabel,
           isLoading: state.isRefreshingList,
           onPressed: () async {
             final AppFailure? failure = await controller.refresh();
@@ -111,8 +114,17 @@ class _PatientRegistryContent extends ConsumerWidget {
             state.overview.totalPatients,
             Localizations.localeOf(context),
           ),
-          description: l10n.patientsTotalSummaryBody,
           icon: Icons.groups_outlined,
+          onPressed: () {
+            _openSummaryPatientList(
+              context,
+              ref,
+              title: l10n.patientsTotalSummaryLabel,
+              query: const PatientListQuery(
+                pageRequest: AppPageRequest(pageSize: 8),
+              ),
+            );
+          },
         ),
         AppWorkspaceSummaryCard(
           label: l10n.patientsActiveSummaryLabel,
@@ -120,8 +132,18 @@ class _PatientRegistryContent extends ConsumerWidget {
             state.overview.activePatients,
             Localizations.localeOf(context),
           ),
-          description: l10n.patientsActiveSummaryBody,
           icon: Icons.how_to_reg_outlined,
+          onPressed: () {
+            _openSummaryPatientList(
+              context,
+              ref,
+              title: l10n.patientsActiveSummaryLabel,
+              query: const PatientListQuery(
+                isActive: true,
+                pageRequest: AppPageRequest(pageSize: 8),
+              ),
+            );
+          },
         ),
         AppWorkspaceSummaryCard(
           label: l10n.patientsQueueSummaryLabel,
@@ -129,8 +151,15 @@ class _PatientRegistryContent extends ConsumerWidget {
             state.overview.waitingQueue,
             Localizations.localeOf(context),
           ),
-          description: l10n.patientsQueueSummaryBody,
           icon: Icons.queue_outlined,
+          onPressed: () {
+            _openSummaryPatientList(
+              context,
+              ref,
+              title: l10n.patientsQueueSummaryLabel,
+              patients: state.overview.waitingQueuePatients,
+            );
+          },
         ),
         AppWorkspaceSummaryCard(
           label: l10n.patientsDuplicateSummaryLabel,
@@ -138,13 +167,19 @@ class _PatientRegistryContent extends ConsumerWidget {
             state.overview.duplicates.length,
             Localizations.localeOf(context),
           ),
-          description: l10n.patientsDuplicateSummaryBody,
           icon: Icons.content_copy_outlined,
+          onPressed: () {
+            _openSummaryPatientList(
+              context,
+              ref,
+              title: l10n.patientsDuplicateSummaryLabel,
+              patients: _patientsFromDuplicates(state.overview.duplicates),
+            );
+          },
         ),
       ],
       filters: _PatientFilters(query: state.query),
       body: _PatientList(state: state),
-      detail: _PatientDetailPanel(state: state),
       activity: _PatientActivityPanel(state: state),
     );
   }
@@ -168,6 +203,23 @@ class _PatientRegistryContent extends ConsumerWidget {
         SnackBar(content: Text(context.l10n.patientsSavedMessage)),
       );
     }
+  }
+
+  Future<void> _openSummaryPatientList(
+    BuildContext context,
+    WidgetRef ref, {
+    required String title,
+    PatientListQuery? query,
+    List<Patient>? patients,
+  }) async {
+    await showAppDialog<void>(
+      context: context,
+      builder: (_) => _PatientSummaryListDialog(
+        title: title,
+        query: query,
+        patients: patients,
+      ),
+    );
   }
 }
 
@@ -219,90 +271,80 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final PatientRegistryState? state = _currentState(ref);
 
     return AppWorkspaceFilterBar(
       semanticLabel: l10n.patientsFiltersLabel,
       search: AppTextField(
         controller: _searchController,
-        labelText: l10n.patientsSearchLabel,
+        semanticLabel: l10n.patientsSearchLabel,
         hintText: l10n.patientsSearchHint,
         prefixIcon: const Icon(Icons.search),
         textInputAction: TextInputAction.search,
         onFieldSubmitted: (_) => _apply(),
       ),
-      filters: <Widget>[
-        AppTextField(
-          controller: _patientIdController,
-          labelText: l10n.patientsPatientIdFilterLabel,
-          textInputAction: TextInputAction.search,
-          onFieldSubmitted: (_) => _apply(),
-        ),
-        AppSelectField<String>(
-          value: _gender,
-          labelText: l10n.patientsGenderFilterLabel,
-          onChanged: (String? value) {
-            setState(() {
-              _gender = value;
-            });
-            _apply();
-          },
-          options: <AppSelectOption<String>>[
-            for (final String value in _genderOptions)
-              AppSelectOption<String>(
-                value: value,
-                label: _genderLabel(l10n, value),
-              ),
-          ],
-        ),
-        AppSelectField<String>(
-          value: _status,
-          labelText: l10n.patientsStatusFilterLabel,
-          onChanged: (String? value) {
-            setState(() {
-              _status = value;
-            });
-            _apply();
-          },
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: _statusActive,
-              label: l10n.patientsActiveFilter,
-            ),
-            AppSelectOption<String>(
-              value: _statusInactive,
-              label: l10n.patientsInactiveFilter,
-            ),
-          ],
-        ),
-        AppSelectField<String>(
-          value: _consentState,
-          labelText: l10n.patientsConsentFilterLabel,
-          onChanged: (String? value) {
-            setState(() {
-              _consentState = value;
-            });
-            _apply();
-          },
-          options: <AppSelectOption<String>>[
-            for (final String value in _filterConsentStatuses(state))
-              AppSelectOption<String>(value: value, label: _apiLabel(value)),
-          ],
-        ),
-      ],
       actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.patientsApplyFiltersAction,
-          leadingIcon: Icons.filter_alt_outlined,
+        AppIconButton(
+          icon: Icons.tune,
+          semanticLabel: l10n.patientsAdvancedFiltersAction,
+          tooltip: l10n.patientsAdvancedFiltersAction,
+          color: _hasAdvancedFilters
+              ? Theme.of(context).colorScheme.primary
+              : null,
+          onPressed: () {
+            _openAdvancedFilters(context);
+          },
+        ),
+        AppIconButton(
+          icon: Icons.search,
+          semanticLabel: l10n.patientsApplyFiltersAction,
+          tooltip: l10n.patientsApplyFiltersAction,
           onPressed: _apply,
         ),
-        AppButton.tertiary(
-          label: l10n.patientsClearFiltersAction,
-          leadingIcon: Icons.filter_alt_off_outlined,
-          onPressed: _clear,
-        ),
+        if (_hasAnyFilter)
+          AppIconButton(
+            icon: Icons.filter_alt_off_outlined,
+            semanticLabel: l10n.patientsClearFiltersAction,
+            tooltip: l10n.patientsClearFiltersAction,
+            onPressed: _clear,
+          ),
       ],
     );
+  }
+
+  bool get _hasAdvancedFilters {
+    return _patientIdController.text.trim().isNotEmpty ||
+        _gender != null ||
+        _status != null ||
+        _consentState != null;
+  }
+
+  bool get _hasAnyFilter {
+    return _searchController.text.trim().isNotEmpty || _hasAdvancedFilters;
+  }
+
+  Future<void> _openAdvancedFilters(BuildContext context) async {
+    final PatientRegistryState? state = _readCurrentState(ref);
+    final _PatientFilterDraft? draft = await showAppDialog<_PatientFilterDraft>(
+      context: context,
+      builder: (_) => _PatientAdvancedFiltersDialog(
+        patientId: _patientIdController.text,
+        gender: _gender,
+        status: _status,
+        consentState: _consentState,
+        consentStatuses: _filterConsentStatuses(state),
+      ),
+    );
+    if (draft == null || !mounted) {
+      return;
+    }
+
+    _patientIdController.text = draft.patientId;
+    setState(() {
+      _gender = draft.gender;
+      _status = draft.status;
+      _consentState = draft.consentState;
+    });
+    await _apply();
   }
 
   Future<void> _apply() async {
@@ -339,6 +381,162 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
     if (mounted) {
       await _showFailureIfNeeded(context, failure);
     }
+  }
+}
+
+@immutable
+final class _PatientFilterDraft {
+  const _PatientFilterDraft({
+    required this.patientId,
+    required this.gender,
+    required this.status,
+    required this.consentState,
+  });
+
+  final String patientId;
+  final String? gender;
+  final String? status;
+  final String? consentState;
+}
+
+class _PatientAdvancedFiltersDialog extends StatefulWidget {
+  const _PatientAdvancedFiltersDialog({
+    required this.patientId,
+    required this.gender,
+    required this.status,
+    required this.consentState,
+    required this.consentStatuses,
+  });
+
+  final String patientId;
+  final String? gender;
+  final String? status;
+  final String? consentState;
+  final List<String> consentStatuses;
+
+  @override
+  State<_PatientAdvancedFiltersDialog> createState() =>
+      _PatientAdvancedFiltersDialogState();
+}
+
+class _PatientAdvancedFiltersDialogState
+    extends State<_PatientAdvancedFiltersDialog> {
+  late final TextEditingController _patientIdController;
+  String? _gender;
+  String? _status;
+  String? _consentState;
+
+  @override
+  void initState() {
+    super.initState();
+    _patientIdController = TextEditingController(text: widget.patientId);
+    _gender = widget.gender;
+    _status = widget.status;
+    _consentState = widget.consentState;
+  }
+
+  @override
+  void dispose() {
+    _patientIdController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return AppDialog(
+      title: Text(l10n.patientsAdvancedFiltersTitle),
+      icon: const Icon(Icons.tune),
+      scrollable: true,
+      content: AppFormSection(
+        children: <Widget>[
+          AppTextField(
+            controller: _patientIdController,
+            labelText: l10n.patientsPatientIdFilterLabel,
+            textInputAction: TextInputAction.search,
+          ),
+          AppSelectField<String>(
+            value: _gender,
+            labelText: l10n.patientsGenderFilterLabel,
+            onChanged: (String? value) {
+              setState(() {
+                _gender = value;
+              });
+            },
+            options: <AppSelectOption<String>>[
+              for (final String value in _genderOptions)
+                AppSelectOption<String>(
+                  value: value,
+                  label: _genderLabel(l10n, value),
+                ),
+            ],
+          ),
+          AppSelectField<String>(
+            value: _status,
+            labelText: l10n.patientsStatusFilterLabel,
+            onChanged: (String? value) {
+              setState(() {
+                _status = value;
+              });
+            },
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _statusActive,
+                label: l10n.patientsActiveFilter,
+              ),
+              AppSelectOption<String>(
+                value: _statusInactive,
+                label: l10n.patientsInactiveFilter,
+              ),
+            ],
+          ),
+          AppSelectField<String>(
+            value: _consentState,
+            labelText: l10n.patientsConsentFilterLabel,
+            onChanged: (String? value) {
+              setState(() {
+                _consentState = value;
+              });
+            },
+            options: <AppSelectOption<String>>[
+              for (final String value in widget.consentStatuses)
+                AppSelectOption<String>(value: value, label: _apiLabel(value)),
+            ],
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.patientsClearFiltersAction,
+          leadingIcon: Icons.filter_alt_off_outlined,
+          onPressed: () {
+            Navigator.of(context).pop(
+              const _PatientFilterDraft(
+                patientId: '',
+                gender: null,
+                status: null,
+                consentState: null,
+              ),
+            );
+          },
+        ),
+        AppButton.primary(
+          label: l10n.patientsApplyFiltersAction,
+          leadingIcon: Icons.filter_alt_outlined,
+          onPressed: () {
+            Navigator.of(context).pop(
+              _PatientFilterDraft(
+                patientId: _patientIdController.text.trim(),
+                gender: _gender,
+                status: _status,
+                consentState: _consentState,
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 
@@ -396,12 +594,7 @@ class _PatientList extends ConsumerWidget {
       ),
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
       onRowSelected: (Patient patient) async {
-        final AppFailure? failure = await ref
-            .read(patientRegistryControllerProvider.notifier)
-            .selectPatient(patient.id);
-        if (context.mounted) {
-          await _showFailureIfNeeded(context, failure);
-        }
+        await _openPatientDetail(context, ref, patient.id);
       },
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.patientsEmptyTitle,
@@ -426,6 +619,210 @@ class _PatientList extends ConsumerWidget {
           await _showFailureIfNeeded(context, failure);
         }
       },
+    );
+  }
+}
+
+Future<void> _openPatientDetail(
+  BuildContext context,
+  WidgetRef ref,
+  String patientId,
+) async {
+  unawaited(
+    ref
+        .read(patientRegistryControllerProvider.notifier)
+        .selectPatient(patientId)
+        .then((AppFailure? failure) async {
+          if (context.mounted) {
+            await _showFailureIfNeeded(context, failure);
+          }
+        }),
+  );
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => _PatientDetailDialog(patientId: patientId),
+  );
+
+  if (context.mounted) {
+    ref.read(patientRegistryControllerProvider.notifier).clearSelection();
+  }
+}
+
+class _PatientSummaryListDialog extends ConsumerStatefulWidget {
+  const _PatientSummaryListDialog({
+    required this.title,
+    this.query,
+    this.patients,
+  });
+
+  final String title;
+  final PatientListQuery? query;
+  final List<Patient>? patients;
+
+  @override
+  ConsumerState<_PatientSummaryListDialog> createState() =>
+      _PatientSummaryListDialogState();
+}
+
+class _PatientSummaryListDialogState
+    extends ConsumerState<_PatientSummaryListDialog> {
+  AppPage<Patient>? _page;
+  AppFailure? _failure;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final PatientListQuery? query = widget.query;
+    if (query != null) {
+      unawaited(_load(query.pageRequest));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final List<Patient>? patients = widget.patients;
+    final AppPage<Patient>? page = _page;
+
+    return AppDialog(
+      title: Text(widget.title),
+      icon: const Icon(Icons.groups_outlined),
+      maxWidth: 920,
+      scrollable: true,
+      content: _failure != null
+          ? AppFailureStateView(failure: _failure!)
+          : patients != null
+          ? _SummaryPatientList(
+              page: AppPage<Patient>(
+                items: patients,
+                request: AppPageRequest(
+                  pageSize: patients.length.clamp(1, 20).toInt(),
+                ),
+                totalItemCount: patients.length,
+              ),
+              isLoading: false,
+              onPageChanged: null,
+            )
+          : page == null && _isLoading
+          ? AppWorkspaceStatePanel.loading(
+              title: l10n.patientsSummaryLoadingTitle,
+              body: l10n.patientsSummaryLoadingBody,
+            )
+          : _SummaryPatientList(
+              page:
+                  page ??
+                  const AppPage<Patient>(
+                    items: <Patient>[],
+                    request: AppPageRequest(pageSize: 8),
+                    totalItemCount: 0,
+                  ),
+              isLoading: _isLoading,
+              onPageChanged: (AppPageRequest request) {
+                unawaited(_load(request));
+              },
+            ),
+    );
+  }
+
+  Future<void> _load(AppPageRequest request) async {
+    final PatientListQuery? query = widget.query;
+    if (query == null) {
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _failure = null;
+    });
+    final Result<AppPage<Patient>> result = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .loadPatientPage(query.copyWith(pageRequest: request));
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AppPage<Patient> page) {
+        setState(() {
+          _page = page;
+          _isLoading = false;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isLoading = false;
+        });
+      },
+    );
+  }
+}
+
+class _SummaryPatientList extends ConsumerWidget {
+  const _SummaryPatientList({
+    required this.page,
+    required this.isLoading,
+    required this.onPageChanged,
+  });
+
+  final AppPage<Patient> page;
+  final bool isLoading;
+  final ValueChanged<AppPageRequest>? onPageChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final Locale locale = Localizations.localeOf(context);
+
+    return AppPaginatedDataList<Patient>(
+      page: page,
+      isLoading: isLoading,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      columns: <AppDataColumn<Patient>>[
+        AppDataColumn<Patient>(
+          label: l10n.patientsPatientColumnLabel,
+          cellBuilder: (_, Patient patient) =>
+              _PatientNameCell(patient: patient),
+        ),
+        AppDataColumn<Patient>(
+          label: l10n.patientsIdentifierColumnLabel,
+          cellBuilder: (_, Patient patient) =>
+              Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
+        ),
+        AppDataColumn<Patient>(
+          label: l10n.patientsDobColumnLabel,
+          cellBuilder: (_, Patient patient) => Text(
+            patient.dateOfBirth == null
+                ? l10n.profileUnknownValue
+                : AppFormatters.mediumDate(patient.dateOfBirth!, locale),
+          ),
+        ),
+      ],
+      mobileItemBuilder: (_, Patient patient) => Padding(
+        padding: EdgeInsets.all(Theme.of(context).spacing.md),
+        child: _PatientMobileRow(patient: patient),
+      ),
+      itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
+      onRowSelected: (Patient patient) async {
+        await _openPatientDetail(context, ref, patient.id);
+      },
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.patientsEmptyTitle,
+        body: l10n.patientsEmptyBody,
+        icon: Icons.person_search_outlined,
+        minHeight: 240,
+      ),
+      pageLabelBuilder: (AppPage<Patient> page) {
+        return l10n.patientsPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.lastItemNumber,
+        );
+      },
+      previousPageLabel: l10n.patientsPreviousPageLabel,
+      nextPageLabel: l10n.patientsNextPageLabel,
+      onPageChanged: onPageChanged,
     );
   }
 }
@@ -532,10 +929,10 @@ class _StatusText extends StatelessWidget {
   }
 }
 
-class _PatientDetailPanel extends ConsumerWidget {
-  const _PatientDetailPanel({required this.state});
+class _PatientDetailDialog extends ConsumerWidget {
+  const _PatientDetailDialog({required this.patientId});
 
-  final PatientRegistryState state;
+  final String patientId;
 
   static const AccessRequirement _writeRequirement = AccessRequirement(
     allPermissions: <AppPermission>[AppPermissions.patientWrite],
@@ -547,40 +944,63 @@ class _PatientDetailPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final PatientDetail? detail = state.selectedDetail;
+    final Result<PatientRegistryState>? result = ref
+        .watch(patientRegistryControllerProvider)
+        .asData
+        ?.value;
+    final PatientRegistryState? state = switch (result) {
+      ResultSuccess<PatientRegistryState>(value: final value) => value,
+      _ => null,
+    };
+    final PatientDetail? selectedDetail = state?.selectedDetail;
+    final PatientDetail? detail = selectedDetail?.patient.id == patientId
+        ? selectedDetail
+        : null;
 
-    if (state.isRefreshingDetail && detail == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.patientsDetailTitle,
-        child: AppWorkspaceStatePanel.loading(
+    if ((state?.isRefreshingDetail ?? true) && detail == null) {
+      return AppDialog(
+        title: Text(l10n.patientsDetailTitle),
+        icon: const Icon(Icons.assignment_ind_outlined),
+        maxWidth: 960,
+        scrollable: true,
+        content: AppWorkspaceStatePanel.loading(
           title: l10n.patientsDetailLoadingTitle,
           body: l10n.patientsDetailLoadingBody,
+          minHeight: 320,
         ),
       );
     }
 
     if (detail == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.patientsDetailTitle,
-        child: AppWorkspaceStatePanel.empty(
-          title: l10n.patientsNoSelectionTitle,
-          body: l10n.patientsNoSelectionBody,
-          icon: Icons.badge_outlined,
-        ),
+      final Object? failure = state?.lastFailure;
+      return AppDialog(
+        title: Text(l10n.patientsDetailTitle),
+        icon: const Icon(Icons.assignment_ind_outlined),
+        maxWidth: 960,
+        scrollable: true,
+        content: failure is AppFailure
+            ? AppFailureStateView(failure: failure)
+            : AppWorkspaceStatePanel.empty(
+                title: l10n.patientsNoSelectionTitle,
+                body: l10n.patientsNoSelectionBody,
+                icon: Icons.badge_outlined,
+                minHeight: 320,
+              ),
       );
     }
 
     final Patient patient = detail.patient;
-    return AppWorkspaceDetailPanel(
-      title: patient.effectiveDisplayName,
-      description: patient.effectiveIdentifier,
+    return AppDialog(
+      title: Text(patient.effectiveDisplayName),
+      icon: const Icon(Icons.assignment_ind_outlined),
+      maxWidth: 980,
+      scrollable: true,
       actions: <Widget>[
         AppAccessActionGate(
           requirement: _writeRequirement,
-          builder: (_, bool isAllowed) => AppIconButton(
-            icon: Icons.edit_outlined,
-            semanticLabel: l10n.patientsEditAction,
-            tooltip: l10n.patientsEditAction,
+          builder: (_, bool isAllowed) => AppButton.secondary(
+            label: l10n.patientsEditAction,
+            leadingIcon: Icons.edit_outlined,
             onPressed: isAllowed
                 ? () => _openPatientForm(context, ref, patient)
                 : null,
@@ -588,20 +1008,20 @@ class _PatientDetailPanel extends ConsumerWidget {
         ),
         AppAccessActionGate(
           requirement: _deleteRequirement,
-          builder: (_, bool isAllowed) => AppIconButton(
-            icon: Icons.delete_outline,
-            semanticLabel: l10n.patientsDeleteAction,
-            tooltip: l10n.patientsDeleteAction,
+          builder: (_, bool isAllowed) => AppButton.tertiary(
+            label: l10n.patientsDeleteAction,
+            leadingIcon: Icons.delete_outline,
             onPressed: isAllowed
                 ? () => _confirmDeletePatient(context, ref, patient)
                 : null,
           ),
         ),
       ],
-      child: Column(
+      content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (state.isRefreshingDetail) const LinearProgressIndicator(),
+          if (state?.isRefreshingDetail ?? false)
+            const LinearProgressIndicator(),
           _PatientDemographics(detail: detail),
           const Divider(),
           _QuickActions(patient: patient),
@@ -721,7 +1141,9 @@ class _PatientDetailPanel extends ConsumerWidget {
       barrierDismissible: false,
       builder: (_) => PatientFormDialog(
         patient: patient,
-        referenceData: state.referenceData,
+        referenceData:
+            _readCurrentState(ref)?.referenceData ??
+            const PatientReferenceData(),
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(patientRegistryControllerProvider.notifier)
@@ -754,9 +1176,11 @@ class _PatientDetailPanel extends ConsumerWidget {
         .read(patientRegistryControllerProvider.notifier)
         .deletePatient(patient.id);
     if (context.mounted && failure == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.patientsDeletedMessage)),
-      );
+      final NavigatorState navigator = Navigator.of(context);
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      final String message = context.l10n.patientsDeletedMessage;
+      await navigator.maybePop();
+      messenger.showSnackBar(SnackBar(content: Text(message)));
     } else if (context.mounted) {
       await _showFailureIfNeeded(context, failure);
     }
@@ -776,7 +1200,9 @@ class _PatientDetailPanel extends ConsumerWidget {
         detail: detail,
         resource: resource,
         item: item,
-        referenceData: state.referenceData,
+        referenceData:
+            _readCurrentState(ref)?.referenceData ??
+            const PatientReferenceData(),
         onCreate: (Map<String, Object?> payload) {
           return ref
               .read(patientRegistryControllerProvider.notifier)
@@ -1870,15 +2296,34 @@ Future<bool?> _showDeleteDialog(
   );
 }
 
-PatientRegistryState? _currentState(WidgetRef ref) {
+PatientRegistryState? _readCurrentState(WidgetRef ref) {
   final Result<PatientRegistryState>? result = ref
-      .watch(patientRegistryControllerProvider)
+      .read(patientRegistryControllerProvider)
       .asData
       ?.value;
   return switch (result) {
     ResultSuccess<PatientRegistryState>(value: final value) => value,
     _ => null,
   };
+}
+
+List<Patient> _patientsFromDuplicates(
+  List<PatientDuplicateCandidate> duplicates,
+) {
+  final Map<String, Patient> patients = <String, Patient>{};
+  for (final PatientDuplicateCandidate duplicate in duplicates) {
+    for (final Patient? patient in <Patient?>[
+      duplicate.primaryPatient,
+      duplicate.secondaryPatient,
+      duplicate.candidatePatient,
+    ]) {
+      if (patient != null && patient.id.isNotEmpty) {
+        patients[patient.id] = patient;
+      }
+    }
+  }
+
+  return patients.values.toList(growable: false);
 }
 
 Future<void> _showFailureIfNeeded(

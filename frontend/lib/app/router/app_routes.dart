@@ -80,11 +80,7 @@ abstract final class AppRoutes {
     name: 'patients',
     path: '/patients',
     access: AppRouteAccess.authenticated,
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.patientRead,
-      AppPermissions.patientWrite,
-      AppPermissions.patientDelete,
-    ],
+    requiredPermissions: <AppPermission>[AppPermissions.patientRead],
   );
   static const AppRouteData tenantFacilitySetup = AppRouteData(
     name: 'tenantFacilitySetup',

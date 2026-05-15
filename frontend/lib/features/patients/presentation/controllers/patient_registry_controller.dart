@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -16,15 +18,34 @@ final class PatientRegistryController
     extends AsyncNotifier<Result<PatientRegistryState>> {
   PatientRepository get _repository => ref.read(patientRepositoryProvider);
 
+  static const Duration _syncInterval = Duration(seconds: 8);
+
+  Timer? _syncTimer;
+  bool _isSyncing = false;
+
   @override
   Future<Result<PatientRegistryState>> build() async {
-    return _loadInitialState();
+    ref.onDispose(() {
+      _syncTimer?.cancel();
+    });
+    final Result<PatientRegistryState> result = await _loadInitialState();
+    _startVisibleDataSync();
+    return result;
   }
 
   Future<AppFailure?> refresh() async {
-    final Result<PatientRegistryState> result = await _loadInitialState();
-    state = AsyncData<Result<PatientRegistryState>>(result);
-    return _failureOrNull(result);
+    final PatientRegistryState? current = _currentState;
+    if (current == null) {
+      final Result<PatientRegistryState> result = await _loadInitialState();
+      state = AsyncData<Result<PatientRegistryState>>(result);
+      return _failureOrNull(result);
+    }
+
+    return _syncVisibleData(
+      showLoading: true,
+      refreshReferenceData: true,
+      allowWhileSaving: true,
+    );
   }
 
   Future<AppFailure?> applyQuery(PatientListQuery query) async {
@@ -70,6 +91,10 @@ final class PatientRegistryController
         return failure;
       },
     );
+  }
+
+  Future<Result<AppPage<Patient>>> loadPatientPage(PatientListQuery query) {
+    return _repository.listPatients(query);
   }
 
   Future<AppFailure?> selectPatient(String patientId) async {
@@ -122,11 +147,20 @@ final class PatientRegistryController
     final Result<Patient> result = await _repository.createPatient(payload);
     return result.when(
       success: (Patient patient) async {
+        final PatientRegistryState latest = _currentState!;
+        final bool shouldInsert =
+            latest.query.pageRequest.pageIndex == 0 &&
+            _patientMatchesQuery(patient, latest.query);
+        _emit(
+          latest.copyWith(
+            page: shouldInsert
+                ? _upsertPatientInPage(latest.page, patient, insertOnTop: true)
+                : latest.page,
+          ),
+        );
         await _refreshOverviewOnly();
-        await applyQuery(_currentState!.query.copyWith());
-        final AppFailure? detailFailure = await selectPatient(patient.id);
         _emit(_currentState!.copyWith(isSaving: false));
-        return detailFailure;
+        return null;
       },
       failure: (AppFailure failure) {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
@@ -151,12 +185,16 @@ final class PatientRegistryController
     );
     return result.when(
       success: (Patient patient) async {
+        final PatientDetail? selectedDetail = _currentState!.selectedDetail;
         _emit(
           _currentState!.copyWith(
             page: _replacePatientInPage(_currentState!.page, patient),
+            selectedDetail: selectedDetail?.copyWith(patient: patient),
           ),
         );
-        final AppFailure? detailFailure = await selectPatient(patient.id);
+        final AppFailure? detailFailure = selectedDetail == null
+            ? null
+            : await selectPatient(patient.id);
         _emit(_currentState!.copyWith(isSaving: false));
         return detailFailure;
       },
@@ -311,6 +349,144 @@ final class PatientRegistryController
     );
   }
 
+  void _startVisibleDataSync() {
+    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
+      unawaited(_syncVisibleData());
+    });
+  }
+
+  Future<AppFailure?> _syncVisibleData({
+    bool showLoading = false,
+    bool refreshReferenceData = false,
+    bool allowWhileSaving = false,
+  }) async {
+    final PatientRegistryState? current = _currentState;
+    if (current == null || _isSyncing) {
+      return null;
+    }
+    if (!allowWhileSaving && current.isSaving) {
+      return null;
+    }
+
+    _isSyncing = true;
+    AppFailure? firstFailure;
+    if (showLoading) {
+      _emit(
+        current.copyWith(
+          isRefreshingList: true,
+          isRefreshingDetail: current.selectedDetail != null,
+          clearLastFailure: true,
+        ),
+      );
+    }
+
+    try {
+      final Result<PatientRegistryOverview> overviewResult = await _repository
+          .loadOverview();
+      overviewResult.when(
+        success: (PatientRegistryOverview overview) {
+          final PatientRegistryState? latest = _currentState;
+          if (latest != null) {
+            _emit(latest.copyWith(overview: overview));
+          }
+        },
+        failure: (AppFailure failure) {
+          firstFailure ??= failure;
+          final PatientRegistryState? latest = _currentState;
+          if (showLoading && latest != null) {
+            _emit(latest.copyWith(lastFailure: failure));
+          }
+        },
+      );
+
+      if (refreshReferenceData) {
+        final Result<PatientReferenceData> referenceResult = await _repository
+            .loadReferenceData();
+        referenceResult.when(
+          success: (PatientReferenceData referenceData) {
+            final PatientRegistryState? latest = _currentState;
+            if (latest != null) {
+              _emit(latest.copyWith(referenceData: referenceData));
+            }
+          },
+          failure: (AppFailure failure) {
+            firstFailure ??= failure;
+            final PatientRegistryState? latest = _currentState;
+            if (showLoading && latest != null) {
+              _emit(latest.copyWith(lastFailure: failure));
+            }
+          },
+        );
+      }
+
+      final PatientRegistryState? beforeList = _currentState;
+      if (beforeList == null) {
+        return firstFailure;
+      }
+      final Result<AppPage<Patient>> pageResult = await _repository
+          .listPatients(beforeList.query);
+      pageResult.when(
+        success: (AppPage<Patient> page) {
+          final PatientRegistryState? latest = _currentState;
+          if (latest != null) {
+            final PatientDetail? selectedDetail =
+                _selectedDetailAfterListRefresh(page, latest.selectedDetail);
+            _emit(
+              latest.copyWith(
+                page: page,
+                selectedDetail: selectedDetail,
+                clearSelectedDetail: selectedDetail == null,
+              ),
+            );
+          }
+        },
+        failure: (AppFailure failure) {
+          firstFailure ??= failure;
+          final PatientRegistryState? latest = _currentState;
+          if (showLoading && latest != null) {
+            _emit(latest.copyWith(lastFailure: failure));
+          }
+        },
+      );
+
+      final PatientDetail? selectedDetail = _currentState?.selectedDetail;
+      if (selectedDetail != null) {
+        final Result<PatientDetail> detailResult = await _repository
+            .loadPatientDetail(selectedDetail.patient.id);
+        detailResult.when(
+          success: (PatientDetail detail) {
+            final PatientRegistryState? latest = _currentState;
+            if (latest != null) {
+              _emit(
+                latest.copyWith(
+                  selectedDetail: detail,
+                  page: _replacePatientInPage(latest.page, detail.patient),
+                ),
+              );
+            }
+          },
+          failure: (AppFailure failure) {
+            firstFailure ??= failure;
+            final PatientRegistryState? latest = _currentState;
+            if (showLoading && latest != null) {
+              _emit(latest.copyWith(lastFailure: failure));
+            }
+          },
+        );
+      }
+    } finally {
+      final PatientRegistryState? latest = _currentState;
+      if (showLoading && latest != null) {
+        _emit(
+          latest.copyWith(isRefreshingList: false, isRefreshingDetail: false),
+        );
+      }
+      _isSyncing = false;
+    }
+
+    return firstFailure;
+  }
+
   PatientDetail? _selectedDetailAfterListRefresh(
     AppPage<Patient> page,
     PatientDetail? selectedDetail,
@@ -342,6 +518,36 @@ final class PatientRegistryController
     );
   }
 
+  AppPage<Patient> _upsertPatientInPage(
+    AppPage<Patient> page,
+    Patient patient, {
+    bool insertOnTop = false,
+  }) {
+    final List<Patient> withoutExisting = page.items
+        .where((Patient item) => item.id != patient.id)
+        .toList(growable: true);
+    final int previousLength = withoutExisting.length;
+    if (insertOnTop) {
+      withoutExisting.insert(0, patient);
+    } else {
+      withoutExisting.add(patient);
+    }
+    final int maxItems = page.request.pageSize;
+    final List<Patient> items = withoutExisting.length > maxItems
+        ? withoutExisting.take(maxItems).toList(growable: false)
+        : withoutExisting.toList(growable: false);
+    final bool wasInserted = previousLength == page.items.length;
+    final int? total = page.totalItemCount == null
+        ? null
+        : page.totalItemCount! + (wasInserted ? 1 : 0);
+
+    return AppPage<Patient>(
+      items: items,
+      request: page.request,
+      totalItemCount: total,
+    );
+  }
+
   AppPage<Patient> _removePatientFromPage(
     AppPage<Patient> page,
     String patientId,
@@ -369,6 +575,40 @@ final class PatientRegistryController
       ResultSuccess<PatientRegistryState>(value: final value) => value,
       _ => null,
     };
+  }
+
+  bool _patientMatchesQuery(Patient patient, PatientListQuery query) {
+    if (query.isActive != null && patient.isActive != query.isActive) {
+      return false;
+    }
+    if (query.gender != null &&
+        patient.gender?.toUpperCase() != query.gender!.toUpperCase()) {
+      return false;
+    }
+    final String patientId = query.patientId.trim().toLowerCase();
+    if (patientId.isNotEmpty &&
+        !(patient.id.toLowerCase().contains(patientId) ||
+            (patient.publicId ?? '').toLowerCase().contains(patientId) ||
+            (patient.effectiveIdentifier ?? '').toLowerCase().contains(
+              patientId,
+            ))) {
+      return false;
+    }
+    final String search = query.search.trim().toLowerCase();
+    if (search.isEmpty) {
+      return true;
+    }
+
+    return <String?>[
+      patient.effectiveDisplayName,
+      patient.effectiveIdentifier,
+      patient.primaryPhone,
+      patient.primaryEmail,
+      patient.facilityLabel,
+      patient.tenantLabel,
+    ].any((String? value) {
+      return (value ?? '').toLowerCase().contains(search);
+    });
   }
 
   void _emit(PatientRegistryState nextState) {

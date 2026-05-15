@@ -265,7 +265,7 @@ abstract class AppLocalizations {
   /// Patient registry screen body.
   ///
   /// In en, this message translates to:
-  /// **'Find, register, and maintain patient records for front desk, clinical, and administrative workflows.'**
+  /// **'Find, register, and maintain patient records across front desk and care workflows.'**
   String get patientsBody;
 
   /// Title while the patient registry loads.
@@ -423,6 +423,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get patientsClearFiltersAction;
+
+  /// Open patient registry advanced filters action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced filters'**
+  String get patientsAdvancedFiltersAction;
+
+  /// Patient registry advanced filters dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced filters'**
+  String get patientsAdvancedFiltersTitle;
+
+  /// Patient summary modal loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading patients'**
+  String get patientsSummaryLoadingTitle;
+
+  /// Patient summary modal loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading related patient records.'**
+  String get patientsSummaryLoadingBody;
 
   /// Active patient status label.
   ///

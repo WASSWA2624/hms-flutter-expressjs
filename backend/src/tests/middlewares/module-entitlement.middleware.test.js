@@ -88,6 +88,26 @@ describe('module entitlement middleware', () => {
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
+  test.each([
+    '/patient-allergies',
+    '/patient-medical-histories',
+    '/patient-documents',
+    '/consents',
+  ])('allows %s as patient-core without subscription lookup', async (path) => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path,
+      user: { tenant_id: 'tenant-patient-core', roles: ['DOCTOR'] },
+    };
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(subscriptionRepository.count).not.toHaveBeenCalled();
+    expect(moduleRepository.count).not.toHaveBeenCalled();
+    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
+  });
+
   test('blocks paid module when active subscription exists but tenant lacks entitlement', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {

@@ -475,6 +475,8 @@ final class PatientRegistryOverview {
     this.unpaidInvoices = 0,
     this.dueFollowUps = 0,
     this.duplicates = const <PatientDuplicateCandidate>[],
+    this.recentPatients = const <Patient>[],
+    this.waitingQueuePatients = const <Patient>[],
     this.consentExceptions = 0,
     this.missingDocuments = 0,
   });
@@ -486,6 +488,8 @@ final class PatientRegistryOverview {
   final int unpaidInvoices;
   final int dueFollowUps;
   final List<PatientDuplicateCandidate> duplicates;
+  final List<Patient> recentPatients;
+  final List<Patient> waitingQueuePatients;
   final int consentExceptions;
   final int missingDocuments;
 }

@@ -328,6 +328,16 @@ final class PatientRegistryOverviewDto {
           .map(PatientDuplicateCandidateDto.new)
           .map((PatientDuplicateCandidateDto dto) => dto.toEntity())
           .toList(growable: false),
+      recentPatients: _list(json['recent_patients'])
+          .map(PatientDto.new)
+          .map((PatientDto dto) => dto.toEntity())
+          .toList(growable: false),
+      waitingQueuePatients: _list(json['waiting_queue'])
+          .map((PatientJsonMap entry) => _map(entry['patient']))
+          .map(PatientDto.new)
+          .map((PatientDto dto) => dto.toEntity())
+          .where((Patient patient) => patient.id.isNotEmpty)
+          .toList(growable: false),
       consentExceptions: _list(json['consent_exceptions']).length,
       missingDocuments: _list(json['missing_documents']).length,
     );
