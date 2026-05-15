@@ -255,8 +255,9 @@ const verifyDemoData = async () => {
     errors.push(`Expected role codes ${expectedRoles.join(', ')} but found ${roleNames.join(', ')}.`);
   }
 
-  if (usersCount !== DEMO_ROLE_CODES.length) {
-    errors.push(`Expected ${DEMO_ROLE_CODES.length} users but found ${usersCount}.`);
+  const expectedDemoUserCount = (DEMO_TENANT.users || []).length;
+  if (usersCount !== expectedDemoUserCount) {
+    errors.push(`Expected ${expectedDemoUserCount} users but found ${usersCount}.`);
   }
 
   const userRolesByName = userRoles.reduce((acc, entry) => {
@@ -268,6 +269,11 @@ const verifyDemoData = async () => {
   const expectedEmailByRole = Object.fromEntries(
     (DEMO_TENANT.users || []).map((entry) => [entry.role, entry.email])
   );
+  for (const userDefinition of DEMO_TENANT.users || []) {
+    for (const extraRole of userDefinition.extra_roles || []) {
+      expectedEmailByRole[extraRole] = userDefinition.email;
+    }
+  }
 
   for (const roleName of DEMO_ROLE_CODES) {
     if (userRolesByName[roleName] !== 1) {

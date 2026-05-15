@@ -12,7 +12,7 @@ const BACKEND_ROOT = path.join(__dirname, '..');
 
 try {
   const moduleAlias = require('module-alias');
-  const prismaRuntimePath = path.join(BACKEND_ROOT, 'src', 'generated', 'prisma-client', 'runtime');
+  const prismaRuntimePath = path.join(BACKEND_ROOT, 'node_modules', '@prisma', 'client', 'runtime');
 
   moduleAlias.addAliases({
     '@app': path.join(BACKEND_ROOT, 'src', 'app'),

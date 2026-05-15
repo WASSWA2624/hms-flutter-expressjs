@@ -29,6 +29,7 @@ const MODULE_LOOKUPS = Object.freeze([
   { id: 'scheduling', label_key: 'dashboard.modules.scheduling' },
   { id: 'ipd', label_key: 'dashboard.modules.ipd' },
   { id: 'lab', label_key: 'dashboard.modules.lab' },
+  { id: 'radiology', label_key: 'dashboard.modules.radiology' },
   { id: 'pharmacy', label_key: 'dashboard.modules.pharmacy' },
   { id: 'billing', label_key: 'dashboard.modules.billing' },
   { id: 'housekeeping', label_key: 'dashboard.modules.housekeeping' },
@@ -43,6 +44,7 @@ const EVENT_TYPE_LOOKUPS = Object.freeze([
   { id: 'admission_updated', label_key: 'dashboard.activity.eventTypes.admissionUpdated' },
   { id: 'invoice_updated', label_key: 'dashboard.activity.eventTypes.invoiceUpdated' },
   { id: 'lab_result_updated', label_key: 'dashboard.activity.eventTypes.labResultUpdated' },
+  { id: 'radiology_result_updated', label_key: 'dashboard.activity.eventTypes.radiologyResultUpdated' },
   { id: 'pharmacy_order_updated', label_key: 'dashboard.activity.eventTypes.pharmacyOrderUpdated' },
   { id: 'maintenance_request_updated', label_key: 'dashboard.activity.eventTypes.maintenanceRequestUpdated' },
   { id: 'housekeeping_task_updated', label_key: 'dashboard.activity.eventTypes.housekeepingTaskUpdated' },
@@ -56,6 +58,7 @@ const QUEUE_LOOKUPS = Object.freeze([
   { id: 'admissions', label_key: 'dashboard.queue.filters.queueTypes.admissions' },
   { id: 'billing_follow_up', label_key: 'dashboard.queue.filters.queueTypes.billingFollowUp' },
   { id: 'lab_results', label_key: 'dashboard.queue.filters.queueTypes.labResults' },
+  { id: 'radiology_results', label_key: 'dashboard.queue.filters.queueTypes.radiologyResults' },
   { id: 'pharmacy_orders', label_key: 'dashboard.queue.filters.queueTypes.pharmacyOrders' },
   { id: 'maintenance_requests', label_key: 'dashboard.queue.filters.queueTypes.maintenanceRequests' },
   { id: 'housekeeping_tasks', label_key: 'dashboard.queue.filters.queueTypes.housekeepingTasks' },
@@ -77,6 +80,8 @@ const STATUS_LABEL_KEYS = Object.freeze({
   PENDING: 'dashboard.statusValues.pending',
   CRITICAL: 'dashboard.statusValues.critical',
   ABNORMAL: 'dashboard.statusValues.abnormal',
+  FINAL: 'dashboard.statusValues.final',
+  AMENDED: 'dashboard.statusValues.amended',
   ORDERED: 'dashboard.statusValues.ordered',
   PARTIALLY_DISPENSED: 'dashboard.statusValues.partiallyDispensed',
   OPEN: 'dashboard.statusValues.open',
@@ -106,6 +111,8 @@ const QUEUE_STATUS_LOOKUPS = Object.freeze(
     'PENDING',
     'CRITICAL',
     'ABNORMAL',
+    'FINAL',
+    'AMENDED',
     'ORDERED',
     'PARTIALLY_DISPENSED',
     'OPEN',
@@ -121,6 +128,7 @@ const QUICK_ACTION_IDS_BY_PACK = Object.freeze({
   [ROLE_PACKS.DOCTOR]: ['new_patient', 'appointment', 'start_admission'],
   [ROLE_PACKS.NURSE]: ['appointment', 'start_admission'],
   [ROLE_PACKS.LAB_TECH]: ['lab_order'],
+  [ROLE_PACKS.RADIOLOGY_TECH]: [],
   [ROLE_PACKS.PHARMACIST]: ['sale'],
   [ROLE_PACKS.RECEPTIONIST]: ['new_patient', 'appointment', 'invoice'],
   [ROLE_PACKS.BILLING]: ['invoice'],
@@ -177,6 +185,14 @@ const buildLabResultScopeWhere = (scope = {}) => ({
       deleted_at: null,
       patient: patientRelationScope(scope),
     },
+  },
+});
+
+const buildRadiologyResultScopeWhere = (scope = {}) => ({
+  deleted_at: null,
+  radiology_order: {
+    deleted_at: null,
+    patient: patientRelationScope(scope),
   },
 });
 
@@ -287,6 +303,27 @@ const activeQueueDefinitions = Object.freeze({
       return 'medium';
     },
     activity_event_type: 'lab_result_updated',
+  },
+  radiology_results: {
+    id: 'radiology_results',
+    queue_key: 'radiology_results',
+    kind: 'radiology_result',
+    module_slug: 'radiology',
+    resource: 'results',
+    model: 'radiology_result',
+    time_field: 'updated_at',
+    default_sort: 'updated_at',
+    select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
+    buildWhere: (scope) => ({
+      ...buildRadiologyResultScopeWhere(scope),
+      status: { in: ['DRAFT', 'AMENDED'] },
+    }),
+    buildSeverity: (row) => {
+      const status = String(row?.status || '').toUpperCase();
+      if (status === 'AMENDED') return 'high';
+      return 'medium';
+    },
+    activity_event_type: 'radiology_result_updated',
   },
   pharmacy_orders: {
     id: 'pharmacy_orders',
@@ -414,10 +451,11 @@ const activeQueueDefinitions = Object.freeze({
 });
 
 const ROLE_QUEUE_IDS = Object.freeze({
-  [ROLE_PACKS.ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'lab_results', 'pharmacy_orders', 'maintenance_requests', 'housekeeping_tasks', 'equipment_work_orders', 'staff_leaves'],
-  [ROLE_PACKS.DOCTOR]: ['appointments', 'admissions', 'lab_results'],
-  [ROLE_PACKS.NURSE]: ['admissions', 'lab_results', 'appointments'],
+  [ROLE_PACKS.ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'lab_results', 'radiology_results', 'pharmacy_orders', 'maintenance_requests', 'housekeeping_tasks', 'equipment_work_orders', 'staff_leaves'],
+  [ROLE_PACKS.DOCTOR]: ['appointments', 'admissions', 'lab_results', 'radiology_results'],
+  [ROLE_PACKS.NURSE]: ['admissions', 'lab_results', 'radiology_results', 'appointments'],
   [ROLE_PACKS.LAB_TECH]: ['lab_results'],
+  [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology_results'],
   [ROLE_PACKS.PHARMACIST]: ['pharmacy_orders'],
   [ROLE_PACKS.RECEPTIONIST]: ['appointments', 'billing_follow_up'],
   [ROLE_PACKS.BILLING]: ['billing_follow_up'],

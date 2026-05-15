@@ -6,6 +6,7 @@ jest.mock('@lib/dashboard/summary', () => ({
     DOCTOR: 'doctor',
     NURSE: 'nurse',
     LAB_TECH: 'lab_tech',
+    RADIOLOGY_TECH: 'radiology_tech',
     PHARMACIST: 'pharmacist',
     RECEPTIONIST: 'receptionist',
     BILLING: 'billing',

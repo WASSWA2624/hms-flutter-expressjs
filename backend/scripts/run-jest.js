@@ -4,7 +4,7 @@ const { installTestEnv, redactDatabaseUrl } = require('./test-env');
 
 const main = () => {
   const env = installTestEnv();
-  const jestBin = require.resolve('jest/bin/jest.js');
+  const jestBin = require.resolve('jest/bin/jest');
   const args = process.argv.slice(2);
 
   console.log(`[test] backend NODE_ENV=${env.NODE_ENV}`);

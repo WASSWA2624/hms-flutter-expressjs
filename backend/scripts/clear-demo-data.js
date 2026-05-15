@@ -5,7 +5,7 @@
  * Prisma migration metadata intact.
  *
  * Usage:
- *   node scripts/clear-demo-data.js
+ *   node scripts/clear-demo-data.js --yes
  *   node scripts/clear-demo-data.js --dry-run
  *
  * @module scripts/clear-demo-data
@@ -19,7 +19,7 @@ const BACKEND_ROOT = path.join(__dirname, '..');
 // Register global aliases for runtime resolution
 try {
   const moduleAlias = require('module-alias');
-  const prismaRuntimePath = path.join(BACKEND_ROOT, 'src', 'generated', 'prisma-client', 'runtime');
+  const prismaRuntimePath = path.join(BACKEND_ROOT, 'node_modules', '@prisma', 'client', 'runtime');
 
   moduleAlias.addAliases({
     '@app': path.join(BACKEND_ROOT, 'src', 'app'),
@@ -47,13 +47,24 @@ try {
 }
 
 const prisma = require('@prisma/client');
+const { assertDemoTaskAllowed } = require('./demo-safety');
 
 const PROTECTED_TABLES = new Set(['_prisma_migrations']);
 
 const normalizeTableName = (row) =>
   row?.TABLE_NAME || row?.table_name || row?.tableName || row?.Table_name || null;
 
-const clearDemoData = async ({ dryRun = false } = {}) => {
+const clearDemoData = async ({ dryRun = false, confirm = false } = {}) => {
+  const safety = assertDemoTaskAllowed('demo data clear');
+  if (!safety.allowed) {
+    console.warn('Skipping demo data clear: NODE_ENV=production');
+    return { skipped: true, reason: safety.reason };
+  }
+
+  if (!dryRun && confirm !== true) {
+    throw new Error('Refusing to clear demo data without explicit confirmation. Use --yes or pass { confirm: true }.');
+  }
+
   const rows = await prisma.$queryRaw`
     SELECT table_name
     FROM information_schema.tables
@@ -71,7 +82,7 @@ const clearDemoData = async ({ dryRun = false } = {}) => {
 
   if (targetTables.length === 0) {
     console.log('No application tables found to clear.');
-    return;
+    return { skipped: false, dryRun, tables: [] };
   }
 
   if (dryRun) {
@@ -79,7 +90,7 @@ const clearDemoData = async ({ dryRun = false } = {}) => {
     targetTables.forEach((tableName) => {
       console.log(`  - ${tableName}`);
     });
-    return;
+    return { skipped: false, dryRun: true, tables: targetTables };
   }
 
   console.log(`Clearing ${targetTables.length} table(s)...`);
@@ -98,13 +109,15 @@ const clearDemoData = async ({ dryRun = false } = {}) => {
   });
 
   console.log('Database data cleared successfully.');
+  return { skipped: false, dryRun: false, tables: targetTables };
 };
 
 const main = async () => {
   const dryRun = process.argv.includes('--dry-run');
+  const confirm = process.argv.includes('--yes') || process.argv.includes('--force');
 
   try {
-    await clearDemoData({ dryRun });
+    await clearDemoData({ dryRun, confirm });
   } catch (error) {
     console.error('Failed to clear database data:', error);
     process.exitCode = 1;

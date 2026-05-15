@@ -24,14 +24,14 @@ npm run db:verify:demo
 #### Seeded Credentials
 
 - `super.admin@hosspi.com`
-- Role-based demo users such as `tenant.admin@hosspi.com`, `doctor@hosspi.com`, `nurse@hosspi.com`, `biomed@hosspi.com`
+- Role-based demo users such as `tenant.admin@hosspi.com`, `doctor@hosspi.com`, `nurse@hosspi.com`, `radiology@hosspi.com`, and `biomed@hosspi.com`
 - Default password for every seeded account: `Hosspi@2624.`
 
 #### Seeded Scenarios
 
 - One tenant: `DemoCare General Hospital`
 - One facility: `DemoCare General Hospital`
-- One account per seeded role: `SUPER_ADMIN`, `TENANT_ADMIN`, `FACILITY_ADMIN`, `DOCTOR`, `NURSE`, `LAB_TECH`, `PHARMACIST`, `RECEPTIONIST`, `BILLING`, `OPERATIONS`, `HR`, `BIOMED`, `HOUSE_KEEPER`, `AMBULANCE_OPERATOR`, `PATIENT`
+- One assignment per seeded role, with some users holding scoped manager roles: `SUPER_ADMIN`, `TENANT_ADMIN`, `FACILITY_ADMIN`, `DOCTOR`, `NURSE`, `LAB_TECH`, `RADIOLOGY_TECH`, `PHARMACIST`, `RECEPTIONIST`, `BILLING`, `OPERATIONS`, `HR`, `BIOMED`, `HOUSE_KEEPER`, `AMBULANCE_OPERATOR`, `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, `THEATRE_MANAGER`, `HOUSEKEEPING_MANAGER`, `BIOMED_MANAGER`, `MORTUARY_STAFF`, `MORTUARY_MANAGER`, `PATIENT`
 - Subscription catalog aligned to the commercial baseline, including Basic facility limit correction and add-on eligibility rules
 - One active advanced-plan subscription with a paid invoice and active license for the seeded tenant
 - Communications scenarios covering an unread direct escalation, an archived billing thread, a sensitive biomedical incident channel, attachments, notifications, and templates
@@ -53,6 +53,7 @@ This script initializes the system with default accounts for:
 - **DOCTOR**: Medical doctor
 - **NURSE**: Nursing staff
 - **LAB_TECH**: Laboratory technician
+- **RADIOLOGY_TECH**: Radiology technologist
 - **PHARMACIST**: Pharmacy staff
 - **RECEPTIONIST**: Front desk staff
 - **BILLING**: Billing and finance staff
@@ -61,6 +62,7 @@ This script initializes the system with default accounts for:
 - **BIOMED**: Biomedical engineering staff
 - **HOUSE_KEEPER**: Housekeeping staff
 - **AMBULANCE_OPERATOR**: Ambulance operations staff
+- **MORTUARY_STAFF** and **MORTUARY_MANAGER**: Mortuary operations users
 - **PATIENT**: Patient user (example)
 
 #### What It Does
@@ -68,7 +70,7 @@ This script initializes the system with default accounts for:
 1. Creates the curated demo tenant and facility
 2. Creates the supporting departments, ward, room, and bed
 3. Creates roles, permissions, users, user profiles, and staff profiles
-4. Assigns the default `Hosspi@2624.` password to all seeded accounts
+4. Assigns the shared demo password to all seeded accounts without printing it in command output
 
 #### Usage
 
@@ -101,6 +103,9 @@ Hosspi@2624.
 | `facility.admin@hosspi.com` | FACILITY_ADMIN | DemoCare General Hospital |
 | `doctor@hosspi.com` | DOCTOR | DemoCare General Hospital |
 | `nurse@hosspi.com` | NURSE | DemoCare General Hospital |
+| `lab@hosspi.com` | LAB_TECH | DemoCare General Hospital |
+| `radiology@hosspi.com` | RADIOLOGY_TECH | DemoCare General Hospital |
+| `pharmacy@hosspi.com` | PHARMACIST | DemoCare General Hospital |
 
 #### Account Details
 
@@ -121,21 +126,7 @@ The script is **idempotent** - it can be run multiple times safely:
 
 #### Customization
 
-To customize the accounts, edit the constants in `setup-default-accounts.js`:
-
-```javascript
-// Change default password
-const DEFAULT_PASSWORD = 'YourSecurePassword123!';
-
-// Change tenant details
-const DEFAULT_TENANT = {
-  name: 'Your Hospital Name',
-  slug: 'your-hospital-slug',
-  is_active: true
-};
-
-// Modify USER_ACCOUNTS array to add/remove/modify accounts
-```
+To customize the demo baseline, edit `scripts/seeders/seed-catalog.js` and keep `verify-demo-data.js` aligned with the intended invariants.
 
 #### Troubleshooting
 
@@ -215,8 +206,8 @@ Clears all application data from the current database.
 #### Usage
 
 ```bash
-# Clear all application data
-node scripts/clear-demo-data.js
+# Clear all application data after explicit confirmation
+node scripts/clear-demo-data.js --yes
 
 # Preview tables without deleting
 node scripts/clear-demo-data.js --dry-run

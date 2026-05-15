@@ -36,6 +36,7 @@ const RADIOLOGY_ALLOWED_ROLES = [
   ROLES.DOCTOR,
   ROLES.NURSE,
   ROLES.LAB_TECH,
+  ROLES.RADIOLOGY_TECH,
 ];
 
 const resolveLegacyRouteParamsSchema = z.object({

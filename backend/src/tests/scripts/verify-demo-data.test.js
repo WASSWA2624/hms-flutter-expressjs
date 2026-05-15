@@ -2,7 +2,22 @@ const createModelMeta = (fields) => ({
   fieldByName: new Map(fields.map((field) => [field.name, field])),
 });
 
-const { DEMO_TENANT } = require('../../../scripts/seeders/seed-catalog');
+const {
+  DEMO_ROLE_CODES,
+  DEMO_TENANT,
+} = require('../../../scripts/seeders/seed-catalog');
+
+const buildUserRoleRows = (users = DEMO_TENANT.users) =>
+  users.flatMap((entry) => [
+    {
+      role: { name: entry.role },
+      user: { email: entry.email },
+    },
+    ...((entry.extra_roles || []).map((role) => ({
+      role: { name: role },
+      user: { email: entry.email },
+    }))),
+  ]);
 
 const mockPrisma = {
   tenant: { findMany: jest.fn() },
@@ -93,30 +108,9 @@ describe('verify-demo-data', () => {
     mockPrisma.facility.findMany.mockResolvedValue([
       { id: 'facility-demo', tenant_id: 'tenant-demo', name: 'DemoCare General Hospital' },
     ]);
-    mockPrisma.user.count.mockResolvedValue(15);
-    mockPrisma.role.findMany.mockResolvedValue([
-      { name: 'AMBULANCE_OPERATOR' },
-      { name: 'BILLING' },
-      { name: 'BIOMED' },
-      { name: 'DOCTOR' },
-      { name: 'FACILITY_ADMIN' },
-      { name: 'HOUSE_KEEPER' },
-      { name: 'HR' },
-      { name: 'LAB_TECH' },
-      { name: 'NURSE' },
-      { name: 'OPERATIONS' },
-      { name: 'PATIENT' },
-      { name: 'PHARMACIST' },
-      { name: 'RECEPTIONIST' },
-      { name: 'SUPER_ADMIN' },
-      { name: 'TENANT_ADMIN' },
-    ]);
-    mockPrisma.user_role.findMany.mockResolvedValue(
-      DEMO_TENANT.users.map((entry) => ({
-        role: { name: entry.role },
-        user: { email: entry.email },
-      }))
-    );
+    mockPrisma.user.count.mockResolvedValue(DEMO_TENANT.users.length);
+    mockPrisma.role.findMany.mockResolvedValue(DEMO_ROLE_CODES.map((name) => ({ name })));
+    mockPrisma.user_role.findMany.mockResolvedValue(buildUserRoleRows());
 
     mockPrisma.subscription_plan.findMany.mockResolvedValue([
       {
@@ -271,12 +265,10 @@ describe('verify-demo-data', () => {
 
   it('fails when a seeded role email does not match the canonical login', async () => {
     mockPrisma.user_role.findMany.mockResolvedValue(
-      DEMO_TENANT.users.map((entry) => ({
-        role: { name: entry.role },
-        user: {
-          email: entry.role === 'SUPER_ADMIN' ? 'superadmin@legacy.test' : entry.email,
-        },
-      }))
+      buildUserRoleRows(DEMO_TENANT.users.map((entry) => ({
+        ...entry,
+        email: entry.role === 'SUPER_ADMIN' ? 'superadmin@legacy.test' : entry.email,
+      })))
     );
 
     const { verifyDemoData } = require('../../../scripts/verify-demo-data');

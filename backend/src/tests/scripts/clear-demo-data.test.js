@@ -7,10 +7,18 @@ const mockPrisma = {
 
 jest.mock('@prisma/client', () => mockPrisma);
 
+const env = require('@config/env');
+
 describe('clear-demo-data script', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    env.setEnvForTests({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'mysql://test:test@localhost:3306/test_db',
+      JWT_SECRET: 'test-jwt-secret-key-minimum-32-characters-long',
+      CORS_ORIGINS: 'http://localhost:3000'
+    });
   });
 
   it('preserves prisma metadata and truncates application tables in sorted order', async () => {
@@ -22,7 +30,7 @@ describe('clear-demo-data script', () => {
     ]);
 
     const { clearDemoData } = require('../../../scripts/clear-demo-data');
-    await clearDemoData();
+    await clearDemoData({ confirm: true });
 
     expect(mockPrisma.$executeRawUnsafe).toHaveBeenNthCalledWith(1, 'SET FOREIGN_KEY_CHECKS = 0');
     expect(mockPrisma.$executeRawUnsafe).toHaveBeenNthCalledWith(2, 'DELETE FROM `invoice`');
@@ -46,5 +54,30 @@ describe('clear-demo-data script', () => {
     expect(console.log).toHaveBeenCalledWith('Dry run mode: the following tables would be cleared:');
     expect(console.log).toHaveBeenCalledWith('  - conversation');
     expect(console.log).toHaveBeenCalledWith('  - notification');
+  });
+
+  it('refuses destructive clears without explicit confirmation', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ table_name: 'tenant' }]);
+
+    const { clearDemoData } = require('../../../scripts/clear-demo-data');
+
+    await expect(clearDemoData()).rejects.toThrow('explicit confirmation');
+    expect(mockPrisma.$executeRawUnsafe).not.toHaveBeenCalled();
+  });
+
+  it('skips clearing data in production', async () => {
+    env.setEnvForTests({
+      NODE_ENV: 'production',
+      DATABASE_URL: 'mysql://test:test@localhost:3306/test_db',
+      JWT_SECRET: 'test-jwt-secret-key-minimum-32-characters-long',
+      CORS_ORIGINS: 'http://localhost:3000'
+    });
+
+    const { clearDemoData } = require('../../../scripts/clear-demo-data');
+    const result = await clearDemoData({ confirm: true });
+
+    expect(result).toEqual({ skipped: true, reason: 'production_environment' });
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+    expect(mockPrisma.$executeRawUnsafe).not.toHaveBeenCalled();
   });
 });

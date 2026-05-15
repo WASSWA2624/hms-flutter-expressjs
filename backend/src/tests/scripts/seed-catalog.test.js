@@ -1,6 +1,7 @@
 const {
   DEMO_ADD_ON_CATALOG,
   DEMO_PLAN_CATALOG,
+  DEMO_ROLE_CODES,
   DEMO_TENANT,
 } = require('../../../scripts/seeders/seed-catalog');
 
@@ -40,6 +41,7 @@ describe('seed-catalog', () => {
       'doctor@hosspi.com',
       'nurse@hosspi.com',
       'lab@hosspi.com',
+      'radiology@hosspi.com',
       'pharmacy@hosspi.com',
       'reception@hosspi.com',
       'billing@hosspi.com',
@@ -47,8 +49,19 @@ describe('seed-catalog', () => {
       'hr@hosspi.com',
       'biomed@hosspi.com',
       'housekeeping@hosspi.com',
+      'mortuary.staff@hosspi.com',
+      'mortuary.manager@hosspi.com',
       'ambulance@hosspi.com',
       'patient.portal@hosspi.com',
     ]);
+  });
+
+  it('keeps every canonical seeded role assigned exactly once through primary or extra roles', () => {
+    const assignedRoles = DEMO_TENANT.users.flatMap((entry) => [
+      entry.role,
+      ...((Array.isArray(entry.extra_roles) ? entry.extra_roles : []).filter(Boolean)),
+    ]);
+
+    expect([...assignedRoles].sort()).toEqual([...DEMO_ROLE_CODES].sort());
   });
 });

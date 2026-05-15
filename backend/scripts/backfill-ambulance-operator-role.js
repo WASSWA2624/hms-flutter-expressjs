@@ -19,7 +19,7 @@ const path = require('path');
 // Register global aliases for runtime resolution
 try {
   const moduleAlias = require('module-alias');
-  const prismaRuntimePath = path.join(__dirname, '..', 'src', 'generated', 'prisma-client', 'runtime');
+  const prismaRuntimePath = path.join(__dirname, '..', 'node_modules', '@prisma', 'client', 'runtime');
 
   moduleAlias.addAliases({
     '@app': path.join(__dirname, '..', 'src', 'app'),

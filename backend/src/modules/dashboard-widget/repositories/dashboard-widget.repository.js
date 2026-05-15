@@ -17,6 +17,7 @@ const ROLE_PACKS = Object.freeze({
   DOCTOR: 'doctor',
   NURSE: 'nurse',
   LAB_TECH: 'lab_tech',
+  RADIOLOGY_TECH: 'radiology_tech',
   PHARMACIST: 'pharmacist',
   RECEPTIONIST: 'receptionist',
   BILLING: 'billing',
@@ -90,6 +91,16 @@ const buildLabResultScopeWhere = (scope = {}) => ({
       patient: patientRelationScope(scope)
     }
   }
+});
+
+const buildRadiologyOrderScopeWhere = (scope = {}) => ({
+  deleted_at: null,
+  patient: patientRelationScope(scope)
+});
+
+const buildRadiologyResultScopeWhere = (scope = {}) => ({
+  deleted_at: null,
+  radiology_order: buildRadiologyOrderScopeWhere(scope)
 });
 
 const buildPharmacyOrderScopeWhere = (scope = {}) => ({
@@ -419,6 +430,8 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     const paymentWhere = directScope(scope, { includeTenant: true, includeFacility: true });
     const labOrderWhere = buildLabOrderScopeWhere(scope);
     const labResultWhere = buildLabResultScopeWhere(scope);
+    const radiologyOrderWhere = buildRadiologyOrderScopeWhere(scope);
+    const radiologyResultWhere = buildRadiologyResultScopeWhere(scope);
     const pharmacyOrderWhere = buildPharmacyOrderScopeWhere(scope);
     const dispenseLogWhere = buildDispenseLogScopeWhere(scope);
     const inventoryStockWhere = buildInventoryStockScopeWhere(scope);
@@ -497,6 +510,25 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         activity: {
           orders: await prisma.lab_order.count({ where: { ...labOrderWhere, updated_at: { gte: window24h } } }),
           results: await prisma.lab_result.count({ where: { ...labResultWhere, updated_at: { gte: window24h } } })
+        }
+      };
+    }
+
+    if (packId === ROLE_PACKS.RADIOLOGY_TECH) {
+      const [ordersToday, inProcess, pending, final, completed] = await Promise.all([
+        prisma.radiology_order.count({ where: { ...radiologyOrderWhere, ordered_at: { gte: todayStart } } }),
+        prisma.radiology_order.count({ where: { ...radiologyOrderWhere, status: 'IN_PROCESS' } }),
+        prisma.radiology_result.count({ where: { ...radiologyResultWhere, status: 'DRAFT' } }),
+        prisma.radiology_result.count({ where: { ...radiologyResultWhere, status: 'FINAL' } }),
+        prisma.radiology_order.count({ where: { ...radiologyOrderWhere, status: 'COMPLETED' } })
+      ]);
+      return {
+        metrics: { ordersToday, inProcess, pending, final, completed },
+        trendDates: await selectDateSeries(prisma.radiology_order, { ...radiologyOrderWhere, ordered_at: { gte: trendStart } }, 'ordered_at'),
+        statusCounts: await countByStatuses(prisma.radiology_result, radiologyResultWhere, ['DRAFT', 'FINAL', 'AMENDED']),
+        activity: {
+          orders: await prisma.radiology_order.count({ where: { ...radiologyOrderWhere, updated_at: { gte: window24h } } }),
+          results: await prisma.radiology_result.count({ where: { ...radiologyResultWhere, updated_at: { gte: window24h } } })
         }
       };
     }
@@ -707,6 +739,8 @@ module.exports = {
     ROLE_PACKS,
     buildLabOrderScopeWhere,
     buildLabResultScopeWhere,
+    buildRadiologyOrderScopeWhere,
+    buildRadiologyResultScopeWhere,
     buildPharmacyOrderScopeWhere,
     buildDispenseLogScopeWhere,
     buildInventoryStockScopeWhere,

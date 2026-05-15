@@ -94,6 +94,7 @@ describe('seed-demo-data script', () => {
     const seedOperationsPack = jest.fn(async () => ({ inventoryItems: {}, suppliers: {} }));
     const seedCommunicationsPack = jest.fn(async () => ({ conversations: { unreadDirect: { id: 'conv-1' } } }));
     const seedBiomedicalPack = jest.fn(async () => ({ registries: { pro: { id: 'eq-1' } } }));
+    const seedMortuaryPack = jest.fn(async () => ({ cases: { demo: { id: 'mortuary-case-1' } } }));
     const seedCompliancePack = jest.fn(async () => ({ integration: { id: 'int-1' } }));
     const seedGovernancePack = jest.fn(async () => ({
       abacPolicies: { allowWardShift: { id: 'abp-1' }, denyPatientExport: { id: 'abp-2' } },
@@ -129,6 +130,7 @@ describe('seed-demo-data script', () => {
     jest.doMock('../../../scripts/seeders/seed-operations-pack', () => ({ seedOperationsPack }));
     jest.doMock('../../../scripts/seeders/seed-communications-pack', () => ({ seedCommunicationsPack }));
     jest.doMock('../../../scripts/seeders/seed-biomedical-pack', () => ({ seedBiomedicalPack }));
+    jest.doMock('../../../scripts/seeders/seed-mortuary-pack', () => ({ seedMortuaryPack }));
     jest.doMock('../../../scripts/seeders/seed-compliance-pack', () => ({ seedCompliancePack }));
     jest.doMock('../../../scripts/seeders/seed-governance-pack', () => ({ seedGovernancePack }));
     jest.doMock('../../../scripts/seeders/seed-filler-pack', () => ({ seedFillerPack }));
@@ -145,6 +147,7 @@ describe('seed-demo-data script', () => {
     expect(seedOperationsPack).toHaveBeenCalledTimes(1);
     expect(seedCommunicationsPack).toHaveBeenCalledTimes(1);
     expect(seedBiomedicalPack).toHaveBeenCalledTimes(1);
+    expect(seedMortuaryPack).toHaveBeenCalledTimes(1);
     expect(seedCompliancePack).toHaveBeenCalledTimes(1);
     expect(seedGovernancePack).toHaveBeenCalledTimes(1);
     expect(seedFillerPack).toHaveBeenCalledWith(expect.any(Object), 0);

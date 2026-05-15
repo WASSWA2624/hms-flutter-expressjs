@@ -26,7 +26,7 @@ try {
   require('module-alias/register');
   const moduleAlias = require('module-alias');
   const srcDir = path.join(process.cwd(), 'src');
-  const generatedPrismaClientPath = path.join(srcDir, 'generated', 'prisma-client');
+  const prismaRuntimePath = path.join(process.cwd(), 'node_modules', '@prisma', 'client', 'runtime');
 
   moduleAlias.addAliases({
     '@app': path.join(srcDir, 'app'),
@@ -39,7 +39,7 @@ try {
     '@prisma/client': path.join(srcDir, 'prisma', 'client.js'),
   });
 
-  moduleAlias.addAlias('@prisma/client/runtime', path.join(generatedPrismaClientPath, 'runtime'));
+  moduleAlias.addAlias('@prisma/client/runtime', prismaRuntimePath);
 
   log('module aliases registered');
 } catch (error) {
@@ -56,10 +56,10 @@ const checkFile = (label, targetPath) => {
 
 checkFile('server', path.join(process.cwd(), 'src', 'server.js'));
 checkFile('prisma wrapper', path.join(process.cwd(), 'src', 'prisma', 'client.js'));
-checkFile('generated prisma index', path.join(process.cwd(), 'src', 'generated', 'prisma-client', 'index.js'));
+checkFile('generated prisma index', path.join(process.cwd(), 'node_modules', '.prisma', 'client', 'index.js'));
 checkFile(
-  'generated prisma runtime',
-  path.join(process.cwd(), 'src', 'generated', 'prisma-client', 'runtime', 'client.js')
+  'prisma runtime',
+  path.join(process.cwd(), 'node_modules', '@prisma', 'client', 'runtime', 'client.js')
 );
 
 const steps = [

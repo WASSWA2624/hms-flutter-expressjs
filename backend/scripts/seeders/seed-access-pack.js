@@ -32,6 +32,7 @@ const departmentForRole = (scenarioKey, role) => {
     TENANT_ADMIN: 'Operations',
     FACILITY_ADMIN: 'Operations',
     LAB_TECH: 'Laboratory',
+    RADIOLOGY_TECH: 'Radiology',
     PHARMACIST: 'Pharmacy',
     BILLING: 'Billing',
     BIOMED: 'Biomedical',
@@ -200,7 +201,7 @@ const seedAccessPack = async (ctx, orgPack) => {
             department_id: department?.id || null,
             staff_number: `${scenario.tenant_code}-${userDefinition.role}-${ctx.hash(userDefinition.email).slice(0, 4).toUpperCase()}`,
             position: userDefinition.title,
-            practitioner_type: ['DOCTOR', 'NURSE', 'LAB_TECH', 'PHARMACIST'].includes(userDefinition.role)
+            practitioner_type: ['DOCTOR', 'NURSE', 'LAB_TECH', 'RADIOLOGY_TECH', 'PHARMACIST'].includes(userDefinition.role)
               ? userDefinition.role
               : null,
             consultation_fee: userDefinition.role === 'DOCTOR' ? 35 : null,

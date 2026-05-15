@@ -6,6 +6,7 @@ const ROLE_PACKS = Object.freeze({
   DOCTOR: 'doctor',
   NURSE: 'nurse',
   LAB_TECH: 'lab_tech',
+  RADIOLOGY_TECH: 'radiology_tech',
   PHARMACIST: 'pharmacist',
   RECEPTIONIST: 'receptionist',
   BILLING: 'billing',
@@ -23,6 +24,7 @@ const ROLE_PROFILE_IDS = Object.freeze({
   [ROLES.DOCTOR]: 'doctor',
   [ROLES.NURSE]: 'nurse',
   [ROLES.LAB_TECH]: 'lab_tech',
+  [ROLES.RADIOLOGY_TECH]: 'radiology_tech',
   [ROLES.PHARMACIST]: 'pharmacist',
   [ROLES.RECEPTIONIST]: 'receptionist',
   [ROLES.BILLING]: 'billing',
@@ -40,6 +42,7 @@ const PROFILE_TO_PACK = Object.freeze({
   doctor: ROLE_PACKS.DOCTOR,
   nurse: ROLE_PACKS.NURSE,
   lab_tech: ROLE_PACKS.LAB_TECH,
+  radiology_tech: ROLE_PACKS.RADIOLOGY_TECH,
   pharmacist: ROLE_PACKS.PHARMACIST,
   receptionist: ROLE_PACKS.RECEPTIONIST,
   billing: ROLE_PACKS.BILLING,
@@ -280,6 +283,16 @@ const metricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'in_process', label: 'Orders in process', value: metrics.inProcess || 0 },
       { id: 'pending_results', label: 'Pending results', value: metrics.pending || 0 },
       { id: 'critical_results', label: 'Critical results', value: metrics.critical || 0 },
+      { id: 'completed_orders', label: 'Completed orders', value: metrics.completed || 0 },
+    ];
+  }
+
+  if (packId === ROLE_PACKS.RADIOLOGY_TECH) {
+    return [
+      { id: 'orders_today', label: 'Radiology orders today', value: metrics.ordersToday || 0 },
+      { id: 'in_process', label: 'Studies in process', value: metrics.inProcess || 0 },
+      { id: 'draft_reports', label: 'Draft reports', value: metrics.pending || 0 },
+      { id: 'final_reports', label: 'Final reports', value: metrics.final || 0 },
       { id: 'completed_orders', label: 'Completed orders', value: metrics.completed || 0 },
     ];
   }

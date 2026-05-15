@@ -24,6 +24,7 @@ const { seedMortuaryPack } = require('./seeders/seed-mortuary-pack');
 const { seedCompliancePack } = require('./seeders/seed-compliance-pack');
 const { seedGovernancePack } = require('./seeders/seed-governance-pack');
 const { seedFillerPack } = require('./seeders/seed-filler-pack');
+const { assertDemoTaskAllowed } = require('./demo-safety');
 const { verifyDemoData } = require('./verify-demo-data');
 
 const getDeterministicDate = (sequence = 0, minuteOffset = 0, randomSeed = DEFAULT_RANDOM_SEED) => {
@@ -40,9 +41,10 @@ const seedDemoData = async ({
   targetCount = 0,
   randomSeed = DEFAULT_RANDOM_SEED,
 } = {}) => {
-  if (env.NODE_ENV === 'production') {
+  const safety = assertDemoTaskAllowed('demo seed');
+  if (!safety.allowed) {
     console.warn('Skipping seed: NODE_ENV=production');
-    return { skipped: true, reason: 'production_environment' };
+    return { skipped: true, reason: safety.reason };
   }
 
   const ctx = createSeedContext({

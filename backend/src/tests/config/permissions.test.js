@@ -7,6 +7,17 @@ describe('permissions config', () => {
     expect(ROLE_PERMISSIONS[ROLES.AMBULANCE_OPERATOR]).toBeDefined();
   });
 
+  it('includes RADIOLOGY_TECH in the canonical role catalog', () => {
+    expect(ROLES.RADIOLOGY_TECH).toBe('RADIOLOGY_TECH');
+    expect(ROLE_PERMISSIONS[ROLES.RADIOLOGY_TECH]).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.RADIOLOGY_READ,
+        PERMISSIONS.RADIOLOGY_WRITE,
+        PERMISSIONS.PATIENT_READ
+      ])
+    );
+  });
+
   it('grants emergency read/write and not emergency delete to AMBULANCE_OPERATOR', () => {
     const permissions = ROLE_PERMISSIONS[ROLES.AMBULANCE_OPERATOR] || [];
 
@@ -34,5 +45,11 @@ describe('permissions config', () => {
     expect(normalizeRoleName('ambulance_driver')).toBe(ROLES.AMBULANCE_OPERATOR);
     expect(normalizeRoleName('EMT')).toBe(ROLES.AMBULANCE_OPERATOR);
     expect(normalizeRoleName('paramedic')).toBe(ROLES.AMBULANCE_OPERATOR);
+  });
+
+  it('normalizes radiology legacy aliases to RADIOLOGY_TECH', () => {
+    expect(normalizeRoleName('radiographer')).toBe(ROLES.RADIOLOGY_TECH);
+    expect(normalizeRoleName('radiology_technician')).toBe(ROLES.RADIOLOGY_TECH);
+    expect(normalizeRoleName('imaging_tech')).toBe(ROLES.RADIOLOGY_TECH);
   });
 });
