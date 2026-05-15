@@ -76,12 +76,8 @@ class _PatientRegistryContent extends ConsumerWidget {
 
     return AppWorkspace(
       title: l10n.patientsTitle,
-      description: l10n.patientsBody,
-      status: AppWorkspaceStatus(
-        label: l10n.patientsStatusReady,
-        tone: AppWorkspaceStatusTone.success,
-        icon: Icons.verified_user_outlined,
-      ),
+      description: '',
+      compactSummaryCards: true,
       primaryAction: AppAccessActionGate(
         requirement: _writeRequirement,
         builder: (_, bool isAllowed) => AppButton.primary(
@@ -115,6 +111,7 @@ class _PatientRegistryContent extends ConsumerWidget {
             Localizations.localeOf(context),
           ),
           icon: Icons.groups_outlined,
+          compact: true,
           onPressed: () {
             _openSummaryPatientList(
               context,
@@ -133,6 +130,7 @@ class _PatientRegistryContent extends ConsumerWidget {
             Localizations.localeOf(context),
           ),
           icon: Icons.how_to_reg_outlined,
+          compact: true,
           onPressed: () {
             _openSummaryPatientList(
               context,
@@ -152,6 +150,7 @@ class _PatientRegistryContent extends ConsumerWidget {
             Localizations.localeOf(context),
           ),
           icon: Icons.queue_outlined,
+          compact: true,
           onPressed: () {
             _openSummaryPatientList(
               context,
@@ -168,6 +167,7 @@ class _PatientRegistryContent extends ConsumerWidget {
             Localizations.localeOf(context),
           ),
           icon: Icons.content_copy_outlined,
+          compact: true,
           onPressed: () {
             _openSummaryPatientList(
               context,
@@ -274,6 +274,7 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
 
     return AppWorkspaceFilterBar(
       semanticLabel: l10n.patientsFiltersLabel,
+      expandSearch: true,
       search: AppTextField(
         controller: _searchController,
         semanticLabel: l10n.patientsSearchLabel,
@@ -667,13 +668,19 @@ class _PatientSummaryListDialog extends ConsumerStatefulWidget {
 
 class _PatientSummaryListDialogState
     extends ConsumerState<_PatientSummaryListDialog> {
+  late final TextEditingController _searchController;
   AppPage<Patient>? _page;
   AppFailure? _failure;
+  Timer? _searchDebounce;
+  String _search = '';
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _search = widget.query?.search ?? '';
+    _searchController = TextEditingController(text: _search);
+    _searchController.addListener(_handleSearchChanged);
     final PatientListQuery? query = widget.query;
     if (query != null) {
       unawaited(_load(query.pageRequest));
@@ -681,49 +688,106 @@ class _PatientSummaryListDialogState
   }
 
   @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController
+      ..removeListener(_handleSearchChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final List<Patient>? patients = widget.patients;
+    final ThemeData theme = Theme.of(context);
+    final List<Patient>? patients = widget.patients == null
+        ? null
+        : _filterPatients(widget.patients!);
     final AppPage<Patient>? page = _page;
+    final Widget list = _failure != null
+        ? AppFailureStateView(failure: _failure!)
+        : patients != null
+        ? _SummaryPatientList(
+            page: AppPage<Patient>(
+              items: patients,
+              request: AppPageRequest(
+                pageSize: patients.length.clamp(1, 20).toInt(),
+              ),
+              totalItemCount: patients.length,
+            ),
+            isLoading: false,
+            onPageChanged: null,
+          )
+        : page == null && _isLoading
+        ? AppWorkspaceStatePanel.loading(
+            title: l10n.patientsSummaryLoadingTitle,
+            body: l10n.patientsSummaryLoadingBody,
+          )
+        : _SummaryPatientList(
+            page:
+                page ??
+                const AppPage<Patient>(
+                  items: <Patient>[],
+                  request: AppPageRequest(pageSize: 8),
+                  totalItemCount: 0,
+                ),
+            isLoading: _isLoading,
+            onPageChanged: (AppPageRequest request) {
+              unawaited(_load(request));
+            },
+          );
 
     return AppDialog(
       title: Text(widget.title),
       icon: const Icon(Icons.groups_outlined),
       maxWidth: 920,
       scrollable: true,
-      content: _failure != null
-          ? AppFailureStateView(failure: _failure!)
-          : patients != null
-          ? _SummaryPatientList(
-              page: AppPage<Patient>(
-                items: patients,
-                request: AppPageRequest(
-                  pageSize: patients.length.clamp(1, 20).toInt(),
-                ),
-                totalItemCount: patients.length,
-              ),
-              isLoading: false,
-              onPageChanged: null,
-            )
-          : page == null && _isLoading
-          ? AppWorkspaceStatePanel.loading(
-              title: l10n.patientsSummaryLoadingTitle,
-              body: l10n.patientsSummaryLoadingBody,
-            )
-          : _SummaryPatientList(
-              page:
-                  page ??
-                  const AppPage<Patient>(
-                    items: <Patient>[],
-                    request: AppPageRequest(pageSize: 8),
-                    totalItemCount: 0,
-                  ),
-              isLoading: _isLoading,
-              onPageChanged: (AppPageRequest request) {
-                unawaited(_load(request));
-              },
-            ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppTextField(
+            controller: _searchController,
+            semanticLabel: l10n.patientsSearchLabel,
+            hintText: l10n.patientsSearchHint,
+            prefixIcon: const Icon(Icons.search),
+            textInputAction: TextInputAction.search,
+            onFieldSubmitted: (_) => _runSearchImmediately(),
+          ),
+          SizedBox(height: theme.spacing.md),
+          list,
+        ],
+      ),
     );
+  }
+
+  void _handleSearchChanged() {
+    final String value = _searchController.text.trim();
+    if (value == _search) {
+      return;
+    }
+    setState(() {
+      _search = value;
+    });
+
+    if (widget.query == null) {
+      return;
+    }
+
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        unawaited(_load(widget.query!.pageRequest.first()));
+      }
+    });
+  }
+
+  void _runSearchImmediately() {
+    _searchDebounce?.cancel();
+    final PatientListQuery? query = widget.query;
+    if (query != null) {
+      unawaited(_load(query.pageRequest.first()));
+    }
   }
 
   Future<void> _load(AppPageRequest request) async {
@@ -737,7 +801,7 @@ class _PatientSummaryListDialogState
     });
     final Result<AppPage<Patient>> result = await ref
         .read(patientRegistryControllerProvider.notifier)
-        .loadPatientPage(query.copyWith(pageRequest: request));
+        .loadPatientPage(query.copyWith(search: _search, pageRequest: request));
     if (!mounted) {
       return;
     }
@@ -755,6 +819,28 @@ class _PatientSummaryListDialogState
         });
       },
     );
+  }
+
+  List<Patient> _filterPatients(List<Patient> patients) {
+    final String needle = _search.toLowerCase();
+    if (needle.isEmpty) {
+      return patients;
+    }
+
+    return patients
+        .where((Patient patient) {
+          return <String?>[
+            patient.effectiveDisplayName,
+            patient.effectiveIdentifier,
+            patient.publicId,
+            patient.primaryPhone,
+            patient.primaryEmail,
+            patient.facilityLabel,
+          ].whereType<String>().any(
+            (String value) => value.toLowerCase().contains(needle),
+          );
+        })
+        .toList(growable: false);
   }
 }
 

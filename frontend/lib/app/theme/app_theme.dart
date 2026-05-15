@@ -40,7 +40,7 @@ abstract final class AppTheme {
     );
     final OutlineInputBorder focusedInputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.zero,
-      borderSide: BorderSide(color: colorScheme.primary, width: 1.2),
+      borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
     );
     final OutlineInputBorder errorInputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.zero,
@@ -48,6 +48,14 @@ abstract final class AppTheme {
         color: statusColors.error,
         width: appTokens.dividerThickness,
       ),
+    );
+    final Color inputFillColor = colorScheme.surfaceContainerLowest;
+    final Color inputHoverColor = colorScheme.primary.withValues(alpha: 0.04);
+    final Color inputHintColor = colorScheme.onSurfaceVariant.withValues(
+      alpha: brightness == Brightness.light ? 0.58 : 0.7,
+    );
+    final Color inputLabelColor = colorScheme.onSurfaceVariant.withValues(
+      alpha: brightness == Brightness.light ? 0.86 : 0.9,
     );
 
     return ThemeData(
@@ -134,8 +142,8 @@ abstract final class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         isDense: true,
         filled: true,
-        fillColor: colorScheme.surface,
-        hoverColor: colorScheme.surfaceContainerHighest,
+        fillColor: inputFillColor,
+        hoverColor: inputHoverColor,
         contentPadding: EdgeInsets.symmetric(
           horizontal: spacing.lg,
           vertical: 13,
@@ -160,11 +168,20 @@ abstract final class AppTheme {
         focusedBorder: focusedInputBorder,
         errorBorder: errorInputBorder,
         focusedErrorBorder: errorInputBorder.copyWith(
-          borderSide: BorderSide(color: statusColors.error, width: 1.2),
+          borderSide: BorderSide(color: statusColors.error, width: 1.4),
         ),
-        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-        floatingLabelStyle: TextStyle(color: colorScheme.primary),
-        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        labelStyle: TextStyle(
+          color: inputLabelColor,
+          fontWeight: FontWeight.w500,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w700,
+        ),
+        hintStyle: TextStyle(
+          color: inputHintColor,
+          fontWeight: FontWeight.w400,
+        ),
       ),
       navigationBarTheme: const NavigationBarThemeData(
         indicatorShape: rectangularShape,

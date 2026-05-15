@@ -68,6 +68,7 @@ class _AppDateFieldState extends State<AppDateField> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final bool canChange = widget.enabled;
 
     return FormField<DateTime>(
@@ -87,6 +88,12 @@ class _AppDateFieldState extends State<AppDateField> {
           focusNode: widget.focusNode,
           restorationId: widget.restorationId,
           onTap: canChange ? () => _selectDate(context, field) : null,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: canChange
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.onSurface.withValues(alpha: 0.62),
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             labelText: widget.labelText,
             hintText: widget.hintText,

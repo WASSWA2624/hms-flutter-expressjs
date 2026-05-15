@@ -87,6 +87,7 @@ class AppSelectField<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final bool canSelect = enabled && !isLoading;
     Widget field = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -106,6 +107,12 @@ class AppSelectField<T> extends StatelessWidget {
           hintText: hintText,
           helperText: helperText,
           trailingIcon: isLoading ? const _SelectLoadingIcon() : null,
+          textStyle: theme.textTheme.bodyLarge?.copyWith(
+            color: canSelect
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.onSurface.withValues(alpha: 0.62),
+            fontWeight: FontWeight.w500,
+          ),
           enableFilter: searchable,
           enableSearch: searchable,
           filterCallback: filterCallback,

@@ -142,6 +142,7 @@ class _AppTextFieldState extends State<AppTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final bool canEdit = widget.enabled && !widget.isLoading;
     final Widget field = TextFormField(
       key: widget.controller == null
@@ -170,6 +171,12 @@ class _AppTextFieldState extends State<AppTextField> {
       autofocus: widget.autofocus,
       autocorrect: widget.obscureText ? false : widget.autocorrect,
       enableSuggestions: widget.obscureText ? false : widget.enableSuggestions,
+      style: theme.textTheme.bodyLarge?.copyWith(
+        color: canEdit
+            ? theme.colorScheme.onSurface
+            : theme.colorScheme.onSurface.withValues(alpha: 0.62),
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         labelText: widget.labelText,
         hintText: widget.hintText,

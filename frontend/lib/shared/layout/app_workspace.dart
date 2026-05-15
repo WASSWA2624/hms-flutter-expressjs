@@ -53,6 +53,7 @@ class AppWorkspace extends StatelessWidget {
     this.maxWidth = PageMaxWidth.dataHeavy,
     this.padding,
     this.scrollable = true,
+    this.compactSummaryCards = false,
     super.key,
   });
 
@@ -69,6 +70,7 @@ class AppWorkspace extends StatelessWidget {
   final PageMaxWidth maxWidth;
   final EdgeInsets? padding;
   final bool scrollable;
+  final bool compactSummaryCards;
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +93,12 @@ class AppWorkspace extends StatelessWidget {
     if (summaryCards.isNotEmpty) {
       children
         ..add(SizedBox(height: contentGap))
-        ..add(AppWorkspaceSummaryGrid(children: summaryCards));
+        ..add(
+          AppWorkspaceSummaryGrid(
+            compact: compactSummaryCards,
+            children: summaryCards,
+          ),
+        );
     }
 
     if (filters != null) {
@@ -164,23 +171,28 @@ class AppWorkspaceHeader extends StatelessWidget {
         border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
       ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: theme.spacing.md),
+        padding: EdgeInsets.only(bottom: theme.spacing.sm),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final double titleWidth = compact
-                ? constraints.maxWidth
-                : constraints.maxWidth.clamp(320, 760).toDouble();
+            if (compact) {
+              return Wrap(
+                spacing: theme.spacing.md,
+                runSpacing: theme.spacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  SizedBox(width: constraints.maxWidth, child: titleBlock),
+                  if (actions.isNotEmpty) actionBar,
+                ],
+              );
+            }
 
-            return Wrap(
-              spacing: theme.spacing.md,
-              runSpacing: theme.spacing.sm,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              alignment: compact
-                  ? WrapAlignment.start
-                  : WrapAlignment.spaceBetween,
+            return Row(
               children: <Widget>[
-                SizedBox(width: titleWidth, child: titleBlock),
-                if (actions.isNotEmpty) actionBar,
+                Expanded(child: titleBlock),
+                if (actions.isNotEmpty) ...<Widget>[
+                  SizedBox(width: theme.spacing.md),
+                  actionBar,
+                ],
               ],
             );
           },
@@ -240,11 +252,15 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
   const AppWorkspaceSummaryGrid({
     required this.children,
     this.maxColumns = 4,
+    this.compact = false,
+    this.compactItemWidth = 218,
     super.key,
   });
 
   final List<Widget> children;
   final int maxColumns;
+  final bool compact;
+  final double compactItemWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +268,24 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        if (compact) {
+          final double gap = constraints.maxWidth < AppBreakpoints.md
+              ? theme.spacing.sm
+              : theme.spacing.md;
+          final double itemWidth = constraints.maxWidth < AppBreakpoints.sm
+              ? constraints.maxWidth
+              : compactItemWidth.clamp(0, constraints.maxWidth).toDouble();
+
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: <Widget>[
+              for (final Widget child in children)
+                SizedBox(width: itemWidth, child: child),
+            ],
+          );
+        }
+
         final int columns = _summaryColumnCount(
           constraints.maxWidth,
           maxColumns,
@@ -283,6 +317,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
     this.status,
     this.icon,
     this.onPressed,
+    this.compact = false,
     super.key,
   });
 
@@ -292,76 +327,128 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
   final AppWorkspaceStatus? status;
   final IconData? icon;
   final VoidCallback? onPressed;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Widget cardBody = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.md,
-        vertical: theme.spacing.sm,
-      ),
-      child: Row(
-        children: <Widget>[
-          if (icon != null) ...<Widget>[
-            Icon(
-              icon,
-              color: colorScheme.primary,
-              size: theme.appTokens.listIconSize,
-            ),
-            SizedBox(width: theme.spacing.sm),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                if (description != null && description!.isNotEmpty)
-                  Text(
-                    description!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+    final Widget cardBody = compact
+        ? ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 46),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.sm,
+                vertical: theme.spacing.xs,
+              ),
+              child: Row(
+                children: <Widget>[
+                  if (icon != null) ...<Widget>[
+                    Icon(icon, color: colorScheme.primary, size: 18),
+                    SizedBox(width: theme.spacing.xs),
+                  ],
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
+                  SizedBox(width: theme.spacing.sm),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (status != null) ...<Widget>[
+                    SizedBox(width: theme.spacing.xs),
+                    AppWorkspaceStatusBadge(status: status!),
+                  ],
+                  if (onPressed != null) ...<Widget>[
+                    SizedBox(width: theme.spacing.xs),
+                    Icon(
+                      Icons.chevron_right,
+                      color: colorScheme.primary,
+                      size: 18,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          )
+        : Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.md,
+              vertical: theme.spacing.sm,
+            ),
+            child: Row(
+              children: <Widget>[
+                if (icon != null) ...<Widget>[
+                  Icon(
+                    icon,
+                    color: colorScheme.primary,
+                    size: theme.appTokens.listIconSize,
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (description != null && description!.isNotEmpty)
+                        Text(
+                          description!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (status != null) ...<Widget>[
+                  SizedBox(width: theme.spacing.sm),
+                  AppWorkspaceStatusBadge(status: status!),
+                ],
+                if (onPressed != null) ...<Widget>[
+                  SizedBox(width: theme.spacing.xs),
+                  Icon(
+                    Icons.chevron_right,
+                    color: colorScheme.primary,
+                    size: theme.appTokens.listIconSize,
+                  ),
+                ],
               ],
             ),
-          ),
-          if (status != null) ...<Widget>[
-            SizedBox(width: theme.spacing.sm),
-            AppWorkspaceStatusBadge(status: status!),
-          ],
-          if (onPressed != null) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.primary,
-              size: theme.appTokens.listIconSize,
-            ),
-          ],
-        ],
-      ),
-    );
+          );
 
     return Semantics(
       button: onPressed != null,
@@ -383,6 +470,7 @@ class AppWorkspaceFilterBar extends StatelessWidget {
     this.filters = const <Widget>[],
     this.actions = const <Widget>[],
     this.semanticLabel,
+    this.expandSearch = false,
     super.key,
   });
 
@@ -390,41 +478,46 @@ class AppWorkspaceFilterBar extends StatelessWidget {
   final List<Widget> filters;
   final List<Widget> actions;
   final String? semanticLabel;
+  final bool expandSearch;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return Semantics(
-      container: true,
-      label: semanticLabel,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.sm,
-            vertical: theme.spacing.xs,
+    return SizedBox(
+      width: double.infinity,
+      child: Semantics(
+        container: true,
+        label: semanticLabel,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border.all(color: colorScheme.outlineVariant),
           ),
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              if (constraints.maxWidth < AppBreakpoints.md) {
-                return _MobileFilterBar(
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.sm,
+              vertical: theme.spacing.xs,
+            ),
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                if (constraints.maxWidth < AppBreakpoints.md) {
+                  return _MobileFilterBar(
+                    search: search,
+                    filters: filters,
+                    actions: actions,
+                  );
+                }
+
+                return _WideFilterBar(
+                  expandSearch: expandSearch,
                   search: search,
                   filters: filters,
                   actions: actions,
                 );
-              }
-
-              return _WideFilterBar(
-                search: search,
-                filters: filters,
-                actions: actions,
-              );
-            },
+              },
+            ),
           ),
         ),
       ),
@@ -1122,11 +1215,13 @@ class _MobileFilterBar extends StatelessWidget {
 
 class _WideFilterBar extends StatelessWidget {
   const _WideFilterBar({
+    required this.expandSearch,
     required this.search,
     required this.filters,
     required this.actions,
   });
 
+  final bool expandSearch;
   final Widget? search;
   final List<Widget> filters;
   final List<Widget> actions;
@@ -1135,6 +1230,23 @@ class _WideFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Widget? searchWidget = search;
+
+    if (expandSearch) {
+      return Row(
+        children: <Widget>[
+          if (searchWidget != null) Expanded(child: searchWidget),
+          for (final Widget filter in filters) ...<Widget>[
+            SizedBox(width: theme.spacing.sm),
+            SizedBox(width: _filterWidth, child: filter),
+          ],
+          if (actions.isNotEmpty) ...<Widget>[
+            SizedBox(width: theme.spacing.sm),
+            _WorkspaceHeaderActions(actions: actions),
+          ],
+        ],
+      );
+    }
+
     final List<Widget> children = <Widget>[
       if (searchWidget != null)
         SizedBox(width: _searchWidth, child: searchWidget),
