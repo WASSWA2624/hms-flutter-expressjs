@@ -162,6 +162,12 @@
   "opdActiveFlowSummaryLabel": "Active flows",
   "opdCompletedFlowSummaryLabel": "Completed",
   "opdFiltersLabel": "OPD filters",
+  "opdFilterAction": "Filter OPD table",
+  "opdFilterDialogTitle": "Filter OPD table",
+  "opdCategoryFilterLabel": "Category",
+  "opdStatusFilterLabel": "Status",
+  "opdAllCategoriesOption": "All categories",
+  "opdAllStatusesOption": "All statuses",
   "opdSearchLabel": "Search OPD",
   "opdSearchHint": "Search patient, identifier, or provider",
   "opdApplyFiltersAction": "Apply filters",
@@ -190,6 +196,7 @@
   "opdNoSummaryPatientsTitle": "No patients",
   "opdNoSummaryPatientsBody": "Matching OPD patients will appear here.",
   "opdPatientColumnLabel": "Patient",
+  "opdCategoryColumnLabel": "Category",
   "opdStatusColumnLabel": "Status",
   "opdTimeColumnLabel": "Time",
   "opdProviderColumnLabel": "Provider",
@@ -309,6 +316,24 @@
   "@opdFiltersLabel": {
     "description": "Semantic label for OPD filters."
   },
+  "@opdFilterAction": {
+    "description": "Action label for opening the OPD table filter dialog."
+  },
+  "@opdFilterDialogTitle": {
+    "description": "OPD table filter dialog title."
+  },
+  "@opdCategoryFilterLabel": {
+    "description": "OPD table category filter label."
+  },
+  "@opdStatusFilterLabel": {
+    "description": "OPD table status filter label."
+  },
+  "@opdAllCategoriesOption": {
+    "description": "All categories option label in OPD filters."
+  },
+  "@opdAllStatusesOption": {
+    "description": "All statuses option label in OPD filters."
+  },
   "@opdSearchLabel": {
     "description": "Search field label for OPD."
   },
@@ -392,6 +417,9 @@
   },
   "@opdPatientColumnLabel": {
     "description": "Patient column label."
+  },
+  "@opdCategoryColumnLabel": {
+    "description": "Category column label for the main OPD table."
   },
   "@opdStatusColumnLabel": {
     "description": "Status column label."

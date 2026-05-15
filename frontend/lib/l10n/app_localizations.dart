@@ -388,6 +388,42 @@ abstract class AppLocalizations {
   /// **'OPD filters'**
   String get opdFiltersLabel;
 
+  /// Action label for opening the OPD table filter dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter OPD table'**
+  String get opdFilterAction;
+
+  /// OPD table filter dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter OPD table'**
+  String get opdFilterDialogTitle;
+
+  /// OPD table category filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get opdCategoryFilterLabel;
+
+  /// OPD table status filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get opdStatusFilterLabel;
+
+  /// All categories option label in OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get opdAllCategoriesOption;
+
+  /// All statuses option label in OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All statuses'**
+  String get opdAllStatusesOption;
+
   /// Search field label for OPD.
   ///
   /// In en, this message translates to:
@@ -555,6 +591,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Patient'**
   String get opdPatientColumnLabel;
+
+  /// Category column label for the main OPD table.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get opdCategoryColumnLabel;
 
   /// Status column label.
   ///

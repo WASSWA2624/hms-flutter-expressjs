@@ -68,11 +68,17 @@ class OpdWorkspacePage extends ConsumerWidget {
   }
 }
 
-class _OpdWorkspaceContent extends ConsumerWidget {
+class _OpdWorkspaceContent extends ConsumerStatefulWidget {
   const _OpdWorkspaceContent({required this.state});
 
   final OpdWorkspaceState state;
 
+  @override
+  ConsumerState<_OpdWorkspaceContent> createState() =>
+      _OpdWorkspaceContentState();
+}
+
+class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   static const AccessRequirement _writeRequirement = AccessRequirement(
     anyPermissions: <AppPermission>[
       AppPermissions.patientWrite,
@@ -84,9 +90,12 @@ class _OpdWorkspaceContent extends ConsumerWidget {
     activeModules: <String>['opd-flow'],
   );
 
+  _OpdTableFilter _filter = const _OpdTableFilter();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final OpdWorkspaceState state = widget.state;
     final OpdWorkspaceController controller = ref.read(
       opdWorkspaceControllerProvider.notifier,
     );
@@ -222,9 +231,16 @@ class _OpdWorkspaceContent extends ConsumerWidget {
           },
         ),
       ],
-      filters: _OpdFilters(state: state),
-      body: _OpdWorkspaceBody(state: state),
-      detail: _FlowDetailPanel(state: state),
+      filters: _OpdFilters(
+        state: state,
+        filter: _filter,
+        onFilterChanged: (_OpdTableFilter value) {
+          setState(() {
+            _filter = value;
+          });
+        },
+      ),
+      body: _OpdWorkspaceBody(state: state, filter: _filter),
     );
   }
 
@@ -236,7 +252,7 @@ class _OpdWorkspaceContent extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => StartWalkInDialog(
-        providerSchedules: state.providerSchedules,
+        providerSchedules: widget.state.providerSchedules,
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(opdWorkspaceControllerProvider.notifier)
@@ -271,9 +287,15 @@ class _OpdWorkspaceContent extends ConsumerWidget {
 }
 
 class _OpdFilters extends ConsumerStatefulWidget {
-  const _OpdFilters({required this.state});
+  const _OpdFilters({
+    required this.state,
+    required this.filter,
+    required this.onFilterChanged,
+  });
 
   final OpdWorkspaceState state;
+  final _OpdTableFilter filter;
+  final ValueChanged<_OpdTableFilter> onFilterChanged;
 
   @override
   ConsumerState<_OpdFilters> createState() => _OpdFiltersState();
@@ -572,7 +594,38 @@ class _OpdFiltersState extends ConsumerState<_OpdFilters> {
         textInputAction: TextInputAction.search,
         onFieldSubmitted: (_) => _applySearchImmediately(),
       ),
+      actions: <Widget>[
+        AppIconButton(
+          icon: widget.filter.isActive
+              ? Icons.filter_alt
+              : Icons.filter_alt_outlined,
+          semanticLabel: l10n.opdFilterAction,
+          tooltip: l10n.opdFilterAction,
+          onPressed: _openFilters,
+        ),
+      ],
     );
+  }
+
+  Future<void> _openFilters() async {
+    final _OpdTableFilter? value = await showAppDialog<_OpdTableFilter>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _OpdFilterDialog(
+        initialFilter: widget.filter,
+        statuses:
+            _tableItems(widget.state)
+                .map((_OpdTableItem item) => item.status)
+                .whereType<String>()
+                .where((String value) => value.trim().isNotEmpty)
+                .toSet()
+                .toList(growable: false)
+              ..sort(),
+      ),
+    );
+    if (value != null) {
+      widget.onFilterChanged(value);
+    }
   }
 
   void _handleSearchChanged() {
@@ -605,126 +658,287 @@ class _OpdFiltersState extends ConsumerState<_OpdFilters> {
 }
 
 class _OpdWorkspaceBody extends StatelessWidget {
-  const _OpdWorkspaceBody({required this.state});
+  const _OpdWorkspaceBody({required this.state, required this.filter});
 
   final OpdWorkspaceState state;
+  final _OpdTableFilter filter;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final List<_OpdTableItem> items = _tableItems(state)
+        .where((_OpdTableItem item) => filter.matches(item))
+        .toList(growable: false);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        _ArrivalsPanel(state: state),
-        SizedBox(height: theme.spacing.lg),
-        _QueueBoardPanel(state: state),
-        SizedBox(height: theme.spacing.lg),
-        _FlowsPanel(state: state),
-        SizedBox(height: theme.spacing.lg),
-        _ProviderReadinessPanel(state: state),
-      ],
+    return _OpdMainTable(
+      items: items,
+      isLoading:
+          state.isRefreshingAppointments ||
+          state.isRefreshingQueue ||
+          state.isRefreshingFlows,
     );
   }
 }
 
-class _ArrivalsPanel extends ConsumerWidget {
-  const _ArrivalsPanel({required this.state});
+@immutable
+final class _OpdTableFilter {
+  const _OpdTableFilter({this.category, this.status});
 
-  final OpdWorkspaceState state;
+  final String? category;
+  final String? status;
+
+  bool get isActive => _isNonEmpty(category) || _isNonEmpty(status);
+
+  _OpdTableFilter copyWith({
+    String? category,
+    String? status,
+    bool clearCategory = false,
+    bool clearStatus = false,
+  }) {
+    return _OpdTableFilter(
+      category: clearCategory ? null : category ?? this.category,
+      status: clearStatus ? null : status ?? this.status,
+    );
+  }
+
+  bool matches(_OpdTableItem item) {
+    if (_isNonEmpty(category) && item.category != category) {
+      return false;
+    }
+    if (_isNonEmpty(status) && item.status != status) {
+      return false;
+    }
+    return true;
+  }
+}
+
+@immutable
+final class _OpdTableItem {
+  const _OpdTableItem({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.status,
+    this.subtitle,
+    this.provider,
+    this.nextStep,
+    this.time,
+    this.appointment,
+    this.queueEntry,
+    this.flow,
+  });
+
+  final String id;
+  final String title;
+  final String category;
+  final String? status;
+  final String? subtitle;
+  final String? provider;
+  final String? nextStep;
+  final DateTime? time;
+  final OpdAppointment? appointment;
+  final OpdQueueEntry? queueEntry;
+  final OpdFlowSummary? flow;
+
+  String get categoryKey {
+    final OpdFlowSummary? activeFlow = flow;
+    final OpdQueueEntry? activeQueue = queueEntry;
+    final OpdAppointment? activeAppointment = appointment;
+    return activeFlow?.patientId ??
+        activeQueue?.patientId ??
+        activeAppointment?.patientId ??
+        id;
+  }
+}
+
+List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
+  final Set<String> usedPatientKeys = <String>{};
+  final List<_OpdTableItem> items = <_OpdTableItem>[];
+
+  for (final OpdFlowSummary flow in state.flows.items) {
+    if (flow.isTerminal || _isCompletedStatus(flow.status ?? flow.stage)) {
+      continue;
+    }
+    final _OpdTableItem item = _OpdTableItem(
+      id: flow.id,
+      title: flow.displayTitle,
+      category: _opdCategoryActiveFlow,
+      status: flow.stage,
+      subtitle: _joinDisplay(<String?>[
+        flow.patientIdentifier,
+        flow.patientPhone,
+      ]),
+      provider: flow.providerDisplayName,
+      nextStep: flow.nextStep,
+      time: flow.startedAt,
+      flow: flow,
+    );
+    usedPatientKeys.add(item.categoryKey);
+    items.add(item);
+  }
+
+  for (final OpdQueueEntry entry in state.queueEntries.items) {
+    if (_isCompletedStatus(entry.status)) {
+      continue;
+    }
+    final _OpdTableItem item = _OpdTableItem(
+      id: entry.id,
+      title: entry.displayTitle,
+      category: _opdCategoryQueue,
+      status: entry.status,
+      subtitle: _joinDisplay(<String?>[
+        entry.patientIdentifier,
+        entry.patientPhone,
+        entry.appointmentReason,
+      ]),
+      provider: entry.providerDisplayName,
+      time: entry.queuedAt,
+      queueEntry: entry,
+    );
+    if (usedPatientKeys.add(item.categoryKey)) {
+      items.add(item);
+    }
+  }
+
+  for (final OpdAppointment appointment in state.appointments.items) {
+    if (_isCompletedStatus(appointment.status)) {
+      continue;
+    }
+    final _OpdTableItem item = _OpdTableItem(
+      id: appointment.id,
+      title: appointment.displayTitle,
+      category: _opdCategoryArrival,
+      status: appointment.status,
+      subtitle: _joinDisplay(<String?>[
+        appointment.patientIdentifier,
+        appointment.patientPhone,
+        appointment.reason,
+      ]),
+      provider: appointment.providerDisplayName,
+      time: appointment.scheduledStart,
+      appointment: appointment,
+    );
+    if (usedPatientKeys.add(item.categoryKey)) {
+      items.add(item);
+    }
+  }
+
+  items.sort((_OpdTableItem left, _OpdTableItem right) {
+    final int categoryCompare = _categorySort(
+      left.category,
+    ).compareTo(_categorySort(right.category));
+    if (categoryCompare != 0) {
+      return categoryCompare;
+    }
+    return (left.time ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(
+      right.time ?? DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  });
+  return items;
+}
+
+int _categorySort(String category) {
+  return switch (category) {
+    _opdCategoryActiveFlow => 0,
+    _opdCategoryQueue => 1,
+    _opdCategoryArrival => 2,
+    _ => 3,
+  };
+}
+
+bool _isCompletedStatus(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'COMPLETED' ||
+    'CANCELLED' ||
+    'NO_SHOW' ||
+    'DISCHARGED' ||
+    'ADMITTED' ||
+    'CLOSED' => true,
+    _ => false,
+  };
+}
+
+class _OpdMainTable extends ConsumerWidget {
+  const _OpdMainTable({required this.items, required this.isLoading});
+
+  final List<_OpdTableItem> items;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
 
-    return _SectionPanel(
-      title: l10n.opdArrivalsTitle,
-      icon: Icons.event_available_outlined,
-      child: AppPaginatedDataList<OpdAppointment>(
-        page: state.appointments,
-        isLoading: state.isRefreshingAppointments,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        pageLabelBuilder: (AppPage<OpdAppointment> page) => l10n.opdPageLabel(
-          page.firstItemNumber,
-          page.lastItemNumber,
-          page.totalItemCount ?? page.items.length,
+    return AppDataList<_OpdTableItem>(
+      items: items,
+      isLoading: isLoading,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      emptyBuilder: (_) =>
+          _EmptyPanel(title: l10n.opdNoFlowsTitle, body: l10n.opdNoFlowsBody),
+      columns: <AppDataColumn<_OpdTableItem>>[
+        AppDataColumn<_OpdTableItem>(
+          label: l10n.opdPatientColumnLabel,
+          cellBuilder: (_, _OpdTableItem item) =>
+              _PatientText(title: item.title, subtitle: item.subtitle),
         ),
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        onPageChanged: (AppPageRequest request) {
-          ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .changeAppointmentPage(request);
-        },
-        emptyBuilder: (_) => _EmptyPanel(
-          title: l10n.opdNoArrivalsTitle,
-          body: l10n.opdNoArrivalsBody,
+        AppDataColumn<_OpdTableItem>(
+          label: l10n.opdCategoryColumnLabel,
+          cellBuilder: (_, _OpdTableItem item) =>
+              _CategoryBadge(category: item.category),
         ),
-        columns: <AppDataColumn<OpdAppointment>>[
-          AppDataColumn<OpdAppointment>(
-            label: l10n.opdPatientColumnLabel,
-            cellBuilder: (_, OpdAppointment item) => _PatientText(
-              title: item.displayTitle,
-              subtitle: item.patientPhone,
-            ),
-          ),
-          AppDataColumn<OpdAppointment>(
-            label: l10n.opdStatusColumnLabel,
-            cellBuilder: (_, OpdAppointment item) =>
-                _StatusBadge(value: item.status),
-          ),
-          AppDataColumn<OpdAppointment>(
-            label: l10n.opdTimeColumnLabel,
-            cellBuilder: (_, OpdAppointment item) =>
-                Text(_formatDateTime(context, item.scheduledStart)),
-          ),
-          AppDataColumn<OpdAppointment>(
-            label: l10n.opdProviderColumnLabel,
-            cellBuilder: (_, OpdAppointment item) =>
-                Text(item.providerDisplayName ?? l10n.profileUnknownValue),
-          ),
-          AppDataColumn<OpdAppointment>(
-            label: l10n.opdActionsColumnLabel,
-            cellBuilder: (_, OpdAppointment item) => AppIconButton(
-              icon: Icons.more_horiz,
-              semanticLabel: l10n.opdOpenActions,
-              tooltip: l10n.opdOpenActions,
-              onPressed: () {
-                _openAppointmentActions(context, ref, item);
-              },
-            ),
-          ),
-        ],
-        mobileItemBuilder: (_, OpdAppointment item) => _MobileRecordRow(
-          title: item.displayTitle,
-          subtitle: _joinDisplay(<String?>[
-            item.reason,
-            item.providerDisplayName,
-            item.scheduledStart == null
-                ? null
-                : AppFormatters.dateTime(item.scheduledStart!, locale),
-          ]),
-          status: item.status,
-          onPressed: () {
-            _openAppointmentActions(context, ref, item);
-          },
+        AppDataColumn<_OpdTableItem>(
+          label: l10n.opdStatusColumnLabel,
+          cellBuilder: (_, _OpdTableItem item) =>
+              _StatusBadge(value: item.status),
         ),
-        itemKeyBuilder: (OpdAppointment item) => ValueKey<String>(item.id),
+        AppDataColumn<_OpdTableItem>(
+          label: l10n.opdNextStepColumnLabel,
+          cellBuilder: (_, _OpdTableItem item) =>
+              Text(_apiLabel(item.nextStep ?? item.status ?? '')),
+        ),
+        AppDataColumn<_OpdTableItem>(
+          label: l10n.opdProviderColumnLabel,
+          cellBuilder: (_, _OpdTableItem item) =>
+              Text(item.provider ?? l10n.profileUnknownValue),
+        ),
+        AppDataColumn<_OpdTableItem>(
+          label: l10n.opdActionsColumnLabel,
+          cellBuilder: (_, _OpdTableItem item) => AppIconButton(
+            icon: Icons.more_horiz,
+            semanticLabel: l10n.opdOpenActions,
+            tooltip: l10n.opdOpenActions,
+            onPressed: () => _openTableItemActions(context, item),
+          ),
+        ),
+      ],
+      mobileItemBuilder: (_, _OpdTableItem item) => _OpdTableMobileRow(
+        item: item,
+        onPressed: () => _openTableItemActions(context, item),
       ),
+      itemKeyBuilder: (_OpdTableItem item) =>
+          ValueKey<String>('${item.category}-${item.id}'),
     );
   }
 
-  Future<void> _openAppointmentActions(
+  Future<void> _openTableItemActions(
     BuildContext context,
-    WidgetRef ref,
-    OpdAppointment appointment,
+    _OpdTableItem item,
   ) async {
+    final OpdAppointment? appointment = item.appointment;
+    final OpdQueueEntry? queueEntry = item.queueEntry;
+    final OpdFlowSummary? flow = item.flow;
+
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AppointmentActionsDialog(appointment: appointment),
+      builder: (_) {
+        if (appointment != null) {
+          return AppointmentActionsDialog(appointment: appointment);
+        }
+        if (queueEntry != null) {
+          return QueueActionsDialog(entry: queueEntry);
+        }
+        return FlowActionsDialog(flow: flow!);
+      },
     );
     if (changed == true && context.mounted) {
       ScaffoldMessenger.of(
@@ -734,402 +948,50 @@ class _ArrivalsPanel extends ConsumerWidget {
   }
 }
 
-class _QueueBoardPanel extends ConsumerWidget {
-  const _QueueBoardPanel({required this.state});
+class _OpdTableMobileRow extends StatelessWidget {
+  const _OpdTableMobileRow({required this.item, required this.onPressed});
 
-  final OpdWorkspaceState state;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final Map<String, List<OpdQueueEntry>> grouped =
-        <String, List<OpdQueueEntry>>{
-          for (final String status in _queueStatuses)
-            status: state.queueEntries.items
-                .where((OpdQueueEntry entry) => entry.status == status)
-                .toList(growable: false),
-        };
-
-    return _SectionPanel(
-      title: l10n.opdQueueBoardTitle,
-      icon: Icons.queue_outlined,
-      trailing: state.isRefreshingQueue
-          ? SizedBox.square(
-              dimension: theme.appTokens.listIconSize,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            )
-          : null,
-      child: state.queueEntries.items.isEmpty && !state.isRefreshingQueue
-          ? _EmptyPanel(title: l10n.opdNoQueueTitle, body: l10n.opdNoQueueBody)
-          : LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final int columns = constraints.maxWidth >= 980
-                    ? 3
-                    : constraints.maxWidth >= 640
-                    ? 2
-                    : 1;
-                final double gap = theme.spacing.sm;
-                final double itemWidth =
-                    (constraints.maxWidth - gap * (columns - 1)) / columns;
-
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: <Widget>[
-                    for (final String status in _queueStatuses)
-                      SizedBox(
-                        width: itemWidth,
-                        child: _QueueStatusColumn(
-                          status: status,
-                          entries: grouped[status] ?? const <OpdQueueEntry>[],
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
-    );
-  }
-}
-
-class _QueueStatusColumn extends ConsumerWidget {
-  const _QueueStatusColumn({required this.status, required this.entries});
-
-  final String status;
-  final List<OpdQueueEntry> entries;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    _apiLabel(status),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
-                Text(
-                  AppFormatters.compactNumber(
-                    entries.length,
-                    Localizations.localeOf(context),
-                  ),
-                  style: theme.textTheme.labelLarge,
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            if (entries.isEmpty)
-              Text(
-                context.l10n.opdQueueEmptyColumnLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              )
-            else
-              for (final OpdQueueEntry entry in entries.take(4)) ...<Widget>[
-                _QueueCard(entry: entry),
-                SizedBox(height: theme.spacing.xs),
-              ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QueueCard extends ConsumerWidget {
-  const _QueueCard({required this.entry});
-
-  final OpdQueueEntry entry;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Material(
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          showAppDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => QueueActionsDialog(entry: entry),
-          );
-        },
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.sm),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                entry.displayTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelLarge,
-              ),
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                _joinDisplay(<String?>[
-                  entry.providerDisplayName,
-                  entry.appointmentReason,
-                  entry.patientPhone,
-                ]),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FlowsPanel extends ConsumerWidget {
-  const _FlowsPanel({required this.state});
-
-  final OpdWorkspaceState state;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
-
-    return _SectionPanel(
-      title: l10n.opdFlowsTitle,
-      icon: Icons.medical_services_outlined,
-      child: AppPaginatedDataList<OpdFlowSummary>(
-        page: state.flows,
-        isLoading: state.isRefreshingFlows,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        pageLabelBuilder: (AppPage<OpdFlowSummary> page) => l10n.opdPageLabel(
-          page.firstItemNumber,
-          page.lastItemNumber,
-          page.totalItemCount ?? page.items.length,
-        ),
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        onPageChanged: (AppPageRequest request) {
-          ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .changeFlowPage(request);
-        },
-        emptyBuilder: (_) =>
-            _EmptyPanel(title: l10n.opdNoFlowsTitle, body: l10n.opdNoFlowsBody),
-        onRowSelected: (OpdFlowSummary flow) async {
-          final AppFailure? failure = await ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .selectFlow(flow);
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        columns: <AppDataColumn<OpdFlowSummary>>[
-          AppDataColumn<OpdFlowSummary>(
-            label: l10n.opdPatientColumnLabel,
-            cellBuilder: (_, OpdFlowSummary flow) => _PatientText(
-              title: flow.displayTitle,
-              subtitle: flow.patientPhone,
-            ),
-          ),
-          AppDataColumn<OpdFlowSummary>(
-            label: l10n.opdStageColumnLabel,
-            cellBuilder: (_, OpdFlowSummary flow) =>
-                _StatusBadge(value: flow.stage),
-          ),
-          AppDataColumn<OpdFlowSummary>(
-            label: l10n.opdNextStepColumnLabel,
-            cellBuilder: (_, OpdFlowSummary flow) =>
-                Text(_apiLabel(flow.nextStep ?? flow.status ?? '')),
-          ),
-          AppDataColumn<OpdFlowSummary>(
-            label: l10n.opdProviderColumnLabel,
-            cellBuilder: (_, OpdFlowSummary flow) =>
-                Text(flow.providerDisplayName ?? l10n.profileUnknownValue),
-          ),
-          AppDataColumn<OpdFlowSummary>(
-            label: l10n.opdTimeColumnLabel,
-            cellBuilder: (_, OpdFlowSummary flow) =>
-                Text(_formatDateTime(context, flow.startedAt)),
-          ),
-        ],
-        mobileItemBuilder: (_, OpdFlowSummary flow) => _MobileRecordRow(
-          title: flow.displayTitle,
-          subtitle: _joinDisplay(<String?>[
-            _apiLabel(flow.stage ?? ''),
-            flow.providerDisplayName,
-            flow.startedAt == null
-                ? null
-                : AppFormatters.dateTime(flow.startedAt!, locale),
-          ]),
-          status: flow.stage,
-          onPressed: () async {
-            final AppFailure? failure = await ref
-                .read(opdWorkspaceControllerProvider.notifier)
-                .selectFlow(flow);
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-        itemKeyBuilder: (OpdFlowSummary flow) => ValueKey<String>(flow.id),
-      ),
-    );
-  }
-}
-
-class _ProviderReadinessPanel extends ConsumerWidget {
-  const _ProviderReadinessPanel({required this.state});
-
-  final OpdWorkspaceState state;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final Locale locale = Localizations.localeOf(context);
-
-    return _SectionPanel(
-      title: l10n.opdProviderReadinessTitle,
-      icon: Icons.badge_outlined,
-      child: state.providerSchedules.isEmpty
-          ? _EmptyPanel(
-              title: l10n.opdNoProvidersTitle,
-              body: l10n.opdNoProvidersBody,
-            )
-          : Column(
-              children: <Widget>[
-                for (final OpdProviderSchedule schedule
-                    in state.providerSchedules) ...<Widget>[
-                  _ProviderReadinessRow(
-                    schedule: schedule,
-                    slotCount: state.availabilitySlots
-                        .where(
-                          (OpdAvailabilitySlot slot) =>
-                              slot.scheduleId == schedule.apiId ||
-                              slot.scheduleId == schedule.publicId,
-                        )
-                        .length,
-                    canAssign:
-                        state.selectedFlow != null &&
-                        schedule.providerApiId.isNotEmpty &&
-                        !(state.selectedFlow?.summary.isTerminal ?? true),
-                    timeLabel: _timeRange(
-                      schedule.startTime,
-                      schedule.endTime,
-                      locale,
-                    ),
-                    onAssign: () async {
-                      final OpdFlowSummary? flow = state.selectedFlow?.summary;
-                      if (flow == null || schedule.providerApiId.isEmpty) {
-                        return;
-                      }
-                      final AppFailure? failure = await ref
-                          .read(opdWorkspaceControllerProvider.notifier)
-                          .assignDoctor(flow, schedule.providerApiId);
-                      if (context.mounted) {
-                        _showFailureIfNeeded(context, failure);
-                      }
-                    },
-                  ),
-                  if (schedule != state.providerSchedules.last)
-                    SizedBox(height: theme.spacing.xs),
-                ],
-              ],
-            ),
-    );
-  }
-}
-
-class _ProviderReadinessRow extends StatelessWidget {
-  const _ProviderReadinessRow({
-    required this.schedule,
-    required this.slotCount,
-    required this.canAssign,
-    required this.timeLabel,
-    required this.onAssign,
-  });
-
-  final OpdProviderSchedule schedule;
-  final int slotCount;
-  final bool canAssign;
-  final String timeLabel;
-  final VoidCallback onAssign;
+  final _OpdTableItem item;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
+    return InkWell(
+      onTap: onPressed,
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
+        padding: EdgeInsets.all(theme.spacing.md),
         child: Row(
           children: <Widget>[
-            const Icon(Icons.medical_information_outlined),
-            SizedBox(width: theme.spacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    schedule.providerDisplayName ??
-                        context.l10n.profileUnknownValue,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall,
-                  ),
+                  Text(item.title, style: theme.textTheme.titleSmall),
                   SizedBox(height: theme.spacing.xs),
                   Text(
                     _joinDisplay(<String?>[
-                      schedule.facilityName,
-                      timeLabel,
-                      context.l10n.opdAvailableSlotsLabel(slotCount),
+                      item.subtitle,
+                      item.provider,
+                      item.nextStep == null ? null : _apiLabel(item.nextStep!),
                     ]),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Wrap(
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    children: <Widget>[
+                      _CategoryBadge(category: item.category),
+                      _StatusBadge(value: item.status),
+                    ],
                   ),
                 ],
               ),
             ),
             SizedBox(width: theme.spacing.sm),
-            AppIconButton(
-              icon: Icons.assignment_ind_outlined,
-              semanticLabel: context.l10n.opdAssignDoctorAction,
-              tooltip: context.l10n.opdAssignDoctorAction,
-              onPressed: canAssign ? onAssign : null,
-            ),
+            const Icon(Icons.chevron_right),
           ],
         ),
       ),
@@ -1137,365 +999,102 @@ class _ProviderReadinessRow extends StatelessWidget {
   }
 }
 
-class _FlowDetailPanel extends ConsumerWidget {
-  const _FlowDetailPanel({required this.state});
+class _OpdFilterDialog extends StatefulWidget {
+  const _OpdFilterDialog({required this.initialFilter, required this.statuses});
 
-  final OpdWorkspaceState state;
+  final _OpdTableFilter initialFilter;
+  final List<String> statuses;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final OpdFlowDetail? detail = state.selectedFlow;
+  State<_OpdFilterDialog> createState() => _OpdFilterDialogState();
+}
+
+class _OpdFilterDialogState extends State<_OpdFilterDialog> {
+  String? _category;
+  String? _status;
+
+  @override
+  void initState() {
+    super.initState();
+    _category = widget.initialFilter.category;
+    _status = widget.initialFilter.status;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    if (detail == null) {
-      return AppWorkspaceStatePanel(
-        child: AppStateView(
-          title: l10n.opdNoFlowSelectedTitle,
-          body: l10n.opdNoFlowSelectedBody,
-        ),
-      );
-    }
-
-    final OpdFlowSummary flow = detail.summary;
-
-    return AppWorkspaceDetailPanel(
-      title: flow.displayTitle,
-      description: _joinDisplay(<String?>[
-        flow.publicId,
-        _apiLabel(flow.stage ?? ''),
-        flow.providerDisplayName,
-      ]),
+    return AppDialog(
+      title: Text(l10n.opdFilterDialogTitle),
+      icon: const Icon(Icons.filter_alt_outlined),
+      content: AppFormSection(
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _category ?? _opdFilterAll,
+            labelText: l10n.opdCategoryFilterLabel,
+            semanticLabel: l10n.opdCategoryFilterLabel,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _opdFilterAll,
+                label: l10n.opdAllCategoriesOption,
+              ),
+              AppSelectOption<String>(
+                value: _opdCategoryArrival,
+                label: l10n.opdArrivalsSummaryLabel,
+              ),
+              AppSelectOption<String>(
+                value: _opdCategoryQueue,
+                label: l10n.opdQueueSummaryLabel,
+              ),
+              AppSelectOption<String>(
+                value: _opdCategoryActiveFlow,
+                label: l10n.opdActiveFlowSummaryLabel,
+              ),
+            ],
+            onChanged: (String? value) {
+              setState(() {
+                _category = value == _opdFilterAll ? null : value;
+              });
+            },
+          ),
+          AppSelectField<String>.searchable(
+            value: _status ?? _opdFilterAll,
+            labelText: l10n.opdStatusFilterLabel,
+            semanticLabel: l10n.opdStatusFilterLabel,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _opdFilterAll,
+                label: l10n.opdAllStatusesOption,
+              ),
+              for (final String status in widget.statuses)
+                AppSelectOption<String>(
+                  value: status,
+                  label: _apiLabel(status),
+                ),
+            ],
+            onChanged: (String? value) {
+              setState(() {
+                _status = value == _opdFilterAll ? null : value;
+              });
+            },
+          ),
+        ],
+      ),
       actions: <Widget>[
-        AppIconButton(
-          icon: Icons.close,
-          semanticLabel: l10n.commonCancelActionLabel,
-          tooltip: l10n.commonCancelActionLabel,
+        AppButton.tertiary(
+          label: l10n.opdClearFiltersAction,
+          onPressed: () => Navigator.of(context).pop(const _OpdTableFilter()),
+        ),
+        AppButton.primary(
+          label: l10n.opdApplyFiltersAction,
+          leadingIcon: Icons.filter_alt_outlined,
           onPressed: () {
-            ref.read(opdWorkspaceControllerProvider.notifier).clearSelection();
+            Navigator.of(
+              context,
+            ).pop(_OpdTableFilter(category: _category, status: _status));
           },
         ),
       ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _FlowActionGrid(detail: detail),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _DetailFacts(detail: detail),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _DetailRelatedList(
-            title: l10n.opdReferralsTitle,
-            items: detail.referrals,
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _DetailRelatedList(
-            title: l10n.opdFollowUpsTitle,
-            items: detail.followUps,
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _TimelineList(items: detail.timeline),
-        ],
-      ),
-    );
-  }
-}
-
-class _FlowActionGrid extends ConsumerWidget {
-  const _FlowActionGrid({required this.detail});
-
-  final OpdFlowDetail detail;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final bool terminal = detail.summary.isTerminal;
-
-    return Wrap(
-      spacing: Theme.of(context).spacing.xs,
-      runSpacing: Theme.of(context).spacing.xs,
-      children: <Widget>[
-        AppButton.secondary(
-          label: l10n.opdAssignDoctorAction,
-          leadingIcon: Icons.assignment_ind_outlined,
-          enabled: !terminal,
-          onPressed: () => _openAssignDoctor(context),
-        ),
-        AppButton.secondary(
-          label: l10n.opdPayConsultationAction,
-          leadingIcon: Icons.payments_outlined,
-          enabled: !terminal,
-          onPressed: () => _openPayment(context),
-        ),
-        AppButton.secondary(
-          label: l10n.opdCorrectStageAction,
-          leadingIcon: Icons.edit_note_outlined,
-          enabled: !terminal,
-          onPressed: () => _openCorrectStage(context),
-        ),
-        AppButton.secondary(
-          label: l10n.opdReferAction,
-          leadingIcon: Icons.alt_route_outlined,
-          enabled: !terminal,
-          onPressed: () => _openReferral(context),
-        ),
-        AppButton.secondary(
-          label: l10n.opdFollowUpAction,
-          leadingIcon: Icons.event_repeat_outlined,
-          enabled: !terminal,
-          onPressed: () => _openFollowUp(context),
-        ),
-        AppButton.primary(
-          label: l10n.opdDispositionAction,
-          leadingIcon: Icons.task_alt_outlined,
-          enabled: !terminal,
-          onPressed: () => _openDisposition(context),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _openAssignDoctor(BuildContext context) async {
-    await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AssignDoctorDialog(flow: detail.summary),
-    );
-  }
-
-  Future<void> _openPayment(BuildContext context) async {
-    await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ConsultationPaymentDialog(flow: detail.summary),
-    );
-  }
-
-  Future<void> _openCorrectStage(BuildContext context) async {
-    await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => CorrectStageDialog(flow: detail.summary),
-    );
-  }
-
-  Future<void> _openReferral(BuildContext context) async {
-    await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ReferralDialog(flow: detail.summary),
-    );
-  }
-
-  Future<void> _openFollowUp(BuildContext context) async {
-    await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => FollowUpDialog(flow: detail.summary),
-    );
-  }
-
-  Future<void> _openDisposition(BuildContext context) async {
-    await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => DispositionDialog(flow: detail.summary),
-    );
-  }
-}
-
-class _DetailFacts extends StatelessWidget {
-  const _DetailFacts({required this.detail});
-
-  final OpdFlowDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final OpdFlowSummary flow = detail.summary;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        _FactRow(label: l10n.opdStageLabel, value: _apiLabel(flow.stage ?? '')),
-        _FactRow(
-          label: l10n.opdNextStepColumnLabel,
-          value: _apiLabel(flow.nextStep ?? ''),
-        ),
-        _FactRow(
-          label: l10n.opdProviderColumnLabel,
-          value: flow.providerDisplayName ?? l10n.profileUnknownValue,
-        ),
-        _FactRow(
-          label: l10n.opdPaymentStatusLabel,
-          value: detail.consultationPaid
-              ? l10n.opdPaymentPaidLabel
-              : detail.consultationPaymentRequired
-              ? l10n.opdPaymentRequiredLabel
-              : l10n.opdPaymentNotRequiredLabel,
-        ),
-      ],
-    );
-  }
-}
-
-class _FactRow extends StatelessWidget {
-  const _FactRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.xs),
-      child: Row(
-        children: <Widget>[
-          SizedBox(
-            width: 122,
-            child: Text(
-              label,
-              style: theme.textTheme.labelLarge,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(child: Text(value, overflow: TextOverflow.ellipsis)),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailRelatedList extends StatelessWidget {
-  const _DetailRelatedList({required this.title, required this.items});
-
-  final String title;
-  final List<OpdRelatedRecord> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(title, style: theme.textTheme.titleSmall),
-        SizedBox(height: theme.spacing.xs),
-        if (items.isEmpty)
-          Text(
-            context.l10n.opdNoRelatedRecordsLabel,
-            style: theme.textTheme.bodySmall,
-          )
-        else
-          for (final OpdRelatedRecord item in items.take(3))
-            _CompactRelatedRow(item: item),
-      ],
-    );
-  }
-}
-
-class _CompactRelatedRow extends StatelessWidget {
-  const _CompactRelatedRow({required this.item});
-
-  final OpdRelatedRecord item;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      title: Text(item.title ?? item.id, overflow: TextOverflow.ellipsis),
-      subtitle: Text(
-        _joinDisplay(<String?>[item.status, item.subtitle]),
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
-class _TimelineList extends StatelessWidget {
-  const _TimelineList({required this.items});
-
-  final List<OpdTimelineItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Locale locale = Localizations.localeOf(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(context.l10n.opdTimelineTitle, style: theme.textTheme.titleSmall),
-        SizedBox(height: theme.spacing.xs),
-        if (items.isEmpty)
-          Text(
-            context.l10n.opdNoTimelineLabel,
-            style: theme.textTheme.bodySmall,
-          )
-        else
-          for (final OpdTimelineItem item in items.take(5))
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.history_outlined),
-              title: Text(_apiLabel(item.action)),
-              subtitle: Text(
-                _joinDisplay(<String?>[
-                  item.stage == null ? null : _apiLabel(item.stage!),
-                  item.occurredAt == null
-                      ? null
-                      : AppFormatters.dateTime(item.occurredAt!, locale),
-                  item.notes,
-                ]),
-              ),
-            ),
-      ],
-    );
-  }
-}
-
-class _SectionPanel extends StatelessWidget {
-  const _SectionPanel({
-    required this.title,
-    required this.icon,
-    required this.child,
-    this.trailing,
-  });
-
-  final String title;
-  final IconData icon;
-  final Widget child;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.md),
-            child: Row(
-              children: <Widget>[
-                Icon(icon, color: colorScheme.primary),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Text(title, style: theme.textTheme.titleMedium),
-                ),
-                ?trailing,
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Padding(padding: EdgeInsets.all(theme.spacing.md), child: child),
-        ],
-      ),
     );
   }
 }
@@ -1558,46 +1157,49 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _MobileRecordRow extends StatelessWidget {
-  const _MobileRecordRow({
-    required this.title,
-    required this.subtitle,
-    required this.status,
-    required this.onPressed,
-  });
+class _CategoryBadge extends StatelessWidget {
+  const _CategoryBadge({required this.category});
 
-  final String title;
-  final String subtitle;
-  final String? status;
-  final VoidCallback onPressed;
+  final String category;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return InkWell(
-      onTap: onPressed,
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(title, style: theme.textTheme.titleSmall),
-                  SizedBox(height: theme.spacing.xs),
-                  Text(subtitle, style: theme.textTheme.bodySmall),
-                ],
-              ),
-            ),
-            SizedBox(width: theme.spacing.sm),
-            _StatusBadge(value: status),
-          ],
-        ),
+    return AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: _categoryLabel(context, category),
+        tone: _categoryTone(category),
+        icon: _categoryIcon(category),
       ),
     );
   }
+}
+
+String _categoryLabel(BuildContext context, String category) {
+  final l10n = context.l10n;
+  return switch (category) {
+    _opdCategoryArrival => l10n.opdArrivalsSummaryLabel,
+    _opdCategoryQueue => l10n.opdQueueSummaryLabel,
+    _opdCategoryActiveFlow => l10n.opdActiveFlowSummaryLabel,
+    _ => _apiLabel(category),
+  };
+}
+
+AppWorkspaceStatusTone _categoryTone(String category) {
+  return switch (category) {
+    _opdCategoryArrival => AppWorkspaceStatusTone.info,
+    _opdCategoryQueue => AppWorkspaceStatusTone.warning,
+    _opdCategoryActiveFlow => AppWorkspaceStatusTone.success,
+    _ => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+IconData _categoryIcon(String category) {
+  return switch (category) {
+    _opdCategoryArrival => Icons.event_available_outlined,
+    _opdCategoryQueue => Icons.queue_outlined,
+    _opdCategoryActiveFlow => Icons.medical_services_outlined,
+    _ => Icons.radio_button_unchecked,
+  };
 }
 
 class _ProviderSelectField extends StatelessWidget {
@@ -2367,6 +1969,89 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
   }
 }
 
+class FlowActionsDialog extends StatelessWidget {
+  const FlowActionsDialog({required this.flow, super.key});
+
+  final OpdFlowSummary flow;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final bool terminal = flow.isTerminal;
+
+    return AppDialog(
+      title: Text(flow.displayTitle),
+      icon: const Icon(Icons.medical_services_outlined),
+      content: AppFormSection(
+        children: <Widget>[
+          _PatientText(
+            title: _categoryLabel(context, _opdCategoryActiveFlow),
+            subtitle: _joinDisplay(<String?>[
+              _apiLabel(flow.stage ?? ''),
+              flow.providerDisplayName,
+              flow.patientPhone,
+            ]),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.secondary(
+          label: l10n.opdAssignDoctorAction,
+          leadingIcon: Icons.assignment_ind_outlined,
+          enabled: !terminal,
+          onPressed: () => _openNested(context, AssignDoctorDialog(flow: flow)),
+        ),
+        AppButton.secondary(
+          label: l10n.opdPayConsultationAction,
+          leadingIcon: Icons.payments_outlined,
+          enabled: !terminal,
+          onPressed: () =>
+              _openNested(context, ConsultationPaymentDialog(flow: flow)),
+        ),
+        AppButton.secondary(
+          label: l10n.opdCorrectStageAction,
+          leadingIcon: Icons.edit_note_outlined,
+          enabled: !terminal,
+          onPressed: () => _openNested(context, CorrectStageDialog(flow: flow)),
+        ),
+        AppButton.secondary(
+          label: l10n.opdReferAction,
+          leadingIcon: Icons.alt_route_outlined,
+          enabled: !terminal,
+          onPressed: () => _openNested(context, ReferralDialog(flow: flow)),
+        ),
+        AppButton.secondary(
+          label: l10n.opdFollowUpAction,
+          leadingIcon: Icons.event_repeat_outlined,
+          enabled: !terminal,
+          onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
+        ),
+        AppButton.primary(
+          label: l10n.opdDispositionAction,
+          leadingIcon: Icons.task_alt_outlined,
+          enabled: !terminal,
+          onPressed: () => _openNested(context, DispositionDialog(flow: flow)),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openNested(BuildContext context, Widget dialog) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => dialog,
+    );
+    if (changed == true && context.mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
 class AssignDoctorDialog extends ConsumerStatefulWidget {
   const AssignDoctorDialog({required this.flow, super.key});
 
@@ -3050,13 +2735,6 @@ String _formatDateTime(BuildContext context, DateTime? value) {
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
 }
 
-String _timeRange(DateTime? start, DateTime? end, Locale locale) {
-  if (start == null || end == null) {
-    return '';
-  }
-  return '${AppFormatters.time(start, locale)}-${AppFormatters.time(end, locale)}';
-}
-
 String _joinDisplay(Iterable<String?> values) {
   return values
       .map((String? value) => value?.trim() ?? '')
@@ -3087,6 +2765,11 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
     context,
   ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
 }
+
+const String _opdCategoryArrival = 'ARRIVAL';
+const String _opdCategoryQueue = 'QUEUE';
+const String _opdCategoryActiveFlow = 'ACTIVE_FLOW';
+const String _opdFilterAll = 'ALL';
 
 const List<String> _queueStatuses = <String>[
   'SCHEDULED',

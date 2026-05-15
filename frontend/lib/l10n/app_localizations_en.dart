@@ -166,6 +166,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdFiltersLabel => 'OPD filters';
 
   @override
+  String get opdFilterAction => 'Filter OPD table';
+
+  @override
+  String get opdFilterDialogTitle => 'Filter OPD table';
+
+  @override
+  String get opdCategoryFilterLabel => 'Category';
+
+  @override
+  String get opdStatusFilterLabel => 'Status';
+
+  @override
+  String get opdAllCategoriesOption => 'All categories';
+
+  @override
+  String get opdAllStatusesOption => 'All statuses';
+
+  @override
   String get opdSearchLabel => 'Search OPD';
 
   @override
@@ -256,6 +274,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdPatientColumnLabel => 'Patient';
+
+  @override
+  String get opdCategoryColumnLabel => 'Category';
 
   @override
   String get opdStatusColumnLabel => 'Status';
