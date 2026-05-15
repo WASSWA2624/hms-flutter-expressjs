@@ -325,6 +325,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
     this.description,
     this.status,
     this.icon,
+    this.tone,
     this.onPressed,
     this.compact = false,
     super.key,
@@ -335,6 +336,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
   final String? description;
   final AppWorkspaceStatus? status;
   final IconData? icon;
+  final AppWorkspaceStatusTone? tone;
   final VoidCallback? onPressed;
   final bool compact;
 
@@ -342,6 +344,14 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final _WorkspaceToneColors? toneColors = tone == null
+        ? null
+        : _toneColors(theme, tone!);
+    final Color iconColor = toneColors?.on ?? colorScheme.primary;
+    final Color labelColor = toneColors?.on ?? colorScheme.onSurfaceVariant;
+    final Color valueColor = toneColors?.on ?? colorScheme.onSurface;
+    final Color borderColor = toneColors?.border ?? colorScheme.outlineVariant;
+    final Color surfaceColor = toneColors?.container ?? colorScheme.surface;
     final Widget cardBody = compact
         ? ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 46),
@@ -353,7 +363,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
               child: Row(
                 children: <Widget>[
                   if (icon != null) ...<Widget>[
-                    Icon(icon, color: colorScheme.primary, size: 18),
+                    Icon(icon, color: iconColor, size: 18),
                     SizedBox(width: theme.spacing.xs),
                   ],
                   Expanded(
@@ -362,7 +372,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                        color: labelColor,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -373,7 +383,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
+                      color: valueColor,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -383,11 +393,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                   ],
                   if (onPressed != null) ...<Widget>[
                     SizedBox(width: theme.spacing.xs),
-                    Icon(
-                      Icons.chevron_right,
-                      color: colorScheme.primary,
-                      size: 18,
-                    ),
+                    Icon(Icons.chevron_right, color: iconColor, size: 18),
                   ],
                 ],
               ),
@@ -403,7 +409,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                 if (icon != null) ...<Widget>[
                   Icon(
                     icon,
-                    color: colorScheme.primary,
+                    color: iconColor,
                     size: theme.appTokens.listIconSize,
                   ),
                   SizedBox(width: theme.spacing.sm),
@@ -418,7 +424,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelLarge?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: labelColor,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -427,7 +433,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleLarge?.copyWith(
-                          color: colorScheme.onSurface,
+                          color: valueColor,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -437,7 +443,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                            color: labelColor,
                           ),
                         ),
                     ],
@@ -451,7 +457,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                   SizedBox(width: theme.spacing.xs),
                   Icon(
                     Icons.chevron_right,
-                    color: colorScheme.primary,
+                    color: iconColor,
                     size: theme.appTokens.listIconSize,
                   ),
                 ],
@@ -462,10 +468,8 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
     return Semantics(
       button: onPressed != null,
       child: Material(
-        color: colorScheme.surface,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: colorScheme.outlineVariant),
-        ),
+        color: surfaceColor,
+        shape: RoundedRectangleBorder(side: BorderSide(color: borderColor)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(onTap: onPressed, child: cardBody),
       ),

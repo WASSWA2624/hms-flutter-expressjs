@@ -90,7 +90,14 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     activeModules: <String>['opd-flow'],
   );
 
-  _OpdTableFilter _filter = const _OpdTableFilter();
+  final ValueNotifier<_OpdTableFilter> _filterNotifier =
+      ValueNotifier<_OpdTableFilter>(const _OpdTableFilter());
+
+  @override
+  void dispose() {
+    _filterNotifier.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +164,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
             Localizations.localeOf(context),
           ),
           icon: Icons.event_available_outlined,
+          tone: _categoryTone(_opdCategoryArrival),
           compact: true,
           onPressed: () {
             _openSummaryPatientList(
@@ -175,6 +183,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
             Localizations.localeOf(context),
           ),
           icon: Icons.queue_outlined,
+          tone: _categoryTone(_opdCategoryQueue),
           compact: true,
           onPressed: () {
             _openSummaryPatientList(
@@ -193,6 +202,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
             Localizations.localeOf(context),
           ),
           icon: Icons.medical_services_outlined,
+          tone: _categoryTone(_opdCategoryActiveFlow),
           compact: true,
           onPressed: () {
             _openSummaryPatientList(
@@ -215,6 +225,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
             Localizations.localeOf(context),
           ),
           icon: Icons.task_alt_outlined,
+          tone: AppWorkspaceStatusTone.neutral,
           compact: true,
           onPressed: () {
             _openSummaryPatientList(
@@ -231,17 +242,30 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
           },
         ),
       ],
-      filters: _OpdFilters(
-        state: state,
-        filter: _filter,
-        onFilterChanged: (_OpdTableFilter value) {
-          setState(() {
-            _filter = value;
-          });
+      filters: ValueListenableBuilder<_OpdTableFilter>(
+        valueListenable: _filterNotifier,
+        builder: (BuildContext context, _OpdTableFilter filter, _) {
+          return _OpdFilters(
+            state: state,
+            filter: filter,
+            onFilterChanged: _setFilter,
+          );
         },
       ),
-      body: _OpdWorkspaceBody(state: state, filter: _filter),
+      body: ValueListenableBuilder<_OpdTableFilter>(
+        valueListenable: _filterNotifier,
+        builder: (BuildContext context, _OpdTableFilter filter, _) {
+          return _OpdWorkspaceBody(state: state, filter: filter);
+        },
+      ),
     );
+  }
+
+  void _setFilter(_OpdTableFilter filter) {
+    if (_filterNotifier.value == filter) {
+      return;
+    }
+    _filterNotifier.value = filter;
   }
 
   Future<void> _openStartWalkInDialog(
@@ -286,7 +310,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   }
 }
 
-class _OpdFilters extends ConsumerStatefulWidget {
+class _OpdFilters extends StatefulWidget {
   const _OpdFilters({
     required this.state,
     required this.filter,
@@ -298,7 +322,7 @@ class _OpdFilters extends ConsumerStatefulWidget {
   final ValueChanged<_OpdTableFilter> onFilterChanged;
 
   @override
-  ConsumerState<_OpdFilters> createState() => _OpdFiltersState();
+  State<_OpdFilters> createState() => _OpdFiltersState();
 }
 
 @immutable
@@ -547,32 +571,27 @@ class _SummaryPatientMobileRow extends StatelessWidget {
   }
 }
 
-class _OpdFiltersState extends ConsumerState<_OpdFilters> {
+class _OpdFiltersState extends State<_OpdFilters> {
   late final TextEditingController _searchController;
-  Timer? _searchDebounce;
-  String _search = '';
 
   @override
   void initState() {
     super.initState();
-    _search = widget.state.flowQuery.search;
-    _searchController = TextEditingController(text: _search);
+    _searchController = TextEditingController(text: widget.filter.search);
     _searchController.addListener(_handleSearchChanged);
   }
 
   @override
   void didUpdateWidget(covariant _OpdFilters oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final String nextSearch = widget.state.flowQuery.search;
-    if (nextSearch != _search && nextSearch != _searchController.text) {
-      _search = nextSearch;
+    final String nextSearch = widget.filter.search;
+    if (nextSearch != _searchController.text) {
       _searchController.text = nextSearch;
     }
   }
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
     _searchController
       ..removeListener(_handleSearchChanged)
       ..dispose();
@@ -582,6 +601,9 @@ class _OpdFiltersState extends ConsumerState<_OpdFilters> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool useAdvancedModal = breakpoint.isMobile;
+    final List<String> statuses = _tableStatuses(widget.state);
 
     return AppWorkspaceFilterBar(
       semanticLabel: l10n.opdFiltersLabel,
@@ -592,17 +614,72 @@ class _OpdFiltersState extends ConsumerState<_OpdFilters> {
         hintText: l10n.opdSearchHint,
         prefixIcon: const Icon(Icons.search),
         textInputAction: TextInputAction.search,
-        onFieldSubmitted: (_) => _applySearchImmediately(),
+        onFieldSubmitted: (_) => _applySearch(),
       ),
+      filters: useAdvancedModal
+          ? const <Widget>[]
+          : <Widget>[
+              AppSelectField<String>.searchable(
+                value: widget.filter.category ?? _opdFilterAll,
+                labelText: l10n.opdCategoryFilterLabel,
+                semanticLabel: l10n.opdCategoryFilterLabel,
+                options: _categoryFilterOptions(context),
+                onChanged: (String? value) {
+                  final bool clearValue =
+                      value == null || value == _opdFilterAll;
+                  widget.onFilterChanged(
+                    widget.filter.copyWith(
+                      category: clearValue ? null : value,
+                      clearCategory: clearValue,
+                    ),
+                  );
+                },
+              ),
+              AppSelectField<String>.searchable(
+                value: widget.filter.status ?? _opdFilterAll,
+                labelText: l10n.opdStatusFilterLabel,
+                semanticLabel: l10n.opdStatusFilterLabel,
+                options: _statusFilterOptions(context, statuses),
+                onChanged: (String? value) {
+                  final bool clearValue =
+                      value == null || value == _opdFilterAll;
+                  widget.onFilterChanged(
+                    widget.filter.copyWith(
+                      status: clearValue ? null : value,
+                      clearStatus: clearValue,
+                    ),
+                  );
+                },
+              ),
+            ],
       actions: <Widget>[
-        AppIconButton(
-          icon: widget.filter.isActive
-              ? Icons.filter_alt
-              : Icons.filter_alt_outlined,
-          semanticLabel: l10n.opdFilterAction,
-          tooltip: l10n.opdFilterAction,
-          onPressed: _openFilters,
-        ),
+        if (!useAdvancedModal && widget.filter.isActive)
+          AppButton.tertiary(
+            label: l10n.opdClearFiltersAction,
+            leadingIcon: Icons.clear,
+            onPressed: () {
+              widget.onFilterChanged(const _OpdTableFilter());
+            },
+          ),
+        if (useAdvancedModal) ...<Widget>[
+          if (widget.filter.isActive)
+            AppIconButton(
+              icon: Icons.clear,
+              semanticLabel: l10n.opdClearFiltersAction,
+              tooltip: l10n.opdClearFiltersAction,
+              onPressed: () {
+                widget.onFilterChanged(const _OpdTableFilter());
+              },
+            ),
+          AppIconButton(
+            icon: widget.filter.hasAdvancedFilters
+                ? Icons.filter_alt
+                : Icons.filter_alt_outlined,
+            semanticLabel: l10n.opdFilterAction,
+            tooltip: l10n.opdFilterAction,
+            onPressed: _openFilters,
+          ),
+        ],
       ],
     );
   }
@@ -613,14 +690,7 @@ class _OpdFiltersState extends ConsumerState<_OpdFilters> {
       barrierDismissible: false,
       builder: (_) => _OpdFilterDialog(
         initialFilter: widget.filter,
-        statuses:
-            _tableItems(widget.state)
-                .map((_OpdTableItem item) => item.status)
-                .whereType<String>()
-                .where((String value) => value.trim().isNotEmpty)
-                .toSet()
-                .toList(growable: false)
-              ..sort(),
+        statuses: _tableStatuses(widget.state),
       ),
     );
     if (value != null) {
@@ -629,31 +699,15 @@ class _OpdFiltersState extends ConsumerState<_OpdFilters> {
   }
 
   void _handleSearchChanged() {
+    _applySearch();
+  }
+
+  void _applySearch() {
     final String value = _searchController.text.trim();
-    if (value == _search) {
+    if (value == widget.filter.search) {
       return;
     }
-    _search = value;
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        unawaited(_applySearch());
-      }
-    });
-  }
-
-  void _applySearchImmediately() {
-    _searchDebounce?.cancel();
-    unawaited(_applySearch());
-  }
-
-  Future<void> _applySearch() async {
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .applySearch(_searchController.text);
-    if (mounted) {
-      _showFailureIfNeeded(context, failure);
-    }
+    widget.onFilterChanged(widget.filter.copyWith(search: value));
   }
 }
 
@@ -679,28 +733,85 @@ class _OpdWorkspaceBody extends StatelessWidget {
   }
 }
 
+List<String> _tableStatuses(OpdWorkspaceState state) {
+  return _tableItems(state)
+      .map((_OpdTableItem item) => item.status)
+      .whereType<String>()
+      .where((String value) => value.trim().isNotEmpty)
+      .toSet()
+      .toList(growable: false)
+    ..sort();
+}
+
+List<AppSelectOption<String>> _categoryFilterOptions(BuildContext context) {
+  final l10n = context.l10n;
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: _opdFilterAll,
+      label: l10n.opdAllCategoriesOption,
+    ),
+    AppSelectOption<String>(
+      value: _opdCategoryArrival,
+      label: l10n.opdArrivalsSummaryLabel,
+    ),
+    AppSelectOption<String>(
+      value: _opdCategoryQueue,
+      label: l10n.opdQueueSummaryLabel,
+    ),
+    AppSelectOption<String>(
+      value: _opdCategoryActiveFlow,
+      label: l10n.opdActiveFlowSummaryLabel,
+    ),
+  ];
+}
+
+List<AppSelectOption<String>> _statusFilterOptions(
+  BuildContext context,
+  List<String> statuses,
+) {
+  final l10n = context.l10n;
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: _opdFilterAll,
+      label: l10n.opdAllStatusesOption,
+    ),
+    for (final String status in statuses)
+      AppSelectOption<String>(value: status, label: _apiLabel(status)),
+  ];
+}
+
 @immutable
 final class _OpdTableFilter {
-  const _OpdTableFilter({this.category, this.status});
+  const _OpdTableFilter({this.search = '', this.category, this.status});
 
+  final String search;
   final String? category;
   final String? status;
 
-  bool get isActive => _isNonEmpty(category) || _isNonEmpty(status);
+  bool get isActive =>
+      search.trim().isNotEmpty || _isNonEmpty(category) || _isNonEmpty(status);
+
+  bool get hasAdvancedFilters => _isNonEmpty(category) || _isNonEmpty(status);
 
   _OpdTableFilter copyWith({
+    String? search,
     String? category,
     String? status,
+    bool clearSearch = false,
     bool clearCategory = false,
     bool clearStatus = false,
   }) {
     return _OpdTableFilter(
+      search: clearSearch ? '' : search ?? this.search,
       category: clearCategory ? null : category ?? this.category,
       status: clearStatus ? null : status ?? this.status,
     );
   }
 
   bool matches(_OpdTableItem item) {
+    if (!item.matches(search)) {
+      return false;
+    }
     if (_isNonEmpty(category) && item.category != category) {
       return false;
     }
@@ -709,6 +820,17 @@ final class _OpdTableFilter {
     }
     return true;
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is _OpdTableFilter &&
+        other.search == search &&
+        other.category == category &&
+        other.status == status;
+  }
+
+  @override
+  int get hashCode => Object.hash(search, category, status);
 }
 
 @immutable
@@ -747,6 +869,38 @@ final class _OpdTableItem {
         activeQueue?.patientId ??
         activeAppointment?.patientId ??
         id;
+  }
+
+  bool matches(String search) {
+    final String needle = search.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+
+    return <String?>[
+      id,
+      title,
+      category,
+      status,
+      subtitle,
+      provider,
+      nextStep,
+      appointment?.patientId,
+      appointment?.patientIdentifier,
+      appointment?.patientPhone,
+      appointment?.reason,
+      queueEntry?.patientId,
+      queueEntry?.patientIdentifier,
+      queueEntry?.patientPhone,
+      queueEntry?.appointmentReason,
+      flow?.patientId,
+      flow?.patientIdentifier,
+      flow?.patientPhone,
+      flow?.stage,
+      flow?.status,
+    ].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
   }
 }
 
@@ -881,24 +1035,13 @@ class _OpdMainTable extends ConsumerWidget {
               _PatientText(title: item.title, subtitle: item.subtitle),
         ),
         AppDataColumn<_OpdTableItem>(
-          label: l10n.opdCategoryColumnLabel,
-          cellBuilder: (_, _OpdTableItem item) =>
-              _CategoryBadge(category: item.category),
-        ),
-        AppDataColumn<_OpdTableItem>(
-          label: l10n.opdStatusColumnLabel,
-          cellBuilder: (_, _OpdTableItem item) =>
-              _StatusBadge(value: item.status),
-        ),
-        AppDataColumn<_OpdTableItem>(
           label: l10n.opdNextStepColumnLabel,
-          cellBuilder: (_, _OpdTableItem item) =>
-              Text(_apiLabel(item.nextStep ?? item.status ?? '')),
-        ),
-        AppDataColumn<_OpdTableItem>(
-          label: l10n.opdProviderColumnLabel,
-          cellBuilder: (_, _OpdTableItem item) =>
-              Text(item.provider ?? l10n.profileUnknownValue),
+          cellBuilder: (_, _OpdTableItem item) => Text(
+            _nextStepLabel(context, item),
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         AppDataColumn<_OpdTableItem>(
           label: l10n.opdActionsColumnLabel,
@@ -916,6 +1059,7 @@ class _OpdMainTable extends ConsumerWidget {
       ),
       itemKeyBuilder: (_OpdTableItem item) =>
           ValueKey<String>('${item.category}-${item.id}'),
+      rowColorBuilder: _opdTableRowColor,
     );
   }
 
@@ -973,19 +1117,9 @@ class _OpdTableMobileRow extends StatelessWidget {
                   Text(
                     _joinDisplay(<String?>[
                       item.subtitle,
-                      item.provider,
-                      item.nextStep == null ? null : _apiLabel(item.nextStep!),
+                      _nextStepLabel(context, item),
                     ]),
                     style: theme.textTheme.bodySmall,
-                  ),
-                  SizedBox(height: theme.spacing.xs),
-                  Wrap(
-                    spacing: theme.spacing.xs,
-                    runSpacing: theme.spacing.xs,
-                    children: <Widget>[
-                      _CategoryBadge(category: item.category),
-                      _StatusBadge(value: item.status),
-                    ],
                   ),
                 ],
               ),
@@ -1033,24 +1167,7 @@ class _OpdFilterDialogState extends State<_OpdFilterDialog> {
             value: _category ?? _opdFilterAll,
             labelText: l10n.opdCategoryFilterLabel,
             semanticLabel: l10n.opdCategoryFilterLabel,
-            options: <AppSelectOption<String>>[
-              AppSelectOption<String>(
-                value: _opdFilterAll,
-                label: l10n.opdAllCategoriesOption,
-              ),
-              AppSelectOption<String>(
-                value: _opdCategoryArrival,
-                label: l10n.opdArrivalsSummaryLabel,
-              ),
-              AppSelectOption<String>(
-                value: _opdCategoryQueue,
-                label: l10n.opdQueueSummaryLabel,
-              ),
-              AppSelectOption<String>(
-                value: _opdCategoryActiveFlow,
-                label: l10n.opdActiveFlowSummaryLabel,
-              ),
-            ],
+            options: _categoryFilterOptions(context),
             onChanged: (String? value) {
               setState(() {
                 _category = value == _opdFilterAll ? null : value;
@@ -1061,17 +1178,7 @@ class _OpdFilterDialogState extends State<_OpdFilterDialog> {
             value: _status ?? _opdFilterAll,
             labelText: l10n.opdStatusFilterLabel,
             semanticLabel: l10n.opdStatusFilterLabel,
-            options: <AppSelectOption<String>>[
-              AppSelectOption<String>(
-                value: _opdFilterAll,
-                label: l10n.opdAllStatusesOption,
-              ),
-              for (final String status in widget.statuses)
-                AppSelectOption<String>(
-                  value: status,
-                  label: _apiLabel(status),
-                ),
-            ],
+            options: _statusFilterOptions(context, widget.statuses),
             onChanged: (String? value) {
               setState(() {
                 _status = value == _opdFilterAll ? null : value;
@@ -1089,9 +1196,14 @@ class _OpdFilterDialogState extends State<_OpdFilterDialog> {
           label: l10n.opdApplyFiltersAction,
           leadingIcon: Icons.filter_alt_outlined,
           onPressed: () {
-            Navigator.of(
-              context,
-            ).pop(_OpdTableFilter(category: _category, status: _status));
+            Navigator.of(context).pop(
+              widget.initialFilter.copyWith(
+                category: _category,
+                status: _status,
+                clearCategory: _category == null,
+                clearStatus: _status == null,
+              ),
+            );
           },
         ),
       ],
@@ -1164,21 +1276,21 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _CategoryBadge extends StatelessWidget {
-  const _CategoryBadge({required this.category});
+String _nextStepLabel(BuildContext context, _OpdTableItem item) {
+  final String label = _apiLabel(item.nextStep ?? item.status ?? '');
+  return label.isEmpty ? context.l10n.profileUnknownValue : label;
+}
 
-  final String category;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: _categoryLabel(context, category),
-        tone: _categoryTone(category),
-        icon: _categoryIcon(category),
-      ),
-    );
-  }
+Color _opdTableRowColor(BuildContext context, _OpdTableItem item) {
+  final ThemeData theme = Theme.of(context);
+  final AppStatusColors statusColors = theme.statusColors;
+  final Color color = switch (item.category) {
+    _opdCategoryArrival => statusColors.infoContainer,
+    _opdCategoryQueue => statusColors.warningContainer,
+    _opdCategoryActiveFlow => statusColors.successContainer,
+    _ => theme.colorScheme.surfaceContainerHighest,
+  };
+  return color.withValues(alpha: 0.42);
 }
 
 String _categoryLabel(BuildContext context, String category) {
@@ -1197,15 +1309,6 @@ AppWorkspaceStatusTone _categoryTone(String category) {
     _opdCategoryQueue => AppWorkspaceStatusTone.warning,
     _opdCategoryActiveFlow => AppWorkspaceStatusTone.success,
     _ => AppWorkspaceStatusTone.neutral,
-  };
-}
-
-IconData _categoryIcon(String category) {
-  return switch (category) {
-    _opdCategoryArrival => Icons.event_available_outlined,
-    _opdCategoryQueue => Icons.queue_outlined,
-    _opdCategoryActiveFlow => Icons.medical_services_outlined,
-    _ => Icons.radio_button_unchecked,
   };
 }
 

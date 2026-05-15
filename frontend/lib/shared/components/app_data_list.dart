@@ -10,6 +10,8 @@ typedef AppDataMobileItemBuilder<T> =
     Widget Function(BuildContext context, T item);
 typedef AppDataItemKeyBuilder<T> = LocalKey Function(T item);
 typedef AppDataPageLabelBuilder<T> = String Function(AppPage<T> page);
+typedef AppDataRowColorBuilder<T> =
+    Color? Function(BuildContext context, T item);
 
 class AppDataColumn<T> {
   const AppDataColumn({
@@ -36,6 +38,7 @@ class AppDataList<T> extends StatelessWidget {
     this.loadingBuilder,
     this.errorBuilder,
     this.footer,
+    this.rowColorBuilder,
     this.isLoading = false,
     this.error,
     this.shrinkWrap = false,
@@ -52,6 +55,7 @@ class AppDataList<T> extends StatelessWidget {
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext context, Object error)? errorBuilder;
   final Widget? footer;
+  final AppDataRowColorBuilder<T>? rowColorBuilder;
   final bool isLoading;
   final Object? error;
   final bool shrinkWrap;
@@ -85,6 +89,7 @@ class AppDataList<T> extends StatelessWidget {
             onRowSelected: onRowSelected,
             shrinkWrap: shrinkWrap,
             physics: physics,
+            rowColorBuilder: rowColorBuilder,
           );
         }
 
@@ -94,6 +99,7 @@ class AppDataList<T> extends StatelessWidget {
           itemKeyBuilder: itemKeyBuilder,
           onRowSelected: onRowSelected,
           minWidth: constraints.maxWidth,
+          rowColorBuilder: rowColorBuilder,
         );
       },
     );
@@ -133,6 +139,7 @@ class AppPaginatedDataList<T> extends StatelessWidget {
     this.emptyBuilder,
     this.loadingBuilder,
     this.errorBuilder,
+    this.rowColorBuilder,
     this.isLoading = false,
     this.error,
     this.shrinkWrap = false,
@@ -152,6 +159,7 @@ class AppPaginatedDataList<T> extends StatelessWidget {
   final WidgetBuilder? emptyBuilder;
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext context, Object error)? errorBuilder;
+  final AppDataRowColorBuilder<T>? rowColorBuilder;
   final bool isLoading;
   final Object? error;
   final bool shrinkWrap;
@@ -168,6 +176,7 @@ class AppPaginatedDataList<T> extends StatelessWidget {
       emptyBuilder: emptyBuilder,
       loadingBuilder: loadingBuilder,
       errorBuilder: errorBuilder,
+      rowColorBuilder: rowColorBuilder,
       isLoading: isLoading,
       error: error,
       shrinkWrap: shrinkWrap,
@@ -254,6 +263,7 @@ class _MobileDataList<T> extends StatelessWidget {
     required this.onRowSelected,
     required this.shrinkWrap,
     required this.physics,
+    required this.rowColorBuilder,
   });
 
   final List<T> items;
@@ -262,6 +272,7 @@ class _MobileDataList<T> extends StatelessWidget {
   final ValueChanged<T>? onRowSelected;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
+  final AppDataRowColorBuilder<T>? rowColorBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -271,20 +282,25 @@ class _MobileDataList<T> extends StatelessWidget {
       physics: physics,
       itemBuilder: (BuildContext context, int index) {
         final T item = items[index];
-        final Widget row = KeyedSubtree(
+        Widget row = KeyedSubtree(
           key: itemKeyBuilder?.call(item),
           child: itemBuilder(context, item),
         );
 
-        if (onRowSelected == null) {
+        if (onRowSelected != null) {
+          row = _SelectableMobileDataRow<T>(
+            item: item,
+            onSelected: onRowSelected!,
+            child: row,
+          );
+        }
+
+        final Color? rowColor = rowColorBuilder?.call(context, item);
+        if (rowColor == null) {
           return row;
         }
 
-        return _SelectableMobileDataRow<T>(
-          item: item,
-          onSelected: onRowSelected!,
-          child: row,
-        );
+        return ColoredBox(color: rowColor, child: row);
       },
       separatorBuilder: (BuildContext context, int index) {
         return const Divider(height: 1);
@@ -349,6 +365,7 @@ class _DesktopDataTable<T> extends StatelessWidget {
     required this.itemKeyBuilder,
     required this.onRowSelected,
     required this.minWidth,
+    required this.rowColorBuilder,
   });
 
   final List<T> items;
@@ -356,6 +373,7 @@ class _DesktopDataTable<T> extends StatelessWidget {
   final AppDataItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
   final double minWidth;
+  final AppDataRowColorBuilder<T>? rowColorBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -373,6 +391,7 @@ class _DesktopDataTable<T> extends StatelessWidget {
         for (final T item in items)
           DataRow(
             key: itemKeyBuilder?.call(item),
+            color: _rowColor(context, item),
             onSelectChanged: onRowSelected == null
                 ? null
                 : (_) {
@@ -393,6 +412,27 @@ class _DesktopDataTable<T> extends StatelessWidget {
         child: table,
       ),
     );
+  }
+
+  WidgetStateProperty<Color?>? _rowColor(BuildContext context, T item) {
+    final AppDataRowColorBuilder<T>? builder = rowColorBuilder;
+    if (builder == null) {
+      return null;
+    }
+
+    return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+      final Color? color = builder(context, item);
+      if (color == null) {
+        return null;
+      }
+      if (states.contains(WidgetState.hovered)) {
+        return Color.alphaBlend(
+          Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+          color,
+        );
+      }
+      return color;
+    });
   }
 }
 
