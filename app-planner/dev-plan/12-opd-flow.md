@@ -1,9 +1,11 @@
 # 12 - OPD and Outpatient Flow
 
 ## Goal
+
 Manage appointments, arrivals, queues, service routing, consultation readiness, and outpatient completion.
 
 ## Backend Routes To Align With
+
 - `/api/v1/appointments`
 - `/api/v1/appointment-participants`
 - `/api/v1/appointment-reminders`
@@ -15,6 +17,7 @@ Manage appointments, arrivals, queues, service routing, consultation readiness, 
 - `/api/v1/referrals`
 
 ## Implementation Scope
+
 1. Appointment and walk-in arrival lists.
 2. Reception workflow for arrival, check-in, queue assignment, and service routing.
 3. OPD queue board for waiting, in-service, completed, referred, admitted, and cancelled states.
@@ -22,6 +25,7 @@ Manage appointments, arrivals, queues, service routing, consultation readiness, 
 5. Modal-based updates for arrival, queue movement, reschedule, cancellation, and referral.
 
 ## UX and Workflow Rules
+
 - Keep this module self-contained.
 - Use the shared workspace pattern from `10-workspace-ui.md`.
 - Keep short actions in modals where safe.
@@ -30,13 +34,16 @@ Manage appointments, arrivals, queues, service routing, consultation readiness, 
 - Respect tenant, facility, department/unit, role, permission, and module entitlement scope.
 
 ## Done Criteria
+
 - Reception can manage OPD without jumping to unrelated modules.
 - Queue state is clear.
 - Actions are permission-gated.
 - OPD handoff into triage/clinical/billing/admission is traceable.
 
 ## Rule References
+
 ### Frontend rules
+
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
 - `frontend/app-planner/app-rules/navigation.md`
@@ -47,7 +54,9 @@ Manage appointments, arrivals, queues, service routing, consultation readiness, 
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+
 ### Backend rules
+
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`
 - `backend/app-planner/app-rules/response-format.md`
