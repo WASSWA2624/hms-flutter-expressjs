@@ -147,15 +147,12 @@ router.post(
   authenticate(),
   authorize(
     [
-      ROLES.SUPER_ADMIN,
-      ROLES.TENANT_ADMIN,
-      ROLES.FACILITY_ADMIN,
-      ROLES.RECEPTIONIST,
-      ROLES.NURSE,
-      ROLES.DOCTOR,
-      ROLES.OPERATIONS
+      PERMISSIONS.PATIENT_WRITE,
+      PERMISSIONS.CLINICAL_WRITE,
+      PERMISSIONS.OPERATIONS_WRITE,
+      PERMISSIONS.EMERGENCY_WRITE
     ],
-    'role'
+    'permission'
   ),
   opdFlowController.startOpdFlow
 );

@@ -102,6 +102,21 @@ class AppSelectField<T> extends StatelessWidget {
         final double effectiveMenuHeight =
             menuHeight ??
             (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 360.0);
+        final bool canClear = canSelect && value != null && onChanged != null;
+        final Widget trailingIcon = isLoading
+            ? const _SelectLoadingIcon()
+            : _SelectTrailingIcon(
+                showClear: canClear,
+                isExpanded: false,
+                onClear: () => onChanged?.call(null),
+              );
+        final Widget selectedTrailingIcon = isLoading
+            ? const _SelectLoadingIcon()
+            : _SelectTrailingIcon(
+                showClear: canClear,
+                isExpanded: true,
+                onClear: () => onChanged?.call(null),
+              );
 
         return DropdownMenuFormField<T>(
           key: ValueKey<T?>(value),
@@ -115,7 +130,8 @@ class AppSelectField<T> extends StatelessWidget {
               : Text(appFieldLabel(labelText, isRequired: isRequired)!),
           hintText: hintText,
           helperText: helperText,
-          trailingIcon: isLoading ? const _SelectLoadingIcon() : null,
+          trailingIcon: trailingIcon,
+          selectedTrailingIcon: selectedTrailingIcon,
           textStyle: theme.textTheme.bodyLarge?.copyWith(
             color: canSelect
                 ? theme.colorScheme.onSurface
@@ -202,6 +218,54 @@ int? _defaultSearch<T>(List<DropdownMenuEntry<T>> entries, String query) {
   );
 
   return containsIndex >= 0 ? containsIndex : null;
+}
+
+class _SelectTrailingIcon extends StatelessWidget {
+  const _SelectTrailingIcon({
+    required this.showClear,
+    required this.isExpanded,
+    required this.onClear,
+  });
+
+  final bool showClear;
+  final bool isExpanded;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return SizedBox(
+      width: showClear ? 76 : 44,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (showClear)
+            IconButton(
+              tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              icon: Icon(
+                Icons.close,
+                size: theme.appTokens.listIconSize * 0.82,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              onPressed: onClear,
+            ),
+          Padding(
+            padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
+            child: Icon(
+              isExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SelectLoadingIcon extends StatelessWidget {

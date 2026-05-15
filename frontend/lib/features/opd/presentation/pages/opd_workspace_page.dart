@@ -1388,32 +1388,51 @@ class _WalkInModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return SegmentedButton<_WalkInPatientMode>(
+      expandedInsets: EdgeInsets.zero,
       segments: <ButtonSegment<_WalkInPatientMode>>[
         ButtonSegment<_WalkInPatientMode>(
           value: _WalkInPatientMode.existing,
-          label: Text(existingLabel, overflow: TextOverflow.ellipsis),
+          label: _WalkInTabLabel(existingLabel),
           icon: const Icon(Icons.badge_outlined),
         ),
         ButtonSegment<_WalkInPatientMode>(
           value: _WalkInPatientMode.appointment,
-          label: Text(appointmentLabel, overflow: TextOverflow.ellipsis),
+          label: _WalkInTabLabel(appointmentLabel),
           icon: const Icon(Icons.event_available_outlined),
         ),
         ButtonSegment<_WalkInPatientMode>(
           value: _WalkInPatientMode.newPatient,
-          label: Text(newPatientLabel, overflow: TextOverflow.ellipsis),
+          label: _WalkInTabLabel(newPatientLabel),
           icon: const Icon(Icons.person_add_alt_1_outlined),
         ),
       ],
       selected: <_WalkInPatientMode>{value},
       showSelectedIcon: false,
-      style: const ButtonStyle(
-        shape: WidgetStatePropertyAll<OutlinedBorder>(RoundedRectangleBorder()),
+      style: ButtonStyle(
+        minimumSize: WidgetStatePropertyAll<Size>(Size(theme.spacing.none, 44)),
+        shape: const WidgetStatePropertyAll<OutlinedBorder>(
+          RoundedRectangleBorder(),
+        ),
       ),
       onSelectionChanged: enabled
           ? (Set<_WalkInPatientMode> selected) => onChanged(selected.first)
           : null,
+    );
+  }
+}
+
+class _WalkInTabLabel extends StatelessWidget {
+  const _WalkInTabLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
 }
@@ -1483,6 +1502,42 @@ class _WalkInFieldRow extends StatelessWidget {
   }
 }
 
+class _WalkInLowerSections extends StatelessWidget {
+  const _WalkInLowerSections({
+    required this.routingSection,
+    required this.billingSection,
+  });
+
+  final Widget routingSection;
+  final Widget billingSection;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool stacked =
+            !constraints.hasBoundedWidth || constraints.maxWidth < 760;
+        if (stacked) {
+          return AppFormSection(
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[routingSection, billingSection],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(child: routingSection),
+            SizedBox(width: theme.spacing.md),
+            Expanded(child: billingSection),
+          ],
+        );
+      },
+    );
+  }
+}
+
 typedef OpdPayloadSubmit =
     Future<AppFailure?> Function(Map<String, Object?> payload);
 
@@ -1509,9 +1564,11 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   late final TextEditingController _feeController;
   late final TextEditingController _notesController;
   List<Patient> _patientOptions = const <Patient>[];
+  List<OpdAppointment> _appointmentOptions = const <OpdAppointment>[];
   List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
   _WalkInPatientMode _patientMode = _WalkInPatientMode.existing;
   bool _isLoadingPatients = false;
+  bool _isLoadingAppointments = false;
   bool _isLoadingProviders = false;
   String? _patientId;
   String? _appointmentId;
@@ -1531,7 +1588,9 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     _lastNameController = TextEditingController();
     _feeController = TextEditingController();
     _notesController = TextEditingController();
+    _appointmentOptions = _eligibleAppointmentOptions(widget.appointments);
     unawaited(_loadPatientOptions());
+    unawaited(_loadAppointmentOptions());
     unawaited(_loadProviderOptions());
   }
 
@@ -1552,7 +1611,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       title: Text(l10n.opdWalkInDialogTitle),
       icon: const Icon(Icons.person_add_alt_1_outlined),
       scrollable: true,
-      maxWidth: 760,
+      maxWidth: 880,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1572,91 +1631,9 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
                 _patientModeContent(l10n),
               ],
             ),
-            _WalkInSection(
-              title: l10n.opdRoutingSectionTitle,
-              children: <Widget>[
-                if (_patientMode != _WalkInPatientMode.appointment)
-                  AppSelectField<String>.searchable(
-                    value: _arrivalMode,
-                    labelText: l10n.opdArrivalModeLabel,
-                    semanticLabel: l10n.opdArrivalModeLabel,
-                    enabled: !_isSaving,
-                    onChanged: (String? value) {
-                      setState(() {
-                        _arrivalMode = value ?? 'WALK_IN';
-                      });
-                    },
-                    options: _statusOptions(_arrivalModeOptions),
-                  ),
-                if (_arrivalMode == 'EMERGENCY' &&
-                    _patientMode != _WalkInPatientMode.appointment)
-                  _WalkInFieldRow(
-                    children: <Widget>[
-                      AppSelectField<String>.searchable(
-                        value: _emergencySeverity,
-                        labelText: l10n.opdEmergencySeverityLabel,
-                        semanticLabel: l10n.opdEmergencySeverityLabel,
-                        enabled: !_isSaving,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _emergencySeverity = value ?? _emergencySeverity;
-                          });
-                        },
-                        options: _statusOptions(_emergencySeverityOptions),
-                      ),
-                      AppSelectField<String>.searchable(
-                        value: _triageLevel,
-                        labelText: l10n.opdTriageLevelLabel,
-                        semanticLabel: l10n.opdTriageLevelLabel,
-                        enabled: !_isSaving,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _triageLevel = value;
-                          });
-                        },
-                        options: _statusOptions(_triageLevelOptions),
-                      ),
-                    ],
-                  ),
-                _ProviderSelectField(
-                  value: _providerId,
-                  providers: _providerOptionsForDialog(),
-                  schedules: widget.providerSchedules,
-                  labelText: l10n.opdSearchProviderLabel,
-                  helperText: l10n.opdSearchProviderHelper,
-                  emptyHelperText: l10n.opdNoProvidersHelper,
-                  enabled: !_isSaving,
-                  isLoading: _isLoadingProviders,
-                  onChanged: (String? value) {
-                    setState(() {
-                      _providerId = value;
-                    });
-                  },
-                ),
-              ],
-            ),
-            _WalkInSection(
-              title: l10n.opdBillingSectionTitle,
-              children: <Widget>[
-                AppCurrencyAmountField(
-                  amountController: _feeController,
-                  currency: _currency,
-                  amountLabelText: l10n.opdConsultationFeeLabel,
-                  currencyLabelText: l10n.opdCurrencyLabel,
-                  enabled: !_isSaving,
-                  onCurrencyChanged: (String? value) {
-                    setState(() {
-                      _currency = value ?? appDefaultCurrencyCode;
-                    });
-                  },
-                ),
-                AppTextField(
-                  controller: _notesController,
-                  labelText: l10n.opdNotesLabel,
-                  enabled: !_isSaving,
-                  maxLines: 3,
-                ),
-              ],
+            _WalkInLowerSections(
+              routingSection: _routingSection(l10n),
+              billingSection: _billingSection(l10n),
             ),
           ],
         ),
@@ -1672,6 +1649,98 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
           leadingIcon: Icons.play_arrow_outlined,
           isLoading: _isSaving,
           onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Widget _routingSection(AppLocalizations l10n) {
+    return _WalkInSection(
+      title: l10n.opdRoutingSectionTitle,
+      children: <Widget>[
+        if (_patientMode != _WalkInPatientMode.appointment)
+          AppSelectField<String>.searchable(
+            value: _arrivalMode,
+            labelText: l10n.opdArrivalModeLabel,
+            semanticLabel: l10n.opdArrivalModeLabel,
+            enabled: !_isSaving,
+            onChanged: (String? value) {
+              setState(() {
+                _arrivalMode = value ?? 'WALK_IN';
+              });
+            },
+            options: _statusOptions(_arrivalModeOptions),
+          ),
+        if (_arrivalMode == 'EMERGENCY' &&
+            _patientMode != _WalkInPatientMode.appointment)
+          _WalkInFieldRow(
+            children: <Widget>[
+              AppSelectField<String>.searchable(
+                value: _emergencySeverity,
+                labelText: l10n.opdEmergencySeverityLabel,
+                semanticLabel: l10n.opdEmergencySeverityLabel,
+                enabled: !_isSaving,
+                onChanged: (String? value) {
+                  setState(() {
+                    _emergencySeverity = value ?? _emergencySeverity;
+                  });
+                },
+                options: _statusOptions(_emergencySeverityOptions),
+              ),
+              AppSelectField<String>.searchable(
+                value: _triageLevel,
+                labelText: l10n.opdTriageLevelLabel,
+                semanticLabel: l10n.opdTriageLevelLabel,
+                enabled: !_isSaving,
+                onChanged: (String? value) {
+                  setState(() {
+                    _triageLevel = value;
+                  });
+                },
+                options: _statusOptions(_triageLevelOptions),
+              ),
+            ],
+          ),
+        _ProviderSelectField(
+          value: _providerId,
+          providers: _providerOptionsForDialog(),
+          schedules: widget.providerSchedules,
+          labelText: l10n.opdSearchProviderLabel,
+          helperText: l10n.opdSearchProviderHelper,
+          emptyHelperText: l10n.opdNoProvidersHelper,
+          enabled: !_isSaving,
+          isLoading: _isLoadingProviders,
+          onChanged: (String? value) {
+            setState(() {
+              _providerId = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _billingSection(AppLocalizations l10n) {
+    return _WalkInSection(
+      title: l10n.opdBillingSectionTitle,
+      children: <Widget>[
+        AppCurrencyAmountField(
+          amountController: _feeController,
+          currency: _currency,
+          amountLabelText: l10n.opdConsultationFeeLabel,
+          currencyLabelText: l10n.opdCurrencyLabel,
+          enabled: !_isSaving,
+          onCurrencyChanged: (String? value) {
+            setState(() {
+              _currency = value ?? appDefaultCurrencyCode;
+            });
+          },
+        ),
+        AppTextField(
+          controller: _notesController,
+          labelText: l10n.opdNotesLabel,
+          enabled: !_isSaving,
+          maxLines: 3,
         ),
       ],
     );
@@ -1735,13 +1804,14 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       ),
       _WalkInPatientMode.appointment => AppSelectField<String>.searchable(
         value: _appointmentId,
-        options: widget.appointments
+        options: _appointmentOptions
             .map(_appointmentSelectOption)
             .whereType<AppSelectOption<String>>()
             .toList(growable: false),
         labelText: l10n.opdAppointmentPatientLabel,
         helperText: l10n.opdAppointmentPatientHelper,
         semanticLabel: l10n.opdAppointmentPatientLabel,
+        isLoading: _isLoadingAppointments,
         enabled: !_isSaving,
         onChanged: (String? value) {
           setState(() {
@@ -1755,29 +1825,34 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
             ? null
             : l10n.validationRequired,
       ),
-      _WalkInPatientMode.newPatient => _WalkInFieldRow(
+      _WalkInPatientMode.newPatient => AppFormSection(
+        density: AppFormSectionDensity.compact,
         children: <Widget>[
-          AppTextField(
-            controller: _firstNameController,
-            labelText: l10n.opdFirstNameLabel,
-            enabled: !_isSaving,
-            textCapitalization: TextCapitalization.words,
-            validator: (String? value) =>
-                _patientMode != _WalkInPatientMode.newPatient ||
-                    _isNonEmpty(value)
-                ? null
-                : l10n.validationRequired,
-          ),
-          AppTextField(
-            controller: _lastNameController,
-            labelText: l10n.opdLastNameLabel,
-            enabled: !_isSaving,
-            textCapitalization: TextCapitalization.words,
-            validator: (String? value) =>
-                _patientMode != _WalkInPatientMode.newPatient ||
-                    _isNonEmpty(value)
-                ? null
-                : l10n.validationRequired,
+          _WalkInFieldRow(
+            children: <Widget>[
+              AppTextField(
+                controller: _firstNameController,
+                labelText: l10n.opdFirstNameLabel,
+                enabled: !_isSaving,
+                textCapitalization: TextCapitalization.words,
+                validator: (String? value) =>
+                    _patientMode != _WalkInPatientMode.newPatient ||
+                        _isNonEmpty(value)
+                    ? null
+                    : l10n.validationRequired,
+              ),
+              AppTextField(
+                controller: _lastNameController,
+                labelText: l10n.opdLastNameLabel,
+                enabled: !_isSaving,
+                textCapitalization: TextCapitalization.words,
+                validator: (String? value) =>
+                    _patientMode != _WalkInPatientMode.newPatient ||
+                        _isNonEmpty(value)
+                    ? null
+                    : l10n.validationRequired,
+              ),
+            ],
           ),
           AppGenderField(
             value: _gender,
@@ -1826,6 +1901,34 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     );
   }
 
+  Future<void> _loadAppointmentOptions() async {
+    setState(() {
+      _isLoadingAppointments = true;
+    });
+    final Result<AppPage<OpdAppointment>> result = await ref
+        .read(opdRepositoryProvider)
+        .listAppointments(
+          const OpdAppointmentQuery(pageRequest: AppPageRequest(pageSize: 50)),
+        );
+    if (!mounted) {
+      return;
+    }
+
+    result.when(
+      success: (AppPage<OpdAppointment> page) {
+        setState(() {
+          _appointmentOptions = _eligibleAppointmentOptions(page.items);
+          _isLoadingAppointments = false;
+        });
+      },
+      failure: (_) {
+        setState(() {
+          _isLoadingAppointments = false;
+        });
+      },
+    );
+  }
+
   Future<void> _loadProviderOptions() async {
     setState(() {
       _isLoadingProviders = true;
@@ -1858,7 +1961,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         provider.id: provider,
     };
 
-    for (final OpdAppointment appointment in widget.appointments) {
+    for (final OpdAppointment appointment in _appointmentOptions) {
       final String? id = appointment.providerUserId;
       if (!_isNonEmpty(id) || options.containsKey(id)) {
         continue;
@@ -1909,7 +2012,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       return null;
     }
 
-    for (final OpdAppointment appointment in widget.appointments) {
+    for (final OpdAppointment appointment in _appointmentOptions) {
       if (appointment.publicId == value || appointment.id == value) {
         return appointment;
       }
@@ -4246,6 +4349,31 @@ AppSelectOption<String>? _appointmentSelectOption(OpdAppointment appointment) {
       appointment.status,
     ]),
   );
+}
+
+List<OpdAppointment> _eligibleAppointmentOptions(
+  Iterable<OpdAppointment> appointments,
+) {
+  final Map<String, OpdAppointment> options = <String, OpdAppointment>{};
+
+  for (final OpdAppointment appointment in appointments) {
+    final String value = appointment.publicId ?? appointment.id;
+    if (!_isNonEmpty(value) ||
+        _isTerminalAppointmentStatus(appointment.status)) {
+      continue;
+    }
+
+    options[value] = appointment;
+  }
+
+  return options.values.toList(growable: false);
+}
+
+bool _isTerminalAppointmentStatus(String? status) {
+  return switch (status?.toUpperCase()) {
+    'CANCELLED' || 'NO_SHOW' || 'COMPLETED' => true,
+    _ => false,
+  };
 }
 
 List<AppSelectOption<String>> _providerSelectOptions({
