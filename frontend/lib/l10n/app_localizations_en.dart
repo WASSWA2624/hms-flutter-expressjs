@@ -464,6 +464,141 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdDecisionLabel => 'Decision';
 
   @override
+  String get opdArrivalModeLabel => 'Arrival mode';
+
+  @override
+  String get opdEmergencySeverityLabel => 'Emergency severity';
+
+  @override
+  String get opdTriageLevelLabel => 'Triage level';
+
+  @override
+  String get opdWorkflowReceptionTitle => 'Reception and queue';
+
+  @override
+  String get opdWorkflowTriageTitle => 'Triage';
+
+  @override
+  String get opdWorkflowDoctorTitle => 'Doctor consultation';
+
+  @override
+  String get opdWorkflowServicesTitle => 'Services';
+
+  @override
+  String get opdWorkflowPrintTitle => 'Printing';
+
+  @override
+  String get opdSendToTriageAction => 'Send to triage';
+
+  @override
+  String get opdSendToDoctorAction => 'Send to doctor';
+
+  @override
+  String get opdRecordVitalsAction => 'Record vitals';
+
+  @override
+  String get opdDoctorReviewAction => 'Doctor review';
+
+  @override
+  String get opdRouteLabAction => 'Send to lab';
+
+  @override
+  String get opdRouteRadiologyAction => 'Send to radiology';
+
+  @override
+  String get opdRoutePharmacyAction => 'Send to pharmacy';
+
+  @override
+  String get opdPrintSummaryAction => 'Print summary';
+
+  @override
+  String get opdPrintAction => 'Print';
+
+  @override
+  String get opdCopySummaryAction => 'Copy summary';
+
+  @override
+  String get opdVitalsSummaryLabel => 'Vitals';
+
+  @override
+  String get opdServicesSummaryLabel => 'Services';
+
+  @override
+  String get opdClinicalNotesSummaryLabel => 'Clinical notes';
+
+  @override
+  String get opdProceduresSummaryLabel => 'Procedures';
+
+  @override
+  String get opdClinicalNoteLabel => 'Clinical note';
+
+  @override
+  String get opdDiagnosisTypeLabel => 'Diagnosis type';
+
+  @override
+  String get opdDiagnosisLabel => 'Diagnosis';
+
+  @override
+  String get opdDiagnosisCodeLabel => 'Diagnosis code';
+
+  @override
+  String get opdProcedureLabel => 'Procedure or minor surgery';
+
+  @override
+  String get opdProcedureCodeLabel => 'Procedure code';
+
+  @override
+  String get opdLabTestIdsLabel => 'Lab test IDs';
+
+  @override
+  String get opdLabPanelIdsLabel => 'Lab panel IDs';
+
+  @override
+  String get opdRadiologyTestIdsLabel => 'Radiology test IDs';
+
+  @override
+  String get opdDrugLabel => 'Available drug';
+
+  @override
+  String get opdDrugQuantityLabel => 'Quantity';
+
+  @override
+  String get opdDosageLabel => 'Dosage';
+
+  @override
+  String get opdFrequencyLabel => 'Frequency';
+
+  @override
+  String get opdMedicationRouteLabel => 'Medication route';
+
+  @override
+  String get opdPrescriptionNotesLabel => 'Prescription notes';
+
+  @override
+  String get opdTemperatureLabel => 'Temperature';
+
+  @override
+  String get opdSystolicLabel => 'Systolic';
+
+  @override
+  String get opdDiastolicLabel => 'Diastolic';
+
+  @override
+  String get opdHeartRateLabel => 'Heart rate';
+
+  @override
+  String get opdRespiratoryRateLabel => 'Respiratory rate';
+
+  @override
+  String get opdOxygenSaturationLabel => 'Oxygen saturation';
+
+  @override
+  String get opdWeightLabel => 'Weight';
+
+  @override
+  String get opdTriageNotesLabel => 'Triage notes';
+
+  @override
   String get patientsTitle => 'Patient registry';
 
   @override
