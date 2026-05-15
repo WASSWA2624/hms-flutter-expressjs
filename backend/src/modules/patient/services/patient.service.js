@@ -1158,7 +1158,19 @@ const deletePatient = async (id, userId, ipAddress, scope = {}) => {
       throw new HttpError('errors.patient.not_found', 404);
     }
 
-    await patientRepository.softDelete(before.id, patientScope);
+    const deletedAt = new Date();
+    await prisma.$transaction(async (tx) => {
+      await patientRepository.softDelete(before.id, patientScope, tx);
+      await tx.visit_queue.updateMany({
+        where: {
+          patient_id: before.id,
+          deleted_at: null,
+        },
+        data: {
+          deleted_at: deletedAt,
+        },
+      });
+    });
 
     // Create audit log (non-blocking)
     createAuditLog({

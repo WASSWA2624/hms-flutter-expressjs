@@ -111,6 +111,20 @@ const VISIT_QUEUE_RELATION_INCLUDE = {
   },
 };
 
+const withActivePatient = (filters = {}) => {
+  const { AND, ...rest } = filters || {};
+  const and = [
+    ...(Array.isArray(AND) ? AND : AND ? [AND] : []),
+    { patient: { deleted_at: null } },
+  ];
+
+  return {
+    ...rest,
+    deleted_at: null,
+    AND: and,
+  };
+};
+
 /**
  * Find visit queue entry by ID
  *
@@ -120,10 +134,7 @@ const VISIT_QUEUE_RELATION_INCLUDE = {
 const findById = async (id) => {
   try {
     return await prisma.visit_queue.findFirst({
-      where: {
-        id,
-        deleted_at: null,
-      },
+      where: withActivePatient({ id }),
       include: VISIT_QUEUE_RELATION_INCLUDE,
     });
   } catch (error) {
@@ -142,11 +153,7 @@ const findById = async (id) => {
  */
 const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { queued_at: 'desc' }) => {
   try {
-    // Build where clause
-    const where = {
-      deleted_at: null,
-      ...filters,
-    };
+    const where = withActivePatient(filters);
 
     return await prisma.visit_queue.findMany({
       where,
@@ -168,10 +175,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { queued_at
  */
 const count = async (filters = {}) => {
   try {
-    const where = {
-      deleted_at: null,
-      ...filters,
-    };
+    const where = withActivePatient(filters);
 
     return await prisma.visit_queue.count({ where });
   } catch (error) {

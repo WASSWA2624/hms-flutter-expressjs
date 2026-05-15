@@ -29,6 +29,18 @@ const {
 
 const prisma = require('@prisma/client');
 
+const expectRelationInclude = () => expect.objectContaining({
+  tenant: expect.any(Object),
+  facility: expect.any(Object),
+  patient: expect.any(Object),
+  appointment: expect.any(Object),
+  provider: expect.any(Object)
+});
+
+const expectActivePatientClause = () => [
+  { patient: { deleted_at: null } }
+];
+
 describe('Visit Queue Repository', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -58,15 +70,10 @@ describe('Visit Queue Repository', () => {
       expect(prisma.visit_queue.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'queue-123',
-          deleted_at: null
+          deleted_at: null,
+          AND: expectActivePatientClause()
         },
-        include: {
-          tenant: true,
-          facility: true,
-          patient: true,
-          appointment: true,
-          provider: true
-        }
+        include: expectRelationInclude()
       });
     });
 
@@ -112,18 +119,13 @@ describe('Visit Queue Repository', () => {
       expect(result).toEqual(mockEntries);
       expect(prisma.visit_queue.findMany).toHaveBeenCalledWith({
         where: {
-          deleted_at: null
+          deleted_at: null,
+          AND: expectActivePatientClause()
         },
         skip: 0,
         take: 20,
         orderBy: { queued_at: 'desc' },
-        include: {
-          tenant: true,
-          facility: true,
-          patient: true,
-          appointment: true,
-          provider: true
-        }
+        include: expectRelationInclude()
       });
     });
 
@@ -154,18 +156,13 @@ describe('Visit Queue Repository', () => {
           deleted_at: null,
           tenant_id: 'tenant-123',
           patient_id: 'patient-123',
-          status: 'SCHEDULED'
+          status: 'SCHEDULED',
+          AND: expectActivePatientClause()
         },
         skip: 0,
         take: 20,
         orderBy: { queued_at: 'desc' },
-        include: {
-          tenant: true,
-          facility: true,
-          patient: true,
-          appointment: true,
-          provider: true
-        }
+        include: expectRelationInclude()
       });
     });
 
@@ -201,7 +198,8 @@ describe('Visit Queue Repository', () => {
       expect(result).toBe(10);
       expect(prisma.visit_queue.count).toHaveBeenCalledWith({
         where: {
-          deleted_at: null
+          deleted_at: null,
+          AND: expectActivePatientClause()
         }
       });
     });
@@ -218,7 +216,8 @@ describe('Visit Queue Repository', () => {
         where: {
           deleted_at: null,
           tenant_id: 'tenant-123',
-          status: 'SCHEDULED'
+          status: 'SCHEDULED',
+          AND: expectActivePatientClause()
         }
       });
     });
@@ -258,13 +257,7 @@ describe('Visit Queue Repository', () => {
       expect(result).toEqual(mockCreated);
       expect(prisma.visit_queue.create).toHaveBeenCalledWith({
         data: entryData,
-        include: {
-          tenant: true,
-          facility: true,
-          patient: true,
-          appointment: true,
-          provider: true
-        }
+        include: expectRelationInclude()
       });
     });
 
@@ -317,13 +310,7 @@ describe('Visit Queue Repository', () => {
       expect(prisma.visit_queue.update).toHaveBeenCalledWith({
         where: { id: 'queue-123' },
         data: updateData,
-        include: {
-          tenant: true,
-          facility: true,
-          patient: true,
-          appointment: true,
-          provider: true
-        }
+        include: expectRelationInclude()
       });
     });
 

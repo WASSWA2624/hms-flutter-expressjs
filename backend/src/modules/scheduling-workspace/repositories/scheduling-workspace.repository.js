@@ -75,6 +75,7 @@ const buildQueueWhere = ({
     ...withScope({ tenantId, facilityId }),
     ...(patientId ? { patient_id: patientId } : {}),
     ...(providerUserId ? { provider_user_id: providerUserId } : {}),
+    patient: { deleted_at: null },
     status: { in: ACTIVE_APPOINTMENT_STATUSES },
   };
 

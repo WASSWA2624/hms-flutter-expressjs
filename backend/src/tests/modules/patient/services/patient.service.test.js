@@ -30,11 +30,17 @@ jest.mock('@services/patient-document/patient-document.service', () => ({
 describe('Patient Service', () => {
   const mockUserId = 'user-123';
   const mockIpAddress = '127.0.0.1';
+  let mockTransaction;
 
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockReturnValue(Promise.resolve());
-    prisma.$transaction.mockImplementation(async (callback) => callback({}));
+    mockTransaction = {
+      visit_queue: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    prisma.$transaction.mockImplementation(async (callback) => callback(mockTransaction));
     patientContactRepository.findMany.mockResolvedValue([]);
     patientIdentifierRepository.findMany.mockResolvedValue([]);
   });
@@ -691,7 +697,16 @@ describe('Patient Service', () => {
 
       await patientService.deletePatient('123', mockUserId, mockIpAddress);
 
-      expect(patientRepository.softDelete).toHaveBeenCalledWith('123', {});
+      expect(patientRepository.softDelete).toHaveBeenCalledWith('123', {}, mockTransaction);
+      expect(mockTransaction.visit_queue.updateMany).toHaveBeenCalledWith({
+        where: {
+          patient_id: '123',
+          deleted_at: null,
+        },
+        data: {
+          deleted_at: expect.any(Date),
+        },
+      });
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'DELETE',
         entity: 'patient',
@@ -708,7 +723,16 @@ describe('Patient Service', () => {
 
       expect(patientRepository.softDelete).toHaveBeenCalledWith(
         '550e8400-e29b-41d4-a716-446655440051',
-        {}
+        {},
+        mockTransaction
+      );
+      expect(mockTransaction.visit_queue.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            patient_id: '550e8400-e29b-41d4-a716-446655440051',
+            deleted_at: null,
+          }),
+        })
       );
       expect(createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({

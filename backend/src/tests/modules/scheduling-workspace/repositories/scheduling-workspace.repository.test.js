@@ -54,6 +54,25 @@ describe('scheduling-workspace.repository', () => {
     );
   });
 
+  it('buildQueueWhere excludes deleted patients from queue results', () => {
+    const result = subject.buildQueueWhere({
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      search: 'Jane',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        deleted_at: null,
+        patient: { deleted_at: null },
+        status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
+      })
+    );
+    expect(result.AND).toHaveLength(1);
+  });
+
   it('findSchedules includes provider and slot data', async () => {
     prisma.provider_schedule.findMany.mockResolvedValue([]);
 

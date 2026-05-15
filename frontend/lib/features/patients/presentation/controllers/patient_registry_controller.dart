@@ -210,6 +210,7 @@ final class PatientRegistryController
     if (current == null) {
       return refresh();
     }
+    final Patient? patient = _findPatientInState(current, patientId);
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<PatientMutationResult> result = await _repository
@@ -223,6 +224,11 @@ final class PatientRegistryController
         _emit(
           _currentState!.copyWith(
             page: page,
+            overview: _removePatientFromOverview(
+              _currentState!.overview,
+              patientId,
+              patient,
+            ),
             isSaving: false,
             clearSelectedDetail: true,
           ),
@@ -567,6 +573,62 @@ final class PatientRegistryController
       request: page.request,
       totalItemCount: total,
     );
+  }
+
+  PatientRegistryOverview _removePatientFromOverview(
+    PatientRegistryOverview overview,
+    String patientId,
+    Patient? patient,
+  ) {
+    final List<Patient> recentPatients = overview.recentPatients
+        .where((Patient item) => item.id != patientId)
+        .toList(growable: false);
+    final List<Patient> waitingQueuePatients = overview.waitingQueuePatients
+        .where((Patient item) => item.id != patientId)
+        .toList(growable: false);
+    final bool wasInRecent =
+        recentPatients.length != overview.recentPatients.length;
+    final bool wasInWaitingQueue =
+        waitingQueuePatients.length != overview.waitingQueuePatients.length;
+
+    return overview.copyWith(
+      totalPatients: wasInRecent
+          ? (overview.totalPatients - 1).clamp(0, overview.totalPatients)
+          : overview.totalPatients,
+      activePatients: wasInRecent && (patient?.isActive ?? false)
+          ? (overview.activePatients - 1).clamp(0, overview.activePatients)
+          : overview.activePatients,
+      waitingQueue: wasInWaitingQueue
+          ? (overview.waitingQueue - 1).clamp(0, overview.waitingQueue)
+          : overview.waitingQueue,
+      recentPatients: recentPatients,
+      waitingQueuePatients: waitingQueuePatients,
+      duplicates: overview.duplicates
+          .where(
+            (PatientDuplicateCandidate candidate) =>
+                candidate.primaryPatient?.id != patientId &&
+                candidate.secondaryPatient?.id != patientId &&
+                candidate.candidatePatient?.id != patientId,
+          )
+          .toList(growable: false),
+    );
+  }
+
+  Patient? _findPatientInState(PatientRegistryState state, String patientId) {
+    final List<Patient> candidates = <Patient>[
+      ...state.page.items,
+      ...state.overview.recentPatients,
+      ...state.overview.waitingQueuePatients,
+      if (state.selectedDetail != null) state.selectedDetail!.patient,
+    ];
+
+    for (final Patient patient in candidates) {
+      if (patient.id == patientId) {
+        return patient;
+      }
+    }
+
+    return null;
   }
 
   PatientRegistryState? get _currentState {

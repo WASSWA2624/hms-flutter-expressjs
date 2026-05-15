@@ -751,6 +751,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
           where: {
             ...where,
             deleted_at: null,
+            patient: { deleted_at: null },
             status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
           },
         })
@@ -764,6 +765,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
           where: {
             ...where,
             deleted_at: null,
+            patient: { deleted_at: null },
             status: 'ADMITTED',
           },
         })
@@ -777,6 +779,7 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
           where: {
             ...where,
             deleted_at: null,
+            patient: { deleted_at: null },
             status: { notIn: ['PAID', 'CANCELLED'] },
           },
         })
@@ -818,7 +821,12 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
       emptyOverviewList,
       () =>
         prisma.visit_queue.findMany({
-          where: { ...where, deleted_at: null, status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] } },
+          where: {
+            ...where,
+            deleted_at: null,
+            patient: { deleted_at: null },
+            status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
+          },
           include: {
             patient: { include: basePatientInclude },
             provider: { select: userDisplaySelect },
@@ -834,7 +842,12 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
       emptyOverviewList,
       () =>
         prisma.admission.findMany({
-          where: { ...where, deleted_at: null, status: 'ADMITTED' },
+          where: {
+            ...where,
+            deleted_at: null,
+            patient: { deleted_at: null },
+            status: 'ADMITTED',
+          },
           include: {
             patient: { include: basePatientInclude },
           },
@@ -848,7 +861,12 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
       emptyOverviewList,
       () =>
         prisma.invoice.findMany({
-          where: { ...where, deleted_at: null, status: { notIn: ['PAID', 'CANCELLED'] } },
+          where: {
+            ...where,
+            deleted_at: null,
+            patient: { deleted_at: null },
+            status: { notIn: ['PAID', 'CANCELLED'] },
+          },
           include: {
             patient: { include: basePatientInclude },
           },

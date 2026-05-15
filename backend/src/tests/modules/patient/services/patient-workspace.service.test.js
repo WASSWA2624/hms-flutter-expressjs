@@ -171,6 +171,18 @@ describe('patient-workspace service', () => {
     expect(result.missing_documents).toHaveLength(1);
     expect(result.unpaid_invoices).toEqual([]);
     expect(result.duplicate_queue).toEqual([]);
+    expect(prisma.visit_queue.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        patient: { deleted_at: null },
+      }),
+    });
+    expect(prisma.visit_queue.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          patient: { deleted_at: null },
+        }),
+      })
+    );
     expect(logger.error).toHaveBeenCalledWith(
       'Patient workspace overview section failed',
       expect.objectContaining({

@@ -492,6 +492,34 @@ final class PatientRegistryOverview {
   final List<Patient> waitingQueuePatients;
   final int consentExceptions;
   final int missingDocuments;
+
+  PatientRegistryOverview copyWith({
+    int? totalPatients,
+    int? activePatients,
+    int? waitingQueue,
+    int? activeAdmissions,
+    int? unpaidInvoices,
+    int? dueFollowUps,
+    List<PatientDuplicateCandidate>? duplicates,
+    List<Patient>? recentPatients,
+    List<Patient>? waitingQueuePatients,
+    int? consentExceptions,
+    int? missingDocuments,
+  }) {
+    return PatientRegistryOverview(
+      totalPatients: totalPatients ?? this.totalPatients,
+      activePatients: activePatients ?? this.activePatients,
+      waitingQueue: waitingQueue ?? this.waitingQueue,
+      activeAdmissions: activeAdmissions ?? this.activeAdmissions,
+      unpaidInvoices: unpaidInvoices ?? this.unpaidInvoices,
+      dueFollowUps: dueFollowUps ?? this.dueFollowUps,
+      duplicates: duplicates ?? this.duplicates,
+      recentPatients: recentPatients ?? this.recentPatients,
+      waitingQueuePatients: waitingQueuePatients ?? this.waitingQueuePatients,
+      consentExceptions: consentExceptions ?? this.consentExceptions,
+      missingDocuments: missingDocuments ?? this.missingDocuments,
+    );
+  }
 }
 
 @immutable
