@@ -15,7 +15,7 @@
 ```sh
 flutter pub get
 flutter test
-flutter run -d chrome --dart-define-from-file=env/development.json.example
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example
 flutter run -d windows --dart-define-from-file=env/development.json.example
 ```
 
@@ -34,6 +34,10 @@ and Dart extensions. This repository configures:
 - Auto save after a short delay.
 - Flutter hot reload on save for active debug sessions.
 - Debug launch targets for Web, Android, iOS, macOS, Windows, and Linux.
+
+The web launch target always binds Chrome to `http://127.0.0.1:5201`, so browser
+tabs and deep links stay on the same address across restarts. If the port is
+busy, stop the older Flutter process before launching again.
 
 Open **Run and Debug** in VS Code and start one of these configurations:
 
@@ -54,7 +58,7 @@ target platform command, then press `r` for hot reload, `R` for hot restart, and
 `q` to quit.
 
 ```sh
-flutter run -d chrome --dart-define-from-file=env/development.json.example
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example
 flutter run -d android --dart-define-from-file=env/development.json.example
 flutter run -d ios --dart-define-from-file=env/development.json.example
 flutter run -d macos --dart-define-from-file=env/development.json.example

@@ -145,6 +145,422 @@
   "@navigationPatientsLabel": {
     "description": "Navigation label for the patient registry destination."
   },
+  "navigationOpdLabel": "OPD",
+  "@navigationOpdLabel": {
+    "description": "Navigation label for the OPD workflow destination."
+  },
+  "opdTitle": "OPD flow",
+  "opdDescription": "Manage arrivals, queues, provider readiness, and outpatient clinical handoffs.",
+  "opdLoadingTitle": "Loading OPD flow",
+  "opdLoadingBody": "Loading outpatient queue and encounter data.",
+  "opdLiveStatus": "Live sync",
+  "opdSavingStatus": "Saving",
+  "opdStartWalkInAction": "Start walk-in",
+  "opdSavedMessage": "OPD changes saved.",
+  "opdArrivalsSummaryLabel": "Arrivals",
+  "opdQueueSummaryLabel": "Queue",
+  "opdActiveFlowSummaryLabel": "Active flows",
+  "opdCompletedFlowSummaryLabel": "Completed",
+  "opdFiltersLabel": "OPD filters",
+  "opdSearchLabel": "Search OPD",
+  "opdSearchHint": "Search patient, identifier, or provider",
+  "opdApplyFiltersAction": "Apply filters",
+  "opdClearFiltersAction": "Clear filters",
+  "opdAppointmentStatusFilterLabel": "Appointment status",
+  "opdQueueStatusFilterLabel": "Queue status",
+  "opdFlowStageFilterLabel": "Flow stage",
+  "opdArrivalsTitle": "Arrivals",
+  "opdQueueBoardTitle": "Queue board",
+  "opdFlowsTitle": "OPD encounters",
+  "opdProviderReadinessTitle": "Provider readiness",
+  "opdActivityTitle": "Recent OPD activity",
+  "opdActivityDescription": "Latest visible outpatient flow changes.",
+  "opdNoArrivalsTitle": "No arrivals",
+  "opdNoArrivalsBody": "Scheduled and checked-in patients will appear here.",
+  "opdNoQueueTitle": "No queued patients",
+  "opdNoQueueBody": "Reception queue entries will appear here as patients are routed.",
+  "opdNoFlowsTitle": "No OPD encounters",
+  "opdNoFlowsBody": "Started outpatient encounters will appear here.",
+  "opdNoFlowSelectedTitle": "No encounter selected",
+  "opdNoFlowSelectedBody": "Select an OPD encounter to review actions and related records.",
+  "opdNoProvidersTitle": "No providers ready",
+  "opdNoProvidersBody": "Provider schedules and available slots will appear here.",
+  "opdNoActivityTitle": "No recent activity",
+  "opdNoActivityBody": "OPD activity appears once encounters start moving.",
+  "opdNoSummaryPatientsTitle": "No patients",
+  "opdNoSummaryPatientsBody": "Matching OPD patients will appear here.",
+  "opdPatientColumnLabel": "Patient",
+  "opdStatusColumnLabel": "Status",
+  "opdTimeColumnLabel": "Time",
+  "opdProviderColumnLabel": "Provider",
+  "opdActionsColumnLabel": "Actions",
+  "opdStageColumnLabel": "Stage",
+  "opdNextStepColumnLabel": "Next step",
+  "opdOpenActions": "Open actions",
+  "opdQueueEmptyColumnLabel": "No patients",
+  "opdNoRelatedRecordsLabel": "No related records",
+  "opdNoTimelineLabel": "No timeline entries",
+  "opdTimelineTitle": "Timeline",
+  "opdReferralsTitle": "Referrals",
+  "opdFollowUpsTitle": "Follow-ups",
+  "opdPaymentStatusLabel": "Payment",
+  "opdPaymentPaidLabel": "Paid",
+  "opdPaymentRequiredLabel": "Payment required",
+  "opdPaymentNotRequiredLabel": "Not required",
+  "opdPageLabel": "{from}-{to} of {total}",
+  "@opdPageLabel": {
+    "description": "Pagination label for OPD data lists.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "opdPreviousPageLabel": "Previous page",
+  "opdNextPageLabel": "Next page",
+  "opdAvailableSlotsLabel": "{count, plural, =0{No open slots} =1{1 open slot} other{{count} open slots}}",
+  "@opdAvailableSlotsLabel": {
+    "description": "Provider availability slot count label.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opdWalkInDialogTitle": "Start OPD walk-in",
+  "opdRegisterNewPatientLabel": "Register a new patient",
+  "opdPatientIdLabel": "Patient ID",
+  "opdFirstNameLabel": "First name",
+  "opdLastNameLabel": "Last name",
+  "opdGenderLabel": "Gender",
+  "opdProviderIdLabel": "Provider ID",
+  "opdConsultationFeeLabel": "Consultation fee",
+  "opdCurrencyLabel": "Currency",
+  "opdNotesLabel": "Notes",
+  "opdQueueAction": "Queue",
+  "opdRescheduleAction": "Reschedule",
+  "opdCancelAction": "Cancel",
+  "opdCheckInAction": "Check in",
+  "opdAppointmentStartLabel": "Start time",
+  "opdAppointmentEndLabel": "End time",
+  "opdDateTimeHint": "YYYY-MM-DDTHH:MM:SS",
+  "opdSaveAction": "Save",
+  "opdCancellationReasonLabel": "Cancellation reason",
+  "opdQueueStatusLabel": "Queue status",
+  "opdReasonLabel": "Reason",
+  "opdPrioritizeAction": "Prioritize",
+  "opdMoveQueueAction": "Move",
+  "opdStartConsultationAction": "Start consultation",
+  "opdAssignDoctorAction": "Assign doctor",
+  "opdPayConsultationAction": "Pay consultation",
+  "opdCorrectStageAction": "Correct stage",
+  "opdReferAction": "Refer",
+  "opdFollowUpAction": "Follow up",
+  "opdDispositionAction": "Disposition",
+  "opdAmountLabel": "Amount",
+  "opdPaymentMethodLabel": "Payment method",
+  "opdTransactionReferenceLabel": "Transaction reference",
+  "opdStageLabel": "Stage",
+  "opdExternalFacilityLabel": "External facility",
+  "opdFollowUpDateLabel": "Follow-up date",
+  "opdDecisionLabel": "Decision",
+  "@opdTitle": {
+    "description": "OPD workspace title."
+  },
+  "@opdDescription": {
+    "description": "OPD workspace description."
+  },
+  "@opdLoadingTitle": {
+    "description": "Title while OPD data loads."
+  },
+  "@opdLoadingBody": {
+    "description": "Body while OPD data loads."
+  },
+  "@opdLiveStatus": {
+    "description": "Status badge shown when OPD data is syncing."
+  },
+  "@opdSavingStatus": {
+    "description": "Status badge shown while OPD changes are saving."
+  },
+  "@opdStartWalkInAction": {
+    "description": "Action label to start a walk-in OPD encounter."
+  },
+  "@opdSavedMessage": {
+    "description": "Snackbar shown after an OPD operation succeeds."
+  },
+  "@opdArrivalsSummaryLabel": {
+    "description": "Summary label for OPD arrivals."
+  },
+  "@opdQueueSummaryLabel": {
+    "description": "Summary label for OPD queue entries."
+  },
+  "@opdActiveFlowSummaryLabel": {
+    "description": "Summary label for active OPD flows."
+  },
+  "@opdCompletedFlowSummaryLabel": {
+    "description": "Summary label for completed OPD flows."
+  },
+  "@opdFiltersLabel": {
+    "description": "Semantic label for OPD filters."
+  },
+  "@opdSearchLabel": {
+    "description": "Search field label for OPD."
+  },
+  "@opdSearchHint": {
+    "description": "Search field hint for OPD."
+  },
+  "@opdApplyFiltersAction": {
+    "description": "Action label to apply OPD filters."
+  },
+  "@opdClearFiltersAction": {
+    "description": "Action label to clear OPD filters."
+  },
+  "@opdAppointmentStatusFilterLabel": {
+    "description": "Filter label for appointment status."
+  },
+  "@opdQueueStatusFilterLabel": {
+    "description": "Filter label for queue status."
+  },
+  "@opdFlowStageFilterLabel": {
+    "description": "Filter label for OPD flow stage."
+  },
+  "@opdArrivalsTitle": {
+    "description": "OPD arrivals panel title."
+  },
+  "@opdQueueBoardTitle": {
+    "description": "OPD queue board panel title."
+  },
+  "@opdFlowsTitle": {
+    "description": "OPD encounters panel title."
+  },
+  "@opdProviderReadinessTitle": {
+    "description": "OPD provider readiness panel title."
+  },
+  "@opdActivityTitle": {
+    "description": "OPD activity panel title."
+  },
+  "@opdActivityDescription": {
+    "description": "OPD activity panel description."
+  },
+  "@opdNoArrivalsTitle": {
+    "description": "Empty state title for OPD arrivals."
+  },
+  "@opdNoArrivalsBody": {
+    "description": "Empty state body for OPD arrivals."
+  },
+  "@opdNoQueueTitle": {
+    "description": "Empty state title for OPD queue."
+  },
+  "@opdNoQueueBody": {
+    "description": "Empty state body for OPD queue."
+  },
+  "@opdNoFlowsTitle": {
+    "description": "Empty state title for OPD encounters."
+  },
+  "@opdNoFlowsBody": {
+    "description": "Empty state body for OPD encounters."
+  },
+  "@opdNoFlowSelectedTitle": {
+    "description": "Detail panel empty state title."
+  },
+  "@opdNoFlowSelectedBody": {
+    "description": "Detail panel empty state body."
+  },
+  "@opdNoProvidersTitle": {
+    "description": "Empty state title for provider readiness."
+  },
+  "@opdNoProvidersBody": {
+    "description": "Empty state body for provider readiness."
+  },
+  "@opdNoActivityTitle": {
+    "description": "Empty state title for OPD activity."
+  },
+  "@opdNoActivityBody": {
+    "description": "Empty state body for OPD activity."
+  },
+  "@opdNoSummaryPatientsTitle": {
+    "description": "Empty state title for OPD summary patient lists."
+  },
+  "@opdNoSummaryPatientsBody": {
+    "description": "Empty state body for OPD summary patient lists."
+  },
+  "@opdPatientColumnLabel": {
+    "description": "Patient column label."
+  },
+  "@opdStatusColumnLabel": {
+    "description": "Status column label."
+  },
+  "@opdTimeColumnLabel": {
+    "description": "Time column label."
+  },
+  "@opdProviderColumnLabel": {
+    "description": "Provider column label."
+  },
+  "@opdActionsColumnLabel": {
+    "description": "Actions column label."
+  },
+  "@opdStageColumnLabel": {
+    "description": "Stage column label."
+  },
+  "@opdNextStepColumnLabel": {
+    "description": "Next step column label."
+  },
+  "@opdOpenActions": {
+    "description": "Tooltip for opening OPD row actions."
+  },
+  "@opdQueueEmptyColumnLabel": {
+    "description": "Empty label for a queue status column."
+  },
+  "@opdNoRelatedRecordsLabel": {
+    "description": "Empty label for related OPD records."
+  },
+  "@opdNoTimelineLabel": {
+    "description": "Empty label for OPD timeline."
+  },
+  "@opdTimelineTitle": {
+    "description": "OPD timeline title."
+  },
+  "@opdReferralsTitle": {
+    "description": "OPD referrals title."
+  },
+  "@opdFollowUpsTitle": {
+    "description": "OPD follow-ups title."
+  },
+  "@opdPaymentStatusLabel": {
+    "description": "Payment status label."
+  },
+  "@opdPaymentPaidLabel": {
+    "description": "Paid payment label."
+  },
+  "@opdPaymentRequiredLabel": {
+    "description": "Payment required label."
+  },
+  "@opdPaymentNotRequiredLabel": {
+    "description": "Payment not required label."
+  },
+  "@opdPreviousPageLabel": {
+    "description": "Previous page label for OPD lists."
+  },
+  "@opdNextPageLabel": {
+    "description": "Next page label for OPD lists."
+  },
+  "@opdWalkInDialogTitle": {
+    "description": "Walk-in dialog title."
+  },
+  "@opdRegisterNewPatientLabel": {
+    "description": "Toggle label for new patient registration in OPD."
+  },
+  "@opdPatientIdLabel": {
+    "description": "Patient ID field label."
+  },
+  "@opdFirstNameLabel": {
+    "description": "First name field label."
+  },
+  "@opdLastNameLabel": {
+    "description": "Last name field label."
+  },
+  "@opdGenderLabel": {
+    "description": "Gender field label."
+  },
+  "@opdProviderIdLabel": {
+    "description": "Provider ID field label."
+  },
+  "@opdConsultationFeeLabel": {
+    "description": "Consultation fee field label."
+  },
+  "@opdCurrencyLabel": {
+    "description": "Currency field label."
+  },
+  "@opdNotesLabel": {
+    "description": "Notes field label."
+  },
+  "@opdQueueAction": {
+    "description": "Action label to queue an appointment."
+  },
+  "@opdRescheduleAction": {
+    "description": "Action label to reschedule an appointment."
+  },
+  "@opdCancelAction": {
+    "description": "Action label to cancel an appointment."
+  },
+  "@opdCheckInAction": {
+    "description": "Action label to check in an appointment."
+  },
+  "@opdAppointmentStartLabel": {
+    "description": "Appointment start field label."
+  },
+  "@opdAppointmentEndLabel": {
+    "description": "Appointment end field label."
+  },
+  "@opdDateTimeHint": {
+    "description": "Date-time input hint for OPD forms."
+  },
+  "@opdSaveAction": {
+    "description": "Save action label for OPD forms."
+  },
+  "@opdCancellationReasonLabel": {
+    "description": "Cancellation reason field label."
+  },
+  "@opdQueueStatusLabel": {
+    "description": "Queue status field label."
+  },
+  "@opdReasonLabel": {
+    "description": "Reason field label."
+  },
+  "@opdPrioritizeAction": {
+    "description": "Action label to prioritize a queue entry."
+  },
+  "@opdMoveQueueAction": {
+    "description": "Action label to move a queue entry."
+  },
+  "@opdStartConsultationAction": {
+    "description": "Action label to start consultation."
+  },
+  "@opdAssignDoctorAction": {
+    "description": "Action label to assign doctor."
+  },
+  "@opdPayConsultationAction": {
+    "description": "Action label to record consultation payment."
+  },
+  "@opdCorrectStageAction": {
+    "description": "Action label to correct OPD stage."
+  },
+  "@opdReferAction": {
+    "description": "Action label to create a referral."
+  },
+  "@opdFollowUpAction": {
+    "description": "Action label to create a follow-up."
+  },
+  "@opdDispositionAction": {
+    "description": "Action label to apply OPD disposition."
+  },
+  "@opdAmountLabel": {
+    "description": "Amount field label."
+  },
+  "@opdPaymentMethodLabel": {
+    "description": "Payment method field label."
+  },
+  "@opdTransactionReferenceLabel": {
+    "description": "Transaction reference field label."
+  },
+  "@opdStageLabel": {
+    "description": "Stage field label."
+  },
+  "@opdExternalFacilityLabel": {
+    "description": "External facility field label."
+  },
+  "@opdFollowUpDateLabel": {
+    "description": "Follow-up date field label."
+  },
+  "@opdDecisionLabel": {
+    "description": "Disposition decision field label."
+  },
   "patientsTitle": "Patient registry",
   "@patientsTitle": {
     "description": "Patient registry screen title."

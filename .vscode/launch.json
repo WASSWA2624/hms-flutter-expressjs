@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Frontend: Flutter Web Chrome (development)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "${workspaceFolder}/frontend",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "flutterMode": "debug",
+      "toolArgs": [
+        "--web-hostname=127.0.0.1",
+        "--web-port=5201",
+        "--dart-define-from-file=env/development.json.example"
+      ]
+    }
+  ]
+}

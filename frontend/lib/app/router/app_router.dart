@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
@@ -66,6 +67,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.patients.path,
             name: AppRoutes.patients.name,
             builder: (_, _) => const PatientRegistryPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.opd.path,
+            name: AppRoutes.opd.name,
+            builder: (_, _) => const OpdWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.settings.path,
@@ -157,6 +163,14 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         label: l10n.navigationPatientsLabel,
         icon: Icons.assignment_ind_outlined,
         selectedIcon: Icons.assignment_ind,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.opd,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationOpdLabel,
+        icon: Icons.local_hospital_outlined,
+        selectedIcon: Icons.local_hospital,
       ),
     ),
     _ShellDestinationRoute(

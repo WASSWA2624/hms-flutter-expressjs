@@ -304,6 +304,606 @@ abstract class AppLocalizations {
   /// **'Patients'**
   String get navigationPatientsLabel;
 
+  /// Navigation label for the OPD workflow destination.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD'**
+  String get navigationOpdLabel;
+
+  /// OPD workspace title.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD flow'**
+  String get opdTitle;
+
+  /// OPD workspace description.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage arrivals, queues, provider readiness, and outpatient clinical handoffs.'**
+  String get opdDescription;
+
+  /// Title while OPD data loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading OPD flow'**
+  String get opdLoadingTitle;
+
+  /// Body while OPD data loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading outpatient queue and encounter data.'**
+  String get opdLoadingBody;
+
+  /// Status badge shown when OPD data is syncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get opdLiveStatus;
+
+  /// Status badge shown while OPD changes are saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get opdSavingStatus;
+
+  /// Action label to start a walk-in OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Start walk-in'**
+  String get opdStartWalkInAction;
+
+  /// Snackbar shown after an OPD operation succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD changes saved.'**
+  String get opdSavedMessage;
+
+  /// Summary label for OPD arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrivals'**
+  String get opdArrivalsSummaryLabel;
+
+  /// Summary label for OPD queue entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get opdQueueSummaryLabel;
+
+  /// Summary label for active OPD flows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active flows'**
+  String get opdActiveFlowSummaryLabel;
+
+  /// Summary label for completed OPD flows.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get opdCompletedFlowSummaryLabel;
+
+  /// Semantic label for OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD filters'**
+  String get opdFiltersLabel;
+
+  /// Search field label for OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'Search OPD'**
+  String get opdSearchLabel;
+
+  /// Search field hint for OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, identifier, or provider'**
+  String get opdSearchHint;
+
+  /// Action label to apply OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get opdApplyFiltersAction;
+
+  /// Action label to clear OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get opdClearFiltersAction;
+
+  /// Filter label for appointment status.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment status'**
+  String get opdAppointmentStatusFilterLabel;
+
+  /// Filter label for queue status.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue status'**
+  String get opdQueueStatusFilterLabel;
+
+  /// Filter label for OPD flow stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Flow stage'**
+  String get opdFlowStageFilterLabel;
+
+  /// OPD arrivals panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrivals'**
+  String get opdArrivalsTitle;
+
+  /// OPD queue board panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue board'**
+  String get opdQueueBoardTitle;
+
+  /// OPD encounters panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD encounters'**
+  String get opdFlowsTitle;
+
+  /// OPD provider readiness panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider readiness'**
+  String get opdProviderReadinessTitle;
+
+  /// OPD activity panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent OPD activity'**
+  String get opdActivityTitle;
+
+  /// OPD activity panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest visible outpatient flow changes.'**
+  String get opdActivityDescription;
+
+  /// Empty state title for OPD arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'No arrivals'**
+  String get opdNoArrivalsTitle;
+
+  /// Empty state body for OPD arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled and checked-in patients will appear here.'**
+  String get opdNoArrivalsBody;
+
+  /// Empty state title for OPD queue.
+  ///
+  /// In en, this message translates to:
+  /// **'No queued patients'**
+  String get opdNoQueueTitle;
+
+  /// Empty state body for OPD queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Reception queue entries will appear here as patients are routed.'**
+  String get opdNoQueueBody;
+
+  /// Empty state title for OPD encounters.
+  ///
+  /// In en, this message translates to:
+  /// **'No OPD encounters'**
+  String get opdNoFlowsTitle;
+
+  /// Empty state body for OPD encounters.
+  ///
+  /// In en, this message translates to:
+  /// **'Started outpatient encounters will appear here.'**
+  String get opdNoFlowsBody;
+
+  /// Detail panel empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No encounter selected'**
+  String get opdNoFlowSelectedTitle;
+
+  /// Detail panel empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an OPD encounter to review actions and related records.'**
+  String get opdNoFlowSelectedBody;
+
+  /// Empty state title for provider readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'No providers ready'**
+  String get opdNoProvidersTitle;
+
+  /// Empty state body for provider readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider schedules and available slots will appear here.'**
+  String get opdNoProvidersBody;
+
+  /// Empty state title for OPD activity.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent activity'**
+  String get opdNoActivityTitle;
+
+  /// Empty state body for OPD activity.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD activity appears once encounters start moving.'**
+  String get opdNoActivityBody;
+
+  /// Empty state title for OPD summary patient lists.
+  ///
+  /// In en, this message translates to:
+  /// **'No patients'**
+  String get opdNoSummaryPatientsTitle;
+
+  /// Empty state body for OPD summary patient lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching OPD patients will appear here.'**
+  String get opdNoSummaryPatientsBody;
+
+  /// Patient column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get opdPatientColumnLabel;
+
+  /// Status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get opdStatusColumnLabel;
+
+  /// Time column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get opdTimeColumnLabel;
+
+  /// Provider column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get opdProviderColumnLabel;
+
+  /// Actions column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get opdActionsColumnLabel;
+
+  /// Stage column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage'**
+  String get opdStageColumnLabel;
+
+  /// Next step column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next step'**
+  String get opdNextStepColumnLabel;
+
+  /// Tooltip for opening OPD row actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Open actions'**
+  String get opdOpenActions;
+
+  /// Empty label for a queue status column.
+  ///
+  /// In en, this message translates to:
+  /// **'No patients'**
+  String get opdQueueEmptyColumnLabel;
+
+  /// Empty label for related OPD records.
+  ///
+  /// In en, this message translates to:
+  /// **'No related records'**
+  String get opdNoRelatedRecordsLabel;
+
+  /// Empty label for OPD timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline entries'**
+  String get opdNoTimelineLabel;
+
+  /// OPD timeline title.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get opdTimelineTitle;
+
+  /// OPD referrals title.
+  ///
+  /// In en, this message translates to:
+  /// **'Referrals'**
+  String get opdReferralsTitle;
+
+  /// OPD follow-ups title.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-ups'**
+  String get opdFollowUpsTitle;
+
+  /// Payment status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get opdPaymentStatusLabel;
+
+  /// Paid payment label.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get opdPaymentPaidLabel;
+
+  /// Payment required label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment required'**
+  String get opdPaymentRequiredLabel;
+
+  /// Payment not required label.
+  ///
+  /// In en, this message translates to:
+  /// **'Not required'**
+  String get opdPaymentNotRequiredLabel;
+
+  /// Pagination label for OPD data lists.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String opdPageLabel(int from, int to, int total);
+
+  /// Previous page label for OPD lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get opdPreviousPageLabel;
+
+  /// Next page label for OPD lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get opdNextPageLabel;
+
+  /// Provider availability slot count label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No open slots} =1{1 open slot} other{{count} open slots}}'**
+  String opdAvailableSlotsLabel(int count);
+
+  /// Walk-in dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Start OPD walk-in'**
+  String get opdWalkInDialogTitle;
+
+  /// Toggle label for new patient registration in OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'Register a new patient'**
+  String get opdRegisterNewPatientLabel;
+
+  /// Patient ID field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get opdPatientIdLabel;
+
+  /// First name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get opdFirstNameLabel;
+
+  /// Last name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get opdLastNameLabel;
+
+  /// Gender field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get opdGenderLabel;
+
+  /// Provider ID field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider ID'**
+  String get opdProviderIdLabel;
+
+  /// Consultation fee field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation fee'**
+  String get opdConsultationFeeLabel;
+
+  /// Currency field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get opdCurrencyLabel;
+
+  /// Notes field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get opdNotesLabel;
+
+  /// Action label to queue an appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get opdQueueAction;
+
+  /// Action label to reschedule an appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule'**
+  String get opdRescheduleAction;
+
+  /// Action label to cancel an appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get opdCancelAction;
+
+  /// Action label to check in an appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get opdCheckInAction;
+
+  /// Appointment start field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get opdAppointmentStartLabel;
+
+  /// Appointment end field label.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get opdAppointmentEndLabel;
+
+  /// Date-time input hint for OPD forms.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DDTHH:MM:SS'**
+  String get opdDateTimeHint;
+
+  /// Save action label for OPD forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get opdSaveAction;
+
+  /// Cancellation reason field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason'**
+  String get opdCancellationReasonLabel;
+
+  /// Queue status field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue status'**
+  String get opdQueueStatusLabel;
+
+  /// Reason field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get opdReasonLabel;
+
+  /// Action label to prioritize a queue entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritize'**
+  String get opdPrioritizeAction;
+
+  /// Action label to move a queue entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get opdMoveQueueAction;
+
+  /// Action label to start consultation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start consultation'**
+  String get opdStartConsultationAction;
+
+  /// Action label to assign doctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign doctor'**
+  String get opdAssignDoctorAction;
+
+  /// Action label to record consultation payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay consultation'**
+  String get opdPayConsultationAction;
+
+  /// Action label to correct OPD stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct stage'**
+  String get opdCorrectStageAction;
+
+  /// Action label to create a referral.
+  ///
+  /// In en, this message translates to:
+  /// **'Refer'**
+  String get opdReferAction;
+
+  /// Action label to create a follow-up.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow up'**
+  String get opdFollowUpAction;
+
+  /// Action label to apply OPD disposition.
+  ///
+  /// In en, this message translates to:
+  /// **'Disposition'**
+  String get opdDispositionAction;
+
+  /// Amount field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get opdAmountLabel;
+
+  /// Payment method field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get opdPaymentMethodLabel;
+
+  /// Transaction reference field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction reference'**
+  String get opdTransactionReferenceLabel;
+
+  /// Stage field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage'**
+  String get opdStageLabel;
+
+  /// External facility field label.
+  ///
+  /// In en, this message translates to:
+  /// **'External facility'**
+  String get opdExternalFacilityLabel;
+
+  /// Follow-up date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up date'**
+  String get opdFollowUpDateLabel;
+
+  /// Disposition decision field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Decision'**
+  String get opdDecisionLabel;
+
   /// Patient registry screen title.
   ///
   /// In en, this message translates to:

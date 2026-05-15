@@ -123,6 +123,326 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationPatientsLabel => 'Patients';
 
   @override
+  String get navigationOpdLabel => 'OPD';
+
+  @override
+  String get opdTitle => 'OPD flow';
+
+  @override
+  String get opdDescription =>
+      'Manage arrivals, queues, provider readiness, and outpatient clinical handoffs.';
+
+  @override
+  String get opdLoadingTitle => 'Loading OPD flow';
+
+  @override
+  String get opdLoadingBody => 'Loading outpatient queue and encounter data.';
+
+  @override
+  String get opdLiveStatus => 'Live sync';
+
+  @override
+  String get opdSavingStatus => 'Saving';
+
+  @override
+  String get opdStartWalkInAction => 'Start walk-in';
+
+  @override
+  String get opdSavedMessage => 'OPD changes saved.';
+
+  @override
+  String get opdArrivalsSummaryLabel => 'Arrivals';
+
+  @override
+  String get opdQueueSummaryLabel => 'Queue';
+
+  @override
+  String get opdActiveFlowSummaryLabel => 'Active flows';
+
+  @override
+  String get opdCompletedFlowSummaryLabel => 'Completed';
+
+  @override
+  String get opdFiltersLabel => 'OPD filters';
+
+  @override
+  String get opdSearchLabel => 'Search OPD';
+
+  @override
+  String get opdSearchHint => 'Search patient, identifier, or provider';
+
+  @override
+  String get opdApplyFiltersAction => 'Apply filters';
+
+  @override
+  String get opdClearFiltersAction => 'Clear filters';
+
+  @override
+  String get opdAppointmentStatusFilterLabel => 'Appointment status';
+
+  @override
+  String get opdQueueStatusFilterLabel => 'Queue status';
+
+  @override
+  String get opdFlowStageFilterLabel => 'Flow stage';
+
+  @override
+  String get opdArrivalsTitle => 'Arrivals';
+
+  @override
+  String get opdQueueBoardTitle => 'Queue board';
+
+  @override
+  String get opdFlowsTitle => 'OPD encounters';
+
+  @override
+  String get opdProviderReadinessTitle => 'Provider readiness';
+
+  @override
+  String get opdActivityTitle => 'Recent OPD activity';
+
+  @override
+  String get opdActivityDescription =>
+      'Latest visible outpatient flow changes.';
+
+  @override
+  String get opdNoArrivalsTitle => 'No arrivals';
+
+  @override
+  String get opdNoArrivalsBody =>
+      'Scheduled and checked-in patients will appear here.';
+
+  @override
+  String get opdNoQueueTitle => 'No queued patients';
+
+  @override
+  String get opdNoQueueBody =>
+      'Reception queue entries will appear here as patients are routed.';
+
+  @override
+  String get opdNoFlowsTitle => 'No OPD encounters';
+
+  @override
+  String get opdNoFlowsBody =>
+      'Started outpatient encounters will appear here.';
+
+  @override
+  String get opdNoFlowSelectedTitle => 'No encounter selected';
+
+  @override
+  String get opdNoFlowSelectedBody =>
+      'Select an OPD encounter to review actions and related records.';
+
+  @override
+  String get opdNoProvidersTitle => 'No providers ready';
+
+  @override
+  String get opdNoProvidersBody =>
+      'Provider schedules and available slots will appear here.';
+
+  @override
+  String get opdNoActivityTitle => 'No recent activity';
+
+  @override
+  String get opdNoActivityBody =>
+      'OPD activity appears once encounters start moving.';
+
+  @override
+  String get opdNoSummaryPatientsTitle => 'No patients';
+
+  @override
+  String get opdNoSummaryPatientsBody =>
+      'Matching OPD patients will appear here.';
+
+  @override
+  String get opdPatientColumnLabel => 'Patient';
+
+  @override
+  String get opdStatusColumnLabel => 'Status';
+
+  @override
+  String get opdTimeColumnLabel => 'Time';
+
+  @override
+  String get opdProviderColumnLabel => 'Provider';
+
+  @override
+  String get opdActionsColumnLabel => 'Actions';
+
+  @override
+  String get opdStageColumnLabel => 'Stage';
+
+  @override
+  String get opdNextStepColumnLabel => 'Next step';
+
+  @override
+  String get opdOpenActions => 'Open actions';
+
+  @override
+  String get opdQueueEmptyColumnLabel => 'No patients';
+
+  @override
+  String get opdNoRelatedRecordsLabel => 'No related records';
+
+  @override
+  String get opdNoTimelineLabel => 'No timeline entries';
+
+  @override
+  String get opdTimelineTitle => 'Timeline';
+
+  @override
+  String get opdReferralsTitle => 'Referrals';
+
+  @override
+  String get opdFollowUpsTitle => 'Follow-ups';
+
+  @override
+  String get opdPaymentStatusLabel => 'Payment';
+
+  @override
+  String get opdPaymentPaidLabel => 'Paid';
+
+  @override
+  String get opdPaymentRequiredLabel => 'Payment required';
+
+  @override
+  String get opdPaymentNotRequiredLabel => 'Not required';
+
+  @override
+  String opdPageLabel(int from, int to, int total) {
+    return '$from-$to of $total';
+  }
+
+  @override
+  String get opdPreviousPageLabel => 'Previous page';
+
+  @override
+  String get opdNextPageLabel => 'Next page';
+
+  @override
+  String opdAvailableSlotsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count open slots',
+      one: '1 open slot',
+      zero: 'No open slots',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get opdWalkInDialogTitle => 'Start OPD walk-in';
+
+  @override
+  String get opdRegisterNewPatientLabel => 'Register a new patient';
+
+  @override
+  String get opdPatientIdLabel => 'Patient ID';
+
+  @override
+  String get opdFirstNameLabel => 'First name';
+
+  @override
+  String get opdLastNameLabel => 'Last name';
+
+  @override
+  String get opdGenderLabel => 'Gender';
+
+  @override
+  String get opdProviderIdLabel => 'Provider ID';
+
+  @override
+  String get opdConsultationFeeLabel => 'Consultation fee';
+
+  @override
+  String get opdCurrencyLabel => 'Currency';
+
+  @override
+  String get opdNotesLabel => 'Notes';
+
+  @override
+  String get opdQueueAction => 'Queue';
+
+  @override
+  String get opdRescheduleAction => 'Reschedule';
+
+  @override
+  String get opdCancelAction => 'Cancel';
+
+  @override
+  String get opdCheckInAction => 'Check in';
+
+  @override
+  String get opdAppointmentStartLabel => 'Start time';
+
+  @override
+  String get opdAppointmentEndLabel => 'End time';
+
+  @override
+  String get opdDateTimeHint => 'YYYY-MM-DDTHH:MM:SS';
+
+  @override
+  String get opdSaveAction => 'Save';
+
+  @override
+  String get opdCancellationReasonLabel => 'Cancellation reason';
+
+  @override
+  String get opdQueueStatusLabel => 'Queue status';
+
+  @override
+  String get opdReasonLabel => 'Reason';
+
+  @override
+  String get opdPrioritizeAction => 'Prioritize';
+
+  @override
+  String get opdMoveQueueAction => 'Move';
+
+  @override
+  String get opdStartConsultationAction => 'Start consultation';
+
+  @override
+  String get opdAssignDoctorAction => 'Assign doctor';
+
+  @override
+  String get opdPayConsultationAction => 'Pay consultation';
+
+  @override
+  String get opdCorrectStageAction => 'Correct stage';
+
+  @override
+  String get opdReferAction => 'Refer';
+
+  @override
+  String get opdFollowUpAction => 'Follow up';
+
+  @override
+  String get opdDispositionAction => 'Disposition';
+
+  @override
+  String get opdAmountLabel => 'Amount';
+
+  @override
+  String get opdPaymentMethodLabel => 'Payment method';
+
+  @override
+  String get opdTransactionReferenceLabel => 'Transaction reference';
+
+  @override
+  String get opdStageLabel => 'Stage';
+
+  @override
+  String get opdExternalFacilityLabel => 'External facility';
+
+  @override
+  String get opdFollowUpDateLabel => 'Follow-up date';
+
+  @override
+  String get opdDecisionLabel => 'Decision';
+
+  @override
   String get patientsTitle => 'Patient registry';
 
   @override

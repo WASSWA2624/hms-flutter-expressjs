@@ -60,8 +60,12 @@ hot reload on save for active debug sessions.
 Run the starter app on Chrome:
 
 ```sh
-flutter run -d chrome --dart-define-from-file=env/development.json.example
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example
 ```
+
+The VS Code `Flutter: Web Chrome (development)` launch target uses the same
+fixed address: `http://127.0.0.1:5201`. If that port is already in use, stop the
+previous Flutter run instead of starting a second one on a random port.
 
 Run the starter app on Windows desktop:
 
