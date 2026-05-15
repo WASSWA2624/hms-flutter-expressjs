@@ -25,9 +25,9 @@ void main() {
       expect(theme.radius.md, 10);
       expect(theme.radius.lg, 12);
       expect(theme.radius.xl, 16);
-      expect(theme.appTokens.pagePaddingMobile, 16);
-      expect(theme.appTokens.pagePaddingTablet, 24);
-      expect(theme.appTokens.pagePaddingDesktop, 32);
+      expect(theme.appTokens.pagePaddingMobile, 12);
+      expect(theme.appTokens.pagePaddingTablet, 16);
+      expect(theme.appTokens.pagePaddingDesktop, 24);
       expect(theme.appTokens.listIconSize, 20);
       expect(theme.statusColors.success, AppStatusColors.light.success);
     });

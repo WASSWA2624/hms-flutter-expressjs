@@ -56,6 +56,11 @@ void main() {
   }
 
   testWidgets('renders the HOSSPI HMS shell', (WidgetTester tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1200, 900);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: authenticatedOverrides().cast(),

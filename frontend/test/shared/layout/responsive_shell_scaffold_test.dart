@@ -95,7 +95,7 @@ void main() {
     testWidgets('uses a compact sidebar for tablet widths', (
       WidgetTester tester,
     ) async {
-      await pumpShellAtSize(tester, const Size(600, 800));
+      await pumpShellAtSize(tester, const Size(840, 800));
 
       expect(find.byType(AppMenuBar), findsOneWidget);
       expect(find.byType(SideNavigation), findsOneWidget);

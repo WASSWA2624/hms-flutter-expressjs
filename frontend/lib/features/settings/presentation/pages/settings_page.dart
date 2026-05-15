@@ -330,12 +330,12 @@ class _SettingsSectionGrid extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool useTwoColumns = constraints.maxWidth >= _twoColumnMinWidth;
         final double itemWidth = useTwoColumns
-            ? (constraints.maxWidth - theme.spacing.lg) / 2
+            ? (constraints.maxWidth - theme.spacing.md) / 2
             : constraints.maxWidth;
 
         return Wrap(
-          spacing: theme.spacing.lg,
-          runSpacing: theme.spacing.lg,
+          spacing: theme.spacing.md,
+          runSpacing: theme.spacing.md,
           children: <Widget>[
             for (final Widget section in sections)
               SizedBox(width: itemWidth, child: section),

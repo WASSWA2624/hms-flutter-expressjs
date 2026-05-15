@@ -28,9 +28,8 @@ abstract final class ResponsiveSpacing {
     required AppSpacingTokens spacing,
   }) {
     return switch (breakpoint) {
-      AppBreakpoint.xs || AppBreakpoint.sm => spacing.xl,
-      AppBreakpoint.md || AppBreakpoint.lg => spacing.xxl,
-      AppBreakpoint.xl || AppBreakpoint.xxl => spacing.xxl,
+      AppBreakpoint.xs || AppBreakpoint.sm || AppBreakpoint.md => spacing.lg,
+      AppBreakpoint.lg || AppBreakpoint.xl || AppBreakpoint.xxl => spacing.xl,
     };
   }
 
@@ -39,9 +38,8 @@ abstract final class ResponsiveSpacing {
     required AppSpacingTokens spacing,
   }) {
     return switch (breakpoint) {
-      AppBreakpoint.xs => spacing.md,
-      AppBreakpoint.sm || AppBreakpoint.md => spacing.lg,
-      AppBreakpoint.lg || AppBreakpoint.xl || AppBreakpoint.xxl => spacing.xl,
+      AppBreakpoint.xs || AppBreakpoint.sm || AppBreakpoint.md => spacing.md,
+      AppBreakpoint.lg || AppBreakpoint.xl || AppBreakpoint.xxl => spacing.lg,
     };
   }
 }

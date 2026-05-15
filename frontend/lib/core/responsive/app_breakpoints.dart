@@ -6,7 +6,7 @@ extension AppBreakpointProperties on AppBreakpoint {
   String get token => name;
 
   bool get isMobile => switch (this) {
-    AppBreakpoint.xs || AppBreakpoint.sm => true,
+    AppBreakpoint.xs || AppBreakpoint.sm || AppBreakpoint.md => true,
     _ => false,
   };
 

@@ -300,9 +300,9 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
   });
 
   static const AppDesignTokens standard = AppDesignTokens(
-    pagePaddingMobile: 16,
-    pagePaddingTablet: 24,
-    pagePaddingDesktop: 32,
+    pagePaddingMobile: 12,
+    pagePaddingTablet: 16,
+    pagePaddingDesktop: 24,
     formGapCompact: 8,
     formGapRegular: 12,
     formGapSpacious: 16,

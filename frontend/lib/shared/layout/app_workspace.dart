@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
@@ -164,19 +166,22 @@ class AppWorkspaceHeader extends StatelessWidget {
       status: status,
     );
     final Widget actionBar = _WorkspaceHeaderActions(actions: actions);
-    final bool compact = breakpoint.isMobile;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
       ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: theme.spacing.sm),
+        padding: EdgeInsets.only(bottom: theme.spacing.xs),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            if (compact) {
+            final bool stackHeader =
+                breakpoint == AppBreakpoint.xs ||
+                constraints.maxWidth < AppBreakpoints.md;
+
+            if (stackHeader) {
               return Wrap(
-                spacing: theme.spacing.md,
+                spacing: theme.spacing.sm,
                 runSpacing: theme.spacing.sm,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
@@ -272,9 +277,13 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
           final double gap = constraints.maxWidth < AppBreakpoints.md
               ? theme.spacing.sm
               : theme.spacing.md;
-          final double itemWidth = constraints.maxWidth < AppBreakpoints.sm
-              ? constraints.maxWidth
-              : compactItemWidth.clamp(0, constraints.maxWidth).toDouble();
+          final int columns = _compactSummaryColumnCount(
+            constraints.maxWidth,
+            children.length,
+            maxColumns,
+          );
+          final double itemWidth =
+              (constraints.maxWidth - (gap * (columns - 1))) / columns;
 
           return Wrap(
             spacing: gap,
@@ -370,7 +379,7 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
                   ),
                   if (status != null) ...<Widget>[
                     SizedBox(width: theme.spacing.xs),
-                    AppWorkspaceStatusBadge(status: status!),
+                    Flexible(child: AppWorkspaceStatusBadge(status: status!)),
                   ],
                   if (onPressed != null) ...<Widget>[
                     SizedBox(width: theme.spacing.xs),
@@ -496,13 +505,10 @@ class AppWorkspaceFilterBar extends StatelessWidget {
             border: Border.all(color: colorScheme.outlineVariant),
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
-              vertical: theme.spacing.xs,
-            ),
+            padding: EdgeInsets.all(theme.spacing.xs),
             child: LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                if (constraints.maxWidth < AppBreakpoints.md) {
+                if (constraints.maxWidth < 480) {
                   return _MobileFilterBar(
                     search: search,
                     filters: filters,
@@ -1116,7 +1122,9 @@ class _WorkspaceHeaderText extends StatelessWidget {
     final TextTheme textTheme = theme.textTheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final TextStyle? titleStyle = switch (breakpoint) {
-      AppBreakpoint.xs || AppBreakpoint.sm => textTheme.titleLarge,
+      AppBreakpoint.xs ||
+      AppBreakpoint.sm ||
+      AppBreakpoint.md => textTheme.titleLarge,
       _ => textTheme.headlineSmall,
     };
     final TextStyle? descriptionStyle = textTheme.bodyMedium?.copyWith(
@@ -1172,8 +1180,8 @@ class _WorkspaceHeaderActions extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return Wrap(
-      spacing: theme.spacing.sm,
-      runSpacing: theme.spacing.sm,
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
       alignment: WrapAlignment.end,
       children: actions,
     );
@@ -1358,13 +1366,29 @@ final class _WorkspaceToneColors {
 
 int _summaryColumnCount(double width, int maxColumns) {
   final int breakpointColumns = switch (width) {
-    >= 1180 => 4,
-    >= 880 => 3,
-    >= 600 => 2,
+    >= 1080 => 4,
+    >= 760 => 3,
+    >= 480 => 2,
     _ => 1,
   };
 
   return breakpointColumns.clamp(1, maxColumns).toInt();
+}
+
+int _compactSummaryColumnCount(double width, int childCount, int maxColumns) {
+  final int effectiveMaxColumns = math.min(childCount, maxColumns);
+  if (effectiveMaxColumns <= 0) {
+    return 1;
+  }
+
+  final int breakpointColumns = switch (width) {
+    >= 920 => 4,
+    >= 700 => 3,
+    >= 480 => 2,
+    _ => 1,
+  };
+
+  return breakpointColumns.clamp(1, effectiveMaxColumns).toInt();
 }
 
 IconData _defaultIcon(AppWorkspaceStatusTone tone) {

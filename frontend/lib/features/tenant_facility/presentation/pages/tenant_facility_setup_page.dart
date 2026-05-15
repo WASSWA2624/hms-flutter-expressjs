@@ -62,10 +62,14 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
     final bool canManageTenant = accessPolicy.canManageTenant();
     final bool canManageFacility = accessPolicy.canManageFacility();
     final bool setupComplete = snapshot.completedChecklistItems == 4;
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool useIconRefresh =
+        breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
 
     return AppWorkspace(
       title: l10n.tenantFacilitySetupTitle,
       description: l10n.tenantFacilitySetupBody,
+      compactSummaryCards: true,
       status: AppWorkspaceStatus(
         label: setupComplete
             ? l10n.tenantFacilitySummaryConfigured
@@ -76,14 +80,29 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
       ),
       maxWidth: PageMaxWidth.dashboard,
       secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          isLoading: isRefreshing,
-          onPressed: () {
-            ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
-          },
-        ),
+        if (useIconRefresh)
+          AppIconButton(
+            icon: Icons.refresh,
+            semanticLabel: l10n.commonRefreshActionLabel,
+            tooltip: l10n.commonRefreshActionLabel,
+            isLoading: isRefreshing,
+            onPressed: () {
+              ref
+                  .read(tenantFacilitySetupControllerProvider.notifier)
+                  .refresh();
+            },
+          )
+        else
+          AppButton.secondary(
+            label: l10n.commonRefreshActionLabel,
+            leadingIcon: Icons.refresh,
+            isLoading: isRefreshing,
+            onPressed: () {
+              ref
+                  .read(tenantFacilitySetupControllerProvider.notifier)
+                  .refresh();
+            },
+          ),
       ],
       summaryCards: _setupSummaryCards(context, l10n, snapshot),
       body: _SetupGrid(
@@ -111,6 +130,7 @@ List<Widget> _setupSummaryCards(
       description: l10n.tenantFacilityTenantSectionBody,
       value: snapshot.tenant?.name ?? l10n.tenantFacilitySummaryNoTenant,
       status: _setupSummaryStatus(l10n, snapshot.hasTenant),
+      compact: true,
       onPressed: () => _openTenantProfileModal(context),
     ),
     AppWorkspaceSummaryCard(
@@ -119,6 +139,7 @@ List<Widget> _setupSummaryCards(
       description: l10n.tenantFacilityFacilitySectionBody,
       value: snapshot.facility?.name ?? l10n.tenantFacilitySummaryNoFacility,
       status: _setupSummaryStatus(l10n, snapshot.hasFacilityIdentity),
+      compact: true,
       onPressed: () => _openFacilityProfileModal(context),
     ),
     AppWorkspaceSummaryCard(
@@ -127,6 +148,7 @@ List<Widget> _setupSummaryCards(
       description: l10n.tenantFacilityBranchesSectionBody,
       value: l10n.tenantFacilitySummaryRecordCount(snapshot.branches.length),
       status: _setupSummaryStatus(l10n, snapshot.branches.isNotEmpty),
+      compact: true,
       onPressed: () => _openBranchesModal(context),
     ),
     AppWorkspaceSummaryCard(
@@ -135,6 +157,7 @@ List<Widget> _setupSummaryCards(
       description: l10n.tenantFacilityDepartmentsModalBody,
       value: l10n.tenantFacilitySummaryRecordCount(snapshot.departments.length),
       status: _setupSummaryStatus(l10n, snapshot.departments.isNotEmpty),
+      compact: true,
       onPressed: () => _openDepartmentsModal(context),
     ),
     AppWorkspaceSummaryCard(
@@ -143,6 +166,7 @@ List<Widget> _setupSummaryCards(
       description: l10n.tenantFacilityUnitsModalBody,
       value: l10n.tenantFacilitySummaryRecordCount(snapshot.units.length),
       status: _setupSummaryStatus(l10n, snapshot.units.isNotEmpty),
+      compact: true,
       onPressed: () => _openUnitsModal(context),
     ),
     AppWorkspaceSummaryCard(
@@ -151,6 +175,7 @@ List<Widget> _setupSummaryCards(
       description: l10n.tenantFacilityWardsModalBody,
       value: l10n.tenantFacilitySummaryRecordCount(snapshot.wards.length),
       status: _setupSummaryStatus(l10n, snapshot.wards.isNotEmpty),
+      compact: true,
       onPressed: () => _openWardsModal(context),
     ),
     AppWorkspaceSummaryCard(
@@ -159,6 +184,7 @@ List<Widget> _setupSummaryCards(
       description: l10n.tenantFacilityRoomsModalBody,
       value: l10n.tenantFacilitySummaryRecordCount(snapshot.rooms.length),
       status: _setupSummaryStatus(l10n, snapshot.rooms.isNotEmpty),
+      compact: true,
       onPressed: () => _openRoomsModal(context),
     ),
     AppWorkspaceSummaryCard(
@@ -167,6 +193,7 @@ List<Widget> _setupSummaryCards(
       description: l10n.tenantFacilityBedsModalBody,
       value: l10n.tenantFacilitySummaryRecordCount(snapshot.beds.length),
       status: _setupSummaryStatus(l10n, snapshot.beds.isNotEmpty),
+      compact: true,
       onPressed: () => _openBedsModal(context),
     ),
   ];
@@ -2780,9 +2807,9 @@ class _SetupGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool useTwoColumns = constraints.maxWidth >= 1000;
+        final bool useTwoColumns = constraints.maxWidth >= AppBreakpoints.lg;
         final bool compact = constraints.maxWidth < AppBreakpoints.sm;
-        final double gap = compact ? theme.spacing.md : theme.spacing.lg;
+        final double gap = compact ? theme.spacing.sm : theme.spacing.md;
         final double itemWidth = useTwoColumns
             ? (constraints.maxWidth - gap) / 2
             : constraints.maxWidth;

@@ -201,11 +201,13 @@ class AppScreenHeader extends StatelessWidget {
     final TextStyle? titleStyle = switch (breakpoint) {
       AppBreakpoint.xs => textTheme.headlineSmall,
       AppBreakpoint.sm => textTheme.headlineSmall,
+      AppBreakpoint.md => textTheme.headlineSmall,
       _ => textTheme.headlineMedium,
     };
     final TextStyle? subtitleStyle = switch (breakpoint) {
       AppBreakpoint.xs => textTheme.titleMedium,
       AppBreakpoint.sm => textTheme.titleMedium,
+      AppBreakpoint.md => textTheme.titleMedium,
       _ => textTheme.titleLarge,
     };
     final TextStyle? bodyStyle = switch (breakpoint) {
@@ -315,8 +317,8 @@ class AppScreenSection extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool compact = breakpoint.isMobile;
-    final double padding = compact ? theme.spacing.md : theme.spacing.lg;
-    final double headingGap = compact ? theme.spacing.xs : theme.spacing.lg;
+    final double padding = theme.spacing.md;
+    final double headingGap = compact ? theme.spacing.sm : theme.spacing.md;
 
     return DecoratedBox(
       decoration: BoxDecoration(

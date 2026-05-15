@@ -20,7 +20,8 @@ void main() {
     test('exposes adaptive navigation decisions', () {
       expect(AppBreakpoint.xs.isMobile, isTrue);
       expect(AppBreakpoint.sm.isMobile, isTrue);
-      expect(AppBreakpoint.md.supportsNavigationRail, isTrue);
+      expect(AppBreakpoint.md.isMobile, isTrue);
+      expect(AppBreakpoint.md.supportsNavigationRail, isFalse);
       expect(AppBreakpoint.md.supportsExtendedNavigationRail, isFalse);
       expect(AppBreakpoint.lg.supportsExtendedNavigationRail, isTrue);
       expect(AppBreakpoint.xl.supportsExtendedNavigationRail, isTrue);

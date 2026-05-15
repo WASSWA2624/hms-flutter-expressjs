@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
@@ -81,14 +82,31 @@ class _PatientRegistryContent extends ConsumerWidget {
       compactSummaryCards: true,
       primaryAction: AppAccessActionGate(
         requirement: _writeRequirement,
-        builder: (_, bool isAllowed) => AppButton.primary(
-          label: l10n.patientsAddAction,
-          leadingIcon: Icons.person_add_alt_1_outlined,
-          enabled: isAllowed,
-          onPressed: () {
-            _openPatientForm(context, ref);
-          },
-        ),
+        builder: (BuildContext context, bool isAllowed) {
+          final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+          final bool iconOnly =
+              breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
+          if (iconOnly) {
+            return AppIconButton(
+              icon: Icons.person_add_alt_1_outlined,
+              semanticLabel: l10n.patientsAddAction,
+              tooltip: l10n.patientsAddAction,
+              enabled: isAllowed,
+              onPressed: () {
+                _openPatientForm(context, ref);
+              },
+            );
+          }
+
+          return AppButton.primary(
+            label: l10n.patientsAddAction,
+            leadingIcon: Icons.person_add_alt_1_outlined,
+            enabled: isAllowed,
+            onPressed: () {
+              _openPatientForm(context, ref);
+            },
+          );
+        },
       ),
       secondaryActions: <Widget>[
         AppIconButton(
