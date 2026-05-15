@@ -40,6 +40,26 @@
   "@commonCancelActionLabel": {
     "description": "Label for actions that dismiss the current dialog or flow."
   },
+  "appDateInvalidMessage": "Enter a valid date.",
+  "@appDateInvalidMessage": {
+    "description": "Validation message for manually typed date fields."
+  },
+  "appDateFormatHint": "YYYY-MM-DD",
+  "@appDateFormatHint": {
+    "description": "Hint text showing the supported manual date entry format."
+  },
+  "appPhoneCountryLabel": "Country code",
+  "@appPhoneCountryLabel": {
+    "description": "Label for the country-code selector inside phone input fields."
+  },
+  "appPhoneNumberLabel": "Phone number",
+  "@appPhoneNumberLabel": {
+    "description": "Label for the national phone number field inside phone input fields."
+  },
+  "appPhoneInvalidMessage": "Enter a valid phone number.",
+  "@appPhoneInvalidMessage": {
+    "description": "Validation message for invalid phone numbers."
+  },
   "appStatusOnlineLabel": "Online",
   "@appStatusOnlineLabel": {
     "description": "Label shown in the app header when network connectivity is available."
