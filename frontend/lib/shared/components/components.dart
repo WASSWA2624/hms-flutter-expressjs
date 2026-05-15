@@ -1,5 +1,6 @@
 export 'app_button.dart';
 export 'app_checkbox_field.dart';
+export 'app_currency_amount_field.dart';
 export 'app_data_list.dart';
 export 'app_date_field.dart';
 export 'app_dialog.dart';
