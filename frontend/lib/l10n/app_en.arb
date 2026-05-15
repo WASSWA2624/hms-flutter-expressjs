@@ -241,6 +241,18 @@
     }
   },
   "opdWalkInDialogTitle": "Start OPD walk-in",
+  "opdPatientSectionTitle": "Patient",
+  "opdRoutingSectionTitle": "Routing",
+  "opdBillingSectionTitle": "Billing",
+  "opdExistingPatientModeLabel": "Existing patient",
+  "opdAppointmentPatientModeLabel": "Appointment patient",
+  "opdNewPatientModeLabel": "New patient",
+  "opdSearchPatientLabel": "Search patient",
+  "opdAppointmentPatientLabel": "Search appointment",
+  "opdAppointmentPatientHelper": "Select a scheduled appointment to check the patient into OPD.",
+  "opdSearchProviderLabel": "Search provider",
+  "opdSearchProviderHelper": "This provider will handle the patient.",
+  "opdNoProvidersHelper": "No registered providers were found. Check doctor setup or provider permissions.",
   "opdRegisterNewPatientLabel": "Register a new patient",
   "opdPatientIdLabel": "Patient ID",
   "opdFirstNameLabel": "First name",
@@ -525,6 +537,42 @@
   },
   "@opdWalkInDialogTitle": {
     "description": "Walk-in dialog title."
+  },
+  "@opdPatientSectionTitle": {
+    "description": "Title for the patient section in the OPD walk-in form."
+  },
+  "@opdRoutingSectionTitle": {
+    "description": "Title for the routing section in the OPD walk-in form."
+  },
+  "@opdBillingSectionTitle": {
+    "description": "Title for the billing section in the OPD walk-in form."
+  },
+  "@opdExistingPatientModeLabel": {
+    "description": "Mode label for starting OPD with an existing patient."
+  },
+  "@opdAppointmentPatientModeLabel": {
+    "description": "Mode label for starting OPD from an appointment."
+  },
+  "@opdNewPatientModeLabel": {
+    "description": "Mode label for registering a new OPD patient."
+  },
+  "@opdSearchPatientLabel": {
+    "description": "Searchable existing patient field label in OPD."
+  },
+  "@opdAppointmentPatientLabel": {
+    "description": "Searchable appointment patient field label in OPD."
+  },
+  "@opdAppointmentPatientHelper": {
+    "description": "Helper text for selecting appointment patients in OPD."
+  },
+  "@opdSearchProviderLabel": {
+    "description": "Searchable provider field label in OPD."
+  },
+  "@opdSearchProviderHelper": {
+    "description": "Helper text explaining the selected OPD provider."
+  },
+  "@opdNoProvidersHelper": {
+    "description": "Helper text shown when no OPD providers can be loaded."
   },
   "@opdRegisterNewPatientLabel": {
     "description": "Toggle label for new patient registration in OPD."

@@ -730,6 +730,78 @@ abstract class AppLocalizations {
   /// **'Start OPD walk-in'**
   String get opdWalkInDialogTitle;
 
+  /// Title for the patient section in the OPD walk-in form.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get opdPatientSectionTitle;
+
+  /// Title for the routing section in the OPD walk-in form.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing'**
+  String get opdRoutingSectionTitle;
+
+  /// Title for the billing section in the OPD walk-in form.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get opdBillingSectionTitle;
+
+  /// Mode label for starting OPD with an existing patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing patient'**
+  String get opdExistingPatientModeLabel;
+
+  /// Mode label for starting OPD from an appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment patient'**
+  String get opdAppointmentPatientModeLabel;
+
+  /// Mode label for registering a new OPD patient.
+  ///
+  /// In en, this message translates to:
+  /// **'New patient'**
+  String get opdNewPatientModeLabel;
+
+  /// Searchable existing patient field label in OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient'**
+  String get opdSearchPatientLabel;
+
+  /// Searchable appointment patient field label in OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'Search appointment'**
+  String get opdAppointmentPatientLabel;
+
+  /// Helper text for selecting appointment patients in OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a scheduled appointment to check the patient into OPD.'**
+  String get opdAppointmentPatientHelper;
+
+  /// Searchable provider field label in OPD.
+  ///
+  /// In en, this message translates to:
+  /// **'Search provider'**
+  String get opdSearchProviderLabel;
+
+  /// Helper text explaining the selected OPD provider.
+  ///
+  /// In en, this message translates to:
+  /// **'This provider will handle the patient.'**
+  String get opdSearchProviderHelper;
+
+  /// Helper text shown when no OPD providers can be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'No registered providers were found. Check doctor setup or provider permissions.'**
+  String get opdNoProvidersHelper;
+
   /// Toggle label for new patient registration in OPD.
   ///
   /// In en, this message translates to:

@@ -24,11 +24,20 @@ const DOCTOR_ADMIN_ROLES = [
   ROLES.HR,
 ];
 
+const DOCTOR_READ_ROLES = [
+  ...DOCTOR_ADMIN_ROLES,
+  ROLES.DOCTOR,
+  ROLES.NURSE,
+  ROLES.RECEPTIONIST,
+  ROLES.BILLING,
+  ROLES.OPERATIONS,
+];
+
 router.get(
   '/',
   validateRequest({ query: listDoctorsQuerySchema }),
   authenticate(),
-  authorize(DOCTOR_ADMIN_ROLES, 'role'),
+  authorize(DOCTOR_READ_ROLES, 'role'),
   doctorController.listDoctors
 );
 
@@ -57,4 +66,3 @@ router.put(
 );
 
 module.exports = router;
-

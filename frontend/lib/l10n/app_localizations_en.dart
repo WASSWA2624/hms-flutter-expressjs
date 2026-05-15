@@ -356,6 +356,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdWalkInDialogTitle => 'Start OPD walk-in';
 
   @override
+  String get opdPatientSectionTitle => 'Patient';
+
+  @override
+  String get opdRoutingSectionTitle => 'Routing';
+
+  @override
+  String get opdBillingSectionTitle => 'Billing';
+
+  @override
+  String get opdExistingPatientModeLabel => 'Existing patient';
+
+  @override
+  String get opdAppointmentPatientModeLabel => 'Appointment patient';
+
+  @override
+  String get opdNewPatientModeLabel => 'New patient';
+
+  @override
+  String get opdSearchPatientLabel => 'Search patient';
+
+  @override
+  String get opdAppointmentPatientLabel => 'Search appointment';
+
+  @override
+  String get opdAppointmentPatientHelper =>
+      'Select a scheduled appointment to check the patient into OPD.';
+
+  @override
+  String get opdSearchProviderLabel => 'Search provider';
+
+  @override
+  String get opdSearchProviderHelper =>
+      'This provider will handle the patient.';
+
+  @override
+  String get opdNoProvidersHelper =>
+      'No registered providers were found. Check doctor setup or provider permissions.';
+
+  @override
   String get opdRegisterNewPatientLabel => 'Register a new patient';
 
   @override

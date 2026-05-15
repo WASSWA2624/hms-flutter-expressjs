@@ -99,6 +99,9 @@ class AppSelectField<T> extends StatelessWidget {
             constraints.hasBoundedWidth && constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : null;
+        final double effectiveMenuHeight =
+            menuHeight ??
+            (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 360.0);
 
         return DropdownMenuFormField<T>(
           key: ValueKey<T?>(value),
@@ -106,7 +109,7 @@ class AppSelectField<T> extends StatelessWidget {
           initialSelection: value,
           enabled: canSelect,
           width: width,
-          menuHeight: menuHeight,
+          menuHeight: effectiveMenuHeight,
           label: labelText == null
               ? null
               : Text(appFieldLabel(labelText, isRequired: isRequired)!),
@@ -121,8 +124,9 @@ class AppSelectField<T> extends StatelessWidget {
           ),
           enableFilter: searchable,
           enableSearch: searchable,
-          filterCallback: filterCallback,
-          searchCallback: searchCallback,
+          expandedInsets: EdgeInsets.zero,
+          filterCallback: filterCallback ?? _defaultFilter,
+          searchCallback: searchCallback ?? _defaultSearch,
           requestFocusOnTap: true,
           focusNode: focusNode,
           autovalidateMode: autovalidateMode,
@@ -156,6 +160,48 @@ class AppSelectField<T> extends StatelessWidget {
 
     return field;
   }
+}
+
+List<DropdownMenuEntry<T>> _defaultFilter<T>(
+  List<DropdownMenuEntry<T>> entries,
+  String filter,
+) {
+  final String query = filter.trim().toLowerCase();
+  if (query.isEmpty) {
+    return entries;
+  }
+
+  return entries
+      .where(
+        (DropdownMenuEntry<T> entry) =>
+            entry.label.toLowerCase().contains(query) ||
+            entry.value.toString().toLowerCase().contains(query),
+      )
+      .toList(growable: false);
+}
+
+int? _defaultSearch<T>(List<DropdownMenuEntry<T>> entries, String query) {
+  final String normalized = query.trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return null;
+  }
+
+  final int startsWithIndex = entries.indexWhere(
+    (DropdownMenuEntry<T> entry) =>
+        entry.label.toLowerCase().startsWith(normalized) ||
+        entry.value.toString().toLowerCase().startsWith(normalized),
+  );
+  if (startsWithIndex >= 0) {
+    return startsWithIndex;
+  }
+
+  final int containsIndex = entries.indexWhere(
+    (DropdownMenuEntry<T> entry) =>
+        entry.label.toLowerCase().contains(normalized) ||
+        entry.value.toString().toLowerCase().contains(normalized),
+  );
+
+  return containsIndex >= 0 ? containsIndex : null;
 }
 
 class _SelectLoadingIcon extends StatelessWidget {

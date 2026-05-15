@@ -73,6 +73,8 @@ abstract interface class OpdRepository {
 
   Future<Result<void>> createFollowUp(Map<String, Object?> payload);
 
+  Future<Result<List<OpdProviderOption>>> listProviders({String? search});
+
   Future<Result<List<OpdProviderSchedule>>> listProviderSchedules();
 
   Future<Result<List<OpdAvailabilitySlot>>> listAvailabilitySlots(

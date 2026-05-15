@@ -508,6 +508,38 @@ final class OpdProviderSchedule {
 }
 
 @immutable
+final class OpdProviderOption {
+  const OpdProviderOption({
+    required this.id,
+    this.displayName,
+    this.email,
+    this.phone,
+    this.positionTitle,
+    this.practitionerType,
+    this.facilityId,
+    this.staffProfileId,
+    this.consultationFee,
+    this.consultationCurrency,
+  });
+
+  final String id;
+  final String? displayName;
+  final String? email;
+  final String? phone;
+  final String? positionTitle;
+  final String? practitionerType;
+  final String? facilityId;
+  final String? staffProfileId;
+  final num? consultationFee;
+  final String? consultationCurrency;
+
+  String get displayTitle {
+    return _firstNonEmpty(<String?>[displayName, email, staffProfileId, id]) ??
+        id;
+  }
+}
+
+@immutable
 final class OpdAvailabilitySlot {
   const OpdAvailabilitySlot({
     required this.id,

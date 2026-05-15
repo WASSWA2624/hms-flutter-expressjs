@@ -41,7 +41,9 @@ final class OpdAppointmentDto {
       tenantId: _string(json['tenant_id']),
       facilityId: _string(json['facility_id']),
       patientId: _string(json['patient_id']),
-      providerUserId: _string(json['provider_user_id']),
+      providerUserId:
+          _string(json['provider_human_friendly_id']) ??
+          _string(json['provider_user_id']),
       status: _string(json['status']),
       scheduledStart: _date(json['scheduled_start']),
       scheduledEnd: _date(json['scheduled_end']),
@@ -343,6 +345,47 @@ List<OpdDrugOption> decodeOpdDrugOptions(Object? responseData) {
       .map(OpdDrugOptionDto.new)
       .map((OpdDrugOptionDto dto) => dto.toEntity())
       .where((OpdDrugOption drug) => drug.id.isNotEmpty)
+      .toList(growable: false);
+}
+
+final class OpdProviderOptionDto {
+  const OpdProviderOptionDto(this.json);
+
+  final OpdJsonMap json;
+
+  OpdProviderOption toEntity() {
+    final OpdJsonMap? profile = _nullableMap(json['profile']);
+    final String? displayName =
+        _join(<String?>[
+          _string(profile?['first_name']),
+          _string(profile?['middle_name']),
+          _string(profile?['last_name']),
+        ]) ??
+        _string(json['display_name']) ??
+        _string(json['email']);
+
+    return OpdProviderOption(
+      id: _string(json['id']) ?? '',
+      displayName: displayName,
+      email: _string(json['email']),
+      phone: _string(json['phone']),
+      positionTitle:
+          _string(json['position_title']) ?? _string(json['position_name']),
+      practitionerType: _string(json['practitioner_type']),
+      facilityId: _string(json['facility_id']),
+      staffProfileId: _string(json['staff_profile_id']),
+      consultationFee: _number(json['consultation_fee']),
+      consultationCurrency: _string(json['consultation_currency']),
+    );
+  }
+}
+
+List<OpdProviderOption> decodeProviderOptions(Object? responseData) {
+  final OpdJsonMap response = _expectMap(responseData);
+  return _list(response['data'])
+      .map(OpdProviderOptionDto.new)
+      .map((OpdProviderOptionDto dto) => dto.toEntity())
+      .where((OpdProviderOption item) => item.id.isNotEmpty)
       .toList(growable: false);
 }
 
