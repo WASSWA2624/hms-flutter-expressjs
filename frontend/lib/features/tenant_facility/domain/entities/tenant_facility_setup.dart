@@ -1,6 +1,8 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 
+const Object _facilitySetupSnapshotUnset = Object();
+
 abstract final class TenantFacilityPermissions {
   static const AppPermission tenantAdmin = AppPermissions.tenantAdmin;
   static const AppPermission facilityAdmin = AppPermissions.facilityAdmin;
@@ -213,6 +215,36 @@ final class FacilitySetupSnapshot {
   final List<WardProfile> wards;
   final List<RoomProfile> rooms;
   final List<BedProfile> beds;
+
+  FacilitySetupSnapshot copyWith({
+    Object? tenant = _facilitySetupSnapshotUnset,
+    Object? facility = _facilitySetupSnapshotUnset,
+    List<FacilityProfile>? facilities,
+    FacilityContactAddress? contactAddress,
+    List<BranchProfile>? branches,
+    List<DepartmentProfile>? departments,
+    List<UnitProfile>? units,
+    List<WardProfile>? wards,
+    List<RoomProfile>? rooms,
+    List<BedProfile>? beds,
+  }) {
+    return FacilitySetupSnapshot(
+      tenant: identical(tenant, _facilitySetupSnapshotUnset)
+          ? this.tenant
+          : tenant as TenantProfile?,
+      facility: identical(facility, _facilitySetupSnapshotUnset)
+          ? this.facility
+          : facility as FacilityProfile?,
+      facilities: facilities ?? this.facilities,
+      contactAddress: contactAddress ?? this.contactAddress,
+      branches: branches ?? this.branches,
+      departments: departments ?? this.departments,
+      units: units ?? this.units,
+      wards: wards ?? this.wards,
+      rooms: rooms ?? this.rooms,
+      beds: beds ?? this.beds,
+    );
+  }
 
   bool get hasTenant => tenant != null;
   bool get hasFacility => facility != null;

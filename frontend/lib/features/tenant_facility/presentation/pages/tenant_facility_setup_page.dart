@@ -10,7 +10,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class TenantFacilitySetupPage extends ConsumerWidget {
   const TenantFacilitySetupPage({super.key});
@@ -19,6 +19,19 @@ class TenantFacilitySetupPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final setup = ref.watch(tenantFacilitySetupControllerProvider);
+
+    ref.listen<int>(
+      tenantFacilitySetupSubmissionProvider.select(
+        (state) => state.successVersion,
+      ),
+      (int? previous, int next) {
+        if (previous == null || next <= previous || !context.mounted) {
+          return;
+        }
+
+        _showSaved(context);
+      },
+    );
 
     return AsyncStateScaffold<FacilitySetupSnapshot>(
       value: setup,
@@ -44,275 +57,130 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool isRefreshing = ref.watch(tenantFacilitySetupRefreshProvider);
     final bool canManageTenant = accessPolicy.canManageTenant();
     final bool canManageFacility = accessPolicy.canManageFacility();
+    final bool setupComplete = snapshot.completedChecklistItems == 4;
 
-    return AppScreen(
+    return AppWorkspace(
       title: l10n.tenantFacilitySetupTitle,
-      body: l10n.tenantFacilitySetupBody,
+      description: l10n.tenantFacilitySetupBody,
+      status: AppWorkspaceStatus(
+        label: setupComplete
+            ? l10n.tenantFacilitySummaryConfigured
+            : l10n.tenantFacilitySummaryNeedsSetup,
+        tone: setupComplete
+            ? AppWorkspaceStatusTone.success
+            : AppWorkspaceStatusTone.warning,
+      ),
       maxWidth: PageMaxWidth.dashboard,
-      headerActions: <Widget>[
+      secondaryActions: <Widget>[
         AppButton.secondary(
-          label: l10n.commonRetryActionLabel,
+          label: l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
+          isLoading: isRefreshing,
           onPressed: () {
             ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
           },
         ),
       ],
-      children: <Widget>[
-        _SetupGrid(
-          children: <Widget>[
-            _SetupChecklist(snapshot: snapshot),
-            _PermissionGateSummary(
-              canManageTenant: canManageTenant,
-              canManageFacility: canManageFacility,
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.lg),
-        _SetupSummaryGrid(
-          children: <Widget>[
-            _SetupSummaryCard(
-              icon: Icons.apartment_outlined,
-              title: l10n.tenantFacilityTenantSectionTitle,
-              body: l10n.tenantFacilityTenantSectionBody,
-              detail:
-                  snapshot.tenant?.name ?? l10n.tenantFacilitySummaryNoTenant,
-              statusLabel: snapshot.hasTenant
-                  ? l10n.tenantFacilitySummaryConfigured
-                  : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.hasTenant,
-              onPressed: () => _openTenantProfileModal(context),
-            ),
-            _SetupSummaryCard(
-              icon: Icons.local_hospital_outlined,
-              title: l10n.tenantFacilityFacilitySectionTitle,
-              body: l10n.tenantFacilityFacilitySectionBody,
-              detail:
-                  snapshot.facility?.name ??
-                  l10n.tenantFacilitySummaryNoFacility,
-              statusLabel: snapshot.hasFacilityIdentity
-                  ? l10n.tenantFacilitySummaryConfigured
-                  : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.hasFacilityIdentity,
-              onPressed: () => _openFacilityProfileModal(context),
-            ),
-            _SetupSummaryCard(
-              icon: Icons.account_tree_outlined,
-              title: l10n.tenantFacilityBranchesSectionTitle,
-              body: l10n.tenantFacilityBranchesSectionBody,
-              detail: l10n.tenantFacilitySummaryRecordCount(
-                snapshot.branches.length,
-              ),
-              statusLabel: snapshot.branches.isNotEmpty
-                  ? l10n.tenantFacilitySummaryConfigured
-                  : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.branches.isNotEmpty,
-              onPressed: () => _openBranchesModal(context),
-            ),
-            _SetupSummaryCard(
-              icon: Icons.groups_2_outlined,
-              title: l10n.tenantFacilityDepartmentsListTitle,
-              body: l10n.tenantFacilityDepartmentsModalBody,
-              detail: l10n.tenantFacilitySummaryRecordCount(
-                snapshot.departments.length,
-              ),
-              statusLabel: snapshot.departments.isNotEmpty
-                  ? l10n.tenantFacilitySummaryConfigured
-                  : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.departments.isNotEmpty,
-              onPressed: () => _openDepartmentsModal(context),
-            ),
-            _SetupSummaryCard(
-              icon: Icons.hub_outlined,
-              title: l10n.tenantFacilityUnitsListTitle,
-              body: l10n.tenantFacilityUnitsModalBody,
-              detail: l10n.tenantFacilitySummaryRecordCount(
-                snapshot.units.length,
-              ),
-              statusLabel: snapshot.units.isNotEmpty
-                  ? l10n.tenantFacilitySummaryConfigured
-                  : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.units.isNotEmpty,
-              onPressed: () => _openUnitsModal(context),
-            ),
-            _SetupSummaryCard(
-              icon: Icons.local_hotel_outlined,
-              title: l10n.tenantFacilityWardsLabel,
-              body: l10n.tenantFacilityWardsModalBody,
-              detail: l10n.tenantFacilitySummaryRecordCount(
-                snapshot.wards.length,
-              ),
-              statusLabel: snapshot.wards.isNotEmpty
-                  ? l10n.tenantFacilitySummaryConfigured
-                  : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.wards.isNotEmpty,
-              onPressed: () => _openWardsModal(context),
-            ),
-            _SetupSummaryCard(
-              icon: Icons.meeting_room_outlined,
-              title: l10n.tenantFacilityRoomsLabel,
-              body: l10n.tenantFacilityRoomsModalBody,
-              detail: l10n.tenantFacilitySummaryRecordCount(
-                snapshot.rooms.length,
-              ),
-              statusLabel: snapshot.rooms.isNotEmpty
-                  ? l10n.tenantFacilitySummaryConfigured
-                  : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.rooms.isNotEmpty,
-              onPressed: () => _openRoomsModal(context),
-            ),
-            _SetupSummaryCard(
-              icon: Icons.bed_outlined,
-              title: l10n.tenantFacilityBedsLabel,
-              body: l10n.tenantFacilityBedsModalBody,
-              detail: l10n.tenantFacilitySummaryRecordCount(
-                snapshot.beds.length,
-              ),
-              statusLabel: snapshot.beds.isNotEmpty
-                  ? l10n.tenantFacilitySummaryConfigured
-                  : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.beds.isNotEmpty,
-              onPressed: () => _openBedsModal(context),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _SetupSummaryGrid extends StatelessWidget {
-  const _SetupSummaryGrid({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns = switch (constraints.maxWidth) {
-          >= 1180 => 3,
-          >= 760 => 2,
-          _ => 1,
-        };
-        final double gap = constraints.maxWidth < AppBreakpoints.sm
-            ? theme.spacing.md
-            : theme.spacing.lg;
-        final double itemWidth =
-            (constraints.maxWidth - (gap * (columns - 1))) / columns;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: <Widget>[
-            for (final Widget child in children)
-              SizedBox(width: itemWidth, child: child),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _SetupSummaryCard extends StatelessWidget {
-  const _SetupSummaryCard({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.detail,
-    required this.statusLabel,
-    required this.completed,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-  final String detail;
-  final String statusLabel;
-  final bool completed;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color statusColor = completed
-        ? theme.statusColors.success
-        : colorScheme.onSurfaceVariant;
-
-    return Material(
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      child: InkWell(
-        onTap: onPressed,
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Icon(icon, color: colorScheme.primary),
-                  SizedBox(width: theme.spacing.sm),
-                  Expanded(
-                    child: Text(title, style: theme.textTheme.titleMedium),
-                  ),
-                  Icon(Icons.chevron_right, color: colorScheme.primary),
-                ],
-              ),
-              SizedBox(height: theme.spacing.sm),
-              Text(
-                body,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              SizedBox(height: theme.spacing.md),
-              Text(
-                detail,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall,
-              ),
-              SizedBox(height: theme.spacing.md),
-              Row(
-                children: <Widget>[
-                  Icon(
-                    completed
-                        ? Icons.check_circle_outline
-                        : Icons.radio_button_unchecked,
-                    color: statusColor,
-                    size: theme.appTokens.listIconSize,
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                  Expanded(
-                    child: Text(
-                      statusLabel,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+      summaryCards: _setupSummaryCards(context, l10n, snapshot),
+      body: _SetupGrid(
+        children: <Widget>[
+          _SetupChecklist(snapshot: snapshot),
+          _PermissionGateSummary(
+            canManageTenant: canManageTenant,
+            canManageFacility: canManageFacility,
           ),
-        ),
+        ],
       ),
     );
   }
+}
+
+List<Widget> _setupSummaryCards(
+  BuildContext context,
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+) {
+  return <Widget>[
+    AppWorkspaceSummaryCard(
+      icon: Icons.apartment_outlined,
+      label: l10n.tenantFacilityTenantSectionTitle,
+      description: l10n.tenantFacilityTenantSectionBody,
+      value: snapshot.tenant?.name ?? l10n.tenantFacilitySummaryNoTenant,
+      status: _setupSummaryStatus(l10n, snapshot.hasTenant),
+      onPressed: () => _openTenantProfileModal(context),
+    ),
+    AppWorkspaceSummaryCard(
+      icon: Icons.local_hospital_outlined,
+      label: l10n.tenantFacilityFacilitySectionTitle,
+      description: l10n.tenantFacilityFacilitySectionBody,
+      value: snapshot.facility?.name ?? l10n.tenantFacilitySummaryNoFacility,
+      status: _setupSummaryStatus(l10n, snapshot.hasFacilityIdentity),
+      onPressed: () => _openFacilityProfileModal(context),
+    ),
+    AppWorkspaceSummaryCard(
+      icon: Icons.account_tree_outlined,
+      label: l10n.tenantFacilityBranchesSectionTitle,
+      description: l10n.tenantFacilityBranchesSectionBody,
+      value: l10n.tenantFacilitySummaryRecordCount(snapshot.branches.length),
+      status: _setupSummaryStatus(l10n, snapshot.branches.isNotEmpty),
+      onPressed: () => _openBranchesModal(context),
+    ),
+    AppWorkspaceSummaryCard(
+      icon: Icons.groups_2_outlined,
+      label: l10n.tenantFacilityDepartmentsListTitle,
+      description: l10n.tenantFacilityDepartmentsModalBody,
+      value: l10n.tenantFacilitySummaryRecordCount(snapshot.departments.length),
+      status: _setupSummaryStatus(l10n, snapshot.departments.isNotEmpty),
+      onPressed: () => _openDepartmentsModal(context),
+    ),
+    AppWorkspaceSummaryCard(
+      icon: Icons.hub_outlined,
+      label: l10n.tenantFacilityUnitsListTitle,
+      description: l10n.tenantFacilityUnitsModalBody,
+      value: l10n.tenantFacilitySummaryRecordCount(snapshot.units.length),
+      status: _setupSummaryStatus(l10n, snapshot.units.isNotEmpty),
+      onPressed: () => _openUnitsModal(context),
+    ),
+    AppWorkspaceSummaryCard(
+      icon: Icons.local_hotel_outlined,
+      label: l10n.tenantFacilityWardsLabel,
+      description: l10n.tenantFacilityWardsModalBody,
+      value: l10n.tenantFacilitySummaryRecordCount(snapshot.wards.length),
+      status: _setupSummaryStatus(l10n, snapshot.wards.isNotEmpty),
+      onPressed: () => _openWardsModal(context),
+    ),
+    AppWorkspaceSummaryCard(
+      icon: Icons.meeting_room_outlined,
+      label: l10n.tenantFacilityRoomsLabel,
+      description: l10n.tenantFacilityRoomsModalBody,
+      value: l10n.tenantFacilitySummaryRecordCount(snapshot.rooms.length),
+      status: _setupSummaryStatus(l10n, snapshot.rooms.isNotEmpty),
+      onPressed: () => _openRoomsModal(context),
+    ),
+    AppWorkspaceSummaryCard(
+      icon: Icons.bed_outlined,
+      label: l10n.tenantFacilityBedsLabel,
+      description: l10n.tenantFacilityBedsModalBody,
+      value: l10n.tenantFacilitySummaryRecordCount(snapshot.beds.length),
+      status: _setupSummaryStatus(l10n, snapshot.beds.isNotEmpty),
+      onPressed: () => _openBedsModal(context),
+    ),
+  ];
+}
+
+AppWorkspaceStatus _setupSummaryStatus(AppLocalizations l10n, bool completed) {
+  return AppWorkspaceStatus(
+    label: completed
+        ? l10n.tenantFacilitySummaryConfigured
+        : l10n.tenantFacilitySummaryNeedsSetup,
+    tone: completed
+        ? AppWorkspaceStatusTone.success
+        : AppWorkspaceStatusTone.warning,
+  );
 }
 
 typedef _SetupDetailBuilder =
@@ -837,7 +705,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       return;
     }
 
-    final bool saved = await ref
+    await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveTenant(
           id: widget.tenant?.id,
@@ -845,9 +713,6 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           slug: _slugController.text,
           isActive: _isActive,
         );
-    if (saved && mounted) {
-      _showSaved(context);
-    }
   }
 }
 
@@ -1090,7 +955,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       return;
     }
 
-    final bool saved = await ref
+    await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveFacility(
           id: widget.snapshot.facility?.id,
@@ -1105,9 +970,6 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           city: _cityController.text,
           country: _countryController.text,
         );
-    if (saved && mounted) {
-      _showSaved(context);
-    }
   }
 }
 
@@ -2648,14 +2510,11 @@ Future<void> _openBranchDialog(
   FacilitySetupSnapshot snapshot, {
   BranchProfile? branch,
 }) async {
-  final bool? saved = await showAppDialog<bool>(
+  await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _BranchFormDialog(snapshot: snapshot, branch: branch),
   );
-  if (saved == true && context.mounted) {
-    _showSaved(context);
-  }
 }
 
 Future<void> _openDepartmentDialog(
@@ -2663,15 +2522,12 @@ Future<void> _openDepartmentDialog(
   FacilitySetupSnapshot snapshot, {
   DepartmentProfile? department,
 }) async {
-  final bool? saved = await showAppDialog<bool>(
+  await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) =>
         _DepartmentFormDialog(snapshot: snapshot, department: department),
   );
-  if (saved == true && context.mounted) {
-    _showSaved(context);
-  }
 }
 
 Future<void> _openUnitDialog(
@@ -2679,14 +2535,11 @@ Future<void> _openUnitDialog(
   FacilitySetupSnapshot snapshot, {
   UnitProfile? unit,
 }) async {
-  final bool? saved = await showAppDialog<bool>(
+  await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _UnitFormDialog(snapshot: snapshot, unit: unit),
   );
-  if (saved == true && context.mounted) {
-    _showSaved(context);
-  }
 }
 
 Future<void> _openWardDialog(
@@ -2694,14 +2547,11 @@ Future<void> _openWardDialog(
   FacilitySetupSnapshot snapshot, {
   WardProfile? ward,
 }) async {
-  final bool? saved = await showAppDialog<bool>(
+  await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _WardFormDialog(snapshot: snapshot, ward: ward),
   );
-  if (saved == true && context.mounted) {
-    _showSaved(context);
-  }
 }
 
 Future<void> _openRoomDialog(
@@ -2709,14 +2559,11 @@ Future<void> _openRoomDialog(
   FacilitySetupSnapshot snapshot, {
   RoomProfile? room,
 }) async {
-  final bool? saved = await showAppDialog<bool>(
+  await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _RoomFormDialog(snapshot: snapshot, room: room),
   );
-  if (saved == true && context.mounted) {
-    _showSaved(context);
-  }
 }
 
 Future<void> _openBedDialog(
@@ -2724,14 +2571,11 @@ Future<void> _openBedDialog(
   FacilitySetupSnapshot snapshot, {
   BedProfile? bed,
 }) async {
-  final bool? saved = await showAppDialog<bool>(
+  await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _BedFormDialog(snapshot: snapshot, bed: bed),
   );
-  if (saved == true && context.mounted) {
-    _showSaved(context);
-  }
 }
 
 Future<void> _deleteEntity({
@@ -2766,8 +2610,8 @@ Future<void> _deleteEntity({
   }
 
   final bool deleted = await deleteAction();
-  if (deleted && context.mounted) {
-    _showSaved(context);
+  if (!deleted) {
+    return;
   }
 }
 

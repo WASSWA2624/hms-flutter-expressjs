@@ -30,6 +30,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRetryActionLabel => 'Try again';
 
   @override
+  String get commonRefreshActionLabel => 'Refresh';
+
+  @override
   String get commonGoHomeActionLabel => 'Go home';
 
   @override

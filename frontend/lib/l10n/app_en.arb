@@ -28,6 +28,10 @@
   "@commonRetryActionLabel": {
     "description": "Label for actions that retry a failed operation."
   },
+  "commonRefreshActionLabel": "Refresh",
+  "@commonRefreshActionLabel": {
+    "description": "Label for actions that refresh visible data without reloading the current screen."
+  },
   "commonGoHomeActionLabel": "Go home",
   "@commonGoHomeActionLabel": {
     "description": "Label for actions that navigate back to the home route."

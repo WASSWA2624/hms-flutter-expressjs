@@ -17,6 +17,29 @@ final tenantFacilitySetupSubmissionProvider =
       TenantFacilitySetupSubmissionState
     >(TenantFacilitySetupSubmissionController.new);
 
+final tenantFacilitySetupRefreshProvider =
+    NotifierProvider<TenantFacilitySetupRefreshController, bool>(
+      TenantFacilitySetupRefreshController.new,
+    );
+
+typedef _SnapshotUpdate<T> =
+    FacilitySetupSnapshot Function(FacilitySetupSnapshot snapshot, T value);
+
+final class TenantFacilitySetupRefreshController extends Notifier<bool> {
+  @override
+  bool build() {
+    return false;
+  }
+
+  void start() {
+    state = true;
+  }
+
+  void stop() {
+    state = false;
+  }
+}
+
 final class TenantFacilitySetupController
     extends AsyncNotifier<Result<FacilitySetupSnapshot>> {
   String? _selectedFacilityId;
@@ -28,18 +51,56 @@ final class TenantFacilitySetupController
         .loadSetup(facilityId: _selectedFacilityId);
   }
 
-  Future<void> refresh() async {
-    state = const AsyncValue<Result<FacilitySetupSnapshot>>.loading();
-    state = await AsyncValue.guard(
-      () => ref
+  Future<Result<FacilitySetupSnapshot>> refresh() async {
+    final previousState = state.value;
+    final refreshState = ref.read(tenantFacilitySetupRefreshProvider.notifier);
+    if (previousState == null) {
+      state = const AsyncValue<Result<FacilitySetupSnapshot>>.loading();
+    }
+
+    refreshState.start();
+    try {
+      final result = await ref
           .read(tenantFacilityRepositoryProvider)
-          .loadSetup(facilityId: _selectedFacilityId),
-    );
+          .loadSetup(facilityId: _selectedFacilityId);
+      state = AsyncValue<Result<FacilitySetupSnapshot>>.data(result);
+      return result;
+    } catch (error, stackTrace) {
+      if (previousState == null) {
+        state = AsyncValue<Result<FacilitySetupSnapshot>>.error(
+          error,
+          stackTrace,
+        );
+      }
+
+      return const Result<FacilitySetupSnapshot>.failure(
+        AppFailure.unexpected(),
+      );
+    } finally {
+      refreshState.stop();
+    }
   }
 
   Future<void> selectFacility(String facilityId) async {
     _selectedFacilityId = facilityId;
     await refresh();
+  }
+
+  void updateSnapshot(
+    FacilitySetupSnapshot Function(FacilitySetupSnapshot snapshot) update,
+  ) {
+    final result = state.value;
+    final snapshot = result?.when<FacilitySetupSnapshot?>(
+      success: (FacilitySetupSnapshot snapshot) => snapshot,
+      failure: (_) => null,
+    );
+    if (snapshot == null) {
+      return;
+    }
+
+    state = AsyncValue<Result<FacilitySetupSnapshot>>.data(
+      Result<FacilitySetupSnapshot>.success(update(snapshot)),
+    );
   }
 }
 
@@ -47,25 +108,31 @@ final class TenantFacilitySetupSubmissionState {
   const TenantFacilitySetupSubmissionState({
     this.isSubmitting = false,
     this.failure,
+    this.successVersion = 0,
   });
 
   final bool isSubmitting;
   final AppFailure? failure;
+  final int successVersion;
 
   TenantFacilitySetupSubmissionState copyWith({
     bool? isSubmitting,
     AppFailure? failure,
+    int? successVersion,
     bool clearFailure = false,
   }) {
     return TenantFacilitySetupSubmissionState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
       failure: clearFailure ? null : failure ?? this.failure,
+      successVersion: successVersion ?? this.successVersion,
     );
   }
 }
 
 final class TenantFacilitySetupSubmissionController
     extends Notifier<TenantFacilitySetupSubmissionState> {
+  static const Duration _postMutationRefreshDelay = Duration(milliseconds: 300);
+
   @override
   TenantFacilitySetupSubmissionState build() {
     return const TenantFacilitySetupSubmissionState();
@@ -84,6 +151,9 @@ final class TenantFacilitySetupSubmissionController
         slug: slug,
         isActive: isActive,
       ),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, TenantProfile tenant) {
+        return snapshot.copyWith(tenant: tenant);
+      },
     );
   }
 
@@ -100,31 +170,58 @@ final class TenantFacilitySetupSubmissionController
     String? city,
     String? country,
   }) {
-    return _submit(() async {
-      final facilityResult = await _repository.saveFacility(
-        id: id,
-        tenantId: tenantId,
-        name: name,
-        type: type,
-        isActive: isActive,
-        logoUrl: logoUrl,
-      );
+    return _submit(
+      () async {
+        final facilityResult = await _repository.saveFacility(
+          id: id,
+          tenantId: tenantId,
+          name: name,
+          type: type,
+          isActive: isActive,
+          logoUrl: logoUrl,
+        );
 
-      return facilityResult.when(
-        success: (FacilityProfile facility) {
-          return _repository.saveFacilityContactAddress(
-            tenantId: tenantId,
-            facilityId: facility.id,
-            phone: phone,
-            email: email,
-            addressLine1: addressLine1,
-            city: city,
-            country: country,
-          );
-        },
-        failure: (AppFailure failure) async => Result<void>.failure(failure),
-      );
-    });
+        return facilityResult.when(
+          success: (FacilityProfile facility) async {
+            final contactResult = await _repository.saveFacilityContactAddress(
+              tenantId: tenantId,
+              facilityId: facility.id,
+              phone: phone,
+              email: email,
+              addressLine1: addressLine1,
+              city: city,
+              country: country,
+            );
+
+            return contactResult.when(
+              success: (_) => Result<FacilityProfile>.success(facility),
+              failure: (AppFailure failure) =>
+                  Result<FacilityProfile>.failure(failure),
+            );
+          },
+          failure: (AppFailure failure) async =>
+              Result<FacilityProfile>.failure(failure),
+        );
+      },
+      updateSnapshot:
+          (FacilitySetupSnapshot snapshot, FacilityProfile facility) {
+            return snapshot.copyWith(
+              facility: facility,
+              facilities: _upsertById<FacilityProfile>(
+                snapshot.facilities,
+                facility,
+                (FacilityProfile item) => item.id,
+              ),
+              contactAddress: FacilityContactAddress(
+                phone: phone,
+                email: email,
+                addressLine1: addressLine1,
+                city: city,
+                country: country,
+              ),
+            );
+          },
+    );
   }
 
   Future<bool> saveBranch({
@@ -142,11 +239,31 @@ final class TenantFacilitySetupSubmissionController
         name: name,
         isActive: isActive,
       ),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, BranchProfile branch) {
+        return snapshot.copyWith(
+          branches: _upsertById<BranchProfile>(
+            snapshot.branches,
+            branch,
+            (BranchProfile item) => item.id,
+          ),
+        );
+      },
     );
   }
 
   Future<bool> deleteBranch(String id) {
-    return _submit(() => _repository.deleteBranch(id));
+    return _submit(
+      () => _repository.deleteBranch(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        return snapshot.copyWith(
+          branches: _removeById<BranchProfile>(
+            snapshot.branches,
+            id,
+            (BranchProfile item) => item.id,
+          ),
+        );
+      },
+    );
   }
 
   Future<bool> saveDepartment({
@@ -170,11 +287,32 @@ final class TenantFacilitySetupSubmissionController
         type: type,
         isActive: isActive,
       ),
+      updateSnapshot:
+          (FacilitySetupSnapshot snapshot, DepartmentProfile department) {
+            return snapshot.copyWith(
+              departments: _upsertById<DepartmentProfile>(
+                snapshot.departments,
+                department,
+                (DepartmentProfile item) => item.id,
+              ),
+            );
+          },
     );
   }
 
   Future<bool> deleteDepartment(String id) {
-    return _submit(() => _repository.deleteDepartment(id));
+    return _submit(
+      () => _repository.deleteDepartment(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        return snapshot.copyWith(
+          departments: _removeById<DepartmentProfile>(
+            snapshot.departments,
+            id,
+            (DepartmentProfile item) => item.id,
+          ),
+        );
+      },
+    );
   }
 
   Future<bool> saveUnit({
@@ -194,11 +332,31 @@ final class TenantFacilitySetupSubmissionController
         departmentId: departmentId,
         isActive: isActive,
       ),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, UnitProfile unit) {
+        return snapshot.copyWith(
+          units: _upsertById<UnitProfile>(
+            snapshot.units,
+            unit,
+            (UnitProfile item) => item.id,
+          ),
+        );
+      },
     );
   }
 
   Future<bool> deleteUnit(String id) {
-    return _submit(() => _repository.deleteUnit(id));
+    return _submit(
+      () => _repository.deleteUnit(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        return snapshot.copyWith(
+          units: _removeById<UnitProfile>(
+            snapshot.units,
+            id,
+            (UnitProfile item) => item.id,
+          ),
+        );
+      },
+    );
   }
 
   Future<bool> saveWard({
@@ -220,11 +378,31 @@ final class TenantFacilitySetupSubmissionController
         departmentId: departmentId,
         isActive: isActive,
       ),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, WardProfile ward) {
+        return snapshot.copyWith(
+          wards: _upsertById<WardProfile>(
+            snapshot.wards,
+            ward,
+            (WardProfile item) => item.id,
+          ),
+        );
+      },
     );
   }
 
   Future<bool> deleteWard(String id) {
-    return _submit(() => _repository.deleteWard(id));
+    return _submit(
+      () => _repository.deleteWard(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        return snapshot.copyWith(
+          wards: _removeById<WardProfile>(
+            snapshot.wards,
+            id,
+            (WardProfile item) => item.id,
+          ),
+        );
+      },
+    );
   }
 
   Future<bool> saveRoom({
@@ -244,11 +422,31 @@ final class TenantFacilitySetupSubmissionController
         wardId: wardId,
         floor: floor,
       ),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, RoomProfile room) {
+        return snapshot.copyWith(
+          rooms: _upsertById<RoomProfile>(
+            snapshot.rooms,
+            room,
+            (RoomProfile item) => item.id,
+          ),
+        );
+      },
     );
   }
 
   Future<bool> deleteRoom(String id) {
-    return _submit(() => _repository.deleteRoom(id));
+    return _submit(
+      () => _repository.deleteRoom(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        return snapshot.copyWith(
+          rooms: _removeById<RoomProfile>(
+            snapshot.rooms,
+            id,
+            (RoomProfile item) => item.id,
+          ),
+        );
+      },
+    );
   }
 
   Future<bool> saveBed({
@@ -270,31 +468,87 @@ final class TenantFacilitySetupSubmissionController
         status: status,
         roomId: roomId,
       ),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, BedProfile bed) {
+        return snapshot.copyWith(
+          beds: _upsertById<BedProfile>(
+            snapshot.beds,
+            bed,
+            (BedProfile item) => item.id,
+          ),
+        );
+      },
     );
   }
 
   Future<bool> deleteBed(String id) {
-    return _submit(() => _repository.deleteBed(id));
+    return _submit(
+      () => _repository.deleteBed(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        return snapshot.copyWith(
+          beds: _removeById<BedProfile>(
+            snapshot.beds,
+            id,
+            (BedProfile item) => item.id,
+          ),
+        );
+      },
+    );
   }
 
   TenantFacilityRepository get _repository {
     return ref.read(tenantFacilityRepositoryProvider);
   }
 
-  Future<bool> _submit<T>(Future<Result<T>> Function() action) async {
+  Future<bool> _submit<T>(
+    Future<Result<T>> Function() action, {
+    _SnapshotUpdate<T>? updateSnapshot,
+  }) async {
     if (state.isSubmitting) {
       return false;
     }
 
     state = state.copyWith(isSubmitting: true, clearFailure: true);
-    final result = await action();
+    final Result<T> result;
+    try {
+      result = await action();
+    } catch (_) {
+      state = state.copyWith(
+        isSubmitting: false,
+        failure: const AppFailure.unexpected(),
+      );
+      return false;
+    }
 
     return result.when(
-      success: (_) async {
-        state = state.copyWith(isSubmitting: false, clearFailure: true);
-        await ref
-            .read(tenantFacilitySetupControllerProvider.notifier)
-            .refresh();
+      success: (T value) async {
+        final setupController = ref.read(
+          tenantFacilitySetupControllerProvider.notifier,
+        );
+        if (updateSnapshot != null) {
+          setupController.updateSnapshot(
+            (FacilitySetupSnapshot snapshot) => updateSnapshot(snapshot, value),
+          );
+        }
+
+        await Future<void>.delayed(_postMutationRefreshDelay);
+        final refreshResult = await setupController.refresh();
+        if (updateSnapshot != null) {
+          refreshResult.when(
+            success: (_) {
+              setupController.updateSnapshot(
+                (FacilitySetupSnapshot snapshot) =>
+                    updateSnapshot(snapshot, value),
+              );
+            },
+            failure: (_) {},
+          );
+        }
+
+        state = state.copyWith(
+          isSubmitting: false,
+          clearFailure: true,
+          successVersion: state.successVersion + 1,
+        );
         return true;
       },
       failure: (AppFailure failure) {
@@ -303,4 +557,23 @@ final class TenantFacilitySetupSubmissionController
       },
     );
   }
+}
+
+List<T> _upsertById<T>(List<T> items, T value, String Function(T item) idOf) {
+  final id = idOf(value);
+  final index = items.indexWhere((T item) => idOf(item) == id);
+  if (index == -1) {
+    return <T>[...items, value];
+  }
+
+  final next = List<T>.of(items);
+  next[index] = value;
+  return next;
+}
+
+List<T> _removeById<T>(List<T> items, String id, String Function(T item) idOf) {
+  return <T>[
+    for (final item in items)
+      if (idOf(item) != id) item,
+  ];
 }

@@ -136,6 +136,12 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get commonRetryActionLabel;
 
+  /// Label for actions that refresh visible data without reloading the current screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get commonRefreshActionLabel;
+
   /// Label for actions that navigate back to the home route.
   ///
   /// In en, this message translates to:
