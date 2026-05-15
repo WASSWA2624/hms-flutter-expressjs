@@ -44,6 +44,8 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
 
     return AppDialog(
       title: Text(l10n.authChangePasswordTitle),
+      scrollable: true,
+      closeEnabled: !state.isSubmitting,
       content: SizedBox(
         width: 420,
         child: Form(

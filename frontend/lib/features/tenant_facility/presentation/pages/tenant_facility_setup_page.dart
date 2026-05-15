@@ -1029,6 +1029,7 @@ class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
             : l10n.tenantFacilityAddBranchTitle,
       ),
       scrollable: true,
+      closeEnabled: canEdit,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1150,6 +1151,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
             : l10n.tenantFacilityAddDepartmentTitle,
       ),
       scrollable: true,
+      closeEnabled: canEdit,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1310,6 +1312,7 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
             : l10n.tenantFacilityAddUnitTitle,
       ),
       scrollable: true,
+      closeEnabled: canEdit,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1449,6 +1452,7 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
             : l10n.tenantFacilityAddWardTitle,
       ),
       scrollable: true,
+      closeEnabled: canEdit,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1608,6 +1612,7 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
             : l10n.tenantFacilityAddRoomTitle,
       ),
       scrollable: true,
+      closeEnabled: canEdit,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1744,6 +1749,7 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
             : l10n.tenantFacilityAddBedTitle,
       ),
       scrollable: true,
+      closeEnabled: canEdit,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1995,18 +2001,22 @@ Future<void> _deleteEntity({
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
-    builder: (_) => AppDialog(
+    builder: (BuildContext dialogContext) => AppDialog(
       title: Text(l10n.tenantFacilityDeleteConfirmationTitle),
       content: Text(l10n.tenantFacilityDeleteConfirmationBody),
+      icon: Icon(
+        Icons.delete_outline,
+        color: Theme.of(context).statusColors.error,
+      ),
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(dialogContext).pop(false),
         ),
         AppButton.primary(
           label: l10n.tenantFacilityDeleteConfirmAction,
           leadingIcon: Icons.delete_outline,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
         ),
       ],
     ),
