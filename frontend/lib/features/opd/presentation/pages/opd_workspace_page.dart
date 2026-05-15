@@ -10,8 +10,10 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
@@ -1408,6 +1410,9 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   String? _patientId;
   String? _providerId;
   String _currency = _defaultCurrency;
+  String _arrivalMode = 'WALK_IN';
+  String _emergencySeverity = 'HIGH';
+  String? _triageLevel;
   String? _gender;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -1444,6 +1449,18 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         child: AppFormSection(
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
+            AppSelectField<String>.searchable(
+              value: _arrivalMode,
+              labelText: l10n.opdArrivalModeLabel,
+              semanticLabel: l10n.opdArrivalModeLabel,
+              enabled: !_isSaving,
+              onChanged: (String? value) {
+                setState(() {
+                  _arrivalMode = value ?? 'WALK_IN';
+                });
+              },
+              options: _statusOptions(_arrivalModeOptions),
+            ),
             AppCheckboxField(
               title: l10n.opdRegisterNewPatientLabel,
               value: _registerNewPatient,
@@ -1495,6 +1512,32 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
                 enabled: !_isSaving,
                 onChanged: (String? value) => setState(() => _gender = value),
                 options: _statusOptions(_genderOptions),
+              ),
+            ],
+            if (_arrivalMode == 'EMERGENCY') ...<Widget>[
+              AppSelectField<String>.searchable(
+                value: _emergencySeverity,
+                labelText: l10n.opdEmergencySeverityLabel,
+                semanticLabel: l10n.opdEmergencySeverityLabel,
+                enabled: !_isSaving,
+                onChanged: (String? value) {
+                  setState(() {
+                    _emergencySeverity = value ?? _emergencySeverity;
+                  });
+                },
+                options: _statusOptions(_emergencySeverityOptions),
+              ),
+              AppSelectField<String>.searchable(
+                value: _triageLevel,
+                labelText: l10n.opdTriageLevelLabel,
+                semanticLabel: l10n.opdTriageLevelLabel,
+                enabled: !_isSaving,
+                onChanged: (String? value) {
+                  setState(() {
+                    _triageLevel = value;
+                  });
+                },
+                options: _statusOptions(_triageLevelOptions),
               ),
             ],
             _ProviderSelectField(
@@ -1620,6 +1663,13 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       else
         'patient_id': _patientId,
       'provider_user_id': _providerId,
+      'arrival_mode': _arrivalMode,
+      if (_arrivalMode == 'EMERGENCY')
+        'emergency': <String, Object?>{
+          'severity': _emergencySeverity,
+          'triage_level': _triageLevel,
+          'notes': _notesController.text.trim(),
+        },
       'consultation_fee': _feeController.text.trim(),
       'currency': _currency,
       'notes': _notesController.text.trim(),
@@ -2087,21 +2137,88 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
   }
 }
 
-class FlowActionsDialog extends StatelessWidget {
+const AccessRequirement _opdReceptionRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.patientWrite,
+    AppPermissions.operationsWrite,
+    AppPermissions.clinicalWrite,
+    AppPermissions.emergencyWrite,
+  ],
+  activeModules: <String>['opd-flow'],
+);
+
+const AccessRequirement _opdTriageRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.clinicalWrite,
+    AppPermissions.emergencyWrite,
+  ],
+  activeModules: <String>['opd-flow'],
+);
+
+const AccessRequirement _opdDoctorRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+  activeModules: <String>['opd-flow'],
+);
+
+const AccessRequirement _opdBillingRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.billingWrite,
+    AppPermissions.patientWrite,
+  ],
+  activeModules: <String>['opd-flow'],
+);
+
+class FlowActionsDialog extends ConsumerStatefulWidget {
   const FlowActionsDialog({required this.flow, super.key});
 
   final OpdFlowSummary flow;
 
   @override
+  ConsumerState<FlowActionsDialog> createState() => _FlowActionsDialogState();
+}
+
+class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
+  @override
+  void initState() {
+    super.initState();
+    unawaited(
+      Future<void>.microtask(
+        () => ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .selectFlow(widget.flow),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final Result<OpdWorkspaceState>? workspaceResult = ref
+        .watch(opdWorkspaceControllerProvider)
+        .asData
+        ?.value;
+    final OpdFlowDetail? detail = workspaceResult?.when(
+      success: (OpdWorkspaceState state) {
+        final OpdFlowDetail? selected = state.selectedFlow;
+        if (selected == null || !_isSameFlow(selected.summary, widget.flow)) {
+          return null;
+        }
+        return selected;
+      },
+      failure: (_) => null,
+    );
+    final OpdFlowSummary flow = detail?.summary ?? widget.flow;
     final bool terminal = flow.isTerminal;
 
     return AppDialog(
       title: Text(flow.displayTitle),
       icon: const Icon(Icons.medical_services_outlined),
+      maxWidth: 860,
+      scrollable: true,
       content: AppFormSection(
+        density: AppFormSectionDensity.compact,
         children: <Widget>[
+          if (detail == null) const LinearProgressIndicator(),
           _PatientText(
             title: _categoryLabel(context, _opdCategoryActiveFlow),
             subtitle: _joinDisplay(<String?>[
@@ -2110,6 +2227,185 @@ class FlowActionsDialog extends StatelessWidget {
               flow.patientPhone,
             ]),
           ),
+          _OpdWorkflowStatusSummary(flow: flow, detail: detail),
+          _OpdWorkflowRecordSummary(detail: detail),
+          _OpdWorkflowSection(
+            title: l10n.opdWorkflowReceptionTitle,
+            children: <Widget>[
+              _OpdWorkflowAction(
+                requirement: _opdBillingRequirement,
+                label: l10n.opdPayConsultationAction,
+                icon: Icons.payments_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, ConsultationPaymentDialog(flow: flow)),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdReceptionRequirement,
+                label: l10n.opdAssignDoctorAction,
+                icon: Icons.assignment_ind_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, AssignDoctorDialog(flow: flow)),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdReceptionRequirement,
+                label: l10n.opdSendToTriageAction,
+                icon: Icons.monitor_heart_outlined,
+                enabled: !terminal,
+                onPressed: () => _openNested(
+                  context,
+                  StageRouteDialog(
+                    flow: flow,
+                    title: l10n.opdSendToTriageAction,
+                    stage: 'WAITING_VITALS',
+                  ),
+                ),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdReceptionRequirement,
+                label: l10n.opdSendToDoctorAction,
+                icon: Icons.medical_information_outlined,
+                enabled: !terminal,
+                onPressed: () => _openNested(
+                  context,
+                  StageRouteDialog(
+                    flow: flow,
+                    title: l10n.opdSendToDoctorAction,
+                    stage: 'WAITING_DOCTOR_REVIEW',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          _OpdWorkflowSection(
+            title: l10n.opdWorkflowTriageTitle,
+            children: <Widget>[
+              _OpdWorkflowAction(
+                requirement: _opdTriageRequirement,
+                label: l10n.opdRecordVitalsAction,
+                icon: Icons.monitor_heart_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, RecordVitalsDialog(flow: flow)),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdTriageRequirement,
+                label: l10n.opdAssignDoctorAction,
+                icon: Icons.assignment_ind_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, AssignDoctorDialog(flow: flow)),
+              ),
+            ],
+          ),
+          _OpdWorkflowSection(
+            title: l10n.opdWorkflowDoctorTitle,
+            children: <Widget>[
+              _OpdWorkflowAction(
+                requirement: _opdDoctorRequirement,
+                label: l10n.opdDoctorReviewAction,
+                icon: Icons.edit_note_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, DoctorReviewDialog(flow: flow)),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdDoctorRequirement,
+                label: l10n.opdReferAction,
+                icon: Icons.alt_route_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, ReferralDialog(flow: flow)),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdDoctorRequirement,
+                label: l10n.opdFollowUpAction,
+                icon: Icons.event_repeat_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, FollowUpDialog(flow: flow)),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdDoctorRequirement,
+                label: l10n.opdDispositionAction,
+                icon: Icons.task_alt_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, DispositionDialog(flow: flow)),
+              ),
+            ],
+          ),
+          _OpdWorkflowSection(
+            title: l10n.opdWorkflowServicesTitle,
+            children: <Widget>[
+              _OpdWorkflowAction(
+                requirement: _opdDoctorRequirement,
+                label: l10n.opdRouteLabAction,
+                icon: Icons.biotech_outlined,
+                enabled: !terminal,
+                onPressed: () => _openNested(
+                  context,
+                  StageRouteDialog(
+                    flow: flow,
+                    title: l10n.opdRouteLabAction,
+                    stage: 'LAB_REQUESTED',
+                  ),
+                ),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdDoctorRequirement,
+                label: l10n.opdRouteRadiologyAction,
+                icon: Icons.personal_injury_outlined,
+                enabled: !terminal,
+                onPressed: () => _openNested(
+                  context,
+                  StageRouteDialog(
+                    flow: flow,
+                    title: l10n.opdRouteRadiologyAction,
+                    stage: 'RADIOLOGY_REQUESTED',
+                  ),
+                ),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdDoctorRequirement,
+                label: l10n.opdRoutePharmacyAction,
+                icon: Icons.local_pharmacy_outlined,
+                enabled: !terminal,
+                onPressed: () => _openNested(
+                  context,
+                  StageRouteDialog(
+                    flow: flow,
+                    title: l10n.opdRoutePharmacyAction,
+                    stage: 'PHARMACY_REQUESTED',
+                  ),
+                ),
+              ),
+              _OpdWorkflowAction(
+                requirement: _opdDoctorRequirement,
+                label: l10n.opdCorrectStageAction,
+                icon: Icons.sync_alt_outlined,
+                enabled: !terminal,
+                onPressed: () =>
+                    _openNested(context, CorrectStageDialog(flow: flow)),
+              ),
+            ],
+          ),
+          _OpdWorkflowSection(
+            title: l10n.opdWorkflowPrintTitle,
+            children: <Widget>[
+              _OpdWorkflowAction(
+                requirement: _opdTriageRequirement,
+                label: l10n.opdPrintSummaryAction,
+                icon: Icons.print_outlined,
+                onPressed: () => _openNested(
+                  context,
+                  PrintOpdSummaryDialog(flow: flow, detail: detail),
+                  closeParentOnChange: false,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       actions: <Widget>[
@@ -2117,56 +2413,938 @@ class FlowActionsDialog extends StatelessWidget {
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        AppButton.secondary(
-          label: l10n.opdAssignDoctorAction,
-          leadingIcon: Icons.assignment_ind_outlined,
-          enabled: !terminal,
-          onPressed: () => _openNested(context, AssignDoctorDialog(flow: flow)),
-        ),
-        AppButton.secondary(
-          label: l10n.opdPayConsultationAction,
-          leadingIcon: Icons.payments_outlined,
-          enabled: !terminal,
-          onPressed: () =>
-              _openNested(context, ConsultationPaymentDialog(flow: flow)),
-        ),
-        AppButton.secondary(
-          label: l10n.opdCorrectStageAction,
-          leadingIcon: Icons.edit_note_outlined,
-          enabled: !terminal,
-          onPressed: () => _openNested(context, CorrectStageDialog(flow: flow)),
-        ),
-        AppButton.secondary(
-          label: l10n.opdReferAction,
-          leadingIcon: Icons.alt_route_outlined,
-          enabled: !terminal,
-          onPressed: () => _openNested(context, ReferralDialog(flow: flow)),
-        ),
-        AppButton.secondary(
-          label: l10n.opdFollowUpAction,
-          leadingIcon: Icons.event_repeat_outlined,
-          enabled: !terminal,
-          onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
-        ),
-        AppButton.primary(
-          label: l10n.opdDispositionAction,
-          leadingIcon: Icons.task_alt_outlined,
-          enabled: !terminal,
-          onPressed: () => _openNested(context, DispositionDialog(flow: flow)),
-        ),
       ],
     );
   }
 
-  Future<void> _openNested(BuildContext context, Widget dialog) async {
+  Future<void> _openNested(
+    BuildContext context,
+    Widget dialog, {
+    bool closeParentOnChange = true,
+  }) async {
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => dialog,
     );
-    if (changed == true && context.mounted) {
+    if (changed == true && closeParentOnChange && context.mounted) {
       Navigator.of(context).pop(true);
     }
+  }
+}
+
+class _OpdWorkflowStatusSummary extends StatelessWidget {
+  const _OpdWorkflowStatusSummary({required this.flow, required this.detail});
+
+  final OpdFlowSummary flow;
+  final OpdFlowDetail? detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final List<Widget> children = <Widget>[
+      _OpdWorkflowInfoPill(
+        label: l10n.opdStageLabel,
+        value: _apiLabel(flow.stage ?? ''),
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdNextStepColumnLabel,
+        value: _apiLabel(flow.nextStep ?? ''),
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdPaymentStatusLabel,
+        value: detail == null
+            ? l10n.profileUnknownValue
+            : detail!.consultationPaid
+            ? l10n.opdPaymentPaidLabel
+            : detail!.consultationPaymentRequired
+            ? l10n.opdPaymentRequiredLabel
+            : l10n.opdPaymentNotRequiredLabel,
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdProviderColumnLabel,
+        value: flow.providerDisplayName ?? l10n.profileUnknownValue,
+      ),
+    ];
+
+    return _OpdWorkflowPanel(children: children);
+  }
+}
+
+class _OpdWorkflowRecordSummary extends StatelessWidget {
+  const _OpdWorkflowRecordSummary({required this.detail});
+
+  final OpdFlowDetail? detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final OpdFlowDetail? value = detail;
+    final List<Widget> children = <Widget>[
+      _OpdWorkflowInfoPill(
+        label: l10n.opdVitalsSummaryLabel,
+        value: '${value?.vitalSigns.length ?? 0}',
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdServicesSummaryLabel,
+        value:
+            '${(value?.labOrders.length ?? 0) + (value?.radiologyOrders.length ?? 0) + (value?.pharmacyOrders.length ?? 0)}',
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdClinicalNotesSummaryLabel,
+        value: '${value?.clinicalNotes.length ?? 0}',
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdProceduresSummaryLabel,
+        value: '${value?.procedures.length ?? 0}',
+      ),
+    ];
+
+    return _OpdWorkflowPanel(children: children);
+  }
+}
+
+class _OpdWorkflowPanel extends StatelessWidget {
+  const _OpdWorkflowPanel({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Wrap(
+          spacing: theme.spacing.md,
+          runSpacing: theme.spacing.sm,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
+class _OpdWorkflowInfoPill extends StatelessWidget {
+  const _OpdWorkflowInfoPill({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 150),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(label, style: theme.textTheme.labelMedium),
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            value.isEmpty ? context.l10n.profileUnknownValue : value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OpdWorkflowSection extends StatelessWidget {
+  const _OpdWorkflowSection({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(title, style: theme.textTheme.titleSmall),
+            SizedBox(height: theme.spacing.sm),
+            Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.sm,
+              children: children,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OpdWorkflowAction extends StatelessWidget {
+  const _OpdWorkflowAction({
+    required this.requirement,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.enabled = true,
+  });
+
+  final AccessRequirement requirement;
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppAccessActionGate(
+      requirement: requirement,
+      builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return const SizedBox.shrink();
+        }
+        return SizedBox(
+          width: 220,
+          child: AppButton.secondary(
+            label: label,
+            leadingIcon: icon,
+            fullWidth: true,
+            enabled: enabled,
+            onPressed: onPressed,
+          ),
+        );
+      },
+    );
+  }
+}
+
+bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
+  return left.id == right.id ||
+      (left.publicId != null && left.publicId == right.publicId);
+}
+
+class StageRouteDialog extends ConsumerStatefulWidget {
+  const StageRouteDialog({
+    required this.flow,
+    required this.title,
+    required this.stage,
+    super.key,
+  });
+
+  final OpdFlowSummary flow;
+  final String title;
+  final String stage;
+
+  @override
+  ConsumerState<StageRouteDialog> createState() => _StageRouteDialogState();
+}
+
+class _StageRouteDialogState extends ConsumerState<StageRouteDialog> {
+  late final TextEditingController _reasonController;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AppDialog(
+      title: Text(widget.title),
+      icon: const Icon(Icons.sync_alt_outlined),
+      content: AppFormSection(
+        children: <Widget>[
+          if (_failure != null) AppFailureStateView(failure: _failure!),
+          _StatusBadge(value: widget.stage),
+          AppTextField(
+            controller: _reasonController,
+            labelText: l10n.opdReasonLabel,
+            enabled: !_isSaving,
+            maxLines: 3,
+            validator: AppValidators.requiredText(l10n.validationRequired),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.opdSaveAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!_isNonEmpty(_reasonController.text)) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .correctStage(widget.flow, widget.stage, _reasonController.text.trim());
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+}
+
+class RecordVitalsDialog extends ConsumerStatefulWidget {
+  const RecordVitalsDialog({required this.flow, super.key});
+
+  final OpdFlowSummary flow;
+
+  @override
+  ConsumerState<RecordVitalsDialog> createState() => _RecordVitalsDialogState();
+}
+
+class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
+  late final TextEditingController _temperatureController;
+  late final TextEditingController _systolicController;
+  late final TextEditingController _diastolicController;
+  late final TextEditingController _heartRateController;
+  late final TextEditingController _respiratoryRateController;
+  late final TextEditingController _oxygenSaturationController;
+  late final TextEditingController _weightController;
+  late final TextEditingController _notesController;
+  String? _triageLevel;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _temperatureController = TextEditingController();
+    _systolicController = TextEditingController();
+    _diastolicController = TextEditingController();
+    _heartRateController = TextEditingController();
+    _respiratoryRateController = TextEditingController();
+    _oxygenSaturationController = TextEditingController();
+    _weightController = TextEditingController();
+    _notesController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _temperatureController.dispose();
+    _systolicController.dispose();
+    _diastolicController.dispose();
+    _heartRateController.dispose();
+    _respiratoryRateController.dispose();
+    _oxygenSaturationController.dispose();
+    _weightController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.opdRecordVitalsAction),
+      icon: const Icon(Icons.monitor_heart_outlined),
+      scrollable: true,
+      content: AppFormSection(
+        children: <Widget>[
+          if (_failure != null) AppFailureStateView(failure: _failure!),
+          AppSelectField<String>.searchable(
+            value: _triageLevel,
+            labelText: l10n.opdTriageLevelLabel,
+            semanticLabel: l10n.opdTriageLevelLabel,
+            enabled: !_isSaving,
+            onChanged: (String? value) => setState(() => _triageLevel = value),
+            options: _statusOptions(_triageLevelOptions),
+          ),
+          AppTextField(
+            controller: _temperatureController,
+            labelText: l10n.opdTemperatureLabel,
+            enabled: !_isSaving,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: _decimalInputFormatters,
+          ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTextField(
+                  controller: _systolicController,
+                  labelText: l10n.opdSystolicLabel,
+                  enabled: !_isSaving,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: _decimalInputFormatters,
+                ),
+              ),
+              SizedBox(width: Theme.of(context).spacing.md),
+              Expanded(
+                child: AppTextField(
+                  controller: _diastolicController,
+                  labelText: l10n.opdDiastolicLabel,
+                  enabled: !_isSaving,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: _decimalInputFormatters,
+                ),
+              ),
+            ],
+          ),
+          AppTextField(
+            controller: _heartRateController,
+            labelText: l10n.opdHeartRateLabel,
+            enabled: !_isSaving,
+            keyboardType: TextInputType.number,
+            inputFormatters: _integerInputFormatters,
+          ),
+          AppTextField(
+            controller: _respiratoryRateController,
+            labelText: l10n.opdRespiratoryRateLabel,
+            enabled: !_isSaving,
+            keyboardType: TextInputType.number,
+            inputFormatters: _integerInputFormatters,
+          ),
+          AppTextField(
+            controller: _oxygenSaturationController,
+            labelText: l10n.opdOxygenSaturationLabel,
+            enabled: !_isSaving,
+            keyboardType: TextInputType.number,
+            inputFormatters: _integerInputFormatters,
+          ),
+          AppTextField(
+            controller: _weightController,
+            labelText: l10n.opdWeightLabel,
+            enabled: !_isSaving,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: _decimalInputFormatters,
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.opdTriageNotesLabel,
+            enabled: !_isSaving,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.opdRecordVitalsAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final List<Map<String, Object?>> vitals = _vitalsPayload();
+    if (vitals.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .recordVitals(widget.flow, <String, Object?>{
+          'vitals': vitals,
+          'triage_level': _triageLevel,
+          'triage_notes': _notesController.text.trim(),
+        });
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+
+  List<Map<String, Object?>> _vitalsPayload() {
+    final List<Map<String, Object?>> vitals = <Map<String, Object?>>[];
+    void addSimpleVital(
+      TextEditingController controller,
+      String type,
+      String unit,
+    ) {
+      final String value = controller.text.trim();
+      if (value.isEmpty) {
+        return;
+      }
+      vitals.add(<String, Object?>{
+        'vital_type': type,
+        'value': value,
+        'unit': unit,
+      });
+    }
+
+    addSimpleVital(_temperatureController, 'TEMPERATURE', 'C');
+    final String systolic = _systolicController.text.trim();
+    final String diastolic = _diastolicController.text.trim();
+    if (systolic.isNotEmpty && diastolic.isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'BLOOD_PRESSURE',
+        'value': '$systolic/$diastolic',
+        'unit': 'mmHg',
+        'systolic_value': systolic,
+        'diastolic_value': diastolic,
+      });
+    }
+    addSimpleVital(_heartRateController, 'HEART_RATE', 'bpm');
+    addSimpleVital(
+      _respiratoryRateController,
+      'RESPIRATORY_RATE',
+      'breaths/min',
+    );
+    addSimpleVital(_oxygenSaturationController, 'OXYGEN_SATURATION', '%');
+    addSimpleVital(_weightController, 'WEIGHT', 'kg');
+    return vitals;
+  }
+}
+
+class DoctorReviewDialog extends ConsumerStatefulWidget {
+  const DoctorReviewDialog({required this.flow, super.key});
+
+  final OpdFlowSummary flow;
+
+  @override
+  ConsumerState<DoctorReviewDialog> createState() => _DoctorReviewDialogState();
+}
+
+class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
+  late final TextEditingController _noteController;
+  late final TextEditingController _diagnosisCodeController;
+  late final TextEditingController _diagnosisController;
+  late final TextEditingController _procedureCodeController;
+  late final TextEditingController _procedureController;
+  late final TextEditingController _labTestIdsController;
+  late final TextEditingController _labPanelIdsController;
+  late final TextEditingController _radiologyIdsController;
+  late final TextEditingController _quantityController;
+  late final TextEditingController _dosageController;
+  late final TextEditingController _prescriptionNotesController;
+  List<OpdDrugOption> _drugOptions = const <OpdDrugOption>[];
+  bool _isLoadingDrugs = false;
+  String _diagnosisType = 'PRIMARY';
+  String? _drugId;
+  String? _frequency;
+  String? _route;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _noteController = TextEditingController();
+    _diagnosisCodeController = TextEditingController();
+    _diagnosisController = TextEditingController();
+    _procedureCodeController = TextEditingController();
+    _procedureController = TextEditingController();
+    _labTestIdsController = TextEditingController();
+    _labPanelIdsController = TextEditingController();
+    _radiologyIdsController = TextEditingController();
+    _quantityController = TextEditingController(text: '1');
+    _dosageController = TextEditingController();
+    _prescriptionNotesController = TextEditingController();
+    unawaited(_loadDrugs());
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    _diagnosisCodeController.dispose();
+    _diagnosisController.dispose();
+    _procedureCodeController.dispose();
+    _procedureController.dispose();
+    _labTestIdsController.dispose();
+    _labPanelIdsController.dispose();
+    _radiologyIdsController.dispose();
+    _quantityController.dispose();
+    _dosageController.dispose();
+    _prescriptionNotesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.opdDoctorReviewAction),
+      icon: const Icon(Icons.edit_note_outlined),
+      maxWidth: 760,
+      scrollable: true,
+      content: AppFormSection(
+        children: <Widget>[
+          if (_failure != null) AppFailureStateView(failure: _failure!),
+          AppTextField(
+            controller: _noteController,
+            labelText: l10n.opdClinicalNoteLabel,
+            enabled: !_isSaving,
+            maxLines: 4,
+            validator: AppValidators.requiredText(l10n.validationRequired),
+          ),
+          AppSelectField<String>.searchable(
+            value: _diagnosisType,
+            labelText: l10n.opdDiagnosisTypeLabel,
+            semanticLabel: l10n.opdDiagnosisTypeLabel,
+            enabled: !_isSaving,
+            onChanged: (String? value) {
+              setState(() => _diagnosisType = value ?? _diagnosisType);
+            },
+            options: _statusOptions(_diagnosisTypes),
+          ),
+          AppTextField(
+            controller: _diagnosisController,
+            labelText: l10n.opdDiagnosisLabel,
+            enabled: !_isSaving,
+            maxLines: 2,
+          ),
+          AppTextField(
+            controller: _diagnosisCodeController,
+            labelText: l10n.opdDiagnosisCodeLabel,
+            enabled: !_isSaving,
+          ),
+          AppTextField(
+            controller: _procedureController,
+            labelText: l10n.opdProcedureLabel,
+            enabled: !_isSaving,
+            maxLines: 2,
+          ),
+          AppTextField(
+            controller: _procedureCodeController,
+            labelText: l10n.opdProcedureCodeLabel,
+            enabled: !_isSaving,
+          ),
+          AppTextField(
+            controller: _labTestIdsController,
+            labelText: l10n.opdLabTestIdsLabel,
+            enabled: !_isSaving,
+            maxLines: 2,
+          ),
+          AppTextField(
+            controller: _labPanelIdsController,
+            labelText: l10n.opdLabPanelIdsLabel,
+            enabled: !_isSaving,
+            maxLines: 2,
+          ),
+          AppTextField(
+            controller: _radiologyIdsController,
+            labelText: l10n.opdRadiologyTestIdsLabel,
+            enabled: !_isSaving,
+            maxLines: 2,
+          ),
+          AppSelectField<String>.searchable(
+            value: _drugId,
+            labelText: l10n.opdDrugLabel,
+            semanticLabel: l10n.opdDrugLabel,
+            enabled: !_isSaving,
+            isLoading: _isLoadingDrugs,
+            onChanged: (String? value) => setState(() => _drugId = value),
+            options: _drugOptions.map(_drugOption).toList(growable: false),
+          ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTextField(
+                  controller: _quantityController,
+                  labelText: l10n.opdDrugQuantityLabel,
+                  enabled: !_isSaving,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: _integerInputFormatters,
+                ),
+              ),
+              SizedBox(width: Theme.of(context).spacing.md),
+              Expanded(
+                child: AppTextField(
+                  controller: _dosageController,
+                  labelText: l10n.opdDosageLabel,
+                  enabled: !_isSaving,
+                ),
+              ),
+            ],
+          ),
+          AppSelectField<String>.searchable(
+            value: _frequency,
+            labelText: l10n.opdFrequencyLabel,
+            semanticLabel: l10n.opdFrequencyLabel,
+            enabled: !_isSaving,
+            onChanged: (String? value) => setState(() => _frequency = value),
+            options: _statusOptions(_medicationFrequencies),
+          ),
+          AppSelectField<String>.searchable(
+            value: _route,
+            labelText: l10n.opdMedicationRouteLabel,
+            semanticLabel: l10n.opdMedicationRouteLabel,
+            enabled: !_isSaving,
+            onChanged: (String? value) => setState(() => _route = value),
+            options: _statusOptions(_medicationRoutes),
+          ),
+          AppTextField(
+            controller: _prescriptionNotesController,
+            labelText: l10n.opdPrescriptionNotesLabel,
+            enabled: !_isSaving,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.opdDoctorReviewAction,
+          leadingIcon: Icons.save_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _loadDrugs() async {
+    setState(() => _isLoadingDrugs = true);
+    final Result<List<OpdDrugOption>> result = await ref
+        .read(opdRepositoryProvider)
+        .listAvailableDrugs();
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (List<OpdDrugOption> drugs) {
+        setState(() {
+          _drugOptions = drugs;
+          _isLoadingDrugs = false;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isLoadingDrugs = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!_isNonEmpty(_noteController.text)) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
+
+    final Map<String, Object?> payload = _payload();
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .doctorReview(widget.flow, payload);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+
+  Map<String, Object?> _payload() {
+    final List<Map<String, Object?>> labRequests = <Map<String, Object?>>[
+      for (final String id in _splitTokens(_labTestIdsController.text))
+        <String, Object?>{'lab_test_id': id, 'status': 'ORDERED'},
+      for (final String id in _splitTokens(_labPanelIdsController.text))
+        <String, Object?>{'lab_panel_id': id, 'status': 'ORDERED'},
+    ];
+    final List<Map<String, Object?>> radiologyRequests = <Map<String, Object?>>[
+      for (final String id in _splitTokens(_radiologyIdsController.text))
+        <String, Object?>{'radiology_test_id': id, 'status': 'ORDERED'},
+    ];
+    final String? drugId = _drugId;
+    final int quantity = int.tryParse(_quantityController.text.trim()) ?? 1;
+
+    return <String, Object?>{
+      'note': _noteController.text.trim(),
+      if (_isNonEmpty(_diagnosisController.text))
+        'diagnoses': <Map<String, Object?>>[
+          <String, Object?>{
+            'diagnosis_type': _diagnosisType,
+            'code': _diagnosisCodeController.text.trim(),
+            'description': _diagnosisController.text.trim(),
+          },
+        ],
+      if (_isNonEmpty(_procedureController.text))
+        'procedures': <Map<String, Object?>>[
+          <String, Object?>{
+            'code': _procedureCodeController.text.trim(),
+            'description': _procedureController.text.trim(),
+            'performed_at': DateTime.now().toUtc().toIso8601String(),
+          },
+        ],
+      if (labRequests.isNotEmpty) 'lab_requests': labRequests,
+      if (radiologyRequests.isNotEmpty) 'radiology_requests': radiologyRequests,
+      if (_isNonEmpty(drugId))
+        'medications': <Map<String, Object?>>[
+          <String, Object?>{
+            'drug_id': drugId,
+            'quantity': quantity,
+            'dosage': _dosageController.text.trim(),
+            'frequency': _frequency,
+            'route': _route,
+            'status': 'ACTIVE',
+          },
+        ],
+      'notes': _prescriptionNotesController.text.trim(),
+    };
+  }
+}
+
+class PrintOpdSummaryDialog extends StatelessWidget {
+  const PrintOpdSummaryDialog({
+    required this.flow,
+    required this.detail,
+    super.key,
+  });
+
+  final OpdFlowSummary flow;
+  final OpdFlowDetail? detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final String summary = _printSummary(context);
+    return AppDialog(
+      title: Text(l10n.opdPrintSummaryAction),
+      icon: const Icon(Icons.print_outlined),
+      maxWidth: 720,
+      scrollable: true,
+      content: SelectionArea(
+        child: Text(summary, style: Theme.of(context).textTheme.bodyMedium),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.secondary(
+          label: l10n.opdCopySummaryAction,
+          leadingIcon: Icons.copy_outlined,
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: summary));
+            if (context.mounted) {
+              Navigator.of(context).pop(false);
+            }
+          },
+        ),
+        AppButton.primary(
+          label: l10n.opdPrintAction,
+          leadingIcon: Icons.print_outlined,
+          onPressed: () {
+            printCurrentWindow();
+            Navigator.of(context).pop(false);
+          },
+        ),
+      ],
+    );
+  }
+
+  String _printSummary(BuildContext context) {
+    final l10n = context.l10n;
+    final OpdFlowDetail? value = detail;
+    final List<String> lines = <String>[
+      flow.displayTitle,
+      _joinDisplay(<String?>[
+        flow.patientIdentifier,
+        flow.patientPhone,
+        flow.providerDisplayName,
+      ]),
+      '${l10n.opdStageLabel}: ${_apiLabel(flow.stage ?? '')}',
+      '${l10n.opdNextStepColumnLabel}: ${_apiLabel(flow.nextStep ?? '')}',
+      '${l10n.opdPaymentStatusLabel}: ${value == null
+          ? l10n.profileUnknownValue
+          : value.consultationPaid
+          ? l10n.opdPaymentPaidLabel
+          : value.consultationPaymentRequired
+          ? l10n.opdPaymentRequiredLabel
+          : l10n.opdPaymentNotRequiredLabel}',
+      '${l10n.opdVitalsSummaryLabel}: ${value?.vitalSigns.length ?? 0}',
+      '${l10n.opdClinicalNotesSummaryLabel}: ${value?.clinicalNotes.length ?? 0}',
+      '${l10n.opdServicesSummaryLabel}: ${(value?.labOrders.length ?? 0) + (value?.radiologyOrders.length ?? 0) + (value?.pharmacyOrders.length ?? 0)}',
+      if (value != null && value.vitalSigns.isNotEmpty) '',
+      if (value != null && value.vitalSigns.isNotEmpty)
+        l10n.opdVitalsSummaryLabel,
+      if (value != null)
+        for (final OpdRelatedRecord vital in value.vitalSigns)
+          _joinDisplay(<String?>[vital.title, vital.subtitle]),
+      if (value != null && value.timeline.isNotEmpty) '',
+      if (value != null && value.timeline.isNotEmpty) l10n.opdTimelineTitle,
+      if (value != null)
+        for (final OpdTimelineItem item in value.timeline)
+          _joinDisplay(<String?>[
+            _apiLabel(item.action),
+            _apiLabel(item.stage ?? ''),
+            item.notes,
+          ]),
+    ];
+    return lines.where((String line) => line.trim().isNotEmpty).join('\n');
   }
 }
 
@@ -2787,6 +3965,18 @@ List<AppSelectOption<String>> _statusOptions(List<String> values) {
   ];
 }
 
+AppSelectOption<String> _drugOption(OpdDrugOption drug) {
+  return AppSelectOption<String>(
+    value: drug.apiId,
+    label: _joinDisplay(<String?>[
+      drug.displayTitle,
+      drug.form,
+      drug.strength,
+      drug.availableQuantity?.toString(),
+    ]),
+  );
+}
+
 AppSelectOption<String>? _patientSelectOption(Patient patient) {
   final String? value = patient.publicId;
   if (!_isNonEmpty(value)) {
@@ -2860,6 +4050,14 @@ String _joinDisplay(Iterable<String?> values) {
       .join(' | ');
 }
 
+List<String> _splitTokens(String value) {
+  return value
+      .split(RegExp(r'[,;\n]+'))
+      .map((String token) => token.trim())
+      .where((String token) => token.isNotEmpty)
+      .toList(growable: false);
+}
+
 AppWorkspaceStatusTone _stageTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
     'COMPLETED' || 'DISCHARGED' || 'ADMITTED' => AppWorkspaceStatusTone.success,
@@ -2898,6 +4096,27 @@ const List<String> _queueStatuses = <String>[
   'NO_SHOW',
 ];
 
+const List<String> _arrivalModeOptions = <String>['WALK_IN', 'EMERGENCY'];
+
+const List<String> _emergencySeverityOptions = <String>[
+  'LOW',
+  'MEDIUM',
+  'HIGH',
+  'CRITICAL',
+];
+
+const List<String> _triageLevelOptions = <String>[
+  'LEVEL_1',
+  'LEVEL_2',
+  'LEVEL_3',
+  'LEVEL_4',
+  'LEVEL_5',
+  'IMMEDIATE',
+  'URGENT',
+  'LESS_URGENT',
+  'NON_URGENT',
+];
+
 const List<String> _flowStages = <String>[
   'WAITING_CONSULTATION_PAYMENT',
   'WAITING_VITALS',
@@ -2932,6 +4151,39 @@ const List<String> _dispositionOptions = <String>[
   'DISCHARGE',
   'ADMIT',
   'SEND_TO_PHARMACY',
+];
+
+const List<String> _diagnosisTypes = <String>[
+  'PRIMARY',
+  'SECONDARY',
+  'DIFFERENTIAL',
+];
+
+const List<String> _medicationFrequencies = <String>[
+  'ONCE',
+  'BID',
+  'TID',
+  'QID',
+  'PRN',
+  'STAT',
+  'CUSTOM',
+];
+
+const List<String> _medicationRoutes = <String>[
+  'ORAL',
+  'IV',
+  'IM',
+  'TOPICAL',
+  'INHALATION',
+  'OTHER',
+];
+
+final List<TextInputFormatter> _decimalInputFormatters = <TextInputFormatter>[
+  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+];
+
+final List<TextInputFormatter> _integerInputFormatters = <TextInputFormatter>[
+  FilteringTextInputFormatter.digitsOnly,
 ];
 
 const String _defaultCurrency = 'UGX';

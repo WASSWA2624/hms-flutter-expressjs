@@ -453,6 +453,16 @@ final class OpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> recordVitals(
+    OpdFlowSummary flow,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateFlow(
+      () => _repository.recordVitals(flow.apiId, payload),
+      refreshAfter: true,
+    );
+  }
+
   Future<AppFailure?> correctStage(
     OpdFlowSummary flow,
     String stage,
@@ -463,6 +473,16 @@ final class OpdWorkspaceController
         'stage_to': stage,
         'reason': reason,
       }),
+      refreshAfter: true,
+    );
+  }
+
+  Future<AppFailure?> doctorReview(
+    OpdFlowSummary flow,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateFlow(
+      () => _repository.doctorReview(flow.apiId, payload),
       refreshAfter: true,
     );
   }
@@ -915,6 +935,14 @@ final class OpdWorkspaceController
           referrals: selected.referrals,
           followUps: selected.followUps,
           clinicalAlerts: selected.clinicalAlerts,
+          vitalSigns: selected.vitalSigns,
+          clinicalNotes: selected.clinicalNotes,
+          diagnoses: selected.diagnoses,
+          procedures: selected.procedures,
+          labOrders: selected.labOrders,
+          radiologyOrders: selected.radiologyOrders,
+          pharmacyOrders: selected.pharmacyOrders,
+          admissions: selected.admissions,
         );
       }
     }

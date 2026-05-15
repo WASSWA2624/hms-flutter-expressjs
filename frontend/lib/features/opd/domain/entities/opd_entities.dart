@@ -402,6 +402,37 @@ final class OpdRelatedRecord {
 }
 
 @immutable
+final class OpdDrugOption {
+  const OpdDrugOption({
+    required this.id,
+    this.publicId,
+    this.name,
+    this.code,
+    this.form,
+    this.strength,
+    this.availableQuantity,
+  });
+
+  final String id;
+  final String? publicId;
+  final String? name;
+  final String? code;
+  final String? form;
+  final String? strength;
+  final int? availableQuantity;
+
+  String get apiId => publicId ?? id;
+
+  String get displayTitle {
+    final List<String> parts = <String>[
+      if ((name ?? '').trim().isNotEmpty) name!.trim(),
+      if ((code ?? '').trim().isNotEmpty) code!.trim(),
+    ];
+    return parts.isEmpty ? apiId : parts.join(' | ');
+  }
+}
+
+@immutable
 final class OpdFlowDetail {
   const OpdFlowDetail({
     required this.summary,
@@ -413,6 +444,14 @@ final class OpdFlowDetail {
     this.referrals = const <OpdRelatedRecord>[],
     this.followUps = const <OpdRelatedRecord>[],
     this.clinicalAlerts = const <OpdRelatedRecord>[],
+    this.vitalSigns = const <OpdRelatedRecord>[],
+    this.clinicalNotes = const <OpdRelatedRecord>[],
+    this.diagnoses = const <OpdRelatedRecord>[],
+    this.procedures = const <OpdRelatedRecord>[],
+    this.labOrders = const <OpdRelatedRecord>[],
+    this.radiologyOrders = const <OpdRelatedRecord>[],
+    this.pharmacyOrders = const <OpdRelatedRecord>[],
+    this.admissions = const <OpdRelatedRecord>[],
   });
 
   final OpdFlowSummary summary;
@@ -424,6 +463,14 @@ final class OpdFlowDetail {
   final List<OpdRelatedRecord> referrals;
   final List<OpdRelatedRecord> followUps;
   final List<OpdRelatedRecord> clinicalAlerts;
+  final List<OpdRelatedRecord> vitalSigns;
+  final List<OpdRelatedRecord> clinicalNotes;
+  final List<OpdRelatedRecord> diagnoses;
+  final List<OpdRelatedRecord> procedures;
+  final List<OpdRelatedRecord> labOrders;
+  final List<OpdRelatedRecord> radiologyOrders;
+  final List<OpdRelatedRecord> pharmacyOrders;
+  final List<OpdRelatedRecord> admissions;
 }
 
 @immutable

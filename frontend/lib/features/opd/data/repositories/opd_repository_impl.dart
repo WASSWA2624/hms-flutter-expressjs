@@ -181,6 +181,20 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
+  Future<Result<OpdFlowDetail>> recordVitals(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
+        'record-vitals',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
   Future<Result<OpdFlowDetail>> assignDoctor(
     String flowId,
     Map<String, Object?> payload,
@@ -188,6 +202,20 @@ final class OpdRepositoryImpl implements OpdRepository {
     return _apiClient.post<OpdFlowDetail>(
       ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
         'assign-doctor',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowDetail>> doctorReview(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
+        'doctor-review',
       ]),
       data: _withoutEmpty(payload),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
@@ -271,6 +299,21 @@ final class OpdRepositoryImpl implements OpdRepository {
         'order': 'asc',
       },
       decoder: decodeAvailabilitySlots,
+    );
+  }
+
+  @override
+  Future<Result<List<OpdDrugOption>>> listAvailableDrugs({String? search}) {
+    return _apiClient.get<List<OpdDrugOption>>(
+      ApiEndpoints.collection(HmsApiResource.drugs),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': 20,
+        'search': search,
+        'sort_by': 'name',
+        'order': 'asc',
+      }),
+      decoder: decodeOpdDrugOptions,
     );
   }
 

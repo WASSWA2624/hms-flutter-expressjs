@@ -946,6 +946,276 @@ abstract class AppLocalizations {
   /// **'Decision'**
   String get opdDecisionLabel;
 
+  /// Arrival mode field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival mode'**
+  String get opdArrivalModeLabel;
+
+  /// Emergency severity field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency severity'**
+  String get opdEmergencySeverityLabel;
+
+  /// Triage level field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage level'**
+  String get opdTriageLevelLabel;
+
+  /// Reception and queue workflow section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Reception and queue'**
+  String get opdWorkflowReceptionTitle;
+
+  /// Triage workflow section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage'**
+  String get opdWorkflowTriageTitle;
+
+  /// Doctor consultation workflow section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor consultation'**
+  String get opdWorkflowDoctorTitle;
+
+  /// Services workflow section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get opdWorkflowServicesTitle;
+
+  /// Printing workflow section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Printing'**
+  String get opdWorkflowPrintTitle;
+
+  /// Action label to route an OPD patient to triage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to triage'**
+  String get opdSendToTriageAction;
+
+  /// Action label to route an OPD patient to doctor review.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to doctor'**
+  String get opdSendToDoctorAction;
+
+  /// Action label to record OPD vitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Record vitals'**
+  String get opdRecordVitalsAction;
+
+  /// Action label to record a doctor review.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor review'**
+  String get opdDoctorReviewAction;
+
+  /// Action label to route an OPD patient to lab.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to lab'**
+  String get opdRouteLabAction;
+
+  /// Action label to route an OPD patient to radiology.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to radiology'**
+  String get opdRouteRadiologyAction;
+
+  /// Action label to route an OPD patient to pharmacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to pharmacy'**
+  String get opdRoutePharmacyAction;
+
+  /// Action label to open the OPD print summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Print summary'**
+  String get opdPrintSummaryAction;
+
+  /// Print action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get opdPrintAction;
+
+  /// Copy OPD summary action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy summary'**
+  String get opdCopySummaryAction;
+
+  /// Vitals summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals'**
+  String get opdVitalsSummaryLabel;
+
+  /// Services summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get opdServicesSummaryLabel;
+
+  /// Clinical notes summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical notes'**
+  String get opdClinicalNotesSummaryLabel;
+
+  /// Procedures summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedures'**
+  String get opdProceduresSummaryLabel;
+
+  /// Clinical note field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical note'**
+  String get opdClinicalNoteLabel;
+
+  /// Diagnosis type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnosis type'**
+  String get opdDiagnosisTypeLabel;
+
+  /// Diagnosis field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnosis'**
+  String get opdDiagnosisLabel;
+
+  /// Diagnosis code field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnosis code'**
+  String get opdDiagnosisCodeLabel;
+
+  /// Procedure field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure or minor surgery'**
+  String get opdProcedureLabel;
+
+  /// Procedure code field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure code'**
+  String get opdProcedureCodeLabel;
+
+  /// Lab test identifiers field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab test IDs'**
+  String get opdLabTestIdsLabel;
+
+  /// Lab panel identifiers field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab panel IDs'**
+  String get opdLabPanelIdsLabel;
+
+  /// Radiology test identifiers field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology test IDs'**
+  String get opdRadiologyTestIdsLabel;
+
+  /// Available drug field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Available drug'**
+  String get opdDrugLabel;
+
+  /// Drug quantity field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get opdDrugQuantityLabel;
+
+  /// Dosage field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dosage'**
+  String get opdDosageLabel;
+
+  /// Medication frequency field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get opdFrequencyLabel;
+
+  /// Medication route field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication route'**
+  String get opdMedicationRouteLabel;
+
+  /// Prescription notes field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescription notes'**
+  String get opdPrescriptionNotesLabel;
+
+  /// Temperature field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get opdTemperatureLabel;
+
+  /// Systolic blood pressure field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic'**
+  String get opdSystolicLabel;
+
+  /// Diastolic blood pressure field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic'**
+  String get opdDiastolicLabel;
+
+  /// Heart rate field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate'**
+  String get opdHeartRateLabel;
+
+  /// Respiratory rate field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Respiratory rate'**
+  String get opdRespiratoryRateLabel;
+
+  /// Oxygen saturation field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen saturation'**
+  String get opdOxygenSaturationLabel;
+
+  /// Weight field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get opdWeightLabel;
+
+  /// Triage notes field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage notes'**
+  String get opdTriageNotesLabel;
+
   /// Patient registry screen title.
   ///
   /// In en, this message translates to:

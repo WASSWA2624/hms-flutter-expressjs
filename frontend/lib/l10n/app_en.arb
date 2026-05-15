@@ -277,6 +277,51 @@
   "opdExternalFacilityLabel": "External facility",
   "opdFollowUpDateLabel": "Follow-up date",
   "opdDecisionLabel": "Decision",
+  "opdArrivalModeLabel": "Arrival mode",
+  "opdEmergencySeverityLabel": "Emergency severity",
+  "opdTriageLevelLabel": "Triage level",
+  "opdWorkflowReceptionTitle": "Reception and queue",
+  "opdWorkflowTriageTitle": "Triage",
+  "opdWorkflowDoctorTitle": "Doctor consultation",
+  "opdWorkflowServicesTitle": "Services",
+  "opdWorkflowPrintTitle": "Printing",
+  "opdSendToTriageAction": "Send to triage",
+  "opdSendToDoctorAction": "Send to doctor",
+  "opdRecordVitalsAction": "Record vitals",
+  "opdDoctorReviewAction": "Doctor review",
+  "opdRouteLabAction": "Send to lab",
+  "opdRouteRadiologyAction": "Send to radiology",
+  "opdRoutePharmacyAction": "Send to pharmacy",
+  "opdPrintSummaryAction": "Print summary",
+  "opdPrintAction": "Print",
+  "opdCopySummaryAction": "Copy summary",
+  "opdVitalsSummaryLabel": "Vitals",
+  "opdServicesSummaryLabel": "Services",
+  "opdClinicalNotesSummaryLabel": "Clinical notes",
+  "opdProceduresSummaryLabel": "Procedures",
+  "opdClinicalNoteLabel": "Clinical note",
+  "opdDiagnosisTypeLabel": "Diagnosis type",
+  "opdDiagnosisLabel": "Diagnosis",
+  "opdDiagnosisCodeLabel": "Diagnosis code",
+  "opdProcedureLabel": "Procedure or minor surgery",
+  "opdProcedureCodeLabel": "Procedure code",
+  "opdLabTestIdsLabel": "Lab test IDs",
+  "opdLabPanelIdsLabel": "Lab panel IDs",
+  "opdRadiologyTestIdsLabel": "Radiology test IDs",
+  "opdDrugLabel": "Available drug",
+  "opdDrugQuantityLabel": "Quantity",
+  "opdDosageLabel": "Dosage",
+  "opdFrequencyLabel": "Frequency",
+  "opdMedicationRouteLabel": "Medication route",
+  "opdPrescriptionNotesLabel": "Prescription notes",
+  "opdTemperatureLabel": "Temperature",
+  "opdSystolicLabel": "Systolic",
+  "opdDiastolicLabel": "Diastolic",
+  "opdHeartRateLabel": "Heart rate",
+  "opdRespiratoryRateLabel": "Respiratory rate",
+  "opdOxygenSaturationLabel": "Oxygen saturation",
+  "opdWeightLabel": "Weight",
+  "opdTriageNotesLabel": "Triage notes",
   "@opdTitle": {
     "description": "OPD workspace title."
   },
@@ -588,6 +633,141 @@
   },
   "@opdDecisionLabel": {
     "description": "Disposition decision field label."
+  },
+  "@opdArrivalModeLabel": {
+    "description": "Arrival mode field label."
+  },
+  "@opdEmergencySeverityLabel": {
+    "description": "Emergency severity field label."
+  },
+  "@opdTriageLevelLabel": {
+    "description": "Triage level field label."
+  },
+  "@opdWorkflowReceptionTitle": {
+    "description": "Reception and queue workflow section title."
+  },
+  "@opdWorkflowTriageTitle": {
+    "description": "Triage workflow section title."
+  },
+  "@opdWorkflowDoctorTitle": {
+    "description": "Doctor consultation workflow section title."
+  },
+  "@opdWorkflowServicesTitle": {
+    "description": "Services workflow section title."
+  },
+  "@opdWorkflowPrintTitle": {
+    "description": "Printing workflow section title."
+  },
+  "@opdSendToTriageAction": {
+    "description": "Action label to route an OPD patient to triage."
+  },
+  "@opdSendToDoctorAction": {
+    "description": "Action label to route an OPD patient to doctor review."
+  },
+  "@opdRecordVitalsAction": {
+    "description": "Action label to record OPD vitals."
+  },
+  "@opdDoctorReviewAction": {
+    "description": "Action label to record a doctor review."
+  },
+  "@opdRouteLabAction": {
+    "description": "Action label to route an OPD patient to lab."
+  },
+  "@opdRouteRadiologyAction": {
+    "description": "Action label to route an OPD patient to radiology."
+  },
+  "@opdRoutePharmacyAction": {
+    "description": "Action label to route an OPD patient to pharmacy."
+  },
+  "@opdPrintSummaryAction": {
+    "description": "Action label to open the OPD print summary."
+  },
+  "@opdPrintAction": {
+    "description": "Print action label."
+  },
+  "@opdCopySummaryAction": {
+    "description": "Copy OPD summary action label."
+  },
+  "@opdVitalsSummaryLabel": {
+    "description": "Vitals summary label."
+  },
+  "@opdServicesSummaryLabel": {
+    "description": "Services summary label."
+  },
+  "@opdClinicalNotesSummaryLabel": {
+    "description": "Clinical notes summary label."
+  },
+  "@opdProceduresSummaryLabel": {
+    "description": "Procedures summary label."
+  },
+  "@opdClinicalNoteLabel": {
+    "description": "Clinical note field label."
+  },
+  "@opdDiagnosisTypeLabel": {
+    "description": "Diagnosis type field label."
+  },
+  "@opdDiagnosisLabel": {
+    "description": "Diagnosis field label."
+  },
+  "@opdDiagnosisCodeLabel": {
+    "description": "Diagnosis code field label."
+  },
+  "@opdProcedureLabel": {
+    "description": "Procedure field label."
+  },
+  "@opdProcedureCodeLabel": {
+    "description": "Procedure code field label."
+  },
+  "@opdLabTestIdsLabel": {
+    "description": "Lab test identifiers field label."
+  },
+  "@opdLabPanelIdsLabel": {
+    "description": "Lab panel identifiers field label."
+  },
+  "@opdRadiologyTestIdsLabel": {
+    "description": "Radiology test identifiers field label."
+  },
+  "@opdDrugLabel": {
+    "description": "Available drug field label."
+  },
+  "@opdDrugQuantityLabel": {
+    "description": "Drug quantity field label."
+  },
+  "@opdDosageLabel": {
+    "description": "Dosage field label."
+  },
+  "@opdFrequencyLabel": {
+    "description": "Medication frequency field label."
+  },
+  "@opdMedicationRouteLabel": {
+    "description": "Medication route field label."
+  },
+  "@opdPrescriptionNotesLabel": {
+    "description": "Prescription notes field label."
+  },
+  "@opdTemperatureLabel": {
+    "description": "Temperature field label."
+  },
+  "@opdSystolicLabel": {
+    "description": "Systolic blood pressure field label."
+  },
+  "@opdDiastolicLabel": {
+    "description": "Diastolic blood pressure field label."
+  },
+  "@opdHeartRateLabel": {
+    "description": "Heart rate field label."
+  },
+  "@opdRespiratoryRateLabel": {
+    "description": "Respiratory rate field label."
+  },
+  "@opdOxygenSaturationLabel": {
+    "description": "Oxygen saturation field label."
+  },
+  "@opdWeightLabel": {
+    "description": "Weight field label."
+  },
+  "@opdTriageNotesLabel": {
+    "description": "Triage notes field label."
   },
   "patientsTitle": "Patient registry",
   "@patientsTitle": {

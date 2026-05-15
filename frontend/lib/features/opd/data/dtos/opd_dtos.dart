@@ -212,6 +212,7 @@ final class OpdFlowDetailDto {
   }
 
   OpdFlowDetail toEntity() {
+    final OpdJsonMap encounter = _map(json['encounter']);
     final OpdJsonMap flow = _map(json['flow']);
     final OpdJsonMap consultation = _map(flow['consultation']);
     final OpdFlowSummary summary = OpdFlowSummaryDto.fromDetail(
@@ -242,6 +243,23 @@ final class OpdFlowDetailDto {
           .map((OpdJsonMap entry) => OpdRelatedRecordDto(entry, 'alert'))
           .map((OpdRelatedRecordDto dto) => dto.toEntity())
           .toList(growable: false),
+      vitalSigns: _relatedRecords(encounter['vital_signs'], 'vital_sign'),
+      clinicalNotes: _relatedRecords(
+        encounter['clinical_notes'],
+        'clinical_note',
+      ),
+      diagnoses: _relatedRecords(encounter['diagnoses'], 'diagnosis'),
+      procedures: _relatedRecords(encounter['procedures'], 'procedure'),
+      labOrders: _relatedRecords(encounter['lab_orders'], 'lab_order'),
+      radiologyOrders: _relatedRecords(
+        encounter['radiology_orders'],
+        'radiology_order',
+      ),
+      pharmacyOrders: _relatedRecords(
+        encounter['pharmacy_orders'],
+        'pharmacy_order',
+      ),
+      admissions: _relatedRecords(encounter['admissions'], 'admission'),
     );
   }
 }
@@ -278,17 +296,54 @@ final class OpdRelatedRecordDto {
       title:
           _string(json['reason']) ??
           _string(json['notes']) ??
+          _string(json['note']) ??
+          _string(json['description']) ??
           _string(json['title']) ??
-          _string(json['external_facility_name']),
+          _string(json['external_facility_name']) ??
+          _vitalDisplay(json),
       subtitle:
           _string(json['external_facility_name']) ??
-          _string(json['referral_reason_code']),
+          _string(json['referral_reason_code']) ??
+          _string(json['code']) ??
+          _string(json['human_friendly_id']),
       occurredAt:
           _date(json['scheduled_at']) ??
+          _date(json['recorded_at']) ??
+          _date(json['ordered_at']) ??
+          _date(json['admitted_at']) ??
           _date(json['created_at']) ??
           _date(json['updated_at']),
     );
   }
+}
+
+final class OpdDrugOptionDto {
+  const OpdDrugOptionDto(this.json);
+
+  final OpdJsonMap json;
+
+  OpdDrugOption toEntity() {
+    return OpdDrugOption(
+      id: _string(json['id']) ?? '',
+      publicId: _string(json['human_friendly_id']),
+      name: _string(json['name']),
+      code: _string(json['code']),
+      form: _string(json['form']),
+      strength: _string(json['strength']),
+      availableQuantity: _intOrNull(
+        json['available_quantity'] ?? json['quantity_on_hand'],
+      ),
+    );
+  }
+}
+
+List<OpdDrugOption> decodeOpdDrugOptions(Object? responseData) {
+  final OpdJsonMap response = _expectMap(responseData);
+  return _list(response['data'])
+      .map(OpdDrugOptionDto.new)
+      .map((OpdDrugOptionDto dto) => dto.toEntity())
+      .where((OpdDrugOption drug) => drug.id.isNotEmpty)
+      .toList(growable: false);
 }
 
 final class OpdProviderScheduleDto {
@@ -359,6 +414,24 @@ List<OpdAvailabilitySlot> decodeAvailabilitySlots(Object? responseData) {
 OpdJsonMap decodeDataMap(Object? responseData) {
   final OpdJsonMap response = _expectMap(responseData);
   return _map(response['data']);
+}
+
+List<OpdRelatedRecord> _relatedRecords(Object? source, String kind) {
+  return _list(source)
+      .map((OpdJsonMap entry) => OpdRelatedRecordDto(entry, kind))
+      .map((OpdRelatedRecordDto dto) => dto.toEntity())
+      .toList(growable: false);
+}
+
+String? _vitalDisplay(OpdJsonMap json) {
+  final String? vitalType = _string(json['vital_type']);
+  final String? value = _string(json['value']);
+  final String? unit = _string(json['unit']);
+  final String? displayValue = _join(<String?>[value, unit]);
+  if (vitalType == null && displayValue == null) {
+    return null;
+  }
+  return _join(<String?>[vitalType, displayValue]) ?? vitalType ?? displayValue;
 }
 
 OpdJsonMap _expectMap(Object? value) {

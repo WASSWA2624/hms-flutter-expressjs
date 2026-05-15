@@ -44,7 +44,17 @@ abstract interface class OpdRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<OpdFlowDetail>> recordVitals(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<OpdFlowDetail>> assignDoctor(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<OpdFlowDetail>> doctorReview(
     String flowId,
     Map<String, Object?> payload,
   );
@@ -68,4 +78,6 @@ abstract interface class OpdRepository {
   Future<Result<List<OpdAvailabilitySlot>>> listAvailabilitySlots(
     String scheduleId,
   );
+
+  Future<Result<List<OpdDrugOption>>> listAvailableDrugs({String? search});
 }
