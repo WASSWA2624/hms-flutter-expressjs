@@ -155,9 +155,7 @@ class _OpdWorkspaceContent extends ConsumerWidget {
               title: l10n.opdArrivalsSummaryLabel,
               emptyTitle: l10n.opdNoArrivalsTitle,
               emptyBody: l10n.opdNoArrivalsBody,
-              patients: _summaryItemsFromAppointments(
-                state.appointments.items,
-              ),
+              patients: _summaryItemsFromAppointments(state.appointments.items),
             );
           },
         ),
@@ -305,15 +303,9 @@ final class _OpdPatientSummaryItem {
       return true;
     }
 
-    return <String?>[
-      id,
-      title,
-      subtitle,
-      status,
-      provider,
-    ].whereType<String>().any(
-      (String value) => value.toLowerCase().contains(needle),
-    );
+    return <String?>[id, title, subtitle, status, provider]
+        .whereType<String>()
+        .any((String value) => value.toLowerCase().contains(needle));
   }
 }
 
@@ -447,17 +439,13 @@ class _OpdSummaryPatientListDialogState
             items: patients,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            emptyBuilder: (_) => _EmptyPanel(
-              title: widget.emptyTitle,
-              body: widget.emptyBody,
-            ),
+            emptyBuilder: (_) =>
+                _EmptyPanel(title: widget.emptyTitle, body: widget.emptyBody),
             columns: <AppDataColumn<_OpdPatientSummaryItem>>[
               AppDataColumn<_OpdPatientSummaryItem>(
                 label: l10n.opdPatientColumnLabel,
-                cellBuilder: (_, _OpdPatientSummaryItem item) => _PatientText(
-                  title: item.title,
-                  subtitle: item.subtitle,
-                ),
+                cellBuilder: (_, _OpdPatientSummaryItem item) =>
+                    _PatientText(title: item.title, subtitle: item.subtitle),
               ),
               AppDataColumn<_OpdPatientSummaryItem>(
                 label: l10n.opdStatusColumnLabel,
@@ -3099,15 +3087,6 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
     context,
   ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
 }
-
-const List<String> _appointmentStatuses = <String>[
-  'SCHEDULED',
-  'CONFIRMED',
-  'IN_PROGRESS',
-  'COMPLETED',
-  'CANCELLED',
-  'NO_SHOW',
-];
 
 const List<String> _queueStatuses = <String>[
   'SCHEDULED',
