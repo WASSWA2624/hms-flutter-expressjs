@@ -123,5 +123,15 @@ void main() {
         ),
       );
     });
+
+    test('normalizes local development API host to the current app host', () {
+      final config = AppConfig.fromValues(
+        environmentName: 'development',
+        apiBaseUrl: 'http://localhost:3000',
+        appBaseUrl: Uri.parse('http://127.0.0.1:5214/opd'),
+      );
+
+      expect(config.apiBaseUrl, Uri.parse('http://127.0.0.1:3000'));
+    });
   });
 }

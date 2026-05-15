@@ -48,6 +48,7 @@ final class AppConfig {
     int apiTimeoutSeconds = AppConfig.defaultApiTimeoutSeconds,
     String logLevelName = 'info',
     FeatureFlags featureFlags = const FeatureFlags(),
+    Uri? appBaseUrl,
   }) {
     return AppConfig._fromRawValues(
       environmentName: environmentName,
@@ -55,6 +56,7 @@ final class AppConfig {
       apiTimeoutSeconds: apiTimeoutSeconds,
       logLevelName: logLevelName,
       featureFlags: featureFlags,
+      appBaseUrl: appBaseUrl,
     );
   }
 
@@ -64,6 +66,7 @@ final class AppConfig {
     required int apiTimeoutSeconds,
     required String logLevelName,
     required FeatureFlags featureFlags,
+    Uri? appBaseUrl,
   }) {
     final errors = <String>[];
 
@@ -79,9 +82,15 @@ final class AppConfig {
       throw AppConfigException(errors);
     }
 
+    final normalizedApiBaseUrl = _normalizeDevelopmentApiBaseUrl(
+      environment: environment,
+      apiBaseUrl: uri,
+      appBaseUrl: appBaseUrl ?? Uri.base,
+    );
+
     final config = AppConfig(
       environment: environment!,
-      apiBaseUrl: uri!,
+      apiBaseUrl: normalizedApiBaseUrl!,
       apiTimeout: Duration(seconds: apiTimeoutSeconds),
       logLevel: logLevel!,
       featureFlags: featureFlags,
@@ -192,6 +201,25 @@ final class AppConfig {
     }
 
     return uri;
+  }
+
+  static Uri? _normalizeDevelopmentApiBaseUrl({
+    required AppEnvironment? environment,
+    required Uri? apiBaseUrl,
+    required Uri appBaseUrl,
+  }) {
+    if (environment != AppEnvironment.development || apiBaseUrl == null) {
+      return apiBaseUrl;
+    }
+
+    if (!appBaseUrl.hasAuthority ||
+        !_isLocalDevelopmentHost(appBaseUrl.host) ||
+        !_isLocalDevelopmentHost(apiBaseUrl.host) ||
+        appBaseUrl.host == apiBaseUrl.host) {
+      return apiBaseUrl;
+    }
+
+    return apiBaseUrl.replace(host: appBaseUrl.host);
   }
 
   static AppLogLevel? _parseLogLevel(String value, List<String> errors) {
