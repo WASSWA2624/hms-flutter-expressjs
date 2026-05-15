@@ -626,6 +626,18 @@
   "@tenantFacilityNoSelectionLabel": {
     "description": "Optional select empty value label."
   },
+  "tenantFacilitySearchLabel": "Search",
+  "@tenantFacilitySearchLabel": {
+    "description": "Generic setup modal search field label."
+  },
+  "tenantFacilityClearSearchAction": "Clear search",
+  "@tenantFacilityClearSearchAction": {
+    "description": "Clear setup modal search field action label."
+  },
+  "tenantFacilitySearchNoResults": "No matching records found.",
+  "@tenantFacilitySearchNoResults": {
+    "description": "Setup modal empty state when a search has no matching rows."
+  },
   "tenantFacilityStatusActive": "Active",
   "@tenantFacilityStatusActive": {
     "description": "Active status label."
@@ -653,6 +665,10 @@
   "tenantFacilityBranchesListTitle": "Branch records",
   "@tenantFacilityBranchesListTitle": {
     "description": "Branches list subheading."
+  },
+  "tenantFacilityBranchSearchHint": "Search branches by name or status",
+  "@tenantFacilityBranchSearchHint": {
+    "description": "Branches modal search field hint."
   },
   "tenantFacilityAddBranchAction": "Add branch",
   "@tenantFacilityAddBranchAction": {
@@ -686,9 +702,25 @@
   "@tenantFacilityDepartmentsListTitle": {
     "description": "Departments list subheading."
   },
+  "tenantFacilityDepartmentsModalBody": "Manage department records for the selected facility.",
+  "@tenantFacilityDepartmentsModalBody": {
+    "description": "Departments modal body."
+  },
+  "tenantFacilityDepartmentSearchHint": "Search departments by name, type, branch, or status",
+  "@tenantFacilityDepartmentSearchHint": {
+    "description": "Departments modal search field hint."
+  },
   "tenantFacilityUnitsListTitle": "Units",
   "@tenantFacilityUnitsListTitle": {
     "description": "Units list subheading."
+  },
+  "tenantFacilityUnitsModalBody": "Manage units under facility departments.",
+  "@tenantFacilityUnitsModalBody": {
+    "description": "Units modal body."
+  },
+  "tenantFacilityUnitSearchHint": "Search units by name, department, or status",
+  "@tenantFacilityUnitSearchHint": {
+    "description": "Units modal search field hint."
   },
   "tenantFacilityDepartmentNameLabel": "Department name",
   "@tenantFacilityDepartmentNameLabel": {
@@ -782,13 +814,37 @@
   "@tenantFacilityNoWards": {
     "description": "Empty ward list label."
   },
+  "tenantFacilityWardsModalBody": "Manage ward records and department assignments.",
+  "@tenantFacilityWardsModalBody": {
+    "description": "Wards modal body."
+  },
+  "tenantFacilityWardSearchHint": "Search wards by name, type, department, or status",
+  "@tenantFacilityWardSearchHint": {
+    "description": "Wards modal search field hint."
+  },
   "tenantFacilityNoRooms": "No rooms have been added.",
   "@tenantFacilityNoRooms": {
     "description": "Empty room list label."
   },
+  "tenantFacilityRoomsModalBody": "Manage rooms and their ward assignments.",
+  "@tenantFacilityRoomsModalBody": {
+    "description": "Rooms modal body."
+  },
+  "tenantFacilityRoomSearchHint": "Search rooms by name, ward, floor, or status",
+  "@tenantFacilityRoomSearchHint": {
+    "description": "Rooms modal search field hint."
+  },
   "tenantFacilityNoBeds": "No beds have been added.",
   "@tenantFacilityNoBeds": {
     "description": "Empty bed list label."
+  },
+  "tenantFacilityBedsModalBody": "Manage bed labels, room links, and availability status.",
+  "@tenantFacilityBedsModalBody": {
+    "description": "Beds modal body."
+  },
+  "tenantFacilityBedSearchHint": "Search beds by label, ward, room, or status",
+  "@tenantFacilityBedSearchHint": {
+    "description": "Beds modal search field hint."
   },
   "tenantFacilityAddWardAction": "Add ward",
   "@tenantFacilityAddWardAction": {

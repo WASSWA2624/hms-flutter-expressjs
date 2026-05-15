@@ -970,6 +970,24 @@ abstract class AppLocalizations {
   /// **'None'**
   String get tenantFacilityNoSelectionLabel;
 
+  /// Generic setup modal search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get tenantFacilitySearchLabel;
+
+  /// Clear setup modal search field action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get tenantFacilityClearSearchAction;
+
+  /// Setup modal empty state when a search has no matching rows.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching records found.'**
+  String get tenantFacilitySearchNoResults;
+
   /// Active status label.
   ///
   /// In en, this message translates to:
@@ -1011,6 +1029,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Branch records'**
   String get tenantFacilityBranchesListTitle;
+
+  /// Branches modal search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search branches by name or status'**
+  String get tenantFacilityBranchSearchHint;
 
   /// Add branch button label.
   ///
@@ -1060,11 +1084,35 @@ abstract class AppLocalizations {
   /// **'Departments'**
   String get tenantFacilityDepartmentsListTitle;
 
+  /// Departments modal body.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage department records for the selected facility.'**
+  String get tenantFacilityDepartmentsModalBody;
+
+  /// Departments modal search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search departments by name, type, branch, or status'**
+  String get tenantFacilityDepartmentSearchHint;
+
   /// Units list subheading.
   ///
   /// In en, this message translates to:
   /// **'Units'**
   String get tenantFacilityUnitsListTitle;
+
+  /// Units modal body.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage units under facility departments.'**
+  String get tenantFacilityUnitsModalBody;
+
+  /// Units modal search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search units by name, department, or status'**
+  String get tenantFacilityUnitSearchHint;
 
   /// Department name field label.
   ///
@@ -1204,17 +1252,53 @@ abstract class AppLocalizations {
   /// **'No wards have been added.'**
   String get tenantFacilityNoWards;
 
+  /// Wards modal body.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage ward records and department assignments.'**
+  String get tenantFacilityWardsModalBody;
+
+  /// Wards modal search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search wards by name, type, department, or status'**
+  String get tenantFacilityWardSearchHint;
+
   /// Empty room list label.
   ///
   /// In en, this message translates to:
   /// **'No rooms have been added.'**
   String get tenantFacilityNoRooms;
 
+  /// Rooms modal body.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage rooms and their ward assignments.'**
+  String get tenantFacilityRoomsModalBody;
+
+  /// Rooms modal search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search rooms by name, ward, floor, or status'**
+  String get tenantFacilityRoomSearchHint;
+
   /// Empty bed list label.
   ///
   /// In en, this message translates to:
   /// **'No beds have been added.'**
   String get tenantFacilityNoBeds;
+
+  /// Beds modal body.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage bed labels, room links, and availability status.'**
+  String get tenantFacilityBedsModalBody;
+
+  /// Beds modal search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search beds by label, ward, room, or status'**
+  String get tenantFacilityBedSearchHint;
 
   /// Add ward button label.
   ///

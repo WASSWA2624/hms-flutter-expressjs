@@ -547,6 +547,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityNoSelectionLabel => 'None';
 
   @override
+  String get tenantFacilitySearchLabel => 'Search';
+
+  @override
+  String get tenantFacilityClearSearchAction => 'Clear search';
+
+  @override
+  String get tenantFacilitySearchNoResults => 'No matching records found.';
+
+  @override
   String get tenantFacilityStatusActive => 'Active';
 
   @override
@@ -567,6 +576,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityBranchesListTitle => 'Branch records';
+
+  @override
+  String get tenantFacilityBranchSearchHint =>
+      'Search branches by name or status';
 
   @override
   String get tenantFacilityAddBranchAction => 'Add branch';
@@ -594,7 +607,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityDepartmentsListTitle => 'Departments';
 
   @override
+  String get tenantFacilityDepartmentsModalBody =>
+      'Manage department records for the selected facility.';
+
+  @override
+  String get tenantFacilityDepartmentSearchHint =>
+      'Search departments by name, type, branch, or status';
+
+  @override
   String get tenantFacilityUnitsListTitle => 'Units';
+
+  @override
+  String get tenantFacilityUnitsModalBody =>
+      'Manage units under facility departments.';
+
+  @override
+  String get tenantFacilityUnitSearchHint =>
+      'Search units by name, department, or status';
 
   @override
   String get tenantFacilityDepartmentNameLabel => 'Department name';
@@ -667,10 +696,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityNoWards => 'No wards have been added.';
 
   @override
+  String get tenantFacilityWardsModalBody =>
+      'Manage ward records and department assignments.';
+
+  @override
+  String get tenantFacilityWardSearchHint =>
+      'Search wards by name, type, department, or status';
+
+  @override
   String get tenantFacilityNoRooms => 'No rooms have been added.';
 
   @override
+  String get tenantFacilityRoomsModalBody =>
+      'Manage rooms and their ward assignments.';
+
+  @override
+  String get tenantFacilityRoomSearchHint =>
+      'Search rooms by name, ward, floor, or status';
+
+  @override
   String get tenantFacilityNoBeds => 'No beds have been added.';
+
+  @override
+  String get tenantFacilityBedsModalBody =>
+      'Manage bed labels, room links, and availability status.';
+
+  @override
+  String get tenantFacilityBedSearchHint =>
+      'Search beds by label, ward, room, or status';
 
   @override
   String get tenantFacilityAddWardAction => 'Add ward';

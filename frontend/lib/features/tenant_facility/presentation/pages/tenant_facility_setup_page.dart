@@ -115,38 +115,68 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
             ),
             _SetupSummaryCard(
               icon: Icons.groups_2_outlined,
-              title: l10n.tenantFacilityDepartmentsSectionTitle,
-              body: l10n.tenantFacilityDepartmentsSectionBody,
-              detail: l10n.tenantFacilitySummaryDepartmentUnitCount(
+              title: l10n.tenantFacilityDepartmentsListTitle,
+              body: l10n.tenantFacilityDepartmentsModalBody,
+              detail: l10n.tenantFacilitySummaryRecordCount(
                 snapshot.departments.length,
-                snapshot.units.length,
               ),
-              statusLabel: snapshot.hasDepartmentsAndUnits
+              statusLabel: snapshot.departments.isNotEmpty
                   ? l10n.tenantFacilitySummaryConfigured
                   : l10n.tenantFacilitySummaryNeedsSetup,
-              completed: snapshot.hasDepartmentsAndUnits,
-              onPressed: () => _openDepartmentsUnitsModal(context),
+              completed: snapshot.departments.isNotEmpty,
+              onPressed: () => _openDepartmentsModal(context),
+            ),
+            _SetupSummaryCard(
+              icon: Icons.hub_outlined,
+              title: l10n.tenantFacilityUnitsListTitle,
+              body: l10n.tenantFacilityUnitsModalBody,
+              detail: l10n.tenantFacilitySummaryRecordCount(
+                snapshot.units.length,
+              ),
+              statusLabel: snapshot.units.isNotEmpty
+                  ? l10n.tenantFacilitySummaryConfigured
+                  : l10n.tenantFacilitySummaryNeedsSetup,
+              completed: snapshot.units.isNotEmpty,
+              onPressed: () => _openUnitsModal(context),
+            ),
+            _SetupSummaryCard(
+              icon: Icons.local_hotel_outlined,
+              title: l10n.tenantFacilityWardsLabel,
+              body: l10n.tenantFacilityWardsModalBody,
+              detail: l10n.tenantFacilitySummaryRecordCount(
+                snapshot.wards.length,
+              ),
+              statusLabel: snapshot.wards.isNotEmpty
+                  ? l10n.tenantFacilitySummaryConfigured
+                  : l10n.tenantFacilitySummaryNeedsSetup,
+              completed: snapshot.wards.isNotEmpty,
+              onPressed: () => _openWardsModal(context),
+            ),
+            _SetupSummaryCard(
+              icon: Icons.meeting_room_outlined,
+              title: l10n.tenantFacilityRoomsLabel,
+              body: l10n.tenantFacilityRoomsModalBody,
+              detail: l10n.tenantFacilitySummaryRecordCount(
+                snapshot.rooms.length,
+              ),
+              statusLabel: snapshot.rooms.isNotEmpty
+                  ? l10n.tenantFacilitySummaryConfigured
+                  : l10n.tenantFacilitySummaryNeedsSetup,
+              completed: snapshot.rooms.isNotEmpty,
+              onPressed: () => _openRoomsModal(context),
             ),
             _SetupSummaryCard(
               icon: Icons.bed_outlined,
-              title: l10n.tenantFacilityLocationsSectionTitle,
-              body: l10n.tenantFacilityLocationsSectionBody,
-              detail: l10n.tenantFacilitySummaryLocationCount(
-                snapshot.wards.length,
-                snapshot.rooms.length,
+              title: l10n.tenantFacilityBedsLabel,
+              body: l10n.tenantFacilityBedsModalBody,
+              detail: l10n.tenantFacilitySummaryRecordCount(
                 snapshot.beds.length,
               ),
-              statusLabel:
-                  snapshot.wards.isNotEmpty ||
-                      snapshot.rooms.isNotEmpty ||
-                      snapshot.beds.isNotEmpty
+              statusLabel: snapshot.beds.isNotEmpty
                   ? l10n.tenantFacilitySummaryConfigured
                   : l10n.tenantFacilitySummaryNeedsSetup,
-              completed:
-                  snapshot.wards.isNotEmpty ||
-                  snapshot.rooms.isNotEmpty ||
-                  snapshot.beds.isNotEmpty,
-              onPressed: () => _openLocationsModal(context),
+              completed: snapshot.beds.isNotEmpty,
+              onPressed: () => _openBedsModal(context),
             ),
           ],
         ),
@@ -417,13 +447,13 @@ Future<void> _openBranchesModal(BuildContext context) {
   );
 }
 
-Future<void> _openDepartmentsUnitsModal(BuildContext context) {
+Future<void> _openDepartmentsModal(BuildContext context) {
   final AppLocalizations l10n = context.l10n;
 
   return showAppDialog<void>(
     context: context,
     builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityDepartmentsSectionTitle,
+      title: l10n.tenantFacilityDepartmentsListTitle,
       icon: Icons.groups_2_outlined,
       builder:
           (
@@ -431,7 +461,7 @@ Future<void> _openDepartmentsUnitsModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
-          ) => _DepartmentUnitSection(
+          ) => _DepartmentSetupSection(
             snapshot: snapshot,
             canSubmit: canManageFacility && snapshot.facility != null,
             framed: false,
@@ -440,13 +470,82 @@ Future<void> _openDepartmentsUnitsModal(BuildContext context) {
   );
 }
 
-Future<void> _openLocationsModal(BuildContext context) {
+Future<void> _openUnitsModal(BuildContext context) {
   final AppLocalizations l10n = context.l10n;
 
   return showAppDialog<void>(
     context: context,
     builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityLocationsSectionTitle,
+      title: l10n.tenantFacilityUnitsListTitle,
+      icon: Icons.hub_outlined,
+      builder:
+          (
+            BuildContext context,
+            FacilitySetupSnapshot snapshot,
+            bool canManageTenant,
+            bool canManageFacility,
+          ) => _UnitSetupSection(
+            snapshot: snapshot,
+            canSubmit: canManageFacility && snapshot.facility != null,
+            framed: false,
+          ),
+    ),
+  );
+}
+
+Future<void> _openWardsModal(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => _SetupDetailDialog(
+      title: l10n.tenantFacilityWardsLabel,
+      icon: Icons.local_hotel_outlined,
+      builder:
+          (
+            BuildContext context,
+            FacilitySetupSnapshot snapshot,
+            bool canManageTenant,
+            bool canManageFacility,
+          ) => _WardSetupSection(
+            snapshot: snapshot,
+            canSubmit: canManageFacility && snapshot.facility != null,
+            framed: false,
+          ),
+    ),
+  );
+}
+
+Future<void> _openRoomsModal(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => _SetupDetailDialog(
+      title: l10n.tenantFacilityRoomsLabel,
+      icon: Icons.meeting_room_outlined,
+      builder:
+          (
+            BuildContext context,
+            FacilitySetupSnapshot snapshot,
+            bool canManageTenant,
+            bool canManageFacility,
+          ) => _RoomSetupSection(
+            snapshot: snapshot,
+            canSubmit: canManageFacility && snapshot.facility != null,
+            framed: false,
+          ),
+    ),
+  );
+}
+
+Future<void> _openBedsModal(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => _SetupDetailDialog(
+      title: l10n.tenantFacilityBedsLabel,
       icon: Icons.bed_outlined,
       builder:
           (
@@ -454,7 +553,7 @@ Future<void> _openLocationsModal(BuildContext context) {
             FacilitySetupSnapshot snapshot,
             bool canManageTenant,
             bool canManageFacility,
-          ) => _RoomsWardsBedsSection(
+          ) => _BedSetupSection(
             snapshot: snapshot,
             canSubmit: canManageFacility && snapshot.facility != null,
             framed: false,
@@ -1031,10 +1130,13 @@ class _BranchSetupSection extends ConsumerWidget {
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canEdit = canSubmit && !submission.isSubmitting;
 
-    final Widget content = _EntityGroup<BranchProfile>(
+    final Widget content = _SearchableEntityGroup<BranchProfile>(
       title: l10n.tenantFacilityBranchesListTitle,
       items: snapshot.branches,
       emptyLabel: l10n.tenantFacilityNoBranches,
+      noResultsLabel: l10n.tenantFacilitySearchNoResults,
+      searchLabel: l10n.tenantFacilitySearchLabel,
+      searchHint: l10n.tenantFacilityBranchSearchHint,
       addLabel: l10n.tenantFacilityAddBranchAction,
       canEdit: canEdit,
       onAdd: () => _openBranchDialog(context, snapshot),
@@ -1066,8 +1168,8 @@ class _BranchSetupSection extends ConsumerWidget {
   }
 }
 
-class _DepartmentUnitSection extends ConsumerWidget {
-  const _DepartmentUnitSection({
+class _DepartmentSetupSection extends ConsumerWidget {
+  const _DepartmentSetupSection({
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
@@ -1079,72 +1181,50 @@ class _DepartmentUnitSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canEdit = canSubmit && !submission.isSubmitting;
 
-    final Widget content = Column(
-      children: <Widget>[
-        _EntityGroup<DepartmentProfile>(
-          title: l10n.tenantFacilityDepartmentsListTitle,
-          items: snapshot.departments,
-          emptyLabel: l10n.tenantFacilityNoDepartments,
-          addLabel: l10n.tenantFacilityAddDepartmentAction,
-          canEdit: canEdit,
-          onAdd: () => _openDepartmentDialog(context, snapshot),
-          titleBuilder: (DepartmentProfile department) => department.name,
-          subtitleBuilder: (DepartmentProfile department) =>
-              _departmentSubtitle(l10n, snapshot, department),
-          onEdit: (DepartmentProfile department) =>
-              _openDepartmentDialog(context, snapshot, department: department),
-          onDelete: (DepartmentProfile department) => _deleteEntity(
-            context: context,
-            deleteAction: () => ref
-                .read(tenantFacilitySetupSubmissionProvider.notifier)
-                .deleteDepartment(department.id),
-          ),
-        ),
-        SizedBox(height: theme.spacing.lg),
-        _EntityGroup<UnitProfile>(
-          title: l10n.tenantFacilityUnitsListTitle,
-          items: snapshot.units,
-          emptyLabel: l10n.tenantFacilityNoUnits,
-          addLabel: l10n.tenantFacilityAddUnitAction,
-          canEdit: canEdit,
-          onAdd: () => _openUnitDialog(context, snapshot),
-          titleBuilder: (UnitProfile unit) => unit.name,
-          subtitleBuilder: (UnitProfile unit) =>
-              _unitSubtitle(l10n, snapshot, unit),
-          onEdit: (UnitProfile unit) =>
-              _openUnitDialog(context, snapshot, unit: unit),
-          onDelete: (UnitProfile unit) => _deleteEntity(
-            context: context,
-            deleteAction: () => ref
-                .read(tenantFacilitySetupSubmissionProvider.notifier)
-                .deleteUnit(unit.id),
-          ),
-        ),
-      ],
+    final Widget content = _SearchableEntityGroup<DepartmentProfile>(
+      title: l10n.tenantFacilityDepartmentsListTitle,
+      items: snapshot.departments,
+      emptyLabel: l10n.tenantFacilityNoDepartments,
+      noResultsLabel: l10n.tenantFacilitySearchNoResults,
+      searchLabel: l10n.tenantFacilitySearchLabel,
+      searchHint: l10n.tenantFacilityDepartmentSearchHint,
+      addLabel: l10n.tenantFacilityAddDepartmentAction,
+      canEdit: canEdit,
+      onAdd: () => _openDepartmentDialog(context, snapshot),
+      titleBuilder: (DepartmentProfile department) => department.name,
+      subtitleBuilder: (DepartmentProfile department) =>
+          _departmentSubtitle(l10n, snapshot, department),
+      onEdit: (DepartmentProfile department) =>
+          _openDepartmentDialog(context, snapshot, department: department),
+      onDelete: (DepartmentProfile department) => _deleteEntity(
+        context: context,
+        deleteAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .deleteDepartment(department.id),
+      ),
     );
 
     if (framed) {
       return AppScreenSection(
-        title: l10n.tenantFacilityDepartmentsSectionTitle,
-        body: l10n.tenantFacilityDepartmentsSectionBody,
+        title: l10n.tenantFacilityDepartmentsListTitle,
+        body: l10n.tenantFacilityDepartmentsModalBody,
         child: content,
       );
     }
 
     return _ModalSectionBody(
-      body: l10n.tenantFacilityDepartmentsSectionBody,
+      body: l10n.tenantFacilityDepartmentsModalBody,
       child: content,
     );
   }
 }
 
-class _RoomsWardsBedsSection extends ConsumerWidget {
-  const _RoomsWardsBedsSection({
+class _UnitSetupSection extends ConsumerWidget {
+  const _UnitSetupSection({
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
@@ -1156,87 +1236,208 @@ class _RoomsWardsBedsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canEdit = canSubmit && !submission.isSubmitting;
 
-    final Widget content = Column(
-      children: <Widget>[
-        _CountSummary(snapshot: snapshot),
-        SizedBox(height: theme.spacing.lg),
-        _EntityGroup<WardProfile>(
-          title: l10n.tenantFacilityWardsLabel,
-          items: snapshot.wards,
-          emptyLabel: l10n.tenantFacilityNoWards,
-          addLabel: l10n.tenantFacilityAddWardAction,
-          canEdit: canEdit,
-          onAdd: () => _openWardDialog(context, snapshot),
-          titleBuilder: (WardProfile ward) => ward.name,
-          subtitleBuilder: (WardProfile ward) =>
-              _wardSubtitle(l10n, snapshot, ward),
-          onEdit: (WardProfile ward) =>
-              _openWardDialog(context, snapshot, ward: ward),
-          onDelete: (WardProfile ward) => _deleteEntity(
-            context: context,
-            deleteAction: () => ref
-                .read(tenantFacilitySetupSubmissionProvider.notifier)
-                .deleteWard(ward.id),
-          ),
-        ),
-        SizedBox(height: theme.spacing.lg),
-        _EntityGroup<RoomProfile>(
-          title: l10n.tenantFacilityRoomsLabel,
-          items: snapshot.rooms,
-          emptyLabel: l10n.tenantFacilityNoRooms,
-          addLabel: l10n.tenantFacilityAddRoomAction,
-          canEdit: canEdit && snapshot.wards.isNotEmpty,
-          onAdd: () => _openRoomDialog(context, snapshot),
-          titleBuilder: (RoomProfile room) => room.name,
-          subtitleBuilder: (RoomProfile room) =>
-              _roomSubtitle(l10n, snapshot, room),
-          onEdit: (RoomProfile room) =>
-              _openRoomDialog(context, snapshot, room: room),
-          onDelete: (RoomProfile room) => _deleteEntity(
-            context: context,
-            deleteAction: () => ref
-                .read(tenantFacilitySetupSubmissionProvider.notifier)
-                .deleteRoom(room.id),
-          ),
-        ),
-        SizedBox(height: theme.spacing.lg),
-        _EntityGroup<BedProfile>(
-          title: l10n.tenantFacilityBedsLabel,
-          items: snapshot.beds,
-          emptyLabel: l10n.tenantFacilityNoBeds,
-          addLabel: l10n.tenantFacilityAddBedAction,
-          canEdit: canEdit && snapshot.wards.isNotEmpty,
-          onAdd: () => _openBedDialog(context, snapshot),
-          titleBuilder: (BedProfile bed) => bed.label,
-          subtitleBuilder: (BedProfile bed) =>
-              _bedSubtitle(l10n, snapshot, bed),
-          onEdit: (BedProfile bed) =>
-              _openBedDialog(context, snapshot, bed: bed),
-          onDelete: (BedProfile bed) => _deleteEntity(
-            context: context,
-            deleteAction: () => ref
-                .read(tenantFacilitySetupSubmissionProvider.notifier)
-                .deleteBed(bed.id),
-          ),
-        ),
-      ],
+    final Widget content = _SearchableEntityGroup<UnitProfile>(
+      title: l10n.tenantFacilityUnitsListTitle,
+      items: snapshot.units,
+      emptyLabel: l10n.tenantFacilityNoUnits,
+      noResultsLabel: l10n.tenantFacilitySearchNoResults,
+      searchLabel: l10n.tenantFacilitySearchLabel,
+      searchHint: l10n.tenantFacilityUnitSearchHint,
+      addLabel: l10n.tenantFacilityAddUnitAction,
+      canEdit: canEdit,
+      onAdd: () => _openUnitDialog(context, snapshot),
+      titleBuilder: (UnitProfile unit) => unit.name,
+      subtitleBuilder: (UnitProfile unit) =>
+          _unitSubtitle(l10n, snapshot, unit),
+      onEdit: (UnitProfile unit) =>
+          _openUnitDialog(context, snapshot, unit: unit),
+      onDelete: (UnitProfile unit) => _deleteEntity(
+        context: context,
+        deleteAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .deleteUnit(unit.id),
+      ),
     );
 
     if (framed) {
       return AppScreenSection(
-        title: l10n.tenantFacilityLocationsSectionTitle,
-        body: l10n.tenantFacilityLocationsSectionBody,
+        title: l10n.tenantFacilityUnitsListTitle,
+        body: l10n.tenantFacilityUnitsModalBody,
         child: content,
       );
     }
 
     return _ModalSectionBody(
-      body: l10n.tenantFacilityLocationsSectionBody,
+      body: l10n.tenantFacilityUnitsModalBody,
+      child: content,
+    );
+  }
+}
+
+class _WardSetupSection extends ConsumerWidget {
+  const _WardSetupSection({
+    required this.snapshot,
+    required this.canSubmit,
+    this.framed = true,
+  });
+
+  final FacilitySetupSnapshot snapshot;
+  final bool canSubmit;
+  final bool framed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool canEdit = canSubmit && !submission.isSubmitting;
+
+    final Widget content = _SearchableEntityGroup<WardProfile>(
+      title: l10n.tenantFacilityWardsLabel,
+      items: snapshot.wards,
+      emptyLabel: l10n.tenantFacilityNoWards,
+      noResultsLabel: l10n.tenantFacilitySearchNoResults,
+      searchLabel: l10n.tenantFacilitySearchLabel,
+      searchHint: l10n.tenantFacilityWardSearchHint,
+      addLabel: l10n.tenantFacilityAddWardAction,
+      canEdit: canEdit,
+      onAdd: () => _openWardDialog(context, snapshot),
+      titleBuilder: (WardProfile ward) => ward.name,
+      subtitleBuilder: (WardProfile ward) =>
+          _wardSubtitle(l10n, snapshot, ward),
+      onEdit: (WardProfile ward) =>
+          _openWardDialog(context, snapshot, ward: ward),
+      onDelete: (WardProfile ward) => _deleteEntity(
+        context: context,
+        deleteAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .deleteWard(ward.id),
+      ),
+    );
+
+    if (framed) {
+      return AppScreenSection(
+        title: l10n.tenantFacilityWardsLabel,
+        body: l10n.tenantFacilityWardsModalBody,
+        child: content,
+      );
+    }
+
+    return _ModalSectionBody(
+      body: l10n.tenantFacilityWardsModalBody,
+      child: content,
+    );
+  }
+}
+
+class _RoomSetupSection extends ConsumerWidget {
+  const _RoomSetupSection({
+    required this.snapshot,
+    required this.canSubmit,
+    this.framed = true,
+  });
+
+  final FacilitySetupSnapshot snapshot;
+  final bool canSubmit;
+  final bool framed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool canEdit =
+        canSubmit && !submission.isSubmitting && snapshot.wards.isNotEmpty;
+
+    final Widget content = _SearchableEntityGroup<RoomProfile>(
+      title: l10n.tenantFacilityRoomsLabel,
+      items: snapshot.rooms,
+      emptyLabel: l10n.tenantFacilityNoRooms,
+      noResultsLabel: l10n.tenantFacilitySearchNoResults,
+      searchLabel: l10n.tenantFacilitySearchLabel,
+      searchHint: l10n.tenantFacilityRoomSearchHint,
+      addLabel: l10n.tenantFacilityAddRoomAction,
+      canEdit: canEdit,
+      onAdd: () => _openRoomDialog(context, snapshot),
+      titleBuilder: (RoomProfile room) => room.name,
+      subtitleBuilder: (RoomProfile room) =>
+          _roomSubtitle(l10n, snapshot, room),
+      onEdit: (RoomProfile room) =>
+          _openRoomDialog(context, snapshot, room: room),
+      onDelete: (RoomProfile room) => _deleteEntity(
+        context: context,
+        deleteAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .deleteRoom(room.id),
+      ),
+    );
+
+    if (framed) {
+      return AppScreenSection(
+        title: l10n.tenantFacilityRoomsLabel,
+        body: l10n.tenantFacilityRoomsModalBody,
+        child: content,
+      );
+    }
+
+    return _ModalSectionBody(
+      body: l10n.tenantFacilityRoomsModalBody,
+      child: content,
+    );
+  }
+}
+
+class _BedSetupSection extends ConsumerWidget {
+  const _BedSetupSection({
+    required this.snapshot,
+    required this.canSubmit,
+    this.framed = true,
+  });
+
+  final FacilitySetupSnapshot snapshot;
+  final bool canSubmit;
+  final bool framed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final bool canEdit =
+        canSubmit && !submission.isSubmitting && snapshot.wards.isNotEmpty;
+
+    final Widget content = _SearchableEntityGroup<BedProfile>(
+      title: l10n.tenantFacilityBedsLabel,
+      items: snapshot.beds,
+      emptyLabel: l10n.tenantFacilityNoBeds,
+      noResultsLabel: l10n.tenantFacilitySearchNoResults,
+      searchLabel: l10n.tenantFacilitySearchLabel,
+      searchHint: l10n.tenantFacilityBedSearchHint,
+      addLabel: l10n.tenantFacilityAddBedAction,
+      canEdit: canEdit,
+      onAdd: () => _openBedDialog(context, snapshot),
+      titleBuilder: (BedProfile bed) => bed.label,
+      subtitleBuilder: (BedProfile bed) => _bedSubtitle(l10n, snapshot, bed),
+      onEdit: (BedProfile bed) => _openBedDialog(context, snapshot, bed: bed),
+      onDelete: (BedProfile bed) => _deleteEntity(
+        context: context,
+        deleteAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .deleteBed(bed.id),
+      ),
+    );
+
+    if (framed) {
+      return AppScreenSection(
+        title: l10n.tenantFacilityBedsLabel,
+        body: l10n.tenantFacilityBedsModalBody,
+        child: content,
+      );
+    }
+
+    return _ModalSectionBody(
+      body: l10n.tenantFacilityBedsModalBody,
       child: content,
     );
   }
@@ -1268,73 +1469,129 @@ class _ModalSectionBody extends StatelessWidget {
   }
 }
 
-class _CountSummary extends StatelessWidget {
-  const _CountSummary({required this.snapshot});
+class _SearchableEntityGroup<T> extends StatefulWidget {
+  const _SearchableEntityGroup({
+    required this.title,
+    required this.items,
+    required this.emptyLabel,
+    required this.noResultsLabel,
+    required this.searchLabel,
+    required this.searchHint,
+    required this.addLabel,
+    required this.canEdit,
+    required this.onAdd,
+    required this.titleBuilder,
+    required this.subtitleBuilder,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
-  final FacilitySetupSnapshot snapshot;
+  final String title;
+  final List<T> items;
+  final String emptyLabel;
+  final String noResultsLabel;
+  final String searchLabel;
+  final String searchHint;
+  final String addLabel;
+  final bool canEdit;
+  final VoidCallback onAdd;
+  final String Function(T item) titleBuilder;
+  final String Function(T item) subtitleBuilder;
+  final ValueChanged<T> onEdit;
+  final ValueChanged<T> onDelete;
 
   @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return Wrap(
-      spacing: Theme.of(context).spacing.sm,
-      runSpacing: Theme.of(context).spacing.sm,
-      children: <Widget>[
-        _CountTile(
-          label: l10n.tenantFacilityRoomsLabel,
-          count: snapshot.roomsCount,
-        ),
-        _CountTile(
-          label: l10n.tenantFacilityWardsLabel,
-          count: snapshot.wardsCount,
-        ),
-        _CountTile(
-          label: l10n.tenantFacilityBedsLabel,
-          count: snapshot.bedsCount,
-        ),
-      ],
-    );
-  }
+  State<_SearchableEntityGroup<T>> createState() =>
+      _SearchableEntityGroupState<T>();
 }
 
-class _CountTile extends StatelessWidget {
-  const _CountTile({required this.label, required this.count});
+class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
 
-  final String label;
-  final int count;
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool compact = breakpoint.isMobile;
-    final double tileWidth = switch (breakpoint) {
-      AppBreakpoint.xs => double.infinity,
-      AppBreakpoint.sm => 132,
-      _ => 120,
-    };
+    final AppLocalizations l10n = context.l10n;
+    final List<T> filteredItems = _filteredItems();
+    final bool isSearching = _query.trim().isNotEmpty;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(compact ? theme.spacing.sm : theme.spacing.md),
-        child: SizedBox(
-          width: tileWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(count.toString(), style: theme.textTheme.headlineSmall),
-              SizedBox(height: theme.spacing.xs),
-              Text(label, style: theme.textTheme.labelLarge),
-            ],
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        AppTextField(
+          controller: _searchController,
+          labelText: widget.searchLabel,
+          hintText: widget.searchHint,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: isSearching
+              ? AppIconButton(
+                  icon: Icons.close,
+                  semanticLabel: l10n.tenantFacilityClearSearchAction,
+                  tooltip: l10n.tenantFacilityClearSearchAction,
+                  onPressed: _clearSearch,
+                )
+              : null,
+          textInputAction: TextInputAction.search,
+          onChanged: (String value) {
+            setState(() {
+              _query = value;
+            });
+          },
         ),
-      ),
+        SizedBox(height: theme.spacing.md),
+        _EntityGroup<T>(
+          title: widget.title,
+          items: filteredItems,
+          emptyLabel: isSearching ? widget.noResultsLabel : widget.emptyLabel,
+          addLabel: widget.addLabel,
+          canEdit: widget.canEdit,
+          onAdd: widget.onAdd,
+          titleBuilder: widget.titleBuilder,
+          subtitleBuilder: widget.subtitleBuilder,
+          onEdit: widget.onEdit,
+          onDelete: widget.onDelete,
+        ),
+      ],
     );
   }
+
+  List<T> _filteredItems() {
+    final String query = _normalizeSearch(_query);
+    if (query.isEmpty) {
+      return widget.items;
+    }
+
+    return widget.items
+        .where(
+          (T item) => _entitySearchText(
+            widget.titleBuilder(item),
+            widget.subtitleBuilder(item),
+          ).contains(query),
+        )
+        .toList(growable: false);
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+    });
+  }
+}
+
+String _entitySearchText(String title, String subtitle) {
+  return _normalizeSearch('$title $subtitle');
+}
+
+String _normalizeSearch(String value) {
+  return value.trim().toLowerCase();
 }
 
 class _EntityGroup<T> extends StatelessWidget {
