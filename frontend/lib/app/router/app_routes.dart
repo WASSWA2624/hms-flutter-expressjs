@@ -1,4 +1,5 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 
 enum AppRouteAccess { public, authenticated }
@@ -28,12 +29,18 @@ final class AppRouteData {
 
   bool get requiresAuthenticatedSession {
     return access == AppRouteAccess.authenticated ||
-        requiredPermissions.isNotEmpty ||
-        requiredAnyPermissions.isNotEmpty ||
-        requiredAnyRoles.isNotEmpty ||
-        requiredActiveModules.isNotEmpty ||
-        requiresTenantContext ||
-        requiresFacilityContext;
+        accessRequirement.isEmpty == false;
+  }
+
+  AccessRequirement get accessRequirement {
+    return AccessRequirement(
+      allPermissions: requiredPermissions,
+      anyPermissions: requiredAnyPermissions,
+      anyRoles: requiredAnyRoles,
+      activeModules: requiredActiveModules,
+      requiresTenantContext: requiresTenantContext,
+      requiresFacilityContext: requiresFacilityContext,
+    );
   }
 
   bool get isAuthEntryRoute {

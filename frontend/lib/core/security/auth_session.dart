@@ -169,27 +169,42 @@ final class AppModuleEntitlement {
 
     final code = _firstPresentString(payload, const <String>[
       'code',
+      'slug',
       'name',
       'module',
       'module_code',
       'moduleCode',
       'module_id',
       'moduleId',
+      'module_slug',
+      'moduleSlug',
+      'module_label',
+      'moduleLabel',
     ]);
     if (code == null) {
       return null;
     }
 
+    final bool entitlementDenied = _boolValue(
+      payload['entitlement_denied'] ?? payload['entitlementDenied'],
+      defaultValue: false,
+    );
+
     return AppModuleEntitlement(
       code: code,
-      isActive: _boolValue(
-        payload['is_active'] ?? payload['isActive'] ?? payload['active'],
-      ),
+      isActive:
+          _boolValue(
+            payload['is_active'] ?? payload['isActive'] ?? payload['active'],
+          ) &&
+          !entitlementDenied,
       licenseStatus: _stringValue(
         payload['license_status'] ??
             payload['licenseStatus'] ??
             payload['subscription_status'] ??
-            payload['subscriptionStatus'],
+            payload['subscriptionStatus'] ??
+            payload['status'] ??
+            payload['evaluated_plan_fit_status'] ??
+            payload['evaluatedPlanFitStatus'],
       )?.toUpperCase(),
     );
   }
@@ -206,7 +221,8 @@ final class AppModuleEntitlement {
         (status == null ||
             status == 'ACTIVE' ||
             status == 'TRIAL' ||
-            status == 'HEALTHY');
+            status == 'HEALTHY' ||
+            status == 'FIT');
   }
 
   @override
@@ -247,7 +263,10 @@ final class AppModuleEntitlement {
     return text.isEmpty ? null : text;
   }
 
-  static bool _boolValue(Object? value) {
+  static bool _boolValue(Object? value, {bool defaultValue = true}) {
+    if (value == null) {
+      return defaultValue;
+    }
     if (value is bool) {
       return value;
     }
@@ -255,7 +274,7 @@ final class AppModuleEntitlement {
       return value != 0;
     }
 
-    return switch (value?.toString().trim().toUpperCase()) {
+    return switch (value.toString().trim().toUpperCase()) {
       'FALSE' || '0' || 'NO' || 'INACTIVE' || 'DISABLED' => false,
       _ => true,
     };

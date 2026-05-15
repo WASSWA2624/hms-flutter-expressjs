@@ -275,31 +275,7 @@ class _AppShell extends ConsumerWidget {
 }
 
 bool _canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
-  if (!accessPolicy.hasAnyRole(route.requiredAnyRoles)) {
-    return false;
-  }
-  if (!accessPolicy.grantsAll(route.requiredPermissions)) {
-    return false;
-  }
-  if (route.requiredAnyPermissions.isNotEmpty &&
-      !accessPolicy.grantsAny(route.requiredAnyPermissions)) {
-    return false;
-  }
-  if (route.requiresTenantContext &&
-      !accessPolicy.hasTenantContext &&
-      !accessPolicy.isElevated) {
-    return false;
-  }
-  if (route.requiresFacilityContext &&
-      !accessPolicy.hasFacilityContext &&
-      !accessPolicy.isElevated) {
-    return false;
-  }
-  if (!accessPolicy.hasAllActiveModules(route.requiredActiveModules)) {
-    return false;
-  }
-
-  return true;
+  return route.accessRequirement.isAllowed(accessPolicy);
 }
 
 UserMenuProfileData? _userMenuProfile(AuthSession? session) {

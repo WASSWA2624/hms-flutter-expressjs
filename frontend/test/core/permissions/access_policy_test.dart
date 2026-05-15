@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 
@@ -61,5 +63,35 @@ void main() {
 
       expect(policy.hasActiveModule('clinical-care'), isTrue);
     });
+
+    test(
+      'evaluates reusable requirements across roles permissions and scope',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['FACILITY_ADMIN'],
+          ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: 'settings', licenseStatus: 'ACTIVE'),
+          ],
+        );
+        final policy = AppAccessPolicy.fromSession(session);
+        const requirement = AccessRequirement(
+          anyRoles: <AppRole>[AppRole.facilityAdmin],
+          anyPermissions: <AppPermission>[
+            AppPermissions.facilityAdmin,
+            AppPermissions.systemAdmin,
+          ],
+          activeModules: <String>['settings'],
+          requiresTenantContext: true,
+          requiresFacilityContext: true,
+        );
+
+        expect(requirement.isAllowed(policy), isTrue);
+      },
+    );
   });
 }

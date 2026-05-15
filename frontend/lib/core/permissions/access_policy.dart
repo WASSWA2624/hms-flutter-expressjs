@@ -200,6 +200,17 @@ final class AppAccessPolicy {
   final String? branchId;
   final Map<String, AppModuleEntitlement> moduleEntitlements;
 
+  AppAccessPolicy copyWithPermissions(Iterable<AppPermission> permissions) {
+    return AppAccessPolicy._(
+      roles: roles,
+      permissions: Set<AppPermission>.unmodifiable(permissions),
+      tenantId: tenantId,
+      facilityId: facilityId,
+      branchId: branchId,
+      moduleEntitlements: moduleEntitlements,
+    );
+  }
+
   bool get isElevated => roles.contains(AppRole.superAdmin);
   bool get hasTenantContext => tenantId != null;
   bool get hasFacilityContext => facilityId != null;

@@ -14,6 +14,18 @@ void main() {
         'status': 'active',
         'position_title': 'tenant_admin',
         'permission_names': <String>['settings.read'],
+        'module_subscriptions': <Object?>[
+          <String, Object?>{
+            'module_slug': 'clinical-care',
+            'is_active': true,
+            'evaluated_plan_fit_status': 'fit',
+          },
+          <String, Object?>{
+            'module_slug': 'billing',
+            'is_active': true,
+            'entitlement_denied': true,
+          },
+        ],
         'profile': <String, Object?>{
           'first_name': 'Wilson',
           'middle_name': 'K',
@@ -46,6 +58,8 @@ void main() {
     expect(session.permissions.map((permission) => permission.value), [
       'settings.read',
     ]);
+    expect(session.moduleEntitlements['CLINICAL_CARE']?.isAvailable, isTrue);
+    expect(session.moduleEntitlements['BILLING']?.isAvailable, isFalse);
     expect(user!.displayName, 'Wilson K Admin');
     expect(user.effectiveTitle, 'Administrator');
     expect(user.overallRole, 'Tenant Admin');

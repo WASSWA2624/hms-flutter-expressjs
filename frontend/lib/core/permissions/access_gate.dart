@@ -1,55 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 
 typedef AccessGateDeniedBuilder =
     Widget Function(BuildContext context, AppAccessPolicy policy);
 typedef AccessGateChildBuilder =
     Widget Function(BuildContext context, bool isAllowed);
-
-final class AccessRequirement {
-  const AccessRequirement({
-    this.allPermissions = const <AppPermission>[],
-    this.anyPermissions = const <AppPermission>[],
-    this.anyRoles = const <AppRole>[],
-    this.activeModules = const <String>[],
-    this.requiresTenantContext = false,
-    this.requiresFacilityContext = false,
-  });
-
-  final Iterable<AppPermission> allPermissions;
-  final Iterable<AppPermission> anyPermissions;
-  final Iterable<AppRole> anyRoles;
-  final Iterable<String> activeModules;
-  final bool requiresTenantContext;
-  final bool requiresFacilityContext;
-
-  bool isAllowed(AppAccessPolicy policy) {
-    if (!policy.hasAnyRole(anyRoles)) {
-      return false;
-    }
-    if (!policy.grantsAll(allPermissions)) {
-      return false;
-    }
-    if (anyPermissions.isNotEmpty && !policy.grantsAny(anyPermissions)) {
-      return false;
-    }
-    if (requiresTenantContext &&
-        !policy.hasTenantContext &&
-        !policy.isElevated) {
-      return false;
-    }
-    if (requiresFacilityContext &&
-        !policy.hasFacilityContext &&
-        !policy.isElevated) {
-      return false;
-    }
-
-    return policy.hasAllActiveModules(activeModules);
-  }
-}
 
 class AppAccessGate extends ConsumerWidget {
   const AppAccessGate({

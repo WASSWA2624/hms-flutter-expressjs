@@ -11,6 +11,7 @@ final class AuthSessionDto {
     this.subject,
     this.user,
     this.permissions = const <AppPermission>[],
+    this.moduleEntitlements = const <AppModuleEntitlement>[],
   });
 
   factory AuthSessionDto.fromResponseData(Object? data) {
@@ -35,6 +36,10 @@ final class AuthSessionDto {
       permissions: user is Map<String, Object?>
           ? _permissionsFromUser(user)
           : _permissionsFromToken(_requiredString(json, 'access_token')),
+      moduleEntitlements: _moduleEntitlementsFromResponse(
+        json,
+        _requiredString(json, 'access_token'),
+      ),
     );
   }
 
@@ -43,6 +48,7 @@ final class AuthSessionDto {
   final String? subject;
   final AuthUserProfile? user;
   final List<AppPermission> permissions;
+  final List<AppModuleEntitlement> moduleEntitlements;
 
   AuthSession toEntity() {
     return AuthSession(
@@ -54,6 +60,7 @@ final class AuthSessionDto {
       subject: subject,
       user: user,
       permissions: permissions,
+      moduleEntitlements: moduleEntitlements,
     );
   }
 
@@ -186,6 +193,52 @@ final class AuthSessionDto {
     return List<AppPermission>.unmodifiable(
       _permissionsFromValues(permissions).toSet(),
     );
+  }
+
+  static List<AppModuleEntitlement> _moduleEntitlementsFromResponse(
+    Map<String, Object?> json,
+    String accessToken,
+  ) {
+    final entries = <AppModuleEntitlement>{
+      ..._moduleEntitlementsFromSource(json),
+      ..._moduleEntitlementsFromSource(_map(json['user'])),
+      ..._moduleEntitlementsFromToken(accessToken),
+    };
+
+    return List<AppModuleEntitlement>.unmodifiable(entries);
+  }
+
+  static List<AppModuleEntitlement> _moduleEntitlementsFromToken(String token) {
+    final payload = _tokenPayload(token);
+    if (payload == null) {
+      return const <AppModuleEntitlement>[];
+    }
+
+    return _moduleEntitlementsFromSource(payload);
+  }
+
+  static List<AppModuleEntitlement> _moduleEntitlementsFromSource(
+    Map<String, Object?> source,
+  ) {
+    for (final key in <String>[
+      'module_entitlements',
+      'moduleEntitlements',
+      'module_subscriptions',
+      'moduleSubscriptions',
+      'modules',
+      'active_modules',
+      'activeModules',
+    ]) {
+      final values = source[key];
+      if (values is Iterable<Object?>) {
+        return values
+            .map(AppModuleEntitlement.tryFromPayload)
+            .whereType<AppModuleEntitlement>()
+            .toList(growable: false);
+      }
+    }
+
+    return const <AppModuleEntitlement>[];
   }
 
   static List<AppPermission> _permissionsFromValues(Iterable<Object?> values) {

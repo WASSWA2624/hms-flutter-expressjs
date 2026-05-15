@@ -54,7 +54,7 @@ final class AppRouteGuards {
       };
     }
 
-    if (!_hasRequiredPermissions(targetRoute, request.grantedPermissions)) {
+    if (!_hasRequiredAccess(targetRoute, request.grantedPermissions)) {
       return AppRoutes.forbidden.locationWithFrom(request.location);
     }
 
@@ -71,41 +71,20 @@ final class AppRouteGuards {
     return null;
   }
 
-  bool _hasRequiredPermissions(
+  bool _hasRequiredAccess(
     AppRouteData route,
     AppPermissionGrant grantedPermissions,
   ) {
     final AppAccessPolicy policy = AppAccessPolicy.fromSession(
       sessionState.session,
     );
-    if (!policy.hasAnyRole(route.requiredAnyRoles)) {
-      return false;
-    }
     final AppPermissionGrant effectivePermissions = AppPermissionGrant(
       <AppPermission>{...policy.permissions, ...grantedPermissions.permissions},
     );
-    if (!effectivePermissions.grantsAll(route.requiredPermissions)) {
-      return false;
-    }
-    if (route.requiredAnyPermissions.isNotEmpty &&
-        !effectivePermissions.grantsAny(route.requiredAnyPermissions) &&
-        !policy.isElevated) {
-      return false;
-    }
-    if (route.requiresTenantContext &&
-        !policy.hasTenantContext &&
-        !policy.isElevated) {
-      return false;
-    }
-    if (route.requiresFacilityContext &&
-        !policy.hasFacilityContext &&
-        !policy.isElevated) {
-      return false;
-    }
-    if (!policy.hasAllActiveModules(route.requiredActiveModules)) {
-      return false;
-    }
+    final effectivePolicy = AppAccessPolicy.fromSession(
+      sessionState.session,
+    ).copyWithPermissions(effectivePermissions.permissions);
 
-    return true;
+    return route.accessRequirement.isAllowed(effectivePolicy);
   }
 }
