@@ -250,6 +250,744 @@ abstract class AppLocalizations {
   /// **'Setup'**
   String get navigationSetupLabel;
 
+  /// Navigation label for the patient registry destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients'**
+  String get navigationPatientsLabel;
+
+  /// Patient registry screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient registry'**
+  String get patientsTitle;
+
+  /// Patient registry screen body.
+  ///
+  /// In en, this message translates to:
+  /// **'Find, register, and maintain patient records for front desk, clinical, and administrative workflows.'**
+  String get patientsBody;
+
+  /// Title while the patient registry loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading patients'**
+  String get patientsLoadingTitle;
+
+  /// Body while the patient registry loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading patient registry data.'**
+  String get patientsLoadingBody;
+
+  /// Patient registry status badge label.
+  ///
+  /// In en, this message translates to:
+  /// **'Registry ready'**
+  String get patientsStatusReady;
+
+  /// Create patient action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add patient'**
+  String get patientsAddAction;
+
+  /// Edit patient or related record action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get patientsEditAction;
+
+  /// Delete patient or related record action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get patientsDeleteAction;
+
+  /// Save patient form action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get patientsSaveAction;
+
+  /// Snackbar shown after a patient registry change is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient registry changes saved.'**
+  String get patientsSavedMessage;
+
+  /// Snackbar shown after a patient registry record is deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient registry record deleted.'**
+  String get patientsDeletedMessage;
+
+  /// Patient registry total patients summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Total patients'**
+  String get patientsTotalSummaryLabel;
+
+  /// Patient registry total patients summary body.
+  ///
+  /// In en, this message translates to:
+  /// **'All visible patient records in scope.'**
+  String get patientsTotalSummaryBody;
+
+  /// Patient registry active patients summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active patients'**
+  String get patientsActiveSummaryLabel;
+
+  /// Patient registry active patients summary body.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients available for current workflows.'**
+  String get patientsActiveSummaryBody;
+
+  /// Patient registry waiting queue summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting queue'**
+  String get patientsQueueSummaryLabel;
+
+  /// Patient registry waiting queue summary body.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients currently waiting for service.'**
+  String get patientsQueueSummaryBody;
+
+  /// Patient registry duplicate review summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate review'**
+  String get patientsDuplicateSummaryLabel;
+
+  /// Patient registry duplicate review summary body.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential matches needing review.'**
+  String get patientsDuplicateSummaryBody;
+
+  /// Accessibility label for patient registry filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient filters'**
+  String get patientsFiltersLabel;
+
+  /// Patient registry search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get patientsSearchLabel;
+
+  /// Patient registry search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, phone, email, identifier, or contact'**
+  String get patientsSearchHint;
+
+  /// Patient registry patient ID filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get patientsPatientIdFilterLabel;
+
+  /// Patient registry gender filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get patientsGenderFilterLabel;
+
+  /// Patient registry status filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get patientsStatusFilterLabel;
+
+  /// Patient registry consent filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent'**
+  String get patientsConsentFilterLabel;
+
+  /// Apply patient registry filters action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get patientsApplyFiltersAction;
+
+  /// Clear patient registry filters action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get patientsClearFiltersAction;
+
+  /// Active patient status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get patientsActiveFilter;
+
+  /// Inactive patient status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get patientsInactiveFilter;
+
+  /// Patient list patient column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get patientsPatientColumnLabel;
+
+  /// Patient list identifier column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifier'**
+  String get patientsIdentifierColumnLabel;
+
+  /// Patient list contact column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get patientsContactColumnLabel;
+
+  /// Patient list date of birth column label.
+  ///
+  /// In en, this message translates to:
+  /// **'DOB'**
+  String get patientsDobColumnLabel;
+
+  /// Patient list status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get patientsStatusColumnLabel;
+
+  /// Patient list pagination range label.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String patientsPageLabel(int from, int to, int total);
+
+  /// Previous patient page button accessibility label.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous patients page'**
+  String get patientsPreviousPageLabel;
+
+  /// Next patient page button accessibility label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next patients page'**
+  String get patientsNextPageLabel;
+
+  /// Patient list empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No patients found'**
+  String get patientsEmptyTitle;
+
+  /// Patient list empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the filters or register a patient.'**
+  String get patientsEmptyBody;
+
+  /// Patient detail panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient details'**
+  String get patientsDetailTitle;
+
+  /// Patient detail loading state title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading patient'**
+  String get patientsDetailLoadingTitle;
+
+  /// Patient detail loading state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading demographics and related records.'**
+  String get patientsDetailLoadingBody;
+
+  /// Patient detail empty selection title.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a patient'**
+  String get patientsNoSelectionTitle;
+
+  /// Patient detail empty selection body.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a patient to review demographics, contacts, clinical flags, documents, and visits.'**
+  String get patientsNoSelectionBody;
+
+  /// Patient name detail label.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get patientsNameLabel;
+
+  /// Patient identifier detail label.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifier'**
+  String get patientsIdentifierLabel;
+
+  /// Patient date of birth label.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of birth'**
+  String get patientsDobLabel;
+
+  /// Patient gender label.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get patientsGenderLabel;
+
+  /// Patient phone label.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get patientsPhoneLabel;
+
+  /// Patient email label.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get patientsEmailLabel;
+
+  /// Patient facility label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get patientsFacilityLabel;
+
+  /// Patient first name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get patientsFirstNameLabel;
+
+  /// Patient last name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get patientsLastNameLabel;
+
+  /// Patient identifier type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifier type'**
+  String get patientsIdentifierTypeLabel;
+
+  /// Patient identifier value field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifier value'**
+  String get patientsIdentifierValueLabel;
+
+  /// Patient active checkbox label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient is active'**
+  String get patientsActiveCheckboxLabel;
+
+  /// Patient form date picker button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get patientsDatePickerAction;
+
+  /// Add patient dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add patient'**
+  String get patientsAddTitle;
+
+  /// Edit patient dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit patient'**
+  String get patientsEditTitle;
+
+  /// Delete patient confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete patient'**
+  String get patientsDeleteTitle;
+
+  /// Delete patient confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name} from active patient records?'**
+  String patientsDeleteBody(String name);
+
+  /// Male patient gender label.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get patientsGenderMale;
+
+  /// Female patient gender label.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get patientsGenderFemale;
+
+  /// Other patient gender label.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get patientsGenderOther;
+
+  /// Unknown patient gender label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get patientsGenderUnknown;
+
+  /// Patient quick actions section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get patientsQuickActionsTitle;
+
+  /// Patient quick appointment action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment'**
+  String get patientsQuickAppointmentAction;
+
+  /// Patient quick triage action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage'**
+  String get patientsQuickTriageAction;
+
+  /// Patient quick clinical visit action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical visit'**
+  String get patientsQuickClinicalAction;
+
+  /// Patient quick billing action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get patientsQuickBillingAction;
+
+  /// Patient quick admission action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission'**
+  String get patientsQuickAdmissionAction;
+
+  /// Snackbar shown when a patient quick action is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'The patient context is ready for the selected workflow.'**
+  String get patientsQuickActionQueuedMessage;
+
+  /// Patient identifiers section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifiers'**
+  String get patientsIdentifiersSectionTitle;
+
+  /// Patient contacts section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Contacts'**
+  String get patientsContactsSectionTitle;
+
+  /// Patient guardians section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Guardians'**
+  String get patientsGuardiansSectionTitle;
+
+  /// Patient allergies section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergies'**
+  String get patientsAllergiesSectionTitle;
+
+  /// Patient medical history section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical history'**
+  String get patientsMedicalHistorySectionTitle;
+
+  /// Patient documents section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get patientsDocumentsSectionTitle;
+
+  /// Patient consents section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Consents'**
+  String get patientsConsentsSectionTitle;
+
+  /// Patient timeline section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get patientsTimelineSectionTitle;
+
+  /// Patient identifiers empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No identifiers recorded.'**
+  String get patientsNoIdentifiers;
+
+  /// Patient contacts empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts recorded.'**
+  String get patientsNoContacts;
+
+  /// Patient guardians empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No guardians recorded.'**
+  String get patientsNoGuardians;
+
+  /// Patient allergies empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No allergies recorded.'**
+  String get patientsNoAllergies;
+
+  /// Patient medical history empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No medical history recorded.'**
+  String get patientsNoMedicalHistory;
+
+  /// Patient documents empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No documents recorded.'**
+  String get patientsNoDocuments;
+
+  /// Patient consents empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No consents recorded.'**
+  String get patientsNoConsents;
+
+  /// Patient timeline empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline entries recorded.'**
+  String get patientsNoTimeline;
+
+  /// Add patient related record action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add record'**
+  String get patientsAddRelatedAction;
+
+  /// Add patient related record dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add patient record'**
+  String get patientsAddRelatedTitle;
+
+  /// Edit patient related record dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit patient record'**
+  String get patientsEditRelatedTitle;
+
+  /// Delete patient related record confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete patient record'**
+  String get patientsRelatedDeleteTitle;
+
+  /// Delete patient related record confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this patient record?'**
+  String get patientsRelatedDeleteBody;
+
+  /// Patient contact type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact type'**
+  String get patientsContactTypeLabel;
+
+  /// Patient contact value field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact value'**
+  String get patientsContactValueLabel;
+
+  /// Patient primary related record checkbox label.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary record'**
+  String get patientsPrimaryRecordLabel;
+
+  /// Patient guardian name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Guardian name'**
+  String get patientsGuardianNameLabel;
+
+  /// Patient guardian relationship field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get patientsGuardianRelationshipLabel;
+
+  /// Patient allergy allergen field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergen'**
+  String get patientsAllergenLabel;
+
+  /// Patient allergy severity field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Severity'**
+  String get patientsSeverityLabel;
+
+  /// Patient allergy reaction field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reaction'**
+  String get patientsReactionLabel;
+
+  /// Patient notes field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get patientsNotesLabel;
+
+  /// Patient medical history condition field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition'**
+  String get patientsConditionLabel;
+
+  /// Patient medical history diagnosis date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnosis date'**
+  String get patientsDiagnosisDateLabel;
+
+  /// Patient document type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Document type'**
+  String get patientsDocumentTypeLabel;
+
+  /// Patient document storage key field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage key'**
+  String get patientsStorageKeyLabel;
+
+  /// Patient document file name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'File name'**
+  String get patientsFileNameLabel;
+
+  /// Patient document content type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Content type'**
+  String get patientsContentTypeLabel;
+
+  /// Patient consent type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent type'**
+  String get patientsConsentTypeLabel;
+
+  /// Patient consent status field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent status'**
+  String get patientsConsentStatusLabel;
+
+  /// Patient consent date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent date'**
+  String get patientsConsentDateLabel;
+
+  /// Patient registry activity section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Registry attention'**
+  String get patientsActivityTitle;
+
+  /// Patient registry activity section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient record issues that may need review.'**
+  String get patientsActivityBody;
+
+  /// Patient registry activity empty title.
+  ///
+  /// In en, this message translates to:
+  /// **'No registry issues'**
+  String get patientsActivityEmptyTitle;
+
+  /// Patient registry activity empty body.
+  ///
+  /// In en, this message translates to:
+  /// **'No duplicate, consent, or document alerts are visible.'**
+  String get patientsActivityEmptyBody;
+
+  /// Patient duplicate activity title.
+  ///
+  /// In en, this message translates to:
+  /// **'Possible duplicate'**
+  String get patientsDuplicateActivityTitle;
+
+  /// Patient duplicate activity confidence subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}% match confidence'**
+  String patientsDuplicateActivitySubtitle(int score);
+
+  /// Patient consent activity title.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent review'**
+  String get patientsConsentActivityTitle;
+
+  /// Patient consent activity count subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 consent needs review} other{{count} consents need review}}'**
+  String patientsConsentActivitySubtitle(int count);
+
+  /// Patient missing documents activity title.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing documents'**
+  String get patientsDocumentsActivityTitle;
+
+  /// Patient missing documents activity count subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 patient has no documents} other{{count} patients have no documents}}'**
+  String patientsDocumentsActivitySubtitle(int count);
+
   /// Home page title for the HMS overview state.
   ///
   /// In en, this message translates to:

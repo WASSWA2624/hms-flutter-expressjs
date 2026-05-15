@@ -76,6 +76,16 @@ abstract final class AppRoutes {
     path: '/settings',
     access: AppRouteAccess.authenticated,
   );
+  static const AppRouteData patients = AppRouteData(
+    name: 'patients',
+    path: '/patients',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.patientRead,
+      AppPermissions.patientWrite,
+      AppPermissions.patientDelete,
+    ],
+  );
   static const AppRouteData tenantFacilitySetup = AppRouteData(
     name: 'tenantFacilitySetup',
     path: '/admin/setup',
@@ -126,6 +136,7 @@ abstract final class AppRoutes {
 
   static const List<AppRouteData> all = <AppRouteData>[
     home,
+    patients,
     settings,
     tenantFacilitySetup,
     profile,
@@ -139,6 +150,7 @@ abstract final class AppRoutes {
 
   static const List<AppRouteData> shellRoutes = <AppRouteData>[
     home,
+    patients,
     settings,
     tenantFacilitySetup,
     profile,

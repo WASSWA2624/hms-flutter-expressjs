@@ -109,6 +109,530 @@
   "@navigationSetupLabel": {
     "description": "Navigation label for tenant and facility setup."
   },
+  "navigationPatientsLabel": "Patients",
+  "@navigationPatientsLabel": {
+    "description": "Navigation label for the patient registry destination."
+  },
+  "patientsTitle": "Patient registry",
+  "@patientsTitle": {
+    "description": "Patient registry screen title."
+  },
+  "patientsBody": "Find, register, and maintain patient records for front desk, clinical, and administrative workflows.",
+  "@patientsBody": {
+    "description": "Patient registry screen body."
+  },
+  "patientsLoadingTitle": "Loading patients",
+  "@patientsLoadingTitle": {
+    "description": "Title while the patient registry loads."
+  },
+  "patientsLoadingBody": "Loading patient registry data.",
+  "@patientsLoadingBody": {
+    "description": "Body while the patient registry loads."
+  },
+  "patientsStatusReady": "Registry ready",
+  "@patientsStatusReady": {
+    "description": "Patient registry status badge label."
+  },
+  "patientsAddAction": "Add patient",
+  "@patientsAddAction": {
+    "description": "Create patient action label."
+  },
+  "patientsEditAction": "Edit",
+  "@patientsEditAction": {
+    "description": "Edit patient or related record action label."
+  },
+  "patientsDeleteAction": "Delete",
+  "@patientsDeleteAction": {
+    "description": "Delete patient or related record action label."
+  },
+  "patientsSaveAction": "Save",
+  "@patientsSaveAction": {
+    "description": "Save patient form action label."
+  },
+  "patientsSavedMessage": "Patient registry changes saved.",
+  "@patientsSavedMessage": {
+    "description": "Snackbar shown after a patient registry change is saved."
+  },
+  "patientsDeletedMessage": "Patient registry record deleted.",
+  "@patientsDeletedMessage": {
+    "description": "Snackbar shown after a patient registry record is deleted."
+  },
+  "patientsTotalSummaryLabel": "Total patients",
+  "@patientsTotalSummaryLabel": {
+    "description": "Patient registry total patients summary label."
+  },
+  "patientsTotalSummaryBody": "All visible patient records in scope.",
+  "@patientsTotalSummaryBody": {
+    "description": "Patient registry total patients summary body."
+  },
+  "patientsActiveSummaryLabel": "Active patients",
+  "@patientsActiveSummaryLabel": {
+    "description": "Patient registry active patients summary label."
+  },
+  "patientsActiveSummaryBody": "Patients available for current workflows.",
+  "@patientsActiveSummaryBody": {
+    "description": "Patient registry active patients summary body."
+  },
+  "patientsQueueSummaryLabel": "Waiting queue",
+  "@patientsQueueSummaryLabel": {
+    "description": "Patient registry waiting queue summary label."
+  },
+  "patientsQueueSummaryBody": "Patients currently waiting for service.",
+  "@patientsQueueSummaryBody": {
+    "description": "Patient registry waiting queue summary body."
+  },
+  "patientsDuplicateSummaryLabel": "Duplicate review",
+  "@patientsDuplicateSummaryLabel": {
+    "description": "Patient registry duplicate review summary label."
+  },
+  "patientsDuplicateSummaryBody": "Potential matches needing review.",
+  "@patientsDuplicateSummaryBody": {
+    "description": "Patient registry duplicate review summary body."
+  },
+  "patientsFiltersLabel": "Patient filters",
+  "@patientsFiltersLabel": {
+    "description": "Accessibility label for patient registry filters."
+  },
+  "patientsSearchLabel": "Search",
+  "@patientsSearchLabel": {
+    "description": "Patient registry search field label."
+  },
+  "patientsSearchHint": "Name, phone, email, identifier, or contact",
+  "@patientsSearchHint": {
+    "description": "Patient registry search field hint."
+  },
+  "patientsPatientIdFilterLabel": "Patient ID",
+  "@patientsPatientIdFilterLabel": {
+    "description": "Patient registry patient ID filter label."
+  },
+  "patientsGenderFilterLabel": "Gender",
+  "@patientsGenderFilterLabel": {
+    "description": "Patient registry gender filter label."
+  },
+  "patientsStatusFilterLabel": "Status",
+  "@patientsStatusFilterLabel": {
+    "description": "Patient registry status filter label."
+  },
+  "patientsConsentFilterLabel": "Consent",
+  "@patientsConsentFilterLabel": {
+    "description": "Patient registry consent filter label."
+  },
+  "patientsApplyFiltersAction": "Apply",
+  "@patientsApplyFiltersAction": {
+    "description": "Apply patient registry filters action label."
+  },
+  "patientsClearFiltersAction": "Clear",
+  "@patientsClearFiltersAction": {
+    "description": "Clear patient registry filters action label."
+  },
+  "patientsActiveFilter": "Active",
+  "@patientsActiveFilter": {
+    "description": "Active patient status label."
+  },
+  "patientsInactiveFilter": "Inactive",
+  "@patientsInactiveFilter": {
+    "description": "Inactive patient status label."
+  },
+  "patientsPatientColumnLabel": "Patient",
+  "@patientsPatientColumnLabel": {
+    "description": "Patient list patient column label."
+  },
+  "patientsIdentifierColumnLabel": "Identifier",
+  "@patientsIdentifierColumnLabel": {
+    "description": "Patient list identifier column label."
+  },
+  "patientsContactColumnLabel": "Contact",
+  "@patientsContactColumnLabel": {
+    "description": "Patient list contact column label."
+  },
+  "patientsDobColumnLabel": "DOB",
+  "@patientsDobColumnLabel": {
+    "description": "Patient list date of birth column label."
+  },
+  "patientsStatusColumnLabel": "Status",
+  "@patientsStatusColumnLabel": {
+    "description": "Patient list status column label."
+  },
+  "patientsPageLabel": "{from}-{to} of {total}",
+  "@patientsPageLabel": {
+    "description": "Patient list pagination range label.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "patientsPreviousPageLabel": "Previous patients page",
+  "@patientsPreviousPageLabel": {
+    "description": "Previous patient page button accessibility label."
+  },
+  "patientsNextPageLabel": "Next patients page",
+  "@patientsNextPageLabel": {
+    "description": "Next patient page button accessibility label."
+  },
+  "patientsEmptyTitle": "No patients found",
+  "@patientsEmptyTitle": {
+    "description": "Patient list empty state title."
+  },
+  "patientsEmptyBody": "Adjust the filters or register a patient.",
+  "@patientsEmptyBody": {
+    "description": "Patient list empty state body."
+  },
+  "patientsDetailTitle": "Patient details",
+  "@patientsDetailTitle": {
+    "description": "Patient detail panel title."
+  },
+  "patientsDetailLoadingTitle": "Loading patient",
+  "@patientsDetailLoadingTitle": {
+    "description": "Patient detail loading state title."
+  },
+  "patientsDetailLoadingBody": "Loading demographics and related records.",
+  "@patientsDetailLoadingBody": {
+    "description": "Patient detail loading state body."
+  },
+  "patientsNoSelectionTitle": "Select a patient",
+  "@patientsNoSelectionTitle": {
+    "description": "Patient detail empty selection title."
+  },
+  "patientsNoSelectionBody": "Open a patient to review demographics, contacts, clinical flags, documents, and visits.",
+  "@patientsNoSelectionBody": {
+    "description": "Patient detail empty selection body."
+  },
+  "patientsNameLabel": "Name",
+  "@patientsNameLabel": {
+    "description": "Patient name detail label."
+  },
+  "patientsIdentifierLabel": "Identifier",
+  "@patientsIdentifierLabel": {
+    "description": "Patient identifier detail label."
+  },
+  "patientsDobLabel": "Date of birth",
+  "@patientsDobLabel": {
+    "description": "Patient date of birth label."
+  },
+  "patientsGenderLabel": "Gender",
+  "@patientsGenderLabel": {
+    "description": "Patient gender label."
+  },
+  "patientsPhoneLabel": "Phone",
+  "@patientsPhoneLabel": {
+    "description": "Patient phone label."
+  },
+  "patientsEmailLabel": "Email",
+  "@patientsEmailLabel": {
+    "description": "Patient email label."
+  },
+  "patientsFacilityLabel": "Facility",
+  "@patientsFacilityLabel": {
+    "description": "Patient facility label."
+  },
+  "patientsFirstNameLabel": "First name",
+  "@patientsFirstNameLabel": {
+    "description": "Patient first name field label."
+  },
+  "patientsLastNameLabel": "Last name",
+  "@patientsLastNameLabel": {
+    "description": "Patient last name field label."
+  },
+  "patientsIdentifierTypeLabel": "Identifier type",
+  "@patientsIdentifierTypeLabel": {
+    "description": "Patient identifier type field label."
+  },
+  "patientsIdentifierValueLabel": "Identifier value",
+  "@patientsIdentifierValueLabel": {
+    "description": "Patient identifier value field label."
+  },
+  "patientsActiveCheckboxLabel": "Patient is active",
+  "@patientsActiveCheckboxLabel": {
+    "description": "Patient active checkbox label."
+  },
+  "patientsDatePickerAction": "Select date",
+  "@patientsDatePickerAction": {
+    "description": "Patient form date picker button label."
+  },
+  "patientsAddTitle": "Add patient",
+  "@patientsAddTitle": {
+    "description": "Add patient dialog title."
+  },
+  "patientsEditTitle": "Edit patient",
+  "@patientsEditTitle": {
+    "description": "Edit patient dialog title."
+  },
+  "patientsDeleteTitle": "Delete patient",
+  "@patientsDeleteTitle": {
+    "description": "Delete patient confirmation title."
+  },
+  "patientsDeleteBody": "Delete {name} from active patient records?",
+  "@patientsDeleteBody": {
+    "description": "Delete patient confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Jane Doe"
+      }
+    }
+  },
+  "patientsGenderMale": "Male",
+  "@patientsGenderMale": {
+    "description": "Male patient gender label."
+  },
+  "patientsGenderFemale": "Female",
+  "@patientsGenderFemale": {
+    "description": "Female patient gender label."
+  },
+  "patientsGenderOther": "Other",
+  "@patientsGenderOther": {
+    "description": "Other patient gender label."
+  },
+  "patientsGenderUnknown": "Unknown",
+  "@patientsGenderUnknown": {
+    "description": "Unknown patient gender label."
+  },
+  "patientsQuickActionsTitle": "Quick actions",
+  "@patientsQuickActionsTitle": {
+    "description": "Patient quick actions section title."
+  },
+  "patientsQuickAppointmentAction": "Appointment",
+  "@patientsQuickAppointmentAction": {
+    "description": "Patient quick appointment action label."
+  },
+  "patientsQuickTriageAction": "Triage",
+  "@patientsQuickTriageAction": {
+    "description": "Patient quick triage action label."
+  },
+  "patientsQuickClinicalAction": "Clinical visit",
+  "@patientsQuickClinicalAction": {
+    "description": "Patient quick clinical visit action label."
+  },
+  "patientsQuickBillingAction": "Billing",
+  "@patientsQuickBillingAction": {
+    "description": "Patient quick billing action label."
+  },
+  "patientsQuickAdmissionAction": "Admission",
+  "@patientsQuickAdmissionAction": {
+    "description": "Patient quick admission action label."
+  },
+  "patientsQuickActionQueuedMessage": "The patient context is ready for the selected workflow.",
+  "@patientsQuickActionQueuedMessage": {
+    "description": "Snackbar shown when a patient quick action is selected."
+  },
+  "patientsIdentifiersSectionTitle": "Identifiers",
+  "@patientsIdentifiersSectionTitle": {
+    "description": "Patient identifiers section title."
+  },
+  "patientsContactsSectionTitle": "Contacts",
+  "@patientsContactsSectionTitle": {
+    "description": "Patient contacts section title."
+  },
+  "patientsGuardiansSectionTitle": "Guardians",
+  "@patientsGuardiansSectionTitle": {
+    "description": "Patient guardians section title."
+  },
+  "patientsAllergiesSectionTitle": "Allergies",
+  "@patientsAllergiesSectionTitle": {
+    "description": "Patient allergies section title."
+  },
+  "patientsMedicalHistorySectionTitle": "Medical history",
+  "@patientsMedicalHistorySectionTitle": {
+    "description": "Patient medical history section title."
+  },
+  "patientsDocumentsSectionTitle": "Documents",
+  "@patientsDocumentsSectionTitle": {
+    "description": "Patient documents section title."
+  },
+  "patientsConsentsSectionTitle": "Consents",
+  "@patientsConsentsSectionTitle": {
+    "description": "Patient consents section title."
+  },
+  "patientsTimelineSectionTitle": "Timeline",
+  "@patientsTimelineSectionTitle": {
+    "description": "Patient timeline section title."
+  },
+  "patientsNoIdentifiers": "No identifiers recorded.",
+  "@patientsNoIdentifiers": {
+    "description": "Patient identifiers empty label."
+  },
+  "patientsNoContacts": "No contacts recorded.",
+  "@patientsNoContacts": {
+    "description": "Patient contacts empty label."
+  },
+  "patientsNoGuardians": "No guardians recorded.",
+  "@patientsNoGuardians": {
+    "description": "Patient guardians empty label."
+  },
+  "patientsNoAllergies": "No allergies recorded.",
+  "@patientsNoAllergies": {
+    "description": "Patient allergies empty label."
+  },
+  "patientsNoMedicalHistory": "No medical history recorded.",
+  "@patientsNoMedicalHistory": {
+    "description": "Patient medical history empty label."
+  },
+  "patientsNoDocuments": "No documents recorded.",
+  "@patientsNoDocuments": {
+    "description": "Patient documents empty label."
+  },
+  "patientsNoConsents": "No consents recorded.",
+  "@patientsNoConsents": {
+    "description": "Patient consents empty label."
+  },
+  "patientsNoTimeline": "No timeline entries recorded.",
+  "@patientsNoTimeline": {
+    "description": "Patient timeline empty label."
+  },
+  "patientsAddRelatedAction": "Add record",
+  "@patientsAddRelatedAction": {
+    "description": "Add patient related record action label."
+  },
+  "patientsAddRelatedTitle": "Add patient record",
+  "@patientsAddRelatedTitle": {
+    "description": "Add patient related record dialog title."
+  },
+  "patientsEditRelatedTitle": "Edit patient record",
+  "@patientsEditRelatedTitle": {
+    "description": "Edit patient related record dialog title."
+  },
+  "patientsRelatedDeleteTitle": "Delete patient record",
+  "@patientsRelatedDeleteTitle": {
+    "description": "Delete patient related record confirmation title."
+  },
+  "patientsRelatedDeleteBody": "Delete this patient record?",
+  "@patientsRelatedDeleteBody": {
+    "description": "Delete patient related record confirmation body."
+  },
+  "patientsContactTypeLabel": "Contact type",
+  "@patientsContactTypeLabel": {
+    "description": "Patient contact type field label."
+  },
+  "patientsContactValueLabel": "Contact value",
+  "@patientsContactValueLabel": {
+    "description": "Patient contact value field label."
+  },
+  "patientsPrimaryRecordLabel": "Primary record",
+  "@patientsPrimaryRecordLabel": {
+    "description": "Patient primary related record checkbox label."
+  },
+  "patientsGuardianNameLabel": "Guardian name",
+  "@patientsGuardianNameLabel": {
+    "description": "Patient guardian name field label."
+  },
+  "patientsGuardianRelationshipLabel": "Relationship",
+  "@patientsGuardianRelationshipLabel": {
+    "description": "Patient guardian relationship field label."
+  },
+  "patientsAllergenLabel": "Allergen",
+  "@patientsAllergenLabel": {
+    "description": "Patient allergy allergen field label."
+  },
+  "patientsSeverityLabel": "Severity",
+  "@patientsSeverityLabel": {
+    "description": "Patient allergy severity field label."
+  },
+  "patientsReactionLabel": "Reaction",
+  "@patientsReactionLabel": {
+    "description": "Patient allergy reaction field label."
+  },
+  "patientsNotesLabel": "Notes",
+  "@patientsNotesLabel": {
+    "description": "Patient notes field label."
+  },
+  "patientsConditionLabel": "Condition",
+  "@patientsConditionLabel": {
+    "description": "Patient medical history condition field label."
+  },
+  "patientsDiagnosisDateLabel": "Diagnosis date",
+  "@patientsDiagnosisDateLabel": {
+    "description": "Patient medical history diagnosis date field label."
+  },
+  "patientsDocumentTypeLabel": "Document type",
+  "@patientsDocumentTypeLabel": {
+    "description": "Patient document type field label."
+  },
+  "patientsStorageKeyLabel": "Storage key",
+  "@patientsStorageKeyLabel": {
+    "description": "Patient document storage key field label."
+  },
+  "patientsFileNameLabel": "File name",
+  "@patientsFileNameLabel": {
+    "description": "Patient document file name field label."
+  },
+  "patientsContentTypeLabel": "Content type",
+  "@patientsContentTypeLabel": {
+    "description": "Patient document content type field label."
+  },
+  "patientsConsentTypeLabel": "Consent type",
+  "@patientsConsentTypeLabel": {
+    "description": "Patient consent type field label."
+  },
+  "patientsConsentStatusLabel": "Consent status",
+  "@patientsConsentStatusLabel": {
+    "description": "Patient consent status field label."
+  },
+  "patientsConsentDateLabel": "Consent date",
+  "@patientsConsentDateLabel": {
+    "description": "Patient consent date field label."
+  },
+  "patientsActivityTitle": "Registry attention",
+  "@patientsActivityTitle": {
+    "description": "Patient registry activity section title."
+  },
+  "patientsActivityBody": "Patient record issues that may need review.",
+  "@patientsActivityBody": {
+    "description": "Patient registry activity section body."
+  },
+  "patientsActivityEmptyTitle": "No registry issues",
+  "@patientsActivityEmptyTitle": {
+    "description": "Patient registry activity empty title."
+  },
+  "patientsActivityEmptyBody": "No duplicate, consent, or document alerts are visible.",
+  "@patientsActivityEmptyBody": {
+    "description": "Patient registry activity empty body."
+  },
+  "patientsDuplicateActivityTitle": "Possible duplicate",
+  "@patientsDuplicateActivityTitle": {
+    "description": "Patient duplicate activity title."
+  },
+  "patientsDuplicateActivitySubtitle": "{score}% match confidence",
+  "@patientsDuplicateActivitySubtitle": {
+    "description": "Patient duplicate activity confidence subtitle.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "patientsConsentActivityTitle": "Consent review",
+  "@patientsConsentActivityTitle": {
+    "description": "Patient consent activity title."
+  },
+  "patientsConsentActivitySubtitle": "{count, plural, =1{1 consent needs review} other{{count} consents need review}}",
+  "@patientsConsentActivitySubtitle": {
+    "description": "Patient consent activity count subtitle.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "patientsDocumentsActivityTitle": "Missing documents",
+  "@patientsDocumentsActivityTitle": {
+    "description": "Patient missing documents activity title."
+  },
+  "patientsDocumentsActivitySubtitle": "{count, plural, =1{1 patient has no documents} other{{count} patients have no documents}}",
+  "@patientsDocumentsActivitySubtitle": {
+    "description": "Patient missing documents activity count subtitle.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeReadyTitle": "Hospital operations workspace",
   "@homeReadyTitle": {
     "description": "Home page title for the HMS overview state."

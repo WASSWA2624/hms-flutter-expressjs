@@ -96,6 +96,407 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationSetupLabel => 'Setup';
 
   @override
+  String get navigationPatientsLabel => 'Patients';
+
+  @override
+  String get patientsTitle => 'Patient registry';
+
+  @override
+  String get patientsBody =>
+      'Find, register, and maintain patient records for front desk, clinical, and administrative workflows.';
+
+  @override
+  String get patientsLoadingTitle => 'Loading patients';
+
+  @override
+  String get patientsLoadingBody => 'Loading patient registry data.';
+
+  @override
+  String get patientsStatusReady => 'Registry ready';
+
+  @override
+  String get patientsAddAction => 'Add patient';
+
+  @override
+  String get patientsEditAction => 'Edit';
+
+  @override
+  String get patientsDeleteAction => 'Delete';
+
+  @override
+  String get patientsSaveAction => 'Save';
+
+  @override
+  String get patientsSavedMessage => 'Patient registry changes saved.';
+
+  @override
+  String get patientsDeletedMessage => 'Patient registry record deleted.';
+
+  @override
+  String get patientsTotalSummaryLabel => 'Total patients';
+
+  @override
+  String get patientsTotalSummaryBody =>
+      'All visible patient records in scope.';
+
+  @override
+  String get patientsActiveSummaryLabel => 'Active patients';
+
+  @override
+  String get patientsActiveSummaryBody =>
+      'Patients available for current workflows.';
+
+  @override
+  String get patientsQueueSummaryLabel => 'Waiting queue';
+
+  @override
+  String get patientsQueueSummaryBody =>
+      'Patients currently waiting for service.';
+
+  @override
+  String get patientsDuplicateSummaryLabel => 'Duplicate review';
+
+  @override
+  String get patientsDuplicateSummaryBody =>
+      'Potential matches needing review.';
+
+  @override
+  String get patientsFiltersLabel => 'Patient filters';
+
+  @override
+  String get patientsSearchLabel => 'Search';
+
+  @override
+  String get patientsSearchHint => 'Name, phone, email, identifier, or contact';
+
+  @override
+  String get patientsPatientIdFilterLabel => 'Patient ID';
+
+  @override
+  String get patientsGenderFilterLabel => 'Gender';
+
+  @override
+  String get patientsStatusFilterLabel => 'Status';
+
+  @override
+  String get patientsConsentFilterLabel => 'Consent';
+
+  @override
+  String get patientsApplyFiltersAction => 'Apply';
+
+  @override
+  String get patientsClearFiltersAction => 'Clear';
+
+  @override
+  String get patientsActiveFilter => 'Active';
+
+  @override
+  String get patientsInactiveFilter => 'Inactive';
+
+  @override
+  String get patientsPatientColumnLabel => 'Patient';
+
+  @override
+  String get patientsIdentifierColumnLabel => 'Identifier';
+
+  @override
+  String get patientsContactColumnLabel => 'Contact';
+
+  @override
+  String get patientsDobColumnLabel => 'DOB';
+
+  @override
+  String get patientsStatusColumnLabel => 'Status';
+
+  @override
+  String patientsPageLabel(int from, int to, int total) {
+    return '$from-$to of $total';
+  }
+
+  @override
+  String get patientsPreviousPageLabel => 'Previous patients page';
+
+  @override
+  String get patientsNextPageLabel => 'Next patients page';
+
+  @override
+  String get patientsEmptyTitle => 'No patients found';
+
+  @override
+  String get patientsEmptyBody => 'Adjust the filters or register a patient.';
+
+  @override
+  String get patientsDetailTitle => 'Patient details';
+
+  @override
+  String get patientsDetailLoadingTitle => 'Loading patient';
+
+  @override
+  String get patientsDetailLoadingBody =>
+      'Loading demographics and related records.';
+
+  @override
+  String get patientsNoSelectionTitle => 'Select a patient';
+
+  @override
+  String get patientsNoSelectionBody =>
+      'Open a patient to review demographics, contacts, clinical flags, documents, and visits.';
+
+  @override
+  String get patientsNameLabel => 'Name';
+
+  @override
+  String get patientsIdentifierLabel => 'Identifier';
+
+  @override
+  String get patientsDobLabel => 'Date of birth';
+
+  @override
+  String get patientsGenderLabel => 'Gender';
+
+  @override
+  String get patientsPhoneLabel => 'Phone';
+
+  @override
+  String get patientsEmailLabel => 'Email';
+
+  @override
+  String get patientsFacilityLabel => 'Facility';
+
+  @override
+  String get patientsFirstNameLabel => 'First name';
+
+  @override
+  String get patientsLastNameLabel => 'Last name';
+
+  @override
+  String get patientsIdentifierTypeLabel => 'Identifier type';
+
+  @override
+  String get patientsIdentifierValueLabel => 'Identifier value';
+
+  @override
+  String get patientsActiveCheckboxLabel => 'Patient is active';
+
+  @override
+  String get patientsDatePickerAction => 'Select date';
+
+  @override
+  String get patientsAddTitle => 'Add patient';
+
+  @override
+  String get patientsEditTitle => 'Edit patient';
+
+  @override
+  String get patientsDeleteTitle => 'Delete patient';
+
+  @override
+  String patientsDeleteBody(String name) {
+    return 'Delete $name from active patient records?';
+  }
+
+  @override
+  String get patientsGenderMale => 'Male';
+
+  @override
+  String get patientsGenderFemale => 'Female';
+
+  @override
+  String get patientsGenderOther => 'Other';
+
+  @override
+  String get patientsGenderUnknown => 'Unknown';
+
+  @override
+  String get patientsQuickActionsTitle => 'Quick actions';
+
+  @override
+  String get patientsQuickAppointmentAction => 'Appointment';
+
+  @override
+  String get patientsQuickTriageAction => 'Triage';
+
+  @override
+  String get patientsQuickClinicalAction => 'Clinical visit';
+
+  @override
+  String get patientsQuickBillingAction => 'Billing';
+
+  @override
+  String get patientsQuickAdmissionAction => 'Admission';
+
+  @override
+  String get patientsQuickActionQueuedMessage =>
+      'The patient context is ready for the selected workflow.';
+
+  @override
+  String get patientsIdentifiersSectionTitle => 'Identifiers';
+
+  @override
+  String get patientsContactsSectionTitle => 'Contacts';
+
+  @override
+  String get patientsGuardiansSectionTitle => 'Guardians';
+
+  @override
+  String get patientsAllergiesSectionTitle => 'Allergies';
+
+  @override
+  String get patientsMedicalHistorySectionTitle => 'Medical history';
+
+  @override
+  String get patientsDocumentsSectionTitle => 'Documents';
+
+  @override
+  String get patientsConsentsSectionTitle => 'Consents';
+
+  @override
+  String get patientsTimelineSectionTitle => 'Timeline';
+
+  @override
+  String get patientsNoIdentifiers => 'No identifiers recorded.';
+
+  @override
+  String get patientsNoContacts => 'No contacts recorded.';
+
+  @override
+  String get patientsNoGuardians => 'No guardians recorded.';
+
+  @override
+  String get patientsNoAllergies => 'No allergies recorded.';
+
+  @override
+  String get patientsNoMedicalHistory => 'No medical history recorded.';
+
+  @override
+  String get patientsNoDocuments => 'No documents recorded.';
+
+  @override
+  String get patientsNoConsents => 'No consents recorded.';
+
+  @override
+  String get patientsNoTimeline => 'No timeline entries recorded.';
+
+  @override
+  String get patientsAddRelatedAction => 'Add record';
+
+  @override
+  String get patientsAddRelatedTitle => 'Add patient record';
+
+  @override
+  String get patientsEditRelatedTitle => 'Edit patient record';
+
+  @override
+  String get patientsRelatedDeleteTitle => 'Delete patient record';
+
+  @override
+  String get patientsRelatedDeleteBody => 'Delete this patient record?';
+
+  @override
+  String get patientsContactTypeLabel => 'Contact type';
+
+  @override
+  String get patientsContactValueLabel => 'Contact value';
+
+  @override
+  String get patientsPrimaryRecordLabel => 'Primary record';
+
+  @override
+  String get patientsGuardianNameLabel => 'Guardian name';
+
+  @override
+  String get patientsGuardianRelationshipLabel => 'Relationship';
+
+  @override
+  String get patientsAllergenLabel => 'Allergen';
+
+  @override
+  String get patientsSeverityLabel => 'Severity';
+
+  @override
+  String get patientsReactionLabel => 'Reaction';
+
+  @override
+  String get patientsNotesLabel => 'Notes';
+
+  @override
+  String get patientsConditionLabel => 'Condition';
+
+  @override
+  String get patientsDiagnosisDateLabel => 'Diagnosis date';
+
+  @override
+  String get patientsDocumentTypeLabel => 'Document type';
+
+  @override
+  String get patientsStorageKeyLabel => 'Storage key';
+
+  @override
+  String get patientsFileNameLabel => 'File name';
+
+  @override
+  String get patientsContentTypeLabel => 'Content type';
+
+  @override
+  String get patientsConsentTypeLabel => 'Consent type';
+
+  @override
+  String get patientsConsentStatusLabel => 'Consent status';
+
+  @override
+  String get patientsConsentDateLabel => 'Consent date';
+
+  @override
+  String get patientsActivityTitle => 'Registry attention';
+
+  @override
+  String get patientsActivityBody =>
+      'Patient record issues that may need review.';
+
+  @override
+  String get patientsActivityEmptyTitle => 'No registry issues';
+
+  @override
+  String get patientsActivityEmptyBody =>
+      'No duplicate, consent, or document alerts are visible.';
+
+  @override
+  String get patientsDuplicateActivityTitle => 'Possible duplicate';
+
+  @override
+  String patientsDuplicateActivitySubtitle(int score) {
+    return '$score% match confidence';
+  }
+
+  @override
+  String get patientsConsentActivityTitle => 'Consent review';
+
+  @override
+  String patientsConsentActivitySubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count consents need review',
+      one: '1 consent needs review',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get patientsDocumentsActivityTitle => 'Missing documents';
+
+  @override
+  String patientsDocumentsActivitySubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count patients have no documents',
+      one: '1 patient has no documents',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get homeReadyTitle => 'Hospital operations workspace';
 
   @override
