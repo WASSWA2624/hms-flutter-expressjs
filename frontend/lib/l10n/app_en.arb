@@ -422,6 +422,58 @@
   "@tenantFacilitySetupLoadingBody": {
     "description": "Body while tenant and facility setup loads."
   },
+  "tenantFacilitySummaryConfigured": "Configured",
+  "@tenantFacilitySummaryConfigured": {
+    "description": "Configured setup summary status label."
+  },
+  "tenantFacilitySummaryNeedsSetup": "Needs setup",
+  "@tenantFacilitySummaryNeedsSetup": {
+    "description": "Incomplete setup summary status label."
+  },
+  "tenantFacilitySummaryNoTenant": "No tenant profile",
+  "@tenantFacilitySummaryNoTenant": {
+    "description": "Tenant setup summary detail when no tenant is configured."
+  },
+  "tenantFacilitySummaryNoFacility": "No facility selected",
+  "@tenantFacilitySummaryNoFacility": {
+    "description": "Facility setup summary detail when no facility is selected."
+  },
+  "tenantFacilitySummaryRecordCount": "{count, plural, =0{No records} =1{1 record} other{{count} records}}",
+  "@tenantFacilitySummaryRecordCount": {
+    "description": "Generic setup record count summary.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilitySummaryDepartmentUnitCount": "{departments, plural, =0{No departments} =1{1 department} other{{departments} departments}}, {units, plural, =0{no units} =1{1 unit} other{{units} units}}",
+  "@tenantFacilitySummaryDepartmentUnitCount": {
+    "description": "Department and unit count summary.",
+    "placeholders": {
+      "departments": {
+        "type": "int"
+      },
+      "units": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilitySummaryLocationCount": "{wards, plural, =0{No wards} =1{1 ward} other{{wards} wards}}, {rooms, plural, =0{no rooms} =1{1 room} other{{rooms} rooms}}, {beds, plural, =0{no beds} =1{1 bed} other{{beds} beds}}",
+  "@tenantFacilitySummaryLocationCount": {
+    "description": "Ward room and bed count summary.",
+    "placeholders": {
+      "wards": {
+        "type": "int"
+      },
+      "rooms": {
+        "type": "int"
+      },
+      "beds": {
+        "type": "int"
+      }
+    }
+  },
   "tenantFacilityChecklistTitle": "First-run checklist",
   "@tenantFacilityChecklistTitle": {
     "description": "Setup checklist section title."

@@ -359,6 +359,75 @@ class AppLocalizationsEn extends AppLocalizations {
       'Loading organization and facility configuration.';
 
   @override
+  String get tenantFacilitySummaryConfigured => 'Configured';
+
+  @override
+  String get tenantFacilitySummaryNeedsSetup => 'Needs setup';
+
+  @override
+  String get tenantFacilitySummaryNoTenant => 'No tenant profile';
+
+  @override
+  String get tenantFacilitySummaryNoFacility => 'No facility selected';
+
+  @override
+  String tenantFacilitySummaryRecordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records',
+      one: '1 record',
+      zero: 'No records',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tenantFacilitySummaryDepartmentUnitCount(int departments, int units) {
+    String _temp0 = intl.Intl.pluralLogic(
+      departments,
+      locale: localeName,
+      other: '$departments departments',
+      one: '1 department',
+      zero: 'No departments',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      units,
+      locale: localeName,
+      other: '$units units',
+      one: '1 unit',
+      zero: 'no units',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String tenantFacilitySummaryLocationCount(int wards, int rooms, int beds) {
+    String _temp0 = intl.Intl.pluralLogic(
+      wards,
+      locale: localeName,
+      other: '$wards wards',
+      one: '1 ward',
+      zero: 'No wards',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      rooms,
+      locale: localeName,
+      other: '$rooms rooms',
+      one: '1 room',
+      zero: 'no rooms',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      beds,
+      locale: localeName,
+      other: '$beds beds',
+      one: '1 bed',
+      zero: 'no beds',
+    );
+    return '$_temp0, $_temp1, $_temp2';
+  }
+
+  @override
   String get tenantFacilityChecklistTitle => 'First-run checklist';
 
   @override

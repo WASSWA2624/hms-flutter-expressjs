@@ -13,10 +13,11 @@ class AppDialog extends StatelessWidget {
     this.scrollable = false,
     this.showCloseButton = true,
     this.closeEnabled = true,
+    this.maxWidth = _defaultMaxWidth,
     super.key,
   });
 
-  static const double _maxWidth = 600;
+  static const double _defaultMaxWidth = 600;
 
   final Widget? title;
   final Widget? content;
@@ -26,6 +27,7 @@ class AppDialog extends StatelessWidget {
   final bool scrollable;
   final bool showCloseButton;
   final bool closeEnabled;
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +51,7 @@ class AppDialog extends StatelessWidget {
       backgroundColor: colorScheme.surface,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.28),
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: _maxWidth, maxHeight: maxHeight),
+        constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
         child: DecoratedBox(
           decoration: BoxDecoration(
             border: Border.all(color: colorScheme.outlineVariant),

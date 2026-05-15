@@ -712,6 +712,48 @@ abstract class AppLocalizations {
   /// **'Loading organization and facility configuration.'**
   String get tenantFacilitySetupLoadingBody;
 
+  /// Configured setup summary status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured'**
+  String get tenantFacilitySummaryConfigured;
+
+  /// Incomplete setup summary status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs setup'**
+  String get tenantFacilitySummaryNeedsSetup;
+
+  /// Tenant setup summary detail when no tenant is configured.
+  ///
+  /// In en, this message translates to:
+  /// **'No tenant profile'**
+  String get tenantFacilitySummaryNoTenant;
+
+  /// Facility setup summary detail when no facility is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'No facility selected'**
+  String get tenantFacilitySummaryNoFacility;
+
+  /// Generic setup record count summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No records} =1{1 record} other{{count} records}}'**
+  String tenantFacilitySummaryRecordCount(int count);
+
+  /// Department and unit count summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{departments, plural, =0{No departments} =1{1 department} other{{departments} departments}}, {units, plural, =0{no units} =1{1 unit} other{{units} units}}'**
+  String tenantFacilitySummaryDepartmentUnitCount(int departments, int units);
+
+  /// Ward room and bed count summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{wards, plural, =0{No wards} =1{1 ward} other{{wards} wards}}, {rooms, plural, =0{no rooms} =1{1 room} other{{rooms} rooms}}, {beds, plural, =0{no beds} =1{1 bed} other{{beds} beds}}'**
+  String tenantFacilitySummaryLocationCount(int wards, int rooms, int beds);
+
   /// Setup checklist section title.
   ///
   /// In en, this message translates to:
