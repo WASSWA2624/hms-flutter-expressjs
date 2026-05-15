@@ -1766,53 +1766,59 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
       icon: const Icon(Icons.assignment_ind_outlined),
       scrollable: true,
       closeEnabled: !_isSaving,
+      maxWidth: 760,
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          density: AppFormSectionDensity.compact,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _firstNameController,
-              labelText: l10n.patientsFirstNameLabel,
-              isRequired: true,
-              textCapitalization: TextCapitalization.words,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+            _ResponsiveFieldPair(
+              left: AppTextField(
+                controller: _firstNameController,
+                labelText: l10n.patientsFirstNameLabel,
+                isRequired: true,
+                textCapitalization: TextCapitalization.words,
+                enabled: !_isSaving,
+                validator: AppValidators.requiredText(l10n.validationRequired),
+              ),
+              right: AppTextField(
+                controller: _lastNameController,
+                labelText: l10n.patientsLastNameLabel,
+                isRequired: true,
+                textCapitalization: TextCapitalization.words,
+                enabled: !_isSaving,
+                validator: AppValidators.requiredText(l10n.validationRequired),
+              ),
             ),
-            AppTextField(
-              controller: _lastNameController,
-              labelText: l10n.patientsLastNameLabel,
-              isRequired: true,
-              textCapitalization: TextCapitalization.words,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppDateField(
-              value: _dateOfBirth,
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now(),
-              pickerButtonLabel: l10n.patientsDatePickerAction,
-              invalidDateMessage: l10n.appDateInvalidMessage,
-              labelText: l10n.patientsDobLabel,
-              hintText: l10n.appDateFormatHint,
-              enabled: !_isSaving,
-              onChanged: (DateTime? value) {
-                _dateOfBirth = value;
-              },
-            ),
-            AppGenderField(
-              value: _gender,
-              labelText: l10n.patientsGenderLabel,
-              maleLabel: l10n.patientsGenderMale,
-              femaleLabel: l10n.patientsGenderFemale,
-              otherLabel: l10n.patientsGenderOther,
-              unknownLabel: l10n.patientsGenderUnknown,
-              enabled: !_isSaving,
-              onChanged: (String? value) {
-                setState(() {
-                  _gender = value;
-                });
-              },
+            _ResponsiveFieldPair(
+              left: AppDateField(
+                value: _dateOfBirth,
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+                pickerButtonLabel: l10n.patientsDatePickerAction,
+                invalidDateMessage: l10n.appDateInvalidMessage,
+                labelText: l10n.patientsDobLabel,
+                hintText: l10n.appDateFormatHint,
+                enabled: !_isSaving,
+                onChanged: (DateTime? value) {
+                  _dateOfBirth = value;
+                },
+              ),
+              right: AppGenderField(
+                value: _gender,
+                labelText: l10n.patientsGenderLabel,
+                maleLabel: l10n.patientsGenderMale,
+                femaleLabel: l10n.patientsGenderFemale,
+                otherLabel: l10n.patientsGenderOther,
+                unknownLabel: l10n.patientsGenderUnknown,
+                enabled: !_isSaving,
+                onChanged: (String? value) {
+                  setState(() {
+                    _gender = value;
+                  });
+                },
+              ),
             ),
             if (widget.referenceData.facilities.isNotEmpty)
               AppSelectField<String>(
