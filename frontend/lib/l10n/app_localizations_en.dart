@@ -39,6 +39,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonCancelActionLabel => 'Cancel';
 
   @override
+  String get appDateInvalidMessage => 'Enter a valid date.';
+
+  @override
+  String get appDateFormatHint => 'YYYY-MM-DD';
+
+  @override
+  String get appPhoneCountryLabel => 'Country code';
+
+  @override
+  String get appPhoneNumberLabel => 'Phone number';
+
+  @override
+  String get appPhoneInvalidMessage => 'Enter a valid phone number.';
+
+  @override
   String get appStatusOnlineLabel => 'Online';
 
   @override

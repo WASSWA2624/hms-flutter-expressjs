@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/src/app_field_label.dart';
 
 class AppSelectOption<T> {
   const AppSelectOption({
@@ -33,6 +34,7 @@ class AppSelectField<T> extends StatelessWidget {
     this.onSaved,
     this.autovalidateMode = AutovalidateMode.disabled,
     this.enabled = true,
+    this.isRequired = false,
     this.isLoading = false,
     this.searchable = false,
     this.filterCallback,
@@ -56,6 +58,7 @@ class AppSelectField<T> extends StatelessWidget {
     this.onSaved,
     this.autovalidateMode = AutovalidateMode.disabled,
     this.enabled = true,
+    this.isRequired = false,
     this.isLoading = false,
     this.filterCallback,
     this.searchCallback,
@@ -77,6 +80,7 @@ class AppSelectField<T> extends StatelessWidget {
   final FormFieldSetter<T>? onSaved;
   final AutovalidateMode autovalidateMode;
   final bool enabled;
+  final bool isRequired;
   final bool isLoading;
   final bool searchable;
   final FilterCallback<T>? filterCallback;
@@ -103,7 +107,9 @@ class AppSelectField<T> extends StatelessWidget {
           enabled: canSelect,
           width: width,
           menuHeight: menuHeight,
-          label: labelText == null ? null : Text(labelText!),
+          label: labelText == null
+              ? null
+              : Text(appFieldLabel(labelText, isRequired: isRequired)!),
           hintText: hintText,
           helperText: helperText,
           trailingIcon: isLoading ? const _SelectLoadingIcon() : null,

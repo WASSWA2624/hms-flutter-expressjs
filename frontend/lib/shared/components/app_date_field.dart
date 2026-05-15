@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/src/app_field_label.dart';
 
 class AppDateField extends StatefulWidget {
   const AppDateField({
     required this.firstDate,
     required this.lastDate,
     required this.pickerButtonLabel,
+    required this.invalidDateMessage,
     this.value,
     this.onChanged,
     this.initialPickerDate,
@@ -19,6 +22,7 @@ class AppDateField extends StatefulWidget {
     this.onSaved,
     this.autovalidateMode = AutovalidateMode.disabled,
     this.enabled = true,
+    this.isRequired = false,
     this.focusNode,
     this.restorationId,
     this.initialEntryMode = DatePickerEntryMode.calendar,
@@ -33,6 +37,7 @@ class AppDateField extends StatefulWidget {
   final DateTime? initialPickerDate;
   final DateTime? currentDate;
   final String pickerButtonLabel;
+  final String invalidDateMessage;
   final String? labelText;
   final String? hintText;
   final String? helperText;
@@ -42,6 +47,7 @@ class AppDateField extends StatefulWidget {
   final FormFieldSetter<DateTime>? onSaved;
   final AutovalidateMode autovalidateMode;
   final bool enabled;
+  final bool isRequired;
   final FocusNode? focusNode;
   final String? restorationId;
   final DatePickerEntryMode initialEntryMode;
@@ -53,17 +59,55 @@ class AppDateField extends StatefulWidget {
 
 class _AppDateFieldState extends State<AppDateField> {
   late final TextEditingController _controller;
+  late FocusNode _focusNode;
+  late bool _ownsFocusNode;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    _controller = TextEditingController(text: _formatDate(widget.value));
+    _attachFocusNode();
+  }
+
+  @override
+  void didUpdateWidget(AppDateField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      _detachFocusNode();
+      _attachFocusNode();
+    }
+    if (oldWidget.value != widget.value && !_focusNode.hasFocus) {
+      _controller.text = _formatDate(widget.value);
+    }
   }
 
   @override
   void dispose() {
+    _detachFocusNode();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _attachFocusNode() {
+    _ownsFocusNode = widget.focusNode == null;
+    _focusNode = widget.focusNode ?? FocusNode();
+    _focusNode.addListener(_handleFocusChanged);
+  }
+
+  void _detachFocusNode() {
+    _focusNode.removeListener(_handleFocusChanged);
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
+  }
+
+  void _handleFocusChanged() {
+    if (!_focusNode.hasFocus) {
+      final DateTime? parsed = _parseDate(_controller.text);
+      if (parsed != null) {
+        _controller.text = _formatDate(parsed);
+      }
+    }
   }
 
   @override
@@ -72,22 +116,23 @@ class _AppDateFieldState extends State<AppDateField> {
     final bool canChange = widget.enabled;
 
     return FormField<DateTime>(
-      key: ValueKey<DateTime?>(widget.value),
       initialValue: widget.value,
-      validator: widget.validator,
-      onSaved: widget.onSaved,
+      validator: (_) => _validate(),
+      onSaved: (_) => widget.onSaved?.call(_parseDate(_controller.text)),
       autovalidateMode: widget.autovalidateMode,
       forceErrorText: widget.errorText,
       builder: (FormFieldState<DateTime> field) {
-        _controller.text = _formatDate(context, field.value);
-
         Widget textField = TextField(
           controller: _controller,
           enabled: canChange,
-          readOnly: true,
-          focusNode: widget.focusNode,
+          focusNode: _focusNode,
           restorationId: widget.restorationId,
-          onTap: canChange ? () => _selectDate(context, field) : null,
+          keyboardType: TextInputType.datetime,
+          textInputAction: TextInputAction.next,
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9/\-.]')),
+          ],
+          onChanged: (String value) => _handleTextChanged(field, value),
           style: theme.textTheme.bodyLarge?.copyWith(
             color: canChange
                 ? theme.colorScheme.onSurface
@@ -95,7 +140,10 @@ class _AppDateFieldState extends State<AppDateField> {
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
-            labelText: widget.labelText,
+            labelText: appFieldLabel(
+              widget.labelText,
+              isRequired: widget.isRequired,
+            ),
             hintText: widget.hintText,
             helperText: widget.helperText,
             errorText: field.errorText,
@@ -122,6 +170,12 @@ class _AppDateFieldState extends State<AppDateField> {
     );
   }
 
+  void _handleTextChanged(FormFieldState<DateTime> field, String value) {
+    final DateTime? parsed = _parseDate(value);
+    field.didChange(parsed);
+    widget.onChanged?.call(value.trim().isEmpty ? null : parsed);
+  }
+
   Future<void> _selectDate(
     BuildContext context,
     FormFieldState<DateTime> field,
@@ -142,6 +196,7 @@ class _AppDateFieldState extends State<AppDateField> {
     }
 
     field.didChange(selectedDate);
+    _controller.text = _formatDate(selectedDate);
     widget.onChanged?.call(selectedDate);
   }
 
@@ -163,11 +218,78 @@ class _AppDateFieldState extends State<AppDateField> {
     return fallback;
   }
 
-  String _formatDate(BuildContext context, DateTime? value) {
+  String? _validate() {
+    final String value = _controller.text.trim();
+    if (value.isEmpty) {
+      return widget.validator?.call(null);
+    }
+
+    final DateTime? parsed = _parseDate(value);
+    if (parsed == null ||
+        parsed.isBefore(_dateOnly(widget.firstDate)) ||
+        parsed.isAfter(_dateOnly(widget.lastDate)) ||
+        widget.selectableDayPredicate?.call(parsed) == false) {
+      return widget.invalidDateMessage;
+    }
+
+    return widget.validator?.call(parsed);
+  }
+
+  DateTime? _parseDate(String value) {
+    final String normalized = value.trim();
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    final RegExpMatch? iso = RegExp(
+      r'^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$',
+    ).firstMatch(normalized);
+    if (iso != null) {
+      return _safeDate(
+        int.parse(iso.group(1)!),
+        int.parse(iso.group(2)!),
+        int.parse(iso.group(3)!),
+      );
+    }
+
+    final RegExpMatch? slash = RegExp(
+      r'^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$',
+    ).firstMatch(normalized);
+    if (slash != null) {
+      final int first = int.parse(slash.group(1)!);
+      final int second = int.parse(slash.group(2)!);
+      final int year = int.parse(slash.group(3)!);
+      if (first > 12) {
+        return _safeDate(year, second, first);
+      }
+      return _safeDate(year, first, second);
+    }
+
+    return null;
+  }
+
+  DateTime? _safeDate(int year, int month, int day) {
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      return null;
+    }
+    final DateTime date = DateTime(year, month, day);
+    if (date.year != year || date.month != month || date.day != day) {
+      return null;
+    }
+    return _dateOnly(date);
+  }
+
+  DateTime _dateOnly(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  String _formatDate(DateTime? value) {
     if (value == null) {
       return '';
     }
 
-    return MaterialLocalizations.of(context).formatMediumDate(value);
+    final String month = value.month.toString().padLeft(2, '0');
+    final String day = value.day.toString().padLeft(2, '0');
+    return '${value.year}-$month-$day';
   }
 }

@@ -104,19 +104,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       enabled: !state.isSubmitting,
                     ),
                     SizedBox(height: theme.spacing.md),
-                    AppTextField(
+                    AppEmailField(
                       controller: _emailController,
                       labelText: l10n.authEmailLabel,
-                      keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
-                      autofillHints: const <String>[AutofillHints.email],
-                      validator: AppValidators.compose<String>([
-                        AppValidators.requiredText(l10n.validationRequired),
-                        AppValidators.email(
-                          l10n.authEmailInvalidMessage,
-                          allowEmpty: false,
-                        ),
-                      ]),
+                      invalidEmailMessage: l10n.authEmailInvalidMessage,
+                      requiredMessage: l10n.validationRequired,
+                      isRequired: true,
                       onChanged: (_) => _clearFormFeedback(),
                       onFocusChanged: _handleFieldFocusChanged,
                       focusNode: _emailFocusNode,
@@ -200,14 +194,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       },
                     ),
                     SizedBox(height: theme.spacing.md),
-                    AppTextField(
+                    AppPhoneField(
                       controller: _phoneController,
                       labelText: l10n.authPhoneOptionalLabel,
-                      keyboardType: TextInputType.phone,
+                      countryLabelText: l10n.appPhoneCountryLabel,
+                      numberLabelText: l10n.appPhoneNumberLabel,
+                      invalidPhoneMessage: l10n.appPhoneInvalidMessage,
                       textInputAction: TextInputAction.next,
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
                       onChanged: (_) => _clearFormFeedback(),
                       onFocusChanged: _handleFieldFocusChanged,
                       focusNode: _phoneFocusNode,

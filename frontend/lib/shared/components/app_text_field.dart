@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/src/app_field_label.dart';
 
 class AppTextField extends StatefulWidget {
   const AppTextField({
@@ -31,6 +32,7 @@ class AppTextField extends StatefulWidget {
     this.minLines,
     this.enabled = true,
     this.readOnly = false,
+    this.isRequired = false,
     this.isLoading = false,
     this.obscureText = false,
     this.enableObscureTextToggle = false,
@@ -80,6 +82,7 @@ class AppTextField extends StatefulWidget {
   final int? minLines;
   final bool enabled;
   final bool readOnly;
+  final bool isRequired;
   final bool isLoading;
   final bool obscureText;
   final bool enableObscureTextToggle;
@@ -178,7 +181,10 @@ class _AppTextFieldState extends State<AppTextField> {
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
-        labelText: widget.labelText,
+        labelText: appFieldLabel(
+          widget.labelText,
+          isRequired: widget.isRequired,
+        ),
         hintText: widget.hintText,
         helperText: widget.helperText,
         prefixIcon: widget.prefixIcon,

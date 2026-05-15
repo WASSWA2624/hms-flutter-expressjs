@@ -154,6 +154,36 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get commonCancelActionLabel;
 
+  /// Validation message for manually typed date fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date.'**
+  String get appDateInvalidMessage;
+
+  /// Hint text showing the supported manual date entry format.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DD'**
+  String get appDateFormatHint;
+
+  /// Label for the country-code selector inside phone input fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Country code'**
+  String get appPhoneCountryLabel;
+
+  /// Label for the national phone number field inside phone input fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get appPhoneNumberLabel;
+
+  /// Validation message for invalid phone numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number.'**
+  String get appPhoneInvalidMessage;
+
   /// Label shown in the app header when network connectivity is available.
   ///
   /// In en, this message translates to:

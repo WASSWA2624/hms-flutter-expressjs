@@ -307,7 +307,7 @@ void main() {
     expect(savedValue, isTrue);
   });
 
-  testWidgets('AppDateField formats the selected date with localization', (
+  testWidgets('AppDateField formats the selected date for manual entry', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -317,17 +317,14 @@ void main() {
         firstDate: DateTime(2020),
         lastDate: DateTime(2030),
         pickerButtonLabel: 'Open date picker',
+        invalidDateMessage: 'Enter a valid date.',
         onChanged: (_) {},
       ),
     );
 
-    final BuildContext context = tester.element(find.byType(AppDateField));
-    final String expectedDate = MaterialLocalizations.of(
-      context,
-    ).formatMediumDate(DateTime(2026, 5, 13));
     final EditableText editableText = tester.widget(find.byType(EditableText));
 
-    expect(editableText.controller.text, expectedDate);
+    expect(editableText.controller.text, '2026-05-13');
   });
 
   testWidgets('AppDateField remains enabled without an onChanged callback', (
@@ -340,6 +337,7 @@ void main() {
         firstDate: DateTime(2020),
         lastDate: DateTime(2030),
         pickerButtonLabel: 'Open date picker',
+        invalidDateMessage: 'Enter a valid date.',
       ),
     );
 

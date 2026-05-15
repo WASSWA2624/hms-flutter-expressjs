@@ -868,19 +868,21 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             helperText: l10n.tenantFacilityLogoUrlHelper,
             keyboardType: TextInputType.url,
           ),
-          AppTextField(
+          AppPhoneField(
             controller: _phoneController,
             enabled: canEdit,
             labelText: l10n.profilePhoneLabel,
-            keyboardType: TextInputType.phone,
-            validator: AppValidators.requiredText(l10n.validationRequired),
+            countryLabelText: l10n.appPhoneCountryLabel,
+            numberLabelText: l10n.appPhoneNumberLabel,
+            invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+            requiredMessage: l10n.validationRequired,
+            isRequired: true,
           ),
-          AppTextField(
+          AppEmailField(
             controller: _emailController,
             enabled: canEdit,
             labelText: l10n.profileEmailLabel,
-            keyboardType: TextInputType.emailAddress,
-            validator: AppValidators.email(l10n.authEmailInvalidMessage),
+            invalidEmailMessage: l10n.authEmailInvalidMessage,
           ),
           AppTextField(
             controller: _addressLineController,

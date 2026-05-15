@@ -457,21 +457,18 @@ class _PatientAdvancedFiltersDialogState
             labelText: l10n.patientsPatientIdFilterLabel,
             textInputAction: TextInputAction.search,
           ),
-          AppSelectField<String>(
+          AppGenderField(
             value: _gender,
             labelText: l10n.patientsGenderFilterLabel,
+            maleLabel: l10n.patientsGenderMale,
+            femaleLabel: l10n.patientsGenderFemale,
+            otherLabel: l10n.patientsGenderOther,
+            unknownLabel: l10n.patientsGenderUnknown,
             onChanged: (String? value) {
               setState(() {
                 _gender = value;
               });
             },
-            options: <AppSelectOption<String>>[
-              for (final String value in _genderOptions)
-                AppSelectOption<String>(
-                  value: value,
-                  label: _genderLabel(l10n, value),
-                ),
-            ],
           ),
           AppSelectField<String>(
             value: _status,
@@ -1763,7 +1760,6 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
 
     return AppDialog(
       title: Text(_isEditing ? l10n.patientsEditTitle : l10n.patientsAddTitle),
@@ -1778,6 +1774,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
             AppTextField(
               controller: _firstNameController,
               labelText: l10n.patientsFirstNameLabel,
+              isRequired: true,
               textCapitalization: TextCapitalization.words,
               enabled: !_isSaving,
               validator: AppValidators.requiredText(l10n.validationRequired),
@@ -1785,6 +1782,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
             AppTextField(
               controller: _lastNameController,
               labelText: l10n.patientsLastNameLabel,
+              isRequired: true,
               textCapitalization: TextCapitalization.words,
               enabled: !_isSaving,
               validator: AppValidators.requiredText(l10n.validationRequired),
@@ -1794,28 +1792,27 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
               firstDate: DateTime(1900),
               lastDate: DateTime.now(),
               pickerButtonLabel: l10n.patientsDatePickerAction,
+              invalidDateMessage: l10n.appDateInvalidMessage,
               labelText: l10n.patientsDobLabel,
+              hintText: l10n.appDateFormatHint,
               enabled: !_isSaving,
               onChanged: (DateTime? value) {
                 _dateOfBirth = value;
               },
             ),
-            AppSelectField<String>(
+            AppGenderField(
               value: _gender,
               labelText: l10n.patientsGenderLabel,
+              maleLabel: l10n.patientsGenderMale,
+              femaleLabel: l10n.patientsGenderFemale,
+              otherLabel: l10n.patientsGenderOther,
+              unknownLabel: l10n.patientsGenderUnknown,
               enabled: !_isSaving,
               onChanged: (String? value) {
                 setState(() {
                   _gender = value;
                 });
               },
-              options: <AppSelectOption<String>>[
-                for (final String value in _genderOptions)
-                  AppSelectOption<String>(
-                    value: value,
-                    label: _genderLabel(l10n, value),
-                  ),
-              ],
             ),
             if (widget.referenceData.facilities.isNotEmpty)
               AppSelectField<String>(
@@ -1836,37 +1833,46 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                     ),
                 ],
               ),
-            AppTextField(
+            AppPhoneField(
               controller: _phoneController,
               labelText: l10n.patientsPhoneLabel,
-              keyboardType: TextInputType.phone,
+              countryLabelText: l10n.appPhoneCountryLabel,
+              numberLabelText: l10n.appPhoneNumberLabel,
+              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
               enabled: !_isSaving,
             ),
-            AppTextField(
+            AppEmailField(
               controller: _emailController,
               labelText: l10n.patientsEmailLabel,
-              keyboardType: TextInputType.emailAddress,
+              invalidEmailMessage: l10n.authEmailInvalidMessage,
               enabled: !_isSaving,
-              validator: AppValidators.email(l10n.authEmailInvalidMessage),
             ),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTextField(
-                    controller: _identifierTypeController,
-                    labelText: l10n.patientsIdentifierTypeLabel,
-                    enabled: !_isSaving,
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    controller: _identifierValueController,
-                    labelText: l10n.patientsIdentifierValueLabel,
-                    enabled: !_isSaving,
-                  ),
-                ),
-              ],
+            _ResponsiveFieldPair(
+              left: AppSelectField<String>.searchable(
+                value: _selectedIdentifierType(_identifierTypeController.text),
+                labelText: l10n.patientsIdentifierTypeLabel,
+                enabled: !_isSaving,
+                menuHeight: 320,
+                onChanged: (String? value) {
+                  setState(() {
+                    _identifierTypeController.text = value ?? '';
+                  });
+                },
+                options: <AppSelectOption<String>>[
+                  for (final String value in _identifierTypeOptions(
+                    _identifierTypeController.text,
+                  ))
+                    AppSelectOption<String>(
+                      value: value,
+                      label: _apiLabel(value),
+                    ),
+                ],
+              ),
+              right: AppTextField(
+                controller: _identifierValueController,
+                labelText: l10n.patientsIdentifierValueLabel,
+                enabled: !_isSaving,
+              ),
             ),
             AppCheckboxField(
               title: l10n.patientsActiveCheckboxLabel,
@@ -1913,7 +1919,9 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
       'facility_id': _facilityId,
       'primary_phone': _phoneController.text.trim(),
       'primary_email': _emailController.text.trim(),
-      'primary_identifier_type': _identifierTypeController.text.trim(),
+      'primary_identifier_type': _identifierTypeController.text
+          .trim()
+          .toUpperCase(),
       'primary_identifier_value': _identifierValueController.text.trim(),
       'is_active': _isActive,
     };
@@ -1930,6 +1938,42 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
       _isSaving = false;
       _failure = failure;
     });
+  }
+}
+
+class _ResponsiveFieldPair extends StatelessWidget {
+  const _ResponsiveFieldPair({required this.left, required this.right});
+
+  final Widget left;
+  final Widget right;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth < 560) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              left,
+              SizedBox(height: theme.spacing.sm),
+              right,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(child: left),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(child: right),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -2034,12 +2078,14 @@ class _PatientRelatedRecordDialogState<T>
           controller: _first,
           labelText: l10n.patientsIdentifierTypeLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
         AppTextField(
           controller: _second,
           labelText: l10n.patientsIdentifierValueLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
         AppCheckboxField(
@@ -2086,18 +2132,19 @@ class _PatientRelatedRecordDialogState<T>
           labelText: l10n.patientsGuardianRelationshipLabel,
           enabled: !_isSaving,
         ),
-        AppTextField(
+        AppPhoneField(
           controller: _third,
           labelText: l10n.patientsPhoneLabel,
-          keyboardType: TextInputType.phone,
+          countryLabelText: l10n.appPhoneCountryLabel,
+          numberLabelText: l10n.appPhoneNumberLabel,
+          invalidPhoneMessage: l10n.appPhoneInvalidMessage,
           enabled: !_isSaving,
         ),
-        AppTextField(
+        AppEmailField(
           controller: _fourth,
           labelText: l10n.patientsEmailLabel,
-          keyboardType: TextInputType.emailAddress,
+          invalidEmailMessage: l10n.authEmailInvalidMessage,
           enabled: !_isSaving,
-          validator: AppValidators.email(l10n.authEmailInvalidMessage),
         ),
       ],
       PatientRelatedResource.allergy => <Widget>[
@@ -2142,7 +2189,9 @@ class _PatientRelatedRecordDialogState<T>
           firstDate: DateTime(1900),
           lastDate: DateTime.now(),
           pickerButtonLabel: l10n.patientsDatePickerAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
           labelText: l10n.patientsDiagnosisDateLabel,
+          hintText: l10n.appDateFormatHint,
           enabled: !_isSaving,
           onChanged: (DateTime? value) => _date = value,
         ),
@@ -2220,7 +2269,9 @@ class _PatientRelatedRecordDialogState<T>
           firstDate: DateTime(1900),
           lastDate: DateTime.now().add(const Duration(days: 3650)),
           pickerButtonLabel: l10n.patientsDatePickerAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
           labelText: l10n.patientsConsentDateLabel,
+          hintText: l10n.appDateFormatHint,
           enabled: !_isSaving,
           onChanged: (DateTime? value) => _date = value,
         ),
@@ -2568,6 +2619,20 @@ String _apiLabel(String value) {
       .join(' ');
 }
 
+List<String> _identifierTypeOptions(String currentValue) {
+  final String normalized = currentValue.trim().toUpperCase();
+  if (normalized.isEmpty || _identifierTypes.contains(normalized)) {
+    return _identifierTypes;
+  }
+
+  return <String>[normalized, ..._identifierTypes];
+}
+
+String? _selectedIdentifierType(String currentValue) {
+  final String normalized = currentValue.trim().toUpperCase();
+  return normalized.isEmpty ? null : normalized;
+}
+
 String _joinDisplay(Iterable<String?> values) {
   return values
       .map((String? value) => value?.trim() ?? '')
@@ -2575,11 +2640,14 @@ String _joinDisplay(Iterable<String?> values) {
       .join(' - ');
 }
 
-const List<String> _genderOptions = <String>[
-  'MALE',
-  'FEMALE',
+const List<String> _identifierTypes = <String>[
+  'MRN',
+  'NATIONAL_ID',
+  'PASSPORT',
+  'INSURANCE',
+  'DRIVER_LICENSE',
+  'BIRTH_CERTIFICATE',
   'OTHER',
-  'UNKNOWN',
 ];
 const List<String> _contactTypes = <String>[
   'PHONE',
