@@ -997,18 +997,18 @@ final class OpdWorkspaceController
     OpdFlowSummary flow,
   ) {
     final List<OpdFlowSummary> items = page.items
-        .where((OpdFlowSummary item) => item.id != flow.id)
+        .where((OpdFlowSummary item) => !_isSameFlow(item, flow))
         .toList(growable: true);
     items.insert(0, flow);
+    final bool alreadyPresent = page.items.any(
+      (OpdFlowSummary item) => _isSameFlow(item, flow),
+    );
     return AppPage<OpdFlowSummary>(
       items: items.take(page.request.pageSize).toList(growable: false),
       request: page.request,
-      totalItemCount: page.totalItemCount == null
-          ? null
-          : page.totalItemCount! +
-                (page.items.any((OpdFlowSummary item) => item.id == flow.id)
-                    ? 0
-                    : 1),
+      totalItemCount: page.totalItemCount == null || alreadyPresent
+          ? page.totalItemCount
+          : page.totalItemCount! + 1,
     );
   }
 
@@ -1016,17 +1016,33 @@ final class OpdWorkspaceController
     AppPage<OpdFlowSummary> page,
     OpdFlowSummary flow,
   ) {
+    var replaced = false;
+    final List<OpdFlowSummary> items = <OpdFlowSummary>[];
+    for (final OpdFlowSummary item in page.items) {
+      if (_isSameFlow(item, flow)) {
+        if (!replaced) {
+          items.add(flow);
+          replaced = true;
+        }
+      } else {
+        items.add(item);
+      }
+    }
+
+    if (!replaced) {
+      return _upsertFlow(page, flow);
+    }
+
     return AppPage<OpdFlowSummary>(
-      items: <OpdFlowSummary>[
-        for (final OpdFlowSummary item in page.items)
-          if (item.id == flow.id || item.publicId == flow.publicId)
-            flow
-          else
-            item,
-      ],
+      items: items,
       request: page.request,
       totalItemCount: page.totalItemCount,
     );
+  }
+
+  bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
+    return left.id == right.id ||
+        (left.publicId != null && left.publicId == right.publicId);
   }
 
   OpdWorkspaceState? get _currentState {
