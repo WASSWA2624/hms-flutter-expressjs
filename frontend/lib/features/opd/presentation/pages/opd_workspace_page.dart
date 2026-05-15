@@ -604,18 +604,45 @@ class _OpdFiltersState extends State<_OpdFilters> {
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool useAdvancedModal = breakpoint.isMobile;
     final List<String> statuses = _tableStatuses(widget.state);
+    final Widget searchField = AppTextField(
+      controller: _searchController,
+      semanticLabel: l10n.opdSearchLabel,
+      hintText: l10n.opdSearchHint,
+      prefixIcon: const Icon(Icons.search),
+      textInputAction: TextInputAction.search,
+      onFieldSubmitted: (_) => _applySearch(),
+    );
 
     return AppWorkspaceFilterBar(
       semanticLabel: l10n.opdFiltersLabel,
       expandSearch: true,
-      search: AppTextField(
-        controller: _searchController,
-        semanticLabel: l10n.opdSearchLabel,
-        hintText: l10n.opdSearchHint,
-        prefixIcon: const Icon(Icons.search),
-        textInputAction: TextInputAction.search,
-        onFieldSubmitted: (_) => _applySearch(),
-      ),
+      search: useAdvancedModal
+          ? Row(
+              children: <Widget>[
+                Expanded(child: searchField),
+                if (widget.filter.isActive) ...<Widget>[
+                  const SizedBox(width: 4),
+                  AppIconButton(
+                    icon: Icons.clear,
+                    semanticLabel: l10n.opdClearFiltersAction,
+                    tooltip: l10n.opdClearFiltersAction,
+                    onPressed: () {
+                      widget.onFilterChanged(const _OpdTableFilter());
+                    },
+                  ),
+                ],
+                const SizedBox(width: 4),
+                AppIconButton(
+                  icon: widget.filter.hasAdvancedFilters
+                      ? Icons.filter_alt
+                      : Icons.filter_alt_outlined,
+                  semanticLabel: l10n.opdFilterAction,
+                  tooltip: l10n.opdFilterAction,
+                  onPressed: _openFilters,
+                ),
+              ],
+            )
+          : searchField,
       filters: useAdvancedModal
           ? const <Widget>[]
           : <Widget>[
@@ -661,25 +688,6 @@ class _OpdFiltersState extends State<_OpdFilters> {
               widget.onFilterChanged(const _OpdTableFilter());
             },
           ),
-        if (useAdvancedModal) ...<Widget>[
-          if (widget.filter.isActive)
-            AppIconButton(
-              icon: Icons.clear,
-              semanticLabel: l10n.opdClearFiltersAction,
-              tooltip: l10n.opdClearFiltersAction,
-              onPressed: () {
-                widget.onFilterChanged(const _OpdTableFilter());
-              },
-            ),
-          AppIconButton(
-            icon: widget.filter.hasAdvancedFilters
-                ? Icons.filter_alt
-                : Icons.filter_alt_outlined,
-            semanticLabel: l10n.opdFilterAction,
-            tooltip: l10n.opdFilterAction,
-            onPressed: _openFilters,
-          ),
-        ],
       ],
     );
   }
