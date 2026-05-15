@@ -873,6 +873,8 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             enabled: canEdit,
             labelText: l10n.profilePhoneLabel,
             countryLabelText: l10n.appPhoneCountryLabel,
+            countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+            countryNoResultsText: l10n.appPhoneCountryNoResults,
             numberLabelText: l10n.appPhoneNumberLabel,
             invalidPhoneMessage: l10n.appPhoneInvalidMessage,
             requiredMessage: l10n.validationRequired,

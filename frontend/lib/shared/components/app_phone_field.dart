@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/shared/components/app_select_field.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/src/app_field_label.dart';
 
@@ -9,6 +9,8 @@ class AppPhoneField extends StatefulWidget {
   const AppPhoneField({
     required this.controller,
     required this.countryLabelText,
+    required this.countrySearchLabelText,
+    required this.countryNoResultsText,
     required this.numberLabelText,
     required this.invalidPhoneMessage,
     this.labelText,
@@ -38,6 +40,8 @@ class AppPhoneField extends StatefulWidget {
   final TextEditingController controller;
   final String? labelText;
   final String countryLabelText;
+  final String countrySearchLabelText;
+  final String countryNoResultsText;
   final String numberLabelText;
   final String? helperText;
   final String? errorText;
@@ -99,21 +103,14 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Widget countryField = AppSelectField<_PhoneCountry>.searchable(
-      value: _country,
+    final Widget countryField = _PhoneCountryField(
+      country: _country,
       labelText: widget.countryLabelText,
+      searchLabelText: widget.countrySearchLabelText,
+      noResultsText: widget.countryNoResultsText,
       enabled: widget.enabled && !widget.isLoading,
-      menuHeight: 320,
-      options: <AppSelectOption<_PhoneCountry>>[
-        for (final _PhoneCountry country in _phoneCountries)
-          AppSelectOption<_PhoneCountry>(
-            value: country,
-            label: country.displayLabel,
-            leadingIcon: const Icon(Icons.public_outlined),
-          ),
-      ],
       onChanged: (value) {
-        if (value == null || value == _country) {
+        if (value == _country) {
           return;
         }
         setState(() {
@@ -297,6 +294,209 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
       (_PhoneCountry country) => country.callingCode == value,
       orElse: () => _phoneCountries.first,
     );
+  }
+}
+
+class _PhoneCountryField extends StatelessWidget {
+  const _PhoneCountryField({
+    required this.country,
+    required this.labelText,
+    required this.searchLabelText,
+    required this.noResultsText,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final _PhoneCountry country;
+  final String labelText;
+  final String searchLabelText;
+  final String noResultsText;
+  final bool enabled;
+  final ValueChanged<_PhoneCountry> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: labelText,
+      child: MouseRegion(
+        cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: enabled
+              ? () async {
+                  final _PhoneCountry? selected =
+                      await showAppDialog<_PhoneCountry>(
+                        context: context,
+                        builder: (_) => _PhoneCountryPickerDialog(
+                          title: labelText,
+                          searchLabelText: searchLabelText,
+                          noResultsText: noResultsText,
+                          selectedCountry: country,
+                        ),
+                      );
+                  if (selected != null) {
+                    onChanged(selected);
+                  }
+                }
+              : null,
+          child: InputDecorator(
+            decoration: InputDecoration(labelText: labelText, enabled: enabled),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  Icons.public_outlined,
+                  size: theme.appTokens.listIconSize,
+                  color: enabled
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.onSurface.withValues(alpha: 0.38),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Text(
+                    country.displayLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: enabled
+                          ? colorScheme.onSurface
+                          : colorScheme.onSurface.withValues(alpha: 0.62),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_drop_down,
+                  color: enabled
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.onSurface.withValues(alpha: 0.38),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhoneCountryPickerDialog extends StatefulWidget {
+  const _PhoneCountryPickerDialog({
+    required this.title,
+    required this.searchLabelText,
+    required this.noResultsText,
+    required this.selectedCountry,
+  });
+
+  final String title;
+  final String searchLabelText;
+  final String noResultsText;
+  final _PhoneCountry selectedCountry;
+
+  @override
+  State<_PhoneCountryPickerDialog> createState() =>
+      _PhoneCountryPickerDialogState();
+}
+
+class _PhoneCountryPickerDialogState extends State<_PhoneCountryPickerDialog> {
+  late final TextEditingController _searchController;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<_PhoneCountry> countries = _filteredCountries;
+
+    return AppDialog(
+      title: Text(widget.title),
+      icon: const Icon(Icons.public_outlined),
+      maxWidth: 420,
+      content: SizedBox(
+        height: 420,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTextField(
+              controller: _searchController,
+              labelText: widget.searchLabelText,
+              prefixIcon: const Icon(Icons.search),
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              onChanged: (String value) {
+                setState(() {
+                  _query = value.trim().toLowerCase();
+                });
+              },
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Expanded(
+              child: countries.isEmpty
+                  ? Center(
+                      child: Text(
+                        widget.noResultsText,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: countries.length,
+                      separatorBuilder: (_, _) =>
+                          Divider(height: 1, color: colorScheme.outlineVariant),
+                      itemBuilder: (BuildContext context, int index) {
+                        final _PhoneCountry country = countries[index];
+                        final bool selected = country == widget.selectedCountry;
+
+                        return ListTile(
+                          leading: const Icon(Icons.public_outlined),
+                          title: Text(country.name),
+                          subtitle: Text(country.callingCode),
+                          trailing: selected
+                              ? Icon(Icons.check, color: colorScheme.primary)
+                              : null,
+                          onTap: () {
+                            Navigator.of(context).pop(country);
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<_PhoneCountry> get _filteredCountries {
+    if (_query.isEmpty) {
+      return _phoneCountries;
+    }
+
+    return _phoneCountries
+        .where((_PhoneCountry country) {
+          final String haystack =
+              '${country.name} ${country.isoCode} ${country.callingCode}'
+                  .toLowerCase();
+          return haystack.contains(_query);
+        })
+        .toList(growable: false);
   }
 }
 

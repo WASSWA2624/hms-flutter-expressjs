@@ -52,6 +52,14 @@
   "@appPhoneCountryLabel": {
     "description": "Label for the country-code selector inside phone input fields."
   },
+  "appPhoneCountrySearchLabel": "Search country",
+  "@appPhoneCountrySearchLabel": {
+    "description": "Label for the search field in the phone country-code picker."
+  },
+  "appPhoneCountryNoResults": "No countries found",
+  "@appPhoneCountryNoResults": {
+    "description": "Empty-state text shown when no phone country-code picker results match the search query."
+  },
   "appPhoneNumberLabel": "Phone number",
   "@appPhoneNumberLabel": {
     "description": "Label for the national phone number field inside phone input fields."

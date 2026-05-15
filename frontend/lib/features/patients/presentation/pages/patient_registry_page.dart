@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1764,133 +1765,146 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
     return AppDialog(
       title: Text(_isEditing ? l10n.patientsEditTitle : l10n.patientsAddTitle),
       icon: const Icon(Icons.assignment_ind_outlined),
-      scrollable: true,
       closeEnabled: !_isSaving,
       maxWidth: 760,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            _ResponsiveFieldPair(
-              left: AppTextField(
-                controller: _firstNameController,
-                labelText: l10n.patientsFirstNameLabel,
-                isRequired: true,
-                textCapitalization: TextCapitalization.words,
-                enabled: !_isSaving,
-                validator: AppValidators.requiredText(l10n.validationRequired),
-              ),
-              right: AppTextField(
-                controller: _lastNameController,
-                labelText: l10n.patientsLastNameLabel,
-                isRequired: true,
-                textCapitalization: TextCapitalization.words,
-                enabled: !_isSaving,
-                validator: AppValidators.requiredText(l10n.validationRequired),
-              ),
-            ),
-            _ResponsiveFieldPair(
-              left: AppDateField(
-                value: _dateOfBirth,
-                firstDate: DateTime(1900),
-                lastDate: DateTime.now(),
-                pickerButtonLabel: l10n.patientsDatePickerAction,
-                invalidDateMessage: l10n.appDateInvalidMessage,
-                labelText: l10n.patientsDobLabel,
-                hintText: l10n.appDateFormatHint,
-                enabled: !_isSaving,
-                onChanged: (DateTime? value) {
-                  _dateOfBirth = value;
-                },
-              ),
-              right: AppGenderField(
-                value: _gender,
-                labelText: l10n.patientsGenderLabel,
-                maleLabel: l10n.patientsGenderMale,
-                femaleLabel: l10n.patientsGenderFemale,
-                otherLabel: l10n.patientsGenderOther,
-                unknownLabel: l10n.patientsGenderUnknown,
-                enabled: !_isSaving,
-                onChanged: (String? value) {
-                  setState(() {
-                    _gender = value;
-                  });
-                },
-              ),
-            ),
-            if (widget.referenceData.facilities.isNotEmpty)
-              AppSelectField<String>(
-                value: _facilityId,
-                labelText: l10n.patientsFacilityLabel,
-                enabled: !_isSaving,
-                onChanged: (String? value) {
-                  setState(() {
-                    _facilityId = value;
-                  });
-                },
-                options: <AppSelectOption<String>>[
-                  for (final PatientReferenceOption option
-                      in widget.referenceData.facilities)
-                    AppSelectOption<String>(
-                      value: option.id,
-                      label: option.label,
+      content: SizedBox(
+        height: _formBodyHeight(context),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: AppFormSection(
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                if (_failure != null) AppFailureStateView(failure: _failure!),
+                _ResponsiveFieldPair(
+                  left: AppTextField(
+                    controller: _firstNameController,
+                    labelText: l10n.patientsFirstNameLabel,
+                    isRequired: true,
+                    textCapitalization: TextCapitalization.words,
+                    enabled: !_isSaving,
+                    validator: AppValidators.requiredText(
+                      l10n.validationRequired,
                     ),
-                ],
-              ),
-            AppPhoneField(
-              controller: _phoneController,
-              labelText: l10n.patientsPhoneLabel,
-              countryLabelText: l10n.appPhoneCountryLabel,
-              numberLabelText: l10n.appPhoneNumberLabel,
-              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
-              enabled: !_isSaving,
-            ),
-            AppEmailField(
-              controller: _emailController,
-              labelText: l10n.patientsEmailLabel,
-              invalidEmailMessage: l10n.authEmailInvalidMessage,
-              enabled: !_isSaving,
-            ),
-            _ResponsiveFieldPair(
-              left: AppSelectField<String>.searchable(
-                value: _selectedIdentifierType(_identifierTypeController.text),
-                labelText: l10n.patientsIdentifierTypeLabel,
-                enabled: !_isSaving,
-                menuHeight: 320,
-                onChanged: (String? value) {
-                  setState(() {
-                    _identifierTypeController.text = value ?? '';
-                  });
-                },
-                options: <AppSelectOption<String>>[
-                  for (final String value in _identifierTypeOptions(
-                    _identifierTypeController.text,
-                  ))
-                    AppSelectOption<String>(
-                      value: value,
-                      label: _apiLabel(value),
+                  ),
+                  right: AppTextField(
+                    controller: _lastNameController,
+                    labelText: l10n.patientsLastNameLabel,
+                    isRequired: true,
+                    textCapitalization: TextCapitalization.words,
+                    enabled: !_isSaving,
+                    validator: AppValidators.requiredText(
+                      l10n.validationRequired,
                     ),
-                ],
-              ),
-              right: AppTextField(
-                controller: _identifierValueController,
-                labelText: l10n.patientsIdentifierValueLabel,
-                enabled: !_isSaving,
-              ),
+                  ),
+                ),
+                _ResponsiveFieldPair(
+                  left: AppDateField(
+                    value: _dateOfBirth,
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                    pickerButtonLabel: l10n.patientsDatePickerAction,
+                    invalidDateMessage: l10n.appDateInvalidMessage,
+                    labelText: l10n.patientsDobLabel,
+                    hintText: l10n.appDateFormatHint,
+                    enabled: !_isSaving,
+                    onChanged: (DateTime? value) {
+                      _dateOfBirth = value;
+                    },
+                  ),
+                  right: AppGenderField(
+                    value: _gender,
+                    labelText: l10n.patientsGenderLabel,
+                    maleLabel: l10n.patientsGenderMale,
+                    femaleLabel: l10n.patientsGenderFemale,
+                    otherLabel: l10n.patientsGenderOther,
+                    unknownLabel: l10n.patientsGenderUnknown,
+                    enabled: !_isSaving,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _gender = value;
+                      });
+                    },
+                  ),
+                ),
+                if (widget.referenceData.facilities.isNotEmpty)
+                  AppSelectField<String>(
+                    value: _facilityId,
+                    labelText: l10n.patientsFacilityLabel,
+                    enabled: !_isSaving,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _facilityId = value;
+                      });
+                    },
+                    options: <AppSelectOption<String>>[
+                      for (final PatientReferenceOption option
+                          in widget.referenceData.facilities)
+                        AppSelectOption<String>(
+                          value: option.id,
+                          label: option.label,
+                        ),
+                    ],
+                  ),
+                AppPhoneField(
+                  controller: _phoneController,
+                  labelText: l10n.patientsPhoneLabel,
+                  countryLabelText: l10n.appPhoneCountryLabel,
+                  countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+                  countryNoResultsText: l10n.appPhoneCountryNoResults,
+                  numberLabelText: l10n.appPhoneNumberLabel,
+                  invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+                  enabled: !_isSaving,
+                ),
+                AppEmailField(
+                  controller: _emailController,
+                  labelText: l10n.patientsEmailLabel,
+                  invalidEmailMessage: l10n.authEmailInvalidMessage,
+                  enabled: !_isSaving,
+                ),
+                _ResponsiveFieldPair(
+                  left: AppSelectField<String>.searchable(
+                    value: _selectedIdentifierType(
+                      _identifierTypeController.text,
+                    ),
+                    labelText: l10n.patientsIdentifierTypeLabel,
+                    enabled: !_isSaving,
+                    menuHeight: 320,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _identifierTypeController.text = value ?? '';
+                      });
+                    },
+                    options: <AppSelectOption<String>>[
+                      for (final String value in _identifierTypeOptions(
+                        _identifierTypeController.text,
+                      ))
+                        AppSelectOption<String>(
+                          value: value,
+                          label: _apiLabel(value),
+                        ),
+                    ],
+                  ),
+                  right: AppTextField(
+                    controller: _identifierValueController,
+                    labelText: l10n.patientsIdentifierValueLabel,
+                    enabled: !_isSaving,
+                  ),
+                ),
+                AppCheckboxField(
+                  title: l10n.patientsActiveCheckboxLabel,
+                  value: _isActive,
+                  enabled: !_isSaving,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isActive = value;
+                    });
+                  },
+                ),
+              ],
             ),
-            AppCheckboxField(
-              title: l10n.patientsActiveCheckboxLabel,
-              value: _isActive,
-              enabled: !_isSaving,
-              onChanged: (bool value) {
-                setState(() {
-                  _isActive = value;
-                });
-              },
-            ),
-          ],
+          ),
         ),
       ),
       actions: <Widget>[
@@ -1905,6 +1919,11 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
         ),
       ],
     );
+  }
+
+  double _formBodyHeight(BuildContext context) {
+    final double viewportHeight = MediaQuery.sizeOf(context).height;
+    return math.min(520, viewportHeight * 0.58);
   }
 
   Future<void> _submit() async {
@@ -2142,6 +2161,8 @@ class _PatientRelatedRecordDialogState<T>
           controller: _third,
           labelText: l10n.patientsPhoneLabel,
           countryLabelText: l10n.appPhoneCountryLabel,
+          countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+          countryNoResultsText: l10n.appPhoneCountryNoResults,
           numberLabelText: l10n.appPhoneNumberLabel,
           invalidPhoneMessage: l10n.appPhoneInvalidMessage,
           enabled: !_isSaving,

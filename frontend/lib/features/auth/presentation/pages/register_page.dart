@@ -198,6 +198,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       controller: _phoneController,
                       labelText: l10n.authPhoneOptionalLabel,
                       countryLabelText: l10n.appPhoneCountryLabel,
+                      countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+                      countryNoResultsText: l10n.appPhoneCountryNoResults,
                       numberLabelText: l10n.appPhoneNumberLabel,
                       invalidPhoneMessage: l10n.appPhoneInvalidMessage,
                       textInputAction: TextInputAction.next,

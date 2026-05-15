@@ -172,6 +172,18 @@ abstract class AppLocalizations {
   /// **'Country code'**
   String get appPhoneCountryLabel;
 
+  /// Label for the search field in the phone country-code picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country'**
+  String get appPhoneCountrySearchLabel;
+
+  /// Empty-state text shown when no phone country-code picker results match the search query.
+  ///
+  /// In en, this message translates to:
+  /// **'No countries found'**
+  String get appPhoneCountryNoResults;
+
   /// Label for the national phone number field inside phone input fields.
   ///
   /// In en, this message translates to:

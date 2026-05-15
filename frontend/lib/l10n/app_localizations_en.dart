@@ -48,6 +48,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appPhoneCountryLabel => 'Country code';
 
   @override
+  String get appPhoneCountrySearchLabel => 'Search country';
+
+  @override
+  String get appPhoneCountryNoResults => 'No countries found';
+
+  @override
   String get appPhoneNumberLabel => 'Phone number';
 
   @override
