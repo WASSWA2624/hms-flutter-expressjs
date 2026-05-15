@@ -103,6 +103,60 @@ void main() {
     expect(secondTop.dx, greaterThan(firstTop.dx));
   });
 
+  testWidgets('AppWorkspaceSummaryGrid compacts into two medium columns', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkspaceSummaryGrid(
+        compact: true,
+        children: <Widget>[
+          AppWorkspaceSummaryCard(label: 'First', value: '1', compact: true),
+          AppWorkspaceSummaryCard(label: 'Second', value: '2', compact: true),
+          AppWorkspaceSummaryCard(label: 'Third', value: '3', compact: true),
+          AppWorkspaceSummaryCard(label: 'Fourth', value: '4', compact: true),
+        ],
+      ),
+      size: const Size(662, 600),
+    );
+
+    final Offset firstTop = tester.getTopLeft(find.text('First'));
+    final Offset secondTop = tester.getTopLeft(find.text('Second'));
+    final Offset thirdTop = tester.getTopLeft(find.text('Third'));
+
+    expect(secondTop.dy, closeTo(firstTop.dy, 0.1));
+    expect(secondTop.dx, greaterThan(firstTop.dx));
+    expect(thirdTop.dy, greaterThan(firstTop.dy));
+  });
+
+  testWidgets('AppWorkspaceSummaryGrid fits four compact desktop cards', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkspaceSummaryGrid(
+        compact: true,
+        children: <Widget>[
+          AppWorkspaceSummaryCard(label: 'First', value: '1', compact: true),
+          AppWorkspaceSummaryCard(label: 'Second', value: '2', compact: true),
+          AppWorkspaceSummaryCard(label: 'Third', value: '3', compact: true),
+          AppWorkspaceSummaryCard(label: 'Fourth', value: '4', compact: true),
+        ],
+      ),
+      size: const Size(1000, 600),
+    );
+
+    final Offset firstTop = tester.getTopLeft(find.text('First'));
+    final Offset secondTop = tester.getTopLeft(find.text('Second'));
+    final Offset thirdTop = tester.getTopLeft(find.text('Third'));
+    final Offset fourthTop = tester.getTopLeft(find.text('Fourth'));
+
+    expect(secondTop.dy, closeTo(firstTop.dy, 0.1));
+    expect(thirdTop.dy, closeTo(firstTop.dy, 0.1));
+    expect(fourthTop.dy, closeTo(firstTop.dy, 0.1));
+    expect(fourthTop.dx, greaterThan(thirdTop.dx));
+  });
+
   testWidgets('AppWorkspaceSplitContent switches from side panel to stack', (
     WidgetTester tester,
   ) async {
