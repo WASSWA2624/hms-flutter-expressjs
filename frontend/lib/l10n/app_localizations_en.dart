@@ -57,6 +57,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appPhoneNumberLabel => 'Phone number';
 
   @override
+  String get appPhoneNumberHint => 'Remaining number digits';
+
+  @override
   String get appPhoneInvalidMessage => 'Enter a valid phone number.';
 
   @override

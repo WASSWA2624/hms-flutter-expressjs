@@ -190,6 +190,12 @@ abstract class AppLocalizations {
   /// **'Phone number'**
   String get appPhoneNumberLabel;
 
+  /// Placeholder text for the phone number digits field after a country code is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining number digits'**
+  String get appPhoneNumberHint;
+
   /// Validation message for invalid phone numbers.
   ///
   /// In en, this message translates to:

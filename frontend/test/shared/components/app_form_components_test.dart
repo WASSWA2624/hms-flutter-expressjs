@@ -347,4 +347,136 @@ void main() {
     expect(textField.enabled, isTrue);
     expect(pickerButton.onPressed, isNotNull);
   });
+
+  testWidgets('AppPhoneField composes one international phone value', (
+    WidgetTester tester,
+  ) async {
+    final controller = TextEditingController();
+
+    await pumpComponent(
+      tester,
+      AppPhoneField(
+        controller: controller,
+        labelText: 'Phone',
+        countryLabelText: 'Country code',
+        countrySearchLabelText: 'Search country',
+        countryNoResultsText: 'No countries found',
+        numberLabelText: 'Phone number',
+        numberHintText: 'Remaining number digits',
+        invalidPhoneMessage: 'Enter a valid phone number.',
+      ),
+    );
+
+    expect(find.text('+256'), findsOneWidget);
+    expect(find.text('Remaining number digits'), findsOneWidget);
+
+    await tester.enterText(find.byType(EditableText), '700000000');
+    await tester.pump();
+
+    expect(controller.text, '+256700000000');
+  });
+
+  testWidgets('AppPhoneField normalizes national prefixes', (
+    WidgetTester tester,
+  ) async {
+    final controller = TextEditingController();
+
+    await pumpComponent(
+      tester,
+      AppPhoneField(
+        controller: controller,
+        labelText: 'Phone',
+        countryLabelText: 'Country code',
+        countrySearchLabelText: 'Search country',
+        countryNoResultsText: 'No countries found',
+        numberLabelText: 'Phone number',
+        numberHintText: 'Remaining number digits',
+        invalidPhoneMessage: 'Enter a valid phone number.',
+      ),
+    );
+
+    await tester.enterText(find.byType(EditableText), '0700000000');
+    await tester.pump();
+
+    expect(controller.text, '+256700000000');
+  });
+
+  testWidgets('AppPhoneField picker searches by country code and name', (
+    WidgetTester tester,
+  ) async {
+    final controller = TextEditingController();
+
+    await pumpComponent(
+      tester,
+      AppPhoneField(
+        controller: controller,
+        labelText: 'Phone',
+        countryLabelText: 'Country code',
+        countrySearchLabelText: 'Search country',
+        countryNoResultsText: 'No countries found',
+        numberLabelText: 'Phone number',
+        numberHintText: 'Remaining number digits',
+        invalidPhoneMessage: 'Enter a valid phone number.',
+      ),
+    );
+
+    await tester.tap(find.text('+256'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(EditableText).last, '256');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Uganda'), findsOneWidget);
+
+    await tester.enterText(find.byType(EditableText).last, 'United States');
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ListTile, 'United States'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ListTile, 'United States'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(EditableText), '2025550119');
+    await tester.pump();
+
+    expect(controller.text, '+12025550119');
+  });
+
+  testWidgets('AppPhoneField rejects invalid national digits', (
+    WidgetTester tester,
+  ) async {
+    final formKey = GlobalKey<FormState>();
+    final controller = TextEditingController();
+
+    await pumpComponent(
+      tester,
+      Form(
+        key: formKey,
+        child: Column(
+          children: <Widget>[
+            AppPhoneField(
+              controller: controller,
+              labelText: 'Phone',
+              countryLabelText: 'Country code',
+              countrySearchLabelText: 'Search country',
+              countryNoResultsText: 'No countries found',
+              numberLabelText: 'Phone number',
+              numberHintText: 'Remaining number digits',
+              invalidPhoneMessage: 'Enter a valid phone number.',
+            ),
+            AppButton.primary(
+              label: 'Submit',
+              onPressed: () {
+                formKey.currentState!.validate();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(EditableText), '123');
+    await tester.tap(find.text('Submit'));
+    await tester.pump();
+
+    expect(find.text('Enter a valid phone number.'), findsOneWidget);
+  });
 }

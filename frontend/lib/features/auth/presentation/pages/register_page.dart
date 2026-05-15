@@ -201,6 +201,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
                       countryNoResultsText: l10n.appPhoneCountryNoResults,
                       numberLabelText: l10n.appPhoneNumberLabel,
+                      numberHintText: l10n.appPhoneNumberHint,
                       invalidPhoneMessage: l10n.appPhoneInvalidMessage,
                       textInputAction: TextInputAction.next,
                       onChanged: (_) => _clearFormFeedback(),

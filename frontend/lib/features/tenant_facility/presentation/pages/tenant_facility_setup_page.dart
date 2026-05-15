@@ -903,6 +903,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
             countryNoResultsText: l10n.appPhoneCountryNoResults,
             numberLabelText: l10n.appPhoneNumberLabel,
+            numberHintText: l10n.appPhoneNumberHint,
             invalidPhoneMessage: l10n.appPhoneInvalidMessage,
             requiredMessage: l10n.validationRequired,
             isRequired: true,

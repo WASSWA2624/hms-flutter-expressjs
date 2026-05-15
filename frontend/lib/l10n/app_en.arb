@@ -64,6 +64,10 @@
   "@appPhoneNumberLabel": {
     "description": "Label for the national phone number field inside phone input fields."
   },
+  "appPhoneNumberHint": "Remaining number digits",
+  "@appPhoneNumberHint": {
+    "description": "Placeholder text for the phone number digits field after a country code is selected."
+  },
   "appPhoneInvalidMessage": "Enter a valid phone number.",
   "@appPhoneInvalidMessage": {
     "description": "Validation message for invalid phone numbers."
