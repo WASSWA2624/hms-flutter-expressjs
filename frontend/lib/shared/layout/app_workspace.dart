@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/layout/responsive_spacing.dart';
@@ -531,15 +532,169 @@ class AppWorkspaceStatePanel extends StatelessWidget {
     required this.child,
     this.minHeight = 280,
     super.key,
-  });
+  }) : _stateVariant = null,
+       _stateTitle = null,
+       _stateBody = null,
+       _stateIcon = null,
+       _stateDetail = null,
+       _stateAction = null,
+       _stateSemanticLabel = null,
+       _stateCrossAxisAlignment = CrossAxisAlignment.center,
+       _stateTextAlign = TextAlign.center;
 
-  final Widget child;
+  const AppWorkspaceStatePanel.state({
+    required AppStateViewVariant variant,
+    required String title,
+    required String body,
+    IconData? icon,
+    String? detail,
+    Widget? action,
+    String? semanticLabel,
+    CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.center,
+    TextAlign textAlign = TextAlign.center,
+    this.minHeight = 280,
+    super.key,
+  }) : child = null,
+       _stateVariant = variant,
+       _stateTitle = title,
+       _stateBody = body,
+       _stateIcon = icon,
+       _stateDetail = detail,
+       _stateAction = action,
+       _stateSemanticLabel = semanticLabel,
+       _stateCrossAxisAlignment = crossAxisAlignment,
+       _stateTextAlign = textAlign;
+
+  const AppWorkspaceStatePanel.loading({
+    required String title,
+    required String body,
+    String? detail,
+    String? semanticLabel,
+    double minHeight = 280,
+    Key? key,
+  }) : this.state(
+         variant: AppStateViewVariant.loading,
+         title: title,
+         body: body,
+         detail: detail,
+         semanticLabel: semanticLabel,
+         minHeight: minHeight,
+         key: key,
+       );
+
+  const AppWorkspaceStatePanel.empty({
+    required String title,
+    required String body,
+    IconData? icon,
+    String? detail,
+    Widget? action,
+    String? semanticLabel,
+    double minHeight = 280,
+    Key? key,
+  }) : this.state(
+         variant: AppStateViewVariant.empty,
+         title: title,
+         body: body,
+         icon: icon,
+         detail: detail,
+         action: action,
+         semanticLabel: semanticLabel,
+         minHeight: minHeight,
+         key: key,
+       );
+
+  const AppWorkspaceStatePanel.error({
+    required String title,
+    required String body,
+    IconData? icon,
+    String? detail,
+    Widget? action,
+    String? semanticLabel,
+    double minHeight = 280,
+    Key? key,
+  }) : this.state(
+         variant: AppStateViewVariant.error,
+         title: title,
+         body: body,
+         icon: icon,
+         detail: detail,
+         action: action,
+         semanticLabel: semanticLabel,
+         minHeight: minHeight,
+         key: key,
+       );
+
+  const AppWorkspaceStatePanel.forbidden({
+    required String title,
+    required String body,
+    IconData? icon,
+    String? detail,
+    Widget? action,
+    String? semanticLabel,
+    double minHeight = 280,
+    Key? key,
+  }) : this.state(
+         variant: AppStateViewVariant.forbidden,
+         title: title,
+         body: body,
+         icon: icon,
+         detail: detail,
+         action: action,
+         semanticLabel: semanticLabel,
+         minHeight: minHeight,
+         key: key,
+       );
+
+  const AppWorkspaceStatePanel.offline({
+    required String title,
+    required String body,
+    IconData? icon,
+    String? detail,
+    Widget? action,
+    String? semanticLabel,
+    double minHeight = 280,
+    Key? key,
+  }) : this.state(
+         variant: AppStateViewVariant.offline,
+         title: title,
+         body: body,
+         icon: icon,
+         detail: detail,
+         action: action,
+         semanticLabel: semanticLabel,
+         minHeight: minHeight,
+         key: key,
+       );
+
+  final Widget? child;
   final double minHeight;
+  final AppStateViewVariant? _stateVariant;
+  final String? _stateTitle;
+  final String? _stateBody;
+  final IconData? _stateIcon;
+  final String? _stateDetail;
+  final Widget? _stateAction;
+  final String? _stateSemanticLabel;
+  final CrossAxisAlignment _stateCrossAxisAlignment;
+  final TextAlign _stateTextAlign;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final Widget content =
+        child ??
+        AppStateView(
+          variant: _stateVariant!,
+          icon: _stateIcon,
+          title: _stateTitle!,
+          body: _stateBody!,
+          detail: _stateDetail,
+          action: _stateAction,
+          semanticLabel: _stateSemanticLabel,
+          crossAxisAlignment: _stateCrossAxisAlignment,
+          textAlign: _stateTextAlign,
+        );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -551,11 +706,103 @@ class AppWorkspaceStatePanel extends StatelessWidget {
         child: Center(
           child: Padding(
             padding: EdgeInsets.all(theme.spacing.lg),
-            child: child,
+            child: content,
           ),
         ),
       ),
     );
+  }
+}
+
+class AppWorkspaceDetailDrawer extends StatelessWidget {
+  const AppWorkspaceDetailDrawer({
+    required this.title,
+    required this.child,
+    this.description,
+    this.actions = const <Widget>[],
+    this.icon,
+    this.semanticLabel,
+    this.scrollable = true,
+    this.showCloseButton = true,
+    this.closeEnabled = true,
+    this.maxWidth = _defaultDrawerWidth,
+    super.key,
+  });
+
+  final Widget title;
+  final Widget child;
+  final Widget? description;
+  final List<Widget> actions;
+  final Widget? icon;
+  final String? semanticLabel;
+  final bool scrollable;
+  final bool showCloseButton;
+  final bool closeEnabled;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Size viewport = MediaQuery.sizeOf(context);
+    final double width = viewport.width < AppBreakpoints.md
+        ? viewport.width
+        : maxWidth.clamp(theme.spacing.none, viewport.width).toDouble();
+    final Widget content = scrollable
+        ? SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: child,
+          )
+        : child;
+    Widget drawer = Align(
+      alignment: AlignmentDirectional.centerEnd,
+      child: SizedBox(
+        width: width,
+        height: double.infinity,
+        child: Material(
+          color: colorScheme.surface,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _WorkspaceDrawerHeader(
+                    title: title,
+                    description: description,
+                    icon: icon,
+                    showCloseButton: showCloseButton,
+                    closeEnabled: closeEnabled,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.all(theme.spacing.lg),
+                      child: content,
+                    ),
+                  ),
+                  if (actions.isNotEmpty)
+                    _WorkspaceDrawerActions(actions: actions),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (semanticLabel != null) {
+      drawer = Semantics(
+        namesRoute: true,
+        scopesRoute: true,
+        explicitChildNodes: true,
+        label: semanticLabel,
+        child: drawer,
+      );
+    }
+
+    return FocusTraversalGroup(child: drawer);
   }
 }
 
@@ -614,6 +861,131 @@ class AppWorkspaceActivityList extends StatelessWidget {
               if (index < items.length - 1) const Divider(height: 1),
             ],
         ],
+      ),
+    );
+  }
+}
+
+class _WorkspaceDrawerHeader extends StatelessWidget {
+  const _WorkspaceDrawerHeader({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.showCloseButton,
+    required this.closeEnabled,
+  });
+
+  final Widget title;
+  final Widget? description;
+  final Widget? icon;
+  final bool showCloseButton;
+  final bool closeEnabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+      ),
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(
+          start: theme.spacing.lg,
+          top: theme.spacing.md,
+          bottom: theme.spacing.md,
+          end: theme.spacing.xs,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            if (icon != null) ...<Widget>[
+              Padding(
+                padding: EdgeInsets.only(top: theme.spacing.xs),
+                child: IconTheme.merge(
+                  data: IconThemeData(
+                    color: colorScheme.primary,
+                    size: theme.appTokens.listIconSize,
+                  ),
+                  child: icon!,
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  DefaultTextStyle(
+                    style:
+                        theme.textTheme.titleLarge?.copyWith(
+                          color: colorScheme.onSurface,
+                        ) ??
+                        TextStyle(color: colorScheme.onSurface, fontSize: 22),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    child: title,
+                  ),
+                  if (description != null) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    DefaultTextStyle(
+                      style:
+                          theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ) ??
+                          TextStyle(color: colorScheme.onSurfaceVariant),
+                      child: description!,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (showCloseButton)
+              Tooltip(
+                message: MaterialLocalizations.of(context).closeButtonTooltip,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: closeEnabled
+                      ? () {
+                          Navigator.of(context).maybePop();
+                        }
+                      : null,
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkspaceDrawerActions extends StatelessWidget {
+  const _WorkspaceDrawerActions({required this.actions});
+
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.lg),
+        child: OverflowBar(
+          alignment: MainAxisAlignment.end,
+          overflowAlignment: OverflowBarAlignment.end,
+          spacing: theme.spacing.sm,
+          overflowSpacing: theme.spacing.sm,
+          children: actions,
+        ),
       ),
     );
   }
@@ -890,5 +1262,118 @@ _WorkspaceToneColors _toneColors(ThemeData theme, AppWorkspaceStatusTone tone) {
   };
 }
 
+Future<T?> showAppWorkspaceActionDialog<T>({
+  required BuildContext context,
+  required Widget title,
+  required Widget content,
+  List<Widget> actions = const <Widget>[],
+  Widget? icon,
+  String? semanticLabel,
+  bool barrierDismissible = false,
+  bool scrollable = true,
+  bool showCloseButton = true,
+  bool closeEnabled = true,
+  double maxWidth = 600,
+  RouteSettings? routeSettings,
+}) {
+  return showAppDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    routeSettings: routeSettings,
+    builder: (_) => AppDialog(
+      title: title,
+      content: content,
+      actions: actions,
+      icon: icon,
+      semanticLabel: semanticLabel,
+      scrollable: scrollable,
+      showCloseButton: showCloseButton,
+      closeEnabled: closeEnabled,
+      maxWidth: maxWidth,
+    ),
+  );
+}
+
+Future<T?> showAppWorkspaceDetailDrawer<T>({
+  required BuildContext context,
+  required Widget title,
+  required Widget child,
+  Widget? description,
+  List<Widget> actions = const <Widget>[],
+  Widget? icon,
+  String? semanticLabel,
+  String? barrierLabel,
+  bool barrierDismissible = true,
+  bool scrollable = true,
+  bool showCloseButton = true,
+  bool closeEnabled = true,
+  double maxWidth = _defaultDrawerWidth,
+  RouteSettings? routeSettings,
+}) async {
+  final FocusNode? previousFocus = FocusManager.instance.primaryFocus;
+  final String resolvedBarrierLabel =
+      barrierLabel ??
+      MaterialLocalizations.of(context).modalBarrierDismissLabel;
+  final T? result = await showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    barrierLabel: resolvedBarrierLabel,
+    routeSettings: routeSettings,
+    pageBuilder:
+        (
+          BuildContext dialogContext,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+        ) {
+          return AppWorkspaceDetailDrawer(
+            title: title,
+            description: description,
+            actions: actions,
+            icon: icon,
+            semanticLabel: semanticLabel,
+            scrollable: scrollable,
+            showCloseButton: showCloseButton,
+            closeEnabled: closeEnabled,
+            maxWidth: maxWidth,
+            child: child,
+          );
+        },
+    transitionBuilder:
+        (
+          BuildContext context,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+          Widget child,
+        ) {
+          final TextDirection textDirection = Directionality.of(context);
+          final double beginOffset = textDirection == TextDirection.rtl
+              ? -1
+              : 1;
+          final Animation<Offset> position = animation.drive(
+            Tween<Offset>(
+              begin: Offset(beginOffset, 0),
+              end: Offset.zero,
+            ).chain(CurveTween(curve: Curves.easeOutCubic)),
+          );
+
+          return SlideTransition(position: position, child: child);
+        },
+  );
+
+  if (previousFocus case final FocusNode node) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final BuildContext? previousContext = node.context;
+      if (previousContext != null &&
+          previousContext.mounted &&
+          node.canRequestFocus) {
+        node.requestFocus();
+      }
+    });
+  }
+
+  return result;
+}
+
 const double _searchWidth = 320;
 const double _filterWidth = 220;
+const double _defaultDrawerWidth = 480;

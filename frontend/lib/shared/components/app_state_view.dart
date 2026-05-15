@@ -7,7 +7,15 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
-enum AppStateViewVariant { loading, empty, error, success, info }
+enum AppStateViewVariant {
+  loading,
+  empty,
+  error,
+  forbidden,
+  offline,
+  success,
+  info,
+}
 
 typedef AsyncStateDataBuilder<T> =
     Widget Function(BuildContext context, T data);
@@ -106,7 +114,7 @@ class AppFailureStateView extends StatelessWidget {
         : null;
 
     return AppStateView(
-      variant: AppStateViewVariant.error,
+      variant: _failureVariant(failure),
       title: title ?? l10n.failureTitle(failure),
       body: body ?? l10n.failureMessage(failure),
       action: retryAction,
@@ -327,6 +335,15 @@ AppFailure _defaultFailureMapper(Object error, StackTrace stackTrace) {
   return const AppFailure.unexpected();
 }
 
+AppStateViewVariant _failureVariant(AppFailure failure) {
+  return switch (failure.category) {
+    AppFailureCategory.forbidden ||
+    AppFailureCategory.unauthorized => AppStateViewVariant.forbidden,
+    AppFailureCategory.offline => AppStateViewVariant.offline,
+    _ => AppStateViewVariant.error,
+  };
+}
+
 class _StateVisual extends StatelessWidget {
   const _StateVisual({required this.variant, required this.icon});
 
@@ -357,6 +374,8 @@ class _StateVisual extends StatelessWidget {
       AppStateViewVariant.loading => Icons.hourglass_empty_outlined,
       AppStateViewVariant.empty => Icons.inbox_outlined,
       AppStateViewVariant.error => Icons.error_outline,
+      AppStateViewVariant.forbidden => Icons.lock_outline,
+      AppStateViewVariant.offline => Icons.wifi_off_outlined,
       AppStateViewVariant.success => Icons.check_circle_outline,
       AppStateViewVariant.info => Icons.info_outline,
     };
@@ -367,6 +386,8 @@ class _StateVisual extends StatelessWidget {
       AppStateViewVariant.loading => theme.colorScheme.primary,
       AppStateViewVariant.empty => theme.colorScheme.onSurfaceVariant,
       AppStateViewVariant.error => theme.statusColors.error,
+      AppStateViewVariant.forbidden => theme.statusColors.warning,
+      AppStateViewVariant.offline => theme.statusColors.info,
       AppStateViewVariant.success => theme.statusColors.success,
       AppStateViewVariant.info => theme.statusColors.info,
     };

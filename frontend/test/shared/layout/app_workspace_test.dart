@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -155,4 +157,126 @@ void main() {
     expect(find.text('Audit events will appear here.'), findsOneWidget);
     expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
   });
+
+  testWidgets('AppWorkspaceStatePanel exposes standard workspace states', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const Column(
+        children: <Widget>[
+          AppWorkspaceStatePanel.forbidden(
+            title: 'Restricted',
+            body: 'You cannot view this workspace.',
+            minHeight: 120,
+          ),
+          AppWorkspaceStatePanel.offline(
+            title: 'Offline',
+            body: 'Reconnect before loading records.',
+            minHeight: 120,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Restricted'), findsOneWidget);
+    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+    expect(find.text('Offline'), findsOneWidget);
+    expect(find.byIcon(Icons.wifi_off_outlined), findsOneWidget);
+  });
+
+  testWidgets('showAppWorkspaceActionDialog opens a standard modal action', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return AppButton.primary(
+            label: 'Open',
+            onPressed: () {
+              unawaited(
+                showAppWorkspaceActionDialog<void>(
+                  context: context,
+                  title: const Text('Create record'),
+                  content: const Text('Short form content'),
+                  actions: <Widget>[
+                    AppButton.primary(
+                      label: 'Done',
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create record'), findsOneWidget);
+    expect(find.text('Short form content'), findsOneWidget);
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create record'), findsNothing);
+  });
+
+  testWidgets(
+    'showAppWorkspaceDetailDrawer opens an end-aligned detail panel',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        Builder(
+          builder: (BuildContext context) {
+            return AppButton.primary(
+              label: 'Inspect',
+              onPressed: () {
+                unawaited(
+                  showAppWorkspaceDetailDrawer<void>(
+                    context: context,
+                    title: const Text('Patient details'),
+                    description: const Text('Current visit context'),
+                    child: const Text('Detail drawer body'),
+                    actions: <Widget>[
+                      AppButton.primary(
+                        label: 'Close',
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        size: const Size(1000, 700),
+      );
+
+      await tester.tap(find.text('Inspect'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Patient details'), findsOneWidget);
+      expect(find.text('Current visit context'), findsOneWidget);
+      expect(find.text('Detail drawer body'), findsOneWidget);
+
+      final Offset drawerTitleTop = tester.getTopLeft(
+        find.text('Patient details'),
+      );
+      expect(drawerTitleTop.dx, greaterThan(500));
+
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Patient details'), findsNothing);
+    },
+  );
 }

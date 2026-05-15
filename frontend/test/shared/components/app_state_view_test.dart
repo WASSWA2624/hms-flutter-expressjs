@@ -80,6 +80,7 @@ void main() {
 
     expect(find.text('Access denied'), findsOneWidget);
     expect(find.text('You do not have permission.'), findsOneWidget);
+    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
     expect(find.text('Try again'), findsNothing);
   });
 
@@ -101,6 +102,7 @@ void main() {
 
     expect(find.text('No connection'), findsOneWidget);
     expect(find.text('Connect to the internet and try again.'), findsOneWidget);
+    expect(find.byIcon(Icons.wifi_off_outlined), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
     expect(find.text('Loading'), findsNothing);
   });
