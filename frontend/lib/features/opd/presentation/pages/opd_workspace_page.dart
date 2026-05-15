@@ -1129,10 +1129,17 @@ class _PatientText extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(title, overflow: TextOverflow.ellipsis),
+        Text(
+          title,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
         if (subtitle != null && subtitle!.isNotEmpty)
           Text(
             subtitle!,
+            maxLines: 1,
+            softWrap: false,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall,
           ),
