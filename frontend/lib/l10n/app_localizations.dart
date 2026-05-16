@@ -2176,6 +2176,42 @@ abstract class AppLocalizations {
   /// **'Enter at least one vital sign before completing triage.'**
   String get patientsVitalsRequiredMessage;
 
+  /// Unit field label for vital sign inputs.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get patientsVitalUnitLabel;
+
+  /// Normal vital sign status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get patientsVitalNormalLabel;
+
+  /// Abnormal vital sign status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Abnormal'**
+  String get patientsVitalAbnormalLabel;
+
+  /// Validation message for non-numeric vital sign input.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number.'**
+  String get patientsVitalNumberInvalidMessage;
+
+  /// Helper text showing the expected vital sign range for the patient profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected for {profile}: {range}'**
+  String patientsVitalRangeSuggestion(String profile, String range);
+
+  /// Validation message for vital sign values outside supported input limits.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value between {range}.'**
+  String patientsVitalLimitMessage(String range);
+
   /// Patient chief complaint field label.
   ///
   /// In en, this message translates to:

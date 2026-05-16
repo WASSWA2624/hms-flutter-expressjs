@@ -1099,6 +1099,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter at least one vital sign before completing triage.';
 
   @override
+  String get patientsVitalUnitLabel => 'Unit';
+
+  @override
+  String get patientsVitalNormalLabel => 'Normal';
+
+  @override
+  String get patientsVitalAbnormalLabel => 'Abnormal';
+
+  @override
+  String get patientsVitalNumberInvalidMessage => 'Enter a valid number.';
+
+  @override
+  String patientsVitalRangeSuggestion(String profile, String range) {
+    return 'Expected for $profile: $range';
+  }
+
+  @override
+  String patientsVitalLimitMessage(String range) {
+    return 'Enter a value between $range.';
+  }
+
+  @override
   String get patientsChiefComplaintLabel => 'Chief complaint';
 
   @override

@@ -1432,6 +1432,46 @@
   "@patientsVitalsRequiredMessage": {
     "description": "Validation message when triage has no vital signs."
   },
+  "patientsVitalUnitLabel": "Unit",
+  "@patientsVitalUnitLabel": {
+    "description": "Unit field label for vital sign inputs."
+  },
+  "patientsVitalNormalLabel": "Normal",
+  "@patientsVitalNormalLabel": {
+    "description": "Normal vital sign status label."
+  },
+  "patientsVitalAbnormalLabel": "Abnormal",
+  "@patientsVitalAbnormalLabel": {
+    "description": "Abnormal vital sign status label."
+  },
+  "patientsVitalNumberInvalidMessage": "Enter a valid number.",
+  "@patientsVitalNumberInvalidMessage": {
+    "description": "Validation message for non-numeric vital sign input."
+  },
+  "patientsVitalRangeSuggestion": "Expected for {profile}: {range}",
+  "@patientsVitalRangeSuggestion": {
+    "description": "Helper text showing the expected vital sign range for the patient profile.",
+    "placeholders": {
+      "profile": {
+        "type": "String",
+        "example": "Adult Female"
+      },
+      "range": {
+        "type": "String",
+        "example": "90-120 mmHg"
+      }
+    }
+  },
+  "patientsVitalLimitMessage": "Enter a value between {range}.",
+  "@patientsVitalLimitMessage": {
+    "description": "Validation message for vital sign values outside supported input limits.",
+    "placeholders": {
+      "range": {
+        "type": "String",
+        "example": "30-300 mmHg"
+      }
+    }
+  },
   "patientsChiefComplaintLabel": "Chief complaint",
   "@patientsChiefComplaintLabel": {
     "description": "Patient chief complaint field label."
