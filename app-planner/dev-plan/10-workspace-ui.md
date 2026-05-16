@@ -15,7 +15,7 @@ Define one reusable UI pattern for all HOSSPI HMS module workspaces so the app l
 
 Each module should use this layout:
 
-1. module header with title, short plain-language description, status, and one primary action;
+1. module header with title, status, and one primary action;
 2. compact KPI/summary cards only where they help the task;
 3. searchable/filterable worklist, list, or table;
 4. readable row/card status badges;
