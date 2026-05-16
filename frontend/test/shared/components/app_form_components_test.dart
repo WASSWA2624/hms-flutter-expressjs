@@ -99,6 +99,42 @@ void main() {
     expect(selected, 'live');
   });
 
+  testWidgets('AppSelectField clear button clears the selected value', (
+    WidgetTester tester,
+  ) async {
+    String? selected = 'live';
+
+    await pumpComponent(
+      tester,
+      StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AppSelectField<String>(
+            labelText: 'Status',
+            value: selected,
+            options: const <AppSelectOption<String>>[
+              AppSelectOption<String>(value: 'draft', label: 'Draft'),
+              AppSelectOption<String>(value: 'live', label: 'Live'),
+            ],
+            onChanged: (String? value) {
+              setState(() {
+                selected = value;
+              });
+            },
+          );
+        },
+      ),
+    );
+
+    expect(find.text('Live'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pump();
+
+    final EditableText editableText = tester.widget(find.byType(EditableText));
+    expect(selected, isNull);
+    expect(editableText.controller.text, isEmpty);
+  });
+
   testWidgets(
     'AppSelectField saves a selection without an onChanged callback',
     (WidgetTester tester) async {

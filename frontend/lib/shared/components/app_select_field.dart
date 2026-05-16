@@ -20,7 +20,7 @@ class AppSelectOption<T> {
   final bool enabled;
 }
 
-class AppSelectField<T> extends StatelessWidget {
+class AppSelectField<T> extends StatefulWidget {
   const AppSelectField({
     required this.options,
     this.value,
@@ -90,9 +90,40 @@ class AppSelectField<T> extends StatelessWidget {
   final double? menuHeight;
 
   @override
+  State<AppSelectField<T>> createState() => _AppSelectFieldState<T>();
+}
+
+class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _labelForValue(widget.value));
+  }
+
+  @override
+  void didUpdateWidget(covariant AppSelectField<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value ||
+        oldWidget.options != widget.options) {
+      final String label = _labelForValue(widget.value);
+      if (_controller.text != label) {
+        _controller.value = TextEditingValue(text: label);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool canSelect = enabled && !isLoading;
+    final bool canSelect = widget.enabled && !widget.isLoading;
     Widget field = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double? width =
@@ -100,40 +131,44 @@ class AppSelectField<T> extends StatelessWidget {
             ? constraints.maxWidth
             : null;
         final double effectiveMenuHeight =
-            menuHeight ??
+            widget.menuHeight ??
             (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 360.0);
-        final bool canClear = canSelect && value != null && onChanged != null;
-        final Widget trailingIcon = isLoading
+        final bool canClear =
+            canSelect && widget.value != null && widget.onChanged != null;
+        final Widget trailingIcon = widget.isLoading
             ? const _SelectLoadingIcon()
             : _SelectTrailingIcon(
                 showClear: canClear,
                 isExpanded: false,
-                onClear: () => onChanged?.call(null),
+                onClear: _clearSelection,
               );
-        final Widget selectedTrailingIcon = isLoading
+        final Widget selectedTrailingIcon = widget.isLoading
             ? const _SelectLoadingIcon()
             : _SelectTrailingIcon(
                 showClear: canClear,
                 isExpanded: true,
-                onClear: () => onChanged?.call(null),
+                onClear: _clearSelection,
               );
-        final bool enableFilter = searchable || filterCallback != null;
-        final bool enableSearch = searchable || searchCallback != null;
+        final bool enableFilter =
+            widget.searchable || widget.filterCallback != null;
+        final bool enableSearch =
+            widget.searchable || widget.searchCallback != null;
 
         return DropdownMenuFormField<T>(
-          key: ValueKey<T?>(value),
-          restorationId: restorationId,
-          initialSelection: value,
+          key: ValueKey<T?>(widget.value),
+          restorationId: widget.restorationId,
+          controller: _controller,
+          initialSelection: widget.value,
           enabled: canSelect,
           width: width,
           menuHeight: effectiveMenuHeight,
           label: appFieldLabelWidget(
             context,
-            labelText,
-            isRequired: isRequired,
+            widget.labelText,
+            isRequired: widget.isRequired,
           ),
-          hintText: hintText,
-          helperText: helperText,
+          hintText: widget.hintText,
+          helperText: widget.helperText,
           trailingIcon: trailingIcon,
           selectedTrailingIcon: selectedTrailingIcon,
           textStyle: theme.textTheme.bodyLarge?.copyWith(
@@ -146,20 +181,25 @@ class AppSelectField<T> extends StatelessWidget {
           enableSearch: enableSearch,
           expandedInsets: EdgeInsets.zero,
           filterCallback: enableFilter
-              ? filterCallback ?? _defaultFilter
+              ? widget.filterCallback ?? _defaultFilter
               : null,
           searchCallback: enableSearch
-              ? searchCallback ?? _defaultSearch
+              ? widget.searchCallback ?? _defaultSearch
               : null,
           requestFocusOnTap: true,
-          focusNode: focusNode,
-          autovalidateMode: autovalidateMode,
-          validator: validator,
-          onSaved: onSaved,
-          forceErrorText: errorText,
-          onSelected: onChanged,
+          focusNode: widget.focusNode,
+          autovalidateMode: widget.autovalidateMode,
+          validator: widget.validator,
+          onSaved: widget.onSaved,
+          forceErrorText: widget.errorText,
+          onSelected: (T? value) {
+            if (value == null) {
+              _controller.clear();
+            }
+            widget.onChanged?.call(value);
+          },
           dropdownMenuEntries: <DropdownMenuEntry<T>>[
-            for (final AppSelectOption<T> option in options)
+            for (final AppSelectOption<T> option in widget.options)
               DropdownMenuEntry<T>(
                 value: option.value,
                 label: option.label,
@@ -173,16 +213,33 @@ class AppSelectField<T> extends StatelessWidget {
       },
     );
 
-    if (semanticLabel != null) {
+    if (widget.semanticLabel != null) {
       field = Semantics(
         textField: true,
         enabled: canSelect,
-        label: semanticLabel,
+        label: widget.semanticLabel,
         child: field,
       );
     }
 
     return field;
+  }
+
+  void _clearSelection() {
+    _controller.clear();
+    widget.onChanged?.call(null);
+  }
+
+  String _labelForValue(T? value) {
+    if (value == null) {
+      return '';
+    }
+    for (final AppSelectOption<T> option in widget.options) {
+      if (option.value == value) {
+        return option.label;
+      }
+    }
+    return '';
   }
 }
 

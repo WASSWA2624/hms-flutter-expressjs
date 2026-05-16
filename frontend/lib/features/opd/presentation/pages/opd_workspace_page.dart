@@ -550,7 +550,6 @@ class _OpdSummaryPatientListDialogState
       title: Text(widget.title),
       icon: const Icon(Icons.groups_outlined),
       maxWidth: 920,
-      scrollable: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2829,10 +2828,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
     await _run(
       () => ref.read(opdWorkspaceControllerProvider.notifier).moveQueueEntry(
         widget.entry,
-        <String, Object?>{
-          'status': _status,
-          'provider_user_id': _providerId,
-        },
+        <String, Object?>{'status': _status, 'provider_user_id': _providerId},
       ),
     );
   }
@@ -3535,10 +3531,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
             children: <Widget>[
               AppTextField(
                 controller: _systolicController,
-                labelText: _opdOptionalFieldLabel(
-                  l10n,
-                  l10n.opdSystolicLabel,
-                ),
+                labelText: _opdOptionalFieldLabel(l10n, l10n.opdSystolicLabel),
                 enabled: !_isSaving,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -3547,10 +3540,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
               ),
               AppTextField(
                 controller: _diastolicController,
-                labelText: _opdOptionalFieldLabel(
-                  l10n,
-                  l10n.opdDiastolicLabel,
-                ),
+                labelText: _opdOptionalFieldLabel(l10n, l10n.opdDiastolicLabel),
                 enabled: !_isSaving,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,

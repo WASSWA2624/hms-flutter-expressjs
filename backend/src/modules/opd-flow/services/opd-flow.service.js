@@ -2877,6 +2877,7 @@ const correctStage = async (id, data, context = {}) => {
     }
 
     setFlowStage(flow, stageTo);
+    const isTerminalStage = TERMINAL_STAGES.has(stageTo);
     appendTimelineEvent(
       flow,
       'STAGE_CORRECTED',
@@ -2892,12 +2893,39 @@ const correctStage = async (id, data, context = {}) => {
     const updatedEncounter = await tx.encounter.update({
       where: { id: encounter.id },
       data: {
+        status: isTerminalStage ? 'CLOSED' : 'OPEN',
+        ended_at: isTerminalStage ? (encounter.ended_at || correctedAt) : null,
         extension_json: {
           ...(encounter.extension_json || {}),
           opd_flow: flow,
         },
       },
     });
+
+    if (flow.visit_queue_id) {
+      await tx.visit_queue.update({
+        where: { id: flow.visit_queue_id },
+        data: {
+          status: isTerminalStage ? 'COMPLETED' : 'IN_PROGRESS',
+        },
+      });
+    }
+
+    if (flow.appointment_id) {
+      const appointment = await tx.appointment.findFirst({
+        where: { id: flow.appointment_id, deleted_at: null },
+      });
+      if (
+        appointment &&
+        appointment.status !== 'CANCELLED' &&
+        appointment.status !== 'NO_SHOW'
+      ) {
+        await tx.appointment.update({
+          where: { id: appointment.id },
+          data: { status: isTerminalStage ? 'COMPLETED' : 'IN_PROGRESS' },
+        });
+      }
+    }
 
     return {
       encounter: updatedEncounter,

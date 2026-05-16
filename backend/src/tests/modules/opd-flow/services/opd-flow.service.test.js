@@ -756,6 +756,94 @@ describe('opd-flow.service', () => {
     ).rejects.toBeInstanceOf(HttpError);
   });
 
+  it('reopens a completed flow when correcting to a non-terminal stage', async () => {
+    const tx = {
+      encounter: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'enc-1',
+            tenant_id: 'tenant-1',
+            patient_id: 'pat-1',
+            status: 'CLOSED',
+            ended_at: new Date('2026-05-16T08:00:00.000Z'),
+            extension_json: {
+              opd_flow: {
+                stage: 'DISCHARGED',
+                visit_queue_id: 'vq-1',
+                appointment_id: 'apt-1'
+              }
+            }
+          })
+          .mockResolvedValueOnce({
+            id: 'enc-1',
+            encounter_type: 'OPD',
+            status: 'OPEN',
+            ended_at: null,
+            extension_json: {
+              opd_flow: {
+                stage: 'WAITING_DOCTOR_REVIEW',
+                next_step: 'DOCTOR_REVIEW',
+                visit_queue_id: 'vq-1',
+                appointment_id: 'apt-1'
+              }
+            }
+          }),
+        update: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
+      },
+      visit_queue: {
+        update: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue({ id: 'vq-1' })
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'apt-1', status: 'COMPLETED' }),
+        update: jest.fn()
+      },
+      invoice: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      payment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      emergency_case: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      triage_assessment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    const result = await opdFlowService.correctStage(
+      'enc-1',
+      {
+        stage_to: 'WAITING_DOCTOR_REVIEW',
+        reason: 'Patient needs another doctor review'
+      },
+      { user_id: 'doc-1' }
+    );
+
+    expect(tx.encounter.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'enc-1' },
+        data: expect.objectContaining({
+          status: 'OPEN',
+          ended_at: null
+        })
+      })
+    );
+    expect(tx.visit_queue.update).toHaveBeenCalledWith({
+      where: { id: 'vq-1' },
+      data: { status: 'IN_PROGRESS' }
+    });
+    expect(tx.appointment.update).toHaveBeenCalledWith({
+      where: { id: 'apt-1' },
+      data: { status: 'IN_PROGRESS' }
+    });
+    expect(result.flow.stage).toBe('WAITING_DOCTOR_REVIEW');
+  });
+
   it('emits OPD realtime updates, excluding actor and adding assigned provider', async () => {
     prisma.user_role.findMany.mockResolvedValue([
       { user_id: 'doctor-team-1' },
