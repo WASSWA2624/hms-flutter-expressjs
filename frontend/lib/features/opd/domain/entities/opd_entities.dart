@@ -284,6 +284,8 @@ final class OpdFlowSummary {
     this.providerDisplayName,
     this.appointmentId,
     this.visitQueueId,
+    this.triageLevel,
+    this.triagePriorityRank,
     this.facilityName,
   });
 
@@ -305,6 +307,8 @@ final class OpdFlowSummary {
   final String? providerDisplayName;
   final String? appointmentId;
   final String? visitQueueId;
+  final String? triageLevel;
+  final int? triagePriorityRank;
   final String? facilityName;
 
   String get apiId => publicId ?? id;
@@ -341,6 +345,8 @@ final class OpdFlowSummary {
     String? providerDisplayName,
     String? appointmentId,
     String? visitQueueId,
+    String? triageLevel,
+    int? triagePriorityRank,
     String? facilityName,
   }) {
     return OpdFlowSummary(
@@ -362,6 +368,8 @@ final class OpdFlowSummary {
       providerDisplayName: providerDisplayName ?? this.providerDisplayName,
       appointmentId: appointmentId ?? this.appointmentId,
       visitQueueId: visitQueueId ?? this.visitQueueId,
+      triageLevel: triageLevel ?? this.triageLevel,
+      triagePriorityRank: triagePriorityRank ?? this.triagePriorityRank,
       facilityName: facilityName ?? this.facilityName,
     );
   }
@@ -616,17 +624,26 @@ final class OpdWorkspaceState {
   final bool isRefreshingDetail;
   final bool isSaving;
 
-  int get arrivalCount =>
-      appointments.totalItemCount ?? appointments.items.length;
-  int get queueCount =>
-      queueEntries.totalItemCount ?? queueEntries.items.length;
+  int get arrivalCount => appointments.items
+      .where((OpdAppointment item) => !_isTerminalStatus(item.status))
+      .length;
+  int get queueCount => queueEntries.items
+      .where((OpdQueueEntry item) => !_isTerminalStatus(item.status))
+      .length;
   int get activeFlowCount {
-    return flows.items.where((OpdFlowSummary flow) => !flow.isTerminal).length;
+    return flows.items
+        .where(
+          (OpdFlowSummary flow) =>
+              !flow.isTerminal && !_isTerminalStatus(flow.status ?? flow.stage),
+        )
+        .length;
   }
 
   int get completedFlowCount {
     return flows.items.where((OpdFlowSummary flow) => flow.isTerminal).length;
   }
+
+  int get workloadCount => arrivalCount + queueCount + activeFlowCount;
 
   OpdWorkspaceState copyWith({
     OpdAppointmentQuery? appointmentQuery,
@@ -679,4 +696,16 @@ String? _firstNonEmpty(Iterable<String?> values) {
   }
 
   return null;
+}
+
+bool _isTerminalStatus(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'COMPLETED' ||
+    'CANCELLED' ||
+    'NO_SHOW' ||
+    'DISCHARGED' ||
+    'ADMITTED' ||
+    'CLOSED' => true,
+    _ => false,
+  };
 }

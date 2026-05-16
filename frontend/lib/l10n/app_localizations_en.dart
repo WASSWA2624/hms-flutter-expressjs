@@ -282,7 +282,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdStatusColumnLabel => 'Status';
 
   @override
-  String get opdTimeColumnLabel => 'Time';
+  String get opdTimeColumnLabel => 'Arrival time';
 
   @override
   String get opdProviderColumnLabel => 'Provider';

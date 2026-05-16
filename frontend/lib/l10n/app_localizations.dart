@@ -604,10 +604,10 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get opdStatusColumnLabel;
 
-  /// Time column label.
+  /// Arrival time column label.
   ///
   /// In en, this message translates to:
-  /// **'Time'**
+  /// **'Arrival time'**
   String get opdTimeColumnLabel;
 
   /// Provider column label.

@@ -7,6 +7,7 @@ const {
   assignDoctorSchema,
   doctorReviewSchema,
   dispositionSchema,
+  correctStageSchema,
   listOpdFlowsQuerySchema
 } = require('@validations/opd-flow/opd-flow.schema');
 
@@ -263,6 +264,16 @@ describe('opd-flow.schema', () => {
         decision: 'ADMIT',
         notes: 'Needs close observation'
       });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('correctStageSchema', () => {
+    it('allows correction without a reason', () => {
+      const result = correctStageSchema.safeParse({
+        stage_to: 'WAITING_DOCTOR_REVIEW'
+      });
+
       expect(result.success).toBe(true);
     });
   });

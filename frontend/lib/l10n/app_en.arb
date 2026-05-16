@@ -198,7 +198,7 @@
   "opdPatientColumnLabel": "Patient",
   "opdCategoryColumnLabel": "Category",
   "opdStatusColumnLabel": "Status",
-  "opdTimeColumnLabel": "Time",
+  "opdTimeColumnLabel": "Arrival time",
   "opdProviderColumnLabel": "Provider",
   "opdActionsColumnLabel": "Actions",
   "opdStageColumnLabel": "Stage",
@@ -482,7 +482,7 @@
     "description": "Status column label."
   },
   "@opdTimeColumnLabel": {
-    "description": "Time column label."
+    "description": "Arrival time column label."
   },
   "@opdProviderColumnLabel": {
     "description": "Provider column label."

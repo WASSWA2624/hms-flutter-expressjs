@@ -198,6 +198,8 @@ final class OpdFlowSummaryDto {
       providerDisplayName: _providerDisplayName(provider),
       appointmentId: _string(flow['appointment_id']),
       visitQueueId: _string(flow['visit_queue_id']),
+      triageLevel: _string(flow['triage_level']),
+      triagePriorityRank: _intOrNull(flow['triage_priority_rank']),
       facilityName: _string(facility?['name']),
     );
   }

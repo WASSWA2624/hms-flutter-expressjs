@@ -335,7 +335,7 @@ const dispositionSchema = z.object({
 
 const correctStageSchema = z.object({
   stage_to: z.enum(WORKFLOW_STAGE_VALUES),
-  reason: z.string().trim().min(1).max(2000),
+  reason: z.string().trim().max(2000).optional().nullable()
 });
 
 const listOpdFlowsQuerySchema = listQuerySchema.extend({

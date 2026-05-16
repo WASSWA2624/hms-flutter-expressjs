@@ -12,17 +12,20 @@ typedef AppDataItemKeyBuilder<T> = LocalKey Function(T item);
 typedef AppDataPageLabelBuilder<T> = String Function(AppPage<T> page);
 typedef AppDataRowColorBuilder<T> =
     Color? Function(BuildContext context, T item);
+typedef AppDataHeaderBuilder = Widget Function(BuildContext context);
 
 class AppDataColumn<T> {
   const AppDataColumn({
     required this.label,
     required this.cellBuilder,
+    this.headerBuilder,
     this.numeric = false,
     this.tooltip,
   });
 
   final String label;
   final AppDataCellBuilder<T> cellBuilder;
+  final AppDataHeaderBuilder? headerBuilder;
   final bool numeric;
   final String? tooltip;
 }
@@ -358,7 +361,7 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
   }
 }
 
-class _DesktopDataTable<T> extends StatelessWidget {
+class _DesktopDataTable<T> extends StatefulWidget {
   const _DesktopDataTable({
     required this.items,
     required this.columns,
@@ -376,46 +379,73 @@ class _DesktopDataTable<T> extends StatelessWidget {
   final AppDataRowColorBuilder<T>? rowColorBuilder;
 
   @override
+  State<_DesktopDataTable<T>> createState() => _DesktopDataTableState<T>();
+}
+
+class _DesktopDataTableState<T> extends State<_DesktopDataTable<T>> {
+  late final ScrollController _horizontalController;
+
+  @override
+  void initState() {
+    super.initState();
+    _horizontalController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _horizontalController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final Widget table = DataTable(
       showCheckboxColumn: false,
       columns: <DataColumn>[
-        for (final AppDataColumn<T> column in columns)
+        for (final AppDataColumn<T> column in widget.columns)
           DataColumn(
             numeric: column.numeric,
             tooltip: column.tooltip,
-            label: Text(column.label),
+            label: column.headerBuilder?.call(context) ?? Text(column.label),
           ),
       ],
       rows: <DataRow>[
-        for (final T item in items)
+        for (final T item in widget.items)
           DataRow(
-            key: itemKeyBuilder?.call(item),
+            key: widget.itemKeyBuilder?.call(item),
             color: _rowColor(context, item),
-            onSelectChanged: onRowSelected == null
+            onSelectChanged: widget.onRowSelected == null
                 ? null
                 : (_) {
-                    onRowSelected!(item);
+                    widget.onRowSelected!(item);
                   },
             cells: <DataCell>[
-              for (final AppDataColumn<T> column in columns)
+              for (final AppDataColumn<T> column in widget.columns)
                 DataCell(column.cellBuilder(context, item)),
             ],
           ),
       ],
     );
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: minWidth),
-        child: table,
+    return Scrollbar(
+      controller: _horizontalController,
+      thumbVisibility: true,
+      notificationPredicate: (ScrollNotification notification) {
+        return notification.metrics.axis == Axis.horizontal;
+      },
+      child: SingleChildScrollView(
+        controller: _horizontalController,
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: widget.minWidth),
+          child: table,
+        ),
       ),
     );
   }
 
   WidgetStateProperty<Color?>? _rowColor(BuildContext context, T item) {
-    final AppDataRowColorBuilder<T>? builder = rowColorBuilder;
+    final AppDataRowColorBuilder<T>? builder = widget.rowColorBuilder;
     if (builder == null) {
       return null;
     }

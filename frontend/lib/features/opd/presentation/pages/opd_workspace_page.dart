@@ -96,10 +96,15 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
 
   final ValueNotifier<_OpdTableFilter> _filterNotifier =
       ValueNotifier<_OpdTableFilter>(const _OpdTableFilter());
+  final ValueNotifier<List<_OpdTableColumnId>> _columnNotifier =
+      ValueNotifier<List<_OpdTableColumnId>>(
+        List<_OpdTableColumnId>.unmodifiable(_defaultOpdTableColumns),
+      );
 
   @override
   void dispose() {
     _filterNotifier.dispose();
+    _columnNotifier.dispose();
     super.dispose();
   }
 
@@ -254,7 +259,18 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       body: ValueListenableBuilder<_OpdTableFilter>(
         valueListenable: _filterNotifier,
         builder: (BuildContext context, _OpdTableFilter filter, _) {
-          return _OpdWorkspaceBody(state: state, filter: filter);
+          return ValueListenableBuilder<List<_OpdTableColumnId>>(
+            valueListenable: _columnNotifier,
+            builder:
+                (BuildContext context, List<_OpdTableColumnId> columns, _) {
+                  return _OpdWorkspaceBody(
+                    state: state,
+                    filter: filter,
+                    columns: columns,
+                    onColumnsChanged: _setColumns,
+                  );
+                },
+          );
         },
       ),
     );
@@ -265,6 +281,14 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       return;
     }
     _filterNotifier.value = filter;
+  }
+
+  void _setColumns(List<_OpdTableColumnId> columns) {
+    final List<_OpdTableColumnId> normalized = _normalizeTableColumns(columns);
+    if (listEquals(_columnNotifier.value, normalized)) {
+      return;
+    }
+    _columnNotifier.value = List<_OpdTableColumnId>.unmodifiable(normalized);
   }
 
   Future<void> _openStartWalkInDialog(
@@ -876,10 +900,17 @@ class _OpdFiltersState extends State<_OpdFilters> {
 }
 
 class _OpdWorkspaceBody extends StatelessWidget {
-  const _OpdWorkspaceBody({required this.state, required this.filter});
+  const _OpdWorkspaceBody({
+    required this.state,
+    required this.filter,
+    required this.columns,
+    required this.onColumnsChanged,
+  });
 
   final OpdWorkspaceState state;
   final _OpdTableFilter filter;
+  final List<_OpdTableColumnId> columns;
+  final ValueChanged<List<_OpdTableColumnId>> onColumnsChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -889,6 +920,8 @@ class _OpdWorkspaceBody extends StatelessWidget {
 
     return _OpdMainTable(
       items: items,
+      columns: columns,
+      onColumnsChanged: onColumnsChanged,
       isLoading:
           state.isRefreshingAppointments ||
           state.isRefreshingQueue ||
@@ -1008,6 +1041,7 @@ final class _OpdTableItem {
     this.provider,
     this.nextStep,
     this.time,
+    this.urgencyRank = _defaultUrgencyRank,
     this.appointment,
     this.queueEntry,
     this.flow,
@@ -1021,6 +1055,7 @@ final class _OpdTableItem {
   final String? provider;
   final String? nextStep;
   final DateTime? time;
+  final int urgencyRank;
   final OpdAppointment? appointment;
   final OpdQueueEntry? queueEntry;
   final OpdFlowSummary? flow;
@@ -1088,6 +1123,7 @@ List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
       provider: flow.providerDisplayName,
       nextStep: flow.nextStep,
       time: flow.startedAt,
+      urgencyRank: _flowUrgencyRank(flow),
       flow: flow,
     );
     usedPatientKeys.add(item.categoryKey);
@@ -1110,6 +1146,7 @@ List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
       ]),
       provider: entry.providerDisplayName,
       time: entry.queuedAt,
+      urgencyRank: _statusUrgencyRank(entry.status),
       queueEntry: entry,
     );
     if (usedPatientKeys.add(item.categoryKey)) {
@@ -1132,7 +1169,8 @@ List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
         appointment.reason,
       ]),
       provider: appointment.providerDisplayName,
-      time: appointment.scheduledStart,
+      time: _appointmentArrivalTime(appointment),
+      urgencyRank: _statusUrgencyRank(appointment.status),
       appointment: appointment,
     );
     if (usedPatientKeys.add(item.categoryKey)) {
@@ -1141,17 +1179,220 @@ List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
   }
 
   items.sort((_OpdTableItem left, _OpdTableItem right) {
-    final int categoryCompare = _categorySort(
+    final int timeCompare = (left.time ?? _unknownArrivalTime).compareTo(
+      right.time ?? _unknownArrivalTime,
+    );
+    if (timeCompare != 0) {
+      return timeCompare;
+    }
+    final int urgencyCompare = left.urgencyRank.compareTo(right.urgencyRank);
+    if (urgencyCompare != 0) {
+      return urgencyCompare;
+    }
+    return _categorySort(
       left.category,
     ).compareTo(_categorySort(right.category));
-    if (categoryCompare != 0) {
-      return categoryCompare;
-    }
-    return (left.time ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(
-      right.time ?? DateTime.fromMillisecondsSinceEpoch(0),
-    );
   });
   return items;
+}
+
+DateTime? _appointmentArrivalTime(OpdAppointment appointment) {
+  final String status = (appointment.status ?? '').toUpperCase();
+  if (status == 'IN_PROGRESS') {
+    return appointment.updatedAt ?? appointment.scheduledStart;
+  }
+  return appointment.scheduledStart ?? appointment.updatedAt;
+}
+
+int _flowUrgencyRank(OpdFlowSummary flow) {
+  final int? triageRank = flow.triagePriorityRank;
+  if (triageRank != null) {
+    return triageRank;
+  }
+  if ((flow.encounterType ?? '').toUpperCase() == 'EMERGENCY') {
+    return 10;
+  }
+  return _statusUrgencyRank(flow.stage ?? flow.status);
+}
+
+int _statusUrgencyRank(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'CRITICAL' || 'IMMEDIATE' || 'LEVEL_1' || 'EMERGENCY' => 0,
+    'URGENT' || 'HIGH' || 'LEVEL_2' => 1,
+    'IN_PROGRESS' || 'WAITING_DOCTOR_REVIEW' || 'WAITING_DISPOSITION' => 20,
+    'CONFIRMED' ||
+    'WAITING_VITALS' ||
+    'WAITING_DOCTOR_ASSIGNMENT' ||
+    'WAITING_CONSULTATION_PAYMENT' => 30,
+    _ => _defaultUrgencyRank,
+  };
+}
+
+List<_OpdTableColumnId> _normalizeTableColumns(
+  List<_OpdTableColumnId> columns,
+) {
+  final List<_OpdTableColumnId> normalized = <_OpdTableColumnId>[];
+  for (final _OpdTableColumnId column in columns) {
+    if (_availableOpdTableColumns.contains(column) &&
+        !normalized.contains(column)) {
+      normalized.add(column);
+    }
+    if (normalized.length == _maxOpdTableColumns) {
+      break;
+    }
+  }
+
+  for (final _OpdTableColumnId column in _defaultOpdTableColumns) {
+    if (normalized.length == _maxOpdTableColumns) {
+      break;
+    }
+    if (!normalized.contains(column)) {
+      normalized.add(column);
+    }
+  }
+
+  return normalized;
+}
+
+List<_OpdTableColumnId> _replaceTableColumn(
+  List<_OpdTableColumnId> columns,
+  int index,
+  _OpdTableColumnId column,
+) {
+  final List<_OpdTableColumnId> next = _normalizeTableColumns(
+    columns,
+  ).toList(growable: true);
+  if (index < 0 || index >= next.length || next[index] == column) {
+    return next;
+  }
+
+  final int existingIndex = next.indexOf(column);
+  if (existingIndex >= 0) {
+    next[existingIndex] = next[index];
+  }
+  next[index] = column;
+  return _normalizeTableColumns(next);
+}
+
+String _opdTableColumnLabel(BuildContext context, _OpdTableColumnId column) {
+  final l10n = context.l10n;
+  return switch (column) {
+    _OpdTableColumnId.patient => l10n.opdPatientColumnLabel,
+    _OpdTableColumnId.status => l10n.opdStatusColumnLabel,
+    _OpdTableColumnId.provider => l10n.opdProviderColumnLabel,
+    _OpdTableColumnId.arrivalTime => l10n.opdTimeColumnLabel,
+    _OpdTableColumnId.nextStep => l10n.opdNextStepColumnLabel,
+  };
+}
+
+AppDataColumn<_OpdTableItem> _opdDataColumn(
+  BuildContext context,
+  List<_OpdTableColumnId> selectedColumns,
+  int index,
+  ValueChanged<List<_OpdTableColumnId>> onColumnsChanged,
+) {
+  final _OpdTableColumnId column = selectedColumns[index];
+  final String label = _opdTableColumnLabel(context, column);
+
+  return AppDataColumn<_OpdTableItem>(
+    label: label,
+    headerBuilder: (BuildContext context) => _OpdColumnHeader(
+      column: column,
+      selectedColumns: selectedColumns,
+      onChanged: (_OpdTableColumnId value) {
+        onColumnsChanged(_replaceTableColumn(selectedColumns, index, value));
+      },
+    ),
+    cellBuilder: (BuildContext context, _OpdTableItem item) {
+      return switch (column) {
+        _OpdTableColumnId.patient => _PatientText(
+          title: item.title,
+          subtitle: item.subtitle,
+        ),
+        _OpdTableColumnId.status => _StatusText(value: item.status),
+        _OpdTableColumnId.provider => _ProviderCell(item: item),
+        _OpdTableColumnId.arrivalTime => Text(
+          _formatDateTime(context, item.time),
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _OpdTableColumnId.nextStep => Text(
+          _nextStepLabel(context, item),
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+      };
+    },
+    tooltip: label,
+  );
+}
+
+enum _OpdTableColumnId { patient, status, provider, arrivalTime, nextStep }
+
+const int _maxOpdTableColumns = 4;
+const int _defaultUrgencyRank = 99;
+final DateTime _unknownArrivalTime = DateTime(9999);
+
+const List<_OpdTableColumnId> _defaultOpdTableColumns = <_OpdTableColumnId>[
+  _OpdTableColumnId.patient,
+  _OpdTableColumnId.status,
+  _OpdTableColumnId.provider,
+  _OpdTableColumnId.arrivalTime,
+];
+
+const List<_OpdTableColumnId> _availableOpdTableColumns = <_OpdTableColumnId>[
+  _OpdTableColumnId.patient,
+  _OpdTableColumnId.status,
+  _OpdTableColumnId.provider,
+  _OpdTableColumnId.arrivalTime,
+  _OpdTableColumnId.nextStep,
+];
+
+class _OpdColumnHeader extends StatelessWidget {
+  const _OpdColumnHeader({
+    required this.column,
+    required this.selectedColumns,
+    required this.onChanged,
+  });
+
+  final _OpdTableColumnId column;
+  final List<_OpdTableColumnId> selectedColumns;
+  final ValueChanged<_OpdTableColumnId> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String label = _opdTableColumnLabel(context, column);
+
+    return PopupMenuButton<_OpdTableColumnId>(
+      tooltip: label,
+      padding: EdgeInsets.zero,
+      onSelected: onChanged,
+      itemBuilder: (BuildContext context) {
+        return <PopupMenuEntry<_OpdTableColumnId>>[
+          for (final _OpdTableColumnId option in _availableOpdTableColumns)
+            if (option == column || !selectedColumns.contains(option))
+              CheckedPopupMenuItem<_OpdTableColumnId>(
+                value: option,
+                checked: option == column,
+                child: Text(_opdTableColumnLabel(context, option)),
+              ),
+        ];
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Flexible(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          SizedBox(width: theme.spacing.xs),
+          Icon(Icons.arrow_drop_down, size: theme.appTokens.listIconSize),
+        ],
+      ),
+    );
+  }
 }
 
 int _categorySort(String category) {
@@ -1192,73 +1433,46 @@ bool _isSameLocalDate(DateTime left, DateTime right) {
 }
 
 class _OpdMainTable extends ConsumerWidget {
-  const _OpdMainTable({required this.items, required this.isLoading});
+  const _OpdMainTable({
+    required this.items,
+    required this.columns,
+    required this.onColumnsChanged,
+    required this.isLoading,
+  });
 
   final List<_OpdTableItem> items;
+  final List<_OpdTableColumnId> columns;
+  final ValueChanged<List<_OpdTableColumnId>> onColumnsChanged;
   final bool isLoading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final List<_OpdTableColumnId> visibleColumns = _normalizeTableColumns(
+      columns,
+    );
 
-    return AppDataList<_OpdTableItem>(
-      items: items,
-      isLoading: isLoading,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      emptyBuilder: (_) =>
-          _EmptyPanel(title: l10n.opdNoFlowsTitle, body: l10n.opdNoFlowsBody),
-      columns: <AppDataColumn<_OpdTableItem>>[
-        AppDataColumn<_OpdTableItem>(
-          label: l10n.opdPatientColumnLabel,
-          cellBuilder: (_, _OpdTableItem item) =>
-              _PatientText(title: item.title, subtitle: item.subtitle),
-        ),
-        AppDataColumn<_OpdTableItem>(
-          label: l10n.opdCategoryFilterLabel,
-          cellBuilder: (BuildContext context, _OpdTableItem item) =>
-              Text(_categoryLabel(context, item.category)),
-        ),
-        AppDataColumn<_OpdTableItem>(
-          label: l10n.opdStatusColumnLabel,
-          cellBuilder: (_, _OpdTableItem item) =>
-              _StatusBadge(value: item.status),
-        ),
-        AppDataColumn<_OpdTableItem>(
-          label: l10n.opdProviderColumnLabel,
-          cellBuilder: (BuildContext context, _OpdTableItem item) => Text(
-            item.provider ?? context.l10n.profileUnknownValue,
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        AppDataColumn<_OpdTableItem>(
-          label: l10n.opdTimeColumnLabel,
-          cellBuilder: (BuildContext context, _OpdTableItem item) => Text(
-            _formatDateTime(context, item.time),
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        AppDataColumn<_OpdTableItem>(
-          label: l10n.opdNextStepColumnLabel,
-          cellBuilder: (_, _OpdTableItem item) => Text(
-            _nextStepLabel(context, item),
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-      onRowSelected: (_OpdTableItem item) =>
-          _openTableItemActions(context, item),
-      mobileItemBuilder: (_, _OpdTableItem item) =>
-          _OpdTableMobileRow(item: item),
-      itemKeyBuilder: (_OpdTableItem item) =>
-          ValueKey<String>('${item.category}-${item.id}'),
-      rowColorBuilder: _opdTableRowColor,
+    return SizedBox(
+      width: double.infinity,
+      child: AppDataList<_OpdTableItem>(
+        items: items,
+        isLoading: isLoading,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        emptyBuilder: (_) =>
+            _EmptyPanel(title: l10n.opdNoFlowsTitle, body: l10n.opdNoFlowsBody),
+        columns: <AppDataColumn<_OpdTableItem>>[
+          for (int index = 0; index < visibleColumns.length; index += 1)
+            _opdDataColumn(context, visibleColumns, index, onColumnsChanged),
+        ],
+        onRowSelected: (_OpdTableItem item) =>
+            _openTableItemActions(context, item),
+        mobileItemBuilder: (_, _OpdTableItem item) =>
+            _OpdTableMobileRow(item: item),
+        itemKeyBuilder: (_OpdTableItem item) =>
+            ValueKey<String>('${item.category}-${item.id}'),
+        rowColorBuilder: _opdTableRowColor,
+      ),
     );
   }
 
@@ -1313,7 +1527,7 @@ class _OpdTableMobileRow extends StatelessWidget {
                 Text(
                   _joinDisplay(<String?>[
                     item.subtitle,
-                    _categoryLabel(context, item.category),
+                    _apiLabel(item.status ?? ''),
                     item.provider,
                     _nextStepLabel(context, item),
                     _formatDateTime(context, item.time),
@@ -1485,6 +1699,47 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
+class _StatusText extends StatelessWidget {
+  const _StatusText({required this.value});
+
+  final String? value;
+
+  @override
+  Widget build(BuildContext context) {
+    final String label = _apiLabel(value ?? '');
+    final ThemeData theme = Theme.of(context);
+    return Text(
+      label.isEmpty ? context.l10n.profileUnknownValue : label,
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: _stageTextColor(theme, value),
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
+class _ProviderCell extends StatelessWidget {
+  const _ProviderCell({required this.item});
+
+  final _OpdTableItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: item.provider ?? context.l10n.profileUnknownValue,
+      child: Text(
+        item.provider ?? context.l10n.profileUnknownValue,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
 class _OpdInlineMeta extends StatelessWidget {
   const _OpdInlineMeta({required this.icon, required this.label});
 
@@ -1543,6 +1798,17 @@ Color _opdTableRowColor(BuildContext context, _OpdTableItem item) {
     _ => theme.colorScheme.surfaceContainerHighest,
   };
   return color.withValues(alpha: 0.42);
+}
+
+Color _stageTextColor(ThemeData theme, String? value) {
+  final AppStatusColors statusColors = theme.statusColors;
+  return switch (_stageTone(value)) {
+    AppWorkspaceStatusTone.success => statusColors.success,
+    AppWorkspaceStatusTone.warning => statusColors.warning,
+    AppWorkspaceStatusTone.error => statusColors.error,
+    AppWorkspaceStatusTone.info => statusColors.info,
+    AppWorkspaceStatusTone.neutral => theme.colorScheme.onSurfaceVariant,
+  };
 }
 
 String _categoryLabel(BuildContext context, String category) {
@@ -3217,10 +3483,24 @@ class _OpdWorkflowPanel extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.md),
-        child: Wrap(
-          spacing: theme.spacing.md,
-          runSpacing: theme.spacing.sm,
-          children: children,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double tileWidth = _responsiveTileWidth(
+              availableWidth: constraints.maxWidth,
+              itemCount: children.length,
+              maxColumns: 4,
+              spacing: theme.spacing.md,
+              minWidth: 150,
+            );
+            return Wrap(
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.sm,
+              children: <Widget>[
+                for (final Widget child in children)
+                  SizedBox(width: tileWidth, child: child),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -3236,24 +3516,21 @@ class _OpdWorkflowInfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 150),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(label, style: theme.textTheme.labelMedium),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            value.isEmpty ? context.l10n.profileUnknownValue : value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(label, style: theme.textTheme.labelMedium),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          value.isEmpty ? context.l10n.profileUnknownValue : value,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -3279,10 +3556,24 @@ class _OpdWorkflowSection extends StatelessWidget {
           children: <Widget>[
             Text(title, style: theme.textTheme.titleSmall),
             SizedBox(height: theme.spacing.sm),
-            Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
-              children: children,
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double tileWidth = _responsiveTileWidth(
+                  availableWidth: constraints.maxWidth,
+                  itemCount: children.length,
+                  maxColumns: 3,
+                  spacing: theme.spacing.sm,
+                  minWidth: 190,
+                );
+                return Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.sm,
+                  children: <Widget>[
+                    for (final Widget child in children)
+                      SizedBox(width: tileWidth, child: child),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -3312,18 +3603,39 @@ class _OpdWorkflowAction extends StatelessWidget {
         if (!isAllowed) {
           return const SizedBox.shrink();
         }
-        return SizedBox(
-          width: 220,
-          child: AppButton.secondary(
-            label: label,
-            leadingIcon: icon,
-            fullWidth: true,
-            onPressed: onPressed,
-          ),
+        return AppButton.secondary(
+          label: label,
+          leadingIcon: icon,
+          fullWidth: true,
+          onPressed: onPressed,
         );
       },
     );
   }
+}
+
+double _responsiveTileWidth({
+  required double availableWidth,
+  required int itemCount,
+  required int maxColumns,
+  required double spacing,
+  required double minWidth,
+}) {
+  if (!availableWidth.isFinite || availableWidth <= 0) {
+    return minWidth;
+  }
+
+  final int maxUsableColumns = itemCount.clamp(1, maxColumns).toInt();
+  int columns = maxUsableColumns;
+  while (columns > 1) {
+    final double candidate =
+        (availableWidth - spacing * (columns - 1)) / columns;
+    if (candidate >= minWidth) {
+      return candidate;
+    }
+    columns -= 1;
+  }
+  return availableWidth;
 }
 
 bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
@@ -4417,10 +4729,9 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
             ),
             AppTextField(
               controller: _reasonController,
-              labelText: _opdRequiredFieldLabel(l10n, l10n.opdReasonLabel),
+              labelText: _opdOptionalFieldLabel(l10n, l10n.opdReasonLabel),
               enabled: !_isSaving,
               maxLines: 3,
-              validator: AppValidators.requiredText(l10n.validationRequired),
             ),
           ],
         ),

@@ -65,7 +65,8 @@ describe('opd-flow.service search filters', () => {
     const where = opdFlowRepository.findMany.mock.calls[0][0];
 
     expect(Array.isArray(where.AND)).toBe(true);
-    expect(where.AND).toHaveLength(2);
+    expect(where.AND).toHaveLength(3);
+    expect(JSON.stringify(where.AND[0])).toContain('$.opd_flow.stage');
 
     const serialized = JSON.stringify(where);
     expect(serialized).toContain('"identifiers"');

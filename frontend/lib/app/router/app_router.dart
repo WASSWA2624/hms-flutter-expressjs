@@ -16,6 +16,8 @@ import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
@@ -146,8 +148,9 @@ final class _ShellDestinationRoute {
 }
 
 List<_ShellDestinationRoute> _localizedShellDestinations(
-  AppLocalizations l10n,
-) {
+  AppLocalizations l10n, {
+  int? opdWorkloadCount,
+}) {
   return <_ShellDestinationRoute>[
     _ShellDestinationRoute(
       route: AppRoutes.home,
@@ -171,6 +174,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         label: l10n.navigationOpdLabel,
         icon: Icons.local_hospital_outlined,
         selectedIcon: Icons.local_hospital,
+        badgeCount: opdWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -202,8 +206,19 @@ class _AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canAccessOpd = _canAccessShellRoute(AppRoutes.opd, accessPolicy);
+    final int? opdWorkloadCount = canAccessOpd
+        ? ref
+              .watch(opdWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (OpdWorkspaceState state) => state.workloadCount,
+                failure: (_) => null,
+              )
+        : null;
     final List<_ShellDestinationRoute> shellDestinations =
-        _localizedShellDestinations(l10n)
+        _localizedShellDestinations(l10n, opdWorkloadCount: opdWorkloadCount)
             .where((_ShellDestinationRoute destination) {
               return _canAccessShellRoute(destination.route, accessPolicy);
             })

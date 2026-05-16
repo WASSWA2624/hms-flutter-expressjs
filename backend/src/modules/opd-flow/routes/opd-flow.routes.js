@@ -248,13 +248,7 @@ router.post(
   validateRequest({ params: encounterIdParamsSchema, body: recordVitalsSchema }),
   authenticate(),
   authorize(
-    [
-      ROLES.SUPER_ADMIN,
-      ROLES.TENANT_ADMIN,
-      ROLES.FACILITY_ADMIN,
-      ROLES.DOCTOR,
-      ROLES.NURSE
-    ],
+    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR, ROLES.NURSE],
     'role'
   ),
   opdFlowController.recordVitals
@@ -278,13 +272,7 @@ router.post(
   validateRequest({ params: encounterIdParamsSchema, body: assignDoctorSchema }),
   authenticate(),
   authorize(
-    [
-      ROLES.SUPER_ADMIN,
-      ROLES.TENANT_ADMIN,
-      ROLES.FACILITY_ADMIN,
-      ROLES.RECEPTIONIST,
-      ROLES.NURSE
-    ],
+    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE],
     'role'
   ),
   opdFlowController.assignDoctor
@@ -313,10 +301,7 @@ router.post(
   '/:id/doctor-review',
   validateRequest({ params: encounterIdParamsSchema, body: doctorReviewSchema }),
   authenticate(),
-  authorize(
-    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR],
-    'role'
-  ),
+  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR], 'role'),
   opdFlowController.doctorReview
 );
 
@@ -339,15 +324,12 @@ router.post(
   '/:id/disposition',
   validateRequest({ params: encounterIdParamsSchema, body: dispositionSchema }),
   authenticate(),
-  authorize(
-    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR],
-    'role'
-  ),
+  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR], 'role'),
   opdFlowController.disposition
 );
 
 /**
- * @description Correct OPD stage progression with mandatory reason
+ * @description Correct OPD stage progression with optional reason
  * @method POST
  * @route /api/v1/opd-flows/:id/correct-stage
  * @authentication Required (JWT)
@@ -355,7 +337,7 @@ router.post(
  * @urlParams {string} id - Encounter Friendly ID
  * @queryParams None
  * @bodyParams {string} stage_to - Target stage
- * @bodyParams {string} reason - Non-empty correction reason
+ * @bodyParams {string} [reason] - Correction reason
  * @returns {Object} Updated OPD flow snapshot
  * @throws 401 Unauthorized
  * @throws 403 Forbidden
@@ -366,13 +348,7 @@ router.post(
   validateRequest({ params: encounterIdParamsSchema, body: correctStageSchema }),
   authenticate(),
   authorize(
-    [
-      ROLES.SUPER_ADMIN,
-      ROLES.TENANT_ADMIN,
-      ROLES.FACILITY_ADMIN,
-      ROLES.NURSE,
-      ROLES.DOCTOR,
-    ],
+    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.NURSE, ROLES.DOCTOR],
     'role'
   ),
   opdFlowController.correctStage

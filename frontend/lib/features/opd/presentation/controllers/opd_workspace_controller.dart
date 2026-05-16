@@ -466,7 +466,7 @@ final class OpdWorkspaceController
   Future<AppFailure?> correctStage(
     OpdFlowSummary flow,
     String stage,
-    String reason,
+    String? reason,
   ) {
     return _mutateFlow(
       () => _repository.correctStage(flow.apiId, <String, Object?>{
@@ -867,6 +867,9 @@ final class OpdWorkspaceController
       },
       failure: (AppFailure failure) {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        if (failure.category == AppFailureCategory.notFound) {
+          unawaited(_syncVisibleData(showLoading: true));
+        }
         return failure;
       },
     );

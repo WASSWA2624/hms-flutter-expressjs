@@ -10,11 +10,13 @@ final class ResponsiveShellDestination {
     required this.label,
     required this.icon,
     required this.selectedIcon,
+    this.badgeCount,
   });
 
   final String label;
   final IconData icon;
   final IconData selectedIcon;
+  final int? badgeCount;
 }
 
 final class UserMenuProfileData {
@@ -1217,6 +1219,15 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
     final Color foregroundColor = widget.selected
         ? colorScheme.onSecondaryContainer
         : colorScheme.onSurfaceVariant;
+    final int badgeCount = widget.destination.badgeCount ?? 0;
+    final bool showIconBadge = badgeCount > 0 && !widget.showLabel;
+    final Widget icon = Icon(
+      widget.selected
+          ? widget.destination.selectedIcon
+          : widget.destination.icon,
+      color: foregroundColor,
+      size: theme.appTokens.listIconSize,
+    );
     final Widget content = AnimatedContainer(
       duration: _menuAnimationDuration,
       height: _menuItemHeight,
@@ -1256,13 +1267,15 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
             ? MainAxisAlignment.start
             : MainAxisAlignment.center,
         children: <Widget>[
-          Icon(
-            widget.selected
-                ? widget.destination.selectedIcon
-                : widget.destination.icon,
-            color: foregroundColor,
-            size: theme.appTokens.listIconSize,
-          ),
+          showIconBadge
+              ? Badge(
+                  label: Text(_compactBadgeCount(badgeCount)),
+                  smallSize: 7,
+                  largeSize: 16,
+                  padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+                  child: icon,
+                )
+              : icon,
           if (widget.showLabel) ...<Widget>[
             SizedBox(width: theme.spacing.sm),
             Expanded(
@@ -1275,6 +1288,10 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
                 ),
               ),
             ),
+            if (badgeCount > 0) ...<Widget>[
+              SizedBox(width: theme.spacing.xs),
+              _MenuItemCountBadge(count: badgeCount, selected: widget.selected),
+            ],
           ],
         ],
       ),
@@ -1335,6 +1352,49 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
       ),
     );
   }
+}
+
+class _MenuItemCountBadge extends StatelessWidget {
+  const _MenuItemCountBadge({required this.count, required this.selected});
+
+  final int count;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: selected ? colorScheme.primary : colorScheme.secondaryContainer,
+        border: Border.all(
+          color: selected ? colorScheme.primary : colorScheme.outlineVariant,
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.xs,
+          vertical: 1,
+        ),
+        child: Text(
+          _compactBadgeCount(count),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: selected
+                ? colorScheme.onPrimary
+                : colorScheme.onSecondaryContainer,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _compactBadgeCount(int count) {
+  if (count > 99) {
+    return '99+';
+  }
+  return count.toString();
 }
 
 class _SidebarResizeHandle extends StatelessWidget {
