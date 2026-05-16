@@ -261,7 +261,6 @@ class _PatientRegistryContentState
         state: widget.state,
         searchListenable: _tableSearchNotifier,
       ),
-      activity: _PatientActivityPanel(state: widget.state),
     );
   }
 
@@ -6019,58 +6018,6 @@ class _TimelineList extends StatelessWidget {
               ),
             ),
       ],
-    );
-  }
-}
-
-class _PatientActivityPanel extends StatelessWidget {
-  const _PatientActivityPanel({required this.state});
-
-  final PatientRegistryState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final List<AppWorkspaceActivityItem> items = <AppWorkspaceActivityItem>[
-      for (final PatientDuplicateCandidate duplicate
-          in state.overview.duplicates.take(3))
-        AppWorkspaceActivityItem(
-          title: l10n.patientsDuplicateActivityTitle,
-          subtitle: l10n.patientsDuplicateActivitySubtitle(
-            duplicate.confidenceScore,
-          ),
-          description:
-              duplicate.secondaryPatient?.effectiveDisplayName ??
-              duplicate.candidatePatient?.effectiveDisplayName,
-          icon: Icons.content_copy_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
-      if (state.overview.consentExceptions > 0)
-        AppWorkspaceActivityItem(
-          title: l10n.patientsConsentActivityTitle,
-          subtitle: l10n.patientsConsentActivitySubtitle(
-            state.overview.consentExceptions,
-          ),
-          icon: Icons.assignment_late_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
-      if (state.overview.missingDocuments > 0)
-        AppWorkspaceActivityItem(
-          title: l10n.patientsDocumentsActivityTitle,
-          subtitle: l10n.patientsDocumentsActivitySubtitle(
-            state.overview.missingDocuments,
-          ),
-          icon: Icons.description_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-    ];
-
-    return AppWorkspaceActivityList(
-      title: l10n.patientsActivityTitle,
-      description: l10n.patientsActivityBody,
-      emptyTitle: l10n.patientsActivityEmptyTitle,
-      emptyBody: l10n.patientsActivityEmptyBody,
-      items: items,
     );
   }
 }
