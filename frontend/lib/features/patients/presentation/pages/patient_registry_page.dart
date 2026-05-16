@@ -487,27 +487,11 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
   Widget _buildSearchField(BuildContext context) {
     final l10n = context.l10n;
 
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: widget.searchController,
-      builder: (BuildContext context, TextEditingValue value, _) {
-        final bool canClear = value.text.isNotEmpty;
-
-        return AppTextField(
-          controller: widget.searchController,
-          semanticLabel: l10n.patientsSearchLabel,
-          hintText: l10n.patientsSearchHint,
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: canClear
-              ? AppIconButton(
-                  icon: Icons.close,
-                  semanticLabel: l10n.patientsClearFiltersAction,
-                  tooltip: l10n.patientsClearFiltersAction,
-                  onPressed: widget.searchController.clear,
-                )
-              : null,
-          textInputAction: TextInputAction.search,
-        );
-      },
+    return AppSearchField(
+      controller: widget.searchController,
+      semanticLabel: l10n.patientsSearchLabel,
+      hintText: l10n.patientsSearchHint,
+      clearLabel: l10n.patientsClearFiltersAction,
     );
   }
 

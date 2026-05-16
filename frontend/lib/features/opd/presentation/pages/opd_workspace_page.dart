@@ -779,13 +779,13 @@ class _OpdFiltersState extends State<_OpdFilters> {
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool useAdvancedModal = breakpoint.isMobile;
     final List<String> statuses = _tableStatuses(widget.state);
-    final Widget searchField = AppTextField(
+    final Widget searchField = AppSearchField(
       controller: _searchController,
       semanticLabel: l10n.opdSearchLabel,
       hintText: l10n.opdSearchHint,
-      prefixIcon: const Icon(Icons.search),
-      textInputAction: TextInputAction.search,
-      onFieldSubmitted: (_) => _applySearch(),
+      clearLabel: l10n.opdClearFiltersAction,
+      onSubmitted: (_) => _applySearch(),
+      onClear: _applySearch,
     );
 
     return AppWorkspaceFilterBar(
