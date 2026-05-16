@@ -1,7 +1,22 @@
 # 00 - Root Development Plan Index
 
 ## Purpose
-This root development plan defines the chronological implementation order for **HOSSPI HMS** (**HOSSPI Hospital Management System**). It is focused mainly on completing the Flutter frontend on top of the current backend and the existing Flutter foundation.
+This root development plan defines the chronological implementation order for **HOSSPI HMS** (**HOSSPI Hospital Management System**). It is focused on completing the Flutter frontend on top of the existing backend contracts and existing Flutter foundation.
+
+The plan must guide implementation only. It must not redefine product scope, OPD flow, IPD flow, backend rules, frontend rules, access rules, report standards, or screen patterns that are already defined elsewhere.
+
+## Source-of-Truth Hierarchy
+Use these references in this order whenever there is overlap:
+
+| Priority | Reference | Purpose |
+| --- | --- | --- |
+| 1 | `app-planner/app-write-up.md` | Defines what the app does, module responsibilities, module boundaries, demo expectations, access expectations, and UX expectations. |
+| 2 | `app-planner/opd-flow.md` | Defines outpatient arrival, registration, triage, billing gates, doctor consultation, lab/radiology/pharmacy routing, result review, admission/referral, and OPD completion. |
+| 3 | `app-planner/ipd-flow.md` | Defines admission, bed allocation, billing/deposit/insurance, ward handover, nursing admission, inpatient care, orders, transfer, discharge, bed release, and IPD closure. |
+| 4 | Frontend and backend `app-rules` | Define how implementation must be done. |
+| 5 | Root `dev-plan` files | Define the implementation sequence and module delivery scope. |
+
+A dev-plan file must never create a new workflow, UI pattern, data model, access model, report format, or endpoint when it is already defined by a higher-priority reference.
 
 ## Naming Standard
 All root `dev-plan` files must use short, descriptive, numeric names:
@@ -21,51 +36,63 @@ The previous root `dev-plan` used long names and letter suffixes. Replace the pr
 ## Chronological Plan
 | Step | File | Focus |
 | --- | --- | --- |
-| 00 | `00-index.md` | Plan index and chronological order |
-| 01 | `01-policy.md` | Execution policy and safe-change boundaries |
-| 02 | `02-codebase.md` | Current backend/frontend foundation map |
+| 00 | `00-index.md` | Plan index, source-of-truth order, and chronological delivery order |
+| 01 | `01-policy.md` | Execution policy, safe-change boundaries, modal-first UI, reports, and synchronization rules |
+| 02 | `02-codebase.md` | Current backend/frontend foundation map and no-reinvention rules |
 | 03 | `03-brand-shell.md` | HOSSPI HMS identity, logo, app shell, and screen shell |
-| 04 | `04-api-data.md` | API contracts, repositories, DTOs, and backend alignment |
-| 05 | `05-auth.md` | Authentication, session, user avatar, and user dropdown |
-| 06 | `06-settings.md` | Theme, language, app bar indicators, and general settings |
-| 07 | `07-tenant-facility.md` | Tenant and facility setup |
-| 08 | `08-access-control.md` | RBAC, ABAC, permissions, module entitlements, and action guards |
-| 09 | `09-demo-seed.md` | Default tenant, facility, admins, department users, and demo data |
-| 10 | `10-workspace-ui.md` | Reusable module workspace pattern |
-| 11 | `11-patients.md` | Patient registry |
-| 12 | `12-opd-flow.md` | Appointments, queues, OPD, and outpatient flow |
-| 13 | `13-triage.md` | OPD triage and routing |
-| 14 | `14-clinical.md` | Clinical consultation and provider workflow |
-| 15 | `15-nursing.md` | Nursing workflow |
-| 16 | `16-inpatient.md` | Admissions, beds, ward rounds, IPD progress, and transfers |
-| 17 | `17-icu.md` | ICU stays, observations, alerts, and transfer/discharge readiness |
+| 04 | `04-api-data.md` | API contracts, repositories, DTOs, backend alignment, and targeted state updates |
+| 05 | `05-auth.md` | Authentication, session, user avatar, user dropdown, and protected routing |
+| 06 | `06-settings.md` | Theme, language, app bar indicators, user preferences, and general settings |
+| 07 | `07-tenant-facility.md` | Tenant, facility, facility identity, departments, units, rooms, wards, and beds setup |
+| 08 | `08-access-control.md` | RBAC, ABAC, permissions, module entitlements, action guards, and role-scoped UI |
+| 09 | `09-demo-seed.md` | Default tenant, facility, admins, department users, catalog seed data, and demo flow data |
+| 10 | `10-workspace-ui.md` | Reusable module workspace, modal actions, nested action pattern, responsive layout, and partial refresh |
+| 11 | `11-patients.md` | Patient registry, lookup, demographics, identifiers, documents, and patient actions |
+| 12 | `12-opd-flow.md` | Appointments, arrivals, queues, OPD encounter, billing gates, routing, and outpatient completion |
+| 13 | `13-triage.md` | OPD triage, vitals, urgency, risk flags, and routing decision |
+| 14 | `14-clinical.md` | Clinical consultation, notes, diagnosis, orders, prescriptions, result review, referral, and admission request |
+| 15 | `15-nursing.md` | Nursing workflow, observations, medication administration, care tasks, handovers, and ward activity |
+| 16 | `16-inpatient.md` | Admissions, beds, IPD encounter, ward rounds, inpatient progress, and transfers |
+| 17 | `17-icu.md` | ICU stays, critical observations, alerts, ICU rounds, transfer, and ICU discharge readiness |
 | 18 | `18-theater.md` | Theater/theatre workflow, anesthesia, post-op, and handover |
-| 19 | `19-discharge.md` | Discharge summary, checks, instructions, and episode closure |
-| 20 | `20-emergency.md` | Emergency and ambulance workflow |
-| 21 | `21-lab.md` | Laboratory workflow |
-| 22 | `22-radiology.md` | Radiology and imaging workflow |
-| 23 | `23-pharmacy.md` | Pharmacy and medication dispensing |
-| 24 | `24-billing.md` | Billing, cashier, receipts, refunds, and reconciliation |
-| 25 | `25-claims.md` | Insurance, coverage, pre-authorization, and claims |
-| 26 | `26-physiotherapy.md` | Physiotherapy workflow |
-| 27 | `27-mortuary.md` | Mortuary workflow |
-| 28 | `28-hr.md` | Human resources, shifts, leave, rosters, and payroll |
-| 29 | `29-rooms-beds.md` | Rooms, wards, beds, and occupancy readiness |
-| 30 | `30-biomedical.md` | Biomedical equipment lifecycle |
-| 31 | `31-operations.md` | Electrical, plumbing, water, power, HVAC, and maintenance |
-| 32 | `32-housekeeping.md` | Cleaning, schedules, turnover, and sanitation readiness |
-| 33 | `33-subscriptions.md` | Plans, subscriptions, module subscriptions, licenses, and invoices |
-| 34 | `34-notifications.md` | Notifications, conversations, badges, and in-app indicators |
-| 35 | `35-reports-audit.md` | Dashboards, reports, analytics, audit, and compliance evidence |
-| 36 | `36-integrations.md` | API keys, webhooks, integrations, and interoperability |
-| 37 | `37-quality-release.md` | Validation, testing, release readiness, and final checklist |
+| 19 | `19-discharge.md` | Discharge planning, summary, clearance, instructions, patient exit, and episode closure |
+| 20 | `20-emergency.md` | Emergency and ambulance workflow, urgent triage, stabilization, deferred billing, and handover |
+| 21 | `21-lab.md` | Laboratory catalog, orders, samples, results, quality control, and result routing |
+| 22 | `22-radiology.md` | Radiology/imaging catalog, orders, imaging studies, reports, assets, and result routing |
+| 23 | `23-pharmacy.md` | Formulary, prescriptions, pharmacy orders, dispensing, returns, stock visibility, and medication handoff |
+| 24 | `24-billing.md` | Billing gates, cashier workflow, invoices, payments, receipts, refunds, deposits, and reconciliation |
+| 25 | `25-claims.md` | Insurance, coverage, pre-authorization, claims, approvals, rejection handling, and payer tracking |
+| 26 | `26-physiotherapy.md` | Physiotherapy workflow where supported by backend contracts |
+| 27 | `27-mortuary.md` | Mortuary cases, storage, custody, viewing, post-mortem, release, and billing events |
+| 28 | `28-hr.md` | Human resources, staff, assignments, availability, shifts, leave, rosters, and payroll |
+| 29 | `29-rooms-beds.md` | Rooms, wards, beds, bed status, bed readiness, bed assignment, cleaning, and occupancy |
+| 30 | `30-biomedical.md` | Biomedical equipment registry, maintenance, calibration, incidents, downtime, recalls, and disposal |
+| 31 | `31-operations.md` | Electrical, plumbing, water, power, HVAC, maintenance, safety, and operational readiness |
+| 32 | `32-housekeeping.md` | Cleaning, schedules, room/bed turnover, ward cleaning, sanitation readiness, and housekeeping requests |
+| 33 | `33-subscriptions.md` | Plans, subscriptions, module subscriptions, licenses, invoices, and entitlement visibility |
+| 34 | `34-notifications.md` | Notifications, conversations, unread indicators, workflow alerts, and staff action routing |
+| 35 | `35-reports-audit.md` | Dashboards, generated reports, print templates, exports, audit, PHI logs, and compliance evidence |
+| 36 | `36-integrations.md` | API keys, integration configuration, logs, webhooks, and interoperability |
+| 37 | `37-quality-release.md` | Validation, testing, release readiness, and final synchronized checklist |
 
 ## Current Implementation Strategy
 - Do not rebuild the backend.
 - Do not rebuild the Flutter starter foundation.
-- Inspect existing frontend files first, then implement only missing app-specific screens, routes, models, repositories, controllers, forms, and module workspaces.
-- Use backend routes, permissions, feature flags, module subscriptions, and response formats as the source of truth.
+- Inspect existing frontend files before implementation and reuse working routes, shell, theme, shared components, forms, state controllers, network helpers, permissions, and localization.
+- Implement only missing app-specific screens, routes, models, repositories, controllers, forms, modal actions, report templates, exports, and module workspaces.
+- Use backend routes, permissions, feature flags, module subscriptions, catalogs, settings, and response formats as the source of truth.
 - Keep each module small enough to implement, test, and review independently.
+- Treat steps `01` through `13` as foundation and implemented/partly implemented flow work. Future work must extend them, not replace them.
+- Treat steps `14` through `37` as continuation work that must connect cleanly to patient registry, OPD, triage, clinical, IPD, billing, reports, notifications, and access control.
+
+## Global UI Contract
+- Keep screens simple, clean, readable, and fast for busy hospital staff.
+- Prefer a searchable worklist, a readable detail area, and clear role-based actions.
+- Use modal actions for short work such as registration edits, triage capture, order requests, payments, status changes, approvals, cancellations, printing, and confirmations.
+- Use full pages only for long, risky, highly detailed, or deep-linkable workflows such as complex clinical documentation, discharge summary authoring, theater records, ICU records, claims review, payroll, and report building.
+- Avoid technical backend language in staff-facing UI.
+- Do not reload the whole app or whole screen after small updates. Refresh only the affected row, badge, panel, queue, notification count, report preview, or form section.
+- Keep mobile, tablet, desktop, web, and large desktop layouts responsive using existing responsive utilities.
 
 ## Obsolete Root Dev-Plan Files To Remove When Replacing The Folder
 - `app-planner/dev-plan/index.md`
@@ -104,6 +131,13 @@ The previous root `dev-plan` used long names and letter suffixes. Replace the pr
 - `app-planner/dev-plan/12-final-validation-and-release-readiness.md`
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -114,7 +148,12 @@ The previous root `dev-plan` used long names and letter suffixes. Replace the pr
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`
@@ -122,7 +161,5 @@ The previous root `dev-plan` used long names and letter suffixes. Replace the pr
 - `backend/app-planner/app-rules/auth-security.md`
 - `backend/app-planner/app-rules/validation.md`
 - `backend/app-planner/app-rules/module-creation.md`
-### Additional references
-- `app-planner/app-write-up.md`
 
 Respect these documents when implementing the step. Do not edit backend or frontend planner files unless a future task explicitly allows it.

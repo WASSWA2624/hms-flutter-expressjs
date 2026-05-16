@@ -3,6 +3,8 @@
 ## Goal
 Apply the HOSSPI HMS root development plan without damaging the existing backend, frontend foundation, frontend planner, or backend planner.
 
+Implementation must follow the product scope in `app-write-up.md`, the outpatient patient movement rules in `opd-flow.md`, the inpatient patient movement rules in `ipd-flow.md`, and the frontend/backend rule files. The dev-plan is an execution guide only; it must not redefine existing product scope, statuses, roles, endpoints, report patterns, UI patterns, or access rules.
+
 ## Hard Boundaries
 1. Only app-specific implementation should be added during future implementation tasks.
 2. Do not modify backend source code unless a future task explicitly permits backend changes.
@@ -11,33 +13,108 @@ Apply the HOSSPI HMS root development plan without damaging the existing backend
 5. Preserve existing folder paths unless a future implementation task explicitly approves restructuring.
 6. Use existing frontend architecture, shared components, shell, theme, localization, routing, networking, state management, and permissions utilities before creating new patterns.
 7. Keep features self-contained under their module/feature folders.
-8. Keep screens simple and permission-aware.
-9. Use modal-based actions for short forms, quick edits, approvals, status changes, and confirmations.
-10. Use full-page flows only for long, risky, multi-step, or deep-linkable workflows.
+8. Keep screens simple, clean, responsive, permission-aware, and not congested.
+9. Use modal-based actions for short forms, quick edits, approvals, requests, payments, status changes, confirmations, print options, and exports.
+10. Use full-page flows only for long, risky, multi-step, data-heavy, or deep-linkable workflows.
+11. Do not print visible UI screens. Print generated information using approved templates.
+12. Do not reload the entire UI after a small update. Refresh only the affected data, row, badge, panel, form section, queue, or notification.
 
 ## Required Implementation Method
 For every future feature task:
-1. Read this root plan step.
-2. Read the relevant frontend and backend rules.
-3. Inspect current frontend source files.
-4. Inspect backend route, schema, permission, and response contracts.
-5. Reuse existing correct work.
-6. Implement only the missing pieces.
-7. Add loading, empty, error, forbidden, offline, and success states.
-8. Confirm responsive behavior on mobile, tablet, desktop, and web.
-9. Localize user-facing text.
-10. Run quality checks and document blockers.
+1. Read this policy and the relevant root dev-plan file.
+2. Read `app-write-up.md` to confirm module scope and boundaries.
+3. Read `opd-flow.md` when the task touches outpatient arrival, triage, consultation, lab, radiology, pharmacy, billing, referral, or admission.
+4. Read `ipd-flow.md` when the task touches admission, bed allocation, nursing handover, inpatient care, transfers, orders, discharge, or bed release.
+5. Read the relevant frontend and backend rules.
+6. Inspect the current frontend source and reuse existing correct work.
+7. Inspect backend routes, schemas, permissions, feature flags, module entitlements, catalogs, and response contracts.
+8. Implement only the missing pieces.
+9. Add loading, empty, error, forbidden, offline, success, validation, and duplicate-submit states.
+10. Confirm responsive behavior on mobile, tablet, desktop, web, and large desktop.
+11. Localize all user-facing text.
+12. Run quality checks and document blockers.
+
+## Modal-First Action Standard
+Use modals for routine work so users can complete actions without losing their place in the queue or workspace.
+
+| Use modal for | Use full page for |
+| --- | --- |
+| Patient lookup, quick registration, edit contact, add allergy, add document note | Long patient profile review or document-heavy workflows |
+| Check-in, queue movement, assign doctor, skip triage, cancel visit | Deep-linkable OPD board or large queue dashboards |
+| Triage vitals, urgency, route decision | Complex emergency documentation that needs a larger workspace |
+| Request lab/radiology/procedure, prescribe, add diagnosis, add note | Full consultation workspace when multiple sections must stay visible |
+| Cash payment, refund confirmation, deposit, coverage check | Complex billing reconciliation, claims, or day-close workflows |
+| Dispense, collect sample, upload result, report ready, handover, status update | Data-heavy service workspaces that require extended review |
+| Print/export options and confirmation | Report builder or multi-section report authoring |
+
+Avoid stacking many modals. If an action needs multiple small steps, use one modal with clear sections or a stepper. If a second confirmation is required, keep it lightweight and return the user to the same workspace after completion.
+
+## Simple UI Standard
+- Show only the information needed for the current role and task.
+- Use one primary action per screen or patient context.
+- Keep lists searchable, filterable, paginated, and easy to scan.
+- Prefer clear labels such as `Waiting Doctor`, `Payment Required`, `Results Ready`, and `Ready to Discharge`; avoid raw technical codes in UI.
+- Use patient headers consistently: patient name, patient number, age/sex where available, alerts/allergies, encounter/admission number, status, location, payer, and key action.
+- Keep forms short and grouped by real-world task.
+- Use configured catalogs for lab tests, radiology tests, medicines, services, fees, departments, wards, beds, and users. Do not hard-code these in UI.
+
+## Access Control Standard
+Every route, menu item, table row action, modal action, print/export action, notification action, and API call must respect:
+- role;
+- permission;
+- action permission;
+- tenant scope;
+- facility scope;
+- department/unit/ward/bed scope where applicable;
+- module subscription and license entitlement;
+- backend authorization response.
+
+The frontend may hide or disable disallowed actions for usability, but backend authorization remains mandatory.
+
+## OPD/IPD Synchronization Standard
+- OPD work must attach to the current OPD encounter.
+- IPD work must attach to the current IPD encounter/admission.
+- Admission from OPD or emergency must preserve the source encounter link.
+- Lab, radiology, pharmacy, billing, claims, nursing, reports, and notifications must update the relevant encounter/admission state without creating duplicate patient journeys.
+- Service orders must route to the correct department queue and return results to the doctor only when review is required by the flow.
+- Billing is a flexible gate, not a fixed step; emergency care must support deferred billing where policy allows.
+
+## Reporting and Printing Standard
+Reports must be generated from structured data, not by printing the visible UI.
+
+Every printable report should use a shared template with:
+1. facility logo;
+2. facility name;
+3. facility address and contacts;
+4. report title;
+5. patient and encounter/admission context where applicable;
+6. generated date/time and generated-by information;
+7. clean section headings and readable spacing;
+8. page numbers for multi-page reports;
+9. optional clinician/staff signature, stamp, or approval block;
+10. footer notes where needed.
+
+The template must support multiple pages, repeatable headers/footers, long tables, clinical summaries, prescriptions, receipts, discharge summaries, referrals, lab/radiology reports, patient reports, and audit/report exports.
+
+## State Update Standard
+- Controllers own presentation state and mutations.
+- Repositories own data access and mapping.
+- UI widgets must not call HTTP directly.
+- After a mutation, refresh only the affected provider/state slice.
+- Use the backend response as the final source of truth for status, amounts, queue position, permissions, and timestamps.
+- Show optimistic updates only when safe and easy to roll back.
 
 ## Small-Module Delivery Rule
 Each module should be delivered in this order:
 1. route and menu entry;
 2. permission guard and entitlement guard;
 3. empty state and dashboard/list shell;
-4. list/table view with search and filters;
-5. detail drawer/panel/page;
-6. create/edit modal or focused form;
+4. list/table/card view with search, filters, pagination, and row actions;
+5. detail drawer, side panel, or detail page;
+6. create/edit/action modals or focused form;
 7. workflow actions and status updates;
-8. exports/reports after the core workflow works.
+8. generated reports, exports, and print templates after the core workflow works;
+9. tests and release checks.
 
 ## Quality Commands
 Use the applicable frontend checks after source changes:
@@ -55,11 +132,22 @@ Backend checks are required only when a future task explicitly allows backend ch
 A step is done when:
 - existing correct work is reused;
 - missing app-specific behavior is implemented;
-- routes, labels, permissions, module entitlements, and API endpoints align;
-- UI remains clean and module-focused;
+- routes, labels, permissions, module entitlements, catalogs, settings, and API endpoints align;
+- OPD/IPD transitions update the correct encounter/admission, queues, orders, billing, notifications, and reports;
+- UI remains simple, clean, responsive, role-aware, localized, and module-focused;
+- modals are used for routine actions and full pages only where justified;
+- generated reports use the shared report template;
+- targeted state refresh is used instead of unnecessary full reloads;
 - tests/static checks pass or blockers are documented.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -70,9 +158,12 @@ A step is done when:
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
-- `frontend/app-planner/app-rules/testing.md`
-- `frontend/app-planner/app-rules/error_handling.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`
@@ -80,7 +171,5 @@ A step is done when:
 - `backend/app-planner/app-rules/auth-security.md`
 - `backend/app-planner/app-rules/validation.md`
 - `backend/app-planner/app-rules/module-creation.md`
-- `backend/app-planner/app-rules/testing.md`
-- `backend/app-planner/app-rules/error-logging.md`
 
 Respect these documents when implementing the step. Do not edit backend or frontend planner files unless a future task explicitly allows it.

@@ -1,7 +1,12 @@
-# 33 - Subscription Management
+# 33 - Subscription Management Module
 
 ## Goal
-Manage subscription plans, active subscriptions, module subscriptions, licenses, subscription invoices, and entitlement-driven module access.
+Manage subscription plans, active subscriptions, module subscriptions, licenses, subscription invoices, entitlement visibility, renewal state, limits, and subscription-driven access.
+
+## Source of Truth
+- Use `app-write-up.md` for subscription scope.
+- Use `01-policy.md` for access control, simple UI, report generation, responsive behavior, and partial state refresh.
+- Use earlier access-control/dev-plan work for role/permission/entitlement guards instead of redefining them.
 
 ## Backend Routes To Align With
 - `/api/v1/subscriptions-workspace`
@@ -13,28 +18,49 @@ Manage subscription plans, active subscriptions, module subscriptions, licenses,
 - `/api/v1/licenses`
 
 ## Implementation Scope
-1. Subscription workspace dashboard.
-2. Plan list and plan details.
-3. Tenant subscription state.
-4. Module subscription visibility.
-5. License status.
-6. Subscription invoice list.
-7. Module entitlement warnings in navigation and admin settings.
+1. Subscription workspace for plans, current subscription, module subscriptions, licenses, invoices, renewal/expiry, and entitlement state.
+2. Plan/module detail with enabled modules, limits, price/invoice state, license state, and tenant/facility scope where supported.
+3. Modal actions for create/update plan, activate subscription, renew, suspend, enable/disable module subscription, update license, and print invoice.
+4. Subscription invoice visibility connected to billing where supported.
+5. Entitlement-aware menu/module visibility across the app.
 
-## UX and Workflow Rules
-- Keep this module self-contained.
-- Use the shared workspace pattern from `10-workspace-ui.md`.
-- Keep short actions in modals where safe.
-- Use full pages only for complex or high-risk workflows.
-- Show loading, empty, error, forbidden, offline, and success states.
-- Respect tenant, facility, department/unit, role, permission, and module entitlement scope.
+## UI and Workflow Contract
+| Area | Requirement |
+| --- | --- |
+| Main screen | Use clean summary cards and lists: active plan, modules enabled, licenses, invoices, renewal/expiry. |
+| Actions | Use modals for plan/module/subscription/license updates and confirmations. |
+| Entitlements | Disabled modules should be hidden or clearly unavailable based on existing rule behavior. |
+| Language | Use simple tenant/admin labels; keep licensing technical details secondary. |
+| Responsiveness | Mobile shows stacked cards/lists; desktop supports summary plus detail panel. |
+
+## Flow Synchronization Rules
+- Module entitlements must affect route guards, menus, actions, reports, and dashboards.
+- Subscription invoice updates must synchronize with billing status where backend supports it.
+- Changing module subscription should update visible navigation and feature access without full app reload where possible.
+- Do not hard-code module availability in widgets; consume backend/module entitlement state.
+
+## Access and State Rules
+- Platform/tenant admins manage subscriptions according to scope.
+- Facility users should not see subscription controls unless permitted.
+- After mutation, refresh only the affected subscription, module entitlement, invoice, navigation availability, and notification badge.
+
+## Reports and Printing
+Subscription invoice, license summary, module entitlement summary, renewal notice, and plan comparison reports must use generated report templates from `35-reports-audit.md`.
 
 ## Done Criteria
-- Admins can see active plan, license, modules, limits, and invoice state.
-- Disabled modules are not shown as usable.
-- Subscription state affects module visibility consistently.
+- Subscription state controls module visibility and access consistently.
+- Subscription actions are modal-based, permission-aware, and auditable.
+- UI is simple for tenant/platform admins.
+- Invoices/reports are generated from data.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -45,7 +71,12 @@ Manage subscription plans, active subscriptions, module subscriptions, licenses,
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`

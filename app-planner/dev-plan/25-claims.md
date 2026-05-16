@@ -1,7 +1,13 @@
-# 25 - Insurance and Claims
+# 25 - Insurance and Claims Module
 
 ## Goal
-Manage coverage, pre-authorization, claims, approvals, rejections, resubmissions, and tracking.
+Manage coverage plans, eligibility/coverage visibility, pre-authorizations, claim preparation, claim submission, approvals, rejections, resubmissions, and insurance-linked billing follow-up.
+
+## Source of Truth
+- Use `app-write-up.md` for insurance and claims scope.
+- Use `opd-flow.md` for OPD service authorization and flexible billing timing.
+- Use `ipd-flow.md` for admission authorization, inpatient billing, discharge clearance, deposit adjustment, and final claim handling.
+- Use `01-policy.md` for simple modal actions, role access, reports, and partial state refresh.
 
 ## Backend Routes To Align With
 - `/api/v1/coverage-plans`
@@ -11,26 +17,50 @@ Manage coverage, pre-authorization, claims, approvals, rejections, resubmissions
 - `/api/v1/billing`
 
 ## Implementation Scope
-1. Coverage plan lookup.
-2. Patient coverage association display where supported.
-3. Pre-authorization request/status workflow.
-4. Claim preparation and submission workflow.
-5. Rejection/resubmission tracking.
+1. Claims workspace for pre-authorization queue, claim queue, rejected/resubmission queue, approved claims, and pending follow-up.
+2. Coverage/plan detail where permitted, linked to patient billing context.
+3. Modal actions for request pre-authorization, update authorization status, prepare claim, submit claim, record response, resubmit, and close claim.
+4. Integration with invoice/billing status and patient service clearance.
+5. Claim reports and generated documents where required.
 
-## UX and Workflow Rules
-- Keep this module self-contained.
-- Use the shared workspace pattern from `10-workspace-ui.md`.
-- Keep short actions in modals where safe.
-- Use full pages only for complex or high-risk workflows.
-- Show loading, empty, error, forbidden, offline, and success states.
-- Respect tenant, facility, department/unit, role, permission, and module entitlement scope.
+## UI and Workflow Contract
+| Area | Requirement |
+| --- | --- |
+| Main screen | Use clear queues: authorization pending, approved, rejected, claim draft, submitted, rejected, resubmission, paid/closed. |
+| Claim detail | Show patient, payer, policy/coverage, invoice/encounter/admission, amount, required documents, status, and next action. |
+| Actions | Use modals for status updates, submission, resubmission, document request, and response recording. |
+| Billing link | Show billing impact in plain language: authorized, partially authorized, not covered, pending, patient balance. |
+| Responsiveness | Mobile supports status/action modals; desktop supports queue plus detail panel. |
+
+## Flow Synchronization Rules
+- OPD/IPD service clearance must reflect authorization status where required.
+- IPD discharge clearance must consider pending claim/insurance finalization based on backend policy.
+- Claim updates must update billing, invoice, and patient queue state only where relevant.
+- Rejections must show simple next steps for billing/insurance staff without exposing technical claim payload details.
+
+## Access and State Rules
+- Insurance/claims users manage authorizations and claims.
+- Billing users can view claim impact and balances where permitted.
+- Clinical users should see only service clearance information, not full financial claim details unless permitted.
+- After claim mutation, refresh only the claim row, invoice status, authorization badge, and affected patient queue item.
+
+## Reports and Printing
+Claim forms, pre-authorization letters, claim statements, rejection/resubmission notes, and payer summaries must use generated report templates from `35-reports-audit.md`.
 
 ## Done Criteria
-- Claims users can track claim lifecycle.
-- Financial and clinical data links are clear.
-- Claim actions are auditable and permission-gated.
+- Coverage, authorization, claim, invoice, and patient flow states remain aligned.
+- Claim actions are simple, modal-based, and permission-aware.
+- Discharge/billing clearance can see insurance blockers clearly.
+- Claim documents are generated from data and printable/exportable.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -41,7 +71,12 @@ Manage coverage, pre-authorization, claims, approvals, rejections, resubmissions
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`

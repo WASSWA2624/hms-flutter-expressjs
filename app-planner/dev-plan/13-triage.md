@@ -1,7 +1,13 @@
 # 13 - OPD Triage
 
 ## Goal
-Capture triage information before consultation and route patients safely.
+Capture triage information before consultation when needed and route patients safely based on urgency, risk, policy, and OPD flow.
+
+## Source of Truth
+- Use `opd-flow.md` for triage role in OPD routing.
+- Use `20-emergency.md` for emergency escalation and urgent handover.
+- Use `14-clinical.md` for doctor handoff and triage summary visibility.
+- Use `01-policy.md` and `10-workspace-ui.md` for simple modal-first triage capture and targeted UI refresh.
 
 ## Backend Routes To Align With
 - `/api/v1/triage`
@@ -11,27 +17,54 @@ Capture triage information before consultation and route patients safely.
 - `/api/v1/clinical-alert-thresholds`
 
 ## Implementation Scope
-1. Triage queue filtered by waiting/urgent/emergency status.
+1. Triage queue filtered by waiting, urgent, emergency, routine, and service-only states.
 2. Vitals capture form.
-3. Chief complaint, priority, triage notes, emergency indicators, and route decision.
-4. Escalation to emergency, doctor, ICU, theater, or admission where supported.
+3. Chief complaint, symptoms, pain/severity indicator, allergies, risk flags, emergency indicators, triage notes, and urgency level.
+4. Route decision to priority doctor, normal doctor, emergency care, admission, referral, or direct protocol service where allowed.
 5. Clear abnormal vital indicators.
+6. Triage summary visible to doctor during consultation.
 
-## UX and Workflow Rules
-- Keep this module self-contained.
-- Use the shared workspace pattern from `10-workspace-ui.md`.
-- Keep short actions in modals where safe.
-- Use full pages only for complex or high-risk workflows.
-- Show loading, empty, error, forbidden, offline, and success states.
-- Respect tenant, facility, department/unit, role, permission, and module entitlement scope.
+## Triage Outputs
+| Output | Meaning | Next Step |
+| --- | --- | --- |
+| Immediate | Patient needs urgent attention. | Priority doctor or emergency care. |
+| Urgent | Patient should be seen before routine queue. | Priority doctor queue. |
+| Routine | Stable OPD patient. | Normal doctor queue. |
+| Service-only | Valid direct order, refill, or protocol service. | Lab, radiology, pharmacy, or procedure queue. |
+| Not fit for OPD | Needs admission, emergency transfer, or referral. | Admission, emergency, or referral workflow. |
+
+## UI and Workflow Contract
+| Area | Requirement |
+| --- | --- |
+| Main screen | Triage worklist with urgency, wait time, arrival type, chief complaint, and next action. |
+| Capture | Use a fast modal or focused form with required vitals and route decision. |
+| Alerts | Show abnormal values clearly without visual clutter. |
+| Routing | Allowed next destinations must come from OPD flow and permissions. |
+| Handoff | Doctor sees triage summary, vitals, urgency, alerts, and route history. |
+
+## Flow Synchronization Rules
+- Triage attaches to the active OPD encounter or emergency encounter.
+- Updating triage should update the encounter status, queue position, urgency badge, and doctor queue only.
+- Emergency escalation must not be delayed by billing.
+- Skipping triage must be an explicit allowed action with reason/policy where needed.
+- Abnormal values and alerts must be visible in clinical consultation, nursing, emergency, and IPD handoff where applicable.
 
 ## Done Criteria
 - Triage can be completed quickly.
 - Abnormal values are visible.
 - Routing decision is recorded.
 - Clinical staff can see triage summary during consultation.
+- Emergency and priority patients are moved forward without unnecessary steps.
+- UI updates are targeted to the queue row, status badge, and patient context.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -42,7 +75,12 @@ Capture triage information before consultation and route patients safely.
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`

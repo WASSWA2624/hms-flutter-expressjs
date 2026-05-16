@@ -1,7 +1,13 @@
 # 15 - Nursing Module
 
 ## Goal
-Support nursing observations, medication administration, care tasks, handovers, and ward/clinical nursing activity.
+Support nursing observations, vital signs, medication administration, care tasks, handovers, ward activity, and clinical escalation across OPD, IPD, ICU, theater recovery, and discharge workflows.
+
+## Source of Truth
+- Use `app-write-up.md` for nursing responsibilities.
+- Use `opd-flow.md` for triage handoff and outpatient nursing touchpoints.
+- Use `ipd-flow.md` for nursing admission, ward handover, inpatient care loop, transfers, discharge readiness, and bed release coordination.
+- Use `01-policy.md` for simple modal actions, role access, responsive UI, and partial state updates.
 
 ## Backend Routes To Align With
 - `/api/v1/nursing-notes`
@@ -12,27 +18,52 @@ Support nursing observations, medication administration, care tasks, handovers, 
 - `/api/v1/care-plans`
 
 ## Implementation Scope
-1. Nursing worklist by ward, unit, patient, priority, and shift.
-2. Nursing note capture.
-3. Medication administration record capture.
-4. Care task status updates.
-5. Handover notes and shift-aware context.
+1. Nursing worklist by ward, unit, shift, patient, priority, care task, admission status, and discharge readiness.
+2. Patient nursing detail with current location, diagnosis summary, care plan, vitals, medications due, tasks, handovers, and alerts.
+3. Modal actions for record vitals, nursing note, medication administration, task completion, handover, escalation, and transfer acknowledgement.
+4. Ward admission checklist connected to IPD bed allocation and admission handover.
+5. Shift-aware context so nurses see what needs action now without browsing unrelated modules.
 
-## UX and Workflow Rules
-- Keep this module self-contained.
-- Use the shared workspace pattern from `10-workspace-ui.md`.
-- Keep short actions in modals where safe.
-- Use full pages only for complex or high-risk workflows.
-- Show loading, empty, error, forbidden, offline, and success states.
-- Respect tenant, facility, department/unit, role, permission, and module entitlement scope.
+## UI and Workflow Contract
+| Area | Requirement |
+| --- | --- |
+| Main screen | Use a clean patient/task board with tabs or filters for assigned ward, urgent, medication due, handover pending, transfer pending, discharge pending. |
+| Patient row | Show patient, ward/room/bed, status, priority, due action, and last observation. Avoid dense clinical history in the list. |
+| Routine actions | Use modals for vitals, notes, MAR updates, handover notes, and task completion. |
+| High-risk actions | Require clear confirmation for medication administration, escalation, and transfer acknowledgement. |
+| Mobile behavior | One-column list and focused modal forms. Keep touch targets practical. |
+| Desktop behavior | Allow worklist and patient panel side by side using shared responsive layout. |
+
+## Flow Synchronization Rules
+- IPD nursing admission must start only after admission/bed workflow provides a patient location or authorized holding area.
+- Medication administration should update MAR status, patient task list, and notification badges only for the affected patient.
+- Transfer handovers must update source and destination nursing queues.
+- Discharge nursing checklist must feed discharge status without closing the admission by itself.
+- ICU and theater handovers must remain visible to permitted nurses without duplicating care episodes.
+
+## Access and State Rules
+- Nurses can act only within assigned facility, ward/unit, role, and entitlement scope.
+- Doctors can view nursing notes where permitted but should not receive nursing-only action buttons unless allowed.
+- After a mutation, update only the patient row, task badge, MAR line, handover item, and detail panel.
+- Offline or failed saves must keep unsaved form data visible until staff retry or discard.
+
+## Reports and Printing
+Nursing notes, handover summaries, observation charts, medication administration summaries, and discharge nursing checklists must use generated report templates from `35-reports-audit.md`. Do not print UI screens.
 
 ## Done Criteria
-- Nurses can complete routine actions from nursing workspace.
-- MAR and notes are easy to update.
-- Handovers are clear.
-- Ward/IPD/ICU links are permission-aware.
+- Nurses can complete routine ward work quickly from the nursing workspace.
+- Nursing actions are synchronized with IPD, ICU, theater, and discharge status.
+- MAR, vitals, notes, tasks, and handovers are easy to update and audit.
+- UI is uncluttered, responsive, and permission-aware.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -43,7 +74,12 @@ Support nursing observations, medication administration, care tasks, handovers, 
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`

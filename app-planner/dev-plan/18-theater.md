@@ -1,7 +1,13 @@
 # 18 - Theater Module
 
 ## Goal
-Manage theater/theatre bookings, procedure flow, anesthesia records, post-op notes, and handover.
+Manage theater/theatre bookings, case readiness, room allocation, procedure flow, anesthesia records, post-op notes, and handover back to ward, ICU, outpatient care, or discharge.
+
+## Source of Truth
+- Use `app-write-up.md` for theater module responsibilities.
+- Use `ipd-flow.md` for inpatient procedure routing, transfers, nursing handover, billing gates, and post-theater movement.
+- Use `opd-flow.md` when OPD patients are sent for OPD procedures or theater-related services.
+- Use `01-policy.md` for modal actions, permissions, responsive UI, reports, and partial refresh.
 
 ## Backend Routes To Align With
 - `/api/v1/theatre-cases`
@@ -12,28 +18,50 @@ Manage theater/theatre bookings, procedure flow, anesthesia records, post-op not
 - `/api/v1/transfer-requests`
 
 ## Implementation Scope
-1. Theater schedule and case board.
-2. Pre-theater checklist and readiness status.
-3. Theater room allocation.
-4. Procedure status tracking.
-5. Anesthesia record and post-op note capture.
-6. Handover back to ward, ICU, outpatient, or discharge.
+1. Theater schedule and case board filtered by date, room, status, urgency, surgeon, anesthetist, and patient location.
+2. Case detail with source encounter/admission, procedure, readiness checklist, billing/authorization status, room allocation, anesthesia, procedure notes, post-op notes, and handover.
+3. Modal actions for schedule case, assign room/team, update readiness, change status, request supplies, complete handover, and cancel/reschedule.
+4. Focused editor or full page only for complex anesthesia/procedure records when a modal would be unsafe.
+5. Handoff to ward, ICU, OPD, discharge, or recovery queue based on clinical decision.
 
-## UX and Workflow Rules
-- Keep this module self-contained.
-- Use the shared workspace pattern from `10-workspace-ui.md`.
-- Keep short actions in modals where safe.
-- Use full pages only for complex or high-risk workflows.
-- Show loading, empty, error, forbidden, offline, and success states.
-- Respect tenant, facility, department/unit, role, permission, and module entitlement scope.
+## UI and Workflow Contract
+| Area | Requirement |
+| --- | --- |
+| Main screen | Use a clean calendar/board/list hybrid where supported, but keep the default view simple for daily cases. |
+| Case row | Show patient, procedure, room, time, status, urgency, readiness, and next action. |
+| Readiness | Checklist must be concise and role-aware: clinical, nursing, billing/authorization, room/equipment, consent where supported. |
+| Actions | Most status updates must be modal-based with reason/notes where required. |
+| Responsiveness | Mobile uses daily list; desktop may show schedule plus case detail. |
+| Language | Use clear staff terms such as scheduled, ready, in theater, completed, handed over, cancelled. |
+
+## Flow Synchronization Rules
+- Theater cases must be created from approved clinical/procedure requests, admission context, or authorized OPD procedure flow.
+- Billing/authorization gates must not block emergency care where emergency deferral is allowed by policy.
+- Starting/completing a case must update theater board, patient location/status, nursing handover, and relevant notifications.
+- Post-op destination must update IPD/ICU/OPD/discharge queues without duplicate admissions.
+
+## Access and State Rules
+- Surgeons, anesthetists, theater nurses, ward nurses, billing, and admins must see role-appropriate actions only.
+- Case notes and anesthesia records require clinical permission.
+- After mutation, update only the case row, room schedule slot, patient detail panel, notification badge, and destination queue.
+
+## Reports and Printing
+Theater schedule, procedure note, anesthesia record, post-op note, and handover document must use the generated report template from `35-reports-audit.md`.
 
 ## Done Criteria
-- Theater cases are scheduled and tracked.
-- Pre/post-op states are clear.
-- Anesthesia and post-op records are linked.
-- Backend spelling `theatre` is respected while UI can display `Theater`.
+- Theater workflow is consistent with OPD/IPD movement.
+- Scheduling, readiness, procedure status, and handover are clear and permission-aware.
+- Routine actions are modal-based; complex clinical records use focused editors only when needed.
+- UI is responsive and not congested.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -44,7 +72,12 @@ Manage theater/theatre bookings, procedure flow, anesthesia records, post-op not
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`

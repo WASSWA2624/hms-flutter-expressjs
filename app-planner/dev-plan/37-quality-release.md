@@ -1,23 +1,51 @@
 # 37 - Quality, Validation, and Release Readiness
 
 ## Goal
-Confirm HOSSPI HMS is safe, usable, consistent, responsive, permission-aware, and ready for staged release.
+Confirm HOSSPI HMS is safe, usable, consistent, responsive, permission-aware, workflow-synchronized, report-ready, and prepared for staged release.
+
+## Source of Truth
+- Use `app-write-up.md` to validate product scope and module boundaries.
+- Use `opd-flow.md` to validate outpatient arrival, registration, triage, billing, doctor consultation, lab/radiology/pharmacy routing, result review, referral, admission, and completion.
+- Use `ipd-flow.md` to validate admission, bed allocation, nursing handover, inpatient care, orders, transfer, billing, discharge, bed release, and encounter closure.
+- Use `01-policy.md` to validate modal-first actions, simple UI, responsive behavior, role access, targeted UI refresh, and generated reporting.
 
 ## Validation Areas
-1. App identity: HOSSPI HMS branding, logo, titles, and shell labels.
+1. App identity: HOSSPI HMS branding, logo, titles, shell labels, and facility identity.
 2. Auth: login, logout, registration policy, change password, session restoration, and route guards.
 3. Tenant/facility setup: organization, facility profile, departments, units, rooms, wards, beds, users, roles, and permissions.
-4. Demo data: tenant, facility, admins, department users, subscriptions, modules, sample patients, clinical data, operations data, biomedical data, mortuary data, reports, notifications, and audit samples.
-5. Access control: routes, menus, buttons, modals, exports, reports, and actions.
+4. Demo data: tenant, facility, admins, department users, subscriptions, modules, sample patients, OPD/IPD cases, clinical data, operations data, biomedical data, mortuary data, reports, notifications, and audit samples.
+5. Access control: routes, menus, buttons, modals, exports, reports, print actions, notifications, and backend calls.
 6. Module workflows: patient registry, OPD, triage, clinical, nursing, inpatient, ICU, theater, discharge, emergency, lab, radiology, physiotherapy, mortuary, pharmacy, billing, claims, HR, rooms/beds, biomedical, operations, housekeeping, subscriptions, notifications, reports, audit, and integrations.
-7. UX: simple screens, clear forms, modal actions where appropriate, no congested dashboards.
-8. Responsiveness: mobile, tablet, desktop, web, and large desktop layouts.
-9. Accessibility: labels, keyboard navigation, focus, readable contrast, tap/click targets.
-10. Security: no secrets, no sensitive logs, secure session cleanup, safe error display.
-11. Offline/connectivity: clear online/offline indicators and safe retry states.
-12. Performance: paginated lists, debounced search, no heavy build work.
-13. Localization: no hard-coded user-facing text in feature widgets.
-14. Testing: unit, widget, and integration coverage for core flows.
+7. OPD flow: emergency, new/walk-in, appointment, triage, billing gates, consultation, orders, pharmacy, result review, admission/referral/completion.
+8. IPD flow: admission request, approval, registration, bed request/allocation, billing/deposit/insurance, ward handover, rounds, orders, transfers, discharge, final clearance, bed cleaning, closure.
+9. UX: simple screens, clear forms, modal actions where appropriate, no congested dashboards, no technical backend language in staff-facing UI.
+10. Responsiveness: mobile, tablet, desktop, web, and large desktop layouts using existing responsive utilities.
+11. Accessibility: labels, keyboard navigation, focus, readable contrast, tap/click targets, and screen-reader-friendly controls.
+12. Security: no secrets, no sensitive logs, secure session cleanup, safe errors, tenant/facility isolation, and PHI protection.
+13. Offline/connectivity: clear online/offline indicators, safe retry states, and unsaved-form protection where needed.
+14. Performance: paginated lists, debounced search, lazy rows, targeted state refresh, no unnecessary full reloads, no heavy build work.
+15. Localization: no hard-coded user-facing text in feature widgets.
+16. Reports/printing: generated multi-page template with facility logo/name/contact, patient/encounter context, clean body, page numbers, and signature blocks.
+17. Testing: unit, widget, and integration coverage for core OPD/IPD and module flows.
+
+## OPD/IPD End-to-End Scenarios
+| Scenario | Must Validate |
+| --- | --- |
+| Emergency OPD | Quick arrival, emergency triage, billing deferral where allowed, doctor review, admission/referral/discharge. |
+| New OPD patient | Registration, OPD encounter, optional billing, triage, doctor consultation, prescription/pharmacy, completion. |
+| Appointment patient | Appointment verification, encounter creation, queue, consultation, orders, completion. |
+| OPD lab/radiology loop | Doctor order, billing gate, department workflow, result release, return to doctor, final decision. |
+| OPD to IPD | Doctor admission request, admission approval, bed allocation, billing/deposit/insurance, ward handover. |
+| Inpatient care | Admission board, ward rounds, nursing tasks, lab/radiology/pharmacy orders, transfer if required. |
+| Discharge | Discharge plan, summary, pharmacy, nursing, billing/insurance, documents, patient exit, bed cleaning, closure. |
+
+## UI Consistency Checklist
+- Use existing shell, routes, theme, shared components, responsive layouts, forms, tables, modals, and state views.
+- Do not redesign screens that already exist and work correctly.
+- Use modal/drawer actions for routine actions.
+- Use full-page editors only for complex clinical, discharge, theater, ICU, payroll, or report-building tasks that cannot safely fit in a modal.
+- Keep search, filters, lists, rows, patient headers, status badges, and action buttons consistent across modules.
+- Ensure every mutation updates only the affected UI pieces.
 
 ## Required Frontend Commands
 Run from `frontend/` after implementation work:
@@ -40,16 +68,26 @@ Backend validation is required only when a future task explicitly permits backen
 - Production secrets are not committed.
 - Error messages are safe and localized.
 - Audit-sensitive workflows are traceable.
-- Reports and exports are permission-gated.
+- Reports, exports, print previews, and downloads are permission-gated.
+- OPD/IPD flows pass end-to-end scenario tests.
 - User documentation and setup notes are updated.
 
 ## Done Criteria
 - All implemented modules pass static checks and tests.
-- Known backend gaps, such as dedicated physiotherapy API support if still missing, are documented.
+- Known backend gaps are documented without inventing frontend-only workflows.
 - The app can be demonstrated using safe demo data.
+- OPD/IPD flows are synchronized across frontend state, backend status, queues, billing gates, orders, notifications, and reports.
+- UI is simple, responsive, role-aware, uniform, and not congested.
 - Production release blockers are listed clearly.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -60,13 +98,12 @@ Backend validation is required only when a future task explicitly permits backen
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
-- `frontend/app-planner/app-rules/testing.md`
-- `frontend/app-planner/app-rules/ci_cd_quality_gates.md`
 - `frontend/app-planner/app-rules/performance.md`
 - `frontend/app-planner/app-rules/accessibility.md`
-- `frontend/app-planner/app-rules/security.md`
-- `frontend/app-planner/app-rules/observability.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`
@@ -74,9 +111,5 @@ Backend validation is required only when a future task explicitly permits backen
 - `backend/app-planner/app-rules/auth-security.md`
 - `backend/app-planner/app-rules/validation.md`
 - `backend/app-planner/app-rules/module-creation.md`
-- `backend/app-planner/app-rules/testing.md`
-- `backend/app-planner/app-rules/performance.md`
-- `backend/app-planner/app-rules/compliance.md`
-- `backend/app-planner/app-rules/error-logging.md`
 
 Respect these documents when implementing the step. Do not edit backend or frontend planner files unless a future task explicitly allows it.

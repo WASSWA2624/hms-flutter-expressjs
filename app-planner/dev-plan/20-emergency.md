@@ -1,7 +1,13 @@
-# 20 - Emergency and Ambulance
+# 20 - Emergency and Ambulance Module
 
 ## Goal
-Support emergency intake, response, ambulance dispatch, trips, and clinical handover.
+Support emergency arrival, rapid triage, emergency response, ambulance dispatch/trips, stabilization, billing deferral where allowed, and safe handoff into OPD, IPD, ICU, theater, referral, or discharge.
+
+## Source of Truth
+- Use `app-write-up.md` for emergency and ambulance scope.
+- Use `opd-flow.md` for emergency patient arrival, triage, priority doctor routing, OPD service routing, and admission/referral/completion decisions.
+- Use `ipd-flow.md` for emergency admission, bed request, billing deferral, ward/ICU transfer, and inpatient handover.
+- Use `01-policy.md` for rapid modal actions, permissions, and partial refresh.
 
 ## Backend Routes To Align With
 - `/api/v1/emergency-cases`
@@ -12,27 +18,51 @@ Support emergency intake, response, ambulance dispatch, trips, and clinical hand
 - `/api/v1/ambulance-trips`
 
 ## Implementation Scope
-1. Emergency case list and priority board.
-2. Rapid triage/assessment capture.
-3. Emergency response documentation.
-4. Ambulance availability, dispatch, and trip tracking.
-5. Handover to OPD, inpatient, ICU, theater, mortuary, or discharge where applicable.
+1. Emergency board for active emergency cases, triage priority, arrival time, response status, current location, and next action.
+2. Quick arrival/temporary registration flow for unknown or incomplete patient details.
+3. Emergency triage and response actions linked to existing triage/vitals where possible.
+4. Ambulance dispatch and trip status with handover into emergency reception.
+5. Handoff to OPD consultation, IPD admission, ICU, theater, referral/transfer-out, or emergency discharge.
 
-## UX and Workflow Rules
-- Keep this module self-contained.
-- Use the shared workspace pattern from `10-workspace-ui.md`.
-- Keep short actions in modals where safe.
-- Use full pages only for complex or high-risk workflows.
-- Show loading, empty, error, forbidden, offline, and success states.
-- Respect tenant, facility, department/unit, role, permission, and module entitlement scope.
+## UI and Workflow Contract
+| Area | Requirement |
+| --- | --- |
+| Main screen | Use an emergency board with clear priority and elapsed time. Avoid dense administrative fields. |
+| Quick actions | Use modals for quick arrival, update priority, record triage, assign clinician, mark response, dispatch ambulance, and handoff. |
+| Patient context | Support temporary patient details, then merge/update when registration is completed by permitted staff. |
+| Billing | Allow emergency billing deferral where policy/backend supports it; do not force payment before urgent care. |
+| Responsiveness | Mobile and tablet must support fast touch entry; desktop shows board plus detail panel. |
+| Safety | Critical actions require clear status and next destination. |
+
+## Flow Synchronization Rules
+- Emergency cases must not create duplicate patient records when final registration is completed.
+- Emergency triage should update clinical urgency and doctor/ICU/theater/admission queues.
+- Handoff to OPD/IPD/ICU/theater must preserve source emergency case and encounter link.
+- Ambulance arrival should create or update emergency reception queue without separate manual duplication.
+- Billing deferral should be visible to billing without delaying emergency care.
+
+## Access and State Rules
+- Emergency clinicians, triage staff, ambulance staff, reception, billing, and admins see only permitted actions.
+- Patient identity updates require proper permission and audit trail.
+- After mutation, update only the emergency row, triage badge, ambulance status, destination queue, and notification badge.
+
+## Reports and Printing
+Emergency case summary, ambulance trip note, referral/transfer note, and emergency discharge summary must use generated report templates from `35-reports-audit.md`.
 
 ## Done Criteria
-- Emergency users can act quickly.
-- Ambulance state is visible.
-- Handover target is recorded.
-- High-priority states stand out without visual clutter.
+- Emergency staff can receive, triage, act, and hand off patients quickly.
+- Emergency billing deferral and OPD/IPD routing are supported without unsafe delays.
+- Ambulance dispatch/trip workflow connects to emergency arrival.
+- UI is simple, responsive, and permission-aware.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -43,7 +73,12 @@ Support emergency intake, response, ambulance dispatch, trips, and clinical hand
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`

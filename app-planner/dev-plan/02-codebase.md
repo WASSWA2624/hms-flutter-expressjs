@@ -1,10 +1,17 @@
 # 02 - Current Codebase Map
 
 ## Goal
-Understand what already exists before planning or implementing new HOSSPI HMS features.
+Understand what already exists before planning or implementing new HOSSPI HMS features, so implementation does not reinvent the wheel.
+
+## Source of Truth
+- Use `app-write-up.md` for module responsibilities and boundaries.
+- Use `opd-flow.md` for outpatient and triage movement.
+- Use `ipd-flow.md` for admission, bed, inpatient, transfer, and discharge movement.
+- Use frontend/backend `app-rules` for implementation mechanics.
+- Use this file only as the current codebase map and reuse checklist.
 
 ## Frontend Foundation Already Present
-The Flutter frontend already includes these reusable foundations:
+The Flutter frontend planner describes these reusable foundations. Confirm the actual files before implementation and extend them instead of replacing them.
 
 | Area | Existing path |
 | --- | --- |
@@ -24,10 +31,11 @@ The Flutter frontend already includes these reusable foundations:
 | Home starter feature | `frontend/lib/features/home/` |
 
 ## Frontend Gaps To Address
-- The app still carries starter/template identity in places such as `pubspec.yaml`, localization labels, and starter home content.
-- `ApiEndpoints` currently contains only a sample endpoint helper.
-- Routes currently cover the starter home/settings/status pages only.
-- HMS modules need feature folders, routes, menu destinations, models, repositories, controllers, forms, tables, detail panels, modals, permissions, and tests.
+- Starter/template identity may still appear in `pubspec.yaml`, localization labels, and starter home content.
+- `ApiEndpoints` may still need HMS endpoint helpers.
+- Routes may still only cover starter pages until module work is added.
+- HMS modules need feature folders, routes, menu destinations, models, repositories, controllers, forms, worklists, detail panels, modals, permissions, report actions, and tests.
+- Existing OPD/triage/patient registry work must be inspected and extended, not replaced.
 
 ## Backend Foundation Already Present
 The backend exposes a broad `/api/v1` module surface. Important existing route families include:
@@ -50,7 +58,7 @@ The backend exposes a broad `/api/v1` module surface. Important existing route f
 | Notifications/reports/audit/integrations | `/notifications`, `/notification-deliveries`, `/dashboard-workspace`, `/reports-workspace`, `/audit-logs`, `/integrations`, `/webhook-subscriptions`, `/interop` |
 
 ## Backend Gap To Track
-A dedicated physiotherapy route/module is not visible in the current backend route map. Future frontend work must not invent backend endpoints. Physiotherapy can start as a planned UI/workflow module and may reuse approved clinical endpoints such as encounters, procedures, care plans, notes, appointments, and follow-ups only if the backend contract supports that workflow. A dedicated backend physiotherapy module requires a separate backend-authorized task.
+A dedicated physiotherapy route/module is not visible in the current backend route map. Future frontend work must not invent backend endpoints. Physiotherapy can start only as a planned UI/workflow module and may reuse approved clinical endpoints such as encounters, procedures, care plans, notes, appointments, and follow-ups only if the backend contract supports that workflow. A dedicated backend physiotherapy module requires a separate backend-authorized task.
 
 ## Demo Seed Foundation Already Present
 The backend already contains:
@@ -61,10 +69,26 @@ The backend already contains:
 - `backend/scripts/seeders/seed-catalog.js`
 - seed packs for clinical, operations, subscriptions, communications, biomedical, mortuary, compliance, and governance.
 
+## No-Reinvention Checklist
+Before adding any module screen or component:
+1. Search the frontend for an existing route, feature folder, shared component, form field, modal, responsive layout, table/list, detail panel, state provider, and repository pattern.
+2. Reuse or extend existing correct work.
+3. Do not create duplicate app shells, navigation systems, theme systems, modal components, API clients, permission utilities, or report templates.
+4. Do not create endpoints or local models that conflict with backend contracts.
+5. Keep data flow consistent: UI → controller/provider → repository → API client → backend.
+6. Keep OPD/IPD flow updates attached to the correct encounter/admission.
+
 ## Output of This Step
-Use this codebase map before creating routes or modules. Do not create duplicate foundations already present in the frontend.
+Use this codebase map before creating routes or modules. The next implementation task should know exactly what exists, what is missing, what can be reused, and what must remain unchanged.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -75,8 +99,12 @@ Use this codebase map before creating routes or modules. Do not create duplicate
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
-- `frontend/app-planner/app-rules/feature_workflow.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`
@@ -84,8 +112,7 @@ Use this codebase map before creating routes or modules. Do not create duplicate
 - `backend/app-planner/app-rules/auth-security.md`
 - `backend/app-planner/app-rules/validation.md`
 - `backend/app-planner/app-rules/module-creation.md`
-- `backend/app-planner/app-rules/project-structure.md`
-- `backend/app-planner/app-rules/prisma.md`
+
 ### Additional references
 - `backend/src/app/router.js`
 - `backend/scripts/seeders/seed-catalog.js`

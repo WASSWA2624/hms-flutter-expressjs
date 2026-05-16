@@ -1,7 +1,12 @@
-# 31 - Operations
+# 31 - Operations Module
 
 ## Goal
-Manage non-clinical facility operations such as electrical, plumbing, water, power backup, HVAC/air-conditioning, safety checks, and general maintenance.
+Manage non-clinical facility operations such as maintenance requests, electrical, plumbing, water, power backup, HVAC/air-conditioning, general assets, safety checks, service logs, and operational readiness.
+
+## Source of Truth
+- Use `app-write-up.md` for operations scope.
+- Use `ipd-flow.md` indirectly where operations affects bed/room/ward readiness and patient movement.
+- Use `01-policy.md` for simple modals, permissions, responsive UI, and partial refresh.
 
 ## Backend Routes To Align With
 - `/api/v1/maintenance-requests`
@@ -12,26 +17,49 @@ Manage non-clinical facility operations such as electrical, plumbing, water, pow
 - `/api/v1/rooms`
 
 ## Implementation Scope
-1. Operations dashboard.
-2. Maintenance request list.
-3. Issue categories such as electrical, plumbing, water, power backup, HVAC, safety, building, and general maintenance.
-4. Request triage, assignment, status update, and completion.
-5. Asset/service-log visibility where supported.
+1. Operations request queue for new, assigned, in progress, waiting parts/vendor, completed, rejected, and closed requests.
+2. Asset/location detail with maintenance history and readiness where supported.
+3. Modal actions for create request, assign technician/team, update status, add service log, request parts/vendor, mark completed, and close request.
+4. Links to room/bed status when maintenance affects patient care space.
+5. Reports for maintenance workload and readiness.
 
-## UX and Workflow Rules
-- Keep this module self-contained.
-- Use the shared workspace pattern from `10-workspace-ui.md`.
-- Keep short actions in modals where safe.
-- Use full pages only for complex or high-risk workflows.
-- Show loading, empty, error, forbidden, offline, and success states.
-- Respect tenant, facility, department/unit, role, permission, and module entitlement scope.
+## UI and Workflow Contract
+| Area | Requirement |
+| --- | --- |
+| Main screen | Use a simple maintenance queue with location, issue, priority, status, assignee, and next action. |
+| Request creation | Use a short modal: location, category, issue, priority, photo/attachment where supported, notes. |
+| Detail view | Show request timeline, assignments, service logs, affected location/asset, and closure notes. |
+| Technicality | Keep engineering details secondary; default UI should be clear to non-technical staff. |
+| Responsiveness | Mobile supports request creation/update; desktop supports queue plus detail panel. |
+
+## Flow Synchronization Rules
+- Maintenance requests affecting rooms/beds should update room/bed readiness only for the affected location.
+- Completed repair should notify bed/room managers where relevant.
+- Housekeeping requests should route to housekeeping instead of duplicating cleaning work.
+- Operations should not redefine facility/room/asset structure; consume configured records.
+
+## Access and State Rules
+- Operations staff manage maintenance workflows.
+- Department staff can request and track issues where permitted.
+- After mutation, refresh only the request row, location readiness badge, asset status, and notification badge.
+
+## Reports and Printing
+Maintenance request summaries, service logs, asset service history, readiness reports, and vendor/parts notes must use generated report templates from `35-reports-audit.md`.
 
 ## Done Criteria
-- Operations staff can manage maintenance without entering unrelated modules.
-- Electrical/plumbing/water/power/HVAC issues are clearly categorized.
-- Requests are assigned, tracked, and auditable.
+- Operations requests are easy to create and track.
+- Room/bed readiness updates stay synchronized with IPD and facility modules.
+- UI is simple for busy staff and detailed enough for operations users.
+- Actions are permission-aware and modal-based.
 
 ## Rule References
+### Product and flow references
+- `app-planner/app-write-up.md`
+- `app-planner/opd-flow.md`
+- `app-planner/ipd-flow.md`
+- `app-planner/dev-plan/01-policy.md`
+- `app-planner/dev-plan/10-workspace-ui.md`
+
 ### Frontend rules
 - `frontend/app-planner/app-rules/architecture.md`
 - `frontend/app-planner/app-rules/project_structure.md`
@@ -42,7 +70,12 @@ Manage non-clinical facility operations such as electrical, plumbing, water, pow
 - `frontend/app-planner/app-rules/network_api.md`
 - `frontend/app-planner/app-rules/permissions.md`
 - `frontend/app-planner/app-rules/forms.md`
+- `frontend/app-planner/app-rules/search_filtering.md`
+- `frontend/app-planner/app-rules/pagination_data_tables.md`
 - `frontend/app-planner/app-rules/localization_i18n.md`
+- `frontend/app-planner/app-rules/performance.md`
+- `frontend/app-planner/app-rules/accessibility.md`
+
 ### Backend rules
 - `backend/app-planner/app-rules/api.md`
 - `backend/app-planner/app-rules/api-versioning.md`
