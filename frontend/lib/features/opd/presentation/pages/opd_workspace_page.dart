@@ -30,18 +30,6 @@ import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 class OpdWorkspacePage extends ConsumerWidget {
   const OpdWorkspacePage({super.key});
 
-  static const AccessRequirement _readRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.patientRead,
-      AppPermissions.clinicalRead,
-      AppPermissions.billingRead,
-      AppPermissions.operationsRead,
-      AppPermissions.emergencyRead,
-    ],
-    activeModules: <String>['opd-flow'],
-    requiresTenantContext: true,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
@@ -49,26 +37,18 @@ class OpdWorkspacePage extends ConsumerWidget {
       opdWorkspaceControllerProvider,
     );
 
-    return AppAccessGate(
-      requirement: _readRequirement,
-      deniedBuilder: (_, _) => AppStateScaffold(
-        variant: AppStateViewVariant.forbidden,
-        title: l10n.routeForbiddenTitle,
-        body: l10n.routeForbiddenBody,
-      ),
-      child: AsyncStateScaffold<OpdWorkspaceState>(
-        value: state,
-        loadingTitle: l10n.opdLoadingTitle,
-        loadingBody: l10n.opdLoadingBody,
-        maxWidth: PageMaxWidth.dataHeavy,
-        centerVertically: false,
-        onRetry: () {
-          ref.read(opdWorkspaceControllerProvider.notifier).refresh();
-        },
-        dataBuilder: (BuildContext context, OpdWorkspaceState data) {
-          return _OpdWorkspaceContent(state: data);
-        },
-      ),
+    return AsyncStateScaffold<OpdWorkspaceState>(
+      value: state,
+      loadingTitle: l10n.opdLoadingTitle,
+      loadingBody: l10n.opdLoadingBody,
+      maxWidth: PageMaxWidth.dataHeavy,
+      centerVertically: false,
+      onRetry: () {
+        ref.read(opdWorkspaceControllerProvider.notifier).refresh();
+      },
+      dataBuilder: (BuildContext context, OpdWorkspaceState data) {
+        return _OpdWorkspaceContent(state: data);
+      },
     );
   }
 }
@@ -93,7 +73,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       AppPermissions.emergencyWrite,
     ],
     activeModules: <String>['opd-flow'],
-    requiresTenantContext: true,
   );
 
   final ValueNotifier<_OpdTableFilter> _filterNotifier =
@@ -3303,7 +3282,6 @@ const AccessRequirement _opdReceptionRequirement = AccessRequirement(
     AppPermissions.emergencyWrite,
   ],
   activeModules: <String>['opd-flow'],
-  requiresTenantContext: true,
 );
 
 const AccessRequirement _opdTriageRequirement = AccessRequirement(
@@ -3312,13 +3290,11 @@ const AccessRequirement _opdTriageRequirement = AccessRequirement(
     AppPermissions.emergencyWrite,
   ],
   activeModules: <String>['opd-flow'],
-  requiresTenantContext: true,
 );
 
 const AccessRequirement _opdDoctorRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
   activeModules: <String>['opd-flow'],
-  requiresTenantContext: true,
 );
 
 const AccessRequirement _opdBillingRequirement = AccessRequirement(
@@ -3327,7 +3303,6 @@ const AccessRequirement _opdBillingRequirement = AccessRequirement(
     AppPermissions.patientWrite,
   ],
   activeModules: <String>['opd-flow'],
-  requiresTenantContext: true,
 );
 
 class FlowActionsDialog extends ConsumerStatefulWidget {

@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Release Flutter web port 5201",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/tool/run_web_5201.ps1",
+        "-ReleaseOnly"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

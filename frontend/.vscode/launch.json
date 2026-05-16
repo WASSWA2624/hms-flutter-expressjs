@@ -8,6 +8,7 @@
       "program": "lib/main.dart",
       "deviceId": "chrome",
       "flutterMode": "debug",
+      "preLaunchTask": "Release Flutter web port 5201",
       "toolArgs": [
         "--web-hostname=127.0.0.1",
         "--web-port=5201",

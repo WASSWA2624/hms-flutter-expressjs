@@ -63,9 +63,17 @@ Run the starter app on Chrome:
 flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example
 ```
 
+On Windows PowerShell, prefer the project launcher when reusing port `5201`.
+It releases any existing listener on that port, waits for the port to be free,
+then starts the same Flutter Chrome command:
+
+```powershell
+.\tool\run_web_5201.ps1
+```
+
 The VS Code `Flutter: Web Chrome (development)` launch target uses the same
-fixed address: `http://127.0.0.1:5201`. If that port is already in use, stop the
-previous Flutter run instead of starting a second one on a random port.
+fixed address: `http://127.0.0.1:5201` and runs the same port-release task
+before launching.
 
 Run the starter app on Windows desktop:
 
