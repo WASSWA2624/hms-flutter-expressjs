@@ -1311,6 +1311,36 @@ class _WorkspaceHeaderText extends StatelessWidget {
             ? constraints.maxWidth
             : (constraints.maxWidth * 0.62).clamp(240, 520).toDouble();
 
+        if (narrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: titleStyle?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (description.isNotEmpty) ...<Widget>[
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: descriptionStyle,
+                ),
+              ],
+              if (status != null) ...<Widget>[
+                SizedBox(height: theme.spacing.xs),
+                AppWorkspaceStatusBadge(status: status!),
+              ],
+            ],
+          );
+        }
+
         return Wrap(
           spacing: theme.spacing.sm,
           runSpacing: theme.spacing.xs,
