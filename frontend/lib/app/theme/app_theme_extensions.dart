@@ -393,7 +393,29 @@ extension AppThemeDataTokens on ThemeData {
       return tokens;
     }
 
-    throw StateError('AppStatusColors is not configured for this ThemeData.');
+    final ColorScheme colors = colorScheme;
+    return AppStatusColors(
+      success: colors.tertiary,
+      onSuccess: colors.onTertiary,
+      successContainer: colors.tertiaryContainer,
+      onSuccessContainer: colors.onTertiaryContainer,
+      warning: colors.secondary,
+      onWarning: colors.onSecondary,
+      warningContainer: colors.secondaryContainer,
+      onWarningContainer: colors.onSecondaryContainer,
+      error: colors.error,
+      onError: colors.onError,
+      errorContainer: colors.errorContainer,
+      onErrorContainer: colors.onErrorContainer,
+      danger: colors.error,
+      onDanger: colors.onError,
+      dangerContainer: colors.errorContainer,
+      onDangerContainer: colors.onErrorContainer,
+      info: colors.primary,
+      onInfo: colors.onPrimary,
+      infoContainer: colors.primaryContainer,
+      onInfoContainer: colors.onPrimaryContainer,
+    );
   }
 
   AppDesignTokens get appTokens {
