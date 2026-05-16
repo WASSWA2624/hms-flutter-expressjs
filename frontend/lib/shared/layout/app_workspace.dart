@@ -352,53 +352,71 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
     final Color valueColor = toneColors?.on ?? colorScheme.onSurface;
     final Color borderColor = toneColors?.border ?? colorScheme.outlineVariant;
     final Color surfaceColor = toneColors?.container ?? colorScheme.surface;
+    final bool hasDescription =
+        description != null && description!.trim().isNotEmpty;
+    final bool useDetailedCompact =
+        compact && (hasDescription || status != null);
     final Widget cardBody = compact
-        ? ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 46),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.sm,
-                vertical: theme.spacing.xs,
-              ),
-              child: Row(
-                children: <Widget>[
-                  if (icon != null) ...<Widget>[
-                    Icon(icon, color: iconColor, size: 18),
-                    SizedBox(width: theme.spacing.xs),
-                  ],
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: labelColor,
-                        fontWeight: FontWeight.w700,
-                      ),
+        ? useDetailedCompact
+              ? _DetailedCompactSummaryCardBody(
+                  icon: icon,
+                  label: label,
+                  value: value,
+                  description: description,
+                  status: status,
+                  iconColor: iconColor,
+                  labelColor: labelColor,
+                  valueColor: valueColor,
+                  onPressed: onPressed,
+                )
+              : ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 46),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: theme.spacing.sm,
+                      vertical: theme.spacing.xs,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        if (icon != null) ...<Widget>[
+                          Icon(icon, color: iconColor, size: 18),
+                          SizedBox(width: theme.spacing.xs),
+                        ],
+                        Expanded(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: labelColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: theme.spacing.sm),
+                        Text(
+                          value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: valueColor,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (status != null) ...<Widget>[
+                          SizedBox(width: theme.spacing.xs),
+                          Flexible(
+                            child: AppWorkspaceStatusBadge(status: status!),
+                          ),
+                        ],
+                        if (onPressed != null) ...<Widget>[
+                          SizedBox(width: theme.spacing.xs),
+                          Icon(Icons.chevron_right, color: iconColor, size: 18),
+                        ],
+                      ],
                     ),
                   ),
-                  SizedBox(width: theme.spacing.sm),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: valueColor,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  if (status != null) ...<Widget>[
-                    SizedBox(width: theme.spacing.xs),
-                    Flexible(child: AppWorkspaceStatusBadge(status: status!)),
-                  ],
-                  if (onPressed != null) ...<Widget>[
-                    SizedBox(width: theme.spacing.xs),
-                    Icon(Icons.chevron_right, color: iconColor, size: 18),
-                  ],
-                ],
-              ),
-            ),
-          )
+                )
         : Padding(
             padding: EdgeInsets.symmetric(
               horizontal: theme.spacing.md,
@@ -473,6 +491,157 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(onTap: onPressed, child: cardBody),
       ),
+    );
+  }
+}
+
+class _DetailedCompactSummaryCardBody extends StatelessWidget {
+  const _DetailedCompactSummaryCardBody({
+    required this.label,
+    required this.value,
+    required this.iconColor,
+    required this.labelColor,
+    required this.valueColor,
+    required this.onPressed,
+    this.description,
+    this.status,
+    this.icon,
+  });
+
+  final String label;
+  final String value;
+  final String? description;
+  final AppWorkspaceStatus? status;
+  final IconData? icon;
+  final Color iconColor;
+  final Color labelColor;
+  final Color valueColor;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.all(theme.spacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              if (icon != null) ...<Widget>[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.08),
+                    border: Border.all(
+                      color: iconColor.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: SizedBox.square(
+                    dimension: 34,
+                    child: Center(
+                      child: Icon(
+                        icon,
+                        color: iconColor,
+                        size: theme.appTokens.listIconSize,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+              ],
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: labelColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (onPressed != null) ...<Widget>[
+                SizedBox(width: theme.spacing.xs),
+                Icon(
+                  Icons.chevron_right,
+                  color: iconColor,
+                  size: theme.appTokens.listIconSize,
+                ),
+              ],
+            ],
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: valueColor,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (description != null &&
+              description!.trim().isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              description!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(color: labelColor),
+            ),
+          ],
+          if (status != null) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            _CompactSummaryStatusLine(
+              status: status!,
+              fallbackColor: colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactSummaryStatusLine extends StatelessWidget {
+  const _CompactSummaryStatusLine({
+    required this.status,
+    required this.fallbackColor,
+  });
+
+  final AppWorkspaceStatus status;
+  final Color fallbackColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final _WorkspaceToneColors colors = _toneColors(theme, status.tone);
+
+    return Row(
+      children: <Widget>[
+        Icon(
+          status.icon ?? _defaultIcon(status.tone),
+          color: colors.on,
+          size: 16,
+        ),
+        SizedBox(width: theme.spacing.xs),
+        Expanded(
+          child: Text(
+            status.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colors.on == Colors.transparent
+                  ? fallbackColor
+                  : colors.on,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
