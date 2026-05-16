@@ -84,6 +84,48 @@ final class OpdFlowQuery {
 }
 
 @immutable
+final class OpdTriageQueueQuery {
+  const OpdTriageQueueQuery({
+    this.search = '',
+    this.stage,
+    this.triageLevel,
+    this.encounterType,
+    this.queueScope = 'ALL',
+    this.pageRequest = const AppPageRequest(pageSize: 12),
+  });
+
+  final String search;
+  final String? stage;
+  final String? triageLevel;
+  final String? encounterType;
+  final String queueScope;
+  final AppPageRequest pageRequest;
+
+  OpdTriageQueueQuery copyWith({
+    String? search,
+    String? stage,
+    String? triageLevel,
+    String? encounterType,
+    String? queueScope,
+    AppPageRequest? pageRequest,
+    bool clearStage = false,
+    bool clearTriageLevel = false,
+    bool clearEncounterType = false,
+  }) {
+    return OpdTriageQueueQuery(
+      search: search ?? this.search,
+      stage: clearStage ? null : stage ?? this.stage,
+      triageLevel: clearTriageLevel ? null : triageLevel ?? this.triageLevel,
+      encounterType: clearEncounterType
+          ? null
+          : encounterType ?? this.encounterType,
+      queueScope: queueScope ?? this.queueScope,
+      pageRequest: pageRequest ?? this.pageRequest,
+    );
+  }
+}
+
+@immutable
 final class OpdAppointment {
   const OpdAppointment({
     required this.id,
@@ -286,6 +328,9 @@ final class OpdFlowSummary {
     this.visitQueueId,
     this.triageLevel,
     this.triagePriorityRank,
+    this.triageNotes,
+    this.chiefComplaint,
+    this.lastRouteTo,
     this.facilityName,
   });
 
@@ -309,6 +354,9 @@ final class OpdFlowSummary {
   final String? visitQueueId;
   final String? triageLevel;
   final int? triagePriorityRank;
+  final String? triageNotes;
+  final String? chiefComplaint;
+  final String? lastRouteTo;
   final String? facilityName;
 
   String get apiId => publicId ?? id;
@@ -347,6 +395,9 @@ final class OpdFlowSummary {
     String? visitQueueId,
     String? triageLevel,
     int? triagePriorityRank,
+    String? triageNotes,
+    String? chiefComplaint,
+    String? lastRouteTo,
     String? facilityName,
   }) {
     return OpdFlowSummary(
@@ -370,6 +421,9 @@ final class OpdFlowSummary {
       visitQueueId: visitQueueId ?? this.visitQueueId,
       triageLevel: triageLevel ?? this.triageLevel,
       triagePriorityRank: triagePriorityRank ?? this.triagePriorityRank,
+      triageNotes: triageNotes ?? this.triageNotes,
+      chiefComplaint: chiefComplaint ?? this.chiefComplaint,
+      lastRouteTo: lastRouteTo ?? this.lastRouteTo,
       facilityName: facilityName ?? this.facilityName,
     );
   }
@@ -407,6 +461,138 @@ final class OpdRelatedRecord {
   final String? title;
   final String? subtitle;
   final DateTime? occurredAt;
+}
+
+@immutable
+final class OpdVitalSign {
+  const OpdVitalSign({
+    required this.id,
+    required this.vitalType,
+    this.value,
+    this.unit,
+    this.systolicValue,
+    this.diastolicValue,
+    this.mapValue,
+    this.recordedAt,
+  });
+
+  final String id;
+  final String vitalType;
+  final String? value;
+  final String? unit;
+  final num? systolicValue;
+  final num? diastolicValue;
+  final num? mapValue;
+  final DateTime? recordedAt;
+
+  String get displayValue {
+    final String normalized = value?.trim() ?? '';
+    final String normalizedUnit = unit?.trim() ?? '';
+    if (normalized.isEmpty) {
+      return '';
+    }
+    if (normalizedUnit.isEmpty) {
+      return normalized;
+    }
+    return '$normalized $normalizedUnit';
+  }
+
+  Iterable<OpdVitalComponentValue> get componentValues sync* {
+    if (vitalType == 'BLOOD_PRESSURE') {
+      if (systolicValue != null) {
+        yield OpdVitalComponentValue(
+          vitalType: vitalType,
+          component: 'SYSTOLIC',
+          value: systolicValue!,
+        );
+      }
+      if (diastolicValue != null) {
+        yield OpdVitalComponentValue(
+          vitalType: vitalType,
+          component: 'DIASTOLIC',
+          value: diastolicValue!,
+        );
+      }
+      if (mapValue != null) {
+        yield OpdVitalComponentValue(
+          vitalType: vitalType,
+          component: 'MAP',
+          value: mapValue!,
+        );
+      }
+      return;
+    }
+
+    final num? parsedValue = value == null ? null : num.tryParse(value!.trim());
+    if (parsedValue != null) {
+      yield OpdVitalComponentValue(
+        vitalType: vitalType,
+        component: 'VALUE',
+        value: parsedValue,
+      );
+    }
+  }
+}
+
+@immutable
+final class OpdVitalComponentValue {
+  const OpdVitalComponentValue({
+    required this.vitalType,
+    required this.component,
+    required this.value,
+  });
+
+  final String vitalType;
+  final String component;
+  final num value;
+}
+
+@immutable
+final class OpdClinicalAlert {
+  const OpdClinicalAlert({
+    required this.id,
+    this.severity,
+    this.status,
+    this.message,
+    this.source,
+    this.vitalSignId,
+    this.createdAt,
+  });
+
+  final String id;
+  final String? severity;
+  final String? status;
+  final String? message;
+  final String? source;
+  final String? vitalSignId;
+  final DateTime? createdAt;
+}
+
+@immutable
+final class OpdClinicalAlertThreshold {
+  const OpdClinicalAlertThreshold({
+    this.id,
+    required this.vitalType,
+    required this.component,
+    required this.ageBand,
+    this.normalMin,
+    this.normalMax,
+    this.criticalLow,
+    this.criticalHigh,
+    this.isActive = true,
+    this.source,
+  });
+
+  final String? id;
+  final String vitalType;
+  final String component;
+  final String ageBand;
+  final num? normalMin;
+  final num? normalMax;
+  final num? criticalLow;
+  final num? criticalHigh;
+  final bool isActive;
+  final String? source;
 }
 
 @immutable
@@ -452,7 +638,9 @@ final class OpdFlowDetail {
     this.referrals = const <OpdRelatedRecord>[],
     this.followUps = const <OpdRelatedRecord>[],
     this.clinicalAlerts = const <OpdRelatedRecord>[],
+    this.clinicalAlertDetails = const <OpdClinicalAlert>[],
     this.vitalSigns = const <OpdRelatedRecord>[],
+    this.vitalMeasurements = const <OpdVitalSign>[],
     this.clinicalNotes = const <OpdRelatedRecord>[],
     this.diagnoses = const <OpdRelatedRecord>[],
     this.procedures = const <OpdRelatedRecord>[],
@@ -471,7 +659,9 @@ final class OpdFlowDetail {
   final List<OpdRelatedRecord> referrals;
   final List<OpdRelatedRecord> followUps;
   final List<OpdRelatedRecord> clinicalAlerts;
+  final List<OpdClinicalAlert> clinicalAlertDetails;
   final List<OpdRelatedRecord> vitalSigns;
+  final List<OpdVitalSign> vitalMeasurements;
   final List<OpdRelatedRecord> clinicalNotes;
   final List<OpdRelatedRecord> diagnoses;
   final List<OpdRelatedRecord> procedures;
@@ -574,9 +764,12 @@ final class OpdWorkspaceState {
     required this.appointmentQuery,
     required this.queueQuery,
     required this.flowQuery,
+    required this.triageQueueQuery,
     required this.appointments,
     required this.queueEntries,
     required this.flows,
+    required this.triageQueue,
+    this.clinicalAlertThresholds = const <OpdClinicalAlertThreshold>[],
     this.providerSchedules = const <OpdProviderSchedule>[],
     this.availabilitySlots = const <OpdAvailabilitySlot>[],
     this.selectedFlow,
@@ -584,6 +777,7 @@ final class OpdWorkspaceState {
     this.isRefreshingAppointments = false,
     this.isRefreshingQueue = false,
     this.isRefreshingFlows = false,
+    this.isRefreshingTriageQueue = false,
     this.isRefreshingDetail = false,
     this.isSaving = false,
   });
@@ -593,6 +787,7 @@ final class OpdWorkspaceState {
       appointmentQuery: OpdAppointmentQuery(),
       queueQuery: OpdQueueQuery(),
       flowQuery: OpdFlowQuery(),
+      triageQueueQuery: OpdTriageQueueQuery(),
       appointments: AppPage<OpdAppointment>(
         items: <OpdAppointment>[],
         request: AppPageRequest(pageSize: 8),
@@ -605,15 +800,22 @@ final class OpdWorkspaceState {
         items: <OpdFlowSummary>[],
         request: AppPageRequest(pageSize: 12),
       ),
+      triageQueue: AppPage<OpdFlowSummary>(
+        items: <OpdFlowSummary>[],
+        request: AppPageRequest(pageSize: 12),
+      ),
     );
   }
 
   final OpdAppointmentQuery appointmentQuery;
   final OpdQueueQuery queueQuery;
   final OpdFlowQuery flowQuery;
+  final OpdTriageQueueQuery triageQueueQuery;
   final AppPage<OpdAppointment> appointments;
   final AppPage<OpdQueueEntry> queueEntries;
   final AppPage<OpdFlowSummary> flows;
+  final AppPage<OpdFlowSummary> triageQueue;
+  final List<OpdClinicalAlertThreshold> clinicalAlertThresholds;
   final List<OpdProviderSchedule> providerSchedules;
   final List<OpdAvailabilitySlot> availabilitySlots;
   final OpdFlowDetail? selectedFlow;
@@ -621,20 +823,32 @@ final class OpdWorkspaceState {
   final bool isRefreshingAppointments;
   final bool isRefreshingQueue;
   final bool isRefreshingFlows;
+  final bool isRefreshingTriageQueue;
   final bool isRefreshingDetail;
   final bool isSaving;
 
   int get arrivalCount => appointments.items
-      .where((OpdAppointment item) => !_isTerminalStatus(item.status))
+      .where((OpdAppointment item) => !isOpdTerminalStatus(item.status))
       .length;
   int get queueCount => queueEntries.items
-      .where((OpdQueueEntry item) => !_isTerminalStatus(item.status))
+      .where((OpdQueueEntry item) => !isOpdTerminalStatus(item.status))
       .length;
   int get activeFlowCount {
     return flows.items
         .where(
           (OpdFlowSummary flow) =>
-              !flow.isTerminal && !_isTerminalStatus(flow.status ?? flow.stage),
+              !flow.isTerminal &&
+              !isOpdTerminalStatus(flow.status ?? flow.stage),
+        )
+        .length;
+  }
+
+  int get triageQueueCount {
+    return triageQueue.items
+        .where(
+          (OpdFlowSummary flow) =>
+              !flow.isTerminal &&
+              !isOpdTerminalStatus(flow.status ?? flow.stage),
         )
         .length;
   }
@@ -649,9 +863,12 @@ final class OpdWorkspaceState {
     OpdAppointmentQuery? appointmentQuery,
     OpdQueueQuery? queueQuery,
     OpdFlowQuery? flowQuery,
+    OpdTriageQueueQuery? triageQueueQuery,
     AppPage<OpdAppointment>? appointments,
     AppPage<OpdQueueEntry>? queueEntries,
     AppPage<OpdFlowSummary>? flows,
+    AppPage<OpdFlowSummary>? triageQueue,
+    List<OpdClinicalAlertThreshold>? clinicalAlertThresholds,
     List<OpdProviderSchedule>? providerSchedules,
     List<OpdAvailabilitySlot>? availabilitySlots,
     OpdFlowDetail? selectedFlow,
@@ -659,6 +876,7 @@ final class OpdWorkspaceState {
     bool? isRefreshingAppointments,
     bool? isRefreshingQueue,
     bool? isRefreshingFlows,
+    bool? isRefreshingTriageQueue,
     bool? isRefreshingDetail,
     bool? isSaving,
     bool clearSelectedFlow = false,
@@ -668,9 +886,13 @@ final class OpdWorkspaceState {
       appointmentQuery: appointmentQuery ?? this.appointmentQuery,
       queueQuery: queueQuery ?? this.queueQuery,
       flowQuery: flowQuery ?? this.flowQuery,
+      triageQueueQuery: triageQueueQuery ?? this.triageQueueQuery,
       appointments: appointments ?? this.appointments,
       queueEntries: queueEntries ?? this.queueEntries,
       flows: flows ?? this.flows,
+      triageQueue: triageQueue ?? this.triageQueue,
+      clinicalAlertThresholds:
+          clinicalAlertThresholds ?? this.clinicalAlertThresholds,
       providerSchedules: providerSchedules ?? this.providerSchedules,
       availabilitySlots: availabilitySlots ?? this.availabilitySlots,
       selectedFlow: clearSelectedFlow
@@ -681,6 +903,8 @@ final class OpdWorkspaceState {
           isRefreshingAppointments ?? this.isRefreshingAppointments,
       isRefreshingQueue: isRefreshingQueue ?? this.isRefreshingQueue,
       isRefreshingFlows: isRefreshingFlows ?? this.isRefreshingFlows,
+      isRefreshingTriageQueue:
+          isRefreshingTriageQueue ?? this.isRefreshingTriageQueue,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
       isSaving: isSaving ?? this.isSaving,
     );
@@ -698,7 +922,7 @@ String? _firstNonEmpty(Iterable<String?> values) {
   return null;
 }
 
-bool _isTerminalStatus(String? status) {
+bool isOpdTerminalStatus(String? status) {
   return switch ((status ?? '').toUpperCase()) {
     'COMPLETED' ||
     'CANCELLED' ||

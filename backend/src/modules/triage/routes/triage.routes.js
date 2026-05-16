@@ -11,34 +11,30 @@ const triageController = require('@controllers/triage/triage.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
-const { ROLES } = require('@config/roles');
 const {
   triageIdParamsSchema,
   listTriageQueueQuerySchema,
   recordVitalsSchema,
   assignProviderSchema,
   routeTriageSchema,
-  correctStageSchema,
+  correctStageSchema
 } = require('@validations/triage/triage.schema');
 
 const TRIAGE_READ_PERMISSIONS = [
   PERMISSIONS.PATIENT_READ,
   PERMISSIONS.CLINICAL_READ,
   PERMISSIONS.OPERATIONS_READ,
-  PERMISSIONS.EMERGENCY_READ,
+  PERMISSIONS.EMERGENCY_READ
 ];
 
-const TRIAGE_ACTION_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.RECEPTIONIST,
-  ROLES.NURSE,
-  ROLES.DOCTOR,
-  ROLES.OPERATIONS,
-  ROLES.LAB_TECH,
-  ROLES.THEATRE_MANAGER,
+const TRIAGE_ACTION_PERMISSIONS = [
+  PERMISSIONS.PATIENT_WRITE,
+  PERMISSIONS.CLINICAL_WRITE,
+  PERMISSIONS.OPERATIONS_WRITE,
+  PERMISSIONS.EMERGENCY_WRITE
 ];
+
+const TRIAGE_CLINICAL_ACTION_PERMISSIONS = [PERMISSIONS.CLINICAL_WRITE, PERMISSIONS.EMERGENCY_WRITE];
 
 router.get(
   '/',
@@ -60,7 +56,7 @@ router.post(
   '/:id/record-vitals',
   validateRequest({ params: triageIdParamsSchema, body: recordVitalsSchema }),
   authenticate(),
-  authorize(TRIAGE_ACTION_ROLES, 'role'),
+  authorize(TRIAGE_CLINICAL_ACTION_PERMISSIONS, 'permission'),
   triageController.recordVitals
 );
 
@@ -68,7 +64,7 @@ router.post(
   '/:id/assign-provider',
   validateRequest({ params: triageIdParamsSchema, body: assignProviderSchema }),
   authenticate(),
-  authorize(TRIAGE_ACTION_ROLES, 'role'),
+  authorize(TRIAGE_ACTION_PERMISSIONS, 'permission'),
   triageController.assignProvider
 );
 
@@ -76,7 +72,7 @@ router.post(
   '/:id/route',
   validateRequest({ params: triageIdParamsSchema, body: routeTriageSchema }),
   authenticate(),
-  authorize(TRIAGE_ACTION_ROLES, 'role'),
+  authorize(TRIAGE_CLINICAL_ACTION_PERMISSIONS, 'permission'),
   triageController.routeFromTriage
 );
 
@@ -84,7 +80,7 @@ router.post(
   '/:id/correct-stage',
   validateRequest({ params: triageIdParamsSchema, body: correctStageSchema }),
   authenticate(),
-  authorize(TRIAGE_ACTION_ROLES, 'role'),
+  authorize(TRIAGE_CLINICAL_ACTION_PERMISSIONS, 'permission'),
   triageController.correctStage
 );
 

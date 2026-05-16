@@ -39,6 +39,7 @@ class OpdWorkspacePage extends ConsumerWidget {
       AppPermissions.emergencyRead,
     ],
     activeModules: <String>['opd-flow'],
+    requiresTenantContext: true,
   );
 
   @override
@@ -92,6 +93,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       AppPermissions.emergencyWrite,
     ],
     activeModules: <String>['opd-flow'],
+    requiresTenantContext: true,
   );
 
   final ValueNotifier<_OpdTableFilter> _filterNotifier =
@@ -156,7 +158,8 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
           isLoading:
               state.isRefreshingAppointments ||
               state.isRefreshingQueue ||
-              state.isRefreshingFlows,
+              state.isRefreshingFlows ||
+              state.isRefreshingTriageQueue,
           onPressed: () async {
             final AppFailure? failure = await controller.refresh();
             if (context.mounted) {
@@ -202,6 +205,19 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
               emptyTitle: l10n.opdNoQueueTitle,
               emptyBody: l10n.opdNoQueueBody,
             );
+          },
+        ),
+        AppWorkspaceSummaryCard(
+          label: l10n.opdWorkflowTriageTitle,
+          value: AppFormatters.compactNumber(
+            state.triageQueueCount,
+            Localizations.localeOf(context),
+          ),
+          icon: Icons.monitor_heart_outlined,
+          tone: AppWorkspaceStatusTone.warning,
+          compact: true,
+          onPressed: () {
+            _setFilter(const _OpdTableFilter(category: _opdCategoryTriage));
           },
         ),
         AppWorkspaceSummaryCard(
@@ -925,7 +941,8 @@ class _OpdWorkspaceBody extends StatelessWidget {
       isLoading:
           state.isRefreshingAppointments ||
           state.isRefreshingQueue ||
-          state.isRefreshingFlows,
+          state.isRefreshingFlows ||
+          state.isRefreshingTriageQueue,
     );
   }
 }
@@ -954,6 +971,10 @@ List<AppSelectOption<String>> _categoryFilterOptions(BuildContext context) {
     AppSelectOption<String>(
       value: _opdCategoryQueue,
       label: l10n.opdQueueSummaryLabel,
+    ),
+    AppSelectOption<String>(
+      value: _opdCategoryTriage,
+      label: l10n.opdWorkflowTriageTitle,
     ),
     AppSelectOption<String>(
       value: _opdCategoryActiveFlow,
@@ -1106,6 +1127,30 @@ final class _OpdTableItem {
 List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
   final Set<String> usedPatientKeys = <String>{};
   final List<_OpdTableItem> items = <_OpdTableItem>[];
+
+  for (final OpdFlowSummary flow in state.triageQueue.items) {
+    if (flow.isTerminal || _isCompletedStatus(flow.status ?? flow.stage)) {
+      continue;
+    }
+    final _OpdTableItem item = _OpdTableItem(
+      id: flow.id,
+      title: flow.displayTitle,
+      category: _opdCategoryTriage,
+      status: flow.triageLevel ?? flow.stage,
+      subtitle: _joinDisplay(<String?>[
+        flow.patientIdentifier,
+        flow.patientPhone,
+        flow.chiefComplaint,
+      ]),
+      provider: flow.providerDisplayName,
+      nextStep: flow.stage,
+      time: flow.startedAt,
+      urgencyRank: _flowUrgencyRank(flow),
+      flow: flow,
+    );
+    usedPatientKeys.add(item.categoryKey);
+    items.add(item);
+  }
 
   for (final OpdFlowSummary flow in state.flows.items) {
     if (flow.isTerminal || _isCompletedStatus(flow.status ?? flow.stage)) {
@@ -1794,6 +1839,7 @@ Color _opdTableRowColor(BuildContext context, _OpdTableItem item) {
   final Color color = switch (item.category) {
     _opdCategoryArrival => statusColors.infoContainer,
     _opdCategoryQueue => statusColors.warningContainer,
+    _opdCategoryTriage => statusColors.errorContainer,
     _opdCategoryActiveFlow => statusColors.successContainer,
     _ => theme.colorScheme.surfaceContainerHighest,
   };
@@ -1811,11 +1857,140 @@ Color _stageTextColor(ThemeData theme, String? value) {
   };
 }
 
+enum _OpdVitalIndicatorState { normal, abnormal, critical }
+
+int _abnormalVitalCount(
+  OpdFlowDetail? detail,
+  List<OpdClinicalAlertThreshold> thresholds,
+) {
+  if (detail == null) {
+    return 0;
+  }
+  return detail.vitalMeasurements
+      .where(
+        (OpdVitalSign vital) =>
+            _vitalIndicatorState(
+              vital,
+              thresholds,
+              detail.clinicalAlertDetails,
+            ) !=
+            _OpdVitalIndicatorState.normal,
+      )
+      .length;
+}
+
+_OpdVitalIndicatorState _vitalIndicatorState(
+  OpdVitalSign vital,
+  List<OpdClinicalAlertThreshold> thresholds,
+  List<OpdClinicalAlert> alerts,
+) {
+  final bool hasCriticalAlert = alerts.any(
+    (OpdClinicalAlert alert) =>
+        alert.vitalSignId == vital.id &&
+        (alert.status ?? '').toUpperCase() != 'RESOLVED' &&
+        (alert.severity ?? '').toUpperCase() == 'CRITICAL',
+  );
+  if (hasCriticalAlert) {
+    return _OpdVitalIndicatorState.critical;
+  }
+
+  var state = _OpdVitalIndicatorState.normal;
+  for (final OpdVitalComponentValue component in vital.componentValues) {
+    final OpdClinicalAlertThreshold? threshold = _matchingThreshold(
+      component,
+      thresholds,
+    );
+    if (threshold == null) {
+      continue;
+    }
+
+    final _OpdVitalIndicatorState next = _stateForThreshold(
+      component.value,
+      threshold,
+    );
+    if (next == _OpdVitalIndicatorState.critical) {
+      return next;
+    }
+    if (next == _OpdVitalIndicatorState.abnormal) {
+      state = next;
+    }
+  }
+
+  if (state == _OpdVitalIndicatorState.normal) {
+    final bool hasOpenAlert = alerts.any(
+      (OpdClinicalAlert alert) =>
+          alert.vitalSignId == vital.id &&
+          (alert.status ?? '').toUpperCase() != 'RESOLVED',
+    );
+    if (hasOpenAlert) {
+      return _OpdVitalIndicatorState.abnormal;
+    }
+  }
+
+  return state;
+}
+
+OpdClinicalAlertThreshold? _matchingThreshold(
+  OpdVitalComponentValue component,
+  List<OpdClinicalAlertThreshold> thresholds,
+) {
+  for (final String ageBand in const <String>['ADULT', '']) {
+    for (final OpdClinicalAlertThreshold threshold in thresholds) {
+      if (!threshold.isActive) {
+        continue;
+      }
+      if (threshold.vitalType != component.vitalType ||
+          threshold.component != component.component) {
+        continue;
+      }
+      if (ageBand.isNotEmpty && threshold.ageBand != ageBand) {
+        continue;
+      }
+      return threshold;
+    }
+  }
+  return null;
+}
+
+_OpdVitalIndicatorState _stateForThreshold(
+  num value,
+  OpdClinicalAlertThreshold threshold,
+) {
+  final num? criticalLow = threshold.criticalLow;
+  final num? criticalHigh = threshold.criticalHigh;
+  final num? normalMin = threshold.normalMin;
+  final num? normalMax = threshold.normalMax;
+
+  if (criticalLow != null && value < criticalLow) {
+    return _OpdVitalIndicatorState.critical;
+  }
+  if (criticalHigh != null && value > criticalHigh) {
+    return _OpdVitalIndicatorState.critical;
+  }
+  if (normalMin != null && value < normalMin) {
+    return _OpdVitalIndicatorState.abnormal;
+  }
+  if (normalMax != null && value > normalMax) {
+    return _OpdVitalIndicatorState.abnormal;
+  }
+  return _OpdVitalIndicatorState.normal;
+}
+
+AppWorkspaceStatusTone _alertTone(String? severity) {
+  return switch ((severity ?? '').toUpperCase()) {
+    'CRITICAL' => AppWorkspaceStatusTone.error,
+    'HIGH' => AppWorkspaceStatusTone.warning,
+    'MEDIUM' => AppWorkspaceStatusTone.info,
+    _ => AppWorkspaceStatusTone.neutral,
+  };
+}
+
 String _categoryLabel(BuildContext context, String category) {
   final l10n = context.l10n;
   return switch (category) {
     _opdCategoryArrival => l10n.opdArrivalsSummaryLabel,
     _opdCategoryQueue => l10n.opdQueueSummaryLabel,
+    _opdCategoryTriage => l10n.opdWorkflowTriageTitle,
     _opdCategoryActiveFlow => l10n.opdActiveFlowSummaryLabel,
     _ => _apiLabel(category),
   };
@@ -1825,6 +2000,7 @@ AppWorkspaceStatusTone _categoryTone(String category) {
   return switch (category) {
     _opdCategoryArrival => AppWorkspaceStatusTone.info,
     _opdCategoryQueue => AppWorkspaceStatusTone.warning,
+    _opdCategoryTriage => AppWorkspaceStatusTone.warning,
     _opdCategoryActiveFlow => AppWorkspaceStatusTone.success,
     _ => AppWorkspaceStatusTone.neutral,
   };
@@ -3127,6 +3303,7 @@ const AccessRequirement _opdReceptionRequirement = AccessRequirement(
     AppPermissions.emergencyWrite,
   ],
   activeModules: <String>['opd-flow'],
+  requiresTenantContext: true,
 );
 
 const AccessRequirement _opdTriageRequirement = AccessRequirement(
@@ -3135,11 +3312,13 @@ const AccessRequirement _opdTriageRequirement = AccessRequirement(
     AppPermissions.emergencyWrite,
   ],
   activeModules: <String>['opd-flow'],
+  requiresTenantContext: true,
 );
 
 const AccessRequirement _opdDoctorRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
   activeModules: <String>['opd-flow'],
+  requiresTenantContext: true,
 );
 
 const AccessRequirement _opdBillingRequirement = AccessRequirement(
@@ -3148,6 +3327,7 @@ const AccessRequirement _opdBillingRequirement = AccessRequirement(
     AppPermissions.patientWrite,
   ],
   activeModules: <String>['opd-flow'],
+  requiresTenantContext: true,
 );
 
 class FlowActionsDialog extends ConsumerStatefulWidget {
@@ -3179,16 +3359,15 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         .watch(opdWorkspaceControllerProvider)
         .asData
         ?.value;
-    final OpdFlowDetail? detail = workspaceResult?.when(
-      success: (OpdWorkspaceState state) {
-        final OpdFlowDetail? selected = state.selectedFlow;
-        if (selected == null || !_isSameFlow(selected.summary, widget.flow)) {
-          return null;
-        }
-        return selected;
-      },
+    final OpdWorkspaceState? workspaceState = workspaceResult?.when(
+      success: (OpdWorkspaceState state) => state,
       failure: (_) => null,
     );
+    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+    final OpdFlowDetail? detail =
+        selected == null || !_isSameFlow(selected.summary, widget.flow)
+        ? null
+        : selected;
     final OpdFlowSummary flow = detail?.summary ?? widget.flow;
 
     return AppDialog(
@@ -3209,7 +3388,18 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             ]),
           ),
           _OpdWorkflowStatusSummary(flow: flow, detail: detail),
-          _OpdWorkflowRecordSummary(detail: detail),
+          _OpdWorkflowRecordSummary(
+            detail: detail,
+            thresholds:
+                workspaceState?.clinicalAlertThresholds ??
+                const <OpdClinicalAlertThreshold>[],
+          ),
+          _OpdVitalIndicatorsPanel(
+            detail: detail,
+            thresholds:
+                workspaceState?.clinicalAlertThresholds ??
+                const <OpdClinicalAlertThreshold>[],
+          ),
           ..._actionSections(context, flow, detail),
         ],
       ),
@@ -3281,6 +3471,13 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           label: l10n.opdAssignDoctorAction,
           icon: Icons.assignment_ind_outlined,
           onPressed: () => _openNested(context, AssignDoctorDialog(flow: flow)),
+        ),
+      if (!terminal && stage == 'WAITING_DOCTOR_ASSIGNMENT')
+        _OpdWorkflowAction(
+          requirement: _opdTriageRequirement,
+          label: l10n.opdRouteDecisionLabel,
+          icon: Icons.alt_route_outlined,
+          onPressed: () => _openNested(context, DispositionDialog(flow: flow)),
         ),
     ]);
 
@@ -3430,6 +3627,19 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
         label: l10n.opdProviderColumnLabel,
         value: flow.providerDisplayName ?? l10n.profileUnknownValue,
       ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdTriageLevelLabel,
+        value: _apiLabel(flow.triageLevel ?? ''),
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdRouteDecisionLabel,
+        value: _apiLabel(flow.lastRouteTo ?? ''),
+      ),
+      if (_isNonEmpty(flow.chiefComplaint))
+        _OpdWorkflowInfoPill(
+          label: l10n.opdChiefComplaintLabel,
+          value: flow.chiefComplaint!,
+        ),
     ];
 
     return _OpdWorkflowPanel(children: children);
@@ -3437,9 +3647,13 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
 }
 
 class _OpdWorkflowRecordSummary extends StatelessWidget {
-  const _OpdWorkflowRecordSummary({required this.detail});
+  const _OpdWorkflowRecordSummary({
+    required this.detail,
+    required this.thresholds,
+  });
 
   final OpdFlowDetail? detail;
+  final List<OpdClinicalAlertThreshold> thresholds;
 
   @override
   Widget build(BuildContext context) {
@@ -3449,6 +3663,14 @@ class _OpdWorkflowRecordSummary extends StatelessWidget {
       _OpdWorkflowInfoPill(
         label: l10n.opdVitalsSummaryLabel,
         value: '${value?.vitalSigns.length ?? 0}',
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdAbnormalVitalsSummaryLabel,
+        value: '${_abnormalVitalCount(value, thresholds)}',
+      ),
+      _OpdWorkflowInfoPill(
+        label: l10n.opdClinicalAlertsSummaryLabel,
+        value: '${value?.clinicalAlerts.length ?? 0}',
       ),
       _OpdWorkflowInfoPill(
         label: l10n.opdServicesSummaryLabel,
@@ -3502,6 +3724,134 @@ class _OpdWorkflowPanel extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _OpdVitalIndicatorsPanel extends StatelessWidget {
+  const _OpdVitalIndicatorsPanel({
+    required this.detail,
+    required this.thresholds,
+  });
+
+  final OpdFlowDetail? detail;
+  final List<OpdClinicalAlertThreshold> thresholds;
+
+  @override
+  Widget build(BuildContext context) {
+    final OpdFlowDetail? value = detail;
+    if (value == null ||
+        (value.vitalMeasurements.isEmpty &&
+            value.clinicalAlertDetails.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    final ThemeData theme = Theme.of(context);
+    final List<OpdVitalSign> vitals = value.vitalMeasurements;
+    final List<OpdClinicalAlert> alerts = value.clinicalAlertDetails;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(
+                  context.l10n.opdVitalsSummaryLabel,
+                  style: theme.textTheme.titleSmall,
+                ),
+                _StatusBadge(
+                  value: _abnormalVitalCount(value, thresholds) > 0
+                      ? 'ABNORMAL'
+                      : 'NORMAL',
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            for (final OpdVitalSign vital in vitals)
+              _OpdVitalIndicatorRow(
+                vital: vital,
+                state: _vitalIndicatorState(vital, thresholds, alerts),
+              ),
+            if (alerts.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Text(
+                context.l10n.opdClinicalAlertsSummaryLabel,
+                style: theme.textTheme.labelMedium,
+              ),
+              SizedBox(height: theme.spacing.xs),
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (final OpdClinicalAlert alert in alerts)
+                    AppWorkspaceStatusBadge(
+                      status: AppWorkspaceStatus(
+                        label: _joinDisplay(<String?>[
+                          _apiLabel(alert.severity ?? ''),
+                          alert.message,
+                        ]),
+                        tone: _alertTone(alert.severity),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OpdVitalIndicatorRow extends StatelessWidget {
+  const _OpdVitalIndicatorRow({required this.vital, required this.state});
+
+  final OpdVitalSign vital;
+  final _OpdVitalIndicatorState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              _joinDisplay(<String?>[
+                _apiLabel(vital.vitalType),
+                vital.displayValue,
+              ]),
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          AppWorkspaceStatusBadge(
+            status: AppWorkspaceStatus(
+              label: _apiLabel(state.name.toUpperCase()),
+              tone: switch (state) {
+                _OpdVitalIndicatorState.critical =>
+                  AppWorkspaceStatusTone.error,
+                _OpdVitalIndicatorState.abnormal =>
+                  AppWorkspaceStatusTone.warning,
+                _OpdVitalIndicatorState.normal =>
+                  AppWorkspaceStatusTone.success,
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -3769,6 +4119,7 @@ class RecordVitalsDialog extends ConsumerStatefulWidget {
 }
 
 class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
+  late final TextEditingController _chiefComplaintController;
   late final TextEditingController _temperatureController;
   late final TextEditingController _systolicController;
   late final TextEditingController _diastolicController;
@@ -3778,12 +4129,16 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   late final TextEditingController _weightController;
   late final TextEditingController _notesController;
   String? _triageLevel;
+  bool _emergencyIndicator = false;
   bool _isSaving = false;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
+    _chiefComplaintController = TextEditingController(
+      text: widget.flow.chiefComplaint ?? '',
+    );
     _temperatureController = TextEditingController();
     _systolicController = TextEditingController();
     _diastolicController = TextEditingController();
@@ -3796,6 +4151,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
 
   @override
   void dispose() {
+    _chiefComplaintController.dispose();
     _temperatureController.dispose();
     _systolicController.dispose();
     _diastolicController.dispose();
@@ -3820,6 +4176,29 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           Text(
             l10n.opdVitalsAtLeastOneRequiredHelper,
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+          AppTextField(
+            controller: _chiefComplaintController,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdChiefComplaintLabel,
+            ),
+            enabled: !_isSaving,
+            maxLines: 2,
+          ),
+          AppSwitchField(
+            title: l10n.opdEmergencyIndicatorsLabel,
+            value: _emergencyIndicator,
+            enabled: !_isSaving,
+            secondary: const Icon(Icons.emergency_outlined),
+            onChanged: (bool value) {
+              setState(() {
+                _emergencyIndicator = value;
+                if (value && _triageLevel == null) {
+                  _triageLevel = 'LEVEL_1';
+                }
+              });
+            },
           ),
           AppSelectField<String>.searchable(
             value: _triageLevel,
@@ -3935,6 +4314,9 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
         .recordVitals(widget.flow, <String, Object?>{
           'vitals': vitals,
           'triage_level': _triageLevel,
+          'triage_priority': _triageLevel,
+          'chief_complaint': _chiefComplaintController.text.trim(),
+          'emergency': _emergencyIndicator,
           'triage_notes': _notesController.text.trim(),
         });
     if (!mounted) {
@@ -4368,6 +4750,10 @@ class PrintOpdSummaryDialog extends StatelessWidget {
       ]),
       '${l10n.opdStageLabel}: ${_apiLabel(flow.stage ?? '')}',
       '${l10n.opdNextStepColumnLabel}: ${_apiLabel(flow.nextStep ?? '')}',
+      '${l10n.opdTriageLevelLabel}: ${_apiLabel(flow.triageLevel ?? '')}',
+      '${l10n.opdRouteDecisionLabel}: ${_apiLabel(flow.lastRouteTo ?? '')}',
+      if (_isNonEmpty(flow.chiefComplaint))
+        '${l10n.opdChiefComplaintLabel}: ${flow.chiefComplaint}',
       '${l10n.opdPaymentStatusLabel}: ${value == null
           ? l10n.profileUnknownValue
           : value.consultationPaid
@@ -5008,7 +5394,7 @@ class DispositionDialog extends ConsumerStatefulWidget {
 
 class _DispositionDialogState extends ConsumerState<DispositionDialog> {
   late final TextEditingController _notesController;
-  String _decision = 'DISCHARGE';
+  String _decision = 'CONSULTATION';
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -5028,14 +5414,14 @@ class _DispositionDialogState extends ConsumerState<DispositionDialog> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AppDialog(
-      title: Text(l10n.opdDispositionAction),
-      icon: const Icon(Icons.task_alt_outlined),
+      title: Text(l10n.opdRouteDecisionLabel),
+      icon: const Icon(Icons.alt_route_outlined),
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
           AppSelectField<String>(
             value: _decision,
-            labelText: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
+            labelText: _opdRequiredFieldLabel(l10n, l10n.opdRouteDecisionLabel),
             enabled: !_isSaving,
             onChanged: (String? value) =>
                 setState(() => _decision = value ?? _decision),
@@ -5056,8 +5442,8 @@ class _DispositionDialogState extends ConsumerState<DispositionDialog> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
-          label: l10n.opdDispositionAction,
-          leadingIcon: Icons.task_alt_outlined,
+          label: l10n.opdRouteDecisionLabel,
+          leadingIcon: Icons.alt_route_outlined,
           isLoading: _isSaving,
           onPressed: _submit,
         ),
@@ -5251,7 +5637,10 @@ List<String> _splitTokens(String value) {
 AppWorkspaceStatusTone _stageTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
     'COMPLETED' || 'DISCHARGED' || 'ADMITTED' => AppWorkspaceStatusTone.success,
+    'NORMAL' => AppWorkspaceStatusTone.success,
     'CANCELLED' || 'NO_SHOW' => AppWorkspaceStatusTone.error,
+    'CRITICAL' => AppWorkspaceStatusTone.error,
+    'ABNORMAL' => AppWorkspaceStatusTone.warning,
     'WAITING_CONSULTATION_PAYMENT' ||
     'WAITING_VITALS' ||
     'WAITING_DOCTOR_ASSIGNMENT' => AppWorkspaceStatusTone.warning,
@@ -5274,6 +5663,7 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
 
 const String _opdCategoryArrival = 'ARRIVAL';
 const String _opdCategoryQueue = 'QUEUE';
+const String _opdCategoryTriage = 'TRIAGE';
 const String _opdCategoryActiveFlow = 'ACTIVE_FLOW';
 const String _opdFilterAll = 'ALL';
 
@@ -5331,9 +5721,17 @@ const List<String> _paymentMethods = <String>[
 ];
 
 const List<String> _dispositionOptions = <String>[
-  'DISCHARGE',
+  'CONSULTATION',
+  'EMERGENCY',
   'ADMIT',
-  'SEND_TO_PHARMACY',
+  'THEATRE',
+  'MINOR_PROCEDURE',
+  'LAB',
+  'RADIOLOGY',
+  'LAB_AND_RADIOLOGY',
+  'PHYSIOTHERAPY',
+  'OTHER_SERVICE',
+  'DISCHARGE',
 ];
 
 const List<String> _diagnosisTypes = <String>[

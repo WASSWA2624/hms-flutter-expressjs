@@ -73,10 +73,9 @@ const LEGACY_RESOURCE_VALUES = [
   'emergency-responses',
   'ambulances',
   'ambulance-dispatches',
-  'ambulance-trips',
+  'ambulance-trips'
 ];
-const UUID_LIKE_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_LIKE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PATIENT_FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
 const RESOURCE_FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
 
@@ -101,10 +100,7 @@ const scopeIdentifierSchema = z
   .trim()
   .min(2)
   .max(64)
-  .refine(
-    (value) => UUID_LIKE_REGEX.test(value) || RESOURCE_FRIENDLY_ID_REGEX.test(value),
-    'Invalid identifier format'
-  )
+  .refine((value) => UUID_LIKE_REGEX.test(value) || RESOURCE_FRIENDLY_ID_REGEX.test(value), 'Invalid identifier format')
   .transform((value) => (UUID_LIKE_REGEX.test(value) ? value.toLowerCase() : value.toUpperCase()));
 const providerIdentifierSchema = scopeIdentifierSchema;
 const appointmentIdentifierSchema = resourceFriendlyIdSchema;
@@ -185,7 +181,7 @@ const encounterIdParamsSchema = z.object({
 
 const resolveLegacyRouteParamsSchema = z.object({
   resource: z.enum(LEGACY_RESOURCE_VALUES),
-  id: scopeIdentifierSchema,
+  id: scopeIdentifierSchema
 });
 
 const payConsultationSchema = z.object({
@@ -199,10 +195,7 @@ const payConsultationSchema = z.object({
   notes: z.string().trim().max(10000).optional().nullable()
 });
 
-const decimalInputSchema = z.union([
-  z.coerce.number().positive(),
-  decimalStringSchema
-]);
+const decimalInputSchema = z.union([z.coerce.number().positive(), decimalStringSchema]);
 
 const recordVitalItemSchema = z
   .object({
@@ -217,8 +210,7 @@ const recordVitalItemSchema = z
   .superRefine((vital, ctx) => {
     if (vital.vital_type === 'BLOOD_PRESSURE') {
       const hasStructuredComponents = vital.systolic_value != null && vital.diastolic_value != null;
-      const hasLegacyValue =
-        typeof vital.value === 'string' && BLOOD_PRESSURE_VALUE_REGEX.test(vital.value.trim());
+      const hasLegacyValue = typeof vital.value === 'string' && BLOOD_PRESSURE_VALUE_REGEX.test(vital.value.trim());
 
       if (!hasStructuredComponents && !hasLegacyValue) {
         ctx.addIssue({
@@ -245,10 +237,11 @@ const recordVitalItemSchema = z
   });
 
 const recordVitalsSchema = z.object({
-  vitals: z
-    .array(recordVitalItemSchema)
-    .min(1),
+  vitals: z.array(recordVitalItemSchema).min(1),
   triage_level: z.enum(TRIAGE_LEVEL_VALUES).optional(),
+  triage_priority: z.enum(TRIAGE_LEVEL_VALUES).optional(),
+  chief_complaint: z.string().trim().max(65535).optional().nullable(),
+  emergency: z.boolean().optional(),
   triage_notes: z.string().trim().max(65535).optional().nullable()
 });
 
@@ -278,30 +271,32 @@ const doctorReviewSchema = z.object({
     .optional(),
   lab_requests: z
     .array(
-      z.object({
-        lab_test_id: resourceFriendlyIdSchema.optional().nullable(),
-        lab_panel_id: resourceFriendlyIdSchema.optional().nullable(),
-        status: z.enum(LAB_ORDER_STATUS_VALUES).optional()
-      }).superRefine((value, ctx) => {
-        const hasLabTest = Boolean(value?.lab_test_id);
-        const hasLabPanel = Boolean(value?.lab_panel_id);
+      z
+        .object({
+          lab_test_id: resourceFriendlyIdSchema.optional().nullable(),
+          lab_panel_id: resourceFriendlyIdSchema.optional().nullable(),
+          status: z.enum(LAB_ORDER_STATUS_VALUES).optional()
+        })
+        .superRefine((value, ctx) => {
+          const hasLabTest = Boolean(value?.lab_test_id);
+          const hasLabPanel = Boolean(value?.lab_panel_id);
 
-        if (!hasLabTest && !hasLabPanel) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Either lab_test_id or lab_panel_id is required.',
-            path: ['lab_test_id']
-          });
-        }
+          if (!hasLabTest && !hasLabPanel) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'Either lab_test_id or lab_panel_id is required.',
+              path: ['lab_test_id']
+            });
+          }
 
-        if (hasLabTest && hasLabPanel) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Select either a lab test or a lab panel.',
-            path: ['lab_panel_id']
-          });
-        }
-      })
+          if (hasLabTest && hasLabPanel) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'Select either a lab test or a lab panel.',
+              path: ['lab_panel_id']
+            });
+          }
+        })
     )
     .optional(),
   radiology_requests: z

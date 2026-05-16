@@ -12,8 +12,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const opdFlowService = require('@services/opd-flow/opd-flow.service');
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const OPD_FLOW_STAGE_JSON_PATH = '$.opd_flow.stage';
 const MAX_SEARCH_TOKENS = 6;
 
@@ -28,13 +27,10 @@ const STAGES = Object.freeze({
   PHARMACY_REQUESTED: 'PHARMACY_REQUESTED',
   WAITING_DISPOSITION: 'WAITING_DISPOSITION',
   ADMITTED: 'ADMITTED',
-  DISCHARGED: 'DISCHARGED',
+  DISCHARGED: 'DISCHARGED'
 });
 
-const TRIAGE_QUEUE_STAGES = Object.freeze([
-  STAGES.WAITING_VITALS,
-  STAGES.WAITING_DOCTOR_ASSIGNMENT,
-]);
+const TRIAGE_QUEUE_STAGES = Object.freeze([STAGES.WAITING_VITALS, STAGES.WAITING_DOCTOR_ASSIGNMENT]);
 
 const WORKFLOW_STAGE_SET = new Set(Object.values(STAGES));
 const TERMINAL_STAGES = new Set([STAGES.ADMITTED, STAGES.DISCHARGED]);
@@ -50,7 +46,7 @@ const ROUTE_DESTINATIONS = Object.freeze({
   EMERGENCY: 'EMERGENCY',
   THEATRE: 'THEATRE',
   MINOR_PROCEDURE: 'MINOR_PROCEDURE',
-  DISCHARGE: 'DISCHARGE',
+  DISCHARGE: 'DISCHARGE'
 });
 
 const ROUTE_DESTINATION_SET = new Set(Object.values(ROUTE_DESTINATIONS));
@@ -66,7 +62,7 @@ const NEXT_STEP_BY_STAGE = Object.freeze({
   [STAGES.PHARMACY_REQUESTED]: 'Pharmacy request has been placed.',
   [STAGES.WAITING_DISPOSITION]: 'Patient has been routed from triage.',
   [STAGES.ADMITTED]: 'Patient has been admitted.',
-  [STAGES.DISCHARGED]: 'Patient has been discharged.',
+  [STAGES.DISCHARGED]: 'Patient has been discharged.'
 });
 
 const TRIAGE_ALIAS_MAP = Object.freeze({
@@ -78,7 +74,7 @@ const TRIAGE_ALIAS_MAP = Object.freeze({
   LEVEL_2: 'LEVEL_2',
   LEVEL_3: 'LEVEL_3',
   LEVEL_4: 'LEVEL_4',
-  LEVEL_5: 'LEVEL_5',
+  LEVEL_5: 'LEVEL_5'
 });
 
 const TRIAGE_SEVERITY_MAP = Object.freeze({
@@ -86,13 +82,13 @@ const TRIAGE_SEVERITY_MAP = Object.freeze({
   LEVEL_2: 'HIGH',
   LEVEL_3: 'MEDIUM',
   LEVEL_4: 'LOW',
-  LEVEL_5: 'LOW',
+  LEVEL_5: 'LOW'
 });
 
 const PROVIDER_PROFILE_SELECT = {
   first_name: true,
   middle_name: true,
-  last_name: true,
+  last_name: true
 };
 
 const PROVIDER_STAFF_PROFILE_SELECT = {
@@ -101,7 +97,7 @@ const PROVIDER_STAFF_PROFILE_SELECT = {
   staff_number: true,
   position: true,
   practitioner_type: true,
-  deleted_at: true,
+  deleted_at: true
 };
 
 const PROVIDER_SELECT = {
@@ -117,15 +113,15 @@ const PROVIDER_SELECT = {
   deleted_at: true,
   version: true,
   profile: {
-    select: PROVIDER_PROFILE_SELECT,
+    select: PROVIDER_PROFILE_SELECT
   },
   staff_profile: {
-    select: PROVIDER_STAFF_PROFILE_SELECT,
-  },
+    select: PROVIDER_STAFF_PROFILE_SELECT
+  }
 };
 
 const PROVIDER_INCLUDE = {
-  select: PROVIDER_SELECT,
+  select: PROVIDER_SELECT
 };
 
 const normalizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -137,16 +133,29 @@ const normalizeNotes = (value) => {
   const normalized = typeof value === 'string' ? value.trim() : '';
   return normalized || null;
 };
+const isElevatedContext = (context = {}) => Array.isArray(context.roles) && context.roles.includes('SUPER_ADMIN');
+
+const assertEncounterScope = (encounter, context = {}) => {
+  if (!encounter || isElevatedContext(context)) return;
+
+  if (context.tenant_id && encounter.tenant_id !== context.tenant_id) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403);
+  }
+
+  if (context.facility_id && encounter.facility_id && encounter.facility_id !== context.facility_id) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403);
+  }
+};
 
 const buildJsonStageFilter = (stage) => ({
   path: OPD_FLOW_STAGE_JSON_PATH,
-  equals: stage,
+  equals: stage
 });
 
 const buildStageOrFilter = (stages = TRIAGE_QUEUE_STAGES) => ({
   OR: stages.map((stage) => ({
-    extension_json: buildJsonStageFilter(stage),
-  })),
+    extension_json: buildJsonStageFilter(stage)
+  }))
 });
 
 const normalizeSearchTokens = (search) =>
@@ -165,8 +174,8 @@ const emptyPage = (page, limit) => ({
     total: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: page > 1,
-  },
+    hasPreviousPage: page > 1
+  }
 });
 
 const getNextStep = (stage) => NEXT_STEP_BY_STAGE[stage] || null;
@@ -185,7 +194,7 @@ const appendTimelineEvent = (flow, event, context = {}, details = {}, at = new D
     event,
     at: at.toISOString(),
     by_user_id: context.user_id || null,
-    details,
+    details
   });
 };
 
@@ -213,31 +222,28 @@ const resolveEntityByIdentifier = async (tx, modelName, identifier, where = {}, 
     where: {
       deleted_at: null,
       ...where,
-      OR: isUuid(normalized)
-        ? [{ id: normalized }]
-        : [{ human_friendly_id: normalized.toUpperCase() }],
+      OR: isUuid(normalized) ? [{ id: normalized }] : [{ human_friendly_id: normalized.toUpperCase() }]
     },
-    ...(select ? { select } : {}),
+    ...(select ? { select } : {})
   });
 };
 
-const resolveTenantByIdentifier = (tx, identifier) =>
-  resolveEntityByIdentifier(tx, 'tenant', identifier);
+const resolveTenantByIdentifier = (tx, identifier) => resolveEntityByIdentifier(tx, 'tenant', identifier);
 
 const resolveFacilityByIdentifier = (tx, identifier, tenantId = null) =>
   resolveEntityByIdentifier(tx, 'facility', identifier, {
-    ...(tenantId ? { tenant_id: tenantId } : {}),
+    ...(tenantId ? { tenant_id: tenantId } : {})
   });
 
 const resolvePatientByIdentifier = (tx, identifier, tenantId = null) =>
   resolveEntityByIdentifier(tx, 'patient', identifier, {
-    ...(tenantId ? { tenant_id: tenantId } : {}),
+    ...(tenantId ? { tenant_id: tenantId } : {})
   });
 
 const resolveDepartmentByIdentifier = (tx, identifier, tenantId = null, facilityId = null) =>
   resolveEntityByIdentifier(tx, 'department', identifier, {
     ...(tenantId ? { tenant_id: tenantId } : {}),
-    ...(facilityId ? { facility_id: facilityId } : {}),
+    ...(facilityId ? { facility_id: facilityId } : {})
   });
 
 const resolveEncounterByIdentifier = async (tx, identifier, include = undefined) => {
@@ -250,9 +256,9 @@ const resolveEncounterByIdentifier = async (tx, identifier, include = undefined)
       encounter_type: { in: ['OPD', 'EMERGENCY'] },
       OR: isUuid(normalized)
         ? [{ id: normalized }]
-        : [{ id: normalized }, { human_friendly_id: normalized.toUpperCase() }],
+        : [{ id: normalized }, { human_friendly_id: normalized.toUpperCase() }]
     },
-    ...(include ? { include } : {}),
+    ...(include ? { include } : {})
   });
 };
 
@@ -263,13 +269,13 @@ const resolveProviderLookupWhere = (identifier, tenantId = null, facilityId = nu
   const where = {
     deleted_at: null,
     ...(tenantId ? { tenant_id: tenantId } : {}),
-    ...(facilityId ? { facility_id: facilityId } : {}),
+    ...(facilityId ? { facility_id: facilityId } : {})
   };
 
   if (isUuid(normalized)) {
     return {
       ...where,
-      id: normalized,
+      id: normalized
     };
   }
 
@@ -286,8 +292,8 @@ const resolveProviderLookupWhere = (identifier, tenantId = null, facilityId = nu
       { staff_profile: { human_friendly_id: { contains: upper } } },
       { staff_profile: { staff_number: { contains: normalized } } },
       { staff_profile: { practitioner_type: { contains: upper } } },
-      { staff_profile: { position: { contains: normalized } } },
-    ],
+      { staff_profile: { position: { contains: normalized } } }
+    ]
   };
 };
 
@@ -297,14 +303,15 @@ const resolveProviderByIdentifier = async (tx, identifier, tenantId = null, faci
 
   const facilityScopedWhere = resolveProviderLookupWhere(identifier, tenantId, facilityId);
   const facilityProvider = facilityScopedWhere
-    ? await tx.user.findFirst({ where: facilityScopedWhere, select: PROVIDER_SELECT })
+    ? await tx.user.findFirst({
+        where: facilityScopedWhere,
+        select: PROVIDER_SELECT
+      })
     : null;
   if (facilityProvider || !facilityId) return facilityProvider;
 
   const tenantScopedWhere = resolveProviderLookupWhere(identifier, tenantId, null);
-  return tenantScopedWhere
-    ? tx.user.findFirst({ where: tenantScopedWhere, select: PROVIDER_SELECT })
-    : null;
+  return tenantScopedWhere ? tx.user.findFirst({ where: tenantScopedWhere, select: PROVIDER_SELECT }) : null;
 };
 
 const buildSearchTokenClause = (token) => {
@@ -317,13 +324,19 @@ const buildSearchTokenClause = (token) => {
       { patient: { first_name: { contains: term } } },
       { patient: { last_name: { contains: term } } },
       { patient: { human_friendly_id: { contains: upper } } },
-      { patient: { identifiers: { some: { deleted_at: null, identifier_value: { contains: term } } } } },
+      {
+        patient: {
+          identifiers: {
+            some: { deleted_at: null, identifier_value: { contains: term } }
+          }
+        }
+      },
       { provider: { email: { contains: term } } },
       { provider: { phone: { contains: term } } },
       { provider: { human_friendly_id: { contains: upper } } },
       { provider: { profile: { first_name: { contains: term } } } },
-      { provider: { profile: { last_name: { contains: term } } } },
-    ],
+      { provider: { profile: { last_name: { contains: term } } } }
+    ]
   };
 };
 
@@ -331,7 +344,7 @@ const buildTriageQueueWhereClause = (filters = {}) => {
   const where = {
     deleted_at: null,
     status: 'OPEN',
-    encounter_type: { in: ['OPD', 'EMERGENCY'] },
+    encounter_type: { in: ['OPD', 'EMERGENCY'] }
   };
   const andClauses = [];
 
@@ -399,7 +412,9 @@ const sortTriageQueueItems = (items) =>
     if (levelDelta !== 0) return levelDelta;
 
     const leftArrival = toTimestamp(leftFlow.queued_at || left?.visit_queue?.queued_at || left?.encounter?.started_at);
-    const rightArrival = toTimestamp(rightFlow.queued_at || right?.visit_queue?.queued_at || right?.encounter?.started_at);
+    const rightArrival = toTimestamp(
+      rightFlow.queued_at || right?.visit_queue?.queued_at || right?.encounter?.started_at
+    );
     if (leftArrival !== rightArrival) return leftArrival - rightArrival;
 
     return normalizeIdentifier(left?.encounter?.human_friendly_id || left?.encounter?.id).localeCompare(
@@ -420,25 +435,29 @@ const hydrateQueueSnapshots = async (tx, encounters = []) => {
     visitQueueIds.length
       ? tx.visit_queue.findMany({
           where: { id: { in: visitQueueIds }, deleted_at: null },
-          include: { provider: PROVIDER_INCLUDE, facility: true, appointment: true },
+          include: {
+            provider: PROVIDER_INCLUDE,
+            facility: true,
+            appointment: true
+          }
         })
       : [],
     appointmentIds.length
       ? tx.appointment.findMany({
           where: { id: { in: appointmentIds }, deleted_at: null },
-          include: { provider: PROVIDER_INCLUDE, facility: true },
+          include: { provider: PROVIDER_INCLUDE, facility: true }
         })
       : [],
     emergencyCaseIds.length
       ? tx.emergency_case.findMany({
-          where: { id: { in: emergencyCaseIds }, deleted_at: null },
+          where: { id: { in: emergencyCaseIds }, deleted_at: null }
         })
       : [],
     triageAssessmentIds.length
       ? tx.triage_assessment.findMany({
-          where: { id: { in: triageAssessmentIds }, deleted_at: null },
+          where: { id: { in: triageAssessmentIds }, deleted_at: null }
         })
-      : [],
+      : []
   ]);
 
   const visitQueueMap = new Map(visitQueues.map((entry) => [entry.id, entry]));
@@ -456,12 +475,12 @@ const hydrateQueueSnapshots = async (tx, encounters = []) => {
       encounter,
       flow: {
         ...flow,
-        triage_level: flow.triage_level || triageAssessment?.triage_level || null,
+        triage_level: flow.triage_level || triageAssessment?.triage_level || null
       },
       visit_queue: flow.visit_queue_id ? visitQueueMap.get(flow.visit_queue_id) || null : null,
       appointment: flow.appointment_id ? appointmentMap.get(flow.appointment_id) || null : null,
       emergency_case: flow.emergency_case_id ? emergencyCaseMap.get(flow.emergency_case_id) || null : null,
-      triage_assessment: triageAssessment,
+      triage_assessment: triageAssessment
     };
   });
 };
@@ -476,11 +495,7 @@ const resolveScopedFilters = async (filters = {}) => {
   }
 
   if (filters.facility_id) {
-    const facility = await resolveFacilityByIdentifier(
-      prisma,
-      filters.facility_id,
-      resolved.tenant_id || null
-    );
+    const facility = await resolveFacilityByIdentifier(prisma, filters.facility_id, resolved.tenant_id || null);
     if (!facility) return null;
     resolved.facility_id = facility.id;
     if (!resolved.tenant_id) resolved.tenant_id = facility.tenant_id;
@@ -512,13 +527,7 @@ const resolveScopedFilters = async (filters = {}) => {
   return resolved;
 };
 
-const listTriageQueue = async (
-  filters = {},
-  page = 1,
-  limit = 20,
-  sortBy = 'started_at',
-  order = 'asc'
-) => {
+const listTriageQueue = async (filters = {}, page = 1, limit = 20, sortBy = 'started_at', order = 'asc') => {
   const normalizedPage = Math.max(Number(page) || 1, 1);
   const normalizedLimit = Math.max(Number(limit) || 20, 1);
   const skip = (normalizedPage - 1) * normalizedLimit;
@@ -540,10 +549,10 @@ const listTriageQueue = async (
         tenant: true,
         facility: true,
         patient: true,
-        provider: PROVIDER_INCLUDE,
-      },
+        provider: PROVIDER_INCLUDE
+      }
     }),
-    prisma.encounter.count({ where }),
+    prisma.encounter.count({ where })
   ]);
 
   const hydrated = await prisma.$transaction((tx) => hydrateQueueSnapshots(tx, encounters));
@@ -561,15 +570,37 @@ const listTriageQueue = async (
       total,
       totalPages,
       hasNextPage: normalizedPage < totalPages,
-      hasPreviousPage: normalizedPage > 1,
-    },
+      hasPreviousPage: normalizedPage > 1
+    }
   };
 };
 
-const getTriageCase = (id) => opdFlowService.getOpdFlowById(id);
-const recordVitals = (id, data, context = {}) => opdFlowService.recordVitals(id, data, context);
-const assignProvider = (id, data, context = {}) => opdFlowService.assignDoctor(id, data, context);
-const correctStage = (id, data, context = {}) => opdFlowService.correctStage(id, data, context);
+const assertTriageCaseScope = async (id, context = {}) => {
+  const encounter = await resolveEncounterByIdentifier(prisma, id);
+  if (!encounter) {
+    throw new HttpError('errors.opd_flow.not_found', 404);
+  }
+  assertEncounterScope(encounter, context);
+  return encounter;
+};
+
+const getTriageCase = async (id, context = {}) => {
+  const flow = await opdFlowService.getOpdFlowById(id);
+  assertEncounterScope(flow?.encounter, context);
+  return flow;
+};
+const recordVitals = async (id, data, context = {}) => {
+  await assertTriageCaseScope(id, context);
+  return opdFlowService.recordVitals(id, data, context);
+};
+const assignProvider = async (id, data, context = {}) => {
+  await assertTriageCaseScope(id, context);
+  return opdFlowService.assignDoctor(id, data, context);
+};
+const correctStage = async (id, data, context = {}) => {
+  await assertTriageCaseScope(id, context);
+  return opdFlowService.correctStage(id, data, context);
+};
 
 const resolveRoutingProvider = async (tx, providerId, encounter) => {
   const normalized = normalizeIdentifier(providerId);
@@ -605,7 +636,7 @@ const updateVisitQueueForRoute = async (tx, flow, data = {}) => {
   if (!flow.visit_queue_id) return null;
   return tx.visit_queue.updateMany({
     where: { id: flow.visit_queue_id, deleted_at: null },
-    data,
+    data
   });
 };
 
@@ -613,7 +644,7 @@ const completeAppointmentForRoute = async (tx, flow) => {
   if (!flow.appointment_id) return null;
   return tx.appointment.updateMany({
     where: { id: flow.appointment_id, deleted_at: null },
-    data: { status: 'COMPLETED' },
+    data: { status: 'COMPLETED' }
   });
 };
 
@@ -623,7 +654,9 @@ const resolveEmergencyRecords = async (tx, encounter, flow, data, context) => {
   const notes = normalizeNotes(data?.notes) || normalizeNotes(data?.triage_notes);
 
   let emergencyCase = flow.emergency_case_id
-    ? await tx.emergency_case.findFirst({ where: { id: flow.emergency_case_id, deleted_at: null } })
+    ? await tx.emergency_case.findFirst({
+        where: { id: flow.emergency_case_id, deleted_at: null }
+      })
     : null;
 
   if (!emergencyCase) {
@@ -633,18 +666,20 @@ const resolveEmergencyRecords = async (tx, encounter, flow, data, context) => {
         facility_id: encounter.facility_id,
         patient_id: encounter.patient_id,
         severity,
-        status: 'OPEN',
-      },
+        status: 'OPEN'
+      }
     });
   } else if (emergencyCase.severity !== severity || emergencyCase.status !== 'OPEN') {
     emergencyCase = await tx.emergency_case.update({
       where: { id: emergencyCase.id },
-      data: { severity, status: 'OPEN' },
+      data: { severity, status: 'OPEN' }
     });
   }
 
   let triageAssessment = flow.triage_assessment_id
-    ? await tx.triage_assessment.findFirst({ where: { id: flow.triage_assessment_id, deleted_at: null } })
+    ? await tx.triage_assessment.findFirst({
+        where: { id: flow.triage_assessment_id, deleted_at: null }
+      })
     : null;
 
   if (!triageAssessment) {
@@ -652,16 +687,16 @@ const resolveEmergencyRecords = async (tx, encounter, flow, data, context) => {
       data: {
         emergency_case_id: emergencyCase.id,
         triage_level: triageLevel,
-        notes,
-      },
+        notes
+      }
     });
   } else {
     triageAssessment = await tx.triage_assessment.update({
       where: { id: triageAssessment.id },
       data: {
         triage_level: triageLevel,
-        notes,
-      },
+        notes
+      }
     });
   }
 
@@ -669,7 +704,7 @@ const resolveEmergencyRecords = async (tx, encounter, flow, data, context) => {
     emergency_case_id: emergencyCase.id,
     triage_assessment_id: triageAssessment.id,
     triage_level: triageLevel,
-    severity,
+    severity
   });
 
   flow.emergency_case_id = emergencyCase.id;
@@ -683,8 +718,8 @@ const createLabOrder = async (tx, encounter) =>
     data: {
       encounter_id: encounter.id,
       patient_id: encounter.patient_id,
-      status: 'ORDERED',
-    },
+      status: 'ORDERED'
+    }
   });
 
 const createRadiologyOrder = async (tx, encounter, data) =>
@@ -696,9 +731,9 @@ const createRadiologyOrder = async (tx, encounter, data) =>
       clinical_note: normalizeNotes(data?.notes),
       request_details: {
         source: 'TRIAGE',
-        reason: normalizeNotes(data?.reason) || normalizeNotes(data?.notes),
-      },
-    },
+        reason: normalizeNotes(data?.reason) || normalizeNotes(data?.notes)
+      }
+    }
   });
 
 const createReferralForRoute = async (tx, encounter, routeTo, department, data) => {
@@ -712,8 +747,8 @@ const createReferralForRoute = async (tx, encounter, routeTo, department, data) 
       to_department_id: department?.id || null,
       reason: normalizeNotes(data?.reason) || routeTo.replace(/_/g, ' '),
       notes: normalizeNotes(data?.notes),
-      status: 'REQUESTED',
-    },
+      status: 'REQUESTED'
+    }
   });
 };
 
@@ -725,8 +760,8 @@ const createAdmissionForRoute = async (tx, encounter, facility, data) =>
       patient_id: encounter.patient_id,
       encounter_id: encounter.id,
       status: 'ADMITTED',
-      admitted_at: data?.admitted_at ? new Date(data.admitted_at) : new Date(),
-    },
+      admitted_at: data?.admitted_at ? new Date(data.admitted_at) : new Date()
+    }
   });
 
 const createTheatreCaseForRoute = async (tx, encounter, provider, data, routeTo) => {
@@ -738,8 +773,8 @@ const createTheatreCaseForRoute = async (tx, encounter, provider, data, routeTo)
       status: 'SCHEDULED',
       surgeon_user_id: provider?.id || encounter.provider_user_id || null,
       workflow_stage: routeTo === ROUTE_DESTINATIONS.MINOR_PROCEDURE ? 'MINOR_PROCEDURE_REQUESTED' : 'TRIAGE_REQUESTED',
-      stage_notes: normalizeNotes(data?.notes) || normalizeNotes(data?.reason),
-    },
+      stage_notes: normalizeNotes(data?.notes) || normalizeNotes(data?.reason)
+    }
   });
 };
 
@@ -763,6 +798,7 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
     if (!encounter) {
       throw new HttpError('errors.opd_flow.not_found', 404);
     }
+    assertEncounterScope(encounter, context);
 
     const flow = getOpdFlowState(encounter);
     ensureNonTerminalStage(flow);
@@ -780,7 +816,7 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
       provider_user_id: provider?.id || encounter.provider_user_id || null,
       department_id: department?.id || null,
       triage_level: triageLevel || null,
-      notes,
+      notes
     };
 
     let encounterData = {};
@@ -806,7 +842,7 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
         encounterData = provider ? { provider_user_id: provider.id } : {};
         queueData = {
           status: 'IN_PROGRESS',
-          ...(provider ? { provider_user_id: provider.id } : {}),
+          ...(provider ? { provider_user_id: provider.id } : {})
         };
         break;
       }
@@ -870,19 +906,25 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
     }
 
     appendRouteHistory(flow, routeRecord);
-    appendTimelineEvent(flow, 'TRIAGE_ROUTED', context, {
-      route_to: routeTo,
-      provider_user_id: routeRecord.provider_user_id,
-      department_id: routeRecord.department_id,
-      triage_level: routeRecord.triage_level,
-      lab_order_id: createdLabOrder?.id || null,
-      radiology_order_id: createdRadiologyOrder?.id || null,
-      referral_id: createdReferral?.id || null,
-      admission_id: createdAdmission?.id || null,
-      theatre_case_id: createdTheatreCase?.id || null,
-      emergency_case_id: emergencyRecords?.emergencyCase?.id || null,
-      notes,
-    }, routedAt);
+    appendTimelineEvent(
+      flow,
+      'TRIAGE_ROUTED',
+      context,
+      {
+        route_to: routeTo,
+        provider_user_id: routeRecord.provider_user_id,
+        department_id: routeRecord.department_id,
+        triage_level: routeRecord.triage_level,
+        lab_order_id: createdLabOrder?.id || null,
+        radiology_order_id: createdRadiologyOrder?.id || null,
+        referral_id: createdReferral?.id || null,
+        admission_id: createdAdmission?.id || null,
+        theatre_case_id: createdTheatreCase?.id || null,
+        emergency_case_id: emergencyRecords?.emergencyCase?.id || null,
+        notes
+      },
+      routedAt
+    );
 
     await updateVisitQueueForRoute(tx, flow, queueData);
     if (routeTo !== ROUTE_DESTINATIONS.CONSULTATION && routeTo !== ROUTE_DESTINATIONS.EMERGENCY) {
@@ -895,9 +937,9 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
         ...encounterData,
         extension_json: {
           ...(encounter.extension_json || {}),
-          opd_flow: flow,
-        },
-      },
+          opd_flow: flow
+        }
+      }
     });
 
     return {
@@ -910,7 +952,7 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
         stage_from: stageBefore,
         stage_to: flow.stage,
         provider_user_id: routeRecord.provider_user_id,
-        occurred_at: routedAt.toISOString(),
+        occurred_at: routedAt.toISOString()
       },
       diff: {
         before: { stage: stageBefore },
@@ -919,9 +961,9 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
           route_to: routeTo,
           provider_user_id: routeRecord.provider_user_id,
           department_id: routeRecord.department_id,
-          triage_level: routeRecord.triage_level,
-        },
-      },
+          triage_level: routeRecord.triage_level
+        }
+      }
     };
   });
 
@@ -932,7 +974,7 @@ const routeFromTriage = async (id, data = {}, context = {}) => {
     entity: 'triage_flow',
     entity_id: updatedResult.encounter.id,
     diff: updatedResult.diff,
-    ip_address: context.ip_address,
+    ip_address: context.ip_address
   }).catch(() => {});
 
   return getTriageCase(updatedResult.encounter.id);
@@ -944,5 +986,5 @@ module.exports = {
   recordVitals,
   assignProvider,
   routeFromTriage,
-  correctStage,
+  correctStage
 };

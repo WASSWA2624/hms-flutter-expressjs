@@ -14,8 +14,9 @@ const buildAuditContext = (req) => ({
   user_id: req.user?.id,
   tenant_id: req.user?.tenant_id,
   facility_id: req.user?.facility_id,
+  roles: req.user?.roles || (req.user?.role ? [req.user.role] : []),
   ip_address: req.ip,
-  user_agent: req.get('user-agent'),
+  user_agent: req.get('user-agent')
 });
 
 const listTriageQueue = asyncHandler(async (req, res) => {
@@ -34,21 +35,20 @@ const listTriageQueue = asyncHandler(async (req, res) => {
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by = 'started_at',
-    order = 'asc',
+    order = 'asc'
   } = req.query;
 
   const result = await triageService.listTriageQueue(
     {
-      tenant_id,
-      facility_id,
+      tenant_id: tenant_id || req.user?.tenant_id,
+      facility_id: facility_id || req.user?.facility_id,
       patient_id,
-      provider_user_id:
-        queue_scope === 'ASSIGNED' && !provider_user_id ? req.user?.id : provider_user_id,
+      provider_user_id: queue_scope === 'ASSIGNED' && !provider_user_id ? req.user?.id : provider_user_id,
       queue_scope,
       encounter_type,
       triage_status: triage_status || stage,
       urgency_level: urgency_level || triage_level,
-      search,
+      search
     },
     Number(page),
     Number(limit),
@@ -60,7 +60,7 @@ const listTriageQueue = asyncHandler(async (req, res) => {
 });
 
 const getTriageCase = asyncHandler(async (req, res) => {
-  const flow = await triageService.getTriageCase(req.params.id);
+  const flow = await triageService.getTriageCase(req.params.id, buildAuditContext(req));
   return sendSuccess(res, 200, 'Triage case loaded successfully.', flow);
 });
 
@@ -90,5 +90,5 @@ module.exports = {
   recordVitals,
   assignProvider,
   routeFromTriage,
-  correctStage,
+  correctStage
 };

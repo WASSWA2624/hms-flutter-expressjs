@@ -37,6 +37,12 @@ abstract interface class OpdRepository {
 
   Future<Result<OpdFlowDetail>> getOpdFlow(String flowId);
 
+  Future<Result<AppPage<OpdFlowSummary>>> listTriageQueue(
+    OpdTriageQueueQuery query,
+  );
+
+  Future<Result<OpdFlowDetail>> getTriageCase(String flowId);
+
   Future<Result<OpdFlowDetail>> startOpdFlow(Map<String, Object?> payload);
 
   Future<Result<OpdFlowDetail>> payConsultation(
@@ -45,6 +51,26 @@ abstract interface class OpdRepository {
   );
 
   Future<Result<OpdFlowDetail>> recordVitals(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<OpdFlowDetail>> recordTriageVitals(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<OpdFlowDetail>> assignTriageProvider(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<OpdFlowDetail>> routeTriage(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<OpdFlowDetail>> correctTriageStage(
     String flowId,
     Map<String, Object?> payload,
   );
@@ -80,6 +106,10 @@ abstract interface class OpdRepository {
   Future<Result<List<OpdAvailabilitySlot>>> listAvailabilitySlots(
     String scheduleId,
   );
+
+  Future<Result<List<OpdClinicalAlertThreshold>>> listClinicalAlertThresholds({
+    String? vitalType,
+  });
 
   Future<Result<List<OpdDrugOption>>> listAvailableDrugs({String? search});
 }

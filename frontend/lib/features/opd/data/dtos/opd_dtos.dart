@@ -198,8 +198,14 @@ final class OpdFlowSummaryDto {
       providerDisplayName: _providerDisplayName(provider),
       appointmentId: _string(flow['appointment_id']),
       visitQueueId: _string(flow['visit_queue_id']),
-      triageLevel: _string(flow['triage_level']),
+      triageLevel:
+          _string(flow['triage_level']) ?? _string(flow['triage_priority']),
       triagePriorityRank: _intOrNull(flow['triage_priority_rank']),
+      triageNotes: _string(flow['triage_notes']),
+      chiefComplaint: _string(flow['chief_complaint']),
+      lastRouteTo: _string(
+        _nullableMap(flow['last_triage_route'])?['route_to'],
+      ),
       facilityName: _string(facility?['name']),
     );
   }
@@ -247,7 +253,17 @@ final class OpdFlowDetailDto {
           .map((OpdJsonMap entry) => OpdRelatedRecordDto(entry, 'alert'))
           .map((OpdRelatedRecordDto dto) => dto.toEntity())
           .toList(growable: false),
+      clinicalAlertDetails: _list(json['clinical_alerts'])
+          .map(OpdClinicalAlertDto.new)
+          .map((OpdClinicalAlertDto dto) => dto.toEntity())
+          .where((OpdClinicalAlert item) => item.id.isNotEmpty)
+          .toList(growable: false),
       vitalSigns: _relatedRecords(encounter['vital_signs'], 'vital_sign'),
+      vitalMeasurements: _list(encounter['vital_signs'])
+          .map(OpdVitalSignDto.new)
+          .map((OpdVitalSignDto dto) => dto.toEntity())
+          .where((OpdVitalSign item) => item.id.isNotEmpty)
+          .toList(growable: false),
       clinicalNotes: _relatedRecords(
         encounter['clinical_notes'],
         'clinical_note',
@@ -317,6 +333,64 @@ final class OpdRelatedRecordDto {
           _date(json['admitted_at']) ??
           _date(json['created_at']) ??
           _date(json['updated_at']),
+    );
+  }
+}
+
+final class OpdVitalSignDto {
+  const OpdVitalSignDto(this.json);
+
+  final OpdJsonMap json;
+
+  OpdVitalSign toEntity() {
+    return OpdVitalSign(
+      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      vitalType: _string(json['vital_type']) ?? '',
+      value: _string(json['value']),
+      unit: _string(json['unit']),
+      systolicValue: _number(json['systolic_value']),
+      diastolicValue: _number(json['diastolic_value']),
+      mapValue: _number(json['map_value']),
+      recordedAt: _date(json['recorded_at']),
+    );
+  }
+}
+
+final class OpdClinicalAlertDto {
+  const OpdClinicalAlertDto(this.json);
+
+  final OpdJsonMap json;
+
+  OpdClinicalAlert toEntity() {
+    return OpdClinicalAlert(
+      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      severity: _string(json['severity']),
+      status: _string(json['status']),
+      message: _string(json['message']),
+      source: _string(json['source']),
+      vitalSignId: _string(json['vital_sign_id']),
+      createdAt: _date(json['created_at']),
+    );
+  }
+}
+
+final class OpdClinicalAlertThresholdDto {
+  const OpdClinicalAlertThresholdDto(this.json);
+
+  final OpdJsonMap json;
+
+  OpdClinicalAlertThreshold toEntity() {
+    return OpdClinicalAlertThreshold(
+      id: _string(json['id']),
+      vitalType: _string(json['vital_type']) ?? '',
+      component: _string(json['component']) ?? 'VALUE',
+      ageBand: _string(json['age_band']) ?? 'ADULT',
+      normalMin: _number(json['normal_min']),
+      normalMax: _number(json['normal_max']),
+      criticalLow: _number(json['critical_low']),
+      criticalHigh: _number(json['critical_high']),
+      isActive: _bool(json['is_active'], fallback: true),
+      source: _string(json['source']),
     );
   }
 }
@@ -459,6 +533,21 @@ List<OpdAvailabilitySlot> decodeAvailabilitySlots(Object? responseData) {
 OpdJsonMap decodeDataMap(Object? responseData) {
   final OpdJsonMap response = _expectMap(responseData);
   return _map(response['data']);
+}
+
+List<OpdClinicalAlertThreshold> decodeClinicalAlertThresholds(
+  Object? responseData,
+) {
+  final OpdJsonMap response = _expectMap(responseData);
+  final OpdJsonMap data = _map(response['data']);
+  return _list(data['thresholds'])
+      .map(OpdClinicalAlertThresholdDto.new)
+      .map((OpdClinicalAlertThresholdDto dto) => dto.toEntity())
+      .where(
+        (OpdClinicalAlertThreshold item) =>
+            item.vitalType.isNotEmpty && item.component.isNotEmpty,
+      )
+      .toList(growable: false);
 }
 
 List<OpdRelatedRecord> _relatedRecords(Object? source, String kind) {

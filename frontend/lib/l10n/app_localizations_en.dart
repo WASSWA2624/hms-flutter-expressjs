@@ -503,6 +503,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdDecisionLabel => 'Decision';
 
   @override
+  String get opdRouteDecisionLabel => 'Route decision';
+
+  @override
   String get opdArrivalModeLabel => 'Arrival mode';
 
   @override
@@ -510,6 +513,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdTriageLevelLabel => 'Triage level';
+
+  @override
+  String get opdChiefComplaintLabel => 'Chief complaint';
+
+  @override
+  String get opdEmergencyIndicatorsLabel => 'Emergency indicators';
 
   @override
   String get opdWorkflowReceptionTitle => 'Reception and queue';
@@ -558,6 +567,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdVitalsSummaryLabel => 'Vitals';
+
+  @override
+  String get opdAbnormalVitalsSummaryLabel => 'Abnormal vitals';
+
+  @override
+  String get opdClinicalAlertsSummaryLabel => 'Clinical alerts';
 
   @override
   String get opdServicesSummaryLabel => 'Services';

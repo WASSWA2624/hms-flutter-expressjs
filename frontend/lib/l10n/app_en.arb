@@ -289,9 +289,12 @@
   "opdExternalFacilityLabel": "External facility",
   "opdFollowUpDateLabel": "Follow-up date",
   "opdDecisionLabel": "Decision",
+  "opdRouteDecisionLabel": "Route decision",
   "opdArrivalModeLabel": "Arrival mode",
   "opdEmergencySeverityLabel": "Emergency severity",
   "opdTriageLevelLabel": "Triage level",
+  "opdChiefComplaintLabel": "Chief complaint",
+  "opdEmergencyIndicatorsLabel": "Emergency indicators",
   "opdWorkflowReceptionTitle": "Reception and queue",
   "opdWorkflowTriageTitle": "Triage",
   "opdWorkflowDoctorTitle": "Doctor consultation",
@@ -308,6 +311,8 @@
   "opdPrintAction": "Print",
   "opdCopySummaryAction": "Copy summary",
   "opdVitalsSummaryLabel": "Vitals",
+  "opdAbnormalVitalsSummaryLabel": "Abnormal vitals",
+  "opdClinicalAlertsSummaryLabel": "Clinical alerts",
   "opdServicesSummaryLabel": "Services",
   "opdClinicalNotesSummaryLabel": "Clinical notes",
   "opdProceduresSummaryLabel": "Procedures",
@@ -682,6 +687,9 @@
   "@opdDecisionLabel": {
     "description": "Disposition decision field label."
   },
+  "@opdRouteDecisionLabel": {
+    "description": "Triage route decision field label."
+  },
   "@opdArrivalModeLabel": {
     "description": "Arrival mode field label."
   },
@@ -690,6 +698,12 @@
   },
   "@opdTriageLevelLabel": {
     "description": "Triage level field label."
+  },
+  "@opdChiefComplaintLabel": {
+    "description": "Chief complaint field label."
+  },
+  "@opdEmergencyIndicatorsLabel": {
+    "description": "Emergency indicators toggle label."
   },
   "@opdWorkflowReceptionTitle": {
     "description": "Reception and queue workflow section title."
@@ -738,6 +752,12 @@
   },
   "@opdVitalsSummaryLabel": {
     "description": "Vitals summary label."
+  },
+  "@opdAbnormalVitalsSummaryLabel": {
+    "description": "Abnormal vital signs summary label."
+  },
+  "@opdClinicalAlertsSummaryLabel": {
+    "description": "Clinical alerts summary label."
   },
   "@opdServicesSummaryLabel": {
     "description": "Services summary label."

@@ -57,9 +57,14 @@ final class OpdWorkspaceController
           search: search,
           pageRequest: current.flowQuery.pageRequest.first(),
         ),
+        triageQueueQuery: current.triageQueueQuery.copyWith(
+          search: search,
+          pageRequest: current.triageQueueQuery.pageRequest.first(),
+        ),
         isRefreshingAppointments: true,
         isRefreshingQueue: true,
         isRefreshingFlows: true,
+        isRefreshingTriageQueue: true,
         clearLastFailure: true,
       ),
     );
@@ -297,7 +302,7 @@ final class OpdWorkspaceController
     }
 
     _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
-    final Result<OpdFlowDetail> result = await _repository.getOpdFlow(
+    final Result<OpdFlowDetail> result = await _repository.getTriageCase(
       flow.apiId,
     );
     return result.when(
@@ -306,6 +311,10 @@ final class OpdWorkspaceController
           _currentState!.copyWith(
             selectedFlow: detail,
             flows: _replaceFlow(_currentState!.flows, detail.summary),
+            triageQueue: _upsertOrRemoveTriageFlow(
+              _currentState!.triageQueue,
+              detail.summary,
+            ),
             isRefreshingDetail: false,
           ),
         );
@@ -436,7 +445,7 @@ final class OpdWorkspaceController
 
   Future<AppFailure?> assignDoctor(OpdFlowSummary flow, String providerUserId) {
     return _mutateFlow(
-      () => _repository.assignDoctor(flow.apiId, <String, Object?>{
+      () => _repository.assignTriageProvider(flow.apiId, <String, Object?>{
         'provider_user_id': providerUserId,
       }),
       refreshAfter: true,
@@ -458,7 +467,7 @@ final class OpdWorkspaceController
     Map<String, Object?> payload,
   ) {
     return _mutateFlow(
-      () => _repository.recordVitals(flow.apiId, payload),
+      () => _repository.recordTriageVitals(flow.apiId, payload),
       refreshAfter: true,
     );
   }
@@ -469,7 +478,7 @@ final class OpdWorkspaceController
     String? reason,
   ) {
     return _mutateFlow(
-      () => _repository.correctStage(flow.apiId, <String, Object?>{
+      () => _repository.correctTriageStage(flow.apiId, <String, Object?>{
         'stage_to': stage,
         'reason': reason,
       }),
@@ -493,7 +502,8 @@ final class OpdWorkspaceController
     String? notes,
   ) {
     return _mutateFlow(
-      () => _repository.disposition(flow.apiId, <String, Object?>{
+      () => _repository.routeTriage(flow.apiId, <String, Object?>{
+        'route_to': decision,
         'decision': decision,
         'notes': notes,
       }),
@@ -538,6 +548,7 @@ final class OpdWorkspaceController
     const OpdAppointmentQuery appointmentQuery = OpdAppointmentQuery();
     const OpdQueueQuery queueQuery = OpdQueueQuery();
     const OpdFlowQuery flowQuery = OpdFlowQuery();
+    const OpdTriageQueueQuery triageQueueQuery = OpdTriageQueueQuery();
 
     final Result<AppPage<OpdAppointment>> appointmentsResult = await _repository
         .listAppointments(appointmentQuery);
@@ -564,6 +575,19 @@ final class OpdWorkspaceController
       return Result<OpdWorkspaceState>.failure(_failureOrNull(flowsResult)!);
     }
 
+    final Result<AppPage<OpdFlowSummary>> triageQueueResult = await _repository
+        .listTriageQueue(triageQueueQuery);
+    final AppPage<OpdFlowSummary>? triageQueue = _successOrNull(
+      triageQueueResult,
+    );
+    if (triageQueue == null) {
+      return Result<OpdWorkspaceState>.failure(
+        _failureOrNull(triageQueueResult)!,
+      );
+    }
+
+    final List<OpdClinicalAlertThreshold> thresholds =
+        await _clinicalAlertThresholds();
     final List<OpdProviderSchedule> schedules = await _providerSchedules();
     final List<OpdAvailabilitySlot> slots = await _availabilitySlots(schedules);
 
@@ -572,9 +596,12 @@ final class OpdWorkspaceController
         appointmentQuery: appointmentQuery,
         queueQuery: queueQuery,
         flowQuery: flowQuery,
+        triageQueueQuery: triageQueueQuery,
         appointments: appointments,
         queueEntries: queue,
         flows: flows,
+        triageQueue: triageQueue,
+        clinicalAlertThresholds: thresholds,
         providerSchedules: schedules,
         availabilitySlots: slots,
       ),
@@ -603,6 +630,7 @@ final class OpdWorkspaceController
           isRefreshingAppointments: true,
           isRefreshingQueue: true,
           isRefreshingFlows: true,
+          isRefreshingTriageQueue: true,
           isRefreshingDetail: current.selectedFlow != null,
           clearLastFailure: true,
         ),
@@ -622,12 +650,15 @@ final class OpdWorkspaceController
         final List<OpdAvailabilitySlot> slots = await _availabilitySlots(
           schedules,
         );
+        final List<OpdClinicalAlertThreshold> thresholds =
+            await _clinicalAlertThresholds();
         final OpdWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
             latest.copyWith(
               providerSchedules: schedules,
               availabilitySlots: slots,
+              clinicalAlertThresholds: thresholds,
             ),
           );
         }
@@ -646,6 +677,10 @@ final class OpdWorkspaceController
                 latest.copyWith(
                   selectedFlow: detail,
                   flows: _replaceFlow(latest.flows, detail.summary),
+                  triageQueue: _upsertOrRemoveTriageFlow(
+                    latest.triageQueue,
+                    detail.summary,
+                  ),
                 ),
               );
             }
@@ -663,6 +698,7 @@ final class OpdWorkspaceController
             isRefreshingAppointments: false,
             isRefreshingQueue: false,
             isRefreshingFlows: false,
+            isRefreshingTriageQueue: false,
             isRefreshingDetail: false,
           ),
         );
@@ -738,6 +774,24 @@ final class OpdWorkspaceController
       },
     );
 
+    final OpdWorkspaceState? afterFlows = _currentState;
+    if (afterFlows == null) {
+      return firstFailure;
+    }
+    final Result<AppPage<OpdFlowSummary>> triageResult = await _repository
+        .listTriageQueue(afterFlows.triageQueueQuery);
+    triageResult.when(
+      success: (AppPage<OpdFlowSummary> page) {
+        final OpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(triageQueue: page));
+        }
+      },
+      failure: (AppFailure failure) {
+        firstFailure ??= failure;
+      },
+    );
+
     final OpdWorkspaceState? latest = _currentState;
     if (showLoading && latest != null) {
       _emit(
@@ -745,6 +799,7 @@ final class OpdWorkspaceController
           isRefreshingAppointments: false,
           isRefreshingQueue: false,
           isRefreshingFlows: false,
+          isRefreshingTriageQueue: false,
           lastFailure: firstFailure,
         ),
       );
@@ -777,6 +832,15 @@ final class OpdWorkspaceController
       );
     }
     return List<OpdAvailabilitySlot>.unmodifiable(slots);
+  }
+
+  Future<List<OpdClinicalAlertThreshold>> _clinicalAlertThresholds() async {
+    final Result<List<OpdClinicalAlertThreshold>> result = await _repository
+        .listClinicalAlertThresholds();
+    return result.when(
+      success: (List<OpdClinicalAlertThreshold> thresholds) => thresholds,
+      failure: (_) => const <OpdClinicalAlertThreshold>[],
+    );
   }
 
   Future<AppFailure?> _mutateAppointment(
@@ -857,6 +921,10 @@ final class OpdWorkspaceController
           latest.copyWith(
             selectedFlow: detail,
             flows: _upsertFlow(latest.flows, detail.summary),
+            triageQueue: _upsertOrRemoveTriageFlow(
+              latest.triageQueue,
+              detail.summary,
+            ),
             isSaving: false,
           ),
         );
@@ -938,7 +1006,9 @@ final class OpdWorkspaceController
           referrals: selected.referrals,
           followUps: selected.followUps,
           clinicalAlerts: selected.clinicalAlerts,
+          clinicalAlertDetails: selected.clinicalAlertDetails,
           vitalSigns: selected.vitalSigns,
+          vitalMeasurements: selected.vitalMeasurements,
           clinicalNotes: selected.clinicalNotes,
           diagnoses: selected.diagnoses,
           procedures: selected.procedures,
@@ -1041,6 +1111,45 @@ final class OpdWorkspaceController
       request: page.request,
       totalItemCount: page.totalItemCount,
     );
+  }
+
+  AppPage<OpdFlowSummary> _upsertOrRemoveTriageFlow(
+    AppPage<OpdFlowSummary> page,
+    OpdFlowSummary flow,
+  ) {
+    if (!_belongsInTriageQueue(flow)) {
+      return _removeFlow(page, flow);
+    }
+    return _upsertFlow(page, flow);
+  }
+
+  AppPage<OpdFlowSummary> _removeFlow(
+    AppPage<OpdFlowSummary> page,
+    OpdFlowSummary flow,
+  ) {
+    final List<OpdFlowSummary> items = page.items
+        .where((OpdFlowSummary item) => !_isSameFlow(item, flow))
+        .toList(growable: false);
+    if (items.length == page.items.length) {
+      return page;
+    }
+
+    return AppPage<OpdFlowSummary>(
+      items: items,
+      request: page.request,
+      totalItemCount: page.totalItemCount == null
+          ? null
+          : page.totalItemCount! > 0
+          ? page.totalItemCount! - 1
+          : 0,
+    );
+  }
+
+  bool _belongsInTriageQueue(OpdFlowSummary flow) {
+    final String stage = (flow.stage ?? '').toUpperCase();
+    return !flow.isTerminal &&
+        (stage == 'WAITING_VITALS' || stage == 'WAITING_DOCTOR_ASSIGNMENT') &&
+        !isOpdTerminalStatus(flow.status ?? flow.stage);
   }
 
   bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {

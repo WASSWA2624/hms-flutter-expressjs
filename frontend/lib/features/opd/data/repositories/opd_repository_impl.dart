@@ -158,6 +158,37 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
+  Future<Result<AppPage<OpdFlowSummary>>> listTriageQueue(
+    OpdTriageQueueQuery query,
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<OpdFlowSummary>>(
+      ApiEndpoints.collection(HmsApiResource.triage),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'search': query.search,
+        'stage': query.stage,
+        'triage_level': query.triageLevel,
+        'encounter_type': query.encounterType,
+        'queue_scope': query.queueScope,
+        'sort_by': 'started_at',
+        'order': 'asc',
+      }),
+      decoder: (Object? data) =>
+          OpdFlowPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowDetail>> getTriageCase(String flowId) {
+    return _apiClient.get<OpdFlowDetail>(
+      ApiEndpoints.byId(HmsApiResource.triage, flowId),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
   Future<Result<OpdFlowDetail>> startOpdFlow(Map<String, Object?> payload) {
     return _apiClient.post<OpdFlowDetail>(
       ApiEndpoints.apiV1(<String>[HmsApiResource.opdFlows.path, 'start']),
@@ -188,6 +219,60 @@ final class OpdRepositoryImpl implements OpdRepository {
     return _apiClient.post<OpdFlowDetail>(
       ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
         'record-vitals',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowDetail>> recordTriageVitals(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.triage, flowId, <String>[
+        'record-vitals',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowDetail>> assignTriageProvider(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.triage, flowId, <String>[
+        'assign-provider',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowDetail>> routeTriage(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.triage, flowId, <String>['route']),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowDetail>> correctTriageStage(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.triage, flowId, <String>[
+        'correct-stage',
       ]),
       data: _withoutEmpty(payload),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
@@ -314,6 +399,19 @@ final class OpdRepositoryImpl implements OpdRepository {
         'order': 'asc',
       },
       decoder: decodeAvailabilitySlots,
+    );
+  }
+
+  @override
+  Future<Result<List<OpdClinicalAlertThreshold>>> listClinicalAlertThresholds({
+    String? vitalType,
+  }) {
+    return _apiClient.get<List<OpdClinicalAlertThreshold>>(
+      ApiEndpoints.collection(HmsApiResource.clinicalAlertThresholds),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'vital_type': vitalType,
+      }),
+      decoder: decodeClinicalAlertThresholds,
     );
   }
 

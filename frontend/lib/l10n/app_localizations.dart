@@ -1018,6 +1018,12 @@ abstract class AppLocalizations {
   /// **'Decision'**
   String get opdDecisionLabel;
 
+  /// Triage route decision field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Route decision'**
+  String get opdRouteDecisionLabel;
+
   /// Arrival mode field label.
   ///
   /// In en, this message translates to:
@@ -1035,6 +1041,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Triage level'**
   String get opdTriageLevelLabel;
+
+  /// Chief complaint field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Chief complaint'**
+  String get opdChiefComplaintLabel;
+
+  /// Emergency indicators toggle label.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency indicators'**
+  String get opdEmergencyIndicatorsLabel;
 
   /// Reception and queue workflow section title.
   ///
@@ -1131,6 +1149,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vitals'**
   String get opdVitalsSummaryLabel;
+
+  /// Abnormal vital signs summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Abnormal vitals'**
+  String get opdAbnormalVitalsSummaryLabel;
+
+  /// Clinical alerts summary label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical alerts'**
+  String get opdClinicalAlertsSummaryLabel;
 
   /// Services summary label.
   ///

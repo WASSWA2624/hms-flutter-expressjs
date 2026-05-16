@@ -8,8 +8,7 @@
 const { z } = require('zod');
 const { listQuerySchema, decimalStringSchema } = require('@lib/validation/zod');
 
-const UUID_LIKE_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_LIKE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RESOURCE_FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
 const BLOOD_PRESSURE_VALUE_REGEX = /^(\d{2,3}(?:\.\d{1,2})?)\s*\/\s*(\d{2,3}(?:\.\d{1,2})?)$/;
 
@@ -24,7 +23,7 @@ const WORKFLOW_STAGE_VALUES = [
   'PHARMACY_REQUESTED',
   'WAITING_DISPOSITION',
   'ADMITTED',
-  'DISCHARGED',
+  'DISCHARGED'
 ];
 
 const TRIAGE_LEVEL_VALUES = [
@@ -36,7 +35,7 @@ const TRIAGE_LEVEL_VALUES = [
   'IMMEDIATE',
   'URGENT',
   'LESS_URGENT',
-  'NON_URGENT',
+  'NON_URGENT'
 ];
 
 const VITAL_TYPE_VALUES = [
@@ -47,7 +46,7 @@ const VITAL_TYPE_VALUES = [
   'OXYGEN_SATURATION',
   'WEIGHT',
   'HEIGHT',
-  'BMI',
+  'BMI'
 ];
 
 const ROUTE_DESTINATION_VALUES = [
@@ -61,7 +60,7 @@ const ROUTE_DESTINATION_VALUES = [
   'EMERGENCY',
   'THEATRE',
   'MINOR_PROCEDURE',
-  'DISCHARGE',
+  'DISCHARGE'
 ];
 
 const QUEUE_SCOPE_VALUES = ['ASSIGNED', 'WAITING', 'ALL'];
@@ -71,10 +70,7 @@ const resourceIdentifierSchema = z
   .trim()
   .min(2)
   .max(64)
-  .refine(
-    (value) => UUID_LIKE_REGEX.test(value) || RESOURCE_FRIENDLY_ID_REGEX.test(value),
-    'Invalid identifier format'
-  )
+  .refine((value) => UUID_LIKE_REGEX.test(value) || RESOURCE_FRIENDLY_ID_REGEX.test(value), 'Invalid identifier format')
   .transform((value) => (UUID_LIKE_REGEX.test(value) ? value.toLowerCase() : value.toUpperCase()));
 
 const scopeIdentifierSchema = z
@@ -82,10 +78,7 @@ const scopeIdentifierSchema = z
   .trim()
   .min(2)
   .max(64)
-  .refine(
-    (value) => UUID_LIKE_REGEX.test(value) || RESOURCE_FRIENDLY_ID_REGEX.test(value),
-    'Invalid identifier format'
-  )
+  .refine((value) => UUID_LIKE_REGEX.test(value) || RESOURCE_FRIENDLY_ID_REGEX.test(value), 'Invalid identifier format')
   .transform((value) => (UUID_LIKE_REGEX.test(value) ? value.toLowerCase() : value.toUpperCase()));
 
 const nullableResourceIdentifierSchema = resourceIdentifierSchema.optional().nullable();
@@ -93,7 +86,7 @@ const nullableScopeIdentifierSchema = scopeIdentifierSchema.optional().nullable(
 const decimalInputSchema = z.union([z.coerce.number().positive(), decimalStringSchema]);
 
 const triageIdParamsSchema = z.object({
-  id: resourceIdentifierSchema,
+  id: resourceIdentifierSchema
 });
 
 const listTriageQueueQuerySchema = listQuerySchema.extend({
@@ -107,7 +100,7 @@ const listTriageQueueQuerySchema = listQuerySchema.extend({
   stage: z.enum(WORKFLOW_STAGE_VALUES).optional(),
   urgency_level: z.enum(TRIAGE_LEVEL_VALUES).optional(),
   triage_level: z.enum(TRIAGE_LEVEL_VALUES).optional(),
-  search: z.string().trim().optional(),
+  search: z.string().trim().optional()
 });
 
 const recordVitalItemSchema = z
@@ -118,24 +111,23 @@ const recordVitalItemSchema = z
     systolic_value: decimalInputSchema.optional(),
     diastolic_value: decimalInputSchema.optional(),
     map_value: decimalInputSchema.optional(),
-    recorded_at: z.string().datetime().optional(),
+    recorded_at: z.string().datetime().optional()
   })
   .superRefine((vital, ctx) => {
     if (vital.vital_type === 'BLOOD_PRESSURE') {
       const hasStructuredComponents = vital.systolic_value != null && vital.diastolic_value != null;
-      const hasLegacyValue =
-        typeof vital.value === 'string' && BLOOD_PRESSURE_VALUE_REGEX.test(vital.value.trim());
+      const hasLegacyValue = typeof vital.value === 'string' && BLOOD_PRESSURE_VALUE_REGEX.test(vital.value.trim());
 
       if (!hasStructuredComponents && !hasLegacyValue) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['systolic_value'],
-          message: 'errors.validation.required',
+          message: 'errors.validation.required'
         });
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['diastolic_value'],
-          message: 'errors.validation.required',
+          message: 'errors.validation.required'
         });
       }
       return;
@@ -145,7 +137,7 @@ const recordVitalItemSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['value'],
-        message: 'errors.validation.required',
+        message: 'errors.validation.required'
       });
     }
   });
@@ -153,11 +145,14 @@ const recordVitalItemSchema = z
 const recordVitalsSchema = z.object({
   vitals: z.array(recordVitalItemSchema).min(1),
   triage_level: z.enum(TRIAGE_LEVEL_VALUES).optional(),
-  triage_notes: z.string().trim().max(65535).optional().nullable(),
+  triage_priority: z.enum(TRIAGE_LEVEL_VALUES).optional(),
+  chief_complaint: z.string().trim().max(65535).optional().nullable(),
+  emergency: z.boolean().optional(),
+  triage_notes: z.string().trim().max(65535).optional().nullable()
 });
 
 const assignProviderSchema = z.object({
-  provider_user_id: resourceIdentifierSchema,
+  provider_user_id: resourceIdentifierSchema
 });
 
 const routeTriageSchema = z.object({
@@ -170,12 +165,12 @@ const routeTriageSchema = z.object({
   notes: z.string().trim().max(65535).optional().nullable(),
   reason: z.string().trim().max(65535).optional().nullable(),
   scheduled_at: z.string().datetime().optional().nullable(),
-  admitted_at: z.string().datetime().optional().nullable(),
+  admitted_at: z.string().datetime().optional().nullable()
 });
 
 const correctStageSchema = z.object({
   stage_to: z.enum(WORKFLOW_STAGE_VALUES),
-  reason: z.string().trim().min(1).max(2000),
+  reason: z.string().trim().min(1).max(2000)
 });
 
 module.exports = {
@@ -188,5 +183,5 @@ module.exports = {
   QUEUE_SCOPE_VALUES,
   ROUTE_DESTINATION_VALUES,
   TRIAGE_LEVEL_VALUES,
-  WORKFLOW_STAGE_VALUES,
+  WORKFLOW_STAGE_VALUES
 };
