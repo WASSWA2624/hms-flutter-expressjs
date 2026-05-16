@@ -4,11 +4,14 @@
 Manage subscription plans, active subscriptions, module subscriptions, licenses, subscription invoices, entitlement visibility, renewal state, limits, and subscription-driven access.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for subscription scope.
 - Use `01-policy.md` for access control, simple UI, report generation, responsive behavior, and partial state refresh.
 - Use earlier access-control/dev-plan work for role/permission/entitlement guards instead of redefining them.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/subscriptions-workspace`
 - `/api/v1/subscription-plans`
 - `/api/v1/subscriptions`
@@ -32,6 +35,14 @@ Manage subscription plans, active subscriptions, module subscriptions, licenses,
 | Entitlements | Disabled modules should be hidden or clearly unavailable based on existing rule behavior. |
 | Language | Use simple tenant/admin labels; keep licensing technical details secondary. |
 | Responsiveness | Mobile shows stacked cards/lists; desktop supports summary plus detail panel. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: plan card, subscription status badge, module entitlement matrix, license status card, invoice/payment link panel, enable/disable module modal, and tenant entitlement summary.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: plans, subscriptions, module entitlements, licenses, tenant/facility access, menus, route guards, billing records, notifications, reports, and audit records must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Module entitlements must affect route guards, menus, actions, reports, and dashboards.

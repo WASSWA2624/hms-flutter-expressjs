@@ -4,17 +4,25 @@
 Prepare, coordinate, print, and complete safe discharge using clinical summary, medicines, nursing clearance, billing/insurance clearance, follow-up, document handover, patient exit, and bed release.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for discharge module scope.
 - Use `ipd-flow.md` as the primary discharge workflow reference.
 - Use `opd-flow.md` for OPD completion, referral, prescription, and follow-up summaries.
 - Use `01-policy.md` and `35-reports-audit.md` for modal actions, permissions, partial refresh, and generated print templates.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/discharge-summaries`
 - `/api/v1/admissions`
-- `/api/v1/ipd-flows`
-- `/api/v1/billing`
+- `/api/v1/encounters`
 - `/api/v1/invoices`
+- `/api/v1/invoice-items`
+- `/api/v1/payments`
+- `/api/v1/refunds`
+- `/api/v1/pharmacy-orders`
+- `/api/v1/bed-assignments`
+- `/api/v1/housekeeping-tasks`
 
 ## Implementation Scope
 1. Discharge worklist for planned, summary pending, pharmacy pending, nursing pending, billing pending, insurance pending, documents ready, and completed discharges.
@@ -32,6 +40,14 @@ Prepare, coordinate, print, and complete safe discharge using clinical summary, 
 | Actions | Routine clearance updates use modals; final completion requires confirmation. |
 | Printing | Print generated documents only, never the UI screen. |
 | Responsiveness | Mobile should focus on checklist and summary; desktop can show queue plus detail panel. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: patient context header, discharge checklist, discharge summary form, clearance panel, pharmacy handoff panel, billing clearance card, instruction/follow-up form, and exit confirmation modal.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: discharge plan, summary, medicines, nursing clearance, billing/insurance clearance, reports, patient exit, bed release, housekeeping task, and episode closure must update as one discharge workflow.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Discharge planning may start before all services are complete, but final discharge must respect required clearance rules.

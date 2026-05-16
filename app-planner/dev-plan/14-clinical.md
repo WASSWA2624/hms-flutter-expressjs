@@ -4,12 +4,15 @@
 Support provider consultation, documentation, diagnosis, orders, procedures, care plans, prescriptions, admission decisions, referrals, follow-up, and result review without forcing doctors to leave the clinical workspace unnecessarily.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for clinical module scope and boundaries.
 - Use `opd-flow.md` for OPD consultation, lab/radiology/pharmacy routing, result review, admission, referral, and OPD completion.
 - Use `ipd-flow.md` for admission handoff, inpatient doctor notes, ward rounds, inpatient orders, transfers, and discharge decisions.
 - Use `01-policy.md` for modal-first actions, role access, report/print rules, responsive UI, and partial UI updates.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/encounters`
 - `/api/v1/clinical-notes`
 - `/api/v1/diagnoses`
@@ -37,6 +40,14 @@ Support provider consultation, documentation, diagnosis, orders, procedures, car
 | Decisions | Final actions must be clear: continue care, send to lab/radiology/pharmacy/procedure, return for review, admit to IPD, refer, follow-up, discharge/complete. |
 | Responsiveness | On mobile use a focused one-column flow; on tablet/desktop use worklist plus detail area without congesting the screen. |
 | Language | Use clinical labels staff understand. Hide raw API names and technical status codes. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: patient context header, consultation workspace sections, clinical note form, diagnosis selector, order request modal, prescription form, result review panel, referral/follow-up modal, and admission request modal.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: consultation notes, diagnoses, care plans, procedures, orders, prescriptions, referrals, follow-ups, admission requests, billing events, reports, and audit records must remain tied to the active encounter/admission.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - OPD consultation must update the OPD encounter status and relevant queues only.

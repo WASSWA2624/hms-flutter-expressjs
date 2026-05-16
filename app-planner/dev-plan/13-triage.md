@@ -4,17 +4,20 @@
 Capture triage information before consultation when needed and route patients safely based on urgency, risk, policy, and OPD flow.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `opd-flow.md` for triage role in OPD routing.
 - Use `20-emergency.md` for emergency escalation and urgent handover.
 - Use `14-clinical.md` for doctor handoff and triage summary visibility.
 - Use `01-policy.md` and `10-workspace-ui.md` for simple modal-first triage capture and targeted UI refresh.
 
 ## Backend Routes To Align With
-- `/api/v1/triage`
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/triage-assessments`
 - `/api/v1/vital-signs`
-- `/api/v1/clinical-alerts`
-- `/api/v1/clinical-alert-thresholds`
+- `/api/v1/critical-alerts`
+- `/api/v1/visit-queues`
+- `/api/v1/encounters`
 
 ## Implementation Scope
 1. Triage queue filtered by waiting, urgent, emergency, routine, and service-only states.
@@ -41,6 +44,14 @@ Capture triage information before consultation when needed and route patients sa
 | Alerts | Show abnormal values clearly without visual clutter. |
 | Routing | Allowed next destinations must come from OPD flow and permissions. |
 | Handoff | Doctor sees triage summary, vitals, urgency, alerts, and route history. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: patient context header, vitals form, urgency selector, risk flag chips, triage decision modal, priority queue badge, and triage summary panel.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: triage assessment, vital signs, urgency, alerts, queue routing, doctor priority, OPD encounter state, emergency escalation, and billing deferral flags must stay aligned.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Triage attaches to the active OPD encounter or emergency encounter.

@@ -4,19 +4,23 @@
 Manage radiology/imaging catalog, orders, scheduling, performance, reports, imaging assets/PACS links, billing/authorization gates, result delivery, and doctor review.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for radiology module scope.
 - Use `opd-flow.md` for OPD imaging order, flexible payment, radiology workflow, and doctor result review.
 - Use `ipd-flow.md` for inpatient imaging orders, service routing, and result review.
 - Use `01-policy.md` for catalog-driven ordering, simple UI, role access, generated reports, and partial refresh.
 
 ## Backend Routes To Align With
-- `/api/v1/radiology`
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/radiology-tests`
 - `/api/v1/radiology-orders`
 - `/api/v1/radiology-results`
 - `/api/v1/imaging-studies`
 - `/api/v1/imaging-assets`
 - `/api/v1/pacs-links`
+- `/api/v1/invoices`
+- `/api/v1/payments`
 
 ## Implementation Scope
 1. Radiology catalog view for configured imaging studies where permitted.
@@ -34,6 +38,14 @@ Manage radiology/imaging catalog, orders, scheduling, performance, reports, imag
 | Assets | Show imaging assets/PACS links only when available and permitted. |
 | Result review | Released reports notify the requesting doctor and update OPD/IPD review status. |
 | Responsiveness | Mobile supports status updates; desktop supports queue plus detail/report panel. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: radiology order row, patient context header, imaging test selector, study/report form, asset/PACS link panel, result status badge, report release modal, and doctor-review routing panel.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: radiology catalog, orders, imaging studies/assets, reports, billing gate, doctor review queue, notifications, reports, and encounter/admission links must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Radiology orders attach to the correct OPD encounter, IPD admission, emergency case, or authorized source.

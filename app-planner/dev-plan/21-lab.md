@@ -4,13 +4,15 @@
 Manage lab test catalog, panels, orders, samples, results, quality control, billing/authorization gates, result delivery, and return-to-doctor review where required.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for laboratory scope.
 - Use `opd-flow.md` for OPD lab ordering, billing flexibility, sample/result workflow, and doctor result review.
 - Use `ipd-flow.md` for inpatient lab orders, service routing, result review, and billing/authorization timing.
 - Use `01-policy.md` for catalog-driven requests, modal actions, role access, and partial UI refresh.
 
 ## Backend Routes To Align With
-- `/api/v1/lab`
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/lab-tests`
 - `/api/v1/lab-panels`
 - `/api/v1/lab-orders`
@@ -18,6 +20,8 @@ Manage lab test catalog, panels, orders, samples, results, quality control, bill
 - `/api/v1/lab-samples`
 - `/api/v1/lab-results`
 - `/api/v1/lab-qc-logs`
+- `/api/v1/invoices`
+- `/api/v1/payments`
 
 ## Implementation Scope
 1. Lab catalog view for tests and panels where permitted.
@@ -35,6 +39,14 @@ Manage lab test catalog, panels, orders, samples, results, quality control, bill
 | Billing | Show payment/authorization blocker clearly but do not expose technical billing codes. |
 | Result review | Released results should notify the requesting doctor and update OPD/IPD review status when required. |
 | Responsiveness | Mobile supports sample/result quick actions; desktop supports queue plus order detail. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: lab order row, patient context header, specimen/sample collection form, test/panel selector, result entry form, QC status badge, result release modal, and doctor-review routing panel.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: lab catalog, order items, samples, results, QC logs, billing gate, doctor review queue, notifications, reports, and encounter/admission links must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Lab orders must attach to the correct OPD encounter, IPD admission, emergency case, or other authorized source.

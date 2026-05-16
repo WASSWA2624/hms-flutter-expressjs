@@ -4,12 +4,15 @@
 Manage ICU admission, ICU bed assignment, intensive observations, alerts, ICU rounds, escalation, transfer-out, and ICU discharge readiness while keeping critical information visible and uncluttered.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for ICU module scope.
 - Use `ipd-flow.md` for ICU transfers, bed movement, inpatient orders, billing, and discharge readiness.
 - Use `opd-flow.md` when emergency/OPD triage routes a patient directly toward ICU through approved admission flow.
 - Use `01-policy.md` for role access, responsive UI, and partial state updates.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/icu-stays`
 - `/api/v1/icu-observations`
 - `/api/v1/critical-alerts`
@@ -33,6 +36,14 @@ Manage ICU admission, ICU bed assignment, intensive observations, alerts, ICU ro
 | Detail view | Use sections for summary, observations, orders, nursing, alerts, and transfer/discharge readiness. |
 | Responsiveness | Mobile should show one patient at a time; desktop can show board plus detail panel. |
 | Safety | Confirmation is required for transfer-out and ICU discharge readiness changes. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: patient context header, ICU stay card, critical observation form, alert banner, ICU status badge, ICU round panel, transfer/discharge readiness modal, and compact trend list.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: ICU stay, critical observations, alerts, vitals, orders, transfers, billing status, ward/bed location, notifications, and IPD admission state must update without duplicate admissions.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - ICU admission/transfer must update IPD/bed assignment state, source queue, and ICU board.

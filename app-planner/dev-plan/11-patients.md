@@ -4,12 +4,15 @@
 Register and manage patients as the shared foundation for clinical and administrative workflows without duplicating patient records across OPD, IPD, billing, pharmacy, lab, radiology, reports, or claims.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for patient registry responsibility and privacy expectations.
 - Use `opd-flow.md` for new/walk-in, appointment, emergency, and follow-up arrival paths.
 - Use `ipd-flow.md` for admission and transfer-in patient verification.
 - Use `01-policy.md` and `10-workspace-ui.md` for modal-first actions, role access, and simple UI.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/patients`
 - `/api/v1/patient-identifiers`
 - `/api/v1/patient-contacts`
@@ -37,6 +40,14 @@ Register and manage patients as the shared foundation for clinical and administr
 | Detail | Use sections/tabs; avoid showing everything at once. |
 | Actions | Use modals for quick edit, add contact, add guardian, add allergy, upload document, consent, OPD check-in, and admission request. |
 | Privacy | Gate PHI fields and patient documents by permission and audit where backend supports it. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: patient search panel, patient summary card, patient context header, registration/edit form, contact/guardian/allergy/document form sections, duplicate warning modal, and patient document list.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: patient identifiers, demographics, contacts, allergies, documents, OPD encounters, IPD admissions, billing, claims, reports, and audit events must reference the same backend patient record.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Patient registry must not create OPD or IPD flows by itself except through allowed quick actions.

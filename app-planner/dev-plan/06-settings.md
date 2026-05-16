@@ -4,6 +4,7 @@
 Complete general settings and app bar indicators for HOSSPI HMS without mixing personal settings with tenant/facility administration.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for app shell, general settings, tenant settings, facility settings, and access expectations.
 - Use `03-brand-shell.md` for app shell and brand behavior.
 - Use `07-tenant-facility.md` for organization/facility setup.
@@ -39,6 +40,14 @@ Complete general settings and app bar indicators for HOSSPI HMS without mixing p
 - Do not place technical configuration names in staff-facing settings labels.
 - Role-gate admin settings and module setup entries.
 - Updating a setting should refresh only the changed setting, theme/locale, shell indicator, or affected module state.
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: settings form sections, preference toggles, language/theme selectors, facility/user preference cards, save/cancel action bars, and settings status messages.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: saved settings must update shell, theme, localization, facility identity, and user preferences from repository responses without full app reloads.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Done Criteria
 - Existing theme and language behavior remains intact.

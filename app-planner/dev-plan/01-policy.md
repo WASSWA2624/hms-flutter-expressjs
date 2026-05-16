@@ -3,7 +3,7 @@
 ## Goal
 Apply the HOSSPI HMS root development plan without damaging the existing backend, frontend foundation, frontend planner, or backend planner.
 
-Implementation must follow the product scope in `app-write-up.md`, the outpatient patient movement rules in `opd-flow.md`, the inpatient patient movement rules in `ipd-flow.md`, and the frontend/backend rule files. The dev-plan is an execution guide only; it must not redefine existing product scope, statuses, roles, endpoints, report patterns, UI patterns, or access rules.
+Implementation must follow `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` as the single product/flow source of truth, then align with the frontend/backend rule files for implementation mechanics. The dev-plan is an execution guide only; it must not redefine existing product scope, statuses, roles, endpoints, report patterns, UI patterns, or access rules.
 
 ## Hard Boundaries
 1. Only app-specific implementation should be added during future implementation tasks.
@@ -26,13 +26,26 @@ For every future feature task:
 3. Read `opd-flow.md` when the task touches outpatient arrival, triage, consultation, lab, radiology, pharmacy, billing, referral, or admission.
 4. Read `ipd-flow.md` when the task touches admission, bed allocation, nursing handover, inpatient care, transfers, orders, discharge, or bed release.
 5. Read the relevant frontend and backend rules.
-6. Inspect the current frontend source and reuse existing correct work.
-7. Inspect backend routes, schemas, permissions, feature flags, module entitlements, catalogs, and response contracts.
+6. Inspect the current frontend source and reuse existing correct work, especially shared forms, modals, patient display components, status badges, lists/tables, filters, layout helpers, async states, and permission wrappers.
+7. Inspect backend routes, schemas, permissions, feature flags, module entitlements, catalogs, and response contracts before wiring frontend models or actions.
 8. Implement only the missing pieces.
 9. Add loading, empty, error, forbidden, offline, success, validation, and duplicate-submit states.
 10. Confirm responsive behavior on mobile, tablet, desktop, web, and large desktop.
 11. Localize all user-facing text.
 12. Run quality checks and document blockers.
+
+
+## Reusable Component Standard
+Before creating any new UI, search the frontend for an existing shared component or reusable pattern. Reuse or extend existing components for forms, fields, modals, patient headers, patient summary cards, queue/worklist rows, status badges, search/filter bars, tables/lists, detail panels, billing gates, order/request pickers, report/print actions, confirmation prompts, loading states, empty states, forbidden states, offline states, and error states.
+
+Create a new shared component only when the pattern is used in multiple places or is clearly app-wide. Do not create one-off duplicates for each module. Shared components must handle layout, responsive behavior, accessibility, localization hooks, validation hooks, loading/disabled/error states, and submit-state protection; business rules, API calls, permission checks, and backend mutations remain in feature controllers/repositories.
+
+Patient-related screens must use a shared patient context display for patient name, MRN/number, age/sex where available, alerts/allergies, current encounter/admission, status, ward/bed/location, payer/coverage where relevant, and responsible department/provider.
+
+## Backend/Frontend Synchronization Standard
+Every screen, repository, DTO, status badge, queue action, modal action, notification, report action, and permission gate must map to current backend contracts and the OPD/IPD rules in `opd-flow.md` and `ipd-flow.md`. A workflow is not complete until the frontend route/action, backend endpoint/action, permission key, module entitlement, DTO fields, validation errors, audit event, notification update, and targeted UI refresh agree.
+
+Do not create frontend-only statuses, duplicate encounter/admission records, fake billing clearances, fake order states, or local-only workflow transitions. Use the backend mutation response as the authoritative state for status, amounts, queue position, permissions, timestamps, and report/audit identifiers.
 
 ## Modal-First Action Standard
 Use modals for routine work so users can complete actions without losing their place in the queue or workspace.
@@ -101,7 +114,7 @@ The template must support multiple pages, repeatable headers/footers, long table
 - Repositories own data access and mapping.
 - UI widgets must not call HTTP directly.
 - After a mutation, refresh only the affected provider/state slice.
-- Use the backend response as the final source of truth for status, amounts, queue position, permissions, and timestamps.
+- Use the backend response as the authoritative current state for status, amounts, queue position, permissions, and timestamps.
 - Show optimistic updates only when safe and easy to roll back.
 
 ## Small-Module Delivery Rule

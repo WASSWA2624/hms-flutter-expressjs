@@ -4,19 +4,25 @@
 Manage admitted patients, admission approval, bed allocation, ward location, inpatient progress, ward rounds, transfers, nursing coordination, billing gates, and discharge readiness according to the IPD flow.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for inpatient module boundaries.
 - Use `ipd-flow.md` as the main workflow reference for admission source, bed management, billing/deposit/insurance, nursing handover, inpatient care loop, transfers, discharge, bed release, and encounter closure.
 - Use `opd-flow.md` when admissions originate from OPD consultation or emergency OPD handling.
 - Use `01-policy.md` for modal-first actions, permissions, responsive UI, and targeted state refresh.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/admissions`
-- `/api/v1/ipd-flows`
+- `/api/v1/encounters`
 - `/api/v1/bed-assignments`
 - `/api/v1/ward-rounds`
 - `/api/v1/transfer-requests`
 - `/api/v1/wards`
+- `/api/v1/rooms`
 - `/api/v1/beds`
+- `/api/v1/invoices`
+- `/api/v1/payments`
 
 ## Implementation Scope
 1. Admission queue for requested, approved, waiting bed, reserved, billing deferred, admitted, transfer pending, discharge planned, and discharged patients.
@@ -35,6 +41,14 @@ Manage admitted patients, admission approval, bed allocation, ward location, inp
 | Patient detail | Use readable sections for summary, bed, care team, orders, rounds, nursing, billing, transfers, and discharge. Avoid one congested page. |
 | Responsiveness | Mobile shows patient list and focused detail pages; desktop can show board plus detail panel. |
 | Language | Use staff-facing status labels from IPD flow, not backend enum names. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: patient context header, admission request card, bed request/allocation panel, IPD status badge, ward-round form, transfer request modal, inpatient order panel, and admission timeline.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: admission, bed assignment, ward handover, inpatient orders, billing/deposit/insurance gates, transfer requests, nursing tasks, notifications, reports, and bed occupancy must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Every IPD admission must link to an admission request and patient record.

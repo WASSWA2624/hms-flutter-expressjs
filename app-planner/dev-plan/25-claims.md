@@ -4,17 +4,22 @@
 Manage coverage plans, eligibility/coverage visibility, pre-authorizations, claim preparation, claim submission, approvals, rejections, resubmissions, and insurance-linked billing follow-up.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for insurance and claims scope.
 - Use `opd-flow.md` for OPD service authorization and flexible billing timing.
 - Use `ipd-flow.md` for admission authorization, inpatient billing, discharge clearance, deposit adjustment, and final claim handling.
 - Use `01-policy.md` for simple modal actions, role access, reports, and partial state refresh.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/coverage-plans`
 - `/api/v1/insurance-claims`
 - `/api/v1/pre-authorizations`
 - `/api/v1/invoices`
-- `/api/v1/billing`
+- `/api/v1/invoice-items`
+- `/api/v1/payments`
+- `/api/v1/refunds`
 
 ## Implementation Scope
 1. Claims workspace for pre-authorization queue, claim queue, rejected/resubmission queue, approved claims, and pending follow-up.
@@ -31,6 +36,14 @@ Manage coverage plans, eligibility/coverage visibility, pre-authorizations, clai
 | Actions | Use modals for status updates, submission, resubmission, document request, and response recording. |
 | Billing link | Show billing impact in plain language: authorized, partially authorized, not covered, pending, patient balance. |
 | Responsiveness | Mobile supports status/action modals; desktop supports queue plus detail panel. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: claim list/table, patient context header, coverage plan selector, pre-authorization modal, claim review form, rejection/appeal modal, payer status badge, and invoice linkage panel.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: coverage, pre-authorizations, invoices, claim status, billing clearance, payer responses, notifications, reports, and audit records must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - OPD/IPD service clearance must reflect authorization status where required.

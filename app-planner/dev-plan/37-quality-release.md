@@ -4,6 +4,7 @@
 Confirm HOSSPI HMS is safe, usable, consistent, responsive, permission-aware, workflow-synchronized, report-ready, and prepared for staged release.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` to validate product scope and module boundaries.
 - Use `opd-flow.md` to validate outpatient arrival, registration, triage, billing, doctor consultation, lab/radiology/pharmacy routing, result review, referral, admission, and completion.
 - Use `ipd-flow.md` to validate admission, bed allocation, nursing handover, inpatient care, orders, transfer, billing, discharge, bed release, and encounter closure.
@@ -71,6 +72,14 @@ Backend validation is required only when a future task explicitly permits backen
 - Reports, exports, print previews, and downloads are permission-gated.
 - OPD/IPD flows pass end-to-end scenario tests.
 - User documentation and setup notes are updated.
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: component inventory checklist, duplicate-widget audit, reusable form/modal/patient-display review, backend/frontend contract checklist, OPD/IPD scenario validation cards, and responsive test matrix.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: final validation must confirm routes, DTOs, statuses, permissions, entitlements, notifications, reports, audit events, and OPD/IPD state transitions agree across frontend and backend.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Done Criteria
 - All implemented modules pass static checks and tests.

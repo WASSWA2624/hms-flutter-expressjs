@@ -4,17 +4,23 @@
 Manage non-clinical facility operations such as maintenance requests, electrical, plumbing, water, power backup, HVAC/air-conditioning, general assets, safety checks, service logs, and operational readiness.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for operations scope.
 - Use `ipd-flow.md` indirectly where operations affects bed/room/ward readiness and patient movement.
 - Use `01-policy.md` for simple modals, permissions, responsive UI, and partial refresh.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/maintenance-requests`
 - `/api/v1/assets`
 - `/api/v1/asset-service-logs`
-- `/api/v1/housekeeping`
 - `/api/v1/facilities`
 - `/api/v1/rooms`
+- `/api/v1/wards`
+- `/api/v1/beds`
+- `/api/v1/housekeeping-tasks`
+- `/api/v1/housekeeping-schedules`
 
 ## Implementation Scope
 1. Operations request queue for new, assigned, in progress, waiting parts/vendor, completed, rejected, and closed requests.
@@ -31,6 +37,14 @@ Manage non-clinical facility operations such as maintenance requests, electrical
 | Detail view | Show request timeline, assignments, service logs, affected location/asset, and closure notes. |
 | Technicality | Keep engineering details secondary; default UI should be clear to non-technical staff. |
 | Responsiveness | Mobile supports request creation/update; desktop supports queue plus detail panel. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: maintenance request list, asset/service-log card, operational status badge, request/approval modal, facility area selector, task assignment panel, and closeout confirmation modal.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: assets, maintenance requests, service logs, facility/room context, housekeeping handoff where relevant, notifications, reports, and audit events must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Maintenance requests affecting rooms/beds should update room/bed readiness only for the affected location.

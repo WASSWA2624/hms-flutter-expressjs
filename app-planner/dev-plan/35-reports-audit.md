@@ -4,11 +4,14 @@
 Provide role-aware dashboards, report definitions, report runs, scheduled reports, exports, audit logs, PHI access logs, data processing logs, compliance evidence, and a shared professional report/print template used by all modules.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for reports, dashboards, and audit scope.
 - Use `opd-flow.md` and `ipd-flow.md` for patient-flow reports, encounter/admission summaries, service movement, billing, discharge, and queue turnaround metrics.
 - Use `01-policy.md` for generated printing, permission-gated reports, simple UI, and partial state refresh.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/dashboard-workspace`
 - `/api/v1/dashboard-widgets`
 - `/api/v1/reports-workspace`
@@ -61,6 +64,14 @@ Printed output must be generated from data, not from the visible UI.
 | Preview | Preview generated report content before print/export when possible. |
 | Exports | Export only data permitted by role and tenant/facility scope. |
 | Responsiveness | Mobile supports report selection and preview; desktop supports catalog plus preview/detail area. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: report definition list, report run card, dashboard widget card, audit log table, PHI access log row, report filter form, generated print/export action, and facility-branded report template.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: report definitions, report runs, dashboards, KPI snapshots, exports, audit/PHI logs, permissions, facility identity, patient/encounter/admission context, and notifications must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Reports must consume module data; reports must not create parallel business logic.

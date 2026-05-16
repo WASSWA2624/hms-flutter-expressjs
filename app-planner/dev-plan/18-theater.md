@@ -4,18 +4,21 @@
 Manage theater/theatre bookings, case readiness, room allocation, procedure flow, anesthesia records, post-op notes, and handover back to ward, ICU, outpatient care, or discharge.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for theater module responsibilities.
 - Use `ipd-flow.md` for inpatient procedure routing, transfers, nursing handover, billing gates, and post-theater movement.
 - Use `opd-flow.md` when OPD patients are sent for OPD procedures or theater-related services.
 - Use `01-policy.md` for modal actions, permissions, responsive UI, reports, and partial refresh.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/theatre-cases`
-- `/api/v1/theatre-flows`
 - `/api/v1/anesthesia-records`
 - `/api/v1/post-op-notes`
 - `/api/v1/procedures`
 - `/api/v1/transfer-requests`
+- `/api/v1/invoice-items`
 
 ## Implementation Scope
 1. Theater schedule and case board filtered by date, room, status, urgency, surgeon, anesthetist, and patient location.
@@ -33,6 +36,14 @@ Manage theater/theatre bookings, case readiness, room allocation, procedure flow
 | Actions | Most status updates must be modal-based with reason/notes where required. |
 | Responsiveness | Mobile uses daily list; desktop may show schedule plus case detail. |
 | Language | Use clear staff terms such as scheduled, ready, in theater, completed, handed over, cancelled. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: patient context header, theatre case card, procedure schedule list, anesthesia form, intra/post-op note sections, post-op handover modal, and theatre status badge.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: procedure/theatre case, anesthesia record, post-op notes, charges, pharmacy/lab/radiology requests, IPD/ICU/OPD destination, notifications, and reports must stay linked to the source encounter/admission.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Theater cases must be created from approved clinical/procedure requests, admission context, or authorized OPD procedure flow.

@@ -4,12 +4,15 @@
 Support emergency arrival, rapid triage, emergency response, ambulance dispatch/trips, stabilization, billing deferral where allowed, and safe handoff into OPD, IPD, ICU, theater, referral, or discharge.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for emergency and ambulance scope.
 - Use `opd-flow.md` for emergency patient arrival, triage, priority doctor routing, OPD service routing, and admission/referral/completion decisions.
 - Use `ipd-flow.md` for emergency admission, bed request, billing deferral, ward/ICU transfer, and inpatient handover.
 - Use `01-policy.md` for rapid modal actions, permissions, and partial refresh.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/emergency-cases`
 - `/api/v1/triage-assessments`
 - `/api/v1/emergency-responses`
@@ -33,6 +36,14 @@ Support emergency arrival, rapid triage, emergency response, ambulance dispatch/
 | Billing | Allow emergency billing deferral where policy/backend supports it; do not force payment before urgent care. |
 | Responsiveness | Mobile and tablet must support fast touch entry; desktop shows board plus detail panel. |
 | Safety | Critical actions require clear status and next destination. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: emergency arrival form, quick registration modal, patient context header, rapid triage panel, stabilization note form, emergency priority badge, deferred-billing indicator, and handover modal.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: emergency case, temporary/final patient registration, triage, stabilization, billing deferral, OPD/IPD handover, ambulance context where supported, notifications, and audit logs must remain traceable.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Emergency cases must not create duplicate patient records when final registration is completed.

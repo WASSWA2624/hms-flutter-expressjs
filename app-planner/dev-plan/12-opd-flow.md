@@ -4,21 +4,27 @@
 Manage appointments, arrivals, queues, OPD encounters, flexible billing gates, service routing, consultation readiness, result review, pharmacy handoff, admission/referral, and outpatient completion.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-planner/opd-flow.md` as the direct OPD flow source of truth.
 - Use `app-write-up.md` for module boundaries.
 - Use `13-triage.md`, `14-clinical.md`, `21-lab.md`, `22-radiology.md`, `23-pharmacy.md`, `24-billing.md`, and `16-inpatient.md` for connected module implementation.
 - Use `01-policy.md` and `10-workspace-ui.md` for modal-first actions, simple UI, role access, and targeted UI refresh.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
+- `/api/v1/patients`
 - `/api/v1/appointments`
 - `/api/v1/appointment-participants`
 - `/api/v1/appointment-reminders`
 - `/api/v1/provider-schedules`
 - `/api/v1/availability-slots`
 - `/api/v1/visit-queues`
-- `/api/v1/opd-flows`
+- `/api/v1/encounters`
 - `/api/v1/follow-ups`
 - `/api/v1/referrals`
+- `/api/v1/invoices`
+- `/api/v1/payments`
 
 ## Implementation Scope
 1. Appointment and walk-in arrival lists.
@@ -47,6 +53,14 @@ Manage appointments, arrivals, queues, OPD encounters, flexible billing gates, s
 | Billing | Show only simple payment status and action; detailed billing remains in billing module. |
 | Routing | Allow triage, doctor, lab, radiology, pharmacy, procedure, admission, referral, follow-up, or completion based on current state and permission. |
 | Turnaround time | Avoid unnecessary steps; keep queues live and update only affected patient rows/status badges. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: arrival/check-in form, patient lookup/quick-registration modal, OPD queue row, encounter status badge, billing gate panel, routing decision modal, provider assignment modal, and OPD completion/summary action.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: OPD encounter, queue item, triage, consultation, orders, billing gates, pharmacy handoff, result review, referral, admission request, notifications, and reports must update as one traceable outpatient journey.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - The OPD encounter is the central outpatient record.

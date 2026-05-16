@@ -4,11 +4,14 @@
 Manage in-app notifications, delivery state, unread indicators, conversations, messages, workflow reminders, alerts, and user-facing notification badges without creating noise.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for notifications and communications scope.
 - Use `opd-flow.md` and `ipd-flow.md` for patient-flow notifications such as triage ready, doctor review, lab/radiology results, pharmacy ready, admission, transfer, discharge, billing, housekeeping, and bed readiness.
 - Use `01-policy.md` for simple UI, role access, partial badge refresh, and responsive behavior.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/notifications`
 - `/api/v1/notification-deliveries`
 - `/api/v1/conversations`
@@ -30,6 +33,14 @@ Manage in-app notifications, delivery state, unread indicators, conversations, m
 | Actions | Use modals or lightweight panels for quick actions; deep-link only when opening the related record is needed. |
 | Noise control | Avoid duplicate alerts for the same event/user. Group where backend supports it. |
 | Responsiveness | Mobile uses notification page/panel; desktop may use app-bar dropdown plus full workspace. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: notification badge, notification list item, conversation list, message composer, unread indicator, workflow alert card, action routing button, and quiet/duplicate grouping pattern.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: notification delivery, unread counts, workflow destinations, permissions, conversations/messages, OPD/IPD/order/billing/report events, and audit logs must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - OPD/IPD workflow updates should notify only responsible roles/users.

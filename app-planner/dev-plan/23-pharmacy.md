@@ -4,21 +4,26 @@
 Manage formulary, drugs, batches, stock visibility, prescriptions, pharmacy orders, dispensing, returns/adjustments where supported, billing/payment gates, and medication handoff from OPD, IPD, emergency, and discharge.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for pharmacy scope.
 - Use `opd-flow.md` for prescription/pharmacy routing and flexible payment timing.
 - Use `ipd-flow.md` for inpatient medication orders, discharge medicines, billing, and pharmacy clearance.
 - Use `01-policy.md` for simple modal actions, catalog-driven selection, role access, and partial UI updates.
 
 ## Backend Routes To Align With
-- `/api/v1/pharmacy`
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/drugs`
 - `/api/v1/drug-batches`
 - `/api/v1/formulary-items`
 - `/api/v1/pharmacy-orders`
 - `/api/v1/pharmacy-order-items`
 - `/api/v1/dispense-logs`
+- `/api/v1/adverse-events`
 - `/api/v1/inventory-items`
 - `/api/v1/inventory-stocks`
+- `/api/v1/invoices`
+- `/api/v1/payments`
 
 ## Implementation Scope
 1. Pharmacy queue for waiting payment/authorization, ready to dispense, partial stock, dispensed, returned/cancelled, and discharge medicine pending.
@@ -36,6 +41,14 @@ Manage formulary, drugs, batches, stock visibility, prescriptions, pharmacy orde
 | Flexibility | Prescription data should support formulary items and permitted free-text/non-formulary instructions without making routine prescribing slow. |
 | Billing | Payment blockers are visible; cashier actions remain in billing unless pharmacy has permitted payment collection. |
 | Responsiveness | Mobile supports quick queue and dispense modal; desktop supports queue plus detail panel. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: prescription/order row, patient context header, drug/formulary selector, batch/stock selector, dispensing form, return/correction modal, medication handoff panel, and pharmacy status badge.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: prescriptions, pharmacy order items, stock/batch visibility, dispense logs, billing gate, medication administration handoff, discharge medicines, notifications, reports, and encounter/admission links must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Prescriptions must attach to the correct OPD encounter, IPD admission, emergency case, or discharge record.

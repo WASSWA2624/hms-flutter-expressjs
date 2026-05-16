@@ -5,6 +5,7 @@
 Define one reusable UI pattern for all HOSSPI HMS module workspaces so the app looks uniform, stays simple, supports fast hospital work, and avoids redesigning screens from module to module.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 
 - Use frontend app-rules for architecture, components, forms, responsive behavior, state management, navigation, permissions, and performance.
 - Use `app-write-up.md` for module boundaries.
@@ -37,6 +38,24 @@ frontend/lib/features/<feature>/
 ```
 
 Do not put product business logic in shared components. Shared components should provide consistent UI behavior only.
+
+
+## Required Reusable UI Building Blocks
+Create or extend these once, then reuse them across module screens instead of rebuilding local variants:
+
+| Reusable pattern | Used for |
+| --- | --- |
+| Shared form shell and fields | Patient registration, triage vitals, clinical notes, orders, prescriptions, payments, setup, HR, reports, and all short module forms. |
+| Shared modal/dialog shell | Quick create/edit, queue movement, status update, approval, payment, print/export, and confirmation actions. |
+| Shared patient context header/card | Any patient-linked OPD, IPD, emergency, diagnostic, pharmacy, billing, claims, physiotherapy, mortuary, clinical, nursing, ICU, theater, or discharge view. |
+| Shared worklist/table/list | Patient queues, catalogs, orders, results, invoices, claims, staff, assets, rooms, beds, tasks, reports, audit logs, and notifications. |
+| Shared search/filter/sort controls | All lists, queues, catalogs, reports, and logs that need filtering or pagination. |
+| Shared status badge/chip | Encounter, admission, billing, order, result, bed, claim, equipment, notification, and report statuses. |
+| Shared detail panel/drawer | Quick record review beside a list or queue on tablet/desktop. |
+| Shared async state views | Loading, empty, error, forbidden, offline, success, and duplicate-submit states. |
+| Shared report/print/export action | Generated summaries, receipts, discharge documents, invoices, audit extracts, and report downloads. |
+
+Shared components must be theme-aware, localized, accessible, responsive, and free of feature-specific backend calls. Feature folders may compose them with module-specific validation, permissions, and submit handlers.
 
 ## Standard Screen Pattern
 

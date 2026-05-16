@@ -4,25 +4,26 @@
 Allow admins to configure the organization and facility before daily hospital operations begin, while keeping facility setup synchronized with reports, patient flows, rooms/beds, users, and module access.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for setup flow and facility/module boundaries.
 - Use `ipd-flow.md` for ward, room, bed, and inpatient readiness.
 - Use `35-reports-audit.md` for facility identity on generated print/report templates.
 - Use backend routes and rules for storage, validation, tenancy, and authorization.
 
 ## Backend Routes
-Use the existing route families:
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/tenants`
 - `/api/v1/facilities`
 - `/api/v1/branches`
 - `/api/v1/departments`
 - `/api/v1/units`
-- `/api/v1/addresses`
-- `/api/v1/contacts`
 - `/api/v1/rooms`
 - `/api/v1/wards`
 - `/api/v1/beds`
 
 ## Scope
+- Store address/contact details through tenant/facility payload fields or dedicated backend routes only when those routes exist; do not invent `/addresses` or `/contacts` calls.
 1. Tenant profile view/edit.
 2. Facility profile view/edit: name, logo, contacts, address, type, active state.
 3. Branch setup where facilities have branches.
@@ -50,6 +51,14 @@ After account creation or first admin login:
 - Do not duplicate room/ward/bed logic outside `29-rooms-beds.md`.
 - Facility logo/name/contact details must feed report templates and relevant shell/screen headers.
 - After setup changes, refresh only affected setup rows, shell facility identity, report template preview, or dependent catalogs.
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: tenant/facility profile forms, contact/address field groups, logo upload field, department/unit/branch setup forms, setup checklist cards, and room/ward/bed entry-point cards.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: facility identity, departments, units, rooms, wards, beds, report headers, OPD/IPD routing options, and permission scopes must update together from backend-backed setup data.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Done Criteria
 - Facility setup can be completed without leaving the admin setup area unnecessarily.

@@ -4,12 +4,15 @@
 Support nursing observations, vital signs, medication administration, care tasks, handovers, ward activity, and clinical escalation across OPD, IPD, ICU, theater recovery, and discharge workflows.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for nursing responsibilities.
 - Use `opd-flow.md` for triage handoff and outpatient nursing touchpoints.
 - Use `ipd-flow.md` for nursing admission, ward handover, inpatient care loop, transfers, discharge readiness, and bed release coordination.
 - Use `01-policy.md` for simple modal actions, role access, responsive UI, and partial state updates.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/nursing-notes`
 - `/api/v1/medication-administrations`
 - `/api/v1/vital-signs`
@@ -33,6 +36,14 @@ Support nursing observations, vital signs, medication administration, care tasks
 | High-risk actions | Require clear confirmation for medication administration, escalation, and transfer acknowledgement. |
 | Mobile behavior | One-column list and focused modal forms. Keep touch targets practical. |
 | Desktop behavior | Allow worklist and patient panel side by side using shared responsive layout. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: patient context header, nursing observation form, vitals form, medication administration form, care task checklist, handover modal, roster/assignment list, and ward activity panel.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: nursing notes, vitals, medication administrations, care tasks, handovers, ward queues, doctor updates, pharmacy stock effects, and IPD admission state must update together.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - IPD nursing admission must start only after admission/bed workflow provides a patient location or authorized holding area.

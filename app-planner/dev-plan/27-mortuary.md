@@ -4,12 +4,24 @@
 Manage deceased profiles, mortuary cases, storage units/slots, custody events, viewings, post-mortem requests, release authorization, billing, documents, and respectful handover.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for mortuary scope.
 - Use `ipd-flow.md` where a mortuary case originates from an inpatient outcome or facility handover.
 - Use `01-policy.md` for respectful simple UI, permissions, generated reports, and partial state refresh.
 
 ## Backend Routes To Align With
-- `/api/v1/mortuary`
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
+- `/api/v1/mortuary-cases`
+- `/api/v1/mortuary-deceased-profiles`
+- `/api/v1/mortuary-storage-units`
+- `/api/v1/mortuary-storage-slots`
+- `/api/v1/mortuary-storage-assignments`
+- `/api/v1/mortuary-custody-events`
+- `/api/v1/mortuary-viewings`
+- `/api/v1/mortuary-post-mortem-requests`
+- `/api/v1/mortuary-release-authorisations`
+- `/api/v1/mortuary-billable-events`
 
 ## Implementation Scope
 1. Mortuary case list with active, pending storage, in storage, viewing scheduled, post-mortem pending, release pending, billing pending, and released statuses where supported.
@@ -26,6 +38,14 @@ Manage deceased profiles, mortuary cases, storage units/slots, custody events, v
 | Actions | Use modals for custody, storage assignment, viewing, release, and print actions. |
 | Language | Use clear respectful labels and avoid technical codes. |
 | Responsiveness | Mobile supports focused case actions; desktop supports case list plus detail panel. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: deceased/person context header, mortuary case card, storage unit/slot selector, custody event form, viewing appointment form, post-mortem request panel, release authorization modal, and billable event card.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: mortuary case, deceased profile, storage assignment, custody chain, viewing, post-mortem request, release authorization, billing events, reports, and audit records must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Mortuary cases originating from IPD/emergency must preserve source patient/encounter/admission context where available.

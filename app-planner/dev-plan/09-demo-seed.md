@@ -4,10 +4,11 @@
 Plan safe default/demo data so HOSSPI HMS can be tested, demonstrated, and initialized consistently across OPD, IPD, billing, clinical, service departments, reports, notifications, and access control.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for demo and seed expectations.
 - Use `opd-flow.md` for sample OPD journeys.
 - Use `ipd-flow.md` for sample IPD journeys.
-- Use backend seed scripts and seed catalog as the source of truth for current support.
+- Align seed/demo expectations with current backend seed scripts and seed catalog support.
 
 ## Current Backend Seed Support
 The current backend already includes:
@@ -69,6 +70,14 @@ A dedicated physiotherapy role/account and backend physiotherapy module are not 
 - Clear/reseed workflows must be protected and restricted.
 - Default credentials must be rotated or disabled before real deployment.
 - Demo records must still obey access control, tenant scope, facility scope, and module entitlement rules.
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: demo account cards, seed status list, setup readiness checklist, sample patient/encounter/admission cards, and demo reset/seed confirmation modal.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: demo data must preserve tenant/facility/user/role/module/subscription, OPD encounter, IPD admission, billing, notification, report, and audit relationships.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Done Criteria
 - Demo setup can create tenant, facility, admins, department users, subscriptions, catalogs, and module data.

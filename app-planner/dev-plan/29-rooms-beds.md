@@ -4,12 +4,15 @@
 Manage facility care spaces, wards, rooms, beds, bed classes, bed readiness, bed assignments, reservations, transfers, cleaning status, maintenance blocks, and occupancy visibility.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for rooms/wards/beds scope.
 - Use `ipd-flow.md` for bed management, admission dependency, transfer, cleaning, maintenance, release, and bed status behavior.
 - Use `opd-flow.md` only where OPD/admission handoff needs bed availability visibility.
 - Use `01-policy.md` for modal actions, role access, responsive UI, and partial state updates.
 
 ## Backend Routes To Align With
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/rooms`
 - `/api/v1/wards`
 - `/api/v1/beds`
@@ -33,6 +36,14 @@ Manage facility care spaces, wards, rooms, beds, bed classes, bed readiness, bed
 | Actions | Use modals for reserve, assign, transfer, release, clean, block, and maintenance updates. |
 | Responsiveness | Mobile uses grouped ward lists; desktop may use board/grid plus detail panel. |
 | Integration | Bed board should be reused by IPD instead of creating a separate bed UI. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: ward/room/bed cards, occupancy badge, bed assignment panel, bed status update modal, transfer-ready indicator, cleaning/readiness badge, and location selector.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: ward/room/bed setup, bed assignments, IPD/ICU transfers, discharge bed release, housekeeping turnover, billing location context, reports, and occupancy dashboards must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Admission bed requests must consume this module’s bed availability and reservation state.

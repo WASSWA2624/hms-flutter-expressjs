@@ -4,11 +4,14 @@
 Ensure every route, menu, button, modal action, report, export, print action, notification action, and API operation is controlled by roles, permissions, action rules, tenant scope, facility scope, and module subscriptions.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for access expectations.
-- Use backend role, permission, ABAC, module-subscription, and license contracts as the source of truth.
+- Align frontend route/action visibility with backend role, permission, ABAC, module-subscription, and license contracts.
 - Use frontend permission rules only to present allowed UI and prevent accidental access.
 
 ## Backend Routes and Files
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/users`
 - `/api/v1/roles`
 - `/api/v1/permissions`
@@ -51,6 +54,14 @@ Admins should manage:
 | Reports | Gate report view, export, print, and audit access separately. |
 | Notifications | Route notification actions only to allowed destinations. |
 | Backend errors | Map `403` to safe forbidden UI and do not expose raw server details. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: permission matrix/table, role assignment form, user-role chips, module entitlement cards, forbidden state view, permission-gated action wrapper, and audit-safe admin modal.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: route guards, visible menus, action buttons, modal availability, report/export permissions, notification destinations, and backend permission responses must match.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Done Criteria
 - Frontend and backend permission names align.

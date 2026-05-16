@@ -5,18 +5,18 @@ This root development plan defines the chronological implementation order for **
 
 The plan must guide implementation only. It must not redefine product scope, OPD flow, IPD flow, backend rules, frontend rules, access rules, report standards, or screen patterns that are already defined elsewhere.
 
-## Source-of-Truth Hierarchy
+## Source-of-Truth and Alignment Hierarchy
 Use these references in this order whenever there is overlap:
 
 | Priority | Reference | Purpose |
 | --- | --- | --- |
-| 1 | `app-planner/app-write-up.md` | Defines what the app does, module responsibilities, module boundaries, demo expectations, access expectations, and UX expectations. |
-| 2 | `app-planner/opd-flow.md` | Defines outpatient arrival, registration, triage, billing gates, doctor consultation, lab/radiology/pharmacy routing, result review, admission/referral, and OPD completion. |
-| 3 | `app-planner/ipd-flow.md` | Defines admission, bed allocation, billing/deposit/insurance, ward handover, nursing admission, inpatient care, orders, transfer, discharge, bed release, and IPD closure. |
-| 4 | Frontend and backend `app-rules` | Define how implementation must be done. |
-| 5 | Root `dev-plan` files | Define the implementation sequence and module delivery scope. |
+| 1 | `app-planner/app-write-up.md` | Single product-scope source for what HOSSPI HMS does, module responsibilities, module boundaries, demo expectations, access expectations, and UX expectations. |
+| 2 | `app-planner/opd-flow.md` | Single outpatient-flow source for arrival, registration, triage, billing gates, consultation, lab/radiology/pharmacy routing, result review, admission/referral, and OPD completion. |
+| 3 | `app-planner/ipd-flow.md` | Single inpatient-flow source for admission, bed allocation, billing/deposit/insurance, ward handover, nursing admission, inpatient care, orders, transfer, discharge, bed release, and IPD closure. |
+| 4 | Current backend and frontend contracts/rules | Alignment references for how to implement the three source files without inventing incompatible routes, permissions, statuses, components, or workflows. |
+| 5 | Root `dev-plan` files | Execution sequence and module delivery scope only. |
 
-A dev-plan file must never create a new workflow, UI pattern, data model, access model, report format, or endpoint when it is already defined by a higher-priority reference.
+A dev-plan file must never create a new workflow, UI pattern, data model, access model, report format, status, component family, or endpoint when it is already defined by a higher-priority reference. If a backend/frontend contract is missing, document the gap instead of inventing a frontend-only workaround.
 
 ## Naming Standard
 All root `dev-plan` files must use short, descriptive, numeric names:
@@ -80,7 +80,7 @@ The previous root `dev-plan` used long names and letter suffixes. Replace the pr
 - Do not rebuild the Flutter starter foundation.
 - Inspect existing frontend files before implementation and reuse working routes, shell, theme, shared components, forms, state controllers, network helpers, permissions, and localization.
 - Implement only missing app-specific screens, routes, models, repositories, controllers, forms, modal actions, report templates, exports, and module workspaces.
-- Use backend routes, permissions, feature flags, module subscriptions, catalogs, settings, and response formats as the source of truth.
+- Align backend routes, permissions, feature flags, module subscriptions, catalogs, settings, and response formats with `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md`; do not invent frontend-only backend behavior.
 - Keep each module small enough to implement, test, and review independently.
 - Treat steps `01` through `13` as foundation and implemented/partly implemented flow work. Future work must extend them, not replace them.
 - Treat steps `14` through `37` as continuation work that must connect cleanly to patient registry, OPD, triage, clinical, IPD, billing, reports, notifications, and access control.
@@ -93,6 +93,14 @@ The previous root `dev-plan` used long names and letter suffixes. Replace the pr
 - Avoid technical backend language in staff-facing UI.
 - Do not reload the whole app or whole screen after small updates. Refresh only the affected row, badge, panel, queue, notification count, report preview, or form section.
 - Keep mobile, tablet, desktop, web, and large desktop layouts responsive using existing responsive utilities.
+
+## Reusable Component Mandate
+- Reuse the existing frontend shell, responsive layout, theme, localization, state, networking, permission, form, modal, and async-state foundations before adding any new UI.
+- Any form, modal, patient display, queue row, status badge, search/filter bar, table/list, detail panel, billing gate, order request, report action, or confirmation pattern used in more than one screen must be implemented as a reusable component or extended from an existing reusable component.
+- Do not create duplicate feature-specific widgets for the same visual or behavioral job. New shared components are allowed only when the existing shared set cannot cover a repeated app-wide need.
+- Shared components must stay business-logic-light: they provide layout, state display, accessibility, responsive behavior, validation hooks, and submit-state handling; feature repositories/controllers own business rules and API calls.
+- Patient-facing context must use one shared patient display pattern across OPD, triage, clinical, nursing, IPD, ICU, theater, discharge, emergency, lab, radiology, pharmacy, billing, claims, physiotherapy, and mortuary workflows.
+- Backend and frontend changes must remain synchronized for routes, DTOs, statuses, permissions, module entitlements, notifications, reports, audit events, and OPD/IPD encounter/admission state.
 
 ## Obsolete Root Dev-Plan Files To Remove When Replacing The Folder
 - `app-planner/dev-plan/index.md`

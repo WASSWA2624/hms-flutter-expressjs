@@ -4,12 +4,14 @@
 Manage cleaning tasks, schedules, bed turnover, ward cleaning, sanitation readiness, laundry coordination where supported, housekeeping requests, and cleanliness status.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for housekeeping scope.
 - Use `ipd-flow.md` for discharge-triggered bed cleaning, bed release, and room readiness.
 - Use `01-policy.md` for simple modal actions, role access, responsive UI, and partial state refresh.
 
 ## Backend Routes To Align With
-- `/api/v1/housekeeping`
+
+Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 - `/api/v1/housekeeping-tasks`
 - `/api/v1/housekeeping-schedules`
 - `/api/v1/maintenance-requests`
@@ -32,6 +34,14 @@ Manage cleaning tasks, schedules, bed turnover, ward cleaning, sanitation readin
 | Actions | Use modals for start, complete, inspect, rework, assign, and ready actions. |
 | Responsiveness | Mobile must support quick task updates from staff; desktop supports board plus detail panel. |
 | Simplicity | Avoid technical facility data in the task list. Show location and action clearly. |
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: housekeeping task list, room/bed context card, cleaning schedule form, task assignment modal, readiness badge, sanitation checklist, and turnover confirmation modal.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: housekeeping tasks, schedules, room/bed readiness, ward/bed availability, discharge turnover, maintenance handoff, notifications, reports, and audit events must stay synchronized.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Flow Synchronization Rules
 - Discharge patient exit should create/update housekeeping cleaning task and set bed to cleaning/dirty where backend supports it.

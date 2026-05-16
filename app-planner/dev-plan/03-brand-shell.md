@@ -4,6 +4,7 @@
 Convert the Flutter starter identity into **HOSSPI HMS** without rebuilding the existing shell foundation.
 
 ## Source of Truth
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
 - Use `app-write-up.md` for official product name, product scope, setup flow, modules, and UX expectations.
 - Use `10-workspace-ui.md` for module workspace consistency.
 - Use frontend app-rules for assets, theming, localization, navigation, responsiveness, and accessibility.
@@ -46,6 +47,14 @@ Implement app identity in this order:
 - User menu actions should include profile, settings, change password, and logout after auth is implemented.
 - Notification indicators should be wired after notification data access is available.
 - When app bar state changes, update only the relevant avatar, badge, status chip, or indicator.
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: app logo/identity display, responsive app shell, screen shell, navigation item, user menu, notification badge, facility identity header, and app status indicator.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: brand labels, shell navigation, user/facility context, notification count, and entitlement visibility must come from authenticated backend-backed state and stay consistent across routes.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Done Criteria
 - App title and short title display as HOSSPI HMS.

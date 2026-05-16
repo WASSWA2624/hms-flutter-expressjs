@@ -4,7 +4,8 @@
 Implement HMS authentication screens and account actions using the existing Flutter session foundation and backend auth APIs.
 
 ## Source of Truth
-- Use backend auth/session routes and response formats as the source of truth.
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
+- Align with current backend auth/session routes and response formats for implementation details.
 - Use `app-write-up.md` and `08-access-control.md` for role and module access expectations.
 - Use frontend auth, session, security, forms, navigation, and permissions rules for implementation.
 
@@ -26,6 +27,8 @@ Implement HMS authentication screens and account actions using the existing Flut
 10. Load role, permission, tenant, facility, and module entitlement context after login.
 
 ## Backend Contracts
+
+Confirm each auth/session contract against the current backend router/API contract before wiring frontend calls. If a contract is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
 Use existing backend auth/session contracts. Confirm payload names, token handling, refresh behavior, session expiry, permission payloads, module entitlement payloads, and error format before implementing UI.
 
 ## UX Rules
@@ -41,6 +44,14 @@ Use existing backend auth/session contracts. Confirm payload names, token handli
 - Menus and routes must be rebuilt from the authenticated user's roles, permissions, scopes, and active module entitlements.
 - Staff must not see actions outside their roles.
 - Backend `401` should trigger session handling; backend `403` should show a localized forbidden state.
+
+## Reusable Components and Sync Contract
+- Reuse `10-workspace-ui.md` workspace layout, shared form fields, shared modal/dialog shell, responsive detail panels, status badges, search/filter/table/list controls, async state views, and permission-gated action patterns before adding module-specific widgets.
+- Use or create shared components for: login/register/change-password forms, password field, submit button, auth error state, session-loading screen, user avatar/menu, protected-route wrapper, and forbidden/unauthenticated state.
+- Keep common form layout, field behavior, validation-error display, server-error mapping, loading state, disabled state, and duplicate-submit protection shared; keep module-specific validation and submit mapping in feature controllers/repositories.
+- Keep modal actions focused and return users to the same worklist/detail context after success; refresh only backend-backed affected rows, badges, panels, queues, counters, report previews, or form sections.
+- Backend/frontend sync required: auth DTOs, session storage, route guards, role/module visibility, and logout cleanup must reflect backend auth/session responses.
+- Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
 ## Done Criteria
 - Login, logout, change password, and session restoration work.

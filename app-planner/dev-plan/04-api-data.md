@@ -4,10 +4,11 @@
 Prepare the Flutter frontend to consume the existing backend safely, consistently, and without duplicating API or data patterns.
 
 ## Source of Truth
-- Backend routes, permissions, feature flags, module entitlements, catalogs, and response formats are the API source of truth.
+- `app-write-up.md`, `opd-flow.md`, and `ipd-flow.md` are the single product/flow source of truth for this implementation plan; backend/frontend planner files and rules are alignment references only.
+- Align with current backend routes, permissions, feature flags, module entitlements, catalogs, and response formats; do not let API convenience change the product/flow rules above.
 - `app-write-up.md` defines module scope.
 - `opd-flow.md` and `ipd-flow.md` define encounter/admission movement that API state must support.
-- Frontend app-rules define repository, DTO, state, error, and network patterns.
+- Frontend app-rules define repository, DTO, state, error, reusable component, and network implementation mechanics.
 
 ## Current State
 - Backend APIs are mounted under `/api/v1`.
@@ -25,6 +26,15 @@ Prepare the Flutter frontend to consume the existing backend safely, consistentl
 7. Respect backend tenant scope, facility scope, module entitlement, role permissions, and action permissions.
 8. Support cancelable/stale requests for search, filters, queues, and large worklists.
 9. After mutations, update only the affected state slice.
+
+
+## Backend/Frontend Synchronization Contract
+- Add or update endpoint helpers, DTOs, domain models, repositories, controllers, permission checks, and UI state together for each module slice.
+- Keep raw API paths out of widgets; widgets call controllers/use-cases, controllers call repositories, and repositories call centralized API helpers.
+- Treat backend mutation responses as the authoritative state for updated rows, totals, queue positions, billing status, order status, report identifiers, and timestamps.
+- Do not hard-code OPD/IPD statuses or transitions outside the source flows; map backend state into localized user-facing labels and shared status badge components.
+- Catalog-backed shared selects must read from backend/configured catalogs and invalidate when setup data changes.
+- Permission, entitlement, feature-flag, and facility/tenant scope checks must be enforced before showing actions and again by backend calls.
 
 ## Endpoint Groups To Prepare
 - Auth/session
