@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_light_theme_palette.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 
 abstract final class AppTheme {
@@ -7,10 +8,7 @@ abstract final class AppTheme {
   static ThemeData get dark => _buildTheme(Brightness.dark);
 
   static ThemeData _buildTheme(Brightness brightness) {
-    final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: _seedColorFor(brightness),
-      brightness: brightness,
-    );
+    final ColorScheme colorScheme = _blueColorSchemeFor(brightness);
     const RoundedRectangleBorder rectangularShape = RoundedRectangleBorder();
     const AppSpacingTokens spacing = AppSpacingTokens.standard;
     const AppDesignTokens appTokens = AppDesignTokens.standard;
@@ -219,10 +217,69 @@ abstract final class AppTheme {
     );
   }
 
-  static Color _seedColorFor(Brightness brightness) {
+  static ColorScheme _blueColorSchemeFor(Brightness brightness) {
+    final ColorScheme baseColorScheme = ColorScheme.fromSeed(
+      seedColor: AppLightThemePalette.shade500,
+      brightness: brightness,
+    );
+
     return switch (brightness) {
-      Brightness.light => const Color(0xFF1565C0),
-      Brightness.dark => const Color(0xFF90CAF9),
+      Brightness.light => baseColorScheme.copyWith(
+        primary: AppLightThemePalette.shade500,
+        onPrimary: Colors.white,
+        primaryContainer: AppLightThemePalette.shade50,
+        onPrimaryContainer: AppLightThemePalette.shade900,
+        primaryFixed: AppLightThemePalette.shade100,
+        primaryFixedDim: AppLightThemePalette.shade200,
+        onPrimaryFixed: AppLightThemePalette.shade900,
+        onPrimaryFixedVariant: AppLightThemePalette.shade700,
+        secondary: AppLightThemePalette.shade700,
+        onSecondary: Colors.white,
+        secondaryContainer: AppLightThemePalette  .shade100,
+        onSecondaryContainer: AppLightThemePalette  .shade900,
+        secondaryFixed: AppLightThemePalette.shade100,
+        secondaryFixedDim: AppLightThemePalette.shade200,
+        onSecondaryFixed: AppLightThemePalette.shade900,
+        onSecondaryFixedVariant: AppLightThemePalette.shade700,
+        tertiary: AppLightThemePalette.accentA400,
+        onTertiary: Colors.white,
+        tertiaryContainer: AppLightThemePalette.accentA100,
+        onTertiaryContainer: AppLightThemePalette.shade900,
+        tertiaryFixed: AppLightThemePalette.accentA100,
+        tertiaryFixedDim: AppLightThemePalette.accentA200,
+        onTertiaryFixed: AppLightThemePalette.shade900,
+        onTertiaryFixedVariant: AppLightThemePalette.accentA700,
+        inversePrimary: AppLightThemePalette.shade200,
+        surfaceTint: AppLightThemePalette.shade500,
+      ),
+      Brightness.dark => baseColorScheme.copyWith(
+        primary: AppLightThemePalette.shade200,
+        onPrimary: AppLightThemePalette.shade900,
+        primaryContainer: AppLightThemePalette.shade800,
+        onPrimaryContainer: AppLightThemePalette.shade50,
+        primaryFixed: AppLightThemePalette.shade100,
+        primaryFixedDim: AppLightThemePalette.shade200,
+        onPrimaryFixed: AppLightThemePalette.shade900,
+        onPrimaryFixedVariant: AppLightThemePalette.shade700,
+        secondary: AppLightThemePalette.shade300,
+        onSecondary: AppLightThemePalette.shade900,
+        secondaryContainer: AppLightThemePalette.shade700,
+        onSecondaryContainer: AppLightThemePalette.shade50,
+        secondaryFixed: AppLightThemePalette.shade100,
+        secondaryFixedDim: AppLightThemePalette.shade200,
+        onSecondaryFixed: AppLightThemePalette.shade900,
+        onSecondaryFixedVariant: AppLightThemePalette.shade700,
+        tertiary: AppLightThemePalette.accentA100,
+        onTertiary: AppLightThemePalette.shade900,
+        tertiaryContainer: AppLightThemePalette.accentA700,
+        onTertiaryContainer: AppLightThemePalette.shade50,
+        tertiaryFixed: AppLightThemePalette.accentA100,
+        tertiaryFixedDim: AppLightThemePalette.accentA200,
+        onTertiaryFixed: AppLightThemePalette.shade900,
+        onTertiaryFixedVariant: AppLightThemePalette.accentA700,
+        inversePrimary: AppLightThemePalette.shade500,
+        surfaceTint: AppLightThemePalette.shade200,
+      ),
     };
   }
 }

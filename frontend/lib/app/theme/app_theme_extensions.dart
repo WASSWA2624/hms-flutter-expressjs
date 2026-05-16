@@ -1,6 +1,7 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_light_theme_palette.dart';
 
 @immutable
 final class AppSpacingTokens extends ThemeExtension<AppSpacingTokens> {
@@ -168,10 +169,10 @@ final class AppStatusColors extends ThemeExtension<AppStatusColors> {
     onError: Color(0xFFFFFFFF),
     errorContainer: Color(0xFFFFDAD6),
     onErrorContainer: Color(0xFF410002),
-    info: Color(0xFF005FAF),
+    info: AppLightThemePalette.shade700,
     onInfo: Color(0xFFFFFFFF),
-    infoContainer: Color(0xFFD5E3FF),
-    onInfoContainer: Color(0xFF001C3B),
+    infoContainer: AppLightThemePalette.shade50,
+    onInfoContainer: AppLightThemePalette.shade900,
   );
 
   static const AppStatusColors dark = AppStatusColors(
@@ -187,10 +188,10 @@ final class AppStatusColors extends ThemeExtension<AppStatusColors> {
     onError: Color(0xFF690005),
     errorContainer: Color(0xFF93000A),
     onErrorContainer: Color(0xFFFFDAD6),
-    info: Color(0xFFA7C8FF),
-    onInfo: Color(0xFF00315F),
-    infoContainer: Color(0xFF004786),
-    onInfoContainer: Color(0xFFD5E3FF),
+    info: AppLightThemePalette.shade200,
+    onInfo: AppLightThemePalette.shade900,
+    infoContainer: AppLightThemePalette.shade800,
+    onInfoContainer: AppLightThemePalette.shade50,
   );
 
   final Color success;
