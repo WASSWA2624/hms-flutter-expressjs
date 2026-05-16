@@ -3,21 +3,21 @@
  */
 
 jest.mock('@lib/jwt', () => ({
-  verifyToken: jest.fn(),
+  verifyToken: jest.fn()
 }));
 
 jest.mock('@lib/crypto', () => ({
-  verifyApiKey: jest.fn(),
+  verifyApiKey: jest.fn()
 }));
 
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(() => Promise.resolve({})),
+  createAuditLog: jest.fn(() => Promise.resolve({}))
 }));
 
 jest.mock('@repositories/api-key/api-key.repository', () => ({
   findAuthCandidatesByFriendlyId: jest.fn(),
   findAuthCandidates: jest.fn(),
-  touchLastUsed: jest.fn(),
+  touchLastUsed: jest.fn()
 }));
 
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
@@ -89,8 +89,40 @@ describe('auth middleware', () => {
     const req = {
       user: {
         role: 'HOSPITAL_ADMIN',
-        roles: ['HOSPITAL_ADMIN'],
-      },
+        roles: ['HOSPITAL_ADMIN']
+      }
+    };
+    const res = {};
+    const next = jest.fn();
+
+    middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it('authorizes display-form super admin roles for permission checks', () => {
+    const middleware = authorize('clinical:read', 'permission');
+    const req = {
+      user: {
+        role: 'Super Admin',
+        roles: ['Super Admin']
+      }
+    };
+    const res = {};
+    const next = jest.fn();
+
+    middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it('authorizes display-form super admin roles for role checks', () => {
+    const middleware = authorize('SUPER_ADMIN', 'role');
+    const req = {
+      user: {
+        role: 'Super Admin',
+        roles: ['Super Admin']
+      }
     };
     const res = {};
     const next = jest.fn();
@@ -182,7 +214,7 @@ describe('auth middleware', () => {
         permissions: ['integration:read']
       },
       originalUrl: '/api/v1/api-keys',
-      path: '/api-keys',
+      path: '/api-keys'
     };
     const res = {};
     const next = jest.fn();
@@ -198,27 +230,29 @@ describe('auth middleware', () => {
     verifyToken.mockReturnValue({
       id: 'user-123',
       tenant_id: 'tenant-123',
-      roles: ['DOCTOR'],
+      roles: ['DOCTOR']
     });
 
     const req = {
       headers: {
-        authorization: 'Bearer valid-token',
+        authorization: 'Bearer valid-token'
       },
       path: '/patients',
-      originalUrl: '/api/v1/patients',
+      originalUrl: '/api/v1/patients'
     };
     const res = {};
     const next = jest.fn();
 
     await authenticate()(req, res, next);
 
-    expect(req.user).toEqual(expect.objectContaining({
-      id: 'user-123',
-      tenant_id: 'tenant-123',
-      auth_type: 'jwt',
-      roles: ['DOCTOR'],
-    }));
+    expect(req.user).toEqual(
+      expect.objectContaining({
+        id: 'user-123',
+        tenant_id: 'tenant-123',
+        auth_type: 'jwt',
+        roles: ['DOCTOR']
+      })
+    );
     expect(next).toHaveBeenCalledWith();
   });
 
@@ -227,27 +261,29 @@ describe('auth middleware', () => {
       id: 'user-hospital-admin',
       tenant_id: 'tenant-123',
       hospital_id: 'hospital-123',
-      roles: ['HOSPITAL_ADMIN'],
+      roles: ['HOSPITAL_ADMIN']
     });
 
     const req = {
       headers: {
-        authorization: 'Bearer valid-token',
+        authorization: 'Bearer valid-token'
       },
       path: '/mortuary',
-      originalUrl: '/api/v1/mortuary',
+      originalUrl: '/api/v1/mortuary'
     };
     const res = {};
     const next = jest.fn();
 
     await authenticate()(req, res, next);
 
-    expect(req.user).toEqual(expect.objectContaining({
-      facility_id: 'hospital-123',
-      facilityId: 'hospital-123',
-      role: 'FACILITY_ADMIN',
-      roles: ['FACILITY_ADMIN'],
-    }));
+    expect(req.user).toEqual(
+      expect.objectContaining({
+        facility_id: 'hospital-123',
+        facilityId: 'hospital-123',
+        role: 'FACILITY_ADMIN',
+        roles: ['FACILITY_ADMIN']
+      })
+    );
     expect(next).toHaveBeenCalledWith();
   });
 
@@ -260,11 +296,9 @@ describe('auth middleware', () => {
       user: {
         id: 'user-123',
         tenant_id: 'tenant-123',
-        roles: [{ role: { name: 'TENANT_ADMIN' } }],
+        roles: [{ role: { name: 'TENANT_ADMIN' } }]
       },
-      permissions: [
-        { permission: { name: 'integration:read' } },
-      ],
+      permissions: [{ permission: { name: 'integration:read' } }]
     };
 
     apiKeyRepository.findAuthCandidatesByFriendlyId.mockResolvedValue([apiKeyRecord]);
@@ -272,26 +306,28 @@ describe('auth middleware', () => {
 
     const req = {
       headers: {
-        'x-api-key': 'KEY-ABCD1234.secret-part',
+        'x-api-key': 'KEY-ABCD1234.secret-part'
       },
       path: '/webhook-subscriptions',
       originalUrl: '/api/v1/webhook-subscriptions',
       ip: '127.0.0.1',
-      get: jest.fn(() => 'jest'),
+      get: jest.fn(() => 'jest')
     };
     const res = {};
     const next = jest.fn();
 
     await authenticate()(req, res, next);
 
-    expect(req.user).toEqual(expect.objectContaining({
-      id: 'user-123',
-      tenant_id: 'tenant-123',
-      auth_type: 'api_key',
-      api_key_id: 'key-123',
-      roles: [],
-      permissions: ['integration:read'],
-    }));
+    expect(req.user).toEqual(
+      expect.objectContaining({
+        id: 'user-123',
+        tenant_id: 'tenant-123',
+        auth_type: 'api_key',
+        api_key_id: 'key-123',
+        roles: [],
+        permissions: ['integration:read']
+      })
+    );
     expect(apiKeyRepository.touchLastUsed).toHaveBeenCalledWith('key-123');
     expect(next).toHaveBeenCalledWith();
   });
@@ -299,12 +335,12 @@ describe('auth middleware', () => {
   it('rejects API keys on non-integration routes', async () => {
     const req = {
       headers: {
-        'x-api-key': 'KEY-ABCD1234.secret-part',
+        'x-api-key': 'KEY-ABCD1234.secret-part'
       },
       path: '/patients',
       originalUrl: '/api/v1/patients',
       ip: '127.0.0.1',
-      get: jest.fn(() => 'jest'),
+      get: jest.fn(() => 'jest')
     };
     const res = {};
     const next = jest.fn();
@@ -320,12 +356,12 @@ describe('auth middleware', () => {
   it('rejects API keys on API key management routes', async () => {
     const req = {
       headers: {
-        'x-api-key': 'KEY-ABCD1234.secret-part',
+        'x-api-key': 'KEY-ABCD1234.secret-part'
       },
       path: '/api-keys',
       originalUrl: '/api/v1/api-keys',
       ip: '127.0.0.1',
-      get: jest.fn(() => 'jest'),
+      get: jest.fn(() => 'jest')
     };
     const res = {};
     const next = jest.fn();

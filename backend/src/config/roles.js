@@ -30,15 +30,17 @@ const ROLES = Object.freeze({
   MORTUARY_STAFF: 'MORTUARY_STAFF',
   MORTUARY_MANAGER: 'MORTUARY_MANAGER',
   PATIENT: 'PATIENT',
-  OTHER: 'OTHER',
+  OTHER: 'OTHER'
 });
 
 const ROLE_VALUES = Object.freeze(Object.values(ROLES));
 
 const LEGACY_ROLE_ALIASES = Object.freeze({
   ADMIN: ROLES.TENANT_ADMIN,
+  ADMINISTRATOR: ROLES.TENANT_ADMIN,
   APP_ADMIN: ROLES.SUPER_ADMIN,
   OWNER: ROLES.TENANT_ADMIN,
+  SUPERADMIN: ROLES.SUPER_ADMIN,
   SYSTEM_ADMIN: ROLES.SUPER_ADMIN,
   PLATFORM_ADMIN: ROLES.SUPER_ADMIN,
   FACILITY_MANAGER: ROLES.FACILITY_ADMIN,
@@ -57,7 +59,7 @@ const LEGACY_ROLE_ALIASES = Object.freeze({
   MORGUE_ATTENDANT: ROLES.MORTUARY_STAFF,
   HOUSEKEEPING_SUPERVISOR: ROLES.HOUSEKEEPING_MANAGER,
   USER: ROLES.OTHER,
-  GUEST: ROLES.OTHER,
+  GUEST: ROLES.OTHER
 });
 
 /**
@@ -67,7 +69,10 @@ const LEGACY_ROLE_ALIASES = Object.freeze({
  * @returns {string | null}
  */
 const normalizeRoleName = (role) => {
-  const normalized = String(role || '').trim().toUpperCase();
+  const normalized = String(role || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_');
   if (!normalized) return null;
   if (LEGACY_ROLE_ALIASES[normalized]) return LEGACY_ROLE_ALIASES[normalized];
   if (ROLE_VALUES.includes(normalized)) return normalized;
@@ -103,7 +108,7 @@ const ROLE_HIERARCHY = Object.freeze({
   [ROLES.MORTUARY_MANAGER]: 21,
   [ROLES.FACILITY_ADMIN]: 22,
   [ROLES.TENANT_ADMIN]: 23,
-  [ROLES.SUPER_ADMIN]: 24,
+  [ROLES.SUPER_ADMIN]: 24
 });
 
 module.exports = {
@@ -113,5 +118,5 @@ module.exports = {
   ELEVATED_ROLES,
   LEGACY_ROLE_ALIASES,
   normalizeRoleName,
-  isCanonicalRole,
+  isCanonicalRole
 };

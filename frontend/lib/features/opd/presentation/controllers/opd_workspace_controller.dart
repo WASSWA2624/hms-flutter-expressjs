@@ -552,8 +552,9 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdAppointment>> appointmentsResult = await _repository
         .listAppointments(appointmentQuery);
-    final AppPage<OpdAppointment>? appointments = _successOrNull(
+    final AppPage<OpdAppointment>? appointments = _pageOrEmptyOnAccessDenied(
       appointmentsResult,
+      appointmentQuery.pageRequest,
     );
     if (appointments == null) {
       return Result<OpdWorkspaceState>.failure(
@@ -563,7 +564,10 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdQueueEntry>> queueResult = await _repository
         .listVisitQueues(queueQuery);
-    final AppPage<OpdQueueEntry>? queue = _successOrNull(queueResult);
+    final AppPage<OpdQueueEntry>? queue = _pageOrEmptyOnAccessDenied(
+      queueResult,
+      queueQuery.pageRequest,
+    );
     if (queue == null) {
       return Result<OpdWorkspaceState>.failure(_failureOrNull(queueResult)!);
     }
@@ -577,8 +581,9 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdFlowSummary>> triageQueueResult = await _repository
         .listTriageQueue(triageQueueQuery);
-    final AppPage<OpdFlowSummary>? triageQueue = _successOrNull(
+    final AppPage<OpdFlowSummary>? triageQueue = _pageOrEmptyOnAccessDenied(
       triageQueueResult,
+      triageQueueQuery.pageRequest,
     );
     if (triageQueue == null) {
       return Result<OpdWorkspaceState>.failure(
@@ -1175,10 +1180,34 @@ final class OpdWorkspaceController
     return result.when(success: (T value) => value, failure: (_) => null);
   }
 
+  AppPage<T>? _pageOrEmptyOnAccessDenied<T>(
+    Result<AppPage<T>> result,
+    AppPageRequest request,
+  ) {
+    return result.when(
+      success: (AppPage<T> page) => page,
+      failure: (AppFailure failure) {
+        if (_isAccessDeniedFailure(failure)) {
+          return AppPage<T>(
+            items: List<T>.empty(),
+            request: request,
+            totalItemCount: 0,
+          );
+        }
+        return null;
+      },
+    );
+  }
+
   AppFailure? _failureOrNull<T>(Result<T> result) {
     return result.when(
       success: (_) => null,
       failure: (AppFailure failure) => failure,
     );
+  }
+
+  bool _isAccessDeniedFailure(AppFailure failure) {
+    return failure.category == AppFailureCategory.unauthorized ||
+        failure.category == AppFailureCategory.forbidden;
   }
 }

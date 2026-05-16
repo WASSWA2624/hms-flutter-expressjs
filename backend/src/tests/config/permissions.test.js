@@ -10,11 +10,7 @@ describe('permissions config', () => {
   it('includes RADIOLOGY_TECH in the canonical role catalog', () => {
     expect(ROLES.RADIOLOGY_TECH).toBe('RADIOLOGY_TECH');
     expect(ROLE_PERMISSIONS[ROLES.RADIOLOGY_TECH]).toEqual(
-      expect.arrayContaining([
-        PERMISSIONS.RADIOLOGY_READ,
-        PERMISSIONS.RADIOLOGY_WRITE,
-        PERMISSIONS.PATIENT_READ
-      ])
+      expect.arrayContaining([PERMISSIONS.RADIOLOGY_READ, PERMISSIONS.RADIOLOGY_WRITE, PERMISSIONS.PATIENT_READ])
     );
   });
 
@@ -22,11 +18,7 @@ describe('permissions config', () => {
     const permissions = ROLE_PERMISSIONS[ROLES.AMBULANCE_OPERATOR] || [];
 
     expect(permissions).toEqual(
-      expect.arrayContaining([
-        PERMISSIONS.PROFILE_READ,
-        PERMISSIONS.EMERGENCY_READ,
-        PERMISSIONS.EMERGENCY_WRITE
-      ])
+      expect.arrayContaining([PERMISSIONS.PROFILE_READ, PERMISSIONS.EMERGENCY_READ, PERMISSIONS.EMERGENCY_WRITE])
     );
     expect(permissions).not.toContain(PERMISSIONS.EMERGENCY_DELETE);
   });
@@ -51,5 +43,12 @@ describe('permissions config', () => {
     expect(normalizeRoleName('radiographer')).toBe(ROLES.RADIOLOGY_TECH);
     expect(normalizeRoleName('radiology_technician')).toBe(ROLES.RADIOLOGY_TECH);
     expect(normalizeRoleName('imaging_tech')).toBe(ROLES.RADIOLOGY_TECH);
+  });
+
+  it('normalizes display-form administrator roles to canonical roles', () => {
+    expect(normalizeRoleName('Super Admin')).toBe(ROLES.SUPER_ADMIN);
+    expect(normalizeRoleName('super-admin')).toBe(ROLES.SUPER_ADMIN);
+    expect(normalizeRoleName('superadmin')).toBe(ROLES.SUPER_ADMIN);
+    expect(normalizeRoleName('Administrator')).toBe(ROLES.TENANT_ADMIN);
   });
 });
