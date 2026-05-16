@@ -2521,7 +2521,7 @@ class _PatientAppointmentQuickDialogState
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
     final DateTime scheduledStart = _combineDateAndTime(
@@ -3139,7 +3139,7 @@ class _PatientFlowQuickDialogState
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
     setState(() {
@@ -3445,26 +3445,26 @@ class _PatientReportDialog extends StatelessWidget {
                 ),
           ),
           SizedBox(height: theme.spacing.md),
-          _ReportSummaryGrid(
-            records: <_ReportSummaryItem>[
-              _ReportSummaryItem(
+          AppReportSummaryGrid(
+            records: <AppReportSummaryItem>[
+              AppReportSummaryItem(
                 label: l10n.patientsAppointmentsSectionTitle,
-                value: workspace?.appointments.length ?? 0,
+                value: (workspace?.appointments.length ?? 0).toString(),
                 icon: Icons.event_available_outlined,
               ),
-              _ReportSummaryItem(
+              AppReportSummaryItem(
                 label: l10n.patientsEncountersSectionTitle,
-                value: workspace?.encounters.length ?? 0,
+                value: (workspace?.encounters.length ?? 0).toString(),
                 icon: Icons.medical_services_outlined,
               ),
-              _ReportSummaryItem(
+              AppReportSummaryItem(
                 label: l10n.patientsAdmissionsSectionTitle,
-                value: workspace?.admissions.length ?? 0,
+                value: (workspace?.admissions.length ?? 0).toString(),
                 icon: Icons.local_hospital_outlined,
               ),
-              _ReportSummaryItem(
+              AppReportSummaryItem(
                 label: l10n.patientsInvoicesSectionTitle,
-                value: workspace?.invoices.length ?? 0,
+                value: (workspace?.invoices.length ?? 0).toString(),
                 icon: Icons.receipt_long_outlined,
               ),
             ],
@@ -3493,9 +3493,8 @@ class _PatientReportDialog extends StatelessWidget {
           label: l10n.commonCloseActionLabel,
           onPressed: () => Navigator.of(context).maybePop(false),
         ),
-        AppButton.primary(
+        AppReportActionButton.print(
           label: l10n.patientsPrintReportAction,
-          leadingIcon: Icons.print_outlined,
           onPressed: () {
             printHtmlDocument(_patientReportHtml(context, patient, detail));
           },
@@ -3503,18 +3502,6 @@ class _PatientReportDialog extends StatelessWidget {
       ],
     );
   }
-}
-
-class _ReportSummaryItem {
-  const _ReportSummaryItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final int value;
-  final IconData icon;
 }
 
 String _patientReportHtml(
@@ -3603,59 +3590,6 @@ String _htmlEscape(String value) {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
-}
-
-class _ReportSummaryGrid extends StatelessWidget {
-  const _ReportSummaryGrid({required this.records});
-
-  final List<_ReportSummaryItem> records;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns = constraints.maxWidth < 520 ? 2 : 4;
-        return GridView.count(
-          crossAxisCount: columns,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: constraints.maxWidth < 520 ? 2.2 : 1.9,
-          crossAxisSpacing: theme.spacing.sm,
-          mainAxisSpacing: theme.spacing.sm,
-          children: <Widget>[
-            for (final _ReportSummaryItem record in records)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(theme.spacing.sm),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(record.icon, color: theme.colorScheme.primary),
-                      SizedBox(height: theme.spacing.xs),
-                      Text(
-                        '${record.value}',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      Text(
-                        record.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 class _RelatedSection<T> extends StatelessWidget {
@@ -4391,142 +4325,133 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
       maxWidth: 760,
       content: SizedBox(
         height: _formBodyHeight(context),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            child: AppFormSection(
-              density: AppFormSectionDensity.compact,
-              children: <Widget>[
-                if (_failure != null) AppFailureStateView(failure: _failure!),
-                if (_duplicateCandidates.isNotEmpty)
-                  PatientDuplicateWarningPanel(
-                    duplicates: _duplicateCandidates,
-                  ),
-                _ResponsiveFieldPair(
-                  left: AppTextField(
-                    controller: _firstNameController,
-                    labelText: l10n.patientsFirstNameLabel,
-                    isRequired: true,
-                    textCapitalization: TextCapitalization.words,
-                    enabled: !_isSaving,
-                    validator: AppValidators.requiredText(
-                      l10n.validationRequired,
-                    ),
-                  ),
-                  right: AppTextField(
-                    controller: _lastNameController,
-                    labelText: l10n.patientsLastNameLabel,
-                    isRequired: true,
-                    textCapitalization: TextCapitalization.words,
-                    enabled: !_isSaving,
-                    validator: AppValidators.requiredText(
-                      l10n.validationRequired,
-                    ),
-                  ),
-                ),
-                _ResponsiveFieldPair(
-                  left: AppDateField(
-                    value: _dateOfBirth,
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime.now(),
-                    pickerButtonLabel: l10n.patientsDatePickerAction,
-                    invalidDateMessage: l10n.appDateInvalidMessage,
-                    labelText: l10n.patientsDobLabel,
-                    hintText: l10n.appDateFormatHint,
-                    enabled: !_isSaving,
-                    onChanged: (DateTime? value) {
-                      _dateOfBirth = value;
-                    },
-                  ),
-                  right: AppGenderField(
-                    value: _gender,
-                    labelText: l10n.patientsGenderLabel,
-                    maleLabel: l10n.patientsGenderMale,
-                    femaleLabel: l10n.patientsGenderFemale,
-                    otherLabel: l10n.patientsGenderOther,
-                    unknownLabel: l10n.patientsGenderUnknown,
-                    enabled: !_isSaving,
-                    onChanged: (String? value) {
-                      setState(() {
-                        _gender = value;
-                      });
-                    },
-                  ),
-                ),
-                if (widget.referenceData.facilities.length > 1)
-                  AppSelectField<String>(
-                    value: _facilityId,
-                    labelText: l10n.patientsFacilityLabel,
-                    enabled: !_isSaving,
-                    onChanged: (String? value) {
-                      setState(() {
-                        _facilityId = value;
-                      });
-                    },
-                    options: <AppSelectOption<String>>[
-                      for (final PatientReferenceOption option
-                          in widget.referenceData.facilities)
-                        AppSelectOption<String>(
-                          value: option.id,
-                          label: option.label,
-                          leadingIcon: const Icon(Icons.business_outlined),
-                        ),
-                    ],
-                  ),
-                AppPhoneField(
-                  controller: _phoneController,
-                  labelText: l10n.patientsPhoneLabel,
-                  countryLabelText: l10n.appPhoneCountryLabel,
-                  countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-                  countryNoResultsText: l10n.appPhoneCountryNoResults,
-                  numberLabelText: l10n.appPhoneNumberLabel,
-                  numberHintText: l10n.appPhoneNumberHint,
-                  invalidPhoneMessage: l10n.appPhoneInvalidMessage,
-                  enabled: !_isSaving,
-                ),
-                AppEmailField(
-                  controller: _emailController,
-                  labelText: l10n.patientsEmailLabel,
-                  invalidEmailMessage: l10n.authEmailInvalidMessage,
-                  enabled: !_isSaving,
-                ),
-                _ResponsiveFieldPair(
-                  left: AppSelectField<String>.searchable(
-                    value: _selectedIdentifierType(
-                      _identifierTypeController.text,
-                    ),
-                    labelText: l10n.patientsIdentifierTypeLabel,
-                    enabled: !_isSaving,
-                    menuHeight: 320,
-                    onChanged: (String? value) {
-                      setState(() {
-                        _identifierTypeController.text = value ?? '';
-                      });
-                    },
-                    options: _identifierTypeSelectOptions(
-                      _identifierTypeController.text,
-                    ),
-                  ),
-                  right: AppTextField(
-                    controller: _identifierValueController,
-                    labelText: l10n.patientsIdentifierValueLabel,
-                    enabled: !_isSaving,
-                  ),
-                ),
-                AppCheckboxField(
-                  title: l10n.patientsActiveCheckboxLabel,
-                  value: _isActive,
-                  enabled: !_isSaving,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
-                ),
-              ],
+        child: AppFormShell(
+          formKey: _formKey,
+          enabled: !_isSaving && !_isCheckingDuplicates,
+          scrollable: true,
+          density: AppFormSectionDensity.compact,
+          formStatus: _failure == null
+              ? null
+              : AppFailureStateView(failure: _failure!),
+          children: <Widget>[
+            if (_duplicateCandidates.isNotEmpty)
+              PatientDuplicateWarningPanel(duplicates: _duplicateCandidates),
+            _ResponsiveFieldPair(
+              left: AppTextField(
+                controller: _firstNameController,
+                labelText: l10n.patientsFirstNameLabel,
+                isRequired: true,
+                textCapitalization: TextCapitalization.words,
+                enabled: !_isSaving,
+                validator: AppValidators.requiredText(l10n.validationRequired),
+              ),
+              right: AppTextField(
+                controller: _lastNameController,
+                labelText: l10n.patientsLastNameLabel,
+                isRequired: true,
+                textCapitalization: TextCapitalization.words,
+                enabled: !_isSaving,
+                validator: AppValidators.requiredText(l10n.validationRequired),
+              ),
             ),
-          ),
+            _ResponsiveFieldPair(
+              left: AppDateField(
+                value: _dateOfBirth,
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+                pickerButtonLabel: l10n.patientsDatePickerAction,
+                invalidDateMessage: l10n.appDateInvalidMessage,
+                labelText: l10n.patientsDobLabel,
+                hintText: l10n.appDateFormatHint,
+                enabled: !_isSaving,
+                onChanged: (DateTime? value) {
+                  _dateOfBirth = value;
+                },
+              ),
+              right: AppGenderField(
+                value: _gender,
+                labelText: l10n.patientsGenderLabel,
+                maleLabel: l10n.patientsGenderMale,
+                femaleLabel: l10n.patientsGenderFemale,
+                otherLabel: l10n.patientsGenderOther,
+                unknownLabel: l10n.patientsGenderUnknown,
+                enabled: !_isSaving,
+                onChanged: (String? value) {
+                  setState(() {
+                    _gender = value;
+                  });
+                },
+              ),
+            ),
+            if (widget.referenceData.facilities.length > 1)
+              AppSelectField<String>(
+                value: _facilityId,
+                labelText: l10n.patientsFacilityLabel,
+                enabled: !_isSaving,
+                onChanged: (String? value) {
+                  setState(() {
+                    _facilityId = value;
+                  });
+                },
+                options: <AppSelectOption<String>>[
+                  for (final PatientReferenceOption option
+                      in widget.referenceData.facilities)
+                    AppSelectOption<String>(
+                      value: option.id,
+                      label: option.label,
+                      leadingIcon: const Icon(Icons.business_outlined),
+                    ),
+                ],
+              ),
+            AppPhoneField(
+              controller: _phoneController,
+              labelText: l10n.patientsPhoneLabel,
+              countryLabelText: l10n.appPhoneCountryLabel,
+              countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+              countryNoResultsText: l10n.appPhoneCountryNoResults,
+              numberLabelText: l10n.appPhoneNumberLabel,
+              numberHintText: l10n.appPhoneNumberHint,
+              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+              enabled: !_isSaving,
+            ),
+            AppEmailField(
+              controller: _emailController,
+              labelText: l10n.patientsEmailLabel,
+              invalidEmailMessage: l10n.authEmailInvalidMessage,
+              enabled: !_isSaving,
+            ),
+            _ResponsiveFieldPair(
+              left: AppSelectField<String>.searchable(
+                value: _selectedIdentifierType(_identifierTypeController.text),
+                labelText: l10n.patientsIdentifierTypeLabel,
+                enabled: !_isSaving,
+                menuHeight: 320,
+                onChanged: (String? value) {
+                  setState(() {
+                    _identifierTypeController.text = value ?? '';
+                  });
+                },
+                options: _identifierTypeSelectOptions(
+                  _identifierTypeController.text,
+                ),
+              ),
+              right: AppTextField(
+                controller: _identifierValueController,
+                labelText: l10n.patientsIdentifierValueLabel,
+                enabled: !_isSaving,
+              ),
+            ),
+            AppCheckboxField(
+              title: l10n.patientsActiveCheckboxLabel,
+              value: _isActive,
+              enabled: !_isSaving,
+              onChanged: (bool value) {
+                setState(() {
+                  _isActive = value;
+                });
+              },
+            ),
+          ],
         ),
       ),
       actions: <Widget>[
@@ -4782,46 +4707,47 @@ class _EmergencyPatientFormDialogState
       icon: const Icon(Icons.emergency_outlined),
       scrollable: true,
       closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            Text(l10n.patientsEmergencyRegisterBody),
-            _ResponsiveFieldPair(
-              left: AppTextField(
-                controller: _firstNameController,
-                labelText: l10n.patientsEmergencyFirstNameLabel,
-                enabled: !_isSaving,
-                textCapitalization: TextCapitalization.words,
-              ),
-              right: AppTextField(
-                controller: _lastNameController,
-                labelText: l10n.patientsEmergencyLastNameLabel,
-                enabled: !_isSaving,
-                textCapitalization: TextCapitalization.words,
-              ),
-            ),
-            AppPhoneField(
-              controller: _phoneController,
-              labelText: l10n.patientsPhoneLabel,
-              countryLabelText: l10n.appPhoneCountryLabel,
-              countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-              countryNoResultsText: l10n.appPhoneCountryNoResults,
-              numberLabelText: l10n.appPhoneNumberLabel,
-              numberHintText: l10n.appPhoneNumberHint,
-              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: _failure == null
+            ? null
+            : AppFailureStateView(failure: _failure!),
+        children: <Widget>[
+          Text(l10n.patientsEmergencyRegisterBody),
+          _ResponsiveFieldPair(
+            left: AppTextField(
+              controller: _firstNameController,
+              labelText: l10n.patientsEmergencyFirstNameLabel,
               enabled: !_isSaving,
+              textCapitalization: TextCapitalization.words,
             ),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.patientsNotesLabel,
+            right: AppTextField(
+              controller: _lastNameController,
+              labelText: l10n.patientsEmergencyLastNameLabel,
               enabled: !_isSaving,
-              maxLines: 3,
+              textCapitalization: TextCapitalization.words,
             ),
-          ],
-        ),
+          ),
+          AppPhoneField(
+            controller: _phoneController,
+            labelText: l10n.patientsPhoneLabel,
+            countryLabelText: l10n.appPhoneCountryLabel,
+            countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+            countryNoResultsText: l10n.appPhoneCountryNoResults,
+            numberLabelText: l10n.appPhoneNumberLabel,
+            numberHintText: l10n.appPhoneNumberHint,
+            invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+            enabled: !_isSaving,
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: l10n.patientsNotesLabel,
+            enabled: !_isSaving,
+            maxLines: 3,
+          ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -4839,7 +4765,7 @@ class _EmergencyPatientFormDialogState
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
     setState(() {

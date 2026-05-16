@@ -2273,31 +2273,32 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       icon: const Icon(Icons.person_add_alt_1_outlined),
       scrollable: true,
       maxWidth: 880,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            _WalkInSection(
-              title: l10n.opdPatientSectionTitle,
-              children: <Widget>[
-                _WalkInModeSelector(
-                  value: _patientMode,
-                  enabled: !_isSaving,
-                  existingLabel: l10n.opdExistingPatientModeLabel,
-                  appointmentLabel: l10n.opdAppointmentPatientModeLabel,
-                  newPatientLabel: l10n.opdNewPatientModeLabel,
-                  onChanged: _setPatientMode,
-                ),
-                _patientModeContent(l10n),
-              ],
-            ),
-            _WalkInLowerSections(
-              routingSection: _routingSection(l10n),
-              billingSection: _billingSection(l10n),
-            ),
-          ],
-        ),
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        formStatus: _failure == null
+            ? null
+            : AppFailureStateView(failure: _failure!),
+        children: <Widget>[
+          _WalkInSection(
+            title: l10n.opdPatientSectionTitle,
+            children: <Widget>[
+              _WalkInModeSelector(
+                value: _patientMode,
+                enabled: !_isSaving,
+                existingLabel: l10n.opdExistingPatientModeLabel,
+                appointmentLabel: l10n.opdAppointmentPatientModeLabel,
+                newPatientLabel: l10n.opdNewPatientModeLabel,
+                onChanged: _setPatientMode,
+              ),
+              _patientModeContent(l10n),
+            ],
+          ),
+          _WalkInLowerSections(
+            routingSection: _routingSection(l10n),
+            billingSection: _billingSection(l10n),
+          ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -2429,7 +2430,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
     setState(() {
@@ -4683,7 +4684,8 @@ class PrintOpdSummaryDialog extends StatelessWidget {
       icon: const Icon(Icons.print_outlined),
       maxWidth: 720,
       scrollable: true,
-      content: SelectionArea(
+      content: AppReportPreviewPanel(
+        selectable: true,
         child: Text(summary, style: Theme.of(context).textTheme.bodyMedium),
       ),
       actions: <Widget>[
@@ -4691,9 +4693,8 @@ class PrintOpdSummaryDialog extends StatelessWidget {
           label: l10n.commonCancelActionLabel,
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        AppButton.secondary(
+        AppReportActionButton.copy(
           label: l10n.opdCopySummaryAction,
-          leadingIcon: Icons.copy_outlined,
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: summary));
             if (context.mounted) {
@@ -4701,9 +4702,8 @@ class PrintOpdSummaryDialog extends StatelessWidget {
             }
           },
         ),
-        AppButton.primary(
+        AppReportActionButton.print(
           label: l10n.opdPrintAction,
-          leadingIcon: Icons.print_outlined,
           onPressed: () {
             printCurrentWindow();
             Navigator.of(context).pop(false);

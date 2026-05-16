@@ -10,6 +10,7 @@ export 'app_icon_button.dart';
 export 'app_logo.dart';
 export 'app_phone_field.dart';
 export 'app_radio_group.dart';
+export 'app_report_actions.dart';
 export 'app_select_field.dart';
 export 'app_state_view.dart';
 export 'app_switch_field.dart';
