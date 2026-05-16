@@ -1965,6 +1965,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPasswordMismatchMessage => 'Passwords do not match.';
 
   @override
+  String opdFieldRequiredLabel(String label) {
+    return '$label (required)';
+  }
+
+  @override
+  String opdFieldOptionalLabel(String label) {
+    return '$label (optional)';
+  }
+
+  @override
+  String get opdVitalsAtLeastOneRequiredHelper =>
+      'Enter at least one vital sign.';
+
+  @override
   String get validationRequired => 'This field is required.';
 
   @override

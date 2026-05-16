@@ -3634,6 +3634,24 @@ abstract class AppLocalizations {
   /// **'Passwords do not match.'**
   String get authPasswordMismatchMessage;
 
+  /// OPD form field label pattern for required fields.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} (required)'**
+  String opdFieldRequiredLabel(String label);
+
+  /// OPD form field label pattern for optional fields.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} (optional)'**
+  String opdFieldOptionalLabel(String label);
+
+  /// Instruction shown in the OPD vitals modal when individual vital fields are optional but one vital sign is required.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least one vital sign.'**
+  String get opdVitalsAtLeastOneRequiredHelper;
+
   /// Generic required-field validation message for forms.
   ///
   /// In en, this message translates to:
