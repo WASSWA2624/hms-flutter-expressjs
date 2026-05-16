@@ -1010,11 +1010,81 @@ const getPatientWorkspaceReferenceData = async (scope = {}) => {
     },
     orderBy: { name: 'asc' },
   });
+  const wards = await prisma.ward.findMany({
+    where: {
+      ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
+      ...('facility_id' in where ? { facility_id: where.facility_id } : {}),
+      deleted_at: null,
+      is_active: true,
+    },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      facility_id: true,
+      name: true,
+      ward_type: true,
+    },
+    orderBy: { name: 'asc' },
+  });
+  const rooms = await prisma.room.findMany({
+    where: {
+      ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
+      ...('facility_id' in where ? { facility_id: where.facility_id } : {}),
+      deleted_at: null,
+    },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      facility_id: true,
+      ward_id: true,
+      name: true,
+      floor: true,
+    },
+    orderBy: { name: 'asc' },
+  });
+  const beds = await prisma.bed.findMany({
+    where: {
+      ...('tenant_id' in where ? { tenant_id: where.tenant_id } : {}),
+      ...('facility_id' in where ? { facility_id: where.facility_id } : {}),
+      deleted_at: null,
+    },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      facility_id: true,
+      ward_id: true,
+      room_id: true,
+      label: true,
+      status: true,
+    },
+    orderBy: [{ status: 'asc' }, { label: 'asc' }],
+  });
 
   return {
     facilities: facilities.map((entry) => ({
       human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
       label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+    })),
+    wards: wards.map((entry) => ({
+      human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+      label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+      facility_id: resolvePublicIdentifier(null, entry?.facility_id),
+      ward_type: entry?.ward_type || null,
+    })),
+    rooms: rooms.map((entry) => ({
+      human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+      label: normalizeText(entry?.name) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+      facility_id: resolvePublicIdentifier(null, entry?.facility_id),
+      ward_id: resolvePublicIdentifier(null, entry?.ward_id),
+      floor: normalizeText(entry?.floor) || null,
+    })),
+    beds: beds.map((entry) => ({
+      human_friendly_id: resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+      label: normalizeText(entry?.label) || resolvePublicIdentifier(entry?.human_friendly_id, entry?.id),
+      facility_id: resolvePublicIdentifier(null, entry?.facility_id),
+      ward_id: resolvePublicIdentifier(null, entry?.ward_id),
+      room_id: resolvePublicIdentifier(null, entry?.room_id),
+      status: entry?.status || null,
     })),
     document_types: DOCUMENT_TYPE_OPTIONS.map((value) => ({ value })),
     consent_types: CONSENT_TYPE_OPTIONS.map((value) => ({ value })),

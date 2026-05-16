@@ -461,6 +461,13 @@ const buildAppointmentFilter = (filters = {}) => {
   return hasAppliedFilter ? filter : null;
 };
 
+const buildVisitDateFilter = (filters = {}) =>
+  buildTemporalFilter({
+    exactValue: filters.visit_date,
+    fromValue: filters.visit_from,
+    toValue: filters.visit_to
+  });
+
 const buildPatientWhereClause = (filters = {}) => {
   const whereClause = {};
   const searchTokens = normalizeSearchTokens(filters.search);
@@ -548,6 +555,37 @@ const buildPatientWhereClause = (filters = {}) => {
   const appointmentFilter = buildAppointmentFilter(filters);
   if (appointmentFilter) {
     whereClause.appointments = { some: appointmentFilter };
+  }
+
+  const visitDateFilter = buildVisitDateFilter(filters);
+  if (visitDateFilter) {
+    whereClause.OR = [
+      ...(whereClause.OR || []),
+      {
+        encounters: {
+          some: {
+            deleted_at: null,
+            started_at: visitDateFilter
+          }
+        }
+      },
+      {
+        visit_queue_entries: {
+          some: {
+            deleted_at: null,
+            queued_at: visitDateFilter
+          }
+        }
+      },
+      {
+        appointments: {
+          some: {
+            deleted_at: null,
+            scheduled_start: visitDateFilter
+          }
+        }
+      }
+    ];
   }
 
   if (searchTokens.length > 0) {

@@ -6,38 +6,107 @@ final class PatientListQuery {
   const PatientListQuery({
     this.search = '',
     this.patientId = '',
+    this.contact = '',
+    this.facilityId,
     this.gender,
     this.isActive,
     this.consentState,
+    this.appointmentStatus,
+    this.visitDate,
+    this.visitFrom,
+    this.visitTo,
+    this.createdFrom,
+    this.createdTo,
+    this.dateOfBirthFrom,
+    this.dateOfBirthTo,
+    this.hasActiveAdmission,
+    this.hasOutstandingBalance,
     this.pageRequest = const AppPageRequest(),
   });
 
   final String search;
   final String patientId;
+  final String contact;
+  final String? facilityId;
   final String? gender;
   final bool? isActive;
   final String? consentState;
+  final String? appointmentStatus;
+  final DateTime? visitDate;
+  final DateTime? visitFrom;
+  final DateTime? visitTo;
+  final DateTime? createdFrom;
+  final DateTime? createdTo;
+  final DateTime? dateOfBirthFrom;
+  final DateTime? dateOfBirthTo;
+  final bool? hasActiveAdmission;
+  final bool? hasOutstandingBalance;
   final AppPageRequest pageRequest;
 
   PatientListQuery copyWith({
     String? search,
     String? patientId,
+    String? contact,
+    String? facilityId,
     String? gender,
     bool? isActive,
     String? consentState,
+    String? appointmentStatus,
+    DateTime? visitDate,
+    DateTime? visitFrom,
+    DateTime? visitTo,
+    DateTime? createdFrom,
+    DateTime? createdTo,
+    DateTime? dateOfBirthFrom,
+    DateTime? dateOfBirthTo,
+    bool? hasActiveAdmission,
+    bool? hasOutstandingBalance,
     AppPageRequest? pageRequest,
+    bool clearFacilityId = false,
     bool clearGender = false,
     bool clearIsActive = false,
     bool clearConsentState = false,
+    bool clearAppointmentStatus = false,
+    bool clearVisitDate = false,
+    bool clearVisitFrom = false,
+    bool clearVisitTo = false,
+    bool clearCreatedFrom = false,
+    bool clearCreatedTo = false,
+    bool clearDateOfBirthFrom = false,
+    bool clearDateOfBirthTo = false,
+    bool clearHasActiveAdmission = false,
+    bool clearHasOutstandingBalance = false,
   }) {
     return PatientListQuery(
       search: search ?? this.search,
       patientId: patientId ?? this.patientId,
+      contact: contact ?? this.contact,
+      facilityId: clearFacilityId ? null : facilityId ?? this.facilityId,
       gender: clearGender ? null : gender ?? this.gender,
       isActive: clearIsActive ? null : isActive ?? this.isActive,
       consentState: clearConsentState
           ? null
           : consentState ?? this.consentState,
+      appointmentStatus: clearAppointmentStatus
+          ? null
+          : appointmentStatus ?? this.appointmentStatus,
+      visitDate: clearVisitDate ? null : visitDate ?? this.visitDate,
+      visitFrom: clearVisitFrom ? null : visitFrom ?? this.visitFrom,
+      visitTo: clearVisitTo ? null : visitTo ?? this.visitTo,
+      createdFrom: clearCreatedFrom ? null : createdFrom ?? this.createdFrom,
+      createdTo: clearCreatedTo ? null : createdTo ?? this.createdTo,
+      dateOfBirthFrom: clearDateOfBirthFrom
+          ? null
+          : dateOfBirthFrom ?? this.dateOfBirthFrom,
+      dateOfBirthTo: clearDateOfBirthTo
+          ? null
+          : dateOfBirthTo ?? this.dateOfBirthTo,
+      hasActiveAdmission: clearHasActiveAdmission
+          ? null
+          : hasActiveAdmission ?? this.hasActiveAdmission,
+      hasOutstandingBalance: clearHasOutstandingBalance
+          ? null
+          : hasOutstandingBalance ?? this.hasOutstandingBalance,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
@@ -629,6 +698,9 @@ final class PatientRegistryOverview {
 final class PatientReferenceData {
   const PatientReferenceData({
     this.facilities = const <PatientReferenceOption>[],
+    this.wards = const <PatientReferenceOption>[],
+    this.rooms = const <PatientReferenceOption>[],
+    this.beds = const <PatientReferenceOption>[],
     this.documentTypes = const <String>[],
     this.consentTypes = const <String>[],
     this.consentStatuses = const <String>[],
@@ -636,6 +708,9 @@ final class PatientReferenceData {
   });
 
   final List<PatientReferenceOption> facilities;
+  final List<PatientReferenceOption> wards;
+  final List<PatientReferenceOption> rooms;
+  final List<PatientReferenceOption> beds;
   final List<String> documentTypes;
   final List<String> consentTypes;
   final List<String> consentStatuses;
@@ -644,10 +719,23 @@ final class PatientReferenceData {
 
 @immutable
 final class PatientReferenceOption {
-  const PatientReferenceOption({required this.id, required this.label});
+  const PatientReferenceOption({
+    required this.id,
+    required this.label,
+    this.facilityId,
+    this.wardId,
+    this.roomId,
+    this.status,
+    this.type,
+  });
 
   final String id;
   final String label;
+  final String? facilityId;
+  final String? wardId;
+  final String? roomId;
+  final String? status;
+  final String? type;
 }
 
 @immutable

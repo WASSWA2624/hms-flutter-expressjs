@@ -387,7 +387,7 @@ void main() {
 
     expect(
       fields.map((EditableText field) => field.controller.text),
-      containsAllInOrder(<String>['2026', '05', '13']),
+      containsAllInOrder(<String>['13', '05', '2026']),
     );
   });
 

@@ -48,7 +48,7 @@
   "@appDateInvalidMessage": {
     "description": "Validation message for manually typed date fields."
   },
-  "appDateFormatHint": "YYYY-MM-DD",
+  "appDateFormatHint": "DD/MM/YYYY",
   "@appDateFormatHint": {
     "description": "Hint text showing the supported manual date entry format."
   },
@@ -965,6 +965,66 @@
   "@patientsConsentFilterLabel": {
     "description": "Patient registry consent filter label."
   },
+  "patientsContactFilterLabel": "Contact",
+  "@patientsContactFilterLabel": {
+    "description": "Patient registry contact filter label."
+  },
+  "patientsVisitDateFilterLabel": "Visit date",
+  "@patientsVisitDateFilterLabel": {
+    "description": "Patient registry exact visit date filter label."
+  },
+  "patientsVisitFromFilterLabel": "Visit from",
+  "@patientsVisitFromFilterLabel": {
+    "description": "Patient registry visit date range start label."
+  },
+  "patientsVisitToFilterLabel": "Visit to",
+  "@patientsVisitToFilterLabel": {
+    "description": "Patient registry visit date range end label."
+  },
+  "patientsDobFromFilterLabel": "DOB from",
+  "@patientsDobFromFilterLabel": {
+    "description": "Patient registry date of birth range start label."
+  },
+  "patientsDobToFilterLabel": "DOB to",
+  "@patientsDobToFilterLabel": {
+    "description": "Patient registry date of birth range end label."
+  },
+  "patientsCreatedFromFilterLabel": "Registered from",
+  "@patientsCreatedFromFilterLabel": {
+    "description": "Patient registry created date range start label."
+  },
+  "patientsCreatedToFilterLabel": "Registered to",
+  "@patientsCreatedToFilterLabel": {
+    "description": "Patient registry created date range end label."
+  },
+  "patientsActiveAdmissionFilterLabel": "Active admission",
+  "@patientsActiveAdmissionFilterLabel": {
+    "description": "Patient registry active admission filter label."
+  },
+  "patientsOutstandingBalanceFilterLabel": "Outstanding balance",
+  "@patientsOutstandingBalanceFilterLabel": {
+    "description": "Patient registry outstanding balance filter label."
+  },
+  "patientsYesFilterLabel": "Yes",
+  "@patientsYesFilterLabel": {
+    "description": "Yes option label for patient filters."
+  },
+  "patientsNoFilterLabel": "No",
+  "@patientsNoFilterLabel": {
+    "description": "No option label for patient filters."
+  },
+  "patientsFilterIdentitySectionTitle": "Identity",
+  "@patientsFilterIdentitySectionTitle": {
+    "description": "Patient advanced filters identity section title."
+  },
+  "patientsFilterVisitSectionTitle": "Visits",
+  "@patientsFilterVisitSectionTitle": {
+    "description": "Patient advanced filters visit section title."
+  },
+  "patientsFilterRecordSectionTitle": "Record state",
+  "@patientsFilterRecordSectionTitle": {
+    "description": "Patient advanced filters record state section title."
+  },
   "patientsApplyFiltersAction": "Apply",
   "@patientsApplyFiltersAction": {
     "description": "Apply patient registry filters action label."
@@ -1226,6 +1286,16 @@
   "@patientsQuickActionSavedMessage": {
     "description": "Snackbar shown after a patient quick action completes successfully."
   },
+  "patientsWorkflowValidationMessage": "Check these fields and try again: {fields}.",
+  "@patientsWorkflowValidationMessage": {
+    "description": "Patient workflow validation failure message with field names.",
+    "placeholders": {
+      "fields": {
+        "type": "String",
+        "example": "Provider user id, Bed id"
+      }
+    }
+  },
   "patientsAppointmentDialogTitle": "Schedule appointment",
   "@patientsAppointmentDialogTitle": {
     "description": "Patient quick appointment dialog title."
@@ -1258,6 +1328,42 @@
   "@patientsProviderOptionalHelper": {
     "description": "Helper text for optional provider selection."
   },
+  "patientsWorkflowSectionTitle": "Workflow",
+  "@patientsWorkflowSectionTitle": {
+    "description": "Patient quick action workflow section title."
+  },
+  "patientsArrivalSectionTitle": "Arrival",
+  "@patientsArrivalSectionTitle": {
+    "description": "Patient quick action arrival section title."
+  },
+  "patientsTriagePrioritySectionTitle": "Triage priority",
+  "@patientsTriagePrioritySectionTitle": {
+    "description": "Patient triage priority form section title."
+  },
+  "patientsVitalsSectionTitle": "Vital signs",
+  "@patientsVitalsSectionTitle": {
+    "description": "Patient triage vital signs section title."
+  },
+  "patientsClinicalAssessmentSectionTitle": "Assessment",
+  "@patientsClinicalAssessmentSectionTitle": {
+    "description": "Patient clinical quick action assessment section title."
+  },
+  "patientsBillingSectionTitle": "Billing details",
+  "@patientsBillingSectionTitle": {
+    "description": "Patient billing quick action section title."
+  },
+  "patientsAdmissionClinicalSectionTitle": "Clinical approval",
+  "@patientsAdmissionClinicalSectionTitle": {
+    "description": "Patient admission clinical section title."
+  },
+  "patientsAdmissionLocationSectionTitle": "Admission location",
+  "@patientsAdmissionLocationSectionTitle": {
+    "description": "Patient admission location section title."
+  },
+  "patientsNotesSectionTitle": "Notes",
+  "@patientsNotesSectionTitle": {
+    "description": "Patient quick action notes section title."
+  },
   "patientsOpdCheckInDialogTitle": "OPD check-in",
   "@patientsOpdCheckInDialogTitle": {
     "description": "Patient OPD check-in dialog title."
@@ -1289,6 +1395,42 @@
   "patientsTriageLevelLabel": "Triage level",
   "@patientsTriageLevelLabel": {
     "description": "Patient triage level field label."
+  },
+  "patientsSystolicLabel": "Systolic",
+  "@patientsSystolicLabel": {
+    "description": "Patient systolic blood pressure field label."
+  },
+  "patientsDiastolicLabel": "Diastolic",
+  "@patientsDiastolicLabel": {
+    "description": "Patient diastolic blood pressure field label."
+  },
+  "patientsTemperatureLabel": "Temperature",
+  "@patientsTemperatureLabel": {
+    "description": "Patient temperature vital field label."
+  },
+  "patientsHeartRateLabel": "Heart rate",
+  "@patientsHeartRateLabel": {
+    "description": "Patient heart rate vital field label."
+  },
+  "patientsRespiratoryRateLabel": "Respiratory rate",
+  "@patientsRespiratoryRateLabel": {
+    "description": "Patient respiratory rate vital field label."
+  },
+  "patientsOxygenSaturationLabel": "Oxygen saturation",
+  "@patientsOxygenSaturationLabel": {
+    "description": "Patient oxygen saturation vital field label."
+  },
+  "patientsWeightLabel": "Weight",
+  "@patientsWeightLabel": {
+    "description": "Patient weight vital field label."
+  },
+  "patientsHeightLabel": "Height",
+  "@patientsHeightLabel": {
+    "description": "Patient height vital field label."
+  },
+  "patientsVitalsRequiredMessage": "Enter at least one vital sign before completing triage.",
+  "@patientsVitalsRequiredMessage": {
+    "description": "Validation message when triage has no vital signs."
   },
   "patientsChiefComplaintLabel": "Chief complaint",
   "@patientsChiefComplaintLabel": {
@@ -1326,6 +1468,18 @@
   "@patientsAdmissionReasonLabel": {
     "description": "Patient admission reason field label."
   },
+  "patientsWardLabel": "Ward",
+  "@patientsWardLabel": {
+    "description": "Patient admission ward field label."
+  },
+  "patientsRoomLabel": "Room",
+  "@patientsRoomLabel": {
+    "description": "Patient admission room field label."
+  },
+  "patientsBedLabel": "Bed",
+  "@patientsBedLabel": {
+    "description": "Patient admission bed field label."
+  },
   "patientsReportDialogTitle": "Patient report",
   "@patientsReportDialogTitle": {
     "description": "Patient report dialog title."
@@ -1349,6 +1503,14 @@
   "patientsInvoicesSectionTitle": "Invoices",
   "@patientsInvoicesSectionTitle": {
     "description": "Patient report invoices section title."
+  },
+  "patientsReportSummarySectionTitle": "Summary",
+  "@patientsReportSummarySectionTitle": {
+    "description": "Patient report summary section title."
+  },
+  "patientsReportGeneratedSectionTitle": "Generated",
+  "@patientsReportGeneratedSectionTitle": {
+    "description": "Patient report generated metadata section title."
   },
   "patientsTimeInvalidMessage": "Enter time as HH:MM.",
   "@patientsTimeInvalidMessage": {

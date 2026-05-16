@@ -14,9 +14,9 @@ class AppDateField extends StatefulWidget {
     this.initialPickerDate,
     this.currentDate,
     this.labelText,
-    this.yearLabelText = 'Year',
-    this.monthLabelText = 'Month',
-    this.dayLabelText = 'Day',
+    this.yearLabelText = 'YYYY',
+    this.monthLabelText = 'MM',
+    this.dayLabelText = 'DD',
     this.hintText,
     this.helperText,
     this.errorText,
@@ -166,14 +166,23 @@ class _AppDateFieldState extends State<AppDateField> {
             ],
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                final Widget yearField = _DatePartTextField(
-                  controller: _yearController,
-                  focusNode: _yearFocusNode,
-                  labelText: widget.yearLabelText,
+                final bool hasError = field.errorText != null;
+                final bool isFocused = _hasFocus;
+                final Color borderColor = !canChange
+                    ? theme.disabledColor
+                    : hasError
+                    ? theme.colorScheme.error
+                    : isFocused
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline;
+                final Widget dayField = _DatePartTextField(
+                  controller: _dayController,
+                  focusNode: _dayFocusNode,
+                  labelText: widget.dayLabelText,
                   hintText: widget.hintText,
-                  maxLength: 4,
+                  maxLength: 2,
                   enabled: canChange,
-                  restorationId: _partRestorationId('year'),
+                  restorationId: _partRestorationId('day'),
                   textInputAction: TextInputAction.next,
                   onChanged: () => _handlePartsChanged(field),
                 );
@@ -187,13 +196,13 @@ class _AppDateFieldState extends State<AppDateField> {
                   textInputAction: TextInputAction.next,
                   onChanged: () => _handlePartsChanged(field),
                 );
-                final Widget dayField = _DatePartTextField(
-                  controller: _dayController,
-                  focusNode: _dayFocusNode,
-                  labelText: widget.dayLabelText,
-                  maxLength: 2,
+                final Widget yearField = _DatePartTextField(
+                  controller: _yearController,
+                  focusNode: _yearFocusNode,
+                  labelText: widget.yearLabelText,
+                  maxLength: 4,
                   enabled: canChange,
-                  restorationId: _partRestorationId('day'),
+                  restorationId: _partRestorationId('year'),
                   textInputAction: TextInputAction.done,
                   onChanged: () => _handlePartsChanged(field),
                 );
@@ -206,43 +215,28 @@ class _AppDateFieldState extends State<AppDateField> {
                   icon: Icons.calendar_today_outlined,
                 );
 
-                if (constraints.maxWidth < 440) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: borderColor),
+                  ),
+                  padding: const EdgeInsetsDirectional.only(
+                    start: 12,
+                    end: 6,
+                    top: 6,
+                    bottom: 6,
+                  ),
+                  child: Row(
                     children: <Widget>[
-                      yearField,
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(child: monthField),
-                          const SizedBox(width: 8),
-                          Expanded(child: dayField),
-                          const SizedBox(width: 8),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: pickerButton,
-                          ),
-                        ],
-                      ),
+                      Expanded(flex: 9, child: dayField),
+                      _DatePartSeparator(enabled: canChange),
+                      Expanded(flex: 9, child: monthField),
+                      _DatePartSeparator(enabled: canChange),
+                      Expanded(flex: 12, child: yearField),
+                      const SizedBox(width: 4),
+                      pickerButton,
                     ],
-                  );
-                }
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(flex: 2, child: yearField),
-                    const SizedBox(width: 8),
-                    Expanded(child: monthField),
-                    const SizedBox(width: 8),
-                    Expanded(child: dayField),
-                    const SizedBox(width: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: pickerButton,
-                    ),
-                  ],
+                  ),
                 );
               },
             ),
@@ -454,9 +448,38 @@ class _DatePartTextField extends StatelessWidget {
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
-        labelText: labelText,
-        hintText: hintText,
+        hintText: hintText ?? labelText,
         counterText: '',
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        isDense: true,
+        contentPadding: EdgeInsets.zero,
+      ),
+    );
+  }
+}
+
+class _DatePartSeparator extends StatelessWidget {
+  const _DatePartSeparator({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Text(
+        '/',
+        style: theme.textTheme.titleMedium?.copyWith(
+          color: enabled
+              ? theme.colorScheme.onSurfaceVariant
+              : theme.disabledColor,
+        ),
       ),
     );
   }

@@ -45,7 +45,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appDateInvalidMessage => 'Enter a valid date.';
 
   @override
-  String get appDateFormatHint => 'YYYY-MM-DD';
+  String get appDateFormatHint => 'DD/MM/YYYY';
 
   @override
   String get appPhoneCountryLabel => 'Country code';
@@ -755,6 +755,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsConsentFilterLabel => 'Consent';
 
   @override
+  String get patientsContactFilterLabel => 'Contact';
+
+  @override
+  String get patientsVisitDateFilterLabel => 'Visit date';
+
+  @override
+  String get patientsVisitFromFilterLabel => 'Visit from';
+
+  @override
+  String get patientsVisitToFilterLabel => 'Visit to';
+
+  @override
+  String get patientsDobFromFilterLabel => 'DOB from';
+
+  @override
+  String get patientsDobToFilterLabel => 'DOB to';
+
+  @override
+  String get patientsCreatedFromFilterLabel => 'Registered from';
+
+  @override
+  String get patientsCreatedToFilterLabel => 'Registered to';
+
+  @override
+  String get patientsActiveAdmissionFilterLabel => 'Active admission';
+
+  @override
+  String get patientsOutstandingBalanceFilterLabel => 'Outstanding balance';
+
+  @override
+  String get patientsYesFilterLabel => 'Yes';
+
+  @override
+  String get patientsNoFilterLabel => 'No';
+
+  @override
+  String get patientsFilterIdentitySectionTitle => 'Identity';
+
+  @override
+  String get patientsFilterVisitSectionTitle => 'Visits';
+
+  @override
+  String get patientsFilterRecordSectionTitle => 'Record state';
+
+  @override
   String get patientsApplyFiltersAction => 'Apply';
 
   @override
@@ -946,6 +991,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsQuickActionSavedMessage => 'Patient workflow updated.';
 
   @override
+  String patientsWorkflowValidationMessage(String fields) {
+    return 'Check these fields and try again: $fields.';
+  }
+
+  @override
   String get patientsAppointmentDialogTitle => 'Schedule appointment';
 
   @override
@@ -970,6 +1020,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsProviderOptionalHelper => 'Optional provider assignment.';
 
   @override
+  String get patientsWorkflowSectionTitle => 'Workflow';
+
+  @override
+  String get patientsArrivalSectionTitle => 'Arrival';
+
+  @override
+  String get patientsTriagePrioritySectionTitle => 'Triage priority';
+
+  @override
+  String get patientsVitalsSectionTitle => 'Vital signs';
+
+  @override
+  String get patientsClinicalAssessmentSectionTitle => 'Assessment';
+
+  @override
+  String get patientsBillingSectionTitle => 'Billing details';
+
+  @override
+  String get patientsAdmissionClinicalSectionTitle => 'Clinical approval';
+
+  @override
+  String get patientsAdmissionLocationSectionTitle => 'Admission location';
+
+  @override
+  String get patientsNotesSectionTitle => 'Notes';
+
+  @override
   String get patientsOpdCheckInDialogTitle => 'OPD check-in';
 
   @override
@@ -992,6 +1069,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsTriageLevelLabel => 'Triage level';
+
+  @override
+  String get patientsSystolicLabel => 'Systolic';
+
+  @override
+  String get patientsDiastolicLabel => 'Diastolic';
+
+  @override
+  String get patientsTemperatureLabel => 'Temperature';
+
+  @override
+  String get patientsHeartRateLabel => 'Heart rate';
+
+  @override
+  String get patientsRespiratoryRateLabel => 'Respiratory rate';
+
+  @override
+  String get patientsOxygenSaturationLabel => 'Oxygen saturation';
+
+  @override
+  String get patientsWeightLabel => 'Weight';
+
+  @override
+  String get patientsHeightLabel => 'Height';
+
+  @override
+  String get patientsVitalsRequiredMessage =>
+      'Enter at least one vital sign before completing triage.';
 
   @override
   String get patientsChiefComplaintLabel => 'Chief complaint';
@@ -1021,6 +1126,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsAdmissionReasonLabel => 'Admission reason';
 
   @override
+  String get patientsWardLabel => 'Ward';
+
+  @override
+  String get patientsRoomLabel => 'Room';
+
+  @override
+  String get patientsBedLabel => 'Bed';
+
+  @override
   String get patientsReportDialogTitle => 'Patient report';
 
   @override
@@ -1037,6 +1151,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsInvoicesSectionTitle => 'Invoices';
+
+  @override
+  String get patientsReportSummarySectionTitle => 'Summary';
+
+  @override
+  String get patientsReportGeneratedSectionTitle => 'Generated';
 
   @override
   String get patientsTimeInvalidMessage => 'Enter time as HH:MM.';

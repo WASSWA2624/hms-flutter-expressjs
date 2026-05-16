@@ -15,6 +15,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
@@ -385,17 +386,41 @@ class _PatientFilters extends ConsumerStatefulWidget {
 
 class _PatientFiltersState extends ConsumerState<_PatientFilters> {
   late final TextEditingController _patientIdController;
+  late final TextEditingController _contactController;
+  String? _facilityId;
   String? _gender;
   String? _status;
   String? _consentState;
+  String? _appointmentStatus;
+  DateTime? _visitDate;
+  DateTime? _visitFrom;
+  DateTime? _visitTo;
+  DateTime? _createdFrom;
+  DateTime? _createdTo;
+  DateTime? _dateOfBirthFrom;
+  DateTime? _dateOfBirthTo;
+  bool? _hasActiveAdmission;
+  bool? _hasOutstandingBalance;
 
   @override
   void initState() {
     super.initState();
     _patientIdController = TextEditingController(text: widget.query.patientId);
+    _contactController = TextEditingController(text: widget.query.contact);
+    _facilityId = widget.query.facilityId;
     _gender = widget.query.gender;
     _status = _statusValue(widget.query.isActive);
     _consentState = widget.query.consentState;
+    _appointmentStatus = widget.query.appointmentStatus;
+    _visitDate = widget.query.visitDate;
+    _visitFrom = widget.query.visitFrom;
+    _visitTo = widget.query.visitTo;
+    _createdFrom = widget.query.createdFrom;
+    _createdTo = widget.query.createdTo;
+    _dateOfBirthFrom = widget.query.dateOfBirthFrom;
+    _dateOfBirthTo = widget.query.dateOfBirthTo;
+    _hasActiveAdmission = widget.query.hasActiveAdmission;
+    _hasOutstandingBalance = widget.query.hasOutstandingBalance;
   }
 
   @override
@@ -403,15 +428,28 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.query != widget.query) {
       _patientIdController.text = widget.query.patientId;
+      _contactController.text = widget.query.contact;
+      _facilityId = widget.query.facilityId;
       _gender = widget.query.gender;
       _status = _statusValue(widget.query.isActive);
       _consentState = widget.query.consentState;
+      _appointmentStatus = widget.query.appointmentStatus;
+      _visitDate = widget.query.visitDate;
+      _visitFrom = widget.query.visitFrom;
+      _visitTo = widget.query.visitTo;
+      _createdFrom = widget.query.createdFrom;
+      _createdTo = widget.query.createdTo;
+      _dateOfBirthFrom = widget.query.dateOfBirthFrom;
+      _dateOfBirthTo = widget.query.dateOfBirthTo;
+      _hasActiveAdmission = widget.query.hasActiveAdmission;
+      _hasOutstandingBalance = widget.query.hasOutstandingBalance;
     }
   }
 
   @override
   void dispose() {
     _patientIdController.dispose();
+    _contactController.dispose();
     super.dispose();
   }
 
@@ -475,9 +513,21 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
 
   bool get _hasAdvancedFilters {
     return _patientIdController.text.trim().isNotEmpty ||
+        _contactController.text.trim().isNotEmpty ||
+        _facilityId != null ||
         _gender != null ||
         _status != null ||
-        _consentState != null;
+        _consentState != null ||
+        _appointmentStatus != null ||
+        _visitDate != null ||
+        _visitFrom != null ||
+        _visitTo != null ||
+        _createdFrom != null ||
+        _createdTo != null ||
+        _dateOfBirthFrom != null ||
+        _dateOfBirthTo != null ||
+        _hasActiveAdmission != null ||
+        _hasOutstandingBalance != null;
   }
 
   Future<void> _openAdvancedFilters(BuildContext context) async {
@@ -486,9 +536,24 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
       context: context,
       builder: (_) => _PatientAdvancedFiltersDialog(
         patientId: _patientIdController.text,
+        contact: _contactController.text,
+        facilityId: _facilityId,
         gender: _gender,
         status: _status,
         consentState: _consentState,
+        appointmentStatus: _appointmentStatus,
+        visitDate: _visitDate,
+        visitFrom: _visitFrom,
+        visitTo: _visitTo,
+        createdFrom: _createdFrom,
+        createdTo: _createdTo,
+        dateOfBirthFrom: _dateOfBirthFrom,
+        dateOfBirthTo: _dateOfBirthTo,
+        hasActiveAdmission: _hasActiveAdmission,
+        hasOutstandingBalance: _hasOutstandingBalance,
+        facilities: state?.referenceData.facilities ?? const [],
+        appointmentStatuses:
+            state?.referenceData.appointmentStatuses ?? const [],
         consentStatuses: _filterConsentStatuses(state),
       ),
     );
@@ -497,10 +562,22 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
     }
 
     _patientIdController.text = draft.patientId;
+    _contactController.text = draft.contact;
     setState(() {
+      _facilityId = draft.facilityId;
       _gender = draft.gender;
       _status = draft.status;
       _consentState = draft.consentState;
+      _appointmentStatus = draft.appointmentStatus;
+      _visitDate = draft.visitDate;
+      _visitFrom = draft.visitFrom;
+      _visitTo = draft.visitTo;
+      _createdFrom = draft.createdFrom;
+      _createdTo = draft.createdTo;
+      _dateOfBirthFrom = draft.dateOfBirthFrom;
+      _dateOfBirthTo = draft.dateOfBirthTo;
+      _hasActiveAdmission = draft.hasActiveAdmission;
+      _hasOutstandingBalance = draft.hasOutstandingBalance;
     });
     await _apply();
   }
@@ -509,13 +586,36 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
     final PatientListQuery nextQuery = widget.query.copyWith(
       search: widget.searchController.text.trim(),
       patientId: _patientIdController.text.trim(),
+      contact: _contactController.text.trim(),
+      facilityId: _facilityId,
       gender: _gender,
       isActive: _activeValue(_status),
       consentState: _consentState,
+      appointmentStatus: _appointmentStatus,
+      visitDate: _visitDate,
+      visitFrom: _visitFrom,
+      visitTo: _visitTo,
+      createdFrom: _createdFrom,
+      createdTo: _createdTo,
+      dateOfBirthFrom: _dateOfBirthFrom,
+      dateOfBirthTo: _dateOfBirthTo,
+      hasActiveAdmission: _hasActiveAdmission,
+      hasOutstandingBalance: _hasOutstandingBalance,
       pageRequest: widget.query.pageRequest.first(),
+      clearFacilityId: _facilityId == null,
       clearGender: _gender == null,
       clearIsActive: _status == null,
       clearConsentState: _consentState == null,
+      clearAppointmentStatus: _appointmentStatus == null,
+      clearVisitDate: _visitDate == null,
+      clearVisitFrom: _visitFrom == null,
+      clearVisitTo: _visitTo == null,
+      clearCreatedFrom: _createdFrom == null,
+      clearCreatedTo: _createdTo == null,
+      clearDateOfBirthFrom: _dateOfBirthFrom == null,
+      clearDateOfBirthTo: _dateOfBirthTo == null,
+      clearHasActiveAdmission: _hasActiveAdmission == null,
+      clearHasOutstandingBalance: _hasOutstandingBalance == null,
     );
     final AppFailure? failure = await ref
         .read(patientRegistryControllerProvider.notifier)
@@ -528,10 +628,22 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
   Future<void> _clear() async {
     widget.searchController.clear();
     _patientIdController.clear();
+    _contactController.clear();
     setState(() {
+      _facilityId = null;
       _gender = null;
       _status = null;
       _consentState = null;
+      _appointmentStatus = null;
+      _visitDate = null;
+      _visitFrom = null;
+      _visitTo = null;
+      _createdFrom = null;
+      _createdTo = null;
+      _dateOfBirthFrom = null;
+      _dateOfBirthTo = null;
+      _hasActiveAdmission = null;
+      _hasOutstandingBalance = null;
     });
     final AppFailure? failure = await ref
         .read(patientRegistryControllerProvider.notifier)
@@ -546,30 +658,82 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
 final class _PatientFilterDraft {
   const _PatientFilterDraft({
     required this.patientId,
+    required this.contact,
+    required this.facilityId,
     required this.gender,
     required this.status,
     required this.consentState,
+    required this.appointmentStatus,
+    required this.visitDate,
+    required this.visitFrom,
+    required this.visitTo,
+    required this.createdFrom,
+    required this.createdTo,
+    required this.dateOfBirthFrom,
+    required this.dateOfBirthTo,
+    required this.hasActiveAdmission,
+    required this.hasOutstandingBalance,
   });
 
   final String patientId;
+  final String contact;
+  final String? facilityId;
   final String? gender;
   final String? status;
   final String? consentState;
+  final String? appointmentStatus;
+  final DateTime? visitDate;
+  final DateTime? visitFrom;
+  final DateTime? visitTo;
+  final DateTime? createdFrom;
+  final DateTime? createdTo;
+  final DateTime? dateOfBirthFrom;
+  final DateTime? dateOfBirthTo;
+  final bool? hasActiveAdmission;
+  final bool? hasOutstandingBalance;
 }
 
 class _PatientAdvancedFiltersDialog extends StatefulWidget {
   const _PatientAdvancedFiltersDialog({
     required this.patientId,
+    required this.contact,
+    required this.facilityId,
     required this.gender,
     required this.status,
     required this.consentState,
+    required this.appointmentStatus,
+    required this.visitDate,
+    required this.visitFrom,
+    required this.visitTo,
+    required this.createdFrom,
+    required this.createdTo,
+    required this.dateOfBirthFrom,
+    required this.dateOfBirthTo,
+    required this.hasActiveAdmission,
+    required this.hasOutstandingBalance,
+    required this.facilities,
+    required this.appointmentStatuses,
     required this.consentStatuses,
   });
 
   final String patientId;
+  final String contact;
+  final String? facilityId;
   final String? gender;
   final String? status;
   final String? consentState;
+  final String? appointmentStatus;
+  final DateTime? visitDate;
+  final DateTime? visitFrom;
+  final DateTime? visitTo;
+  final DateTime? createdFrom;
+  final DateTime? createdTo;
+  final DateTime? dateOfBirthFrom;
+  final DateTime? dateOfBirthTo;
+  final bool? hasActiveAdmission;
+  final bool? hasOutstandingBalance;
+  final List<PatientReferenceOption> facilities;
+  final List<String> appointmentStatuses;
   final List<String> consentStatuses;
 
   @override
@@ -580,22 +744,47 @@ class _PatientAdvancedFiltersDialog extends StatefulWidget {
 class _PatientAdvancedFiltersDialogState
     extends State<_PatientAdvancedFiltersDialog> {
   late final TextEditingController _patientIdController;
+  late final TextEditingController _contactController;
+  String? _facilityId;
   String? _gender;
   String? _status;
   String? _consentState;
+  String? _appointmentStatus;
+  DateTime? _visitDate;
+  DateTime? _visitFrom;
+  DateTime? _visitTo;
+  DateTime? _createdFrom;
+  DateTime? _createdTo;
+  DateTime? _dateOfBirthFrom;
+  DateTime? _dateOfBirthTo;
+  bool? _hasActiveAdmission;
+  bool? _hasOutstandingBalance;
 
   @override
   void initState() {
     super.initState();
     _patientIdController = TextEditingController(text: widget.patientId);
+    _contactController = TextEditingController(text: widget.contact);
+    _facilityId = widget.facilityId;
     _gender = widget.gender;
     _status = widget.status;
     _consentState = widget.consentState;
+    _appointmentStatus = widget.appointmentStatus;
+    _visitDate = widget.visitDate;
+    _visitFrom = widget.visitFrom;
+    _visitTo = widget.visitTo;
+    _createdFrom = widget.createdFrom;
+    _createdTo = widget.createdTo;
+    _dateOfBirthFrom = widget.dateOfBirthFrom;
+    _dateOfBirthTo = widget.dateOfBirthTo;
+    _hasActiveAdmission = widget.hasActiveAdmission;
+    _hasOutstandingBalance = widget.hasOutstandingBalance;
   }
 
   @override
   void dispose() {
     _patientIdController.dispose();
+    _contactController.dispose();
     super.dispose();
   }
 
@@ -607,56 +796,205 @@ class _PatientAdvancedFiltersDialogState
       title: Text(l10n.patientsAdvancedFiltersTitle),
       icon: const Icon(Icons.tune),
       scrollable: true,
+      maxWidth: 760,
       content: AppFormSection(
+        density: AppFormSectionDensity.compact,
         children: <Widget>[
-          AppTextField(
-            controller: _patientIdController,
-            labelText: l10n.patientsPatientIdFilterLabel,
-            textInputAction: TextInputAction.search,
-          ),
-          AppGenderField(
-            value: _gender,
-            labelText: l10n.patientsGenderFilterLabel,
-            maleLabel: l10n.patientsGenderMale,
-            femaleLabel: l10n.patientsGenderFemale,
-            otherLabel: l10n.patientsGenderOther,
-            unknownLabel: l10n.patientsGenderUnknown,
-            onChanged: (String? value) {
-              setState(() {
-                _gender = value;
-              });
-            },
-          ),
-          AppSelectField<String>(
-            value: _status,
-            labelText: l10n.patientsStatusFilterLabel,
-            onChanged: (String? value) {
-              setState(() {
-                _status = value;
-              });
-            },
-            options: <AppSelectOption<String>>[
-              AppSelectOption<String>(
-                value: _statusActive,
-                label: l10n.patientsActiveFilter,
+          AppFormSection(
+            title: l10n.patientsFilterIdentitySectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              _ResponsiveFieldPair(
+                left: AppTextField(
+                  controller: _patientIdController,
+                  labelText: l10n.patientsPatientIdFilterLabel,
+                  textInputAction: TextInputAction.search,
+                ),
+                right: AppTextField(
+                  controller: _contactController,
+                  labelText: l10n.patientsContactFilterLabel,
+                  textInputAction: TextInputAction.search,
+                ),
               ),
-              AppSelectOption<String>(
-                value: _statusInactive,
-                label: l10n.patientsInactiveFilter,
+              if (widget.facilities.length > 1)
+                _ResponsiveFieldPair(
+                  left: AppSelectField<String>.searchable(
+                    value: _facilityId,
+                    labelText: l10n.patientsFacilityLabel,
+                    onChanged: (String? value) =>
+                        setState(() => _facilityId = value),
+                    options: <AppSelectOption<String>>[
+                      for (final PatientReferenceOption option
+                          in widget.facilities)
+                        AppSelectOption<String>(
+                          value: option.id,
+                          label: option.label,
+                          leadingIcon: const Icon(Icons.business_outlined),
+                        ),
+                    ],
+                  ),
+                  right: AppGenderField(
+                    value: _gender,
+                    labelText: l10n.patientsGenderFilterLabel,
+                    maleLabel: l10n.patientsGenderMale,
+                    femaleLabel: l10n.patientsGenderFemale,
+                    otherLabel: l10n.patientsGenderOther,
+                    unknownLabel: l10n.patientsGenderUnknown,
+                    onChanged: (String? value) =>
+                        setState(() => _gender = value),
+                  ),
+                )
+              else
+                AppGenderField(
+                  value: _gender,
+                  labelText: l10n.patientsGenderFilterLabel,
+                  maleLabel: l10n.patientsGenderMale,
+                  femaleLabel: l10n.patientsGenderFemale,
+                  otherLabel: l10n.patientsGenderOther,
+                  unknownLabel: l10n.patientsGenderUnknown,
+                  onChanged: (String? value) => setState(() => _gender = value),
+                ),
+            ],
+          ),
+          AppFormSection(
+            title: l10n.patientsFilterVisitSectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppDateField(
+                value: _visitDate,
+                firstDate: _patientFilterFirstDate,
+                lastDate: _patientFilterLastDate,
+                pickerButtonLabel: l10n.patientsDatePickerAction,
+                invalidDateMessage: l10n.appDateInvalidMessage,
+                labelText: l10n.patientsVisitDateFilterLabel,
+                onChanged: (DateTime? value) => _visitDate = value,
+              ),
+              _ResponsiveFieldPair(
+                left: AppDateField(
+                  value: _visitFrom,
+                  firstDate: _patientFilterFirstDate,
+                  lastDate: _patientFilterLastDate,
+                  pickerButtonLabel: l10n.patientsDatePickerAction,
+                  invalidDateMessage: l10n.appDateInvalidMessage,
+                  labelText: l10n.patientsVisitFromFilterLabel,
+                  onChanged: (DateTime? value) => _visitFrom = value,
+                ),
+                right: AppDateField(
+                  value: _visitTo,
+                  firstDate: _patientFilterFirstDate,
+                  lastDate: _patientFilterLastDate,
+                  pickerButtonLabel: l10n.patientsDatePickerAction,
+                  invalidDateMessage: l10n.appDateInvalidMessage,
+                  labelText: l10n.patientsVisitToFilterLabel,
+                  onChanged: (DateTime? value) => _visitTo = value,
+                ),
+              ),
+              AppSelectField<String>.searchable(
+                value: _appointmentStatus,
+                labelText: l10n.patientsAppointmentStatusLabel,
+                onChanged: (String? value) =>
+                    setState(() => _appointmentStatus = value),
+                options: <AppSelectOption<String>>[
+                  for (final String value in widget.appointmentStatuses)
+                    AppSelectOption<String>(
+                      value: value,
+                      label: _apiLabel(value),
+                      leadingIcon: Icon(_appointmentStatusIcon(value)),
+                    ),
+                ],
               ),
             ],
           ),
-          AppSelectField<String>(
-            value: _consentState,
-            labelText: l10n.patientsConsentFilterLabel,
-            onChanged: (String? value) {
-              setState(() {
-                _consentState = value;
-              });
-            },
-            options: <AppSelectOption<String>>[
-              for (final String value in widget.consentStatuses)
-                AppSelectOption<String>(value: value, label: _apiLabel(value)),
+          AppFormSection(
+            title: l10n.patientsFilterRecordSectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              _ResponsiveFieldPair(
+                left: AppSelectField<String>(
+                  value: _status,
+                  labelText: l10n.patientsStatusFilterLabel,
+                  onChanged: (String? value) => setState(() => _status = value),
+                  options: <AppSelectOption<String>>[
+                    AppSelectOption<String>(
+                      value: _statusActive,
+                      label: l10n.patientsActiveFilter,
+                    ),
+                    AppSelectOption<String>(
+                      value: _statusInactive,
+                      label: l10n.patientsInactiveFilter,
+                    ),
+                  ],
+                ),
+                right: AppSelectField<String>(
+                  value: _consentState,
+                  labelText: l10n.patientsConsentFilterLabel,
+                  onChanged: (String? value) =>
+                      setState(() => _consentState = value),
+                  options: <AppSelectOption<String>>[
+                    for (final String value in widget.consentStatuses)
+                      AppSelectOption<String>(
+                        value: value,
+                        label: _apiLabel(value),
+                      ),
+                  ],
+                ),
+              ),
+              _ResponsiveFieldPair(
+                left: AppSelectField<bool>(
+                  value: _hasActiveAdmission,
+                  labelText: l10n.patientsActiveAdmissionFilterLabel,
+                  onChanged: (bool? value) =>
+                      setState(() => _hasActiveAdmission = value),
+                  options: _booleanFilterOptions(l10n),
+                ),
+                right: AppSelectField<bool>(
+                  value: _hasOutstandingBalance,
+                  labelText: l10n.patientsOutstandingBalanceFilterLabel,
+                  onChanged: (bool? value) =>
+                      setState(() => _hasOutstandingBalance = value),
+                  options: _booleanFilterOptions(l10n),
+                ),
+              ),
+              _ResponsiveFieldPair(
+                left: AppDateField(
+                  value: _dateOfBirthFrom,
+                  firstDate: DateTime(1900),
+                  lastDate: DateTime.now(),
+                  pickerButtonLabel: l10n.patientsDatePickerAction,
+                  invalidDateMessage: l10n.appDateInvalidMessage,
+                  labelText: l10n.patientsDobFromFilterLabel,
+                  onChanged: (DateTime? value) => _dateOfBirthFrom = value,
+                ),
+                right: AppDateField(
+                  value: _dateOfBirthTo,
+                  firstDate: DateTime(1900),
+                  lastDate: DateTime.now(),
+                  pickerButtonLabel: l10n.patientsDatePickerAction,
+                  invalidDateMessage: l10n.appDateInvalidMessage,
+                  labelText: l10n.patientsDobToFilterLabel,
+                  onChanged: (DateTime? value) => _dateOfBirthTo = value,
+                ),
+              ),
+              _ResponsiveFieldPair(
+                left: AppDateField(
+                  value: _createdFrom,
+                  firstDate: _patientFilterFirstDate,
+                  lastDate: _patientFilterLastDate,
+                  pickerButtonLabel: l10n.patientsDatePickerAction,
+                  invalidDateMessage: l10n.appDateInvalidMessage,
+                  labelText: l10n.patientsCreatedFromFilterLabel,
+                  onChanged: (DateTime? value) => _createdFrom = value,
+                ),
+                right: AppDateField(
+                  value: _createdTo,
+                  firstDate: _patientFilterFirstDate,
+                  lastDate: _patientFilterLastDate,
+                  pickerButtonLabel: l10n.patientsDatePickerAction,
+                  invalidDateMessage: l10n.appDateInvalidMessage,
+                  labelText: l10n.patientsCreatedToFilterLabel,
+                  onChanged: (DateTime? value) => _createdTo = value,
+                ),
+              ),
             ],
           ),
         ],
@@ -669,9 +1007,21 @@ class _PatientAdvancedFiltersDialogState
             Navigator.of(context).pop(
               const _PatientFilterDraft(
                 patientId: '',
+                contact: '',
+                facilityId: null,
                 gender: null,
                 status: null,
                 consentState: null,
+                appointmentStatus: null,
+                visitDate: null,
+                visitFrom: null,
+                visitTo: null,
+                createdFrom: null,
+                createdTo: null,
+                dateOfBirthFrom: null,
+                dateOfBirthTo: null,
+                hasActiveAdmission: null,
+                hasOutstandingBalance: null,
               ),
             );
           },
@@ -683,9 +1033,21 @@ class _PatientAdvancedFiltersDialogState
             Navigator.of(context).pop(
               _PatientFilterDraft(
                 patientId: _patientIdController.text.trim(),
+                contact: _contactController.text.trim(),
+                facilityId: _facilityId,
                 gender: _gender,
                 status: _status,
                 consentState: _consentState,
+                appointmentStatus: _appointmentStatus,
+                visitDate: _visitDate,
+                visitFrom: _visitFrom,
+                visitTo: _visitTo,
+                createdFrom: _createdFrom,
+                createdTo: _createdTo,
+                dateOfBirthFrom: _dateOfBirthFrom,
+                dateOfBirthTo: _dateOfBirthTo,
+                hasActiveAdmission: _hasActiveAdmission,
+                hasOutstandingBalance: _hasOutstandingBalance,
               ),
             );
           },
@@ -1588,40 +1950,175 @@ class _PatientDemographics extends StatelessWidget {
   Widget build(BuildContext context) {
     final Patient patient = detail.patient;
     final l10n = context.l10n;
+    final List<_PatientDetailItem> items = <_PatientDetailItem>[
+      _PatientDetailItem(
+        label: l10n.patientsNameLabel,
+        value: patient.effectiveDisplayName,
+        icon: Icons.person_outline,
+      ),
+      _PatientDetailItem(
+        label: l10n.patientsIdentifierLabel,
+        value: patient.effectiveIdentifier,
+        icon: Icons.badge_outlined,
+      ),
+      _PatientDetailItem(
+        label: l10n.patientsDobLabel,
+        value: _formatOptionalDate(context, patient.dateOfBirth),
+        icon: Icons.cake_outlined,
+      ),
+      _PatientDetailItem(
+        label: l10n.patientsGenderLabel,
+        value: patient.gender == null
+            ? null
+            : _genderLabel(l10n, patient.gender!),
+        icon: Icons.wc_outlined,
+      ),
+      _PatientDetailItem(
+        label: l10n.patientsPhoneLabel,
+        value: patient.primaryPhone,
+        icon: Icons.phone_outlined,
+      ),
+      _PatientDetailItem(
+        label: l10n.patientsEmailLabel,
+        value: patient.primaryEmail,
+        icon: Icons.alternate_email_outlined,
+      ),
+      _PatientDetailItem(
+        label: l10n.patientsFacilityLabel,
+        value: patient.facilityLabel,
+        icon: Icons.business_outlined,
+      ),
+      if (patient.requiresCompletion)
+        _PatientDetailItem(
+          label: l10n.patientsRegistrationStatusLabel,
+          value: l10n.patientsRegistrationIncompleteValue,
+          icon: Icons.error_outline,
+        ),
+    ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        _InfoRow(
-          label: l10n.patientsNameLabel,
-          value: patient.effectiveDisplayName,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final ThemeData theme = Theme.of(context);
+        final int columns = constraints.maxWidth >= 820
+            ? 4
+            : constraints.maxWidth >= 560
+            ? 3
+            : constraints.maxWidth >= 360
+            ? 2
+            : 1;
+        final double gap = theme.spacing.sm;
+        final double width =
+            (constraints.maxWidth - (gap * (columns - 1))) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: <Widget>[
+            for (final _PatientDetailItem item in items)
+              SizedBox(
+                width: math.max(width, 0),
+                child: _PatientDetailTile(item: item),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PatientDetailItem {
+  const _PatientDetailItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String? value;
+  final IconData icon;
+}
+
+class _PatientDetailTile extends StatelessWidget {
+  const _PatientDetailTile({required this.item});
+
+  final _PatientDetailItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(
+              item.icon,
+              size: theme.appTokens.listIconSize,
+              color: theme.colorScheme.primary,
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    item.value ?? context.l10n.profileUnknownValue,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        _InfoRow(
-          label: l10n.patientsIdentifierLabel,
-          value: patient.effectiveIdentifier,
+      ),
+    );
+  }
+}
+
+class _InlineFormError extends StatelessWidget {
+  const _InlineFormError(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.error),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.error_outline, color: theme.colorScheme.error),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Text(
+                message,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
+          ],
         ),
-        _InfoRow(
-          label: l10n.patientsDobLabel,
-          value: _formatOptionalDate(context, patient.dateOfBirth),
-        ),
-        _InfoRow(
-          label: l10n.patientsGenderLabel,
-          value: patient.gender == null
-              ? null
-              : _genderLabel(l10n, patient.gender!),
-        ),
-        _InfoRow(label: l10n.patientsPhoneLabel, value: patient.primaryPhone),
-        _InfoRow(label: l10n.patientsEmailLabel, value: patient.primaryEmail),
-        _InfoRow(
-          label: l10n.patientsFacilityLabel,
-          value: patient.facilityLabel,
-        ),
-        if (patient.requiresCompletion)
-          _InfoRow(
-            label: l10n.patientsRegistrationStatusLabel,
-            value: l10n.patientsRegistrationIncompleteValue,
-          ),
-      ],
+      ),
     );
   }
 }
@@ -1892,7 +2389,11 @@ class _PatientAppointmentQuickDialogState
         child: AppFormSection(
           density: AppFormSectionDensity.compact,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_failure != null)
+              AppFailureStateView(
+                failure: _failure!,
+                body: _workflowFailureMessage(context, _failure!),
+              ),
             if (widget.referenceData.facilities.length > 1)
               _facilitySelect(context),
             _ResponsiveFieldPair(
@@ -2092,8 +2593,21 @@ class _PatientFlowQuickDialogState
   final TextEditingController _feeController = TextEditingController();
   final TextEditingController _transactionRefController =
       TextEditingController();
+  final TextEditingController _temperatureController = TextEditingController();
+  final TextEditingController _systolicController = TextEditingController();
+  final TextEditingController _diastolicController = TextEditingController();
+  final TextEditingController _heartRateController = TextEditingController();
+  final TextEditingController _respiratoryRateController =
+      TextEditingController();
+  final TextEditingController _oxygenSaturationController =
+      TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
   String? _facilityId;
   String? _providerId;
+  String? _wardId;
+  String? _roomId;
+  String? _bedId;
   String _arrivalMode = 'WALK_IN';
   String _emergencySeverity = 'HIGH';
   String? _triageLevel;
@@ -2104,6 +2618,7 @@ class _PatientFlowQuickDialogState
   bool _isLoadingProviders = false;
   bool _isSaving = false;
   AppFailure? _failure;
+  String? _formErrorText;
 
   @override
   void initState() {
@@ -2123,6 +2638,14 @@ class _PatientFlowQuickDialogState
     _diagnosisController.dispose();
     _feeController.dispose();
     _transactionRefController.dispose();
+    _temperatureController.dispose();
+    _systolicController.dispose();
+    _diastolicController.dispose();
+    _heartRateController.dispose();
+    _respiratoryRateController.dispose();
+    _oxygenSaturationController.dispose();
+    _weightController.dispose();
+    _heightController.dispose();
     super.dispose();
   }
 
@@ -2140,16 +2663,33 @@ class _PatientFlowQuickDialogState
         child: AppFormSection(
           density: AppFormSectionDensity.compact,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            if (widget.referenceData.facilities.length > 1)
-              _facilitySelect(context),
-            if (_usesProvider) _providerSelect(context),
+            if (_failure != null)
+              AppFailureStateView(
+                failure: _failure!,
+                body: _workflowFailureMessage(context, _failure!),
+              ),
+            if (_formErrorText != null) _InlineFormError(_formErrorText!),
+            AppFormSection(
+              title: l10n.patientsWorkflowSectionTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                if (widget.referenceData.facilities.length > 1)
+                  _facilitySelect(context),
+                if (_usesProvider) _providerSelect(context),
+              ],
+            ),
             ..._modeFields(context),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.patientsNotesLabel,
-              enabled: !_isSaving,
-              maxLines: 3,
+            AppFormSection(
+              title: l10n.patientsNotesSectionTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                AppTextField(
+                  controller: _notesController,
+                  labelText: l10n.patientsNotesLabel,
+                  enabled: !_isSaving,
+                  maxLines: 3,
+                ),
+              ],
             ),
           ],
         ),
@@ -2209,75 +2749,183 @@ class _PatientFlowQuickDialogState
     final l10n = context.l10n;
     return switch (widget.action) {
       _PatientQuickAction.opdCheckIn => <Widget>[
-        AppSelectField<String>.searchable(
-          value: _arrivalMode,
-          labelText: l10n.patientsArrivalModeLabel,
-          enabled: !_isSaving,
-          onChanged: (String? value) =>
-              setState(() => _arrivalMode = value ?? 'WALK_IN'),
-          options: _simpleStatusOptions(const <String>['WALK_IN', 'EMERGENCY']),
+        AppFormSection(
+          title: l10n.patientsArrivalSectionTitle,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppSelectField<String>.searchable(
+              value: _arrivalMode,
+              labelText: l10n.patientsArrivalModeLabel,
+              enabled: !_isSaving,
+              onChanged: (String? value) =>
+                  setState(() => _arrivalMode = value ?? 'WALK_IN'),
+              options: _simpleStatusOptions(const <String>[
+                'WALK_IN',
+                'EMERGENCY',
+              ]),
+            ),
+            if (_arrivalMode == 'EMERGENCY') _emergencyFields(context),
+            _consultationFeeField(context, required: false),
+          ],
         ),
-        if (_arrivalMode == 'EMERGENCY') _emergencyFields(context),
-        _consultationFeeField(context, required: false),
       ],
       _PatientQuickAction.triage => <Widget>[
-        _emergencyFields(context),
-        AppTextField(
-          controller: _chiefComplaintController,
-          labelText: l10n.patientsChiefComplaintLabel,
-          enabled: !_isSaving,
-          maxLines: 3,
+        AppFormSection(
+          title: l10n.patientsTriagePrioritySectionTitle,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            _emergencyFields(context),
+            AppTextField(
+              controller: _chiefComplaintController,
+              labelText: l10n.patientsChiefComplaintLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              maxLines: 3,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+          ],
+        ),
+        AppFormSection(
+          title: l10n.patientsVitalsSectionTitle,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            _ResponsiveFieldPair(
+              left: AppTextField(
+                controller: _systolicController,
+                labelText: l10n.patientsSystolicLabel,
+                enabled: !_isSaving,
+                keyboardType: TextInputType.number,
+              ),
+              right: AppTextField(
+                controller: _diastolicController,
+                labelText: l10n.patientsDiastolicLabel,
+                enabled: !_isSaving,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            _ResponsiveFieldPair(
+              left: AppTextField(
+                controller: _temperatureController,
+                labelText: l10n.patientsTemperatureLabel,
+                enabled: !_isSaving,
+                keyboardType: TextInputType.number,
+              ),
+              right: AppTextField(
+                controller: _heartRateController,
+                labelText: l10n.patientsHeartRateLabel,
+                enabled: !_isSaving,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            _ResponsiveFieldPair(
+              left: AppTextField(
+                controller: _respiratoryRateController,
+                labelText: l10n.patientsRespiratoryRateLabel,
+                enabled: !_isSaving,
+                keyboardType: TextInputType.number,
+              ),
+              right: AppTextField(
+                controller: _oxygenSaturationController,
+                labelText: l10n.patientsOxygenSaturationLabel,
+                enabled: !_isSaving,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            _ResponsiveFieldPair(
+              left: AppTextField(
+                controller: _weightController,
+                labelText: l10n.patientsWeightLabel,
+                enabled: !_isSaving,
+                keyboardType: TextInputType.number,
+              ),
+              right: AppTextField(
+                controller: _heightController,
+                labelText: l10n.patientsHeightLabel,
+                enabled: !_isSaving,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
         ),
       ],
       _PatientQuickAction.clinicalVisit => <Widget>[
-        AppTextField(
-          controller: _clinicalNoteController,
-          labelText: l10n.patientsClinicalNoteLabel,
-          enabled: !_isSaving,
-          isRequired: true,
-          maxLines: 4,
-          validator: AppValidators.requiredText(l10n.validationRequired),
-        ),
-        AppTextField(
-          controller: _diagnosisController,
-          labelText: l10n.patientsDiagnosisLabel,
-          enabled: !_isSaving,
-          maxLines: 2,
+        AppFormSection(
+          title: l10n.patientsClinicalAssessmentSectionTitle,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppTextField(
+              controller: _clinicalNoteController,
+              labelText: l10n.patientsClinicalNoteLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              maxLines: 4,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+            AppTextField(
+              controller: _diagnosisController,
+              labelText: l10n.patientsDiagnosisLabel,
+              enabled: !_isSaving,
+              maxLines: 2,
+            ),
+          ],
         ),
       ],
       _PatientQuickAction.billing => <Widget>[
-        _consultationFeeField(context, required: true),
-        AppCheckboxField(
-          title: l10n.patientsMarkPaymentReceivedLabel,
-          value: _markPaid,
-          enabled: !_isSaving,
-          onChanged: (bool value) => setState(() => _markPaid = value),
+        AppFormSection(
+          title: l10n.patientsBillingSectionTitle,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            _consultationFeeField(context, required: true),
+            AppCheckboxField(
+              title: l10n.patientsMarkPaymentReceivedLabel,
+              value: _markPaid,
+              enabled: !_isSaving,
+              onChanged: (bool value) => setState(() => _markPaid = value),
+            ),
+            if (_markPaid)
+              _ResponsiveFieldPair(
+                left: AppSelectField<String>.searchable(
+                  value: _paymentMethod,
+                  labelText: l10n.patientsPaymentMethodLabel,
+                  enabled: !_isSaving,
+                  onChanged: (String? value) =>
+                      setState(() => _paymentMethod = value ?? 'CASH'),
+                  options: _paymentMethodSelectOptions(),
+                ),
+                right: AppTextField(
+                  controller: _transactionRefController,
+                  labelText: l10n.patientsTransactionReferenceLabel,
+                  enabled: !_isSaving,
+                ),
+              ),
+          ],
         ),
-        if (_markPaid)
-          _ResponsiveFieldPair(
-            left: AppSelectField<String>.searchable(
-              value: _paymentMethod,
-              labelText: l10n.patientsPaymentMethodLabel,
-              enabled: !_isSaving,
-              onChanged: (String? value) =>
-                  setState(() => _paymentMethod = value ?? 'CASH'),
-              options: _simpleStatusOptions(_paymentMethods),
-            ),
-            right: AppTextField(
-              controller: _transactionRefController,
-              labelText: l10n.patientsTransactionReferenceLabel,
-              enabled: !_isSaving,
-            ),
-          ),
       ],
       _PatientQuickAction.admission => <Widget>[
-        AppTextField(
-          controller: _clinicalNoteController,
-          labelText: l10n.patientsAdmissionReasonLabel,
-          enabled: !_isSaving,
-          isRequired: true,
-          maxLines: 4,
-          validator: AppValidators.requiredText(l10n.validationRequired),
+        AppFormSection(
+          title: l10n.patientsAdmissionClinicalSectionTitle,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            AppTextField(
+              controller: _clinicalNoteController,
+              labelText: l10n.patientsAdmissionReasonLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              maxLines: 4,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+          ],
+        ),
+        AppFormSection(
+          title: l10n.patientsAdmissionLocationSectionTitle,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            _wardSelect(context),
+            _ResponsiveFieldPair(
+              left: _roomSelect(context),
+              right: _bedSelect(context),
+            ),
+          ],
         ),
       ],
       _ => const <Widget>[],
@@ -2330,7 +2978,14 @@ class _PatientFlowQuickDialogState
       value: _facilityId,
       labelText: context.l10n.patientsFacilityLabel,
       enabled: !_isSaving,
-      onChanged: (String? value) => setState(() => _facilityId = value),
+      onChanged: (String? value) {
+        setState(() {
+          _facilityId = value;
+          _wardId = null;
+          _roomId = null;
+          _bedId = null;
+        });
+      },
       options: <AppSelectOption<String>>[
         for (final PatientReferenceOption option
             in widget.referenceData.facilities)
@@ -2353,6 +3008,110 @@ class _PatientFlowQuickDialogState
       onChanged: (String? value) => setState(() => _providerId = value),
       options: _providerSelectOptions(_providers),
     );
+  }
+
+  Widget _wardSelect(BuildContext context) {
+    final List<PatientReferenceOption> wards = _facilityFiltered(
+      widget.referenceData.wards,
+    );
+    return AppSelectField<String>.searchable(
+      value: _wardId,
+      labelText: context.l10n.patientsWardLabel,
+      enabled: !_isSaving && wards.isNotEmpty,
+      onChanged: (String? value) {
+        setState(() {
+          _wardId = value;
+          _roomId = null;
+          _bedId = null;
+        });
+      },
+      options: <AppSelectOption<String>>[
+        for (final PatientReferenceOption option in wards)
+          AppSelectOption<String>(
+            value: option.id,
+            label: option.label,
+            leadingIcon: const Icon(Icons.domain_outlined),
+          ),
+      ],
+    );
+  }
+
+  Widget _roomSelect(BuildContext context) {
+    final List<PatientReferenceOption> rooms =
+        _facilityFiltered(widget.referenceData.rooms)
+            .where((PatientReferenceOption option) {
+              return _wardId == null ||
+                  option.wardId == null ||
+                  option.wardId == _wardId;
+            })
+            .toList(growable: false);
+    return AppSelectField<String>.searchable(
+      value: _roomId,
+      labelText: context.l10n.patientsRoomLabel,
+      enabled: !_isSaving && rooms.isNotEmpty,
+      onChanged: (String? value) {
+        setState(() {
+          _roomId = value;
+          _bedId = null;
+        });
+      },
+      options: <AppSelectOption<String>>[
+        for (final PatientReferenceOption option in rooms)
+          AppSelectOption<String>(
+            value: option.id,
+            label: option.label,
+            leadingIcon: const Icon(Icons.meeting_room_outlined),
+          ),
+      ],
+    );
+  }
+
+  Widget _bedSelect(BuildContext context) {
+    final List<PatientReferenceOption> beds =
+        _facilityFiltered(widget.referenceData.beds)
+            .where((PatientReferenceOption option) {
+              final bool matchesWard =
+                  _wardId == null ||
+                  option.wardId == null ||
+                  option.wardId == _wardId;
+              final bool matchesRoom =
+                  _roomId == null ||
+                  option.roomId == null ||
+                  option.roomId == _roomId;
+              final bool isAvailable =
+                  option.status == null ||
+                  option.status!.toUpperCase() == 'AVAILABLE';
+              return matchesWard && matchesRoom && isAvailable;
+            })
+            .toList(growable: false);
+    return AppSelectField<String>.searchable(
+      value: _bedId,
+      labelText: context.l10n.patientsBedLabel,
+      enabled: !_isSaving && beds.isNotEmpty,
+      onChanged: (String? value) => setState(() => _bedId = value),
+      options: <AppSelectOption<String>>[
+        for (final PatientReferenceOption option in beds)
+          AppSelectOption<String>(
+            value: option.id,
+            label: option.label,
+            leadingIcon: Icon(_bedStatusIcon(option.status)),
+          ),
+      ],
+    );
+  }
+
+  List<PatientReferenceOption> _facilityFiltered(
+    List<PatientReferenceOption> options,
+  ) {
+    if (_facilityId == null) {
+      return options;
+    }
+    return options
+        .where(
+          (PatientReferenceOption option) =>
+              option.facilityId == null || option.facilityId == _facilityId,
+        )
+        .toList(growable: false);
   }
 
   Future<void> _loadProviders() async {
@@ -2386,6 +3145,7 @@ class _PatientFlowQuickDialogState
     setState(() {
       _isSaving = true;
       _failure = null;
+      _formErrorText = null;
     });
 
     final AppFailure? failure = await (switch (widget.action) {
@@ -2417,18 +3177,65 @@ class _PatientFlowQuickDialogState
       if (_arrivalMode == 'EMERGENCY') 'emergency': _emergencyPayload(),
       if (amount.isNotEmpty) 'consultation_fee': amount,
       if (amount.isNotEmpty) 'currency': _currency,
-      if (amount.isNotEmpty) 'create_consultation_invoice': true,
-      if (amount.isNotEmpty) 'require_consultation_payment': true,
+      'create_consultation_invoice': amount.isNotEmpty,
+      'require_consultation_payment': amount.isNotEmpty,
     });
   }
 
-  Future<AppFailure?> _submitTriage() {
-    return _startFlow(<String, Object?>{
-      'arrival_mode': 'EMERGENCY',
-      'emergency': _emergencyPayload(),
-      'initial_stage': 'WAITING_VITALS',
-      'notes': _chiefComplaintController.text.trim(),
-    });
+  Future<AppFailure?> _submitTriage() async {
+    final List<Map<String, Object?>> vitals = _vitalPayload();
+    if (vitals.isEmpty) {
+      setState(() {
+        _formErrorText = context.l10n.patientsVitalsRequiredMessage;
+      });
+      return AppFailure.validation(validationFields: const <String>{'vitals'});
+    }
+
+    final Result<OpdFlowDetail> flowResult = await ref
+        .read(opdRepositoryProvider)
+        .startOpdFlow(
+          _baseFlowPayload(<String, Object?>{
+            'arrival_mode': 'EMERGENCY',
+            'emergency': _emergencyPayload(),
+            'initial_stage': 'WAITING_VITALS',
+            'notes': _chiefComplaintController.text.trim(),
+            'require_consultation_payment': false,
+            'create_consultation_invoice': false,
+          }),
+        );
+    final OpdFlowDetail? flow = _successOrNull(flowResult);
+    if (flow == null) {
+      return _failureOrNull(flowResult);
+    }
+
+    final Result<OpdFlowDetail> vitalsResult = await ref
+        .read(opdRepositoryProvider)
+        .recordVitals(
+          flow.summary.apiId,
+          _withoutEmptyPayload(<String, Object?>{
+            'vitals': vitals,
+            'triage_level': _triageLevel,
+            'triage_priority': _triageLevel,
+            'chief_complaint': _chiefComplaintController.text.trim(),
+            'emergency': true,
+            'triage_notes': _notesController.text.trim(),
+          }),
+        );
+    final OpdFlowDetail? triaged = _successOrNull(vitalsResult);
+    if (triaged == null) {
+      return _failureOrNull(vitalsResult);
+    }
+
+    if (_providerId == null) {
+      return null;
+    }
+
+    final Result<OpdFlowDetail> assignResult = await ref
+        .read(opdRepositoryProvider)
+        .assignDoctor(triaged.summary.apiId, <String, Object?>{
+          'provider_user_id': _providerId,
+        });
+    return _failureOrNull(assignResult);
   }
 
   Future<AppFailure?> _submitClinicalVisit() async {
@@ -2521,7 +3328,25 @@ class _PatientFlowQuickDialogState
             'notes': _notesController.text.trim(),
           }),
         );
-    return _failureOrNull(dispositionResult);
+    final OpdFlowDetail? admitted = _successOrNull(dispositionResult);
+    if (admitted == null) {
+      return _failureOrNull(dispositionResult);
+    }
+
+    final String? admissionId = admitted.admissions.isEmpty
+        ? null
+        : admitted.admissions.first.id;
+    if (admissionId == null || _bedId == null) {
+      return null;
+    }
+
+    final Result<void> bedResult = await ref
+        .read(ipdRepositoryProvider)
+        .assignBed(admissionId, <String, Object?>{
+          'bed_id': _bedId,
+          'assigned_at': DateTime.now().toUtc().toIso8601String(),
+        });
+    return _failureOrNull(bedResult);
   }
 
   Future<AppFailure?> _startFlow(Map<String, Object?> payload) async {
@@ -2549,6 +3374,45 @@ class _PatientFlowQuickDialogState
       'triage_level': _triageLevel,
       'notes': _notesController.text.trim(),
     });
+  }
+
+  List<Map<String, Object?>> _vitalPayload() {
+    final List<Map<String, Object?>> vitals = <Map<String, Object?>>[];
+    final String now = DateTime.now().toUtc().toIso8601String();
+    final String systolic = normalizeCurrencyAmount(_systolicController.text);
+    final String diastolic = normalizeCurrencyAmount(_diastolicController.text);
+    if (systolic.isNotEmpty && diastolic.isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'BLOOD_PRESSURE',
+        'systolic_value': systolic,
+        'diastolic_value': diastolic,
+        'recorded_at': now,
+      });
+    }
+    void addScalar(
+      TextEditingController controller,
+      String vitalType,
+      String unit,
+    ) {
+      final String value = normalizeCurrencyAmount(controller.text);
+      if (value.isEmpty) {
+        return;
+      }
+      vitals.add(<String, Object?>{
+        'vital_type': vitalType,
+        'value': value,
+        'unit': unit,
+        'recorded_at': now,
+      });
+    }
+
+    addScalar(_temperatureController, 'TEMPERATURE', 'C');
+    addScalar(_heartRateController, 'HEART_RATE', 'bpm');
+    addScalar(_respiratoryRateController, 'RESPIRATORY_RATE', 'breaths/min');
+    addScalar(_oxygenSaturationController, 'OXYGEN_SATURATION', '%');
+    addScalar(_weightController, 'WEIGHT', 'kg');
+    addScalar(_heightController, 'HEIGHT', 'cm');
+    return vitals;
   }
 }
 
@@ -2632,7 +3496,9 @@ class _PatientReportDialog extends StatelessWidget {
         AppButton.primary(
           label: l10n.patientsPrintReportAction,
           leadingIcon: Icons.print_outlined,
-          onPressed: printCurrentWindow,
+          onPressed: () {
+            printHtmlDocument(_patientReportHtml(context, patient, detail));
+          },
         ),
       ],
     );
@@ -2649,6 +3515,94 @@ class _ReportSummaryItem {
   final String label;
   final int value;
   final IconData icon;
+}
+
+String _patientReportHtml(
+  BuildContext context,
+  Patient patient,
+  PatientDetail? detail,
+) {
+  final l10n = context.l10n;
+  final Locale locale = Localizations.localeOf(context);
+  final PatientWorkspaceSnapshot? workspace = detail?.workspace;
+  final List<PatientTimelineItem> timeline =
+      detail?.timeline ?? const <PatientTimelineItem>[];
+  String row(String label, String? value) {
+    return '<tr><th>${_htmlEscape(label)}</th><td>${_htmlEscape(value ?? l10n.profileUnknownValue)}</td></tr>';
+  }
+
+  String summary(String label, int value) {
+    return '<div class="metric"><span>${_htmlEscape(value.toString())}</span><small>${_htmlEscape(label)}</small></div>';
+  }
+
+  return '''
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, sans-serif; color: #1f2937; }
+  .report { padding: 32px; }
+  .header { border-bottom: 2px solid #111827; padding-bottom: 16px; margin-bottom: 24px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .subtitle { color: #4b5563; font-size: 13px; }
+  h2 { font-size: 15px; margin: 24px 0 10px; text-transform: uppercase; letter-spacing: .04em; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; vertical-align: top; font-size: 13px; }
+  th { width: 28%; background: #f3f4f6; }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .metric { border: 1px solid #d1d5db; padding: 12px; }
+  .metric span { display: block; font-size: 20px; font-weight: 700; }
+  .metric small { color: #4b5563; }
+  .timeline { margin: 0; padding-left: 18px; }
+  .timeline li { margin-bottom: 8px; font-size: 13px; }
+  @media print { .report { padding: 20mm; } }
+</style>
+<main class="report">
+  <section class="header">
+    <h1>${_htmlEscape(l10n.patientsReportDialogTitle)}</h1>
+    <div class="subtitle">${_htmlEscape(patient.effectiveDisplayName)} | ${_htmlEscape(patient.effectiveIdentifier ?? patient.id)}</div>
+  </section>
+  <section>
+    <h2>${_htmlEscape(l10n.patientsDetailTitle)}</h2>
+    <table>
+      ${row(l10n.patientsNameLabel, patient.effectiveDisplayName)}
+      ${row(l10n.patientsIdentifierLabel, patient.effectiveIdentifier)}
+      ${row(l10n.patientsDobLabel, _formatOptionalDate(context, patient.dateOfBirth))}
+      ${row(l10n.patientsGenderLabel, patient.gender == null ? null : _genderLabel(l10n, patient.gender!))}
+      ${row(l10n.patientsPhoneLabel, patient.primaryPhone)}
+      ${row(l10n.patientsEmailLabel, patient.primaryEmail)}
+      ${row(l10n.patientsFacilityLabel, patient.facilityLabel)}
+    </table>
+  </section>
+  <section>
+    <h2>${_htmlEscape(l10n.patientsReportSummarySectionTitle)}</h2>
+    <div class="metrics">
+      ${summary(l10n.patientsAppointmentsSectionTitle, workspace?.appointments.length ?? 0)}
+      ${summary(l10n.patientsEncountersSectionTitle, workspace?.encounters.length ?? 0)}
+      ${summary(l10n.patientsAdmissionsSectionTitle, workspace?.admissions.length ?? 0)}
+      ${summary(l10n.patientsInvoicesSectionTitle, workspace?.invoices.length ?? 0)}
+    </div>
+  </section>
+  <section>
+    <h2>${_htmlEscape(l10n.patientsTimelineSectionTitle)}</h2>
+    ${timeline.isEmpty ? '<p>${_htmlEscape(l10n.patientsNoTimeline)}</p>' : '<ol class="timeline">${timeline.take(12).map((PatientTimelineItem item) {
+          final String title = _joinDisplay(<String?>[item.title, _formatOptionalDateTime(context, item.occurredAt)]);
+          return '<li><strong>${_htmlEscape(_apiLabel(item.resource))}</strong>: ${_htmlEscape(title)}</li>';
+        }).join()}</ol>'}
+  </section>
+  <section>
+    <h2>${_htmlEscape(l10n.patientsReportGeneratedSectionTitle)}</h2>
+    <p>${_htmlEscape(AppFormatters.mediumDate(DateTime.now(), locale))}</p>
+  </section>
+</main>
+''';
+}
+
+String _htmlEscape(String value) {
+  return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 }
 
 class _ReportSummaryGrid extends StatelessWidget {
@@ -4969,6 +5923,15 @@ AppFailure? _failureOrNull<T>(Result<T> result) {
   );
 }
 
+String _workflowFailureMessage(BuildContext context, AppFailure failure) {
+  final l10n = context.l10n;
+  if (failure.validationFields.isEmpty) {
+    return l10n.failureMessage(failure);
+  }
+  final String fields = failure.validationFields.map(_apiLabel).join(', ');
+  return l10n.patientsWorkflowValidationMessage(fields);
+}
+
 String _apiLabel(String value) {
   return value
       .split('_')
@@ -5060,6 +6023,32 @@ List<AppSelectOption<String>> _consentTypeSelectOptions(
   ];
 }
 
+List<AppSelectOption<String>> _paymentMethodSelectOptions() {
+  return <AppSelectOption<String>>[
+    for (final String value in _paymentMethods)
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: Icon(_paymentMethodIcon(value)),
+      ),
+  ];
+}
+
+List<AppSelectOption<bool>> _booleanFilterOptions(AppLocalizations l10n) {
+  return <AppSelectOption<bool>>[
+    AppSelectOption<bool>(
+      value: true,
+      label: l10n.patientsYesFilterLabel,
+      leadingIcon: const Icon(Icons.check_circle_outline),
+    ),
+    AppSelectOption<bool>(
+      value: false,
+      label: l10n.patientsNoFilterLabel,
+      leadingIcon: const Icon(Icons.block_outlined),
+    ),
+  ];
+}
+
 IconData _identifierTypeIcon(String value) {
   return switch (value.toUpperCase()) {
     'MRN' => Icons.local_hospital_outlined,
@@ -5069,6 +6058,18 @@ IconData _identifierTypeIcon(String value) {
     'DRIVER_LICENSE' => Icons.badge_outlined,
     'BIRTH_CERTIFICATE' => Icons.child_care_outlined,
     _ => Icons.perm_identity_outlined,
+  };
+}
+
+IconData _appointmentStatusIcon(String value) {
+  return switch (value.toUpperCase()) {
+    'SCHEDULED' => Icons.event_available_outlined,
+    'CONFIRMED' => Icons.verified_outlined,
+    'IN_PROGRESS' => Icons.pending_actions_outlined,
+    'COMPLETED' => Icons.check_circle_outline,
+    'CANCELLED' => Icons.cancel_outlined,
+    'NO_SHOW' => Icons.event_busy_outlined,
+    _ => Icons.event_note_outlined,
   };
 }
 
@@ -5121,6 +6122,28 @@ IconData _consentTypeIcon(String value) {
     'RESEARCH' => Icons.science_outlined,
     'BILLING' => Icons.receipt_long_outlined,
     _ => Icons.verified_user_outlined,
+  };
+}
+
+IconData _paymentMethodIcon(String value) {
+  return switch (value.toUpperCase()) {
+    'CASH' => Icons.payments_outlined,
+    'CREDIT_CARD' || 'DEBIT_CARD' || 'PREPAID_CARD' => Icons.credit_card,
+    'MOBILE_MONEY' => Icons.phone_android_outlined,
+    'BANK_TRANSFER' || 'BANK_CHECK' => Icons.account_balance_outlined,
+    'INSURANCE' => Icons.health_and_safety_outlined,
+    'VOUCHER' || 'GIFT_CARD' => Icons.confirmation_number_outlined,
+    _ => Icons.receipt_long_outlined,
+  };
+}
+
+IconData _bedStatusIcon(String? value) {
+  return switch (value?.toUpperCase()) {
+    'AVAILABLE' => Icons.bed_outlined,
+    'RESERVED' => Icons.lock_clock_outlined,
+    'OCCUPIED' => Icons.hotel_outlined,
+    'OUT_OF_SERVICE' => Icons.build_outlined,
+    _ => Icons.bed_outlined,
   };
 }
 
@@ -5226,5 +6249,9 @@ const List<String> _documentTypes = <String>[
   'DISCHARGE',
   'OTHER',
 ];
+final DateTime _patientFilterFirstDate = DateTime(1900);
+final DateTime _patientFilterLastDate = DateTime.now().add(
+  const Duration(days: 730),
+);
 const String _statusActive = 'active';
 const String _statusInactive = 'inactive';

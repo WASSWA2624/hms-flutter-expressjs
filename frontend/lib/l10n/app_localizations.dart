@@ -169,7 +169,7 @@ abstract class AppLocalizations {
   /// Hint text showing the supported manual date entry format.
   ///
   /// In en, this message translates to:
-  /// **'YYYY-MM-DD'**
+  /// **'DD/MM/YYYY'**
   String get appDateFormatHint;
 
   /// Label for the country-code selector inside phone input fields.
@@ -1510,6 +1510,96 @@ abstract class AppLocalizations {
   /// **'Consent'**
   String get patientsConsentFilterLabel;
 
+  /// Patient registry contact filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get patientsContactFilterLabel;
+
+  /// Patient registry exact visit date filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit date'**
+  String get patientsVisitDateFilterLabel;
+
+  /// Patient registry visit date range start label.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit from'**
+  String get patientsVisitFromFilterLabel;
+
+  /// Patient registry visit date range end label.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit to'**
+  String get patientsVisitToFilterLabel;
+
+  /// Patient registry date of birth range start label.
+  ///
+  /// In en, this message translates to:
+  /// **'DOB from'**
+  String get patientsDobFromFilterLabel;
+
+  /// Patient registry date of birth range end label.
+  ///
+  /// In en, this message translates to:
+  /// **'DOB to'**
+  String get patientsDobToFilterLabel;
+
+  /// Patient registry created date range start label.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered from'**
+  String get patientsCreatedFromFilterLabel;
+
+  /// Patient registry created date range end label.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered to'**
+  String get patientsCreatedToFilterLabel;
+
+  /// Patient registry active admission filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active admission'**
+  String get patientsActiveAdmissionFilterLabel;
+
+  /// Patient registry outstanding balance filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding balance'**
+  String get patientsOutstandingBalanceFilterLabel;
+
+  /// Yes option label for patient filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get patientsYesFilterLabel;
+
+  /// No option label for patient filters.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get patientsNoFilterLabel;
+
+  /// Patient advanced filters identity section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get patientsFilterIdentitySectionTitle;
+
+  /// Patient advanced filters visit section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Visits'**
+  String get patientsFilterVisitSectionTitle;
+
+  /// Patient advanced filters record state section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Record state'**
+  String get patientsFilterRecordSectionTitle;
+
   /// Apply patient registry filters action label.
   ///
   /// In en, this message translates to:
@@ -1876,6 +1966,12 @@ abstract class AppLocalizations {
   /// **'Patient workflow updated.'**
   String get patientsQuickActionSavedMessage;
 
+  /// Patient workflow validation failure message with field names.
+  ///
+  /// In en, this message translates to:
+  /// **'Check these fields and try again: {fields}.'**
+  String patientsWorkflowValidationMessage(String fields);
+
   /// Patient quick appointment dialog title.
   ///
   /// In en, this message translates to:
@@ -1924,6 +2020,60 @@ abstract class AppLocalizations {
   /// **'Optional provider assignment.'**
   String get patientsProviderOptionalHelper;
 
+  /// Patient quick action workflow section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow'**
+  String get patientsWorkflowSectionTitle;
+
+  /// Patient quick action arrival section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival'**
+  String get patientsArrivalSectionTitle;
+
+  /// Patient triage priority form section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage priority'**
+  String get patientsTriagePrioritySectionTitle;
+
+  /// Patient triage vital signs section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Vital signs'**
+  String get patientsVitalsSectionTitle;
+
+  /// Patient clinical quick action assessment section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Assessment'**
+  String get patientsClinicalAssessmentSectionTitle;
+
+  /// Patient billing quick action section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing details'**
+  String get patientsBillingSectionTitle;
+
+  /// Patient admission clinical section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical approval'**
+  String get patientsAdmissionClinicalSectionTitle;
+
+  /// Patient admission location section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission location'**
+  String get patientsAdmissionLocationSectionTitle;
+
+  /// Patient quick action notes section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get patientsNotesSectionTitle;
+
   /// Patient OPD check-in dialog title.
   ///
   /// In en, this message translates to:
@@ -1971,6 +2121,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Triage level'**
   String get patientsTriageLevelLabel;
+
+  /// Patient systolic blood pressure field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic'**
+  String get patientsSystolicLabel;
+
+  /// Patient diastolic blood pressure field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic'**
+  String get patientsDiastolicLabel;
+
+  /// Patient temperature vital field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get patientsTemperatureLabel;
+
+  /// Patient heart rate vital field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate'**
+  String get patientsHeartRateLabel;
+
+  /// Patient respiratory rate vital field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Respiratory rate'**
+  String get patientsRespiratoryRateLabel;
+
+  /// Patient oxygen saturation vital field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Oxygen saturation'**
+  String get patientsOxygenSaturationLabel;
+
+  /// Patient weight vital field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get patientsWeightLabel;
+
+  /// Patient height vital field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get patientsHeightLabel;
+
+  /// Validation message when triage has no vital signs.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least one vital sign before completing triage.'**
+  String get patientsVitalsRequiredMessage;
 
   /// Patient chief complaint field label.
   ///
@@ -2026,6 +2230,24 @@ abstract class AppLocalizations {
   /// **'Admission reason'**
   String get patientsAdmissionReasonLabel;
 
+  /// Patient admission ward field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get patientsWardLabel;
+
+  /// Patient admission room field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get patientsRoomLabel;
+
+  /// Patient admission bed field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed'**
+  String get patientsBedLabel;
+
   /// Patient report dialog title.
   ///
   /// In en, this message translates to:
@@ -2061,6 +2283,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invoices'**
   String get patientsInvoicesSectionTitle;
+
+  /// Patient report summary section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get patientsReportSummarySectionTitle;
+
+  /// Patient report generated metadata section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated'**
+  String get patientsReportGeneratedSectionTitle;
 
   /// Validation message for invalid time fields.
   ///

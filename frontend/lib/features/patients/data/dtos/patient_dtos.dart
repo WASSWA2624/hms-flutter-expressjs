@@ -412,15 +412,19 @@ final class PatientReferenceDataDto {
   PatientReferenceData toEntity() {
     return PatientReferenceData(
       facilities: _list(json['facilities'])
-          .map(
-            (PatientJsonMap entry) => PatientReferenceOption(
-              id:
-                  _string(entry['human_friendly_id']) ??
-                  _string(entry['id']) ??
-                  '',
-              label: _string(entry['label']) ?? '',
-            ),
-          )
+          .map(_referenceOption)
+          .where((PatientReferenceOption option) => option.id.isNotEmpty)
+          .toList(growable: false),
+      wards: _list(json['wards'])
+          .map(_referenceOption)
+          .where((PatientReferenceOption option) => option.id.isNotEmpty)
+          .toList(growable: false),
+      rooms: _list(json['rooms'])
+          .map(_referenceOption)
+          .where((PatientReferenceOption option) => option.id.isNotEmpty)
+          .toList(growable: false),
+      beds: _list(json['beds'])
+          .map(_referenceOption)
           .where((PatientReferenceOption option) => option.id.isNotEmpty)
           .toList(growable: false),
       documentTypes: _optionValues(json['document_types']),
@@ -429,6 +433,18 @@ final class PatientReferenceDataDto {
       appointmentStatuses: _optionValues(json['appointment_statuses']),
     );
   }
+}
+
+PatientReferenceOption _referenceOption(PatientJsonMap entry) {
+  return PatientReferenceOption(
+    id: _string(entry['human_friendly_id']) ?? _string(entry['id']) ?? '',
+    label: _string(entry['label']) ?? '',
+    facilityId: _string(entry['facility_id']),
+    wardId: _string(entry['ward_id']),
+    roomId: _string(entry['room_id']),
+    status: _string(entry['status']),
+    type: _string(entry['type']) ?? _string(entry['ward_type']),
+  );
 }
 
 PatientJsonMap decodeDataMap(Object? responseData) {
