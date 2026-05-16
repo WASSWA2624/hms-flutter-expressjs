@@ -1177,8 +1177,14 @@ class _OpdFilterDialogState extends State<_OpdFilterDialog> {
         children: <Widget>[
           AppSelectField<String>.searchable(
             value: _category ?? _opdFilterAll,
-            labelText: l10n.opdCategoryFilterLabel,
-            semanticLabel: l10n.opdCategoryFilterLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdCategoryFilterLabel,
+            ),
+            semanticLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdCategoryFilterLabel,
+            ),
             options: _categoryFilterOptions(context),
             onChanged: (String? value) {
               setState(() {
@@ -1188,8 +1194,14 @@ class _OpdFilterDialogState extends State<_OpdFilterDialog> {
           ),
           AppSelectField<String>.searchable(
             value: _status ?? _opdFilterAll,
-            labelText: l10n.opdStatusFilterLabel,
-            semanticLabel: l10n.opdStatusFilterLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdStatusFilterLabel,
+            ),
+            semanticLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdStatusFilterLabel,
+            ),
             options: _statusFilterOptions(context, widget.statuses),
             onChanged: (String? value) {
               setState(() {
@@ -1291,6 +1303,14 @@ class _StatusBadge extends StatelessWidget {
 String _nextStepLabel(BuildContext context, _OpdTableItem item) {
   final String label = _apiLabel(item.nextStep ?? item.status ?? '');
   return label.isEmpty ? context.l10n.profileUnknownValue : label;
+}
+
+String _opdRequiredFieldLabel(AppLocalizations l10n, String label) {
+  return l10n.opdFieldRequiredLabel(label);
+}
+
+String _opdOptionalFieldLabel(AppLocalizations l10n, String label) {
+  return l10n.opdFieldOptionalLabel(label);
 }
 
 Color _opdTableRowColor(BuildContext context, _OpdTableItem item) {
@@ -1661,8 +1681,14 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         if (_patientMode != _WalkInPatientMode.appointment)
           AppSelectField<String>.searchable(
             value: _arrivalMode,
-            labelText: l10n.opdArrivalModeLabel,
-            semanticLabel: l10n.opdArrivalModeLabel,
+            labelText: _opdRequiredFieldLabel(
+              l10n,
+              l10n.opdArrivalModeLabel,
+            ),
+            semanticLabel: _opdRequiredFieldLabel(
+              l10n,
+              l10n.opdArrivalModeLabel,
+            ),
             enabled: !_isSaving,
             onChanged: (String? value) {
               setState(() {
@@ -1677,8 +1703,14 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
             children: <Widget>[
               AppSelectField<String>.searchable(
                 value: _emergencySeverity,
-                labelText: l10n.opdEmergencySeverityLabel,
-                semanticLabel: l10n.opdEmergencySeverityLabel,
+                labelText: _opdRequiredFieldLabel(
+                  l10n,
+                  l10n.opdEmergencySeverityLabel,
+                ),
+                semanticLabel: _opdRequiredFieldLabel(
+                  l10n,
+                  l10n.opdEmergencySeverityLabel,
+                ),
                 enabled: !_isSaving,
                 onChanged: (String? value) {
                   setState(() {
@@ -1689,8 +1721,14 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
               ),
               AppSelectField<String>.searchable(
                 value: _triageLevel,
-                labelText: l10n.opdTriageLevelLabel,
-                semanticLabel: l10n.opdTriageLevelLabel,
+                labelText: _opdOptionalFieldLabel(
+                  l10n,
+                  l10n.opdTriageLevelLabel,
+                ),
+                semanticLabel: _opdOptionalFieldLabel(
+                  l10n,
+                  l10n.opdTriageLevelLabel,
+                ),
                 enabled: !_isSaving,
                 onChanged: (String? value) {
                   setState(() {
@@ -1705,7 +1743,10 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
           value: _providerId,
           providers: _providerOptionsForDialog(),
           schedules: widget.providerSchedules,
-          labelText: l10n.opdSearchProviderLabel,
+          labelText: _opdOptionalFieldLabel(
+            l10n,
+            l10n.opdSearchProviderLabel,
+          ),
           helperText: l10n.opdSearchProviderHelper,
           emptyHelperText: l10n.opdNoProvidersHelper,
           enabled: !_isSaving,
@@ -1727,8 +1768,14 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         AppCurrencyAmountField(
           amountController: _feeController,
           currency: _currency,
-          amountLabelText: l10n.opdConsultationFeeLabel,
-          currencyLabelText: l10n.opdCurrencyLabel,
+          amountLabelText: _opdOptionalFieldLabel(
+            l10n,
+            l10n.opdConsultationFeeLabel,
+          ),
+          currencyLabelText: _opdRequiredFieldLabel(
+            l10n,
+            l10n.opdCurrencyLabel,
+          ),
           enabled: !_isSaving,
           onCurrencyChanged: (String? value) {
             setState(() {
@@ -1738,7 +1785,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         ),
         AppTextField(
           controller: _notesController,
-          labelText: l10n.opdNotesLabel,
+          labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
           enabled: !_isSaving,
           maxLines: 3,
         ),
@@ -1788,8 +1835,11 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
             .map(_patientSelectOption)
             .whereType<AppSelectOption<String>>()
             .toList(growable: false),
-        labelText: l10n.opdSearchPatientLabel,
-        semanticLabel: l10n.opdSearchPatientLabel,
+        labelText: _opdRequiredFieldLabel(l10n, l10n.opdSearchPatientLabel),
+        semanticLabel: _opdRequiredFieldLabel(
+          l10n,
+          l10n.opdSearchPatientLabel,
+        ),
         isLoading: _isLoadingPatients,
         enabled: !_isSaving,
         onChanged: (String? value) {
@@ -1808,9 +1858,15 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
             .map(_appointmentSelectOption)
             .whereType<AppSelectOption<String>>()
             .toList(growable: false),
-        labelText: l10n.opdAppointmentPatientLabel,
+        labelText: _opdRequiredFieldLabel(
+          l10n,
+          l10n.opdAppointmentPatientLabel,
+        ),
         helperText: l10n.opdAppointmentPatientHelper,
-        semanticLabel: l10n.opdAppointmentPatientLabel,
+        semanticLabel: _opdRequiredFieldLabel(
+          l10n,
+          l10n.opdAppointmentPatientLabel,
+        ),
         isLoading: _isLoadingAppointments,
         enabled: !_isSaving,
         onChanged: (String? value) {
@@ -1832,7 +1888,10 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
             children: <Widget>[
               AppTextField(
                 controller: _firstNameController,
-                labelText: l10n.opdFirstNameLabel,
+                labelText: _opdRequiredFieldLabel(
+                  l10n,
+                  l10n.opdFirstNameLabel,
+                ),
                 enabled: !_isSaving,
                 textCapitalization: TextCapitalization.words,
                 validator: (String? value) =>
@@ -1843,7 +1902,10 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
               ),
               AppTextField(
                 controller: _lastNameController,
-                labelText: l10n.opdLastNameLabel,
+                labelText: _opdRequiredFieldLabel(
+                  l10n,
+                  l10n.opdLastNameLabel,
+                ),
                 enabled: !_isSaving,
                 textCapitalization: TextCapitalization.words,
                 validator: (String? value) =>
@@ -1856,7 +1918,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
           ),
           AppGenderField(
             value: _gender,
-            labelText: l10n.opdGenderLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdGenderLabel),
             maleLabel: l10n.patientsGenderMale,
             femaleLabel: l10n.patientsGenderFemale,
             otherLabel: l10n.patientsGenderOther,
@@ -2191,14 +2253,20 @@ class _RescheduleAppointmentDialogState
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppTextField(
               controller: _startController,
-              labelText: l10n.opdAppointmentStartLabel,
+              labelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdAppointmentStartLabel,
+              ),
               hintText: l10n.opdDateTimeHint,
               enabled: !_isSaving,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
             AppTextField(
               controller: _endController,
-              labelText: l10n.opdAppointmentEndLabel,
+              labelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdAppointmentEndLabel,
+              ),
               hintText: l10n.opdDateTimeHint,
               enabled: !_isSaving,
               validator: AppValidators.requiredText(l10n.validationRequired),
@@ -2295,7 +2363,10 @@ class _CancelAppointmentDialogState
           if (_failure != null) AppFailureStateView(failure: _failure!),
           AppTextField(
             controller: _reasonController,
-            labelText: l10n.opdCancellationReasonLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdCancellationReasonLabel,
+            ),
             enabled: !_isSaving,
             maxLines: 3,
           ),
@@ -2388,19 +2459,25 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppSelectField<String>(
               value: _status,
-              labelText: l10n.opdQueueStatusLabel,
+              labelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdQueueStatusLabel,
+              ),
               enabled: !_isSaving,
               onChanged: (String? value) => setState(() => _status = value),
               options: _statusOptions(_queueStatuses),
             ),
             AppTextField(
               controller: _providerController,
-              labelText: l10n.opdProviderIdLabel,
+              labelText: _opdOptionalFieldLabel(
+                l10n,
+                l10n.opdProviderIdLabel,
+              ),
               enabled: !_isSaving,
             ),
             AppTextField(
               controller: _reasonController,
-              labelText: l10n.opdReasonLabel,
+              labelText: _opdOptionalFieldLabel(l10n, l10n.opdReasonLabel),
               enabled: !_isSaving,
               maxLines: 3,
             ),
@@ -3024,7 +3101,7 @@ class _StageRouteDialogState extends ConsumerState<StageRouteDialog> {
           _StatusBadge(value: widget.stage),
           AppTextField(
             controller: _reasonController,
-            labelText: l10n.opdReasonLabel,
+            labelText: _opdRequiredFieldLabel(l10n, l10n.opdReasonLabel),
             enabled: !_isSaving,
             maxLines: 3,
             validator: AppValidators.requiredText(l10n.validationRequired),
@@ -3132,17 +3209,30 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
+          Text(
+            l10n.opdVitalsAtLeastOneRequiredHelper,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           AppSelectField<String>.searchable(
             value: _triageLevel,
-            labelText: l10n.opdTriageLevelLabel,
-            semanticLabel: l10n.opdTriageLevelLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdTriageLevelLabel,
+            ),
+            semanticLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdTriageLevelLabel,
+            ),
             enabled: !_isSaving,
             onChanged: (String? value) => setState(() => _triageLevel = value),
             options: _statusOptions(_triageLevelOptions),
           ),
           AppTextField(
             controller: _temperatureController,
-            labelText: l10n.opdTemperatureLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdTemperatureLabel,
+            ),
             enabled: !_isSaving,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: _decimalInputFormatters,
@@ -3152,7 +3242,10 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
               Expanded(
                 child: AppTextField(
                   controller: _systolicController,
-                  labelText: l10n.opdSystolicLabel,
+                  labelText: _opdOptionalFieldLabel(
+                    l10n,
+                    l10n.opdSystolicLabel,
+                  ),
                   enabled: !_isSaving,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -3164,7 +3257,10 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
               Expanded(
                 child: AppTextField(
                   controller: _diastolicController,
-                  labelText: l10n.opdDiastolicLabel,
+                  labelText: _opdOptionalFieldLabel(
+                    l10n,
+                    l10n.opdDiastolicLabel,
+                  ),
                   enabled: !_isSaving,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -3176,35 +3272,41 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           ),
           AppTextField(
             controller: _heartRateController,
-            labelText: l10n.opdHeartRateLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdHeartRateLabel),
             enabled: !_isSaving,
             keyboardType: TextInputType.number,
             inputFormatters: _integerInputFormatters,
           ),
           AppTextField(
             controller: _respiratoryRateController,
-            labelText: l10n.opdRespiratoryRateLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdRespiratoryRateLabel,
+            ),
             enabled: !_isSaving,
             keyboardType: TextInputType.number,
             inputFormatters: _integerInputFormatters,
           ),
           AppTextField(
             controller: _oxygenSaturationController,
-            labelText: l10n.opdOxygenSaturationLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdOxygenSaturationLabel,
+            ),
             enabled: !_isSaving,
             keyboardType: TextInputType.number,
             inputFormatters: _integerInputFormatters,
           ),
           AppTextField(
             controller: _weightController,
-            labelText: l10n.opdWeightLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdWeightLabel),
             enabled: !_isSaving,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: _decimalInputFormatters,
           ),
           AppTextField(
             controller: _notesController,
-            labelText: l10n.opdTriageNotesLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdTriageNotesLabel),
             enabled: !_isSaving,
             maxLines: 3,
           ),
@@ -3375,15 +3477,24 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
           if (_failure != null) AppFailureStateView(failure: _failure!),
           AppTextField(
             controller: _noteController,
-            labelText: l10n.opdClinicalNoteLabel,
+            labelText: _opdRequiredFieldLabel(
+              l10n,
+              l10n.opdClinicalNoteLabel,
+            ),
             enabled: !_isSaving,
             maxLines: 4,
             validator: AppValidators.requiredText(l10n.validationRequired),
           ),
           AppSelectField<String>.searchable(
             value: _diagnosisType,
-            labelText: l10n.opdDiagnosisTypeLabel,
-            semanticLabel: l10n.opdDiagnosisTypeLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdDiagnosisTypeLabel,
+            ),
+            semanticLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdDiagnosisTypeLabel,
+            ),
             enabled: !_isSaving,
             onChanged: (String? value) {
               setState(() => _diagnosisType = value ?? _diagnosisType);
@@ -3392,48 +3503,57 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
           ),
           AppTextField(
             controller: _diagnosisController,
-            labelText: l10n.opdDiagnosisLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdDiagnosisLabel),
             enabled: !_isSaving,
             maxLines: 2,
           ),
           AppTextField(
             controller: _diagnosisCodeController,
-            labelText: l10n.opdDiagnosisCodeLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdDiagnosisCodeLabel,
+            ),
             enabled: !_isSaving,
           ),
           AppTextField(
             controller: _procedureController,
-            labelText: l10n.opdProcedureLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdProcedureLabel),
             enabled: !_isSaving,
             maxLines: 2,
           ),
           AppTextField(
             controller: _procedureCodeController,
-            labelText: l10n.opdProcedureCodeLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdProcedureCodeLabel,
+            ),
             enabled: !_isSaving,
           ),
           AppTextField(
             controller: _labTestIdsController,
-            labelText: l10n.opdLabTestIdsLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdLabTestIdsLabel),
             enabled: !_isSaving,
             maxLines: 2,
           ),
           AppTextField(
             controller: _labPanelIdsController,
-            labelText: l10n.opdLabPanelIdsLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdLabPanelIdsLabel),
             enabled: !_isSaving,
             maxLines: 2,
           ),
           AppTextField(
             controller: _radiologyIdsController,
-            labelText: l10n.opdRadiologyTestIdsLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdRadiologyTestIdsLabel,
+            ),
             enabled: !_isSaving,
             maxLines: 2,
           ),
           AppSelectField<String>.searchable(
             value: _drugId,
-            labelText: l10n.opdDrugLabel,
-            semanticLabel: l10n.opdDrugLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdDrugLabel),
+            semanticLabel: _opdOptionalFieldLabel(l10n, l10n.opdDrugLabel),
             enabled: !_isSaving,
             isLoading: _isLoadingDrugs,
             onChanged: (String? value) => setState(() => _drugId = value),
@@ -3444,7 +3564,10 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
               Expanded(
                 child: AppTextField(
                   controller: _quantityController,
-                  labelText: l10n.opdDrugQuantityLabel,
+                  labelText: _opdOptionalFieldLabel(
+                    l10n,
+                    l10n.opdDrugQuantityLabel,
+                  ),
                   enabled: !_isSaving,
                   keyboardType: TextInputType.number,
                   inputFormatters: _integerInputFormatters,
@@ -3454,7 +3577,7 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
               Expanded(
                 child: AppTextField(
                   controller: _dosageController,
-                  labelText: l10n.opdDosageLabel,
+                  labelText: _opdOptionalFieldLabel(l10n, l10n.opdDosageLabel),
                   enabled: !_isSaving,
                 ),
               ),
@@ -3462,23 +3585,35 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
           ),
           AppSelectField<String>.searchable(
             value: _frequency,
-            labelText: l10n.opdFrequencyLabel,
-            semanticLabel: l10n.opdFrequencyLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdFrequencyLabel),
+            semanticLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdFrequencyLabel,
+            ),
             enabled: !_isSaving,
             onChanged: (String? value) => setState(() => _frequency = value),
             options: _statusOptions(_medicationFrequencies),
           ),
           AppSelectField<String>.searchable(
             value: _route,
-            labelText: l10n.opdMedicationRouteLabel,
-            semanticLabel: l10n.opdMedicationRouteLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdMedicationRouteLabel,
+            ),
+            semanticLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdMedicationRouteLabel,
+            ),
             enabled: !_isSaving,
             onChanged: (String? value) => setState(() => _route = value),
             options: _statusOptions(_medicationRoutes),
           ),
           AppTextField(
             controller: _prescriptionNotesController,
-            labelText: l10n.opdPrescriptionNotesLabel,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdPrescriptionNotesLabel,
+            ),
             enabled: !_isSaving,
             maxLines: 3,
           ),
@@ -3702,6 +3837,7 @@ class AssignDoctorDialog extends ConsumerStatefulWidget {
 }
 
 class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _providerController;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -3724,16 +3860,19 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
     return AppDialog(
       title: Text(l10n.opdAssignDoctorAction),
       icon: const Icon(Icons.assignment_ind_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppTextField(
-            controller: _providerController,
-            labelText: l10n.opdProviderIdLabel,
-            enabled: !_isSaving,
-            validator: AppValidators.requiredText(l10n.validationRequired),
-          ),
-        ],
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            AppTextField(
+              controller: _providerController,
+              labelText: _opdRequiredFieldLabel(l10n, l10n.opdProviderIdLabel),
+              enabled: !_isSaving,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+          ],
+        ),
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -3752,6 +3891,9 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
   }
 
   Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -3785,6 +3927,7 @@ class ConsultationPaymentDialog extends ConsumerStatefulWidget {
 
 class _ConsultationPaymentDialogState
     extends ConsumerState<ConsultationPaymentDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _amountController;
   late final TextEditingController _referenceController;
   late final TextEditingController _notesController;
@@ -3816,42 +3959,58 @@ class _ConsultationPaymentDialogState
       title: Text(l10n.opdPayConsultationAction),
       icon: const Icon(Icons.payments_outlined),
       scrollable: true,
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppCurrencyAmountField(
-            amountController: _amountController,
-            currency: _currency,
-            amountLabelText: l10n.opdAmountLabel,
-            currencyLabelText: l10n.opdCurrencyLabel,
-            enabled: !_isSaving,
-            onCurrencyChanged: (String? value) {
-              setState(() {
-                _currency = value ?? appDefaultCurrencyCode;
-              });
-            },
-          ),
-          AppSelectField<String>(
-            value: _method,
-            labelText: l10n.opdPaymentMethodLabel,
-            enabled: !_isSaving,
-            onChanged: (String? value) {
-              setState(() => _method = value ?? _method);
-            },
-            options: _statusOptions(_paymentMethods),
-          ),
-          AppTextField(
-            controller: _referenceController,
-            labelText: l10n.opdTransactionReferenceLabel,
-            enabled: !_isSaving,
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.opdNotesLabel,
-            enabled: !_isSaving,
-            maxLines: 3,
-          ),
-        ],
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            AppCurrencyAmountField(
+              amountController: _amountController,
+              currency: _currency,
+              amountLabelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdAmountLabel,
+              ),
+              currencyLabelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdCurrencyLabel,
+              ),
+              enabled: !_isSaving,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+              onCurrencyChanged: (String? value) {
+                setState(() {
+                  _currency = value ?? appDefaultCurrencyCode;
+                });
+              },
+            ),
+            AppSelectField<String>(
+              value: _method,
+              labelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdPaymentMethodLabel,
+              ),
+              enabled: !_isSaving,
+              onChanged: (String? value) {
+                setState(() => _method = value ?? _method);
+              },
+              options: _statusOptions(_paymentMethods),
+            ),
+            AppTextField(
+              controller: _referenceController,
+              labelText: _opdOptionalFieldLabel(
+                l10n,
+                l10n.opdTransactionReferenceLabel,
+              ),
+              enabled: !_isSaving,
+            ),
+            AppTextField(
+              controller: _notesController,
+              labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
+              enabled: !_isSaving,
+              maxLines: 3,
+            ),
+          ],
+        ),
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -3870,6 +4029,9 @@ class _ConsultationPaymentDialogState
   }
 
   Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -3909,6 +4071,7 @@ class CorrectStageDialog extends ConsumerStatefulWidget {
 }
 
 class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _reasonController;
   String _stage = _flowStages.first;
   bool _isSaving = false;
@@ -3933,25 +4096,28 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
     return AppDialog(
       title: Text(l10n.opdCorrectStageAction),
       icon: const Icon(Icons.edit_note_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppSelectField<String>(
-            value: _stage,
-            labelText: l10n.opdStageLabel,
-            enabled: !_isSaving,
-            onChanged: (String? value) =>
-                setState(() => _stage = value ?? _stage),
-            options: _statusOptions(_flowStages),
-          ),
-          AppTextField(
-            controller: _reasonController,
-            labelText: l10n.opdReasonLabel,
-            enabled: !_isSaving,
-            maxLines: 3,
-            validator: AppValidators.requiredText(l10n.validationRequired),
-          ),
-        ],
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            AppSelectField<String>(
+              value: _stage,
+              labelText: _opdRequiredFieldLabel(l10n, l10n.opdStageLabel),
+              enabled: !_isSaving,
+              onChanged: (String? value) =>
+                  setState(() => _stage = value ?? _stage),
+              options: _statusOptions(_flowStages),
+            ),
+            AppTextField(
+              controller: _reasonController,
+              labelText: _opdRequiredFieldLabel(l10n, l10n.opdReasonLabel),
+              enabled: !_isSaving,
+              maxLines: 3,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+          ],
+        ),
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -3970,6 +4136,9 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
   }
 
   Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -4038,20 +4207,23 @@ class _ReferralDialogState extends ConsumerState<ReferralDialog> {
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppTextField(
               controller: _facilityController,
-              labelText: l10n.opdExternalFacilityLabel,
+              labelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdExternalFacilityLabel,
+              ),
               enabled: !_isSaving,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
             AppTextField(
               controller: _reasonController,
-              labelText: l10n.opdReasonLabel,
+              labelText: _opdRequiredFieldLabel(l10n, l10n.opdReasonLabel),
               enabled: !_isSaving,
               maxLines: 3,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
             AppTextField(
               controller: _notesController,
-              labelText: l10n.opdNotesLabel,
+              labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
               enabled: !_isSaving,
               maxLines: 3,
             ),
@@ -4146,14 +4318,17 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
           if (_failure != null) AppFailureStateView(failure: _failure!),
           AppTextField(
             controller: _dateController,
-            labelText: l10n.opdFollowUpDateLabel,
+            labelText: _opdRequiredFieldLabel(
+              l10n,
+              l10n.opdFollowUpDateLabel,
+            ),
             hintText: l10n.opdDateTimeHint,
             enabled: !_isSaving,
             validator: AppValidators.requiredText(l10n.validationRequired),
           ),
           AppTextField(
             controller: _notesController,
-            labelText: l10n.opdNotesLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
             enabled: !_isSaving,
             maxLines: 3,
           ),
@@ -4246,7 +4421,7 @@ class _DispositionDialogState extends ConsumerState<DispositionDialog> {
           if (_failure != null) AppFailureStateView(failure: _failure!),
           AppSelectField<String>(
             value: _decision,
-            labelText: l10n.opdDecisionLabel,
+            labelText: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
             enabled: !_isSaving,
             onChanged: (String? value) =>
                 setState(() => _decision = value ?? _decision),
@@ -4254,7 +4429,7 @@ class _DispositionDialogState extends ConsumerState<DispositionDialog> {
           ),
           AppTextField(
             controller: _notesController,
-            labelText: l10n.opdNotesLabel,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
             enabled: !_isSaving,
             maxLines: 3,
           ),

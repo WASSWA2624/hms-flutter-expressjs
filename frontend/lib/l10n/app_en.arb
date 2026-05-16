@@ -2462,6 +2462,30 @@
   "@authPasswordMismatchMessage": {
     "description": "Password confirmation mismatch validation message."
   },
+  "opdFieldRequiredLabel": "{label} (required)",
+  "@opdFieldRequiredLabel": {
+    "description": "OPD form field label pattern for required fields.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Patient"
+      }
+    }
+  },
+  "opdFieldOptionalLabel": "{label} (optional)",
+  "@opdFieldOptionalLabel": {
+    "description": "OPD form field label pattern for optional fields.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Notes"
+      }
+    }
+  },
+  "opdVitalsAtLeastOneRequiredHelper": "Enter at least one vital sign.",
+  "@opdVitalsAtLeastOneRequiredHelper": {
+    "description": "Instruction shown in the OPD vitals modal when individual vital fields are optional but one vital sign is required."
+  },
   "validationRequired": "This field is required.",
   "@validationRequired": {
     "description": "Generic required-field validation message for forms."
