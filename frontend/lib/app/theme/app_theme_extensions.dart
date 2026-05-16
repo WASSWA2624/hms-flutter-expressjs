@@ -1,7 +1,6 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_light_theme_palette.dart';
 
 @immutable
 final class AppSpacingTokens extends ThemeExtension<AppSpacingTokens> {
@@ -150,49 +149,15 @@ final class AppStatusColors extends ThemeExtension<AppStatusColors> {
     required this.onError,
     required this.errorContainer,
     required this.onErrorContainer,
+    required this.danger,
+    required this.onDanger,
+    required this.dangerContainer,
+    required this.onDangerContainer,
     required this.info,
     required this.onInfo,
     required this.infoContainer,
     required this.onInfoContainer,
   });
-
-  static const AppStatusColors light = AppStatusColors(
-    success: Color(0xFF0F6B35),
-    onSuccess: Color(0xFFFFFFFF),
-    successContainer: Color(0xFFD7F5DD),
-    onSuccessContainer: Color(0xFF00210B),
-    warning: Color(0xFF7A5600),
-    onWarning: Color(0xFFFFFFFF),
-    warningContainer: Color(0xFFFFDEA6),
-    onWarningContainer: Color(0xFF261A00),
-    error: Color(0xFFBA1A1A),
-    onError: Color(0xFFFFFFFF),
-    errorContainer: Color(0xFFFFDAD6),
-    onErrorContainer: Color(0xFF410002),
-    info: AppLightThemePalette.shade700,
-    onInfo: Color(0xFFFFFFFF),
-    infoContainer: AppLightThemePalette.shade50,
-    onInfoContainer: AppLightThemePalette.shade900,
-  );
-
-  static const AppStatusColors dark = AppStatusColors(
-    success: Color(0xFF8EDA9D),
-    onSuccess: Color(0xFF003916),
-    successContainer: Color(0xFF005324),
-    onSuccessContainer: Color(0xFFD7F5DD),
-    warning: Color(0xFFF4BF48),
-    onWarning: Color(0xFF402D00),
-    warningContainer: Color(0xFF5C4100),
-    onWarningContainer: Color(0xFFFFDEA6),
-    error: Color(0xFFFFB4AB),
-    onError: Color(0xFF690005),
-    errorContainer: Color(0xFF93000A),
-    onErrorContainer: Color(0xFFFFDAD6),
-    info: AppLightThemePalette.shade200,
-    onInfo: AppLightThemePalette.shade900,
-    infoContainer: AppLightThemePalette.shade800,
-    onInfoContainer: AppLightThemePalette.shade50,
-  );
 
   final Color success;
   final Color onSuccess;
@@ -206,6 +171,10 @@ final class AppStatusColors extends ThemeExtension<AppStatusColors> {
   final Color onError;
   final Color errorContainer;
   final Color onErrorContainer;
+  final Color danger;
+  final Color onDanger;
+  final Color dangerContainer;
+  final Color onDangerContainer;
   final Color info;
   final Color onInfo;
   final Color infoContainer;
@@ -225,6 +194,10 @@ final class AppStatusColors extends ThemeExtension<AppStatusColors> {
     Color? onError,
     Color? errorContainer,
     Color? onErrorContainer,
+    Color? danger,
+    Color? onDanger,
+    Color? dangerContainer,
+    Color? onDangerContainer,
     Color? info,
     Color? onInfo,
     Color? infoContainer,
@@ -243,6 +216,10 @@ final class AppStatusColors extends ThemeExtension<AppStatusColors> {
       onError: onError ?? this.onError,
       errorContainer: errorContainer ?? this.errorContainer,
       onErrorContainer: onErrorContainer ?? this.onErrorContainer,
+      danger: danger ?? this.danger,
+      onDanger: onDanger ?? this.onDanger,
+      dangerContainer: dangerContainer ?? this.dangerContainer,
+      onDangerContainer: onDangerContainer ?? this.onDangerContainer,
       info: info ?? this.info,
       onInfo: onInfo ?? this.onInfo,
       infoContainer: infoContainer ?? this.infoContainer,
@@ -277,6 +254,14 @@ final class AppStatusColors extends ThemeExtension<AppStatusColors> {
       onError: _lerpColor(onError, other.onError, t),
       errorContainer: _lerpColor(errorContainer, other.errorContainer, t),
       onErrorContainer: _lerpColor(onErrorContainer, other.onErrorContainer, t),
+      danger: _lerpColor(danger, other.danger, t),
+      onDanger: _lerpColor(onDanger, other.onDanger, t),
+      dangerContainer: _lerpColor(dangerContainer, other.dangerContainer, t),
+      onDangerContainer: _lerpColor(
+        onDangerContainer,
+        other.onDangerContainer,
+        t,
+      ),
       info: _lerpColor(info, other.info, t),
       onInfo: _lerpColor(onInfo, other.onInfo, t),
       infoContainer: _lerpColor(infoContainer, other.infoContainer, t),
@@ -408,10 +393,7 @@ extension AppThemeDataTokens on ThemeData {
       return tokens;
     }
 
-    return switch (colorScheme.brightness) {
-      Brightness.light => AppStatusColors.light,
-      Brightness.dark => AppStatusColors.dark,
-    };
+    throw StateError('AppStatusColors is not configured for this ThemeData.');
   }
 
   AppDesignTokens get appTokens {
