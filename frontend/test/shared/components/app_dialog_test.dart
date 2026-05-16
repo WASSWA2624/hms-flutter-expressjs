@@ -69,10 +69,10 @@ void main() {
   ) async {
     await pumpComponent(
       tester,
-      AppDialog(
-        title: const Text('Edit record'),
+      const AppDialog(
+        title: Text('Edit record'),
         content: Form(
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               AppTextField(labelText: 'Name', isRequired: true),
