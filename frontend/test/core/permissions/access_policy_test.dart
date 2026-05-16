@@ -37,6 +37,24 @@ void main() {
       expect(policy.grants(AppPermissions.emergencyWrite), isTrue);
     });
 
+    test('normalizes display-form elevated role names', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(roles: <String>['Super Admin']),
+      );
+
+      final policy = AppAccessPolicy.fromSession(session);
+      const requirement = AccessRequirement(
+        anyPermissions: <AppPermission>[AppPermissions.clinicalRead],
+        requiresTenantContext: true,
+        requiresFacilityContext: true,
+      );
+
+      expect(policy.hasRole(AppRole.superAdmin), isTrue);
+      expect(policy.isElevated, isTrue);
+      expect(requirement.isAllowed(policy), isTrue);
+    });
+
     test('uses active module entitlements when they are present', () {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),

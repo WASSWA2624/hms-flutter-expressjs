@@ -285,10 +285,14 @@ final class AppAccessPolicy {
   }
 
   static AppRole? _normalizeRole(String value) {
-    final normalized = value.trim().toUpperCase();
+    final normalized = value.trim().toUpperCase().replaceAll(
+      RegExp(r'[\s-]+'),
+      '_',
+    );
     final aliased = switch (normalized) {
-      'ADMIN' || 'OWNER' => AppRole.tenantAdmin.value,
+      'ADMIN' || 'ADMINISTRATOR' || 'OWNER' => AppRole.tenantAdmin.value,
       'APP_ADMIN' ||
+      'SUPERADMIN' ||
       'SYSTEM_ADMIN' ||
       'PLATFORM_ADMIN' => AppRole.superAdmin.value,
       'FACILITY_MANAGER' ||

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -13,6 +14,7 @@ typedef AppDataPageLabelBuilder<T> = String Function(AppPage<T> page);
 typedef AppDataRowColorBuilder<T> =
     Color? Function(BuildContext context, T item);
 typedef AppDataHeaderBuilder = Widget Function(BuildContext context);
+typedef AppDataSearchMatcher<T> = bool Function(T item, String query);
 
 class AppDataColumn<T> {
   const AppDataColumn({
@@ -193,6 +195,97 @@ class AppPaginatedDataList<T> extends StatelessWidget {
         nextPageLabel: nextPageLabel,
         onPageChanged: onPageChanged,
       ),
+    );
+  }
+}
+
+class AppSearchablePaginatedDataList<T> extends StatelessWidget {
+  const AppSearchablePaginatedDataList({
+    required this.page,
+    required this.columns,
+    required this.mobileItemBuilder,
+    required this.pageLabelBuilder,
+    required this.previousPageLabel,
+    required this.nextPageLabel,
+    required this.searchListenable,
+    required this.searchMatcher,
+    this.itemKeyBuilder,
+    this.onRowSelected,
+    this.onPageChanged,
+    this.emptyBuilder,
+    this.loadingBuilder,
+    this.errorBuilder,
+    this.rowColorBuilder,
+    this.isLoading = false,
+    this.error,
+    this.shrinkWrap = false,
+    this.physics,
+    super.key,
+  });
+
+  final AppPage<T> page;
+  final List<AppDataColumn<T>> columns;
+  final AppDataMobileItemBuilder<T> mobileItemBuilder;
+  final AppDataPageLabelBuilder<T> pageLabelBuilder;
+  final String previousPageLabel;
+  final String nextPageLabel;
+  final ValueListenable<String> searchListenable;
+  final AppDataSearchMatcher<T> searchMatcher;
+  final AppDataItemKeyBuilder<T>? itemKeyBuilder;
+  final ValueChanged<T>? onRowSelected;
+  final ValueChanged<AppPageRequest>? onPageChanged;
+  final WidgetBuilder? emptyBuilder;
+  final WidgetBuilder? loadingBuilder;
+  final Widget Function(BuildContext context, Object error)? errorBuilder;
+  final AppDataRowColorBuilder<T>? rowColorBuilder;
+  final bool isLoading;
+  final Object? error;
+  final bool shrinkWrap;
+  final ScrollPhysics? physics;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String>(
+      valueListenable: searchListenable,
+      builder: (BuildContext context, String query, _) {
+        final String normalizedQuery = query.trim();
+        final bool isSearching = normalizedQuery.isNotEmpty;
+        final AppPage<T> visiblePage = isSearching
+            ? _filteredPage(normalizedQuery)
+            : page;
+
+        return AppPaginatedDataList<T>(
+          page: visiblePage,
+          columns: columns,
+          mobileItemBuilder: mobileItemBuilder,
+          pageLabelBuilder: pageLabelBuilder,
+          previousPageLabel: previousPageLabel,
+          nextPageLabel: nextPageLabel,
+          itemKeyBuilder: itemKeyBuilder,
+          onRowSelected: onRowSelected,
+          onPageChanged: isSearching ? null : onPageChanged,
+          emptyBuilder: emptyBuilder,
+          loadingBuilder: loadingBuilder,
+          errorBuilder: errorBuilder,
+          rowColorBuilder: rowColorBuilder,
+          isLoading: isLoading,
+          error: error,
+          shrinkWrap: shrinkWrap,
+          physics: physics,
+        );
+      },
+    );
+  }
+
+  AppPage<T> _filteredPage(String query) {
+    final List<T> visibleItems = page.items
+        .where((T item) => searchMatcher(item, query))
+        .toList(growable: false);
+
+    return AppPage<T>(
+      items: visibleItems,
+      request: page.request.first(),
+      totalItemCount: visibleItems.length,
     );
   }
 }

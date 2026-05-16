@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -60,7 +61,7 @@ class PatientRegistryPage extends ConsumerWidget {
   }
 }
 
-class _PatientRegistryContent extends ConsumerWidget {
+class _PatientRegistryContent extends ConsumerStatefulWidget {
   const _PatientRegistryContent({required this.state});
 
   final PatientRegistryState state;
@@ -70,7 +71,47 @@ class _PatientRegistryContent extends ConsumerWidget {
   );
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PatientRegistryContent> createState() =>
+      _PatientRegistryContentState();
+}
+
+class _PatientRegistryContentState
+    extends ConsumerState<_PatientRegistryContent> {
+  late final TextEditingController _tableSearchController;
+  late final ValueNotifier<String> _tableSearchNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _tableSearchController = TextEditingController(
+      text: widget.state.query.search,
+    );
+    _tableSearchNotifier = ValueNotifier<String>(widget.state.query.search);
+    _tableSearchController.addListener(_handleTableSearchChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _PatientRegistryContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final String nextSearch = widget.state.query.search;
+    if (oldWidget.state.query.search != nextSearch &&
+        _tableSearchController.text != nextSearch) {
+      _tableSearchController.text = nextSearch;
+      _tableSearchNotifier.value = nextSearch;
+    }
+  }
+
+  @override
+  void dispose() {
+    _tableSearchController
+      ..removeListener(_handleTableSearchChanged)
+      ..dispose();
+    _tableSearchNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final PatientRegistryController controller = ref.read(
       patientRegistryControllerProvider.notifier,
@@ -81,7 +122,7 @@ class _PatientRegistryContent extends ConsumerWidget {
       description: '',
       compactSummaryCards: true,
       primaryAction: AppAccessActionGate(
-        requirement: _writeRequirement,
+        requirement: _PatientRegistryContent._writeRequirement,
         builder: (BuildContext context, bool isAllowed) {
           final AppBreakpoint breakpoint = AppBreakpoints.of(context);
           final bool iconOnly =
@@ -113,7 +154,7 @@ class _PatientRegistryContent extends ConsumerWidget {
           icon: Icons.refresh,
           semanticLabel: l10n.commonRefreshActionLabel,
           tooltip: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshingList,
+          isLoading: widget.state.isRefreshingList,
           onPressed: () async {
             final AppFailure? failure = await controller.refresh();
             if (context.mounted) {
@@ -126,7 +167,7 @@ class _PatientRegistryContent extends ConsumerWidget {
         AppWorkspaceSummaryCard(
           label: l10n.patientsTotalSummaryLabel,
           value: AppFormatters.compactNumber(
-            state.overview.totalPatients,
+            widget.state.overview.totalPatients,
             Localizations.localeOf(context),
           ),
           icon: Icons.groups_outlined,
@@ -145,7 +186,7 @@ class _PatientRegistryContent extends ConsumerWidget {
         AppWorkspaceSummaryCard(
           label: l10n.patientsActiveSummaryLabel,
           value: AppFormatters.compactNumber(
-            state.overview.activePatients,
+            widget.state.overview.activePatients,
             Localizations.localeOf(context),
           ),
           icon: Icons.how_to_reg_outlined,
@@ -165,7 +206,7 @@ class _PatientRegistryContent extends ConsumerWidget {
         AppWorkspaceSummaryCard(
           label: l10n.patientsQueueSummaryLabel,
           value: AppFormatters.compactNumber(
-            state.overview.waitingQueue,
+            widget.state.overview.waitingQueue,
             Localizations.localeOf(context),
           ),
           icon: Icons.queue_outlined,
@@ -175,14 +216,14 @@ class _PatientRegistryContent extends ConsumerWidget {
               context,
               ref,
               title: l10n.patientsQueueSummaryLabel,
-              patients: state.overview.waitingQueuePatients,
+              patients: widget.state.overview.waitingQueuePatients,
             );
           },
         ),
         AppWorkspaceSummaryCard(
           label: l10n.patientsDuplicateSummaryLabel,
           value: AppFormatters.compactNumber(
-            state.overview.duplicates.length,
+            widget.state.overview.duplicates.length,
             Localizations.localeOf(context),
           ),
           icon: Icons.content_copy_outlined,
@@ -192,15 +233,32 @@ class _PatientRegistryContent extends ConsumerWidget {
               context,
               ref,
               title: l10n.patientsDuplicateSummaryLabel,
-              patients: _patientsFromDuplicates(state.overview.duplicates),
+              patients: _patientsFromDuplicates(
+                widget.state.overview.duplicates,
+              ),
             );
           },
         ),
       ],
-      filters: _PatientFilters(query: state.query),
-      body: _PatientList(state: state),
-      activity: _PatientActivityPanel(state: state),
+      filters: _PatientFilters(
+        query: widget.state.query,
+        searchController: _tableSearchController,
+      ),
+      body: _PatientList(
+        state: widget.state,
+        searchListenable: _tableSearchNotifier,
+      ),
+      activity: _PatientActivityPanel(state: widget.state),
     );
+  }
+
+  void _handleTableSearchChanged() {
+    final String query = _tableSearchController.text;
+    if (_tableSearchNotifier.value == query) {
+      return;
+    }
+
+    _tableSearchNotifier.value = query;
   }
 
   Future<void> _openPatientForm(BuildContext context, WidgetRef ref) async {
@@ -208,7 +266,7 @@ class _PatientRegistryContent extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => PatientFormDialog(
-        referenceData: state.referenceData,
+        referenceData: widget.state.referenceData,
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(patientRegistryControllerProvider.notifier)
@@ -243,16 +301,16 @@ class _PatientRegistryContent extends ConsumerWidget {
 }
 
 class _PatientFilters extends ConsumerStatefulWidget {
-  const _PatientFilters({required this.query});
+  const _PatientFilters({required this.query, required this.searchController});
 
   final PatientListQuery query;
+  final TextEditingController searchController;
 
   @override
   ConsumerState<_PatientFilters> createState() => _PatientFiltersState();
 }
 
 class _PatientFiltersState extends ConsumerState<_PatientFilters> {
-  late final TextEditingController _searchController;
   late final TextEditingController _patientIdController;
   String? _gender;
   String? _status;
@@ -261,7 +319,6 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController(text: widget.query.search);
     _patientIdController = TextEditingController(text: widget.query.patientId);
     _gender = widget.query.gender;
     _status = _statusValue(widget.query.isActive);
@@ -272,7 +329,6 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
   void didUpdateWidget(covariant _PatientFilters oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.query != widget.query) {
-      _searchController.text = widget.query.search;
       _patientIdController.text = widget.query.patientId;
       _gender = widget.query.gender;
       _status = _statusValue(widget.query.isActive);
@@ -282,7 +338,6 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
 
   @override
   void dispose() {
-    _searchController.dispose();
     _patientIdController.dispose();
     super.dispose();
   }
@@ -294,14 +349,7 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
     return AppWorkspaceFilterBar(
       semanticLabel: l10n.patientsFiltersLabel,
       expandSearch: true,
-      search: AppTextField(
-        controller: _searchController,
-        semanticLabel: l10n.patientsSearchLabel,
-        hintText: l10n.patientsSearchHint,
-        prefixIcon: const Icon(Icons.search),
-        textInputAction: TextInputAction.search,
-        onFieldSubmitted: (_) => _apply(),
-      ),
+      search: _buildSearchField(context),
       actions: <Widget>[
         AppIconButton(
           icon: Icons.tune,
@@ -314,13 +362,7 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
             _openAdvancedFilters(context);
           },
         ),
-        AppIconButton(
-          icon: Icons.search,
-          semanticLabel: l10n.patientsApplyFiltersAction,
-          tooltip: l10n.patientsApplyFiltersAction,
-          onPressed: _apply,
-        ),
-        if (_hasAnyFilter)
+        if (_hasAdvancedFilters)
           AppIconButton(
             icon: Icons.filter_alt_off_outlined,
             semanticLabel: l10n.patientsClearFiltersAction,
@@ -331,15 +373,38 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
     );
   }
 
+  Widget _buildSearchField(BuildContext context) {
+    final l10n = context.l10n;
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: widget.searchController,
+      builder: (BuildContext context, TextEditingValue value, _) {
+        final bool canClear = value.text.isNotEmpty;
+
+        return AppTextField(
+          controller: widget.searchController,
+          semanticLabel: l10n.patientsSearchLabel,
+          hintText: l10n.patientsSearchHint,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: canClear
+              ? AppIconButton(
+                  icon: Icons.close,
+                  semanticLabel: l10n.patientsClearFiltersAction,
+                  tooltip: l10n.patientsClearFiltersAction,
+                  onPressed: widget.searchController.clear,
+                )
+              : null,
+          textInputAction: TextInputAction.search,
+        );
+      },
+    );
+  }
+
   bool get _hasAdvancedFilters {
     return _patientIdController.text.trim().isNotEmpty ||
         _gender != null ||
         _status != null ||
         _consentState != null;
-  }
-
-  bool get _hasAnyFilter {
-    return _searchController.text.trim().isNotEmpty || _hasAdvancedFilters;
   }
 
   Future<void> _openAdvancedFilters(BuildContext context) async {
@@ -369,7 +434,7 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
 
   Future<void> _apply() async {
     final PatientListQuery nextQuery = widget.query.copyWith(
-      search: _searchController.text.trim(),
+      search: '',
       patientId: _patientIdController.text.trim(),
       gender: _gender,
       isActive: _activeValue(_status),
@@ -388,7 +453,7 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
   }
 
   Future<void> _clear() async {
-    _searchController.clear();
+    widget.searchController.clear();
     _patientIdController.clear();
     setState(() {
       _gender = null;
@@ -558,17 +623,22 @@ class _PatientAdvancedFiltersDialogState
 }
 
 class _PatientList extends ConsumerWidget {
-  const _PatientList({required this.state});
+  const _PatientList({required this.state, required this.searchListenable});
 
   final PatientRegistryState state;
+  final ValueListenable<String> searchListenable;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
 
-    return AppPaginatedDataList<Patient>(
+    return AppSearchablePaginatedDataList<Patient>(
       page: state.page,
+      searchListenable: searchListenable,
+      searchMatcher: (Patient patient, String query) {
+        return _matchesPatientTableSearch(context, patient, query);
+      },
       isLoading: state.isRefreshingList,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -1029,6 +1099,53 @@ class _StatusText extends StatelessWidget {
       ],
     );
   }
+}
+
+bool _matchesPatientTableSearch(
+  BuildContext context,
+  Patient patient,
+  String query,
+) {
+  final List<String> tokens = _searchTokens(query);
+  if (tokens.isEmpty) {
+    return true;
+  }
+
+  final l10n = context.l10n;
+  final Locale locale = Localizations.localeOf(context);
+  final DateTime? dateOfBirth = patient.dateOfBirth;
+  final String status = patient.isActive
+      ? l10n.patientsActiveFilter
+      : l10n.patientsInactiveFilter;
+  final String haystack = <String?>[
+    patient.effectiveDisplayName,
+    patient.displayName,
+    patient.firstName,
+    patient.lastName,
+    patient.effectiveIdentifier,
+    patient.id,
+    patient.publicId,
+    patient.primaryIdentifierType,
+    patient.primaryIdentifierValue,
+    patient.primaryPhone,
+    patient.primaryEmail,
+    dateOfBirth == null ? null : AppFormatters.mediumDate(dateOfBirth, locale),
+    dateOfBirth?.toIso8601String(),
+    status,
+    patient.isActive ? 'active' : 'inactive',
+    patient.facilityLabel,
+    patient.tenantLabel,
+  ].whereType<String>().join(' ').toLowerCase();
+
+  return tokens.every(haystack.contains);
+}
+
+List<String> _searchTokens(String query) {
+  return query
+      .toLowerCase()
+      .split(RegExp(r'\s+'))
+      .where((String token) => token.isNotEmpty)
+      .toList(growable: false);
 }
 
 class _PatientDetailDialog extends ConsumerWidget {
