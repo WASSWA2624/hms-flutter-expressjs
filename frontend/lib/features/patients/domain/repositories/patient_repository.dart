@@ -9,7 +9,28 @@ abstract interface class PatientRepository {
 
   Future<Result<PatientReferenceData>> loadReferenceData();
 
+  Future<Result<AppPage<PatientDuplicateCandidate>>> listDuplicateCandidates(
+    PatientDuplicateQuery query,
+  );
+
   Future<Result<PatientDetail>> loadPatientDetail(String patientId);
+
+  Future<Result<PatientMergePreview>> previewPatientMerge({
+    required String primaryPatientId,
+    required String secondaryPatientId,
+  });
+
+  Future<Result<PatientMutationResult>> mergePatients({
+    required String primaryPatientId,
+    required String secondaryPatientId,
+  });
+
+  Future<Result<PatientMutationResult>> dismissDuplicateCandidate({
+    required String reviewId,
+    required String primaryPatientId,
+    required String secondaryPatientId,
+    String? reason,
+  });
 
   Future<Result<Patient>> createPatient(Map<String, Object?> payload);
 

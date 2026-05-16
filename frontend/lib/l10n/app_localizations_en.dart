@@ -672,6 +672,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsAddAction => 'Add patient';
 
   @override
+  String get patientsEmergencyRegisterAction => 'Emergency registration';
+
+  @override
   String get patientsEditAction => 'Edit';
 
   @override
@@ -681,10 +684,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsSaveAction => 'Save';
 
   @override
+  String get patientsSaveAnywayAction => 'Save anyway';
+
+  @override
   String get patientsSavedMessage => 'Patient registry changes saved.';
 
   @override
+  String get patientsEmergencySavedMessage =>
+      'Emergency patient registered for completion.';
+
+  @override
   String get patientsDeletedMessage => 'Patient registry record deleted.';
+
+  @override
+  String get patientsMergedMessage => 'Patient records merged.';
+
+  @override
+  String get patientsDuplicateDismissedMessage => 'Duplicate review dismissed.';
 
   @override
   String get patientsTotalSummaryLabel => 'Total patients';
@@ -830,6 +846,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsFacilityLabel => 'Facility';
 
   @override
+  String get patientsRegistrationStatusLabel => 'Registration';
+
+  @override
+  String get patientsRegistrationIncompleteValue => 'Completion needed';
+
+  @override
   String get patientsFirstNameLabel => 'First name';
 
   @override
@@ -849,6 +871,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsAddTitle => 'Add patient';
+
+  @override
+  String get patientsEmergencyRegisterTitle => 'Emergency registration';
+
+  @override
+  String get patientsEmergencyRegisterBody =>
+      'Create a minimal patient record now; demographics and documents can be completed after urgent care starts.';
+
+  @override
+  String get patientsEmergencyFirstNameLabel => 'Known first name';
+
+  @override
+  String get patientsEmergencyLastNameLabel => 'Known last name';
+
+  @override
+  String get patientsEmergencySaveAction => 'Register emergency patient';
 
   @override
   String get patientsEditTitle => 'Edit patient';
@@ -880,6 +918,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsQuickAppointmentAction => 'Appointment';
 
   @override
+  String get patientsQuickOpdCheckInAction => 'OPD check-in';
+
+  @override
   String get patientsQuickTriageAction => 'Triage';
 
   @override
@@ -890,6 +931,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsQuickAdmissionAction => 'Admission';
+
+  @override
+  String get patientsQuickReportAction => 'Patient report';
 
   @override
   String get patientsQuickActionQueuedMessage =>
@@ -1011,6 +1055,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsConsentDateLabel => 'Consent date';
+
+  @override
+  String get patientsDuplicateWarningTitle => 'Potential duplicate found';
+
+  @override
+  String get patientsDuplicateWarningBody =>
+      'Review the matches before creating another patient record. Continue only when this is a different patient.';
+
+  @override
+  String get patientsDuplicateReviewTitle => 'Duplicate review';
+
+  @override
+  String get patientsNoDuplicateReviewsTitle => 'No duplicates to review';
+
+  @override
+  String get patientsNoDuplicateReviewsBody =>
+      'Potential duplicate patient records will appear here.';
+
+  @override
+  String get patientsMergePreviewLoadingTitle => 'Loading merge preview';
+
+  @override
+  String get patientsMergePreviewLoadingBody =>
+      'Checking which records will move to the retained patient.';
+
+  @override
+  String patientsDuplicateScoreLabel(int score) {
+    return '$score% match';
+  }
+
+  @override
+  String get patientsReviewMergeAction => 'Review merge';
+
+  @override
+  String get patientsDismissDuplicateAction => 'Dismiss';
+
+  @override
+  String get patientsMergePreviewTitle => 'Merge preview';
+
+  @override
+  String patientsMergeTransferCountLabel(String resource, int count) {
+    return '$resource: $count';
+  }
+
+  @override
+  String get patientsMergePatientsAction => 'Merge patients';
 
   @override
   String get patientsActivityTitle => 'Registry attention';

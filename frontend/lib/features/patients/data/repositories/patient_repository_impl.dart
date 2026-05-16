@@ -67,6 +67,28 @@ final class PatientRepositoryImpl implements PatientRepository {
   }
 
   @override
+  Future<Result<AppPage<PatientDuplicateCandidate>>> listDuplicateCandidates(
+    PatientDuplicateQuery query,
+  ) {
+    final AppPageRequest request = query.pageRequest;
+    return _apiClient.get<AppPage<PatientDuplicateCandidate>>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.patients.path, 'duplicates']),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': request.pageIndex + 1,
+        'limit': request.pageSize,
+        'patient_id': query.patientId,
+        'first_name': query.firstName,
+        'last_name': query.lastName,
+        'date_of_birth': _dateOnly(query.dateOfBirth),
+        'phone': query.phone,
+        'identifier_value': query.identifierValue,
+      }),
+      decoder: (Object? data) =>
+          PatientDuplicatePageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
   Future<Result<PatientDetail>> loadPatientDetail(String patientId) async {
     final Patient? patient = await _resultValue(
       _apiClient.get<Patient>(
@@ -201,6 +223,64 @@ final class PatientRepositoryImpl implements PatientRepository {
         consents: consents,
         timeline: timeline,
       ),
+    );
+  }
+
+  @override
+  Future<Result<PatientMergePreview>> previewPatientMerge({
+    required String primaryPatientId,
+    required String secondaryPatientId,
+  }) {
+    return _apiClient.post<PatientMergePreview>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.patients.path,
+        'merge',
+        'preview',
+      ]),
+      data: <String, Object?>{
+        'primary_patient_id': primaryPatientId,
+        'secondary_patient_id': secondaryPatientId,
+      },
+      decoder: (Object? data) =>
+          PatientMergePreviewDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<PatientMutationResult>> mergePatients({
+    required String primaryPatientId,
+    required String secondaryPatientId,
+  }) {
+    return _apiClient.post<PatientMutationResult>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.patients.path, 'merge']),
+      data: <String, Object?>{
+        'primary_patient_id': primaryPatientId,
+        'secondary_patient_id': secondaryPatientId,
+      },
+      decoder: (_) => PatientMutationResult(patientId: primaryPatientId),
+    );
+  }
+
+  @override
+  Future<Result<PatientMutationResult>> dismissDuplicateCandidate({
+    required String reviewId,
+    required String primaryPatientId,
+    required String secondaryPatientId,
+    String? reason,
+  }) {
+    return _apiClient.post<PatientMutationResult>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.patients.path,
+        'duplicates',
+        reviewId,
+        'dismiss',
+      ]),
+      data: _withoutEmpty(<String, Object?>{
+        'primary_patient_id': primaryPatientId,
+        'secondary_patient_id': secondaryPatientId,
+        'dismissed_reason': reason,
+      }),
+      decoder: (_) => PatientMutationResult(patientId: primaryPatientId),
     );
   }
 
@@ -373,5 +453,13 @@ final class PatientRepositoryImpl implements PatientRepository {
       return value.trim().isEmpty;
     }
     return false;
+  }
+
+  String? _dateOnly(DateTime? value) {
+    if (value == null) {
+      return null;
+    }
+
+    return value.toIso8601String().split('T').first;
   }
 }

@@ -44,6 +44,48 @@ final class PatientListQuery {
 }
 
 @immutable
+final class PatientDuplicateQuery {
+  const PatientDuplicateQuery({
+    this.patientId = '',
+    this.firstName = '',
+    this.lastName = '',
+    this.dateOfBirth,
+    this.phone = '',
+    this.identifierValue = '',
+    this.pageRequest = const AppPageRequest(pageSize: 8),
+  });
+
+  final String patientId;
+  final String firstName;
+  final String lastName;
+  final DateTime? dateOfBirth;
+  final String phone;
+  final String identifierValue;
+  final AppPageRequest pageRequest;
+
+  PatientDuplicateQuery copyWith({
+    String? patientId,
+    String? firstName,
+    String? lastName,
+    DateTime? dateOfBirth,
+    String? phone,
+    String? identifierValue,
+    AppPageRequest? pageRequest,
+    bool clearDateOfBirth = false,
+  }) {
+    return PatientDuplicateQuery(
+      patientId: patientId ?? this.patientId,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      dateOfBirth: clearDateOfBirth ? null : dateOfBirth ?? this.dateOfBirth,
+      phone: phone ?? this.phone,
+      identifierValue: identifierValue ?? this.identifierValue,
+      pageRequest: pageRequest ?? this.pageRequest,
+    );
+  }
+}
+
+@immutable
 final class Patient {
   const Patient({
     required this.id,
@@ -62,6 +104,9 @@ final class Patient {
     this.primaryIdentifierValue,
     this.tenantLabel,
     this.facilityLabel,
+    this.requiresCompletion = false,
+    this.registrationSource,
+    this.registrationStatus,
     this.createdAt,
     this.updatedAt,
   });
@@ -82,6 +127,9 @@ final class Patient {
   final String? primaryIdentifierValue;
   final String? tenantLabel;
   final String? facilityLabel;
+  final bool requiresCompletion;
+  final String? registrationSource;
+  final String? registrationStatus;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -120,6 +168,9 @@ final class Patient {
     String? primaryIdentifierValue,
     String? tenantLabel,
     String? facilityLabel,
+    bool? requiresCompletion,
+    String? registrationSource,
+    String? registrationStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool clearDateOfBirth = false,
@@ -155,6 +206,9 @@ final class Patient {
           : primaryIdentifierValue ?? this.primaryIdentifierValue,
       tenantLabel: tenantLabel ?? this.tenantLabel,
       facilityLabel: facilityLabel ?? this.facilityLabel,
+      requiresCompletion: requiresCompletion ?? this.requiresCompletion,
+      registrationSource: registrationSource ?? this.registrationSource,
+      registrationStatus: registrationStatus ?? this.registrationStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -399,6 +453,7 @@ final class PatientDuplicateCandidate {
     required this.reviewId,
     required this.confidenceScore,
     required this.classification,
+    this.matchReasons = const <String>[],
     this.primaryPatient,
     this.secondaryPatient,
     this.candidatePatient,
@@ -407,9 +462,44 @@ final class PatientDuplicateCandidate {
   final String reviewId;
   final int confidenceScore;
   final String classification;
+  final List<String> matchReasons;
   final Patient? primaryPatient;
   final Patient? secondaryPatient;
   final Patient? candidatePatient;
+
+  List<Patient> get patients {
+    final Map<String, Patient> values = <String, Patient>{};
+    for (final Patient? patient in <Patient?>[
+      primaryPatient,
+      secondaryPatient,
+      candidatePatient,
+    ]) {
+      if (patient != null && patient.id.isNotEmpty) {
+        values[patient.id] = patient;
+      }
+    }
+
+    return values.values.toList(growable: false);
+  }
+}
+
+@immutable
+final class PatientMergePreview {
+  const PatientMergePreview({
+    required this.primaryPatient,
+    required this.secondaryPatient,
+    required this.confidenceScore,
+    required this.classification,
+    this.matchReasons = const <String>[],
+    this.transferCounts = const <String, int>{},
+  });
+
+  final Patient primaryPatient;
+  final Patient secondaryPatient;
+  final int confidenceScore;
+  final String classification;
+  final List<String> matchReasons;
+  final Map<String, int> transferCounts;
 }
 
 @immutable

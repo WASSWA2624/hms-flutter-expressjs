@@ -861,6 +861,10 @@
   "@patientsAddAction": {
     "description": "Create patient action label."
   },
+  "patientsEmergencyRegisterAction": "Emergency registration",
+  "@patientsEmergencyRegisterAction": {
+    "description": "Emergency patient registration action label."
+  },
   "patientsEditAction": "Edit",
   "@patientsEditAction": {
     "description": "Edit patient or related record action label."
@@ -873,13 +877,29 @@
   "@patientsSaveAction": {
     "description": "Save patient form action label."
   },
+  "patientsSaveAnywayAction": "Save anyway",
+  "@patientsSaveAnywayAction": {
+    "description": "Save patient despite duplicate warning action label."
+  },
   "patientsSavedMessage": "Patient registry changes saved.",
   "@patientsSavedMessage": {
     "description": "Snackbar shown after a patient registry change is saved."
   },
+  "patientsEmergencySavedMessage": "Emergency patient registered for completion.",
+  "@patientsEmergencySavedMessage": {
+    "description": "Snackbar shown after emergency patient registration."
+  },
   "patientsDeletedMessage": "Patient registry record deleted.",
   "@patientsDeletedMessage": {
     "description": "Snackbar shown after a patient registry record is deleted."
+  },
+  "patientsMergedMessage": "Patient records merged.",
+  "@patientsMergedMessage": {
+    "description": "Snackbar shown after patient records are merged."
+  },
+  "patientsDuplicateDismissedMessage": "Duplicate review dismissed.",
+  "@patientsDuplicateDismissedMessage": {
+    "description": "Snackbar shown after a duplicate review is dismissed."
   },
   "patientsTotalSummaryLabel": "Total patients",
   "@patientsTotalSummaryLabel": {
@@ -1072,6 +1092,14 @@
   "@patientsFacilityLabel": {
     "description": "Patient facility label."
   },
+  "patientsRegistrationStatusLabel": "Registration",
+  "@patientsRegistrationStatusLabel": {
+    "description": "Patient registration completion status label."
+  },
+  "patientsRegistrationIncompleteValue": "Completion needed",
+  "@patientsRegistrationIncompleteValue": {
+    "description": "Patient registration incomplete status value."
+  },
   "patientsFirstNameLabel": "First name",
   "@patientsFirstNameLabel": {
     "description": "Patient first name field label."
@@ -1099,6 +1127,26 @@
   "patientsAddTitle": "Add patient",
   "@patientsAddTitle": {
     "description": "Add patient dialog title."
+  },
+  "patientsEmergencyRegisterTitle": "Emergency registration",
+  "@patientsEmergencyRegisterTitle": {
+    "description": "Emergency patient registration dialog title."
+  },
+  "patientsEmergencyRegisterBody": "Create a minimal patient record now; demographics and documents can be completed after urgent care starts.",
+  "@patientsEmergencyRegisterBody": {
+    "description": "Emergency patient registration dialog body."
+  },
+  "patientsEmergencyFirstNameLabel": "Known first name",
+  "@patientsEmergencyFirstNameLabel": {
+    "description": "Emergency patient first name field label."
+  },
+  "patientsEmergencyLastNameLabel": "Known last name",
+  "@patientsEmergencyLastNameLabel": {
+    "description": "Emergency patient last name field label."
+  },
+  "patientsEmergencySaveAction": "Register emergency patient",
+  "@patientsEmergencySaveAction": {
+    "description": "Emergency patient registration submit action label."
   },
   "patientsEditTitle": "Edit patient",
   "@patientsEditTitle": {
@@ -1142,6 +1190,10 @@
   "@patientsQuickAppointmentAction": {
     "description": "Patient quick appointment action label."
   },
+  "patientsQuickOpdCheckInAction": "OPD check-in",
+  "@patientsQuickOpdCheckInAction": {
+    "description": "Patient quick OPD check-in action label."
+  },
   "patientsQuickTriageAction": "Triage",
   "@patientsQuickTriageAction": {
     "description": "Patient quick triage action label."
@@ -1157,6 +1209,10 @@
   "patientsQuickAdmissionAction": "Admission",
   "@patientsQuickAdmissionAction": {
     "description": "Patient quick admission action label."
+  },
+  "patientsQuickReportAction": "Patient report",
+  "@patientsQuickReportAction": {
+    "description": "Patient quick report action label."
   },
   "patientsQuickActionQueuedMessage": "The patient context is ready for the selected workflow.",
   "@patientsQuickActionQueuedMessage": {
@@ -1317,6 +1373,72 @@
   "patientsConsentDateLabel": "Consent date",
   "@patientsConsentDateLabel": {
     "description": "Patient consent date field label."
+  },
+  "patientsDuplicateWarningTitle": "Potential duplicate found",
+  "@patientsDuplicateWarningTitle": {
+    "description": "Patient registration duplicate warning title."
+  },
+  "patientsDuplicateWarningBody": "Review the matches before creating another patient record. Continue only when this is a different patient.",
+  "@patientsDuplicateWarningBody": {
+    "description": "Patient registration duplicate warning body."
+  },
+  "patientsDuplicateReviewTitle": "Duplicate review",
+  "@patientsDuplicateReviewTitle": {
+    "description": "Patient duplicate review dialog title."
+  },
+  "patientsNoDuplicateReviewsTitle": "No duplicates to review",
+  "@patientsNoDuplicateReviewsTitle": {
+    "description": "Patient duplicate review empty state title."
+  },
+  "patientsNoDuplicateReviewsBody": "Potential duplicate patient records will appear here.",
+  "@patientsNoDuplicateReviewsBody": {
+    "description": "Patient duplicate review empty state body."
+  },
+  "patientsMergePreviewLoadingTitle": "Loading merge preview",
+  "@patientsMergePreviewLoadingTitle": {
+    "description": "Patient merge preview loading title."
+  },
+  "patientsMergePreviewLoadingBody": "Checking which records will move to the retained patient.",
+  "@patientsMergePreviewLoadingBody": {
+    "description": "Patient merge preview loading body."
+  },
+  "patientsDuplicateScoreLabel": "{score}% match",
+  "@patientsDuplicateScoreLabel": {
+    "description": "Patient duplicate match score label.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "patientsReviewMergeAction": "Review merge",
+  "@patientsReviewMergeAction": {
+    "description": "Patient duplicate review merge preview action label."
+  },
+  "patientsDismissDuplicateAction": "Dismiss",
+  "@patientsDismissDuplicateAction": {
+    "description": "Patient duplicate review dismiss action label."
+  },
+  "patientsMergePreviewTitle": "Merge preview",
+  "@patientsMergePreviewTitle": {
+    "description": "Patient duplicate merge preview title."
+  },
+  "patientsMergeTransferCountLabel": "{resource}: {count}",
+  "@patientsMergeTransferCountLabel": {
+    "description": "Patient merge transfer count badge label.",
+    "placeholders": {
+      "resource": {
+        "type": "String",
+        "example": "Contacts"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "patientsMergePatientsAction": "Merge patients",
+  "@patientsMergePatientsAction": {
+    "description": "Patient duplicate merge confirm action label."
   },
   "patientsActivityTitle": "Registry attention",
   "@patientsActivityTitle": {

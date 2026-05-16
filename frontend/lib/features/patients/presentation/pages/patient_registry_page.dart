@@ -79,6 +79,7 @@ class _PatientRegistryContentState
     extends ConsumerState<_PatientRegistryContent> {
   late final TextEditingController _tableSearchController;
   late final ValueNotifier<String> _tableSearchNotifier;
+  Timer? _tableSearchDebounce;
 
   @override
   void initState() {
@@ -103,6 +104,7 @@ class _PatientRegistryContentState
 
   @override
   void dispose() {
+    _tableSearchDebounce?.cancel();
     _tableSearchController
       ..removeListener(_handleTableSearchChanged)
       ..dispose();
@@ -150,6 +152,18 @@ class _PatientRegistryContentState
         },
       ),
       secondaryActions: <Widget>[
+        AppAccessActionGate(
+          requirement: _PatientRegistryContent._writeRequirement,
+          builder: (BuildContext context, bool isAllowed) => AppIconButton(
+            icon: Icons.emergency_outlined,
+            semanticLabel: l10n.patientsEmergencyRegisterAction,
+            tooltip: l10n.patientsEmergencyRegisterAction,
+            enabled: isAllowed,
+            onPressed: () {
+              _openEmergencyRegistration(context, ref);
+            },
+          ),
+        ),
         AppIconButton(
           icon: Icons.refresh,
           semanticLabel: l10n.commonRefreshActionLabel,
@@ -229,14 +243,7 @@ class _PatientRegistryContentState
           icon: Icons.content_copy_outlined,
           compact: true,
           onPressed: () {
-            _openSummaryPatientList(
-              context,
-              ref,
-              title: l10n.patientsDuplicateSummaryLabel,
-              patients: _patientsFromDuplicates(
-                widget.state.overview.duplicates,
-              ),
-            );
+            _openDuplicateReview(context, ref);
           },
         ),
       ],
@@ -259,6 +266,31 @@ class _PatientRegistryContentState
     }
 
     _tableSearchNotifier.value = query;
+    _tableSearchDebounce?.cancel();
+    _tableSearchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) {
+        unawaited(_applyTableSearch(query));
+      }
+    });
+  }
+
+  Future<void> _applyTableSearch(String query) async {
+    final String search = query.trim();
+    if (search == widget.state.query.search.trim()) {
+      return;
+    }
+
+    final AppFailure? failure = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .applyQuery(
+          widget.state.query.copyWith(
+            search: search,
+            pageRequest: widget.state.query.pageRequest.first(),
+          ),
+        );
+    if (mounted) {
+      await _showFailureIfNeeded(context, failure);
+    }
   }
 
   Future<void> _openPatientForm(BuildContext context, WidgetRef ref) async {
@@ -267,6 +299,11 @@ class _PatientRegistryContentState
       barrierDismissible: false,
       builder: (_) => PatientFormDialog(
         referenceData: widget.state.referenceData,
+        onLookupDuplicates: (PatientDuplicateQuery query) {
+          return ref
+              .read(patientRegistryControllerProvider.notifier)
+              .loadDuplicateCandidates(query);
+        },
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(patientRegistryControllerProvider.notifier)
@@ -280,6 +317,38 @@ class _PatientRegistryContentState
         SnackBar(content: Text(context.l10n.patientsSavedMessage)),
       );
     }
+  }
+
+  Future<void> _openEmergencyRegistration(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => EmergencyPatientFormDialog(
+        onSubmit: (Map<String, Object?> payload) {
+          return ref
+              .read(patientRegistryControllerProvider.notifier)
+              .createPatient(payload);
+        },
+      ),
+    );
+
+    if (saved == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.patientsEmergencySavedMessage)),
+      );
+    }
+  }
+
+  Future<void> _openDuplicateReview(BuildContext context, WidgetRef ref) async {
+    await showAppDialog<void>(
+      context: context,
+      builder: (_) => PatientDuplicateReviewDialog(
+        duplicates: widget.state.overview.duplicates,
+      ),
+    );
   }
 
   Future<void> _openSummaryPatientList(
@@ -434,7 +503,7 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
 
   Future<void> _apply() async {
     final PatientListQuery nextQuery = widget.query.copyWith(
-      search: '',
+      search: widget.searchController.text.trim(),
       patientId: _patientIdController.text.trim(),
       gender: _gender,
       isActive: _activeValue(_status),
@@ -1020,6 +1089,14 @@ class _PatientNameCell extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+        if (patient.requiresCompletion)
+          Text(
+            context.l10n.patientsRegistrationIncompleteValue,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.statusColors.warning,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
       ],
     );
   }
@@ -1058,6 +1135,14 @@ class _PatientMobileRow extends StatelessWidget {
                 Text(patient.primaryPhone ?? patient.primaryEmail!),
               SizedBox(height: theme.spacing.xs),
               _StatusText(isActive: patient.isActive),
+              if (patient.requiresCompletion)
+                Text(
+                  l10n.patientsRegistrationIncompleteValue,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.statusColors.warning,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
             ],
           ),
         ),
@@ -1133,6 +1218,9 @@ bool _matchesPatientTableSearch(
     dateOfBirth?.toIso8601String(),
     status,
     patient.isActive ? 'active' : 'inactive',
+    patient.requiresCompletion ? 'incomplete registration emergency' : null,
+    patient.registrationSource,
+    patient.registrationStatus,
     patient.facilityLabel,
     patient.tenantLabel,
   ].whereType<String>().join(' ').toLowerCase();
@@ -1510,6 +1598,11 @@ class _PatientDemographics extends StatelessWidget {
           label: l10n.patientsFacilityLabel,
           value: patient.facilityLabel,
         ),
+        if (patient.requiresCompletion)
+          _InfoRow(
+            label: l10n.patientsRegistrationStatusLabel,
+            value: l10n.patientsRegistrationIncompleteValue,
+          ),
       ],
     );
   }
@@ -1542,6 +1635,16 @@ class _QuickActions extends StatelessWidget {
               ),
             ),
             _QuickActionButton(
+              label: l10n.patientsQuickOpdCheckInAction,
+              icon: Icons.login_outlined,
+              requirement: const AccessRequirement(
+                anyPermissions: <AppPermission>[
+                  AppPermissions.patientWrite,
+                  AppPermissions.emergencyWrite,
+                ],
+              ),
+            ),
+            _QuickActionButton(
               label: l10n.patientsQuickTriageAction,
               icon: Icons.monitor_heart_outlined,
               requirement: const AccessRequirement(
@@ -1567,6 +1670,13 @@ class _QuickActions extends StatelessWidget {
               icon: Icons.local_hospital_outlined,
               requirement: const AccessRequirement(
                 allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+              ),
+            ),
+            _QuickActionButton(
+              label: l10n.patientsQuickReportAction,
+              icon: Icons.summarize_outlined,
+              requirement: const AccessRequirement(
+                allPermissions: <AppPermission>[AppPermissions.reportsRead],
               ),
             ),
           ],
@@ -1796,6 +1906,425 @@ class _PatientActivityPanel extends StatelessWidget {
   }
 }
 
+class PatientDuplicateReviewDialog extends ConsumerStatefulWidget {
+  const PatientDuplicateReviewDialog({required this.duplicates, super.key});
+
+  final List<PatientDuplicateCandidate> duplicates;
+
+  @override
+  ConsumerState<PatientDuplicateReviewDialog> createState() =>
+      _PatientDuplicateReviewDialogState();
+}
+
+class _PatientDuplicateReviewDialogState
+    extends ConsumerState<PatientDuplicateReviewDialog> {
+  late List<PatientDuplicateCandidate> _duplicates;
+  PatientDuplicateCandidate? _selectedDuplicate;
+  PatientMergePreview? _preview;
+  bool _isLoadingPreview = false;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _duplicates = widget.duplicates.toList(growable: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return AppDialog(
+      title: Text(l10n.patientsDuplicateReviewTitle),
+      icon: const Icon(Icons.content_copy_outlined),
+      maxWidth: 920,
+      scrollable: true,
+      closeEnabled: !_isSaving && !_isLoadingPreview,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (_failure != null) ...<Widget>[
+            AppFailureStateView(failure: _failure!),
+            SizedBox(height: theme.spacing.md),
+          ],
+          if (_duplicates.isEmpty)
+            AppWorkspaceStatePanel.empty(
+              title: l10n.patientsNoDuplicateReviewsTitle,
+              body: l10n.patientsNoDuplicateReviewsBody,
+              icon: Icons.verified_user_outlined,
+              minHeight: 240,
+            )
+          else
+            for (final PatientDuplicateCandidate duplicate in _duplicates)
+              Padding(
+                padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                child: _DuplicateReviewCard(
+                  duplicate: duplicate,
+                  isBusy: _isSaving || _isLoadingPreview,
+                  onPreview: () => _previewMerge(duplicate),
+                  onDismiss: () => _dismissDuplicate(duplicate),
+                ),
+              ),
+          if (_isLoadingPreview)
+            AppWorkspaceStatePanel.loading(
+              title: l10n.patientsMergePreviewLoadingTitle,
+              body: l10n.patientsMergePreviewLoadingBody,
+              minHeight: 180,
+            )
+          else if (_preview != null && _selectedDuplicate != null)
+            _PatientMergePreviewPanel(
+              preview: _preview!,
+              isSaving: _isSaving,
+              onMerge: () => _mergeDuplicate(_selectedDuplicate!),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _previewMerge(PatientDuplicateCandidate duplicate) async {
+    setState(() {
+      _isLoadingPreview = true;
+      _failure = null;
+      _selectedDuplicate = duplicate;
+      _preview = null;
+    });
+    final Result<PatientMergePreview> result = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .previewDuplicateMerge(duplicate);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (PatientMergePreview preview) {
+        setState(() {
+          _preview = preview;
+          _isLoadingPreview = false;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isLoadingPreview = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _dismissDuplicate(PatientDuplicateCandidate duplicate) async {
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .dismissDuplicateCandidate(duplicate);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      setState(() {
+        _duplicates.removeWhere(
+          (PatientDuplicateCandidate item) =>
+              item.reviewId == duplicate.reviewId,
+        );
+        if (_selectedDuplicate?.reviewId == duplicate.reviewId) {
+          _selectedDuplicate = null;
+          _preview = null;
+        }
+        _isSaving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.patientsDuplicateDismissedMessage)),
+      );
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+
+  Future<void> _mergeDuplicate(PatientDuplicateCandidate duplicate) async {
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .mergeDuplicateCandidate(duplicate);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.patientsMergedMessage)),
+      );
+      await Navigator.of(context).maybePop();
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+}
+
+class _DuplicateReviewCard extends StatelessWidget {
+  const _DuplicateReviewCard({
+    required this.duplicate,
+    required this.isBusy,
+    required this.onPreview,
+    required this.onDismiss,
+  });
+
+  final PatientDuplicateCandidate duplicate;
+  final bool isBusy;
+  final VoidCallback onPreview;
+  final VoidCallback onDismiss;
+
+  static const AccessRequirement _writeRequirement = AccessRequirement(
+    allPermissions: <AppPermission>[AppPermissions.patientWrite],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final Patient? primary = duplicate.primaryPatient;
+    final Patient? secondary =
+        duplicate.secondaryPatient ?? duplicate.candidatePatient;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: theme.colorScheme.surfaceContainerLowest,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                AppWorkspaceStatusBadge(
+                  status: AppWorkspaceStatus(
+                    label: l10n.patientsDuplicateScoreLabel(
+                      duplicate.confidenceScore,
+                    ),
+                    tone: AppWorkspaceStatusTone.warning,
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Text(
+                    _apiLabel(duplicate.classification),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            _DuplicatePatientPair(primary: primary, secondary: secondary),
+            if (duplicate.matchReasons.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Text(
+                duplicate.matchReasons.map(_apiLabel).join(', '),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            SizedBox(height: theme.spacing.sm),
+            Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                AppAccessActionGate(
+                  requirement: _writeRequirement,
+                  builder: (_, bool isAllowed) => AppButton.secondary(
+                    label: l10n.patientsReviewMergeAction,
+                    leadingIcon: Icons.merge_type_outlined,
+                    enabled:
+                        isAllowed &&
+                        !isBusy &&
+                        primary != null &&
+                        secondary != null,
+                    onPressed: onPreview,
+                  ),
+                ),
+                AppAccessActionGate(
+                  requirement: _writeRequirement,
+                  builder: (_, bool isAllowed) => AppButton.tertiary(
+                    label: l10n.patientsDismissDuplicateAction,
+                    leadingIcon: Icons.block_outlined,
+                    enabled:
+                        isAllowed &&
+                        !isBusy &&
+                        primary != null &&
+                        secondary != null,
+                    onPressed: onDismiss,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DuplicatePatientPair extends StatelessWidget {
+  const _DuplicatePatientPair({required this.primary, required this.secondary});
+
+  final Patient? primary;
+  final Patient? secondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool stacked = constraints.maxWidth < 560;
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _DuplicatePatientSummary(patient: primary),
+              SizedBox(height: theme.spacing.sm),
+              _DuplicatePatientSummary(patient: secondary),
+            ],
+          );
+        }
+
+        return Row(
+          children: <Widget>[
+            Expanded(child: _DuplicatePatientSummary(patient: primary)),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(child: _DuplicatePatientSummary(patient: secondary)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DuplicatePatientSummary extends StatelessWidget {
+  const _DuplicatePatientSummary({required this.patient});
+
+  final Patient? patient;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Patient? value = patient;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              value?.effectiveDisplayName ?? context.l10n.profileUnknownValue,
+              style: theme.textTheme.titleSmall,
+            ),
+            Text(
+              _joinDisplay(<String?>[
+                value?.effectiveIdentifier,
+                value?.primaryPhone,
+                value?.primaryEmail,
+              ]),
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PatientMergePreviewPanel extends StatelessWidget {
+  const _PatientMergePreviewPanel({
+    required this.preview,
+    required this.isSaving,
+    required this.onMerge,
+  });
+
+  final PatientMergePreview preview;
+  final bool isSaving;
+  final VoidCallback onMerge;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final List<MapEntry<String, int>> counts = preview.transferCounts.entries
+        .where((MapEntry<String, int> entry) => entry.value > 0)
+        .toList(growable: false);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.statusColors.warningContainer,
+        border: Border.all(color: theme.statusColors.warning),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              l10n.patientsMergePreviewTitle,
+              style: theme.textTheme.titleSmall,
+            ),
+            SizedBox(height: theme.spacing.sm),
+            _DuplicatePatientPair(
+              primary: preview.primaryPatient,
+              secondary: preview.secondaryPatient,
+            ),
+            if (counts.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (final MapEntry<String, int> count in counts)
+                    AppWorkspaceStatusBadge(
+                      status: AppWorkspaceStatus(
+                        label: l10n.patientsMergeTransferCountLabel(
+                          _apiLabel(count.key),
+                          count.value,
+                        ),
+                        tone: AppWorkspaceStatusTone.info,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            SizedBox(height: theme.spacing.md),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: AppButton.primary(
+                label: l10n.patientsMergePatientsAction,
+                leadingIcon: Icons.merge_type_outlined,
+                isLoading: isSaving,
+                onPressed: onMerge,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _InfoRow extends StatelessWidget {
   const _InfoRow({required this.label, required this.value});
 
@@ -1834,12 +2363,17 @@ class PatientFormDialog extends StatefulWidget {
     required this.referenceData,
     required this.onSubmit,
     this.patient,
+    this.onLookupDuplicates,
     super.key,
   });
 
   final Patient? patient;
   final PatientReferenceData referenceData;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
+  final Future<Result<AppPage<PatientDuplicateCandidate>>> Function(
+    PatientDuplicateQuery query,
+  )?
+  onLookupDuplicates;
 
   @override
   State<PatientFormDialog> createState() => _PatientFormDialogState();
@@ -1858,6 +2392,10 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
   String? _facilityId;
   bool _isActive = true;
   bool _isSaving = false;
+  bool _isCheckingDuplicates = false;
+  bool _duplicateWarningAccepted = false;
+  List<PatientDuplicateCandidate> _duplicateCandidates =
+      const <PatientDuplicateCandidate>[];
   AppFailure? _failure;
 
   bool get _isEditing => widget.patient != null;
@@ -1880,10 +2418,22 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
     _gender = patient?.gender;
     _facilityId = patient?.facilityId;
     _isActive = patient?.isActive ?? true;
+    if (!_isEditing) {
+      _firstNameController.addListener(_clearDuplicateWarning);
+      _lastNameController.addListener(_clearDuplicateWarning);
+      _phoneController.addListener(_clearDuplicateWarning);
+      _identifierValueController.addListener(_clearDuplicateWarning);
+    }
   }
 
   @override
   void dispose() {
+    if (!_isEditing) {
+      _firstNameController.removeListener(_clearDuplicateWarning);
+      _lastNameController.removeListener(_clearDuplicateWarning);
+      _phoneController.removeListener(_clearDuplicateWarning);
+      _identifierValueController.removeListener(_clearDuplicateWarning);
+    }
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
@@ -1912,6 +2462,10 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
               density: AppFormSectionDensity.compact,
               children: <Widget>[
                 if (_failure != null) AppFailureStateView(failure: _failure!),
+                if (_duplicateCandidates.isNotEmpty)
+                  PatientDuplicateWarningPanel(
+                    duplicates: _duplicateCandidates,
+                  ),
                 _ResponsiveFieldPair(
                   left: AppTextField(
                     controller: _firstNameController,
@@ -2049,8 +2603,10 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
           onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
-          label: l10n.patientsSaveAction,
-          isLoading: _isSaving,
+          label: _duplicateCandidates.isNotEmpty && _duplicateWarningAccepted
+              ? l10n.patientsSaveAnywayAction
+              : l10n.patientsSaveAction,
+          isLoading: _isSaving || _isCheckingDuplicates,
           onPressed: _submit,
         ),
       ],
@@ -2065,6 +2621,17 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
+    }
+
+    final bool shouldCheckDuplicates =
+        !_isEditing &&
+        !_duplicateWarningAccepted &&
+        widget.onLookupDuplicates != null;
+    if (shouldCheckDuplicates) {
+      final bool canContinue = await _checkDuplicatesBeforeSave();
+      if (!canContinue) {
+        return;
+      }
     }
 
     setState(() {
@@ -2087,6 +2654,288 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
       'is_active': _isActive,
     };
     final AppFailure? failure = await widget.onSubmit(payload);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() {
+      _isSaving = false;
+      _failure = failure;
+    });
+  }
+
+  Future<bool> _checkDuplicatesBeforeSave() async {
+    setState(() {
+      _isCheckingDuplicates = true;
+      _failure = null;
+    });
+
+    final Result<AppPage<PatientDuplicateCandidate>> result =
+        await widget.onLookupDuplicates!(
+          PatientDuplicateQuery(
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+            dateOfBirth: _dateOfBirth,
+            phone: _phoneController.text.trim(),
+            identifierValue: _identifierValueController.text.trim(),
+          ),
+        );
+    if (!mounted) {
+      return false;
+    }
+
+    return result.when(
+      success: (AppPage<PatientDuplicateCandidate> page) {
+        if (page.items.isEmpty) {
+          setState(() {
+            _isCheckingDuplicates = false;
+            _duplicateCandidates = const <PatientDuplicateCandidate>[];
+          });
+          return true;
+        }
+
+        setState(() {
+          _isCheckingDuplicates = false;
+          _duplicateCandidates = page.items;
+          _duplicateWarningAccepted = true;
+        });
+        return false;
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _isCheckingDuplicates = false;
+          _failure = failure;
+        });
+        return false;
+      },
+    );
+  }
+
+  void _clearDuplicateWarning() {
+    if (_duplicateCandidates.isEmpty && !_duplicateWarningAccepted) {
+      return;
+    }
+
+    setState(() {
+      _duplicateCandidates = const <PatientDuplicateCandidate>[];
+      _duplicateWarningAccepted = false;
+    });
+  }
+}
+
+class PatientDuplicateWarningPanel extends StatelessWidget {
+  const PatientDuplicateWarningPanel({required this.duplicates, super.key});
+
+  final List<PatientDuplicateCandidate> duplicates;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final Iterable<PatientDuplicateCandidate> visible = duplicates.take(3);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.statusColors.warningContainer,
+        border: Border.all(color: theme.statusColors.warning),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.content_copy_outlined,
+                  color: theme.statusColors.warning,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.patientsDuplicateWarningTitle,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.xs),
+            Text(l10n.patientsDuplicateWarningBody),
+            SizedBox(height: theme.spacing.sm),
+            for (final PatientDuplicateCandidate duplicate in visible)
+              _DuplicateCandidateLine(duplicate: duplicate),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DuplicateCandidateLine extends StatelessWidget {
+  const _DuplicateCandidateLine({required this.duplicate});
+
+  final PatientDuplicateCandidate duplicate;
+
+  @override
+  Widget build(BuildContext context) {
+    final Patient? patient =
+        duplicate.secondaryPatient ??
+        duplicate.candidatePatient ??
+        duplicate.primaryPatient;
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.only(top: theme.spacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            context.l10n.patientsDuplicateScoreLabel(duplicate.confidenceScore),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Text(
+              _joinDisplay(<String?>[
+                patient?.effectiveDisplayName,
+                patient?.effectiveIdentifier,
+                duplicate.matchReasons.map(_apiLabel).join(', '),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class EmergencyPatientFormDialog extends StatefulWidget {
+  const EmergencyPatientFormDialog({required this.onSubmit, super.key});
+
+  final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
+
+  @override
+  State<EmergencyPatientFormDialog> createState() =>
+      _EmergencyPatientFormDialogState();
+}
+
+class _EmergencyPatientFormDialogState
+    extends State<EmergencyPatientFormDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _phoneController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return AppDialog(
+      title: Text(l10n.patientsEmergencyRegisterTitle),
+      icon: const Icon(Icons.emergency_outlined),
+      scrollable: true,
+      closeEnabled: !_isSaving,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            Text(l10n.patientsEmergencyRegisterBody),
+            _ResponsiveFieldPair(
+              left: AppTextField(
+                controller: _firstNameController,
+                labelText: l10n.patientsEmergencyFirstNameLabel,
+                enabled: !_isSaving,
+                textCapitalization: TextCapitalization.words,
+              ),
+              right: AppTextField(
+                controller: _lastNameController,
+                labelText: l10n.patientsEmergencyLastNameLabel,
+                enabled: !_isSaving,
+                textCapitalization: TextCapitalization.words,
+              ),
+            ),
+            AppPhoneField(
+              controller: _phoneController,
+              labelText: l10n.patientsPhoneLabel,
+              countryLabelText: l10n.appPhoneCountryLabel,
+              countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+              countryNoResultsText: l10n.appPhoneCountryNoResults,
+              numberLabelText: l10n.appPhoneNumberLabel,
+              numberHintText: l10n.appPhoneNumberHint,
+              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+              enabled: !_isSaving,
+            ),
+            AppTextField(
+              controller: _notesController,
+              labelText: l10n.patientsNotesLabel,
+              enabled: !_isSaving,
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
+        ),
+        AppButton.primary(
+          label: l10n.patientsEmergencySaveAction,
+          leadingIcon: Icons.emergency_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+
+    final DateTime registeredAt = DateTime.now().toUtc();
+    final String firstName = _firstNameController.text.trim();
+    final String lastName = _lastNameController.text.trim();
+    final AppFailure? failure = await widget.onSubmit(<String, Object?>{
+      'first_name': firstName.isEmpty ? 'Emergency' : firstName,
+      'last_name': lastName.isEmpty
+          ? 'Patient ${registeredAt.millisecondsSinceEpoch}'
+          : lastName,
+      'gender': 'UNKNOWN',
+      'primary_phone': _phoneController.text.trim(),
+      'is_active': true,
+      'extension_json': <String, Object?>{
+        'registration': <String, Object?>{
+          'source': 'EMERGENCY',
+          'status': 'INCOMPLETE',
+          'requires_completion': true,
+          'registered_at': registeredAt.toIso8601String(),
+          'notes': _notesController.text.trim(),
+        },
+      },
+    });
     if (!mounted) {
       return;
     }
@@ -2616,25 +3465,6 @@ PatientRegistryState? _readCurrentState(WidgetRef ref) {
     ResultSuccess<PatientRegistryState>(value: final value) => value,
     _ => null,
   };
-}
-
-List<Patient> _patientsFromDuplicates(
-  List<PatientDuplicateCandidate> duplicates,
-) {
-  final Map<String, Patient> patients = <String, Patient>{};
-  for (final PatientDuplicateCandidate duplicate in duplicates) {
-    for (final Patient? patient in <Patient?>[
-      duplicate.primaryPatient,
-      duplicate.secondaryPatient,
-      duplicate.candidatePatient,
-    ]) {
-      if (patient != null && patient.id.isNotEmpty) {
-        patients[patient.id] = patient;
-      }
-    }
-  }
-
-  return patients.values.toList(growable: false);
 }
 
 Future<void> _showFailureIfNeeded(

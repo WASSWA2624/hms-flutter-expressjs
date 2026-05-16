@@ -30,6 +30,32 @@ final class PatientPageDto {
   }
 }
 
+final class PatientDuplicatePageDto {
+  const PatientDuplicatePageDto({required this.page});
+
+  final AppPage<PatientDuplicateCandidate> page;
+
+  factory PatientDuplicatePageDto.fromResponse(
+    Object? responseData,
+    AppPageRequest request,
+  ) {
+    final PatientJsonMap response = _expectMap(responseData);
+    final List<PatientDuplicateCandidate> items = _list(response['data'])
+        .map(PatientDuplicateCandidateDto.new)
+        .map((PatientDuplicateCandidateDto dto) => dto.toEntity())
+        .toList(growable: false);
+    final PatientJsonMap pagination = _map(response['pagination']);
+
+    return PatientDuplicatePageDto(
+      page: AppPage<PatientDuplicateCandidate>(
+        items: items,
+        request: request,
+        totalItemCount: _int(pagination['total']),
+      ),
+    );
+  }
+}
+
 final class PatientDto {
   const PatientDto(this.json);
 
@@ -59,6 +85,8 @@ final class PatientDto {
         _string(json['contact_value']);
     final bool primaryContactIsPhone =
         primaryContactType?.toUpperCase() == 'PHONE';
+    final PatientJsonMap extension = _map(json['extension_json']);
+    final PatientJsonMap registration = _map(extension['registration']);
 
     return Patient(
       id: _string(json['id']) ?? _string(json['human_friendly_id']) ?? '',
@@ -83,6 +111,9 @@ final class PatientDto {
           _string(json['facility_label']) ??
           _string(facilityContext?['label']) ??
           _string(_nullableMap(json['facility'])?['label']),
+      requiresCompletion: _bool(registration['requires_completion']),
+      registrationSource: _string(registration['source']),
+      registrationStatus: _string(registration['status']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     ).copyWith(
@@ -297,9 +328,33 @@ final class PatientDuplicateCandidateDto {
       reviewId: _string(json['review_id']) ?? '',
       confidenceScore: _int(json['confidence_score']),
       classification: _string(json['classification']) ?? '',
+      matchReasons: _stringList(json['match_reasons']),
       primaryPatient: _patientOrNull(json['primary_patient']),
       secondaryPatient: _patientOrNull(json['secondary_patient']),
       candidatePatient: _patientOrNull(json['candidate_patient']),
+    );
+  }
+}
+
+final class PatientMergePreviewDto {
+  const PatientMergePreviewDto(this.json);
+
+  final PatientJsonMap json;
+
+  factory PatientMergePreviewDto.fromResponse(Object? responseData) {
+    return PatientMergePreviewDto(decodeDataMap(responseData));
+  }
+
+  PatientMergePreview toEntity() {
+    return PatientMergePreview(
+      primaryPatient:
+          _patientOrNull(json['primary_patient']) ?? const Patient(id: ''),
+      secondaryPatient:
+          _patientOrNull(json['secondary_patient']) ?? const Patient(id: ''),
+      confidenceScore: _int(json['confidence_score']),
+      classification: _string(json['classification']) ?? '',
+      matchReasons: _stringList(json['match_reasons']),
+      transferCounts: _intMap(json['transfer_counts']),
     );
   }
 }
@@ -499,6 +554,18 @@ List<String> _optionValues(Object? value) {
       )
       .whereType<String>()
       .where((String value) => value.isNotEmpty)
+      .toList(growable: false);
+}
+
+List<String> _stringList(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+
+  return value
+      .map(_string)
+      .whereType<String>()
+      .where((String entry) => entry.isNotEmpty)
       .toList(growable: false);
 }
 

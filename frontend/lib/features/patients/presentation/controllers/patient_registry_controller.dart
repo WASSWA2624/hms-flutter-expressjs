@@ -97,6 +97,12 @@ final class PatientRegistryController
     return _repository.listPatients(query);
   }
 
+  Future<Result<AppPage<PatientDuplicateCandidate>>> loadDuplicateCandidates(
+    PatientDuplicateQuery query,
+  ) {
+    return _repository.listDuplicateCandidates(query);
+  }
+
   Future<AppFailure?> selectPatient(String patientId) async {
     final PatientRegistryState? current = _currentState;
     if (current == null) {
@@ -166,6 +172,98 @@ final class PatientRegistryController
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
         return failure;
       },
+    );
+  }
+
+  Future<AppFailure?> mergeDuplicateCandidate(
+    PatientDuplicateCandidate duplicate,
+  ) async {
+    final PatientRegistryState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    final _DuplicatePair? pair = _duplicatePair(duplicate);
+    if (pair == null) {
+      return null;
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<PatientMutationResult> result = await _repository
+        .mergePatients(
+          primaryPatientId: pair.primary.id,
+          secondaryPatientId: pair.secondary.id,
+        );
+    return result.when(
+      success: (PatientMutationResult result) async {
+        await _syncVisibleData(
+          showLoading: true,
+          refreshReferenceData: true,
+          allowWhileSaving: true,
+        );
+        final AppFailure? detailFailure = await selectPatient(result.patientId);
+        _emit(_currentState!.copyWith(isSaving: false));
+        return detailFailure;
+      },
+      failure: (AppFailure failure) {
+        _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> dismissDuplicateCandidate(
+    PatientDuplicateCandidate duplicate,
+  ) async {
+    final PatientRegistryState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    final _DuplicatePair? pair = _duplicatePair(duplicate);
+    if (pair == null) {
+      return null;
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<PatientMutationResult> result = await _repository
+        .dismissDuplicateCandidate(
+          reviewId: duplicate.reviewId,
+          primaryPatientId: pair.primary.id,
+          secondaryPatientId: pair.secondary.id,
+        );
+    return result.when(
+      success: (_) async {
+        await _syncVisibleData(
+          showLoading: true,
+          refreshReferenceData: true,
+          allowWhileSaving: true,
+        );
+        _emit(_currentState!.copyWith(isSaving: false));
+        return null;
+      },
+      failure: (AppFailure failure) {
+        _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        return failure;
+      },
+    );
+  }
+
+  Future<Result<PatientMergePreview>> previewDuplicateMerge(
+    PatientDuplicateCandidate duplicate,
+  ) {
+    final _DuplicatePair? pair = _duplicatePair(duplicate);
+    if (pair == null) {
+      return Future<Result<PatientMergePreview>>.value(
+        Result<PatientMergePreview>.failure(
+          AppFailure.validation(
+            validationFields: const <String>{'secondary_patient_id'},
+          ),
+        ),
+      );
+    }
+
+    return _repository.previewPatientMerge(
+      primaryPatientId: pair.primary.id,
+      secondaryPatientId: pair.secondary.id,
     );
   }
 
@@ -689,4 +787,26 @@ final class PatientRegistryController
       failure: (AppFailure failure) => failure,
     );
   }
+}
+
+final class _DuplicatePair {
+  const _DuplicatePair({required this.primary, required this.secondary});
+
+  final Patient primary;
+  final Patient secondary;
+}
+
+_DuplicatePair? _duplicatePair(PatientDuplicateCandidate duplicate) {
+  final Patient? primary = duplicate.primaryPatient;
+  final Patient? secondary =
+      duplicate.secondaryPatient ?? duplicate.candidatePatient;
+  if (primary == null ||
+      secondary == null ||
+      primary.id.isEmpty ||
+      secondary.id.isEmpty ||
+      primary.id == secondary.id) {
+    return null;
+  }
+
+  return _DuplicatePair(primary: primary, secondary: secondary);
 }

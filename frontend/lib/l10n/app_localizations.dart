@@ -1354,6 +1354,12 @@ abstract class AppLocalizations {
   /// **'Add patient'**
   String get patientsAddAction;
 
+  /// Emergency patient registration action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency registration'**
+  String get patientsEmergencyRegisterAction;
+
   /// Edit patient or related record action label.
   ///
   /// In en, this message translates to:
@@ -1372,17 +1378,41 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get patientsSaveAction;
 
+  /// Save patient despite duplicate warning action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get patientsSaveAnywayAction;
+
   /// Snackbar shown after a patient registry change is saved.
   ///
   /// In en, this message translates to:
   /// **'Patient registry changes saved.'**
   String get patientsSavedMessage;
 
+  /// Snackbar shown after emergency patient registration.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency patient registered for completion.'**
+  String get patientsEmergencySavedMessage;
+
   /// Snackbar shown after a patient registry record is deleted.
   ///
   /// In en, this message translates to:
   /// **'Patient registry record deleted.'**
   String get patientsDeletedMessage;
+
+  /// Snackbar shown after patient records are merged.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient records merged.'**
+  String get patientsMergedMessage;
+
+  /// Snackbar shown after a duplicate review is dismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate review dismissed.'**
+  String get patientsDuplicateDismissedMessage;
 
   /// Patient registry total patients summary label.
   ///
@@ -1654,6 +1684,18 @@ abstract class AppLocalizations {
   /// **'Facility'**
   String get patientsFacilityLabel;
 
+  /// Patient registration completion status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration'**
+  String get patientsRegistrationStatusLabel;
+
+  /// Patient registration incomplete status value.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion needed'**
+  String get patientsRegistrationIncompleteValue;
+
   /// Patient first name field label.
   ///
   /// In en, this message translates to:
@@ -1695,6 +1737,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add patient'**
   String get patientsAddTitle;
+
+  /// Emergency patient registration dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency registration'**
+  String get patientsEmergencyRegisterTitle;
+
+  /// Emergency patient registration dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a minimal patient record now; demographics and documents can be completed after urgent care starts.'**
+  String get patientsEmergencyRegisterBody;
+
+  /// Emergency patient first name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Known first name'**
+  String get patientsEmergencyFirstNameLabel;
+
+  /// Emergency patient last name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Known last name'**
+  String get patientsEmergencyLastNameLabel;
+
+  /// Emergency patient registration submit action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Register emergency patient'**
+  String get patientsEmergencySaveAction;
 
   /// Edit patient dialog title.
   ///
@@ -1750,6 +1822,12 @@ abstract class AppLocalizations {
   /// **'Appointment'**
   String get patientsQuickAppointmentAction;
 
+  /// Patient quick OPD check-in action label.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD check-in'**
+  String get patientsQuickOpdCheckInAction;
+
   /// Patient quick triage action label.
   ///
   /// In en, this message translates to:
@@ -1773,6 +1851,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Admission'**
   String get patientsQuickAdmissionAction;
+
+  /// Patient quick report action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient report'**
+  String get patientsQuickReportAction;
 
   /// Snackbar shown when a patient quick action is selected.
   ///
@@ -2013,6 +2097,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Consent date'**
   String get patientsConsentDateLabel;
+
+  /// Patient registration duplicate warning title.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate found'**
+  String get patientsDuplicateWarningTitle;
+
+  /// Patient registration duplicate warning body.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the matches before creating another patient record. Continue only when this is a different patient.'**
+  String get patientsDuplicateWarningBody;
+
+  /// Patient duplicate review dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate review'**
+  String get patientsDuplicateReviewTitle;
+
+  /// Patient duplicate review empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No duplicates to review'**
+  String get patientsNoDuplicateReviewsTitle;
+
+  /// Patient duplicate review empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate patient records will appear here.'**
+  String get patientsNoDuplicateReviewsBody;
+
+  /// Patient merge preview loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading merge preview'**
+  String get patientsMergePreviewLoadingTitle;
+
+  /// Patient merge preview loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking which records will move to the retained patient.'**
+  String get patientsMergePreviewLoadingBody;
+
+  /// Patient duplicate match score label.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}% match'**
+  String patientsDuplicateScoreLabel(int score);
+
+  /// Patient duplicate review merge preview action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Review merge'**
+  String get patientsReviewMergeAction;
+
+  /// Patient duplicate review dismiss action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get patientsDismissDuplicateAction;
+
+  /// Patient duplicate merge preview title.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge preview'**
+  String get patientsMergePreviewTitle;
+
+  /// Patient merge transfer count badge label.
+  ///
+  /// In en, this message translates to:
+  /// **'{resource}: {count}'**
+  String patientsMergeTransferCountLabel(String resource, int count);
+
+  /// Patient duplicate merge confirm action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge patients'**
+  String get patientsMergePatientsAction;
 
   /// Patient registry activity section title.
   ///
