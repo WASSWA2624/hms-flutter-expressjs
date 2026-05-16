@@ -239,6 +239,99 @@ void main() {
     expect(find.byIcon(Icons.wifi_off_outlined), findsOneWidget);
   });
 
+  testWidgets('AppWorkspacePatientContextHeader renders patient context', (
+    WidgetTester tester,
+  ) async {
+    var actionCount = 0;
+
+    await pumpComponent(
+      tester,
+      AppWorkspacePatientContextHeader(
+        patientName: 'Amina Kato',
+        patientNumber: 'MRN-10024',
+        demographics: '34y | Female',
+        status: const AppWorkspaceStatus(
+          label: 'Waiting Doctor',
+          tone: AppWorkspaceStatusTone.info,
+        ),
+        alerts: const <AppWorkspaceStatus>[
+          AppWorkspaceStatus(
+            label: 'Penicillin allergy',
+            tone: AppWorkspaceStatusTone.error,
+          ),
+        ],
+        fields: const <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: 'Encounter',
+            value: 'OPD-2026-0007',
+            icon: Icons.assignment_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: 'Location',
+            value: 'Clinic 2',
+            icon: Icons.location_on_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: 'Coverage',
+            value: 'Insurance active',
+            icon: Icons.verified_user_outlined,
+            tone: AppWorkspaceStatusTone.success,
+          ),
+        ],
+        actions: <Widget>[
+          AppButton.secondary(
+            label: 'View',
+            onPressed: () {
+              actionCount += 1;
+            },
+          ),
+        ],
+      ),
+      size: const Size(900, 500),
+    );
+
+    expect(find.text('Amina Kato'), findsOneWidget);
+    expect(find.text('MRN-10024'), findsOneWidget);
+    expect(find.text('34y | Female'), findsOneWidget);
+    expect(find.text('Waiting Doctor'), findsOneWidget);
+    expect(find.text('Penicillin allergy'), findsOneWidget);
+    expect(find.text('Encounter'), findsOneWidget);
+    expect(find.text('Coverage'), findsOneWidget);
+
+    await tester.tap(find.text('View'));
+    await tester.pump();
+
+    expect(actionCount, 1);
+  });
+
+  testWidgets('AppWorkspacePatientContextHeader adapts field layout', (
+    WidgetTester tester,
+  ) async {
+    const Widget header = AppWorkspacePatientContextHeader(
+      patientName: 'Amina Kato',
+      patientNumber: 'MRN-10024',
+      fields: <AppWorkspacePatientContextField>[
+        AppWorkspacePatientContextField(label: 'Encounter', value: 'OPD-1'),
+        AppWorkspacePatientContextField(label: 'Location', value: 'Ward A'),
+      ],
+    );
+
+    await pumpComponent(tester, header, size: const Size(420, 500));
+
+    final Offset narrowEncounterTop = tester.getTopLeft(find.text('Encounter'));
+    final Offset narrowLocationTop = tester.getTopLeft(find.text('Location'));
+
+    expect(narrowLocationTop.dy, greaterThan(narrowEncounterTop.dy));
+
+    await pumpComponent(tester, header, size: const Size(900, 500));
+
+    final Offset wideEncounterTop = tester.getTopLeft(find.text('Encounter'));
+    final Offset wideLocationTop = tester.getTopLeft(find.text('Location'));
+
+    expect(wideLocationTop.dy, closeTo(wideEncounterTop.dy, 0.1));
+    expect(wideLocationTop.dx, greaterThan(wideEncounterTop.dx));
+  });
+
   testWidgets('showAppWorkspaceActionDialog opens a standard modal action', (
     WidgetTester tester,
   ) async {

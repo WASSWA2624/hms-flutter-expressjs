@@ -40,6 +40,23 @@ final class AppWorkspaceActivityItem {
   final AppWorkspaceStatusTone tone;
 }
 
+@immutable
+final class AppWorkspacePatientContextField {
+  const AppWorkspacePatientContextField({
+    required this.label,
+    required this.value,
+    this.icon,
+    this.tone = AppWorkspaceStatusTone.neutral,
+  });
+
+  final String label;
+  final String value;
+  final IconData? icon;
+  final AppWorkspaceStatusTone tone;
+
+  bool get hasValue => value.trim().isNotEmpty;
+}
+
 class AppWorkspace extends StatelessWidget {
   const AppWorkspace({
     required this.title,
@@ -813,6 +830,97 @@ class AppWorkspaceDetailPanel extends StatelessWidget {
   }
 }
 
+class AppWorkspacePatientContextHeader extends StatelessWidget {
+  const AppWorkspacePatientContextHeader({
+    required this.patientName,
+    required this.patientNumber,
+    this.demographics,
+    this.status,
+    this.alerts = const <AppWorkspaceStatus>[],
+    this.fields = const <AppWorkspacePatientContextField>[],
+    this.actions = const <Widget>[],
+    this.semanticLabel,
+    super.key,
+  });
+
+  final String patientName;
+  final String patientNumber;
+  final String? demographics;
+  final AppWorkspaceStatus? status;
+  final List<AppWorkspaceStatus> alerts;
+  final List<AppWorkspacePatientContextField> fields;
+  final List<Widget> actions;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<AppWorkspacePatientContextField> visibleFields = fields
+        .where((AppWorkspacePatientContextField field) => field.hasValue)
+        .toList(growable: false);
+    Widget header = DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.lg),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool compact = constraints.maxWidth < AppBreakpoints.md;
+            final Widget identity = _PatientContextIdentity(
+              patientName: patientName,
+              patientNumber: patientNumber,
+              demographics: demographics,
+              status: status,
+              alerts: alerts,
+            );
+            final Widget? actionBar = actions.isEmpty
+                ? null
+                : _WorkspaceHeaderActions(actions: actions);
+            final List<Widget> children = <Widget>[
+              compact || actionBar == null
+                  ? identity
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(child: identity),
+                        SizedBox(width: theme.spacing.md),
+                        Flexible(child: actionBar),
+                      ],
+                    ),
+            ];
+
+            if (compact && actionBar != null) {
+              children
+                ..add(SizedBox(height: theme.spacing.md))
+                ..add(actionBar);
+            }
+
+            if (visibleFields.isNotEmpty) {
+              children
+                ..add(SizedBox(height: theme.spacing.md))
+                ..add(_PatientContextFieldGrid(fields: visibleFields));
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            );
+          },
+        ),
+      ),
+    );
+
+    if (semanticLabel != null) {
+      header = Semantics(container: true, label: semanticLabel, child: header);
+    }
+
+    return header;
+  }
+}
+
 class AppWorkspaceStatePanel extends StatelessWidget {
   const AppWorkspaceStatePanel({
     required this.child,
@@ -1147,6 +1255,254 @@ class AppWorkspaceActivityList extends StatelessWidget {
               if (index < items.length - 1) const Divider(height: 1),
             ],
         ],
+      ),
+    );
+  }
+}
+
+class _PatientContextIdentity extends StatelessWidget {
+  const _PatientContextIdentity({
+    required this.patientName,
+    required this.patientNumber,
+    required this.demographics,
+    required this.status,
+    required this.alerts,
+  });
+
+  final String patientName;
+  final String patientNumber;
+  final String? demographics;
+  final AppWorkspaceStatus? status;
+  final List<AppWorkspaceStatus> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            border: Border.all(color: colorScheme.primary),
+          ),
+          child: SizedBox.square(
+            dimension: 44,
+            child: Icon(
+              Icons.person_outline,
+              color: colorScheme.onPrimaryContainer,
+              size: theme.appTokens.listIconSize,
+            ),
+          ),
+        ),
+        SizedBox(width: theme.spacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                patientName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: theme.spacing.xs),
+              _PatientContextMetaLine(
+                patientNumber: patientNumber,
+                demographics: demographics,
+                status: status,
+              ),
+              if (alerts.isNotEmpty) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                _PatientContextAlerts(alerts: alerts),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PatientContextMetaLine extends StatelessWidget {
+  const _PatientContextMetaLine({
+    required this.patientNumber,
+    required this.demographics,
+    required this.status,
+  });
+
+  final String patientNumber;
+  final String? demographics;
+  final AppWorkspaceStatus? status;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<Widget> items = <Widget>[
+      if (patientNumber.trim().isNotEmpty)
+        Text(
+          patientNumber,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      if (demographics != null && demographics!.trim().isNotEmpty)
+        Text(
+          demographics!,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      if (status != null) AppWorkspaceStatusBadge(status: status!),
+    ];
+
+    return Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: items,
+    );
+  }
+}
+
+class _PatientContextAlerts extends StatelessWidget {
+  const _PatientContextAlerts({required this.alerts});
+
+  final List<AppWorkspaceStatus> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Wrap(
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      children: <Widget>[
+        for (final AppWorkspaceStatus alert in alerts)
+          AppWorkspaceStatusBadge(status: alert),
+      ],
+    );
+  }
+}
+
+class _PatientContextFieldGrid extends StatelessWidget {
+  const _PatientContextFieldGrid({required this.fields});
+
+  final List<AppWorkspacePatientContextField> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double gap = constraints.maxWidth < AppBreakpoints.md
+            ? theme.spacing.sm
+            : theme.spacing.md;
+        final int columns = _patientContextColumnCount(
+          constraints.maxWidth,
+          fields.length,
+        );
+        final double itemWidth =
+            (constraints.maxWidth - (gap * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: <Widget>[
+            for (final AppWorkspacePatientContextField field in fields)
+              SizedBox(
+                width: itemWidth,
+                child: _PatientContextFieldTile(field: field),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PatientContextFieldTile extends StatelessWidget {
+  const _PatientContextFieldTile({required this.field});
+
+  final AppWorkspacePatientContextField field;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool neutralTone = field.tone == AppWorkspaceStatusTone.neutral;
+    final _WorkspaceToneColors colors = _toneColors(theme, field.tone);
+    final Color borderColor = neutralTone
+        ? colorScheme.outlineVariant
+        : colors.border;
+    final Color labelColor = neutralTone
+        ? colorScheme.onSurfaceVariant
+        : colors.on;
+    final Color iconColor = neutralTone ? colorScheme.primary : colors.on;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: neutralTone
+            ? colorScheme.surfaceContainerLowest
+            : colors.container,
+        border: Border.all(color: borderColor),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            if (field.icon != null) ...<Widget>[
+              Padding(
+                padding: EdgeInsets.only(top: theme.spacing.xs),
+                child: Icon(
+                  field.icon,
+                  color: iconColor,
+                  size: theme.appTokens.listIconSize,
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    field.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: labelColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    field.value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: neutralTone ? colorScheme.onSurface : colors.on,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1592,6 +1948,21 @@ int _compactSummaryColumnCount(double width, int childCount, int maxColumns) {
   };
 
   return breakpointColumns.clamp(1, effectiveMaxColumns).toInt();
+}
+
+int _patientContextColumnCount(double width, int childCount) {
+  if (childCount <= 0) {
+    return 1;
+  }
+
+  final int breakpointColumns = switch (width) {
+    >= 980 => 4,
+    >= 720 => 3,
+    >= 460 => 2,
+    _ => 1,
+  };
+
+  return math.min(childCount, breakpointColumns).clamp(1, childCount).toInt();
 }
 
 IconData _defaultIcon(AppWorkspaceStatusTone tone) {
