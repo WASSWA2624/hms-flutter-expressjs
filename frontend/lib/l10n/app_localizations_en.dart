@@ -39,6 +39,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonCancelActionLabel => 'Cancel';
 
   @override
+  String get commonCloseActionLabel => 'Close';
+
+  @override
   String get appDateInvalidMessage => 'Enter a valid date.';
 
   @override
@@ -940,6 +943,112 @@ class AppLocalizationsEn extends AppLocalizations {
       'The patient context is ready for the selected workflow.';
 
   @override
+  String get patientsQuickActionSavedMessage => 'Patient workflow updated.';
+
+  @override
+  String get patientsAppointmentDialogTitle => 'Schedule appointment';
+
+  @override
+  String get patientsAppointmentDateLabel => 'Appointment date';
+
+  @override
+  String get patientsAppointmentTimeLabel => 'Start time';
+
+  @override
+  String get patientsAppointmentDurationLabel => 'Duration minutes';
+
+  @override
+  String get patientsAppointmentStatusLabel => 'Appointment status';
+
+  @override
+  String get patientsAppointmentReasonLabel => 'Reason';
+
+  @override
+  String get patientsProviderLabel => 'Provider';
+
+  @override
+  String get patientsProviderOptionalHelper => 'Optional provider assignment.';
+
+  @override
+  String get patientsOpdCheckInDialogTitle => 'OPD check-in';
+
+  @override
+  String get patientsTriageDialogTitle => 'Triage intake';
+
+  @override
+  String get patientsClinicalDialogTitle => 'Clinical visit';
+
+  @override
+  String get patientsBillingDialogTitle => 'Consultation billing';
+
+  @override
+  String get patientsAdmissionDialogTitle => 'Admit patient';
+
+  @override
+  String get patientsArrivalModeLabel => 'Arrival mode';
+
+  @override
+  String get patientsEmergencySeverityLabel => 'Emergency severity';
+
+  @override
+  String get patientsTriageLevelLabel => 'Triage level';
+
+  @override
+  String get patientsChiefComplaintLabel => 'Chief complaint';
+
+  @override
+  String get patientsClinicalNoteLabel => 'Clinical note';
+
+  @override
+  String get patientsDiagnosisLabel => 'Diagnosis';
+
+  @override
+  String get patientsConsultationFeeLabel => 'Consultation fee';
+
+  @override
+  String get patientsCurrencyLabel => 'Currency';
+
+  @override
+  String get patientsMarkPaymentReceivedLabel => 'Payment received';
+
+  @override
+  String get patientsPaymentMethodLabel => 'Payment method';
+
+  @override
+  String get patientsTransactionReferenceLabel => 'Transaction reference';
+
+  @override
+  String get patientsAdmissionReasonLabel => 'Admission reason';
+
+  @override
+  String get patientsReportDialogTitle => 'Patient report';
+
+  @override
+  String get patientsPrintReportAction => 'Print report';
+
+  @override
+  String get patientsAppointmentsSectionTitle => 'Appointments';
+
+  @override
+  String get patientsEncountersSectionTitle => 'Encounters';
+
+  @override
+  String get patientsAdmissionsSectionTitle => 'Admissions';
+
+  @override
+  String get patientsInvoicesSectionTitle => 'Invoices';
+
+  @override
+  String get patientsTimeInvalidMessage => 'Enter time as HH:MM.';
+
+  @override
+  String get patientsTimeHint => 'HH:MM';
+
+  @override
+  String get patientsDurationInvalidMessage =>
+      'Enter a duration between 1 and 720 minutes.';
+
+  @override
   String get patientsIdentifiersSectionTitle => 'Identifiers';
 
   @override
@@ -1009,6 +1118,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsContactValueLabel => 'Contact value';
 
   @override
+  String get patientsContactInvalidMessage => 'Enter a valid contact value.';
+
+  @override
   String get patientsPrimaryRecordLabel => 'Primary record';
 
   @override
@@ -1040,6 +1152,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsStorageKeyLabel => 'Storage key';
+
+  @override
+  String get patientsStorageKeyAdvancedLabel => 'Storage key (advanced)';
+
+  @override
+  String get patientsStorageKeyAdvancedHelper =>
+      'Upload a file instead. Only enter this when referencing an existing stored document.';
+
+  @override
+  String get patientsDocumentUploadTitle => 'Document upload';
+
+  @override
+  String get patientsDocumentUploadEmpty =>
+      'No file selected. PDF, JPG, and PNG files up to 10 MB are supported.';
+
+  @override
+  String get patientsChooseDocumentAction => 'Choose file';
 
   @override
   String get patientsFileNameLabel => 'File name';

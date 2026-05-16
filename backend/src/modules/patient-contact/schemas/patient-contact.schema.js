@@ -30,6 +30,32 @@ const CONTACT_TYPE_VALUES = [
   'FAX',
   'OTHER',
 ];
+const PHONE_LIKE_CONTACT_TYPES = new Set(['PHONE', 'WHATSAPP', 'FAX']);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\+?[0-9 ()-]{6,40}$/;
+
+const validateContactValue = (payload, ctx) => {
+  const contactType = String(payload?.contact_type || '').trim().toUpperCase();
+  const value = String(payload?.value || '').trim();
+  if (!contactType || !value) return;
+
+  if (PHONE_LIKE_CONTACT_TYPES.has(contactType) && !PHONE_PATTERN.test(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['value'],
+      message: 'errors.patient_contact.invalid_phone',
+    });
+    return;
+  }
+
+  if (contactType === 'EMAIL' && !EMAIL_PATTERN.test(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['value'],
+      message: 'errors.patient_contact.invalid_email',
+    });
+  }
+};
 
 // ==================== Body Schemas ====================
 
@@ -43,7 +69,7 @@ const createPatientContactSchema = z.object({
   contact_type: z.enum(CONTACT_TYPE_VALUES),
   value: z.string().trim().min(1).max(255),
   is_primary: z.boolean().optional()
-});
+}).superRefine(validateContactValue);
 
 /**
  * Update patient contact body validation
@@ -54,7 +80,7 @@ const updatePatientContactSchema = z.object({
   contact_type: z.enum(CONTACT_TYPE_VALUES).optional(),
   value: z.string().trim().min(1).max(255).optional(),
   is_primary: z.boolean().optional()
-});
+}).superRefine(validateContactValue);
 
 // ==================== URL Params ====================
 

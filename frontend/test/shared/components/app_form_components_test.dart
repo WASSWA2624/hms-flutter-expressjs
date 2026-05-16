@@ -381,9 +381,14 @@ void main() {
       ),
     );
 
-    final EditableText editableText = tester.widget(find.byType(EditableText));
+    final List<EditableText> fields = tester
+        .widgetList<EditableText>(find.byType(EditableText))
+        .toList(growable: false);
 
-    expect(editableText.controller.text, '2026-05-13');
+    expect(
+      fields.map((EditableText field) => field.controller.text),
+      containsAllInOrder(<String>['2026', '05', '13']),
+    );
   });
 
   testWidgets('AppDateField remains enabled without an onChanged callback', (
@@ -400,10 +405,15 @@ void main() {
       ),
     );
 
-    final TextField textField = tester.widget(find.byType(TextField));
+    final Iterable<TextField> textFields = tester.widgetList<TextField>(
+      find.byType(TextField),
+    );
     final IconButton pickerButton = tester.widget(find.byType(IconButton));
 
-    expect(textField.enabled, isTrue);
+    expect(
+      textFields.every((TextField field) => field.enabled ?? false),
+      isTrue,
+    );
     expect(pickerButton.onPressed, isNotNull);
   });
 

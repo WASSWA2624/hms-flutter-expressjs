@@ -154,6 +154,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get commonCancelActionLabel;
 
+  /// Label for actions that close the current dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get commonCloseActionLabel;
+
   /// Validation message for manually typed date fields.
   ///
   /// In en, this message translates to:
@@ -1864,6 +1870,216 @@ abstract class AppLocalizations {
   /// **'The patient context is ready for the selected workflow.'**
   String get patientsQuickActionQueuedMessage;
 
+  /// Snackbar shown after a patient quick action completes successfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient workflow updated.'**
+  String get patientsQuickActionSavedMessage;
+
+  /// Patient quick appointment dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule appointment'**
+  String get patientsAppointmentDialogTitle;
+
+  /// Patient appointment date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment date'**
+  String get patientsAppointmentDateLabel;
+
+  /// Patient appointment start time field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get patientsAppointmentTimeLabel;
+
+  /// Patient appointment duration field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration minutes'**
+  String get patientsAppointmentDurationLabel;
+
+  /// Patient appointment status field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment status'**
+  String get patientsAppointmentStatusLabel;
+
+  /// Patient appointment reason field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get patientsAppointmentReasonLabel;
+
+  /// Patient workflow provider select field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get patientsProviderLabel;
+
+  /// Helper text for optional provider selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional provider assignment.'**
+  String get patientsProviderOptionalHelper;
+
+  /// Patient OPD check-in dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD check-in'**
+  String get patientsOpdCheckInDialogTitle;
+
+  /// Patient triage dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage intake'**
+  String get patientsTriageDialogTitle;
+
+  /// Patient clinical visit dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical visit'**
+  String get patientsClinicalDialogTitle;
+
+  /// Patient billing dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation billing'**
+  String get patientsBillingDialogTitle;
+
+  /// Patient admission dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Admit patient'**
+  String get patientsAdmissionDialogTitle;
+
+  /// Patient OPD arrival mode field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival mode'**
+  String get patientsArrivalModeLabel;
+
+  /// Patient emergency severity field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency severity'**
+  String get patientsEmergencySeverityLabel;
+
+  /// Patient triage level field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage level'**
+  String get patientsTriageLevelLabel;
+
+  /// Patient chief complaint field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Chief complaint'**
+  String get patientsChiefComplaintLabel;
+
+  /// Patient clinical note field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical note'**
+  String get patientsClinicalNoteLabel;
+
+  /// Patient diagnosis field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnosis'**
+  String get patientsDiagnosisLabel;
+
+  /// Patient consultation fee field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation fee'**
+  String get patientsConsultationFeeLabel;
+
+  /// Patient currency field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get patientsCurrencyLabel;
+
+  /// Patient billing payment received checkbox label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment received'**
+  String get patientsMarkPaymentReceivedLabel;
+
+  /// Patient payment method field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get patientsPaymentMethodLabel;
+
+  /// Patient payment transaction reference field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction reference'**
+  String get patientsTransactionReferenceLabel;
+
+  /// Patient admission reason field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission reason'**
+  String get patientsAdmissionReasonLabel;
+
+  /// Patient report dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient report'**
+  String get patientsReportDialogTitle;
+
+  /// Patient report print action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Print report'**
+  String get patientsPrintReportAction;
+
+  /// Patient report appointments section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointments'**
+  String get patientsAppointmentsSectionTitle;
+
+  /// Patient report encounters section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounters'**
+  String get patientsEncountersSectionTitle;
+
+  /// Patient report admissions section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Admissions'**
+  String get patientsAdmissionsSectionTitle;
+
+  /// Patient report invoices section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get patientsInvoicesSectionTitle;
+
+  /// Validation message for invalid time fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter time as HH:MM.'**
+  String get patientsTimeInvalidMessage;
+
+  /// Hint for time fields that expect 24-hour HH:MM input.
+  ///
+  /// In en, this message translates to:
+  /// **'HH:MM'**
+  String get patientsTimeHint;
+
+  /// Validation message for invalid appointment duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a duration between 1 and 720 minutes.'**
+  String get patientsDurationInvalidMessage;
+
   /// Patient identifiers section title.
   ///
   /// In en, this message translates to:
@@ -2002,6 +2218,12 @@ abstract class AppLocalizations {
   /// **'Contact value'**
   String get patientsContactValueLabel;
 
+  /// Validation message for invalid patient contact values.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid contact value.'**
+  String get patientsContactInvalidMessage;
+
   /// Patient primary related record checkbox label.
   ///
   /// In en, this message translates to:
@@ -2067,6 +2289,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Storage key'**
   String get patientsStorageKeyLabel;
+
+  /// Patient document advanced storage key field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage key (advanced)'**
+  String get patientsStorageKeyAdvancedLabel;
+
+  /// Helper text for patient document storage key.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a file instead. Only enter this when referencing an existing stored document.'**
+  String get patientsStorageKeyAdvancedHelper;
+
+  /// Patient document upload panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Document upload'**
+  String get patientsDocumentUploadTitle;
+
+  /// Patient document upload empty selection text.
+  ///
+  /// In en, this message translates to:
+  /// **'No file selected. PDF, JPG, and PNG files up to 10 MB are supported.'**
+  String get patientsDocumentUploadEmpty;
+
+  /// Patient document file picker action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get patientsChooseDocumentAction;
 
   /// Patient document file name field label.
   ///

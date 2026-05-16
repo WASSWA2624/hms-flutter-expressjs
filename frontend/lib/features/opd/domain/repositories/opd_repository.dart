@@ -7,6 +7,10 @@ abstract interface class OpdRepository {
     OpdAppointmentQuery query,
   );
 
+  Future<Result<OpdAppointment>> createAppointment(
+    Map<String, Object?> payload,
+  );
+
   Future<Result<OpdAppointment>> updateAppointment(
     String appointmentId,
     Map<String, Object?> payload,
@@ -44,6 +48,8 @@ abstract interface class OpdRepository {
   Future<Result<OpdFlowDetail>> getTriageCase(String flowId);
 
   Future<Result<OpdFlowDetail>> startOpdFlow(Map<String, Object?> payload);
+
+  Future<Result<OpdFlowDetail>> bootstrapOpdFlow(Map<String, Object?> payload);
 
   Future<Result<OpdFlowDetail>> payConsultation(
     String flowId,

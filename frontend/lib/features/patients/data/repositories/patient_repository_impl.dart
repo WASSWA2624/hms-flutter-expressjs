@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -322,6 +323,43 @@ final class PatientRepositoryImpl implements PatientRepository {
       ApiEndpoints.collection(_resourceEndpoint(resource)),
       data: _withoutEmpty(payload),
       decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<List<PatientDocument>>> uploadPatientDocuments({
+    required String patientId,
+    required String documentType,
+    required List<PatientDocumentUploadFile> files,
+  }) {
+    final FormData formData = FormData();
+    formData.fields.add(
+      MapEntry<String, String>('document_type', documentType),
+    );
+    for (final PatientDocumentUploadFile file in files) {
+      formData.files.add(
+        MapEntry<String, MultipartFile>(
+          'files',
+          MultipartFile.fromBytes(
+            file.bytes,
+            filename: file.name,
+            contentType: file.contentType == null
+                ? null
+                : DioMediaType.parse(file.contentType!),
+          ),
+        ),
+      );
+    }
+
+    return _apiClient.post<List<PatientDocument>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.patients.path,
+        patientId,
+        'documents',
+        'upload',
+      ]),
+      data: formData,
+      decoder: decodeDocumentUploadList,
     );
   }
 

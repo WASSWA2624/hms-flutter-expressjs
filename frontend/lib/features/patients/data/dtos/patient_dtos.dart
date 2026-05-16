@@ -489,6 +489,15 @@ List<PatientDocument> decodeDocumentList(Object? responseData) {
       .toList(growable: false);
 }
 
+List<PatientDocument> decodeDocumentUploadList(Object? responseData) {
+  final PatientJsonMap data = decodeDataMap(responseData);
+  return _list(data['items'])
+      .map(PatientDocumentDto.new)
+      .map((PatientDocumentDto dto) => dto.toEntity())
+      .where((PatientDocument value) => value.id.isNotEmpty)
+      .toList(growable: false);
+}
+
 List<PatientConsent> decodeConsentList(Object? responseData) {
   return decodeDataList(responseData)
       .map(PatientConsentDto.new)

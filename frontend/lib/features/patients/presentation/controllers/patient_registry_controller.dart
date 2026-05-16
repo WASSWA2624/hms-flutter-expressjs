@@ -350,6 +350,21 @@ final class PatientRegistryController
     );
   }
 
+  Future<AppFailure?> uploadPatientDocuments({
+    required String patientId,
+    required String documentType,
+    required List<PatientDocumentUploadFile> files,
+  }) async {
+    return _mutateSelectedDetail<List<PatientDocument>>(
+      () => _repository.uploadPatientDocuments(
+        patientId: patientId,
+        documentType: documentType,
+        files: files,
+      ),
+      patientId: patientId,
+    );
+  }
+
   Future<AppFailure?> updateRelatedRecord(
     PatientRelatedResource resource,
     String recordId,
@@ -372,6 +387,13 @@ final class PatientRegistryController
   Future<AppFailure?> _mutateRelated(
     Future<Result<void>> Function() action,
   ) async {
+    return _mutateSelectedDetail<void>(action);
+  }
+
+  Future<AppFailure?> _mutateSelectedDetail<T>(
+    Future<Result<T>> Function() action, {
+    String? patientId,
+  }) async {
     final PatientRegistryState? current = _currentState;
     final PatientDetail? selectedDetail = current?.selectedDetail;
     if (current == null || selectedDetail == null) {
@@ -379,11 +401,11 @@ final class PatientRegistryController
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<void> result = await action();
+    final Result<T> result = await action();
     return result.when(
       success: (_) async {
         final AppFailure? detailFailure = await selectPatient(
-          selectedDetail.patient.id,
+          patientId ?? selectedDetail.patient.id,
         );
         await _refreshOverviewOnly();
         _emit(_currentState!.copyWith(isSaving: false));

@@ -360,6 +360,19 @@ final class PatientDocument {
 }
 
 @immutable
+final class PatientDocumentUploadFile {
+  const PatientDocumentUploadFile({
+    required this.name,
+    required this.bytes,
+    this.contentType,
+  });
+
+  final String name;
+  final Uint8List bytes;
+  final String? contentType;
+}
+
+@immutable
 final class PatientConsent {
   const PatientConsent({
     required this.id,

@@ -46,6 +46,12 @@ abstract interface class PatientRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<List<PatientDocument>>> uploadPatientDocuments({
+    required String patientId,
+    required String documentType,
+    required List<PatientDocumentUploadFile> files,
+  });
+
   Future<Result<void>> updateRelatedRecord(
     PatientRelatedResource resource,
     String recordId,

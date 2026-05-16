@@ -39,6 +39,18 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
+  Future<Result<OpdAppointment>> createAppointment(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<OpdAppointment>(
+      ApiEndpoints.collection(HmsApiResource.appointments),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          OpdAppointmentDto(decodeDataMap(data)).toEntity(),
+    );
+  }
+
+  @override
   Future<Result<OpdAppointment>> updateAppointment(
     String appointmentId,
     Map<String, Object?> payload,
@@ -192,6 +204,15 @@ final class OpdRepositoryImpl implements OpdRepository {
   Future<Result<OpdFlowDetail>> startOpdFlow(Map<String, Object?> payload) {
     return _apiClient.post<OpdFlowDetail>(
       ApiEndpoints.apiV1(<String>[HmsApiResource.opdFlows.path, 'start']),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowDetail>> bootstrapOpdFlow(Map<String, Object?> payload) {
+    return _apiClient.post<OpdFlowDetail>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.opdFlows.path, 'bootstrap']),
       data: _withoutEmpty(payload),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
     );

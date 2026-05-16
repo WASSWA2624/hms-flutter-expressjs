@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,8 +12,11 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
+import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -1520,6 +1524,20 @@ class _PatientDetailDialog extends ConsumerWidget {
               .read(patientRegistryControllerProvider.notifier)
               .updateRelatedRecord(resource, recordId, payload);
         },
+        onUploadDocuments:
+            ({
+              required String patientId,
+              required String documentType,
+              required List<PatientDocumentUploadFile> files,
+            }) {
+              return ref
+                  .read(patientRegistryControllerProvider.notifier)
+                  .uploadPatientDocuments(
+                    patientId: patientId,
+                    documentType: documentType,
+                    files: files,
+                  );
+            },
       ),
     );
 
@@ -1608,13 +1626,13 @@ class _PatientDemographics extends StatelessWidget {
   }
 }
 
-class _QuickActions extends StatelessWidget {
+class _QuickActions extends ConsumerWidget {
   const _QuickActions({required this.patient});
 
   final Patient patient;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
 
@@ -1630,6 +1648,12 @@ class _QuickActions extends StatelessWidget {
             _QuickActionButton(
               label: l10n.patientsQuickAppointmentAction,
               icon: Icons.event_available_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.appointment,
+              ),
               requirement: const AccessRequirement(
                 allPermissions: <AppPermission>[AppPermissions.patientWrite],
               ),
@@ -1637,6 +1661,12 @@ class _QuickActions extends StatelessWidget {
             _QuickActionButton(
               label: l10n.patientsQuickOpdCheckInAction,
               icon: Icons.login_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.opdCheckIn,
+              ),
               requirement: const AccessRequirement(
                 anyPermissions: <AppPermission>[
                   AppPermissions.patientWrite,
@@ -1647,6 +1677,12 @@ class _QuickActions extends StatelessWidget {
             _QuickActionButton(
               label: l10n.patientsQuickTriageAction,
               icon: Icons.monitor_heart_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.triage,
+              ),
               requirement: const AccessRequirement(
                 allPermissions: <AppPermission>[AppPermissions.emergencyWrite],
               ),
@@ -1654,6 +1690,12 @@ class _QuickActions extends StatelessWidget {
             _QuickActionButton(
               label: l10n.patientsQuickClinicalAction,
               icon: Icons.medical_services_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.clinicalVisit,
+              ),
               requirement: const AccessRequirement(
                 allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
               ),
@@ -1661,6 +1703,12 @@ class _QuickActions extends StatelessWidget {
             _QuickActionButton(
               label: l10n.patientsQuickBillingAction,
               icon: Icons.receipt_long_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.billing,
+              ),
               requirement: const AccessRequirement(
                 allPermissions: <AppPermission>[AppPermissions.billingWrite],
               ),
@@ -1668,6 +1716,12 @@ class _QuickActions extends StatelessWidget {
             _QuickActionButton(
               label: l10n.patientsQuickAdmissionAction,
               icon: Icons.local_hospital_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.admission,
+              ),
               requirement: const AccessRequirement(
                 allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
               ),
@@ -1675,6 +1729,12 @@ class _QuickActions extends StatelessWidget {
             _QuickActionButton(
               label: l10n.patientsQuickReportAction,
               icon: Icons.summarize_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.report,
+              ),
               requirement: const AccessRequirement(
                 allPermissions: <AppPermission>[AppPermissions.reportsRead],
               ),
@@ -1691,11 +1751,13 @@ class _QuickActionButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.requirement,
+    required this.onPressed,
   });
 
   final String label;
   final IconData icon;
   final AccessRequirement requirement;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -1705,18 +1767,939 @@ class _QuickActionButton extends StatelessWidget {
         leadingIcon: icon,
         label: label,
         enabled: isAllowed,
-        onPressed: isAllowed
-            ? () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      context.l10n.patientsQuickActionQueuedMessage,
-                    ),
-                  ),
-                );
-              }
-            : null,
+        onPressed: isAllowed ? onPressed : null,
       ),
+    );
+  }
+}
+
+enum _PatientQuickAction {
+  appointment,
+  opdCheckIn,
+  triage,
+  clinicalVisit,
+  billing,
+  admission,
+  report,
+}
+
+Future<void> _openQuickAction(
+  BuildContext context,
+  WidgetRef ref,
+  Patient patient,
+  _PatientQuickAction action,
+) async {
+  final PatientRegistryState? state = _readCurrentState(ref);
+  final PatientReferenceData referenceData =
+      state?.referenceData ?? const PatientReferenceData();
+  final PatientDetail? detail = state?.selectedDetail?.patient.id == patient.id
+      ? state?.selectedDetail
+      : null;
+
+  final bool? changed = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) {
+      return switch (action) {
+        _PatientQuickAction.appointment => _PatientAppointmentQuickDialog(
+          patient: patient,
+          referenceData: referenceData,
+        ),
+        _PatientQuickAction.report => _PatientReportDialog(
+          detail: detail,
+          patient: patient,
+        ),
+        _ => _PatientFlowQuickDialog(
+          patient: patient,
+          referenceData: referenceData,
+          action: action,
+        ),
+      };
+    },
+  );
+
+  if (changed == true && context.mounted) {
+    await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .selectPatient(patient.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.patientsQuickActionSavedMessage)),
+      );
+    }
+  }
+}
+
+class _PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
+  const _PatientAppointmentQuickDialog({
+    required this.patient,
+    required this.referenceData,
+  });
+
+  final Patient patient;
+  final PatientReferenceData referenceData;
+
+  @override
+  ConsumerState<_PatientAppointmentQuickDialog> createState() =>
+      _PatientAppointmentQuickDialogState();
+}
+
+class _PatientAppointmentQuickDialogState
+    extends ConsumerState<_PatientAppointmentQuickDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _timeController = TextEditingController(
+    text: '09:00',
+  );
+  final TextEditingController _durationController = TextEditingController(
+    text: '30',
+  );
+  final TextEditingController _reasonController = TextEditingController();
+  DateTime? _date = DateTime.now();
+  String? _facilityId;
+  String? _providerId;
+  String _status = 'SCHEDULED';
+  List<OpdProviderOption> _providers = const <OpdProviderOption>[];
+  bool _isLoadingProviders = false;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _facilityId = widget.patient.facilityId;
+    unawaited(_loadProviders());
+  }
+
+  @override
+  void dispose() {
+    _timeController.dispose();
+    _durationController.dispose();
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.patientsAppointmentDialogTitle),
+      icon: const Icon(Icons.event_available_outlined),
+      scrollable: true,
+      closeEnabled: !_isSaving,
+      maxWidth: 720,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (widget.referenceData.facilities.length > 1)
+              _facilitySelect(context),
+            _ResponsiveFieldPair(
+              left: AppDateField(
+                value: _date,
+                firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                pickerButtonLabel: l10n.patientsDatePickerAction,
+                invalidDateMessage: l10n.appDateInvalidMessage,
+                labelText: l10n.patientsAppointmentDateLabel,
+                isRequired: true,
+                enabled: !_isSaving,
+                validator: AppValidators.requiredValue(l10n.validationRequired),
+                onChanged: (DateTime? value) => _date = value,
+              ),
+              right: AppTextField(
+                controller: _timeController,
+                labelText: l10n.patientsAppointmentTimeLabel,
+                hintText: l10n.patientsTimeHint,
+                enabled: !_isSaving,
+                isRequired: true,
+                keyboardType: TextInputType.datetime,
+                validator: _timeValidator(context),
+              ),
+            ),
+            _ResponsiveFieldPair(
+              left: AppTextField(
+                controller: _durationController,
+                labelText: l10n.patientsAppointmentDurationLabel,
+                enabled: !_isSaving,
+                isRequired: true,
+                keyboardType: TextInputType.number,
+                validator: _durationValidator(context),
+              ),
+              right: AppSelectField<String>.searchable(
+                value: _status,
+                labelText: l10n.patientsAppointmentStatusLabel,
+                enabled: !_isSaving,
+                onChanged: (String? value) =>
+                    setState(() => _status = value ?? 'SCHEDULED'),
+                options: _simpleStatusOptions(const <String>[
+                  'SCHEDULED',
+                  'CONFIRMED',
+                ]),
+              ),
+            ),
+            _providerSelect(context),
+            AppTextField(
+              controller: _reasonController,
+              labelText: l10n.patientsAppointmentReasonLabel,
+              enabled: !_isSaving,
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).maybePop(false),
+        ),
+        AppButton.primary(
+          label: l10n.patientsQuickAppointmentAction,
+          leadingIcon: Icons.event_available_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Widget _facilitySelect(BuildContext context) {
+    return AppSelectField<String>.searchable(
+      value: _facilityId,
+      labelText: context.l10n.patientsFacilityLabel,
+      enabled: !_isSaving,
+      onChanged: (String? value) => setState(() => _facilityId = value),
+      options: <AppSelectOption<String>>[
+        for (final PatientReferenceOption option
+            in widget.referenceData.facilities)
+          AppSelectOption<String>(
+            value: option.id,
+            label: option.label,
+            leadingIcon: const Icon(Icons.business_outlined),
+          ),
+      ],
+    );
+  }
+
+  Widget _providerSelect(BuildContext context) {
+    return AppSelectField<String>.searchable(
+      value: _providerId,
+      labelText: context.l10n.patientsProviderLabel,
+      helperText: context.l10n.patientsProviderOptionalHelper,
+      enabled: !_isSaving,
+      isLoading: _isLoadingProviders,
+      onChanged: (String? value) => setState(() => _providerId = value),
+      options: _providerSelectOptions(_providers),
+    );
+  }
+
+  Future<void> _loadProviders() async {
+    setState(() => _isLoadingProviders = true);
+    final Result<List<OpdProviderOption>> result = await ref
+        .read(opdRepositoryProvider)
+        .listProviders();
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (List<OpdProviderOption> providers) {
+        setState(() {
+          _providers = providers;
+          _isLoadingProviders = false;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isLoadingProviders = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    final DateTime scheduledStart = _combineDateAndTime(
+      _date!,
+      _timeController.text,
+    )!;
+    final int duration = int.parse(_durationController.text.trim());
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final Result<OpdAppointment> result = await ref
+        .read(opdRepositoryProvider)
+        .createAppointment(
+          _withoutEmptyPayload(<String, Object?>{
+            'tenant_id': widget.patient.tenantId,
+            'facility_id': _facilityId,
+            'patient_id': widget.patient.id,
+            'provider_user_id': _providerId,
+            'status': _status,
+            'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+            'scheduled_end': scheduledStart
+                .add(Duration(minutes: duration))
+                .toUtc()
+                .toIso8601String(),
+            'reason': _reasonController.text.trim(),
+          }),
+        );
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (_) => Navigator.of(context).pop(true),
+      failure: (AppFailure failure) {
+        setState(() {
+          _isSaving = false;
+          _failure = failure;
+        });
+      },
+    );
+  }
+}
+
+class _PatientFlowQuickDialog extends ConsumerStatefulWidget {
+  const _PatientFlowQuickDialog({
+    required this.patient,
+    required this.referenceData,
+    required this.action,
+  });
+
+  final Patient patient;
+  final PatientReferenceData referenceData;
+  final _PatientQuickAction action;
+
+  @override
+  ConsumerState<_PatientFlowQuickDialog> createState() =>
+      _PatientFlowQuickDialogState();
+}
+
+class _PatientFlowQuickDialogState
+    extends ConsumerState<_PatientFlowQuickDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _chiefComplaintController =
+      TextEditingController();
+  final TextEditingController _clinicalNoteController = TextEditingController();
+  final TextEditingController _diagnosisController = TextEditingController();
+  final TextEditingController _feeController = TextEditingController();
+  final TextEditingController _transactionRefController =
+      TextEditingController();
+  String? _facilityId;
+  String? _providerId;
+  String _arrivalMode = 'WALK_IN';
+  String _emergencySeverity = 'HIGH';
+  String? _triageLevel;
+  String _currency = appDefaultCurrencyCode;
+  String _paymentMethod = 'CASH';
+  bool _markPaid = false;
+  List<OpdProviderOption> _providers = const <OpdProviderOption>[];
+  bool _isLoadingProviders = false;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _facilityId = widget.patient.facilityId;
+    if (widget.action == _PatientQuickAction.triage) {
+      _arrivalMode = 'EMERGENCY';
+    }
+    unawaited(_loadProviders());
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    _chiefComplaintController.dispose();
+    _clinicalNoteController.dispose();
+    _diagnosisController.dispose();
+    _feeController.dispose();
+    _transactionRefController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AppDialog(
+      title: Text(_dialogTitle(l10n)),
+      icon: Icon(_dialogIcon),
+      scrollable: true,
+      closeEnabled: !_isSaving,
+      maxWidth: 780,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (widget.referenceData.facilities.length > 1)
+              _facilitySelect(context),
+            if (_usesProvider) _providerSelect(context),
+            ..._modeFields(context),
+            AppTextField(
+              controller: _notesController,
+              labelText: l10n.patientsNotesLabel,
+              enabled: !_isSaving,
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).maybePop(false),
+        ),
+        AppButton.primary(
+          label: _primaryActionLabel(l10n),
+          leadingIcon: _dialogIcon,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  bool get _usesProvider => widget.action != _PatientQuickAction.billing;
+
+  IconData get _dialogIcon {
+    return switch (widget.action) {
+      _PatientQuickAction.opdCheckIn => Icons.login_outlined,
+      _PatientQuickAction.triage => Icons.monitor_heart_outlined,
+      _PatientQuickAction.clinicalVisit => Icons.medical_services_outlined,
+      _PatientQuickAction.billing => Icons.receipt_long_outlined,
+      _PatientQuickAction.admission => Icons.local_hospital_outlined,
+      _ => Icons.play_arrow_outlined,
+    };
+  }
+
+  String _dialogTitle(AppLocalizations l10n) {
+    return switch (widget.action) {
+      _PatientQuickAction.opdCheckIn => l10n.patientsOpdCheckInDialogTitle,
+      _PatientQuickAction.triage => l10n.patientsTriageDialogTitle,
+      _PatientQuickAction.clinicalVisit => l10n.patientsClinicalDialogTitle,
+      _PatientQuickAction.billing => l10n.patientsBillingDialogTitle,
+      _PatientQuickAction.admission => l10n.patientsAdmissionDialogTitle,
+      _ => l10n.patientsQuickActionsTitle,
+    };
+  }
+
+  String _primaryActionLabel(AppLocalizations l10n) {
+    return switch (widget.action) {
+      _PatientQuickAction.opdCheckIn => l10n.patientsQuickOpdCheckInAction,
+      _PatientQuickAction.triage => l10n.patientsQuickTriageAction,
+      _PatientQuickAction.clinicalVisit => l10n.patientsQuickClinicalAction,
+      _PatientQuickAction.billing => l10n.patientsQuickBillingAction,
+      _PatientQuickAction.admission => l10n.patientsQuickAdmissionAction,
+      _ => l10n.patientsSaveAction,
+    };
+  }
+
+  List<Widget> _modeFields(BuildContext context) {
+    final l10n = context.l10n;
+    return switch (widget.action) {
+      _PatientQuickAction.opdCheckIn => <Widget>[
+        AppSelectField<String>.searchable(
+          value: _arrivalMode,
+          labelText: l10n.patientsArrivalModeLabel,
+          enabled: !_isSaving,
+          onChanged: (String? value) =>
+              setState(() => _arrivalMode = value ?? 'WALK_IN'),
+          options: _simpleStatusOptions(const <String>['WALK_IN', 'EMERGENCY']),
+        ),
+        if (_arrivalMode == 'EMERGENCY') _emergencyFields(context),
+        _consultationFeeField(context, required: false),
+      ],
+      _PatientQuickAction.triage => <Widget>[
+        _emergencyFields(context),
+        AppTextField(
+          controller: _chiefComplaintController,
+          labelText: l10n.patientsChiefComplaintLabel,
+          enabled: !_isSaving,
+          maxLines: 3,
+        ),
+      ],
+      _PatientQuickAction.clinicalVisit => <Widget>[
+        AppTextField(
+          controller: _clinicalNoteController,
+          labelText: l10n.patientsClinicalNoteLabel,
+          enabled: !_isSaving,
+          isRequired: true,
+          maxLines: 4,
+          validator: AppValidators.requiredText(l10n.validationRequired),
+        ),
+        AppTextField(
+          controller: _diagnosisController,
+          labelText: l10n.patientsDiagnosisLabel,
+          enabled: !_isSaving,
+          maxLines: 2,
+        ),
+      ],
+      _PatientQuickAction.billing => <Widget>[
+        _consultationFeeField(context, required: true),
+        AppCheckboxField(
+          title: l10n.patientsMarkPaymentReceivedLabel,
+          value: _markPaid,
+          enabled: !_isSaving,
+          onChanged: (bool value) => setState(() => _markPaid = value),
+        ),
+        if (_markPaid)
+          _ResponsiveFieldPair(
+            left: AppSelectField<String>.searchable(
+              value: _paymentMethod,
+              labelText: l10n.patientsPaymentMethodLabel,
+              enabled: !_isSaving,
+              onChanged: (String? value) =>
+                  setState(() => _paymentMethod = value ?? 'CASH'),
+              options: _simpleStatusOptions(_paymentMethods),
+            ),
+            right: AppTextField(
+              controller: _transactionRefController,
+              labelText: l10n.patientsTransactionReferenceLabel,
+              enabled: !_isSaving,
+            ),
+          ),
+      ],
+      _PatientQuickAction.admission => <Widget>[
+        AppTextField(
+          controller: _clinicalNoteController,
+          labelText: l10n.patientsAdmissionReasonLabel,
+          enabled: !_isSaving,
+          isRequired: true,
+          maxLines: 4,
+          validator: AppValidators.requiredText(l10n.validationRequired),
+        ),
+      ],
+      _ => const <Widget>[],
+    };
+  }
+
+  Widget _emergencyFields(BuildContext context) {
+    final l10n = context.l10n;
+    return _ResponsiveFieldPair(
+      left: AppSelectField<String>.searchable(
+        value: _emergencySeverity,
+        labelText: l10n.patientsEmergencySeverityLabel,
+        enabled: !_isSaving,
+        onChanged: (String? value) =>
+            setState(() => _emergencySeverity = value ?? 'HIGH'),
+        options: _simpleStatusOptions(_emergencySeverityOptions),
+      ),
+      right: AppSelectField<String>.searchable(
+        value: _triageLevel,
+        labelText: l10n.patientsTriageLevelLabel,
+        enabled: !_isSaving,
+        onChanged: (String? value) => setState(() => _triageLevel = value),
+        options: _simpleStatusOptions(_triageLevelOptions),
+      ),
+    );
+  }
+
+  Widget _consultationFeeField(BuildContext context, {required bool required}) {
+    final l10n = context.l10n;
+    return AppCurrencyAmountField(
+      amountController: _feeController,
+      currency: _currency,
+      amountLabelText: l10n.patientsConsultationFeeLabel,
+      currencyLabelText: l10n.patientsCurrencyLabel,
+      enabled: !_isSaving,
+      isRequired: required,
+      validator: required
+          ? AppValidators.requiredText(l10n.validationRequired)
+          : null,
+      onCurrencyChanged: (String? value) {
+        setState(() {
+          _currency = value ?? appDefaultCurrencyCode;
+        });
+      },
+    );
+  }
+
+  Widget _facilitySelect(BuildContext context) {
+    return AppSelectField<String>.searchable(
+      value: _facilityId,
+      labelText: context.l10n.patientsFacilityLabel,
+      enabled: !_isSaving,
+      onChanged: (String? value) => setState(() => _facilityId = value),
+      options: <AppSelectOption<String>>[
+        for (final PatientReferenceOption option
+            in widget.referenceData.facilities)
+          AppSelectOption<String>(
+            value: option.id,
+            label: option.label,
+            leadingIcon: const Icon(Icons.business_outlined),
+          ),
+      ],
+    );
+  }
+
+  Widget _providerSelect(BuildContext context) {
+    return AppSelectField<String>.searchable(
+      value: _providerId,
+      labelText: context.l10n.patientsProviderLabel,
+      helperText: context.l10n.patientsProviderOptionalHelper,
+      enabled: !_isSaving,
+      isLoading: _isLoadingProviders,
+      onChanged: (String? value) => setState(() => _providerId = value),
+      options: _providerSelectOptions(_providers),
+    );
+  }
+
+  Future<void> _loadProviders() async {
+    setState(() => _isLoadingProviders = true);
+    final Result<List<OpdProviderOption>> result = await ref
+        .read(opdRepositoryProvider)
+        .listProviders();
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (List<OpdProviderOption> providers) {
+        setState(() {
+          _providers = providers;
+          _isLoadingProviders = false;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isLoadingProviders = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+
+    final AppFailure? failure = await (switch (widget.action) {
+      _PatientQuickAction.opdCheckIn => _submitOpdCheckIn(),
+      _PatientQuickAction.triage => _submitTriage(),
+      _PatientQuickAction.clinicalVisit => _submitClinicalVisit(),
+      _PatientQuickAction.billing => _submitBilling(),
+      _PatientQuickAction.admission => _submitAdmission(),
+      _ => Future<AppFailure?>.value(),
+    });
+
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _isSaving = false;
+      _failure = failure;
+    });
+  }
+
+  Future<AppFailure?> _submitOpdCheckIn() {
+    final String amount = normalizeCurrencyAmount(_feeController.text);
+    return _startFlow(<String, Object?>{
+      'arrival_mode': _arrivalMode,
+      if (_arrivalMode == 'EMERGENCY') 'emergency': _emergencyPayload(),
+      if (amount.isNotEmpty) 'consultation_fee': amount,
+      if (amount.isNotEmpty) 'currency': _currency,
+      if (amount.isNotEmpty) 'create_consultation_invoice': true,
+      if (amount.isNotEmpty) 'require_consultation_payment': true,
+    });
+  }
+
+  Future<AppFailure?> _submitTriage() {
+    return _startFlow(<String, Object?>{
+      'arrival_mode': 'EMERGENCY',
+      'emergency': _emergencyPayload(),
+      'initial_stage': 'WAITING_VITALS',
+      'notes': _chiefComplaintController.text.trim(),
+    });
+  }
+
+  Future<AppFailure?> _submitClinicalVisit() async {
+    final Result<OpdFlowDetail> flowResult = await ref
+        .read(opdRepositoryProvider)
+        .startOpdFlow(
+          _baseFlowPayload(<String, Object?>{
+            'arrival_mode': 'WALK_IN',
+            'initial_stage': 'WAITING_DOCTOR_REVIEW',
+            'require_consultation_payment': false,
+            'create_consultation_invoice': false,
+          }),
+        );
+    final OpdFlowDetail? flow = _successOrNull(flowResult);
+    if (flow == null) {
+      return _failureOrNull(flowResult);
+    }
+
+    final Result<OpdFlowDetail> reviewResult = await ref
+        .read(opdRepositoryProvider)
+        .doctorReview(
+          flow.summary.apiId,
+          _withoutEmptyPayload(<String, Object?>{
+            'note': _clinicalNoteController.text.trim(),
+            if (_diagnosisController.text.trim().isNotEmpty)
+              'diagnoses': <Map<String, Object?>>[
+                <String, Object?>{
+                  'diagnosis_type': 'PRIMARY',
+                  'description': _diagnosisController.text.trim(),
+                },
+              ],
+            'notes': _notesController.text.trim(),
+          }),
+        );
+    return _failureOrNull(reviewResult);
+  }
+
+  Future<AppFailure?> _submitBilling() {
+    final String amount = normalizeCurrencyAmount(_feeController.text);
+    return _startFlow(<String, Object?>{
+      'arrival_mode': 'WALK_IN',
+      'consultation_fee': amount,
+      'currency': _currency,
+      'create_consultation_invoice': true,
+      'require_consultation_payment': true,
+      if (_markPaid)
+        'pay_now': _withoutEmptyPayload(<String, Object?>{
+          'method': _paymentMethod,
+          'amount': amount,
+          'status': 'COMPLETED',
+          'transaction_ref': _transactionRefController.text.trim(),
+          'paid_at': DateTime.now().toUtc().toIso8601String(),
+        }),
+    });
+  }
+
+  Future<AppFailure?> _submitAdmission() async {
+    final Result<OpdFlowDetail> flowResult = await ref
+        .read(opdRepositoryProvider)
+        .startOpdFlow(
+          _baseFlowPayload(<String, Object?>{
+            'arrival_mode': 'WALK_IN',
+            'initial_stage': 'WAITING_DOCTOR_REVIEW',
+            'require_consultation_payment': false,
+            'create_consultation_invoice': false,
+          }),
+        );
+    final OpdFlowDetail? flow = _successOrNull(flowResult);
+    if (flow == null) {
+      return _failureOrNull(flowResult);
+    }
+
+    final Result<OpdFlowDetail> reviewResult = await ref
+        .read(opdRepositoryProvider)
+        .doctorReview(flow.summary.apiId, <String, Object?>{
+          'note': _clinicalNoteController.text.trim(),
+        });
+    final OpdFlowDetail? reviewed = _successOrNull(reviewResult);
+    if (reviewed == null) {
+      return _failureOrNull(reviewResult);
+    }
+
+    final Result<OpdFlowDetail> dispositionResult = await ref
+        .read(opdRepositoryProvider)
+        .disposition(
+          reviewed.summary.apiId,
+          _withoutEmptyPayload(<String, Object?>{
+            'decision': 'ADMIT',
+            'admission_facility_id': _facilityId,
+            'notes': _notesController.text.trim(),
+          }),
+        );
+    return _failureOrNull(dispositionResult);
+  }
+
+  Future<AppFailure?> _startFlow(Map<String, Object?> payload) async {
+    final Result<OpdFlowDetail> result = await ref
+        .read(opdRepositoryProvider)
+        .startOpdFlow(_baseFlowPayload(payload));
+    return _failureOrNull(result);
+  }
+
+  Map<String, Object?> _baseFlowPayload(Map<String, Object?> extra) {
+    return _withoutEmptyPayload(<String, Object?>{
+      'tenant_id': widget.patient.tenantId,
+      'facility_id': _facilityId,
+      'patient_id': widget.patient.id,
+      'provider_user_id': _providerId,
+      'queued_at': DateTime.now().toUtc().toIso8601String(),
+      'notes': _notesController.text.trim(),
+      ...extra,
+    });
+  }
+
+  Map<String, Object?> _emergencyPayload() {
+    return _withoutEmptyPayload(<String, Object?>{
+      'severity': _emergencySeverity,
+      'triage_level': _triageLevel,
+      'notes': _notesController.text.trim(),
+    });
+  }
+}
+
+class _PatientReportDialog extends StatelessWidget {
+  const _PatientReportDialog({required this.patient, this.detail});
+
+  final Patient patient;
+  final PatientDetail? detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final PatientWorkspaceSnapshot? workspace = detail?.workspace;
+
+    return AppDialog(
+      title: Text(l10n.patientsReportDialogTitle),
+      icon: const Icon(Icons.summarize_outlined),
+      scrollable: true,
+      maxWidth: 760,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _PatientDemographics(
+            detail:
+                detail ??
+                PatientDetail(
+                  patient: patient,
+                  workspace: const PatientWorkspaceSnapshot(),
+                ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          _ReportSummaryGrid(
+            records: <_ReportSummaryItem>[
+              _ReportSummaryItem(
+                label: l10n.patientsAppointmentsSectionTitle,
+                value: workspace?.appointments.length ?? 0,
+                icon: Icons.event_available_outlined,
+              ),
+              _ReportSummaryItem(
+                label: l10n.patientsEncountersSectionTitle,
+                value: workspace?.encounters.length ?? 0,
+                icon: Icons.medical_services_outlined,
+              ),
+              _ReportSummaryItem(
+                label: l10n.patientsAdmissionsSectionTitle,
+                value: workspace?.admissions.length ?? 0,
+                icon: Icons.local_hospital_outlined,
+              ),
+              _ReportSummaryItem(
+                label: l10n.patientsInvoicesSectionTitle,
+                value: workspace?.invoices.length ?? 0,
+                icon: Icons.receipt_long_outlined,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.patientsTimelineSectionTitle,
+            style: theme.textTheme.titleSmall,
+          ),
+          SizedBox(height: theme.spacing.xs),
+          if ((detail?.timeline ?? const <PatientTimelineItem>[]).isEmpty)
+            Text(l10n.patientsNoTimeline)
+          else
+            for (final PatientTimelineItem item in detail!.timeline.take(8))
+              _InfoRow(
+                label: _apiLabel(item.resource),
+                value: _joinDisplay(<String?>[
+                  item.title,
+                  _formatOptionalDateTime(context, item.occurredAt),
+                ]),
+              ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () => Navigator.of(context).maybePop(false),
+        ),
+        AppButton.primary(
+          label: l10n.patientsPrintReportAction,
+          leadingIcon: Icons.print_outlined,
+          onPressed: printCurrentWindow,
+        ),
+      ],
+    );
+  }
+}
+
+class _ReportSummaryItem {
+  const _ReportSummaryItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final int value;
+  final IconData icon;
+}
+
+class _ReportSummaryGrid extends StatelessWidget {
+  const _ReportSummaryGrid({required this.records});
+
+  final List<_ReportSummaryItem> records;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int columns = constraints.maxWidth < 520 ? 2 : 4;
+        return GridView.count(
+          crossAxisCount: columns,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: constraints.maxWidth < 520 ? 2.2 : 1.9,
+          crossAxisSpacing: theme.spacing.sm,
+          mainAxisSpacing: theme.spacing.sm,
+          children: <Widget>[
+            for (final _ReportSummaryItem record in records)
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(theme.spacing.sm),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(record.icon, color: theme.colorScheme.primary),
+                      SizedBox(height: theme.spacing.xs),
+                      Text(
+                        '${record.value}',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      Text(
+                        record.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -2517,7 +3500,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                     },
                   ),
                 ),
-                if (widget.referenceData.facilities.isNotEmpty)
+                if (widget.referenceData.facilities.length > 1)
                   AppSelectField<String>(
                     value: _facilityId,
                     labelText: l10n.patientsFacilityLabel,
@@ -2533,6 +3516,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                         AppSelectOption<String>(
                           value: option.id,
                           label: option.label,
+                          leadingIcon: const Icon(Icons.business_outlined),
                         ),
                     ],
                   ),
@@ -2566,15 +3550,9 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                         _identifierTypeController.text = value ?? '';
                       });
                     },
-                    options: <AppSelectOption<String>>[
-                      for (final String value in _identifierTypeOptions(
-                        _identifierTypeController.text,
-                      ))
-                        AppSelectOption<String>(
-                          value: value,
-                          label: _apiLabel(value),
-                        ),
-                    ],
+                    options: _identifierTypeSelectOptions(
+                      _identifierTypeController.text,
+                    ),
                   ),
                   right: AppTextField(
                     controller: _identifierValueController,
@@ -2615,7 +3593,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
 
   double _formBodyHeight(BuildContext context) {
     final double viewportHeight = MediaQuery.sizeOf(context).height;
-    return math.min(520, viewportHeight * 0.58);
+    return math.min(640, viewportHeight * 0.72);
   }
 
   Future<void> _submit() async {
@@ -2994,6 +3972,7 @@ class PatientRelatedRecordDialog<T> extends StatefulWidget {
     required this.referenceData,
     required this.onCreate,
     required this.onUpdate,
+    this.onUploadDocuments,
     this.item,
     super.key,
   });
@@ -3008,6 +3987,12 @@ class PatientRelatedRecordDialog<T> extends StatefulWidget {
     Map<String, Object?> payload,
   )
   onUpdate;
+  final Future<AppFailure?> Function({
+    required String patientId,
+    required String documentType,
+    required List<PatientDocumentUploadFile> files,
+  })?
+  onUploadDocuments;
 
   @override
   State<PatientRelatedRecordDialog<T>> createState() =>
@@ -3024,6 +4009,8 @@ class _PatientRelatedRecordDialogState<T>
   String? _choice;
   bool _isPrimary = false;
   DateTime? _date;
+  List<XFile> _documentFiles = const <XFile>[];
+  bool _isPickingDocuments = false;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -3084,12 +4071,16 @@ class _PatientRelatedRecordDialogState<T>
     final l10n = context.l10n;
     return switch (widget.resource) {
       PatientRelatedResource.identifier => <Widget>[
-        AppTextField(
-          controller: _first,
+        AppSelectField<String>.searchable(
+          value: _selectedIdentifierType(_first.text),
           labelText: l10n.patientsIdentifierTypeLabel,
           enabled: !_isSaving,
           isRequired: true,
-          validator: AppValidators.requiredText(l10n.validationRequired),
+          menuHeight: 320,
+          validator: AppValidators.requiredValue(l10n.validationRequired),
+          onChanged: (String? value) =>
+              setState(() => _first.text = value ?? ''),
+          options: _identifierTypeSelectOptions(_first.text),
         ),
         AppTextField(
           controller: _second,
@@ -3106,25 +4097,20 @@ class _PatientRelatedRecordDialogState<T>
         ),
       ],
       PatientRelatedResource.contact => <Widget>[
-        AppSelectField<String>(
+        AppSelectField<String>.searchable(
           value: _choice,
           labelText: l10n.patientsContactTypeLabel,
           isRequired: true,
           enabled: !_isSaving,
+          menuHeight: 320,
           validator: AppValidators.requiredValue(l10n.validationRequired),
-          onChanged: (String? value) => setState(() => _choice = value),
-          options: <AppSelectOption<String>>[
-            for (final String value in _contactTypes)
-              AppSelectOption<String>(value: value, label: _apiLabel(value)),
-          ],
+          onChanged: (String? value) => setState(() {
+            _choice = value;
+            _first.clear();
+          }),
+          options: _contactTypeSelectOptions(),
         ),
-        AppTextField(
-          controller: _first,
-          labelText: l10n.patientsContactValueLabel,
-          enabled: !_isSaving,
-          isRequired: true,
-          validator: AppValidators.requiredText(l10n.validationRequired),
-        ),
+        _contactValueField(context),
         AppCheckboxField(
           title: l10n.patientsPrimaryRecordLabel,
           value: _isPrimary,
@@ -3140,10 +4126,16 @@ class _PatientRelatedRecordDialogState<T>
           isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
-        AppTextField(
-          controller: _second,
+        AppSelectField<String>.searchable(
+          value: _second.text.trim().isEmpty
+              ? null
+              : _second.text.trim().toUpperCase(),
           labelText: l10n.patientsGuardianRelationshipLabel,
           enabled: !_isSaving,
+          menuHeight: 360,
+          onChanged: (String? value) =>
+              setState(() => _second.text = value ?? ''),
+          options: _relationshipSelectOptions(_second.text),
         ),
         AppPhoneField(
           controller: _third,
@@ -3222,27 +4214,47 @@ class _PatientRelatedRecordDialogState<T>
         ),
       ],
       PatientRelatedResource.document => <Widget>[
-        AppSelectField<String>(
+        AppSelectField<String>.searchable(
           value: _choice,
           labelText: l10n.patientsDocumentTypeLabel,
           enabled: !_isSaving,
           isRequired: true,
+          menuHeight: 320,
           validator: AppValidators.requiredValue(l10n.validationRequired),
           onChanged: (String? value) => setState(() => _choice = value),
-          options: <AppSelectOption<String>>[
-            for (final String value
-                in widget.referenceData.documentTypes.isEmpty
-                    ? _documentTypes
-                    : widget.referenceData.documentTypes)
-              AppSelectOption<String>(value: value, label: _apiLabel(value)),
-          ],
+          options: _documentTypeSelectOptions(
+            widget.referenceData.documentTypes.isEmpty
+                ? _documentTypes
+                : widget.referenceData.documentTypes,
+          ),
+        ),
+        _DocumentUploadField(
+          files: _documentFiles,
+          enabled:
+              !_isSaving &&
+              !_isPickingDocuments &&
+              widget.onUploadDocuments != null,
+          isLoading: _isPickingDocuments,
+          onPick: _pickDocumentFiles,
+          onClear: () => setState(() => _documentFiles = const <XFile>[]),
         ),
         AppTextField(
           controller: _first,
-          labelText: l10n.patientsStorageKeyLabel,
+          labelText: l10n.patientsStorageKeyAdvancedLabel,
+          helperText: l10n.patientsStorageKeyAdvancedHelper,
           enabled: !_isSaving,
-          isRequired: true,
-          validator: AppValidators.requiredText(l10n.validationRequired),
+          isRequired:
+              _documentFiles.isEmpty &&
+              (_isEditing || widget.onUploadDocuments == null),
+          validator: (String? value) {
+            if (_documentFiles.isNotEmpty) {
+              return null;
+            }
+            if (!_isEditing && widget.onUploadDocuments != null) {
+              return AppValidators.requiredText(l10n.validationRequired)(value);
+            }
+            return AppValidators.requiredText(l10n.validationRequired)(value);
+          },
         ),
         AppTextField(
           controller: _second,
@@ -3256,20 +4268,19 @@ class _PatientRelatedRecordDialogState<T>
         ),
       ],
       PatientRelatedResource.consent => <Widget>[
-        AppSelectField<String>(
+        AppSelectField<String>.searchable(
           value: _choice,
           labelText: l10n.patientsConsentTypeLabel,
           enabled: !_isSaving,
           isRequired: true,
+          menuHeight: 320,
           validator: AppValidators.requiredValue(l10n.validationRequired),
           onChanged: (String? value) => setState(() => _choice = value),
-          options: <AppSelectOption<String>>[
-            for (final String value
-                in widget.referenceData.consentTypes.isEmpty
-                    ? _consentTypes
-                    : widget.referenceData.consentTypes)
-              AppSelectOption<String>(value: value, label: _apiLabel(value)),
-          ],
+          options: _consentTypeSelectOptions(
+            widget.referenceData.consentTypes.isEmpty
+                ? _consentTypes
+                : widget.referenceData.consentTypes,
+          ),
         ),
         AppSelectField<String>(
           value: _first.text.isEmpty ? null : _first.text,
@@ -3300,6 +4311,97 @@ class _PatientRelatedRecordDialogState<T>
         ),
       ],
     };
+  }
+
+  Widget _contactValueField(BuildContext context) {
+    final l10n = context.l10n;
+    final String type = (_choice ?? '').toUpperCase();
+    if (<String>{'PHONE', 'WHATSAPP', 'FAX'}.contains(type)) {
+      return AppPhoneField(
+        controller: _first,
+        labelText: l10n.patientsContactValueLabel,
+        countryLabelText: l10n.appPhoneCountryLabel,
+        countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+        countryNoResultsText: l10n.appPhoneCountryNoResults,
+        numberLabelText: l10n.appPhoneNumberLabel,
+        numberHintText: l10n.appPhoneNumberHint,
+        invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+        requiredMessage: l10n.validationRequired,
+        enabled: !_isSaving,
+        isRequired: true,
+      );
+    }
+
+    if (type == 'EMAIL') {
+      return AppEmailField(
+        controller: _first,
+        labelText: l10n.patientsContactValueLabel,
+        invalidEmailMessage: l10n.authEmailInvalidMessage,
+        requiredMessage: l10n.validationRequired,
+        enabled: !_isSaving,
+        isRequired: true,
+      );
+    }
+
+    return AppTextField(
+      controller: _first,
+      labelText: l10n.patientsContactValueLabel,
+      enabled: !_isSaving,
+      isRequired: true,
+      validator: AppValidators.compose<String>(<FormFieldValidator<String>>[
+        AppValidators.requiredText(l10n.validationRequired),
+        AppValidators.maxLength(
+          255,
+          l10n.patientsContactInvalidMessage,
+          allowEmpty: false,
+          trim: true,
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _pickDocumentFiles() async {
+    setState(() {
+      _isPickingDocuments = true;
+      _failure = null;
+    });
+    try {
+      final List<XFile> files = await openFiles(
+        acceptedTypeGroups: <XTypeGroup>[
+          XTypeGroup(
+            label: context.l10n.patientsDocumentsSectionTitle,
+            extensions: const <String>['pdf', 'jpg', 'jpeg', 'png'],
+            mimeTypes: const <String>[
+              'application/pdf',
+              'image/jpeg',
+              'image/jpg',
+              'image/png',
+            ],
+          ),
+        ],
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _documentFiles = files.take(5).toList(growable: false);
+        _isPickingDocuments = false;
+        if (_documentFiles.isNotEmpty) {
+          _first.clear();
+          if (_documentFiles.length == 1) {
+            _second.text = _documentFiles.first.name;
+            _third.text = _documentFiles.first.mimeType ?? '';
+          }
+        }
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isPickingDocuments = false;
+      });
+    }
   }
 
   void _hydrate() {
@@ -3350,8 +4452,27 @@ class _PatientRelatedRecordDialogState<T>
       _failure = null;
     });
 
-    final Map<String, Object?> payload = _payload();
     final String? recordId = _recordId(widget.item);
+    if (widget.resource == PatientRelatedResource.document &&
+        recordId == null &&
+        _documentFiles.isNotEmpty &&
+        widget.onUploadDocuments != null) {
+      final AppFailure? failure = await _uploadDocuments();
+      if (!mounted) {
+        return;
+      }
+      if (failure == null) {
+        Navigator.of(context).pop(true);
+        return;
+      }
+      setState(() {
+        _isSaving = false;
+        _failure = failure;
+      });
+      return;
+    }
+
+    final Map<String, Object?> payload = _payload();
     final AppFailure? failure = recordId == null
         ? await widget.onCreate(payload)
         : await widget.onUpdate(recordId, payload);
@@ -3368,6 +4489,25 @@ class _PatientRelatedRecordDialogState<T>
     });
   }
 
+  Future<AppFailure?> _uploadDocuments() async {
+    final List<PatientDocumentUploadFile> files = <PatientDocumentUploadFile>[];
+    for (final XFile file in _documentFiles) {
+      files.add(
+        PatientDocumentUploadFile(
+          name: file.name,
+          bytes: await file.readAsBytes(),
+          contentType: file.mimeType,
+        ),
+      );
+    }
+
+    return widget.onUploadDocuments!(
+      patientId: widget.detail.patient.id,
+      documentType: _choice ?? 'OTHER',
+      files: files,
+    );
+  }
+
   Map<String, Object?> _payload() {
     final Patient patient = widget.detail.patient;
     final Map<String, Object?> createContext = <String, Object?>{
@@ -3378,7 +4518,7 @@ class _PatientRelatedRecordDialogState<T>
     return switch (widget.resource) {
       PatientRelatedResource.identifier => <String, Object?>{
         ...createContext,
-        'identifier_type': _first.text.trim(),
+        'identifier_type': _first.text.trim().toUpperCase(),
         'identifier_value': _second.text.trim(),
         'is_primary': _isPrimary,
       },
@@ -3391,7 +4531,7 @@ class _PatientRelatedRecordDialogState<T>
       PatientRelatedResource.guardian => <String, Object?>{
         ...createContext,
         'name': _first.text.trim(),
-        'relationship': _second.text.trim(),
+        'relationship': _second.text.trim().toUpperCase(),
         'phone': _third.text.trim(),
         'email': _fourth.text.trim(),
       },
@@ -3425,6 +4565,95 @@ class _PatientRelatedRecordDialogState<T>
           'revoked_at': _date?.toUtc().toIso8601String(),
       },
     };
+  }
+}
+
+class _DocumentUploadField extends StatelessWidget {
+  const _DocumentUploadField({
+    required this.files,
+    required this.enabled,
+    required this.isLoading,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final List<XFile> files;
+  final bool enabled;
+  final bool isLoading;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final String fileSummary = files.isEmpty
+        ? l10n.patientsDocumentUploadEmpty
+        : files.map((XFile file) => file.name).join(', ');
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: theme.colorScheme.surfaceContainerLowest,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.upload_file_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        l10n.patientsDocumentUploadTitle,
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      SizedBox(height: theme.spacing.xs),
+                      Text(
+                        fileSummary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                AppButton.secondary(
+                  label: l10n.patientsChooseDocumentAction,
+                  leadingIcon: Icons.attach_file_outlined,
+                  isLoading: isLoading,
+                  enabled: enabled,
+                  onPressed: enabled ? onPick : null,
+                ),
+                if (files.isNotEmpty)
+                  AppButton.tertiary(
+                    label: l10n.patientsClearFiltersAction,
+                    leadingIcon: Icons.close,
+                    enabled: enabled,
+                    onPressed: enabled ? onClear : null,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -3612,6 +4841,134 @@ String _formatOptionalDateTime(BuildContext context, DateTime? value) {
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
 }
 
+List<AppSelectOption<String>> _simpleStatusOptions(Iterable<String> values) {
+  return <AppSelectOption<String>>[
+    for (final String value in values)
+      AppSelectOption<String>(value: value, label: _apiLabel(value)),
+  ];
+}
+
+List<AppSelectOption<String>> _providerSelectOptions(
+  List<OpdProviderOption> providers,
+) {
+  return <AppSelectOption<String>>[
+    for (final OpdProviderOption provider in providers)
+      AppSelectOption<String>(
+        value: provider.id,
+        label: provider.displayTitle,
+        leadingIcon: const Icon(Icons.person_search_outlined),
+        labelWidget: _ProviderOptionLabel(provider: provider),
+      ),
+  ];
+}
+
+class _ProviderOptionLabel extends StatelessWidget {
+  const _ProviderOptionLabel({required this.provider});
+
+  final OpdProviderOption provider;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(provider.displayTitle),
+        if (_joinDisplay(<String?>[
+          provider.positionTitle,
+          provider.practitionerType,
+        ]).isNotEmpty)
+          Text(
+            _joinDisplay(<String?>[
+              provider.positionTitle,
+              provider.practitionerType,
+            ]),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+FormFieldValidator<String> _timeValidator(BuildContext context) {
+  return (String? value) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isEmpty) {
+      return context.l10n.validationRequired;
+    }
+    return _parseTime(normalized) == null
+        ? context.l10n.patientsTimeInvalidMessage
+        : null;
+  };
+}
+
+FormFieldValidator<String> _durationValidator(BuildContext context) {
+  return (String? value) {
+    final int? minutes = int.tryParse(value?.trim() ?? '');
+    if (minutes == null) {
+      return context.l10n.validationRequired;
+    }
+    return minutes <= 0 || minutes > 720
+        ? context.l10n.patientsDurationInvalidMessage
+        : null;
+  };
+}
+
+DateTime? _combineDateAndTime(DateTime date, String time) {
+  final (int, int)? parsed = _parseTime(time);
+  if (parsed == null) {
+    return null;
+  }
+  return DateTime(date.year, date.month, date.day, parsed.$1, parsed.$2);
+}
+
+(int, int)? _parseTime(String value) {
+  final RegExpMatch? match = RegExp(
+    r'^([01]?\d|2[0-3]):([0-5]\d)$',
+  ).firstMatch(value.trim());
+  if (match == null) {
+    return null;
+  }
+  return (int.parse(match.group(1)!), int.parse(match.group(2)!));
+}
+
+Map<String, Object?> _withoutEmptyPayload(Map<String, Object?> payload) {
+  return <String, Object?>{
+    for (final MapEntry<String, Object?> entry in payload.entries)
+      if (!_payloadValueIsEmpty(entry.value)) entry.key: entry.value,
+  };
+}
+
+bool _payloadValueIsEmpty(Object? value) {
+  if (value == null) {
+    return true;
+  }
+  if (value is String) {
+    return value.trim().isEmpty;
+  }
+  if (value is Iterable) {
+    return value.isEmpty;
+  }
+  if (value is Map) {
+    return value.isEmpty;
+  }
+  return false;
+}
+
+T? _successOrNull<T>(Result<T> result) {
+  return result.when(success: (T value) => value, failure: (_) => null);
+}
+
+AppFailure? _failureOrNull<T>(Result<T> result) {
+  return result.when(
+    success: (_) => null,
+    failure: (AppFailure value) => value,
+  );
+}
+
 String _apiLabel(String value) {
   return value
       .split('_')
@@ -3632,9 +4989,139 @@ List<String> _identifierTypeOptions(String currentValue) {
   return <String>[normalized, ..._identifierTypes];
 }
 
+List<AppSelectOption<String>> _identifierTypeSelectOptions(
+  String currentValue,
+) {
+  return <AppSelectOption<String>>[
+    for (final String value in _identifierTypeOptions(currentValue))
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: Icon(_identifierTypeIcon(value)),
+      ),
+  ];
+}
+
 String? _selectedIdentifierType(String currentValue) {
   final String normalized = currentValue.trim().toUpperCase();
   return normalized.isEmpty ? null : normalized;
+}
+
+List<AppSelectOption<String>> _contactTypeSelectOptions() {
+  return <AppSelectOption<String>>[
+    for (final String value in _contactTypes)
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: Icon(_contactTypeIcon(value)),
+      ),
+  ];
+}
+
+List<AppSelectOption<String>> _relationshipSelectOptions(String currentValue) {
+  final String normalized = currentValue.trim().toUpperCase();
+  final List<String> values =
+      normalized.isEmpty || _relationshipTypes.contains(normalized)
+      ? _relationshipTypes
+      : <String>[normalized, ..._relationshipTypes];
+  return <AppSelectOption<String>>[
+    for (final String value in values)
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: Icon(_relationshipIcon(value)),
+      ),
+  ];
+}
+
+List<AppSelectOption<String>> _documentTypeSelectOptions(
+  Iterable<String> values,
+) {
+  return <AppSelectOption<String>>[
+    for (final String value in values)
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: Icon(_documentTypeIcon(value)),
+      ),
+  ];
+}
+
+List<AppSelectOption<String>> _consentTypeSelectOptions(
+  Iterable<String> values,
+) {
+  return <AppSelectOption<String>>[
+    for (final String value in values)
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: Icon(_consentTypeIcon(value)),
+      ),
+  ];
+}
+
+IconData _identifierTypeIcon(String value) {
+  return switch (value.toUpperCase()) {
+    'MRN' => Icons.local_hospital_outlined,
+    'NATIONAL_ID' => Icons.credit_card_outlined,
+    'PASSPORT' => Icons.flight_takeoff_outlined,
+    'INSURANCE' => Icons.health_and_safety_outlined,
+    'DRIVER_LICENSE' => Icons.badge_outlined,
+    'BIRTH_CERTIFICATE' => Icons.child_care_outlined,
+    _ => Icons.perm_identity_outlined,
+  };
+}
+
+IconData _contactTypeIcon(String value) {
+  return switch (value.toUpperCase()) {
+    'PHONE' => Icons.phone_outlined,
+    'EMAIL' => Icons.alternate_email_outlined,
+    'WHATSAPP' => Icons.chat_outlined,
+    'TELEGRAM' => Icons.send_outlined,
+    'FAX' => Icons.print_outlined,
+    'FACEBOOK' => Icons.groups_outlined,
+    'LINKEDIN' => Icons.work_outline,
+    'X' => Icons.public_outlined,
+    'YOUTUBE' => Icons.play_circle_outline,
+    'DISCORD' => Icons.forum_outlined,
+    _ => Icons.contact_mail_outlined,
+  };
+}
+
+IconData _relationshipIcon(String value) {
+  return switch (value.toUpperCase()) {
+    'SPOUSE' || 'PARTNER' => Icons.favorite_border,
+    'PARENT' || 'MOTHER' || 'FATHER' => Icons.family_restroom_outlined,
+    'CHILD' || 'SON' || 'DAUGHTER' => Icons.child_care_outlined,
+    'SIBLING' || 'BROTHER' || 'SISTER' => Icons.people_alt_outlined,
+    'GUARDIAN' || 'CAREGIVER' => Icons.supervisor_account_outlined,
+    'NEXT_OF_KIN' => Icons.contact_emergency_outlined,
+    _ => Icons.person_outline,
+  };
+}
+
+IconData _documentTypeIcon(String value) {
+  return switch (value.toUpperCase()) {
+    'IDENTITY' => Icons.badge_outlined,
+    'INSURANCE' => Icons.health_and_safety_outlined,
+    'REFERRAL' => Icons.forward_to_inbox_outlined,
+    'LAB_RESULT' => Icons.science_outlined,
+    'RADIOLOGY' => Icons.biotech_outlined,
+    'PRESCRIPTION' => Icons.medication_outlined,
+    'CONSENT' => Icons.assignment_turned_in_outlined,
+    'DISCHARGE' => Icons.logout_outlined,
+    _ => Icons.description_outlined,
+  };
+}
+
+IconData _consentTypeIcon(String value) {
+  return switch (value.toUpperCase()) {
+    'TREATMENT' => Icons.medical_services_outlined,
+    'DATA_SHARING' => Icons.share_outlined,
+    'RESEARCH' => Icons.science_outlined,
+    'BILLING' => Icons.receipt_long_outlined,
+    _ => Icons.verified_user_outlined,
+  };
 }
 
 String _joinDisplay(Iterable<String?> values) {
@@ -3657,10 +5144,69 @@ const List<String> _contactTypes = <String>[
   'PHONE',
   'EMAIL',
   'WHATSAPP',
+  'TELEGRAM',
+  'TIKTOK',
+  'INSTAGRAM',
+  'FACEBOOK',
+  'LINKEDIN',
+  'X',
+  'YOUTUBE',
+  'PINTEREST',
+  'REDDIT',
+  'DISCORD',
   'FAX',
   'OTHER',
 ];
+const List<String> _relationshipTypes = <String>[
+  'SPOUSE',
+  'PARTNER',
+  'PARENT',
+  'MOTHER',
+  'FATHER',
+  'CHILD',
+  'SON',
+  'DAUGHTER',
+  'SIBLING',
+  'BROTHER',
+  'SISTER',
+  'GRANDPARENT',
+  'GRANDCHILD',
+  'AUNT',
+  'UNCLE',
+  'COUSIN',
+  'GUARDIAN',
+  'CAREGIVER',
+  'NEXT_OF_KIN',
+  'FRIEND',
+  'OTHER',
+];
 const List<String> _severityOptions = <String>['MILD', 'MODERATE', 'SEVERE'];
+const List<String> _emergencySeverityOptions = <String>[
+  'LOW',
+  'MEDIUM',
+  'HIGH',
+  'CRITICAL',
+];
+const List<String> _triageLevelOptions = <String>[
+  'LEVEL_1',
+  'LEVEL_2',
+  'LEVEL_3',
+  'LEVEL_4',
+  'LEVEL_5',
+  'IMMEDIATE',
+  'URGENT',
+  'LESS_URGENT',
+  'NON_URGENT',
+];
+const List<String> _paymentMethods = <String>[
+  'CASH',
+  'CREDIT_CARD',
+  'DEBIT_CARD',
+  'MOBILE_MONEY',
+  'BANK_TRANSFER',
+  'INSURANCE',
+  'OTHER',
+];
 const List<String> _consentStates = <String>['GRANTED', 'REVOKED', 'PENDING'];
 const List<String> _consentTypes = <String>[
   'TREATMENT',

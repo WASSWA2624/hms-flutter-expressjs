@@ -40,6 +40,10 @@
   "@commonCancelActionLabel": {
     "description": "Label for actions that dismiss the current dialog or flow."
   },
+  "commonCloseActionLabel": "Close",
+  "@commonCloseActionLabel": {
+    "description": "Label for actions that close the current dialog."
+  },
   "appDateInvalidMessage": "Enter a valid date.",
   "@appDateInvalidMessage": {
     "description": "Validation message for manually typed date fields."
@@ -1218,6 +1222,146 @@
   "@patientsQuickActionQueuedMessage": {
     "description": "Snackbar shown when a patient quick action is selected."
   },
+  "patientsQuickActionSavedMessage": "Patient workflow updated.",
+  "@patientsQuickActionSavedMessage": {
+    "description": "Snackbar shown after a patient quick action completes successfully."
+  },
+  "patientsAppointmentDialogTitle": "Schedule appointment",
+  "@patientsAppointmentDialogTitle": {
+    "description": "Patient quick appointment dialog title."
+  },
+  "patientsAppointmentDateLabel": "Appointment date",
+  "@patientsAppointmentDateLabel": {
+    "description": "Patient appointment date field label."
+  },
+  "patientsAppointmentTimeLabel": "Start time",
+  "@patientsAppointmentTimeLabel": {
+    "description": "Patient appointment start time field label."
+  },
+  "patientsAppointmentDurationLabel": "Duration minutes",
+  "@patientsAppointmentDurationLabel": {
+    "description": "Patient appointment duration field label."
+  },
+  "patientsAppointmentStatusLabel": "Appointment status",
+  "@patientsAppointmentStatusLabel": {
+    "description": "Patient appointment status field label."
+  },
+  "patientsAppointmentReasonLabel": "Reason",
+  "@patientsAppointmentReasonLabel": {
+    "description": "Patient appointment reason field label."
+  },
+  "patientsProviderLabel": "Provider",
+  "@patientsProviderLabel": {
+    "description": "Patient workflow provider select field label."
+  },
+  "patientsProviderOptionalHelper": "Optional provider assignment.",
+  "@patientsProviderOptionalHelper": {
+    "description": "Helper text for optional provider selection."
+  },
+  "patientsOpdCheckInDialogTitle": "OPD check-in",
+  "@patientsOpdCheckInDialogTitle": {
+    "description": "Patient OPD check-in dialog title."
+  },
+  "patientsTriageDialogTitle": "Triage intake",
+  "@patientsTriageDialogTitle": {
+    "description": "Patient triage dialog title."
+  },
+  "patientsClinicalDialogTitle": "Clinical visit",
+  "@patientsClinicalDialogTitle": {
+    "description": "Patient clinical visit dialog title."
+  },
+  "patientsBillingDialogTitle": "Consultation billing",
+  "@patientsBillingDialogTitle": {
+    "description": "Patient billing dialog title."
+  },
+  "patientsAdmissionDialogTitle": "Admit patient",
+  "@patientsAdmissionDialogTitle": {
+    "description": "Patient admission dialog title."
+  },
+  "patientsArrivalModeLabel": "Arrival mode",
+  "@patientsArrivalModeLabel": {
+    "description": "Patient OPD arrival mode field label."
+  },
+  "patientsEmergencySeverityLabel": "Emergency severity",
+  "@patientsEmergencySeverityLabel": {
+    "description": "Patient emergency severity field label."
+  },
+  "patientsTriageLevelLabel": "Triage level",
+  "@patientsTriageLevelLabel": {
+    "description": "Patient triage level field label."
+  },
+  "patientsChiefComplaintLabel": "Chief complaint",
+  "@patientsChiefComplaintLabel": {
+    "description": "Patient chief complaint field label."
+  },
+  "patientsClinicalNoteLabel": "Clinical note",
+  "@patientsClinicalNoteLabel": {
+    "description": "Patient clinical note field label."
+  },
+  "patientsDiagnosisLabel": "Diagnosis",
+  "@patientsDiagnosisLabel": {
+    "description": "Patient diagnosis field label."
+  },
+  "patientsConsultationFeeLabel": "Consultation fee",
+  "@patientsConsultationFeeLabel": {
+    "description": "Patient consultation fee field label."
+  },
+  "patientsCurrencyLabel": "Currency",
+  "@patientsCurrencyLabel": {
+    "description": "Patient currency field label."
+  },
+  "patientsMarkPaymentReceivedLabel": "Payment received",
+  "@patientsMarkPaymentReceivedLabel": {
+    "description": "Patient billing payment received checkbox label."
+  },
+  "patientsPaymentMethodLabel": "Payment method",
+  "@patientsPaymentMethodLabel": {
+    "description": "Patient payment method field label."
+  },
+  "patientsTransactionReferenceLabel": "Transaction reference",
+  "@patientsTransactionReferenceLabel": {
+    "description": "Patient payment transaction reference field label."
+  },
+  "patientsAdmissionReasonLabel": "Admission reason",
+  "@patientsAdmissionReasonLabel": {
+    "description": "Patient admission reason field label."
+  },
+  "patientsReportDialogTitle": "Patient report",
+  "@patientsReportDialogTitle": {
+    "description": "Patient report dialog title."
+  },
+  "patientsPrintReportAction": "Print report",
+  "@patientsPrintReportAction": {
+    "description": "Patient report print action label."
+  },
+  "patientsAppointmentsSectionTitle": "Appointments",
+  "@patientsAppointmentsSectionTitle": {
+    "description": "Patient report appointments section title."
+  },
+  "patientsEncountersSectionTitle": "Encounters",
+  "@patientsEncountersSectionTitle": {
+    "description": "Patient report encounters section title."
+  },
+  "patientsAdmissionsSectionTitle": "Admissions",
+  "@patientsAdmissionsSectionTitle": {
+    "description": "Patient report admissions section title."
+  },
+  "patientsInvoicesSectionTitle": "Invoices",
+  "@patientsInvoicesSectionTitle": {
+    "description": "Patient report invoices section title."
+  },
+  "patientsTimeInvalidMessage": "Enter time as HH:MM.",
+  "@patientsTimeInvalidMessage": {
+    "description": "Validation message for invalid time fields."
+  },
+  "patientsTimeHint": "HH:MM",
+  "@patientsTimeHint": {
+    "description": "Hint for time fields that expect 24-hour HH:MM input."
+  },
+  "patientsDurationInvalidMessage": "Enter a duration between 1 and 720 minutes.",
+  "@patientsDurationInvalidMessage": {
+    "description": "Validation message for invalid appointment duration."
+  },
   "patientsIdentifiersSectionTitle": "Identifiers",
   "@patientsIdentifiersSectionTitle": {
     "description": "Patient identifiers section title."
@@ -1310,6 +1454,10 @@
   "@patientsContactValueLabel": {
     "description": "Patient contact value field label."
   },
+  "patientsContactInvalidMessage": "Enter a valid contact value.",
+  "@patientsContactInvalidMessage": {
+    "description": "Validation message for invalid patient contact values."
+  },
   "patientsPrimaryRecordLabel": "Primary record",
   "@patientsPrimaryRecordLabel": {
     "description": "Patient primary related record checkbox label."
@@ -1353,6 +1501,26 @@
   "patientsStorageKeyLabel": "Storage key",
   "@patientsStorageKeyLabel": {
     "description": "Patient document storage key field label."
+  },
+  "patientsStorageKeyAdvancedLabel": "Storage key (advanced)",
+  "@patientsStorageKeyAdvancedLabel": {
+    "description": "Patient document advanced storage key field label."
+  },
+  "patientsStorageKeyAdvancedHelper": "Upload a file instead. Only enter this when referencing an existing stored document.",
+  "@patientsStorageKeyAdvancedHelper": {
+    "description": "Helper text for patient document storage key."
+  },
+  "patientsDocumentUploadTitle": "Document upload",
+  "@patientsDocumentUploadTitle": {
+    "description": "Patient document upload panel title."
+  },
+  "patientsDocumentUploadEmpty": "No file selected. PDF, JPG, and PNG files up to 10 MB are supported.",
+  "@patientsDocumentUploadEmpty": {
+    "description": "Patient document upload empty selection text."
+  },
+  "patientsChooseDocumentAction": "Choose file",
+  "@patientsChooseDocumentAction": {
+    "description": "Patient document file picker action label."
   },
   "patientsFileNameLabel": "File name",
   "@patientsFileNameLabel": {

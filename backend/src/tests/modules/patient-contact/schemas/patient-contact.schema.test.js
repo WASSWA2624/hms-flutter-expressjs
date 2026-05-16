@@ -49,12 +49,34 @@ describe('Patient Contact Schemas', () => {
     });
 
     it('should accept valid contact types', () => {
-      const types = ['PHONE', 'EMAIL', 'FAX', 'OTHER'];
-      types.forEach(type => {
-        const data = { ...validData, contact_type: type };
+      const examples = {
+        PHONE: '+256700000000',
+        EMAIL: 'patient@example.com',
+        FAX: '+256414000000',
+        OTHER: 'Preferred front desk contact'
+      };
+      Object.entries(examples).forEach(([type, value]) => {
+        const data = { ...validData, contact_type: type, value };
         const result = createPatientContactSchema.safeParse(data);
         expect(result.success).toBe(true);
       });
+    });
+
+    it('should reject invalid values for typed contact channels', () => {
+      expect(
+        createPatientContactSchema.safeParse({
+          ...validData,
+          contact_type: 'PHONE',
+          value: 'not-a-phone'
+        }).success
+      ).toBe(false);
+      expect(
+        createPatientContactSchema.safeParse({
+          ...validData,
+          contact_type: 'EMAIL',
+          value: 'not-an-email'
+        }).success
+      ).toBe(false);
     });
   });
 
