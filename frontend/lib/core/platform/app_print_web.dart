@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
@@ -26,10 +26,12 @@ $html
 </body>
 </html>
 ''';
-  final String url = Uri.dataFromString(
-    document,
-    mimeType: 'text/html',
-    encoding: utf8,
-  ).toString();
-  web.window.open(url, '_blank');
+  final web.Window? printWindow = web.window.open('', '_blank');
+  if (printWindow == null) {
+    return;
+  }
+  printWindow.document.open();
+  printWindow.document.write(document.toJS);
+  printWindow.document.close();
+  printWindow.focus();
 }

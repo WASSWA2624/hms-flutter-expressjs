@@ -4092,48 +4092,46 @@ class _PatientReportDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
-    final PatientWorkspaceSnapshot? workspace = detail?.workspace;
+    final PatientDetail effectiveDetail = _effectivePatientDetail(
+      patient,
+      detail,
+    );
+    final PatientWorkspaceSnapshot workspace = effectiveDetail.workspace;
 
     return AppDialog(
       title: Text(l10n.patientsReportDialogTitle),
       icon: const Icon(Icons.summarize_outlined),
       scrollable: true,
-      maxWidth: 760,
+      maxWidth: 820,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _PatientDemographics(
-            detail:
-                detail ??
-                PatientDetail(
-                  patient: patient,
-                  workspace: const PatientWorkspaceSnapshot(),
-                ),
-          ),
+          _PatientReportIdentityPanel(detail: effectiveDetail),
           SizedBox(height: theme.spacing.md),
           AppReportSummaryGrid(
             records: <AppReportSummaryItem>[
               AppReportSummaryItem(
                 label: l10n.patientsAppointmentsSectionTitle,
-                value: (workspace?.appointments.length ?? 0).toString(),
+                value: workspace.appointments.length.toString(),
                 icon: Icons.event_available_outlined,
               ),
               AppReportSummaryItem(
                 label: l10n.patientsEncountersSectionTitle,
-                value: (workspace?.encounters.length ?? 0).toString(),
+                value: workspace.encounters.length.toString(),
                 icon: Icons.medical_services_outlined,
               ),
               AppReportSummaryItem(
                 label: l10n.patientsAdmissionsSectionTitle,
-                value: (workspace?.admissions.length ?? 0).toString(),
+                value: workspace.admissions.length.toString(),
                 icon: Icons.local_hospital_outlined,
               ),
               AppReportSummaryItem(
                 label: l10n.patientsInvoicesSectionTitle,
-                value: (workspace?.invoices.length ?? 0).toString(),
+                value: workspace.invoices.length.toString(),
                 icon: Icons.receipt_long_outlined,
               ),
             ],
+            minTileWidth: 120,
           ),
           SizedBox(height: theme.spacing.md),
           Text(
@@ -4141,10 +4139,11 @@ class _PatientReportDialog extends StatelessWidget {
             style: theme.textTheme.titleSmall,
           ),
           SizedBox(height: theme.spacing.xs),
-          if ((detail?.timeline ?? const <PatientTimelineItem>[]).isEmpty)
+          if (effectiveDetail.timeline.isEmpty)
             Text(l10n.patientsNoTimeline)
           else
-            for (final PatientTimelineItem item in detail!.timeline.take(8))
+            for (final PatientTimelineItem item
+                in effectiveDetail.timeline.take(6))
               _InfoRow(
                 label: _apiLabel(item.resource),
                 value: _joinDisplay(<String?>[
@@ -4162,7 +4161,15 @@ class _PatientReportDialog extends StatelessWidget {
         AppReportActionButton.print(
           label: l10n.patientsPrintReportAction,
           onPressed: () {
-            printHtmlDocument(_patientReportHtml(context, patient, detail));
+            unawaited(
+              showAppDialog<void>(
+                context: context,
+                builder: (_) => _PatientReportPrintPreviewDialog(
+                  patient: patient,
+                  detail: detail,
+                ),
+              ),
+            );
           },
         ),
       ],
@@ -4170,81 +4177,1706 @@ class _PatientReportDialog extends StatelessWidget {
   }
 }
 
-String _patientReportHtml(
-  BuildContext context,
-  Patient patient,
-  PatientDetail? detail,
-) {
-  final l10n = context.l10n;
-  final Locale locale = Localizations.localeOf(context);
-  final PatientWorkspaceSnapshot? workspace = detail?.workspace;
-  final List<PatientTimelineItem> timeline =
-      detail?.timeline ?? const <PatientTimelineItem>[];
-  String row(String label, String? value) {
-    return '<tr><th>${_htmlEscape(label)}</th><td>${_htmlEscape(value ?? l10n.profileUnknownValue)}</td></tr>';
+class _PatientReportIdentityPanel extends StatelessWidget {
+  const _PatientReportIdentityPanel({required this.detail});
+
+  final PatientDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final Patient patient = detail.patient;
+    final List<_PatientReportFact> facts = <_PatientReportFact>[
+      _PatientReportFact(
+        label: l10n.patientsDobLabel,
+        value: _formatOptionalDate(context, patient.dateOfBirth),
+      ),
+      _PatientReportFact(
+        label: l10n.patientsGenderLabel,
+        value: patient.gender == null
+            ? l10n.profileUnknownValue
+            : _genderLabel(l10n, patient.gender!),
+      ),
+      _PatientReportFact(
+        label: l10n.patientsPhoneLabel,
+        value: patient.primaryPhone ?? l10n.profileUnknownValue,
+      ),
+      _PatientReportFact(
+        label: l10n.patientsEmailLabel,
+        value: patient.primaryEmail ?? l10n.profileUnknownValue,
+      ),
+      _PatientReportFact(
+        label: l10n.patientsFacilityLabel,
+        value: patient.facilityLabel ?? l10n.profileUnknownValue,
+      ),
+      _PatientReportFact(
+        label: l10n.profileTenantLabel,
+        value: patient.tenantLabel ?? l10n.profileUnknownValue,
+      ),
+    ];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.assignment_ind_outlined,
+                  color: theme.colorScheme.primary,
+                  size: theme.appTokens.listIconSize,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        patient.effectiveDisplayName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        patient.effectiveIdentifier ?? patient.id,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final int columns = constraints.maxWidth >= 640
+                    ? 3
+                    : constraints.maxWidth >= 420
+                    ? 2
+                    : 1;
+                final double gap = theme.spacing.sm;
+                final double width =
+                    (constraints.maxWidth - (gap * (columns - 1))) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    for (final _PatientReportFact fact in facts)
+                      SizedBox(
+                        width: math.max(width, 0),
+                        child: _PatientReportCompactFact(fact: fact),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PatientReportCompactFact extends StatelessWidget {
+  const _PatientReportCompactFact({required this.fact});
+
+  final _PatientReportFact fact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          fact.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          fact.value,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PatientReportPrintPreviewDialog extends StatefulWidget {
+  const _PatientReportPrintPreviewDialog({required this.patient, this.detail});
+
+  final Patient patient;
+  final PatientDetail? detail;
+
+  @override
+  State<_PatientReportPrintPreviewDialog> createState() =>
+      _PatientReportPrintPreviewDialogState();
+}
+
+class _PatientReportPrintPreviewDialogState
+    extends State<_PatientReportPrintPreviewDialog> {
+  late final DateTime _generatedAt;
+  _PatientReportPeriodMode _periodMode = _PatientReportPeriodMode.allDates;
+  DateTime? _singleDate;
+  DateTime? _startDate;
+  DateTime? _endDate;
+  final Set<_PatientReportSection> _selectedSections = <_PatientReportSection>{
+    ..._defaultPatientReportSections,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _generatedAt = DateTime.now();
   }
 
-  String summary(String label, int value) {
-    return '<div class="metric"><span>${_htmlEscape(value.toString())}</span><small>${_htmlEscape(label)}</small></div>';
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final PatientDetail effectiveDetail = _effectivePatientDetail(
+      widget.patient,
+      widget.detail,
+    );
+    final _PatientReportSelection selection = _PatientReportSelection(
+      periodMode: _periodMode,
+      singleDate: _singleDate,
+      startDate: _startDate,
+      endDate: _endDate,
+      sections: Set<_PatientReportSection>.unmodifiable(_selectedSections),
+    );
+    final _PatientReportDocument document = _buildPatientReportDocument(
+      context,
+      detail: effectiveDetail,
+      selection: selection,
+      generatedAt: _generatedAt,
+    );
+    final bool periodIsValid = _periodRangeIsValid;
+
+    return AppDialog(
+      title: Text(l10n.patientsReportPreviewDialogTitle),
+      icon: const Icon(Icons.preview_outlined),
+      scrollable: true,
+      maxWidth: 1080,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _PatientReportPreviewControls(
+            detail: effectiveDetail,
+            selection: selection,
+            periodIsValid: periodIsValid,
+            onPeriodModeChanged: (_PatientReportPeriodMode? value) {
+              setState(() {
+                _periodMode = value ?? _PatientReportPeriodMode.allDates;
+              });
+            },
+            onSingleDateChanged: (DateTime? value) {
+              setState(() => _singleDate = value);
+            },
+            onStartDateChanged: (DateTime? value) {
+              setState(() => _startDate = value);
+            },
+            onEndDateChanged: (DateTime? value) {
+              setState(() => _endDate = value);
+            },
+            onSectionChanged: _toggleSection,
+          ),
+          SizedBox(height: theme.spacing.lg),
+          Text(
+            l10n.patientsReportPreviewSectionTitle,
+            style: theme.textTheme.titleMedium,
+          ),
+          SizedBox(height: theme.spacing.sm),
+          _PatientReportPreviewPages(document: document),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () => Navigator.of(context).maybePop(false),
+        ),
+        AppReportActionButton.print(
+          label: l10n.patientsReportPrintNowAction,
+          enabled: periodIsValid,
+          onPressed: periodIsValid
+              ? () {
+                  printHtmlDocument(_patientReportHtml(context, document));
+                }
+              : null,
+        ),
+      ],
+    );
+  }
+
+  bool get _periodRangeIsValid {
+    if (_periodMode != _PatientReportPeriodMode.dateRange ||
+        _startDate == null ||
+        _endDate == null) {
+      return true;
+    }
+    return !_dateOnly(_startDate!).isAfter(_dateOnly(_endDate!));
+  }
+
+  void _toggleSection(_PatientReportSection section, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedSections.add(section);
+        return;
+      }
+      if (_selectedSections.length > 1) {
+        _selectedSections.remove(section);
+      }
+    });
+  }
+}
+
+class _PatientReportPreviewControls extends StatelessWidget {
+  const _PatientReportPreviewControls({
+    required this.detail,
+    required this.selection,
+    required this.periodIsValid,
+    required this.onPeriodModeChanged,
+    required this.onSingleDateChanged,
+    required this.onStartDateChanged,
+    required this.onEndDateChanged,
+    required this.onSectionChanged,
+  });
+
+  final PatientDetail detail;
+  final _PatientReportSelection selection;
+  final bool periodIsValid;
+  final ValueChanged<_PatientReportPeriodMode?> onPeriodModeChanged;
+  final ValueChanged<DateTime?> onSingleDateChanged;
+  final ValueChanged<DateTime?> onStartDateChanged;
+  final ValueChanged<DateTime?> onEndDateChanged;
+  final void Function(_PatientReportSection section, bool selected)
+  onSectionChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppFormSection(
+          title: l10n.patientsReportPeriodLabel,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                if (constraints.maxWidth < 720) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      _periodModeField(context),
+                      if (_dateFieldForMode(context)
+                          case final Widget field) ...<Widget>[
+                        SizedBox(height: theme.spacing.sm),
+                        field,
+                      ],
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SizedBox(width: 240, child: _periodModeField(context)),
+                    SizedBox(width: theme.spacing.sm),
+                    Expanded(
+                      child:
+                          _dateFieldForMode(context) ?? const SizedBox.shrink(),
+                    ),
+                  ],
+                );
+              },
+            ),
+            if (!periodIsValid)
+              Text(
+                l10n.patientsReportDateRangeInvalidMessage,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.lg),
+        AppFormSection(
+          title: l10n.patientsReportSectionsLabel,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final int columns = constraints.maxWidth >= 920
+                    ? 3
+                    : constraints.maxWidth >= 620
+                    ? 2
+                    : 1;
+                final double gap = theme.spacing.sm;
+                final double tileWidth =
+                    (constraints.maxWidth - (gap * (columns - 1))) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: <Widget>[
+                    for (final _PatientReportSection section
+                        in _patientReportSections)
+                      SizedBox(
+                        width: math.max(tileWidth, 0),
+                        child: _PatientReportSectionTile(
+                          title: _patientReportSectionLabel(l10n, section),
+                          count: _patientReportSectionCount(
+                            detail,
+                            section,
+                            selection,
+                          ),
+                          icon: _patientReportSectionIcon(section),
+                          selected: selection.sections.contains(section),
+                          onChanged: (bool value) =>
+                              onSectionChanged(section, value),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _periodModeField(BuildContext context) {
+    final l10n = context.l10n;
+    return AppSelectField<_PatientReportPeriodMode>(
+      value: selection.periodMode,
+      labelText: l10n.patientsReportPeriodLabel,
+      options: <AppSelectOption<_PatientReportPeriodMode>>[
+        for (final _PatientReportPeriodMode value
+            in _PatientReportPeriodMode.values)
+          AppSelectOption<_PatientReportPeriodMode>(
+            value: value,
+            label: _patientReportPeriodModeLabel(l10n, value),
+          ),
+      ],
+      onChanged: onPeriodModeChanged,
+    );
+  }
+
+  Widget? _dateFieldForMode(BuildContext context) {
+    final l10n = context.l10n;
+    final DateTime now = DateTime.now();
+    final DateTime firstDate = DateTime(1900);
+    final DateTime lastDate = DateTime(now.year + 1, 12, 31);
+
+    return switch (selection.periodMode) {
+      _PatientReportPeriodMode.allDates => null,
+      _PatientReportPeriodMode.singleDate => AppDateField(
+        value: selection.singleDate,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        currentDate: now,
+        initialPickerDate: selection.singleDate ?? now,
+        pickerButtonLabel: l10n.patientsDatePickerAction,
+        invalidDateMessage: l10n.appDateInvalidMessage,
+        labelText: l10n.patientsReportDateLabel,
+        onChanged: onSingleDateChanged,
+      ),
+      _PatientReportPeriodMode.dateRange => _ResponsiveFieldPair(
+        left: AppDateField(
+          value: selection.startDate,
+          firstDate: firstDate,
+          lastDate: lastDate,
+          currentDate: now,
+          initialPickerDate: selection.startDate ?? now,
+          pickerButtonLabel: l10n.patientsDatePickerAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
+          labelText: l10n.patientsReportStartDateLabel,
+          onChanged: onStartDateChanged,
+        ),
+        right: AppDateField(
+          value: selection.endDate,
+          firstDate: firstDate,
+          lastDate: lastDate,
+          currentDate: now,
+          initialPickerDate: selection.endDate ?? selection.startDate ?? now,
+          pickerButtonLabel: l10n.patientsDatePickerAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
+          labelText: l10n.patientsReportEndDateLabel,
+          onChanged: onEndDateChanged,
+        ),
+      ),
+    };
+  }
+}
+
+class _PatientReportSectionTile extends StatelessWidget {
+  const _PatientReportSectionTile({
+    required this.title,
+    required this.count,
+    required this.icon,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String title;
+  final int count;
+  final IconData icon;
+  final bool selected;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Semantics(
+      button: true,
+      checked: selected,
+      child: InkWell(
+        onTap: () => onChanged(!selected),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected
+                ? colorScheme.primaryContainer.withValues(alpha: 0.28)
+                : colorScheme.surface,
+            border: Border.all(
+              color: selected
+                  ? colorScheme.primary
+                  : colorScheme.outlineVariant,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.sm,
+              vertical: theme.spacing.xs,
+            ),
+            child: Row(
+              children: <Widget>[
+                Checkbox(
+                  value: selected,
+                  visualDensity: VisualDensity.compact,
+                  onChanged: (bool? value) => onChanged(value ?? false),
+                ),
+                Icon(
+                  icon,
+                  color: selected
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                  size: theme.appTokens.listIconSize,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Text(
+                  count.toString(),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PatientReportPreviewPages extends StatelessWidget {
+  const _PatientReportPreviewPages({required this.document});
+
+  final _PatientReportDocument document;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (var index = 0; index < document.pages.length; index++) ...<Widget>[
+          _PatientReportPreviewPage(
+            document: document,
+            page: document.pages[index],
+            pageNumber: index + 1,
+            totalPages: document.pages.length,
+          ),
+          if (index < document.pages.length - 1)
+            SizedBox(height: theme.spacing.md),
+        ],
+      ],
+    );
+  }
+}
+
+class _PatientReportPreviewPage extends StatelessWidget {
+  const _PatientReportPreviewPage({
+    required this.document,
+    required this.page,
+    required this.pageNumber,
+    required this.totalPages,
+  });
+
+  final _PatientReportDocument document;
+  final _PatientReportPage page;
+  final int pageNumber;
+  final int totalPages;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 680),
+        child: Padding(
+          padding: EdgeInsets.all(theme.spacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _PatientReportPageHeader(document: document),
+              SizedBox(height: theme.spacing.md),
+              for (
+                var index = 0;
+                index < page.blocks.length;
+                index++
+              ) ...<Widget>[
+                _PatientReportBlockPreview(block: page.blocks[index]),
+                if (index < page.blocks.length - 1)
+                  SizedBox(height: theme.spacing.md),
+              ],
+              SizedBox(height: theme.spacing.md),
+              Divider(color: theme.colorScheme.outlineVariant),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Text(
+                  l10n.patientsReportPageNumberLabel(pageNumber, totalPages),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PatientReportPageHeader extends StatelessWidget {
+  const _PatientReportPageHeader({required this.document});
+
+  final _PatientReportDocument document;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: theme.colorScheme.outline)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: theme.spacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    document.hospitalName,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    document.title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: theme.spacing.md),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
+                  Text(
+                    document.patientName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    document.patientIdentifier,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    '${l10n.patientsReportPeriodLabel}: ${document.periodLabel}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PatientReportBlockPreview extends StatelessWidget {
+  const _PatientReportBlockPreview({required this.block});
+
+  final _PatientReportBlock block;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          block.title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: Colors.black,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xffd1d5db)),
+          ),
+          child: block.rows.isEmpty
+              ? Padding(
+                  padding: EdgeInsets.all(theme.spacing.sm),
+                  child: Text(
+                    block.emptyText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.black87,
+                    ),
+                  ),
+                )
+              : Column(
+                  children: <Widget>[
+                    for (var index = 0; index < block.rows.length; index++)
+                      _PatientReportRowPreview(
+                        row: block.rows[index],
+                        showDivider: index < block.rows.length - 1,
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PatientReportRowPreview extends StatelessWidget {
+  const _PatientReportRowPreview({
+    required this.row,
+    required this.showDivider,
+  });
+
+  final _PatientReportRow row;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? labelStyle = theme.textTheme.bodySmall?.copyWith(
+      color: Colors.black87,
+      fontWeight: FontWeight.w800,
+    );
+    final TextStyle? valueStyle = theme.textTheme.bodySmall?.copyWith(
+      color: Colors.black,
+    );
+    final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
+      color: Colors.black87,
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: showDivider
+            ? const Border(bottom: BorderSide(color: Color(0xffe5e7eb)))
+            : null,
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final Widget value = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(row.value, style: valueStyle),
+                if (row.detail != null) Text(row.detail!, style: detailStyle),
+              ],
+            );
+            final Widget? meta = row.meta == null
+                ? null
+                : Text(row.meta!, textAlign: TextAlign.end, style: detailStyle);
+
+            if (constraints.maxWidth < 520) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    row.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  value,
+                  if (meta != null) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: meta,
+                    ),
+                  ],
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SizedBox(
+                  width: 160,
+                  child: Text(
+                    row.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle,
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(child: value),
+                if (meta != null) ...<Widget>[
+                  SizedBox(width: theme.spacing.sm),
+                  SizedBox(width: 128, child: meta),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+PatientDetail _effectivePatientDetail(Patient patient, PatientDetail? detail) {
+  return detail ??
+      PatientDetail(
+        patient: patient,
+        workspace: const PatientWorkspaceSnapshot(),
+      );
+}
+
+enum _PatientReportPeriodMode { allDates, singleDate, dateRange }
+
+enum _PatientReportSection {
+  summary,
+  timeline,
+  vitalSigns,
+  appointments,
+  encounters,
+  admissions,
+  invoices,
+  payments,
+  identifiers,
+  contacts,
+  guardians,
+  allergies,
+  medicalHistory,
+  documents,
+  consents,
+}
+
+const List<_PatientReportSection> _patientReportSections =
+    <_PatientReportSection>[
+      _PatientReportSection.summary,
+      _PatientReportSection.timeline,
+      _PatientReportSection.vitalSigns,
+      _PatientReportSection.appointments,
+      _PatientReportSection.encounters,
+      _PatientReportSection.admissions,
+      _PatientReportSection.invoices,
+      _PatientReportSection.payments,
+      _PatientReportSection.identifiers,
+      _PatientReportSection.contacts,
+      _PatientReportSection.guardians,
+      _PatientReportSection.allergies,
+      _PatientReportSection.medicalHistory,
+      _PatientReportSection.documents,
+      _PatientReportSection.consents,
+    ];
+
+const Set<_PatientReportSection> _defaultPatientReportSections =
+    <_PatientReportSection>{
+      _PatientReportSection.summary,
+      _PatientReportSection.timeline,
+      _PatientReportSection.vitalSigns,
+      _PatientReportSection.appointments,
+      _PatientReportSection.encounters,
+      _PatientReportSection.admissions,
+      _PatientReportSection.identifiers,
+      _PatientReportSection.contacts,
+      _PatientReportSection.medicalHistory,
+    };
+
+@immutable
+final class _PatientReportSelection {
+  const _PatientReportSelection({
+    required this.periodMode,
+    required this.sections,
+    this.singleDate,
+    this.startDate,
+    this.endDate,
+  });
+
+  final _PatientReportPeriodMode periodMode;
+  final DateTime? singleDate;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final Set<_PatientReportSection> sections;
+}
+
+@immutable
+final class _PatientReportFact {
+  const _PatientReportFact({required this.label, required this.value});
+
+  final String label;
+  final String value;
+}
+
+@immutable
+final class _PatientReportRow {
+  const _PatientReportRow({
+    required this.label,
+    required this.value,
+    this.detail,
+    this.meta,
+  });
+
+  final String label;
+  final String value;
+  final String? detail;
+  final String? meta;
+}
+
+@immutable
+final class _PatientReportBlock {
+  const _PatientReportBlock({
+    required this.title,
+    required this.rows,
+    required this.emptyText,
+  });
+
+  final String title;
+  final List<_PatientReportRow> rows;
+  final String emptyText;
+}
+
+@immutable
+final class _PatientReportPage {
+  const _PatientReportPage({required this.blocks});
+
+  final List<_PatientReportBlock> blocks;
+}
+
+@immutable
+final class _PatientReportDocument {
+  const _PatientReportDocument({
+    required this.title,
+    required this.hospitalName,
+    required this.patientName,
+    required this.patientIdentifier,
+    required this.periodLabel,
+    required this.generatedAtLabel,
+    required this.pages,
+  });
+
+  final String title;
+  final String hospitalName;
+  final String patientName;
+  final String patientIdentifier;
+  final String periodLabel;
+  final String generatedAtLabel;
+  final List<_PatientReportPage> pages;
+}
+
+_PatientReportDocument _buildPatientReportDocument(
+  BuildContext context, {
+  required PatientDetail detail,
+  required _PatientReportSelection selection,
+  required DateTime generatedAt,
+}) {
+  final l10n = context.l10n;
+  final Locale locale = Localizations.localeOf(context);
+  final Patient patient = detail.patient;
+  final PatientWorkspaceSnapshot workspace = detail.workspace;
+  final String hospitalName =
+      patient.facilityLabel ?? patient.tenantLabel ?? l10n.appTitle;
+  final String emptyText = l10n.patientsReportNoRecordsForSection;
+
+  final List<_PatientReportBlock> leadingBlocks = <_PatientReportBlock>[
+    _PatientReportBlock(
+      title: l10n.patientsReportHospitalInfoSectionTitle,
+      emptyText: emptyText,
+      rows: <_PatientReportRow>[
+        _PatientReportRow(
+          label: l10n.patientsReportHospitalNameLabel,
+          value: hospitalName,
+        ),
+        _PatientReportRow(
+          label: l10n.patientsFacilityLabel,
+          value: patient.facilityLabel ?? l10n.profileUnknownValue,
+        ),
+        _PatientReportRow(
+          label: l10n.profileTenantLabel,
+          value: patient.tenantLabel ?? l10n.profileUnknownValue,
+        ),
+        _PatientReportRow(
+          label: l10n.patientsReportHospitalContactLabel,
+          value: l10n.profileUnknownValue,
+        ),
+        _PatientReportRow(
+          label: l10n.patientsReportHospitalLocationLabel,
+          value: l10n.profileUnknownValue,
+        ),
+        _PatientReportRow(
+          label: l10n.patientsReportHospitalAddressLabel,
+          value: l10n.profileUnknownValue,
+        ),
+      ],
+    ),
+    _PatientReportBlock(
+      title: l10n.patientsReportPatientInfoSectionTitle,
+      emptyText: emptyText,
+      rows: <_PatientReportRow>[
+        _PatientReportRow(
+          label: l10n.patientsNameLabel,
+          value: patient.effectiveDisplayName,
+        ),
+        _PatientReportRow(
+          label: l10n.patientsIdentifierLabel,
+          value: patient.effectiveIdentifier ?? patient.id,
+        ),
+        _PatientReportRow(
+          label: l10n.patientsDobLabel,
+          value: _formatOptionalDate(context, patient.dateOfBirth),
+        ),
+        _PatientReportRow(
+          label: l10n.patientsGenderLabel,
+          value: patient.gender == null
+              ? l10n.profileUnknownValue
+              : _genderLabel(l10n, patient.gender!),
+        ),
+        _PatientReportRow(
+          label: l10n.patientsPhoneLabel,
+          value: patient.primaryPhone ?? l10n.profileUnknownValue,
+        ),
+        _PatientReportRow(
+          label: l10n.patientsEmailLabel,
+          value: patient.primaryEmail ?? l10n.profileUnknownValue,
+        ),
+      ],
+    ),
+  ];
+
+  final List<_PatientReportBlock> bodyBlocks = <_PatientReportBlock>[
+    if (selection.sections.contains(_PatientReportSection.summary))
+      _PatientReportBlock(
+        title: l10n.patientsReportSummarySectionTitle,
+        emptyText: emptyText,
+        rows: <_PatientReportRow>[
+          _PatientReportRow(
+            label: l10n.patientsAppointmentsSectionTitle,
+            value: _filteredSummaryRecords(
+              workspace.appointments,
+              selection,
+            ).length.toString(),
+          ),
+          _PatientReportRow(
+            label: l10n.patientsEncountersSectionTitle,
+            value: _filteredSummaryRecords(
+              workspace.encounters,
+              selection,
+            ).length.toString(),
+          ),
+          _PatientReportRow(
+            label: l10n.patientsReportVitalsSectionTitle,
+            value: _filteredTimelineItems(
+              detail.timeline.where(_isVitalTimelineItem),
+              selection,
+            ).length.toString(),
+          ),
+          _PatientReportRow(
+            label: l10n.patientsAdmissionsSectionTitle,
+            value: _filteredSummaryRecords(
+              workspace.admissions,
+              selection,
+            ).length.toString(),
+          ),
+          _PatientReportRow(
+            label: l10n.patientsInvoicesSectionTitle,
+            value: _filteredSummaryRecords(
+              workspace.invoices,
+              selection,
+            ).length.toString(),
+          ),
+          _PatientReportRow(
+            label: l10n.patientsReportPaymentsSectionTitle,
+            value: _filteredSummaryRecords(
+              workspace.payments,
+              selection,
+            ).length.toString(),
+          ),
+        ],
+      ),
+    if (selection.sections.contains(_PatientReportSection.timeline))
+      _PatientReportBlock(
+        title: l10n.patientsTimelineSectionTitle,
+        rows: _timelineRows(context, detail.timeline, selection),
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.vitalSigns))
+      _PatientReportBlock(
+        title: l10n.patientsReportVitalsSectionTitle,
+        rows: _timelineRows(
+          context,
+          detail.timeline.where(_isVitalTimelineItem),
+          selection,
+        ),
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.appointments))
+      _PatientReportBlock(
+        title: l10n.patientsAppointmentsSectionTitle,
+        rows: _summaryRecordRows(context, workspace.appointments, selection),
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.encounters))
+      _PatientReportBlock(
+        title: l10n.patientsEncountersSectionTitle,
+        rows: _summaryRecordRows(context, workspace.encounters, selection),
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.admissions))
+      _PatientReportBlock(
+        title: l10n.patientsAdmissionsSectionTitle,
+        rows: _summaryRecordRows(context, workspace.admissions, selection),
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.invoices))
+      _PatientReportBlock(
+        title: l10n.patientsInvoicesSectionTitle,
+        rows: _summaryRecordRows(context, workspace.invoices, selection),
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.payments))
+      _PatientReportBlock(
+        title: l10n.patientsReportPaymentsSectionTitle,
+        rows: _summaryRecordRows(context, workspace.payments, selection),
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.identifiers))
+      _PatientReportBlock(
+        title: l10n.patientsIdentifiersSectionTitle,
+        rows: <_PatientReportRow>[
+          for (final PatientIdentifier item in detail.identifiers)
+            _PatientReportRow(
+              label: _apiLabel(item.type),
+              value: item.value,
+              meta: item.isPrimary ? l10n.patientsPrimaryRecordLabel : null,
+            ),
+        ],
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.contacts))
+      _PatientReportBlock(
+        title: l10n.patientsContactsSectionTitle,
+        rows: <_PatientReportRow>[
+          for (final PatientContact item in detail.contacts)
+            _PatientReportRow(
+              label: _apiLabel(item.type),
+              value: item.value,
+              meta: item.isPrimary ? l10n.patientsPrimaryRecordLabel : null,
+            ),
+        ],
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.guardians))
+      _PatientReportBlock(
+        title: l10n.patientsGuardiansSectionTitle,
+        rows: <_PatientReportRow>[
+          for (final PatientGuardian item in detail.guardians)
+            _PatientReportRow(
+              label: item.name,
+              value: item.relationship ?? l10n.profileUnknownValue,
+              detail: _joinDisplay(<String?>[item.phone, item.email]),
+            ),
+        ],
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.allergies))
+      _PatientReportBlock(
+        title: l10n.patientsAllergiesSectionTitle,
+        rows: <_PatientReportRow>[
+          for (final PatientAllergy item in detail.allergies)
+            _PatientReportRow(
+              label: item.allergen,
+              value: _apiLabel(item.severity),
+              detail: _joinDisplay(<String?>[item.reaction, item.notes]),
+            ),
+        ],
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.medicalHistory))
+      _PatientReportBlock(
+        title: l10n.patientsMedicalHistorySectionTitle,
+        rows: <_PatientReportRow>[
+          for (final PatientMedicalHistory item in detail.medicalHistories)
+            _PatientReportRow(
+              label: item.condition,
+              value: _formatOptionalDate(context, item.diagnosisDate),
+              detail: item.notes,
+            ),
+        ],
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.documents))
+      _PatientReportBlock(
+        title: l10n.patientsDocumentsSectionTitle,
+        rows: <_PatientReportRow>[
+          for (final PatientDocument item in detail.documents)
+            _PatientReportRow(
+              label: _apiLabel(item.documentType),
+              value: item.fileName ?? item.storageKey,
+              detail: item.contentType,
+            ),
+        ],
+        emptyText: emptyText,
+      ),
+    if (selection.sections.contains(_PatientReportSection.consents))
+      _PatientReportBlock(
+        title: l10n.patientsConsentsSectionTitle,
+        rows: <_PatientReportRow>[
+          for (final PatientConsent item in detail.consents)
+            _PatientReportRow(
+              label: _apiLabel(item.consentType),
+              value: _apiLabel(item.status),
+              meta: _formatOptionalDateTime(
+                context,
+                item.grantedAt ?? item.revokedAt ?? item.updatedAt,
+              ),
+            ),
+        ],
+        emptyText: emptyText,
+      ),
+    _PatientReportBlock(
+      title: l10n.patientsReportGeneratedSectionTitle,
+      emptyText: emptyText,
+      rows: <_PatientReportRow>[
+        _PatientReportRow(
+          label: l10n.patientsReportPreparedOnLabel,
+          value: AppFormatters.dateTime(generatedAt, locale),
+        ),
+      ],
+    ),
+  ];
+
+  return _PatientReportDocument(
+    title: l10n.patientsReportDialogTitle,
+    hospitalName: hospitalName,
+    patientName: patient.effectiveDisplayName,
+    patientIdentifier: patient.effectiveIdentifier ?? patient.id,
+    periodLabel: _patientReportPeriodLabel(context, selection),
+    generatedAtLabel: AppFormatters.dateTime(generatedAt, locale),
+    pages: _paginatePatientReportBlocks(leadingBlocks, bodyBlocks),
+  );
+}
+
+List<_PatientReportPage> _paginatePatientReportBlocks(
+  List<_PatientReportBlock> leadingBlocks,
+  List<_PatientReportBlock> bodyBlocks,
+) {
+  const int firstPageCapacity = 22;
+  const int regularPageCapacity = 26;
+  const int maxBlockRows = 18;
+  final List<_PatientReportPage> pages = <_PatientReportPage>[];
+  final List<_PatientReportBlock> currentBlocks = <_PatientReportBlock>[];
+  var capacity = firstPageCapacity;
+  var used = 0;
+
+  void pushPage() {
+    if (currentBlocks.isEmpty) {
+      return;
+    }
+    pages.add(
+      _PatientReportPage(blocks: List<_PatientReportBlock>.of(currentBlocks)),
+    );
+    currentBlocks.clear();
+    capacity = regularPageCapacity;
+    used = 0;
+  }
+
+  void addBlock(_PatientReportBlock block) {
+    for (final _PatientReportBlock chunk in _chunkPatientReportBlock(
+      block,
+      maxBlockRows,
+    )) {
+      final int weight = math.max(chunk.rows.length, 1) + 2;
+      if (currentBlocks.isNotEmpty && used + weight > capacity) {
+        pushPage();
+      }
+      currentBlocks.add(chunk);
+      used += weight;
+    }
+  }
+
+  for (final _PatientReportBlock block in leadingBlocks) {
+    addBlock(block);
+  }
+  for (final _PatientReportBlock block in bodyBlocks) {
+    addBlock(block);
+  }
+  pushPage();
+
+  return pages.isEmpty
+      ? <_PatientReportPage>[
+          const _PatientReportPage(blocks: <_PatientReportBlock>[]),
+        ]
+      : pages;
+}
+
+List<_PatientReportBlock> _chunkPatientReportBlock(
+  _PatientReportBlock block,
+  int maxRows,
+) {
+  if (block.rows.length <= maxRows) {
+    return <_PatientReportBlock>[block];
+  }
+
+  final List<_PatientReportBlock> chunks = <_PatientReportBlock>[];
+  for (var index = 0; index < block.rows.length; index += maxRows) {
+    chunks.add(
+      _PatientReportBlock(
+        title: block.title,
+        rows: block.rows.skip(index).take(maxRows).toList(growable: false),
+        emptyText: block.emptyText,
+      ),
+    );
+  }
+  return chunks;
+}
+
+List<_PatientReportRow> _summaryRecordRows(
+  BuildContext context,
+  Iterable<PatientSummaryRecord> records,
+  _PatientReportSelection selection,
+) {
+  final List<PatientSummaryRecord> filtered = _filteredSummaryRecords(
+    records,
+    selection,
+  );
+  return <_PatientReportRow>[
+    for (final PatientSummaryRecord record in filtered)
+      _PatientReportRow(
+        label: record.title ?? _apiLabel(record.kind),
+        value: _joinDisplay(<String?>[
+          record.status == null ? null : _apiLabel(record.status!),
+          record.subtitle,
+        ]),
+        meta: _joinDisplay(<String?>[
+          _formatOptionalDateTime(context, record.occurredAt),
+          _formatSummaryRecordAmount(context, record),
+        ]),
+      ),
+  ];
+}
+
+List<_PatientReportRow> _timelineRows(
+  BuildContext context,
+  Iterable<PatientTimelineItem> items,
+  _PatientReportSelection selection,
+) {
+  return <_PatientReportRow>[
+    for (final PatientTimelineItem item in _filteredTimelineItems(
+      items,
+      selection,
+    ))
+      _PatientReportRow(
+        label: _apiLabel(item.resource),
+        value: item.title ?? item.subtitle ?? context.l10n.profileUnknownValue,
+        detail: item.title == null ? null : item.subtitle,
+        meta: _formatOptionalDateTime(context, item.occurredAt),
+      ),
+  ];
+}
+
+List<PatientSummaryRecord> _filteredSummaryRecords(
+  Iterable<PatientSummaryRecord> records,
+  _PatientReportSelection selection,
+) {
+  return records
+      .where(
+        (PatientSummaryRecord record) =>
+            _matchesPatientReportPeriod(record.occurredAt, selection),
+      )
+      .toList(growable: false);
+}
+
+List<PatientTimelineItem> _filteredTimelineItems(
+  Iterable<PatientTimelineItem> items,
+  _PatientReportSelection selection,
+) {
+  return items
+      .where(
+        (PatientTimelineItem item) =>
+            _matchesPatientReportPeriod(item.occurredAt, selection),
+      )
+      .toList(growable: false);
+}
+
+bool _matchesPatientReportPeriod(
+  DateTime? value,
+  _PatientReportSelection selection,
+) {
+  if (selection.periodMode == _PatientReportPeriodMode.allDates) {
+    return true;
+  }
+  if (value == null) {
+    return false;
+  }
+
+  final DateTime date = _dateOnly(value);
+  return switch (selection.periodMode) {
+    _PatientReportPeriodMode.allDates => true,
+    _PatientReportPeriodMode.singleDate =>
+      selection.singleDate == null || date == _dateOnly(selection.singleDate!),
+    _PatientReportPeriodMode.dateRange =>
+      (selection.startDate == null ||
+              !date.isBefore(_dateOnly(selection.startDate!))) &&
+          (selection.endDate == null ||
+              !date.isAfter(_dateOnly(selection.endDate!))),
+  };
+}
+
+String? _formatSummaryRecordAmount(
+  BuildContext context,
+  PatientSummaryRecord record,
+) {
+  if (record.amount == null) {
+    return null;
+  }
+  return AppFormatters.currency(
+    record.amount!,
+    Localizations.localeOf(context),
+    currencyCode: record.currency,
+  );
+}
+
+bool _isVitalTimelineItem(PatientTimelineItem item) {
+  final String searchable = <String>[
+    item.resource,
+    item.title ?? '',
+    item.subtitle ?? '',
+  ].join(' ').toLowerCase();
+  return searchable.contains('vital');
+}
+
+int _patientReportSectionCount(
+  PatientDetail detail,
+  _PatientReportSection section,
+  _PatientReportSelection selection,
+) {
+  final PatientWorkspaceSnapshot workspace = detail.workspace;
+  return switch (section) {
+    _PatientReportSection.summary => 6,
+    _PatientReportSection.timeline => _filteredTimelineItems(
+      detail.timeline,
+      selection,
+    ).length,
+    _PatientReportSection.vitalSigns => _filteredTimelineItems(
+      detail.timeline.where(_isVitalTimelineItem),
+      selection,
+    ).length,
+    _PatientReportSection.appointments => _filteredSummaryRecords(
+      workspace.appointments,
+      selection,
+    ).length,
+    _PatientReportSection.encounters => _filteredSummaryRecords(
+      workspace.encounters,
+      selection,
+    ).length,
+    _PatientReportSection.admissions => _filteredSummaryRecords(
+      workspace.admissions,
+      selection,
+    ).length,
+    _PatientReportSection.invoices => _filteredSummaryRecords(
+      workspace.invoices,
+      selection,
+    ).length,
+    _PatientReportSection.payments => _filteredSummaryRecords(
+      workspace.payments,
+      selection,
+    ).length,
+    _PatientReportSection.identifiers => detail.identifiers.length,
+    _PatientReportSection.contacts => detail.contacts.length,
+    _PatientReportSection.guardians => detail.guardians.length,
+    _PatientReportSection.allergies => detail.allergies.length,
+    _PatientReportSection.medicalHistory => detail.medicalHistories.length,
+    _PatientReportSection.documents => detail.documents.length,
+    _PatientReportSection.consents => detail.consents.length,
+  };
+}
+
+String _patientReportSectionLabel(
+  AppLocalizations l10n,
+  _PatientReportSection section,
+) {
+  return switch (section) {
+    _PatientReportSection.summary => l10n.patientsReportSummarySectionTitle,
+    _PatientReportSection.timeline => l10n.patientsTimelineSectionTitle,
+    _PatientReportSection.vitalSigns => l10n.patientsReportVitalsSectionTitle,
+    _PatientReportSection.appointments => l10n.patientsAppointmentsSectionTitle,
+    _PatientReportSection.encounters => l10n.patientsEncountersSectionTitle,
+    _PatientReportSection.admissions => l10n.patientsAdmissionsSectionTitle,
+    _PatientReportSection.invoices => l10n.patientsInvoicesSectionTitle,
+    _PatientReportSection.payments => l10n.patientsReportPaymentsSectionTitle,
+    _PatientReportSection.identifiers => l10n.patientsIdentifiersSectionTitle,
+    _PatientReportSection.contacts => l10n.patientsContactsSectionTitle,
+    _PatientReportSection.guardians => l10n.patientsGuardiansSectionTitle,
+    _PatientReportSection.allergies => l10n.patientsAllergiesSectionTitle,
+    _PatientReportSection.medicalHistory =>
+      l10n.patientsMedicalHistorySectionTitle,
+    _PatientReportSection.documents => l10n.patientsDocumentsSectionTitle,
+    _PatientReportSection.consents => l10n.patientsConsentsSectionTitle,
+  };
+}
+
+IconData _patientReportSectionIcon(_PatientReportSection section) {
+  return switch (section) {
+    _PatientReportSection.summary => Icons.summarize_outlined,
+    _PatientReportSection.timeline => Icons.timeline_outlined,
+    _PatientReportSection.vitalSigns => Icons.monitor_heart_outlined,
+    _PatientReportSection.appointments => Icons.event_available_outlined,
+    _PatientReportSection.encounters => Icons.medical_services_outlined,
+    _PatientReportSection.admissions => Icons.local_hospital_outlined,
+    _PatientReportSection.invoices => Icons.receipt_long_outlined,
+    _PatientReportSection.payments => Icons.payments_outlined,
+    _PatientReportSection.identifiers => Icons.badge_outlined,
+    _PatientReportSection.contacts => Icons.contact_phone_outlined,
+    _PatientReportSection.guardians => Icons.supervisor_account_outlined,
+    _PatientReportSection.allergies => Icons.warning_amber_outlined,
+    _PatientReportSection.medicalHistory => Icons.history_edu_outlined,
+    _PatientReportSection.documents => Icons.description_outlined,
+    _PatientReportSection.consents => Icons.fact_check_outlined,
+  };
+}
+
+String _patientReportPeriodModeLabel(
+  AppLocalizations l10n,
+  _PatientReportPeriodMode value,
+) {
+  return switch (value) {
+    _PatientReportPeriodMode.allDates => l10n.patientsReportAllDatesOption,
+    _PatientReportPeriodMode.singleDate => l10n.patientsReportSingleDateOption,
+    _PatientReportPeriodMode.dateRange => l10n.patientsReportDateRangeOption,
+  };
+}
+
+String _patientReportPeriodLabel(
+  BuildContext context,
+  _PatientReportSelection selection,
+) {
+  final l10n = context.l10n;
+  return switch (selection.periodMode) {
+    _PatientReportPeriodMode.allDates => l10n.patientsReportAllDatesOption,
+    _PatientReportPeriodMode.singleDate =>
+      selection.singleDate == null
+          ? l10n.patientsReportSingleDateOption
+          : _formatOptionalDate(context, selection.singleDate),
+    _PatientReportPeriodMode.dateRange =>
+      _joinDisplay(<String?>[
+            selection.startDate == null
+                ? null
+                : _formatOptionalDate(context, selection.startDate),
+            selection.endDate == null
+                ? null
+                : _formatOptionalDate(context, selection.endDate),
+          ]).isEmpty
+          ? l10n.patientsReportDateRangeOption
+          : _joinDisplay(<String?>[
+              selection.startDate == null
+                  ? null
+                  : _formatOptionalDate(context, selection.startDate),
+              selection.endDate == null
+                  ? null
+                  : _formatOptionalDate(context, selection.endDate),
+            ]),
+  };
+}
+
+DateTime _dateOnly(DateTime value) {
+  return DateTime(value.year, value.month, value.day);
+}
+
+String _patientReportHtml(BuildContext context, _PatientReportDocument report) {
+  String row(_PatientReportRow value) {
+    final String detail = value.detail == null
+        ? ''
+        : '<div class="detail">${_htmlEscape(value.detail!)}</div>';
+    final String meta = value.meta == null
+        ? ''
+        : '<div class="meta">${_htmlEscape(value.meta!)}</div>';
+    return '''
+      <tr>
+        <th>${_htmlEscape(value.label)}</th>
+        <td>${_htmlEscape(value.value)}$detail</td>
+        <td>$meta</td>
+      </tr>
+''';
+  }
+
+  String block(_PatientReportBlock value) {
+    final String rows = value.rows.isEmpty
+        ? '<tr><td colspan="3" class="empty">${_htmlEscape(value.emptyText)}</td></tr>'
+        : value.rows.map(row).join();
+    return '''
+      <section class="block">
+        <h2>${_htmlEscape(value.title)}</h2>
+        <table>$rows</table>
+      </section>
+''';
+  }
+
+  String page(_PatientReportPage value, int index) {
+    final int pageNumber = index + 1;
+    final int totalPages = report.pages.length;
+    return '''
+    <article class="page">
+      <header class="page-header">
+        <div>
+          <strong>${_htmlEscape(report.hospitalName)}</strong>
+          <span>${_htmlEscape(report.title)}</span>
+        </div>
+        <div class="patient-header">
+          <strong>${_htmlEscape(report.patientName)}</strong>
+          <span>${_htmlEscape(report.patientIdentifier)}</span>
+          <span>${_htmlEscape(context.l10n.patientsReportPeriodLabel)}: ${_htmlEscape(report.periodLabel)}</span>
+        </div>
+      </header>
+      ${value.blocks.map(block).join()}
+      <footer>${_htmlEscape(context.l10n.patientsReportPageNumberLabel(pageNumber, totalPages))}</footer>
+    </article>
+''';
   }
 
   return '''
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: Arial, sans-serif; color: #1f2937; }
-  .report { padding: 32px; }
-  .header { border-bottom: 2px solid #111827; padding-bottom: 16px; margin-bottom: 24px; }
-  h1 { font-size: 24px; margin: 0 0 6px; }
-  .subtitle { color: #4b5563; font-size: 13px; }
-  h2 { font-size: 15px; margin: 24px 0 10px; text-transform: uppercase; letter-spacing: .04em; }
+  body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; }
+  .page { width: 210mm; min-height: 297mm; margin: 0 auto 12mm; padding: 16mm 15mm 18mm; background: #fff; position: relative; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  .page-header { border-bottom: 2px solid #111827; display: flex; justify-content: space-between; gap: 16px; padding-bottom: 10px; margin-bottom: 14px; }
+  .page-header strong, .page-header span { display: block; }
+  .page-header span { color: #374151; font-size: 11px; margin-top: 2px; }
+  .patient-header { text-align: right; }
+  .block { margin: 0 0 14px; }
+  h2 { font-size: 12px; margin: 0 0 6px; text-transform: uppercase; color: #111827; }
   table { width: 100%; border-collapse: collapse; }
-  th, td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; vertical-align: top; font-size: 13px; }
-  th { width: 28%; background: #f3f4f6; }
-  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .metric { border: 1px solid #d1d5db; padding: 12px; }
-  .metric span { display: block; font-size: 20px; font-weight: 700; }
-  .metric small { color: #4b5563; }
-  .timeline { margin: 0; padding-left: 18px; }
-  .timeline li { margin-bottom: 8px; font-size: 13px; }
-  @media print { .report { padding: 20mm; } }
+  th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; vertical-align: top; font-size: 11px; }
+  th { width: 28%; background: #f3f4f6; font-weight: 700; }
+  td:last-child { width: 20%; text-align: right; color: #374151; }
+  .detail { color: #374151; margin-top: 2px; }
+  .meta { color: #374151; }
+  .empty { color: #6b7280; text-align: left !important; }
+  footer { position: absolute; bottom: 9mm; left: 15mm; right: 15mm; border-top: 1px solid #d1d5db; padding-top: 5px; text-align: right; font-size: 10px; color: #374151; }
+  @page { size: A4; margin: 0; }
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; }
+  }
 </style>
-<main class="report">
-  <section class="header">
-    <h1>${_htmlEscape(l10n.patientsReportDialogTitle)}</h1>
-    <div class="subtitle">${_htmlEscape(patient.effectiveDisplayName)} | ${_htmlEscape(patient.effectiveIdentifier ?? patient.id)}</div>
-  </section>
-  <section>
-    <h2>${_htmlEscape(l10n.patientsDetailTitle)}</h2>
-    <table>
-      ${row(l10n.patientsNameLabel, patient.effectiveDisplayName)}
-      ${row(l10n.patientsIdentifierLabel, patient.effectiveIdentifier)}
-      ${row(l10n.patientsDobLabel, _formatOptionalDate(context, patient.dateOfBirth))}
-      ${row(l10n.patientsGenderLabel, patient.gender == null ? null : _genderLabel(l10n, patient.gender!))}
-      ${row(l10n.patientsPhoneLabel, patient.primaryPhone)}
-      ${row(l10n.patientsEmailLabel, patient.primaryEmail)}
-      ${row(l10n.patientsFacilityLabel, patient.facilityLabel)}
-    </table>
-  </section>
-  <section>
-    <h2>${_htmlEscape(l10n.patientsReportSummarySectionTitle)}</h2>
-    <div class="metrics">
-      ${summary(l10n.patientsAppointmentsSectionTitle, workspace?.appointments.length ?? 0)}
-      ${summary(l10n.patientsEncountersSectionTitle, workspace?.encounters.length ?? 0)}
-      ${summary(l10n.patientsAdmissionsSectionTitle, workspace?.admissions.length ?? 0)}
-      ${summary(l10n.patientsInvoicesSectionTitle, workspace?.invoices.length ?? 0)}
-    </div>
-  </section>
-  <section>
-    <h2>${_htmlEscape(l10n.patientsTimelineSectionTitle)}</h2>
-    ${timeline.isEmpty ? '<p>${_htmlEscape(l10n.patientsNoTimeline)}</p>' : '<ol class="timeline">${timeline.take(12).map((PatientTimelineItem item) {
-          final String title = _joinDisplay(<String?>[item.title, _formatOptionalDateTime(context, item.occurredAt)]);
-          return '<li><strong>${_htmlEscape(_apiLabel(item.resource))}</strong>: ${_htmlEscape(title)}</li>';
-        }).join()}</ol>'}
-  </section>
-  <section>
-    <h2>${_htmlEscape(l10n.patientsReportGeneratedSectionTitle)}</h2>
-    <p>${_htmlEscape(AppFormatters.mediumDate(DateTime.now(), locale))}</p>
-  </section>
+<main>
+  ${report.pages.asMap().entries.map((MapEntry<int, _PatientReportPage> entry) => page(entry.value, entry.key)).join()}
 </main>
 ''';
 }

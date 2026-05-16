@@ -346,6 +346,158 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('patient report opens configurable paginated print preview', (
+    WidgetTester tester,
+  ) async {
+    final patientRepository = _MockPatientRepository();
+    final opdRepository = _MockOpdRepository();
+    final DateTime occurredAt = DateTime(2026, 5, 16, 7, 45);
+    final patient = Patient(
+      id: 'patient-1',
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      firstName: 'Amina',
+      lastName: 'Kato',
+      dateOfBirth: DateTime(1990),
+      gender: 'FEMALE',
+      primaryPhone: '+256700000000',
+      primaryEmail: 'amina@example.com',
+      primaryIdentifierType: 'MRN',
+      primaryIdentifierValue: 'MRN-10024',
+      tenantLabel: 'HOSSPI Health',
+      facilityLabel: 'Demo General Hospital',
+    );
+    final PatientDetail detail = PatientDetail(
+      patient: patient,
+      workspace: PatientWorkspaceSnapshot(
+        appointments: <PatientSummaryRecord>[
+          PatientSummaryRecord(
+            id: 'appointment-1',
+            kind: 'appointment',
+            status: 'scheduled',
+            title: 'Dental review',
+            subtitle: 'Clinic room 2',
+            occurredAt: occurredAt,
+          ),
+        ],
+        encounters: <PatientSummaryRecord>[
+          PatientSummaryRecord(
+            id: 'encounter-1',
+            kind: 'encounter',
+            status: 'open',
+            title: 'OPD encounter',
+            subtitle: 'General consultation',
+            occurredAt: occurredAt,
+          ),
+        ],
+        admissions: <PatientSummaryRecord>[
+          PatientSummaryRecord(
+            id: 'admission-1',
+            kind: 'admission',
+            status: 'active',
+            title: 'Medical ward',
+            subtitle: 'Bed A2',
+            occurredAt: occurredAt,
+          ),
+        ],
+        invoices: <PatientSummaryRecord>[
+          PatientSummaryRecord(
+            id: 'invoice-1',
+            kind: 'invoice',
+            status: 'sent',
+            title: 'Consultation invoice',
+            amount: 120000,
+            currency: 'UGX',
+            occurredAt: occurredAt,
+          ),
+        ],
+        payments: <PatientSummaryRecord>[
+          PatientSummaryRecord(
+            id: 'payment-1',
+            kind: 'payment',
+            status: 'posted',
+            title: 'Mobile money payment',
+            amount: 50000,
+            currency: 'UGX',
+            occurredAt: occurredAt,
+          ),
+        ],
+      ),
+      identifiers: const <PatientIdentifier>[
+        PatientIdentifier(
+          id: 'identifier-1',
+          tenantId: 'tenant-1',
+          patientId: 'patient-1',
+          type: 'MRN',
+          value: 'MRN-10024',
+          isPrimary: true,
+        ),
+      ],
+      contacts: const <PatientContact>[
+        PatientContact(
+          id: 'contact-1',
+          tenantId: 'tenant-1',
+          patientId: 'patient-1',
+          type: 'phone',
+          value: '+256700000000',
+          isPrimary: true,
+        ),
+      ],
+      medicalHistories: <PatientMedicalHistory>[
+        PatientMedicalHistory(
+          id: 'history-1',
+          tenantId: 'tenant-1',
+          patientId: 'patient-1',
+          condition: 'Hypertension',
+          diagnosisDate: DateTime(2022, 3),
+          notes: 'Managed with medication.',
+        ),
+      ],
+      timeline: <PatientTimelineItem>[
+        for (var index = 0; index < 22; index++)
+          PatientTimelineItem(
+            id: 'timeline-$index',
+            resource: index.isEven ? 'encounter' : 'vital_sign',
+            title: index.isEven
+                ? 'Encounter note ${index + 1}'
+                : 'Vital signs ${index + 1}',
+            subtitle: index.isEven ? 'Clinical update' : 'BP 110/70 mmHg',
+            occurredAt: occurredAt.subtract(Duration(days: index)),
+          ),
+      ],
+    );
+
+    _stubPatientRegistry(patientRepository, patient, detail: detail);
+    _stubProviderLookup(opdRepository);
+
+    await _pumpPatientRegistry(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      size: const Size(1200, 960),
+      roles: const <String>['SUPER_ADMIN'],
+    );
+
+    await tester.tap(find.text('Amina Kato').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Patient report'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Print report'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Print preview'), findsOneWidget);
+    expect(find.text('Report period'), findsWidgets);
+    expect(find.text('Report sections'), findsOneWidget);
+    expect(find.text('Patient information'), findsWidgets);
+    expect(find.text('Hospital information'), findsWidgets);
+    expect(find.text('Vital signs'), findsWidgets);
+    expect(find.text('Demo General Hospital'), findsWidgets);
+    expect(find.text('Amina Kato'), findsWidgets);
+    expect(find.text('Print'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'1 of [2-9]')), findsOneWidget);
+    expect(find.textContaining(RegExp(r'2 of [2-9]')), findsWidgets);
+  });
 }
 
 final class _MockPatientRepository extends Mock implements PatientRepository {}
@@ -354,8 +506,9 @@ final class _MockOpdRepository extends Mock implements OpdRepository {}
 
 void _stubPatientRegistry(
   _MockPatientRepository patientRepository,
-  Patient patient,
-) {
+  Patient patient, {
+  PatientDetail? detail,
+}) {
   when(() => patientRepository.loadOverview()).thenAnswer(
     (_) async => const Result<PatientRegistryOverview>.success(
       PatientRegistryOverview(totalPatients: 1, activePatients: 1),
@@ -376,10 +529,11 @@ void _stubPatientRegistry(
   );
   when(() => patientRepository.loadPatientDetail(patient.id)).thenAnswer(
     (_) async => Result<PatientDetail>.success(
-      PatientDetail(
-        patient: patient,
-        workspace: const PatientWorkspaceSnapshot(),
-      ),
+      detail ??
+          PatientDetail(
+            patient: patient,
+            workspace: const PatientWorkspaceSnapshot(),
+          ),
     ),
   );
 }
@@ -396,6 +550,7 @@ Future<void> _pumpPatientRegistry(
   required PatientRepository patientRepository,
   required OpdRepository opdRepository,
   required Size size,
+  List<String> roles = const <String>['DOCTOR'],
 }) async {
   setTestViewport(tester, size);
   await tester.pumpWidget(
@@ -406,10 +561,10 @@ Future<void> _pumpPatientRegistry(
             session: AuthSession(
               tokens: SessionTokens(accessToken: 'test-access-token'),
               subject: 'doctor@example.com',
-              user: const AuthUserProfile(
+              user: AuthUserProfile(
                 id: 'user-1',
                 email: 'doctor@example.com',
-                roles: <String>['DOCTOR'],
+                roles: roles,
               ),
             ),
           ),

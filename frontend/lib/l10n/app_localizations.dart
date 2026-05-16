@@ -2332,6 +2332,144 @@ abstract class AppLocalizations {
   /// **'Generated'**
   String get patientsReportGeneratedSectionTitle;
 
+  /// Patient report print preview dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Print preview'**
+  String get patientsReportPreviewDialogTitle;
+
+  /// Patient report period selector label.
+  ///
+  /// In en, this message translates to:
+  /// **'Report period'**
+  String get patientsReportPeriodLabel;
+
+  /// Patient report period option for all dates.
+  ///
+  /// In en, this message translates to:
+  /// **'All dates'**
+  String get patientsReportAllDatesOption;
+
+  /// Patient report period option for a single date.
+  ///
+  /// In en, this message translates to:
+  /// **'Single date'**
+  String get patientsReportSingleDateOption;
+
+  /// Patient report period option for a date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get patientsReportDateRangeOption;
+
+  /// Patient report single date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Report date'**
+  String get patientsReportDateLabel;
+
+  /// Patient report start date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get patientsReportStartDateLabel;
+
+  /// Patient report end date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get patientsReportEndDateLabel;
+
+  /// Patient report section selector title.
+  ///
+  /// In en, this message translates to:
+  /// **'Report sections'**
+  String get patientsReportSectionsLabel;
+
+  /// Patient report preview section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get patientsReportPreviewSectionTitle;
+
+  /// Patient report patient information section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient information'**
+  String get patientsReportPatientInfoSectionTitle;
+
+  /// Patient report hospital information section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Hospital information'**
+  String get patientsReportHospitalInfoSectionTitle;
+
+  /// Patient report vital signs section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Vital signs'**
+  String get patientsReportVitalsSectionTitle;
+
+  /// Patient report payments section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get patientsReportPaymentsSectionTitle;
+
+  /// Patient report page number label.
+  ///
+  /// In en, this message translates to:
+  /// **'{page} of {total}'**
+  String patientsReportPageNumberLabel(int page, int total);
+
+  /// Patient report empty section label.
+  ///
+  /// In en, this message translates to:
+  /// **'No records available for the selected period.'**
+  String get patientsReportNoRecordsForSection;
+
+  /// Patient report prepared date label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared on'**
+  String get patientsReportPreparedOnLabel;
+
+  /// Patient report hospital name label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hospital name'**
+  String get patientsReportHospitalNameLabel;
+
+  /// Patient report hospital contact label.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact information'**
+  String get patientsReportHospitalContactLabel;
+
+  /// Patient report hospital location label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get patientsReportHospitalLocationLabel;
+
+  /// Patient report hospital address label.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get patientsReportHospitalAddressLabel;
+
+  /// Patient report print preview action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get patientsReportPrintNowAction;
+
+  /// Patient report date range validation message.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date must be on or before end date.'**
+  String get patientsReportDateRangeInvalidMessage;
+
   /// Validation message for invalid time fields.
   ///
   /// In en, this message translates to:

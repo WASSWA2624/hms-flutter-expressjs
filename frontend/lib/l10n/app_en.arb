@@ -1552,6 +1552,106 @@
   "@patientsReportGeneratedSectionTitle": {
     "description": "Patient report generated metadata section title."
   },
+  "patientsReportPreviewDialogTitle": "Print preview",
+  "@patientsReportPreviewDialogTitle": {
+    "description": "Patient report print preview dialog title."
+  },
+  "patientsReportPeriodLabel": "Report period",
+  "@patientsReportPeriodLabel": {
+    "description": "Patient report period selector label."
+  },
+  "patientsReportAllDatesOption": "All dates",
+  "@patientsReportAllDatesOption": {
+    "description": "Patient report period option for all dates."
+  },
+  "patientsReportSingleDateOption": "Single date",
+  "@patientsReportSingleDateOption": {
+    "description": "Patient report period option for a single date."
+  },
+  "patientsReportDateRangeOption": "Date range",
+  "@patientsReportDateRangeOption": {
+    "description": "Patient report period option for a date range."
+  },
+  "patientsReportDateLabel": "Report date",
+  "@patientsReportDateLabel": {
+    "description": "Patient report single date field label."
+  },
+  "patientsReportStartDateLabel": "Start date",
+  "@patientsReportStartDateLabel": {
+    "description": "Patient report start date field label."
+  },
+  "patientsReportEndDateLabel": "End date",
+  "@patientsReportEndDateLabel": {
+    "description": "Patient report end date field label."
+  },
+  "patientsReportSectionsLabel": "Report sections",
+  "@patientsReportSectionsLabel": {
+    "description": "Patient report section selector title."
+  },
+  "patientsReportPreviewSectionTitle": "Preview",
+  "@patientsReportPreviewSectionTitle": {
+    "description": "Patient report preview section title."
+  },
+  "patientsReportPatientInfoSectionTitle": "Patient information",
+  "@patientsReportPatientInfoSectionTitle": {
+    "description": "Patient report patient information section title."
+  },
+  "patientsReportHospitalInfoSectionTitle": "Hospital information",
+  "@patientsReportHospitalInfoSectionTitle": {
+    "description": "Patient report hospital information section title."
+  },
+  "patientsReportVitalsSectionTitle": "Vital signs",
+  "@patientsReportVitalsSectionTitle": {
+    "description": "Patient report vital signs section title."
+  },
+  "patientsReportPaymentsSectionTitle": "Payments",
+  "@patientsReportPaymentsSectionTitle": {
+    "description": "Patient report payments section title."
+  },
+  "patientsReportPageNumberLabel": "{page} of {total}",
+  "@patientsReportPageNumberLabel": {
+    "description": "Patient report page number label.",
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "patientsReportNoRecordsForSection": "No records available for the selected period.",
+  "@patientsReportNoRecordsForSection": {
+    "description": "Patient report empty section label."
+  },
+  "patientsReportPreparedOnLabel": "Prepared on",
+  "@patientsReportPreparedOnLabel": {
+    "description": "Patient report prepared date label."
+  },
+  "patientsReportHospitalNameLabel": "Hospital name",
+  "@patientsReportHospitalNameLabel": {
+    "description": "Patient report hospital name label."
+  },
+  "patientsReportHospitalContactLabel": "Contact information",
+  "@patientsReportHospitalContactLabel": {
+    "description": "Patient report hospital contact label."
+  },
+  "patientsReportHospitalLocationLabel": "Location",
+  "@patientsReportHospitalLocationLabel": {
+    "description": "Patient report hospital location label."
+  },
+  "patientsReportHospitalAddressLabel": "Address",
+  "@patientsReportHospitalAddressLabel": {
+    "description": "Patient report hospital address label."
+  },
+  "patientsReportPrintNowAction": "Print",
+  "@patientsReportPrintNowAction": {
+    "description": "Patient report print preview action label."
+  },
+  "patientsReportDateRangeInvalidMessage": "Start date must be on or before end date.",
+  "@patientsReportDateRangeInvalidMessage": {
+    "description": "Patient report date range validation message."
+  },
   "patientsTimeInvalidMessage": "Enter time as HH:MM.",
   "@patientsTimeInvalidMessage": {
     "description": "Validation message for invalid time fields."

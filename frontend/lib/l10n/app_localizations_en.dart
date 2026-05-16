@@ -1181,6 +1181,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsReportGeneratedSectionTitle => 'Generated';
 
   @override
+  String get patientsReportPreviewDialogTitle => 'Print preview';
+
+  @override
+  String get patientsReportPeriodLabel => 'Report period';
+
+  @override
+  String get patientsReportAllDatesOption => 'All dates';
+
+  @override
+  String get patientsReportSingleDateOption => 'Single date';
+
+  @override
+  String get patientsReportDateRangeOption => 'Date range';
+
+  @override
+  String get patientsReportDateLabel => 'Report date';
+
+  @override
+  String get patientsReportStartDateLabel => 'Start date';
+
+  @override
+  String get patientsReportEndDateLabel => 'End date';
+
+  @override
+  String get patientsReportSectionsLabel => 'Report sections';
+
+  @override
+  String get patientsReportPreviewSectionTitle => 'Preview';
+
+  @override
+  String get patientsReportPatientInfoSectionTitle => 'Patient information';
+
+  @override
+  String get patientsReportHospitalInfoSectionTitle => 'Hospital information';
+
+  @override
+  String get patientsReportVitalsSectionTitle => 'Vital signs';
+
+  @override
+  String get patientsReportPaymentsSectionTitle => 'Payments';
+
+  @override
+  String patientsReportPageNumberLabel(int page, int total) {
+    return '$page of $total';
+  }
+
+  @override
+  String get patientsReportNoRecordsForSection =>
+      'No records available for the selected period.';
+
+  @override
+  String get patientsReportPreparedOnLabel => 'Prepared on';
+
+  @override
+  String get patientsReportHospitalNameLabel => 'Hospital name';
+
+  @override
+  String get patientsReportHospitalContactLabel => 'Contact information';
+
+  @override
+  String get patientsReportHospitalLocationLabel => 'Location';
+
+  @override
+  String get patientsReportHospitalAddressLabel => 'Address';
+
+  @override
+  String get patientsReportPrintNowAction => 'Print';
+
+  @override
+  String get patientsReportDateRangeInvalidMessage =>
+      'Start date must be on or before end date.';
+
+  @override
   String get patientsTimeInvalidMessage => 'Enter time as HH:MM.';
 
   @override
