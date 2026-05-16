@@ -1060,6 +1060,48 @@ class AppWorkspaceStatePanel extends StatelessWidget {
          key: key,
        );
 
+  const AppWorkspaceStatePanel.validation({
+    required String title,
+    required String body,
+    IconData? icon,
+    String? detail,
+    Widget? action,
+    String? semanticLabel,
+    double minHeight = 280,
+    Key? key,
+  }) : this.state(
+         variant: AppStateViewVariant.validation,
+         title: title,
+         body: body,
+         icon: icon,
+         detail: detail,
+         action: action,
+         semanticLabel: semanticLabel,
+         minHeight: minHeight,
+         key: key,
+       );
+
+  const AppWorkspaceStatePanel.success({
+    required String title,
+    required String body,
+    IconData? icon,
+    String? detail,
+    Widget? action,
+    String? semanticLabel,
+    double minHeight = 280,
+    Key? key,
+  }) : this.state(
+         variant: AppStateViewVariant.success,
+         title: title,
+         body: body,
+         icon: icon,
+         detail: detail,
+         action: action,
+         semanticLabel: semanticLabel,
+         minHeight: minHeight,
+         key: key,
+       );
+
   final Widget? child;
   final double minHeight;
   final AppStateViewVariant? _stateVariant;

@@ -46,6 +46,26 @@ void main() {
     expect(find.byIcon(Icons.error_outline), findsOneWidget);
   });
 
+  testWidgets('AppStateView exposes validation state content', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppStateView(
+        variant: AppStateViewVariant.validation,
+        title: 'Review required fields',
+        body: 'Fix highlighted fields before continuing.',
+      ),
+    );
+
+    expect(find.text('Review required fields'), findsOneWidget);
+    expect(
+      find.text('Fix highlighted fields before continuing.'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.fact_check_outlined), findsOneWidget);
+  });
+
   testWidgets('AppFailureStateView renders localized retryable failures', (
     WidgetTester tester,
   ) async {

@@ -13,6 +13,7 @@ enum AppStateViewVariant {
   error,
   forbidden,
   offline,
+  validation,
   success,
   info,
 }
@@ -376,6 +377,7 @@ class _StateVisual extends StatelessWidget {
       AppStateViewVariant.error => Icons.error_outline,
       AppStateViewVariant.forbidden => Icons.lock_outline,
       AppStateViewVariant.offline => Icons.wifi_off_outlined,
+      AppStateViewVariant.validation => Icons.fact_check_outlined,
       AppStateViewVariant.success => Icons.check_circle_outline,
       AppStateViewVariant.info => Icons.info_outline,
     };
@@ -388,6 +390,7 @@ class _StateVisual extends StatelessWidget {
       AppStateViewVariant.error => theme.statusColors.error,
       AppStateViewVariant.forbidden => theme.statusColors.warning,
       AppStateViewVariant.offline => theme.statusColors.info,
+      AppStateViewVariant.validation => theme.statusColors.warning,
       AppStateViewVariant.success => theme.statusColors.success,
       AppStateViewVariant.info => theme.statusColors.info,
     };

@@ -239,6 +239,33 @@ void main() {
     expect(find.byIcon(Icons.wifi_off_outlined), findsOneWidget);
   });
 
+  testWidgets('AppWorkspaceStatePanel exposes validation and success states', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const Column(
+        children: <Widget>[
+          AppWorkspaceStatePanel.validation(
+            title: 'Review form',
+            body: 'Fix highlighted fields before submitting.',
+            minHeight: 120,
+          ),
+          AppWorkspaceStatePanel.success(
+            title: 'Saved',
+            body: 'The workspace has the latest values.',
+            minHeight: 120,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Review form'), findsOneWidget);
+    expect(find.byIcon(Icons.fact_check_outlined), findsOneWidget);
+    expect(find.text('Saved'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+  });
+
   testWidgets('AppWorkspacePatientContextHeader renders patient context', (
     WidgetTester tester,
   ) async {
