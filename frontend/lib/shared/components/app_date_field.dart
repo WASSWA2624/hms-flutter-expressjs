@@ -140,7 +140,8 @@ class _AppDateFieldState extends State<AppDateField> {
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
-            labelText: appFieldLabel(
+            label: appFieldLabelWidget(
+              context,
               widget.labelText,
               isRequired: widget.isRequired,
             ),

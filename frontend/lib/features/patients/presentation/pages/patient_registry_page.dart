@@ -2143,6 +2143,7 @@ class _PatientRelatedRecordDialogState<T>
         AppSelectField<String>(
           value: _choice,
           labelText: l10n.patientsContactTypeLabel,
+          isRequired: true,
           enabled: !_isSaving,
           validator: AppValidators.requiredValue(l10n.validationRequired),
           onChanged: (String? value) => setState(() => _choice = value),
@@ -2155,6 +2156,7 @@ class _PatientRelatedRecordDialogState<T>
           controller: _first,
           labelText: l10n.patientsContactValueLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
         AppCheckboxField(
@@ -2169,6 +2171,7 @@ class _PatientRelatedRecordDialogState<T>
           controller: _first,
           labelText: l10n.patientsGuardianNameLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
         AppTextField(
@@ -2199,12 +2202,14 @@ class _PatientRelatedRecordDialogState<T>
           controller: _first,
           labelText: l10n.patientsAllergenLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
         AppSelectField<String>(
           value: _choice,
           labelText: l10n.patientsSeverityLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredValue(l10n.validationRequired),
           onChanged: (String? value) => setState(() => _choice = value),
           options: <AppSelectOption<String>>[
@@ -2229,6 +2234,7 @@ class _PatientRelatedRecordDialogState<T>
           controller: _first,
           labelText: l10n.patientsConditionLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
         AppDateField(
@@ -2254,6 +2260,7 @@ class _PatientRelatedRecordDialogState<T>
           value: _choice,
           labelText: l10n.patientsDocumentTypeLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredValue(l10n.validationRequired),
           onChanged: (String? value) => setState(() => _choice = value),
           options: <AppSelectOption<String>>[
@@ -2268,6 +2275,7 @@ class _PatientRelatedRecordDialogState<T>
           controller: _first,
           labelText: l10n.patientsStorageKeyLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
         AppTextField(
@@ -2286,6 +2294,7 @@ class _PatientRelatedRecordDialogState<T>
           value: _choice,
           labelText: l10n.patientsConsentTypeLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredValue(l10n.validationRequired),
           onChanged: (String? value) => setState(() => _choice = value),
           options: <AppSelectOption<String>>[
@@ -2300,6 +2309,7 @@ class _PatientRelatedRecordDialogState<T>
           value: _first.text.isEmpty ? null : _first.text,
           labelText: l10n.patientsConsentStatusLabel,
           enabled: !_isSaving,
+          isRequired: true,
           validator: AppValidators.requiredValue(l10n.validationRequired),
           onChanged: (String? value) =>
               setState(() => _first.text = value ?? ''),

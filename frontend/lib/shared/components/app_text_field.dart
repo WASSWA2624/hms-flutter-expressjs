@@ -181,7 +181,8 @@ class _AppTextFieldState extends State<AppTextField> {
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
-        labelText: appFieldLabel(
+        label: appFieldLabelWidget(
+          context,
           widget.labelText,
           isRequired: widget.isRequired,
         ),

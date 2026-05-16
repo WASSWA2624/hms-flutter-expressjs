@@ -155,13 +155,15 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
       field = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            appFieldLabel(widget.labelText, isRequired: widget.isRequired)!,
+          appFieldLabelWidget(
+            context,
+            widget.labelText,
+            isRequired: widget.isRequired,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,
             ),
-          ),
+          )!,
           SizedBox(height: theme.spacing.xs),
           field,
         ],

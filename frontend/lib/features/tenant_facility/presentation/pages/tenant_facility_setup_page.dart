@@ -676,6 +676,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
             controller: _nameController,
             enabled: widget.canSubmit && !submission.isSubmitting,
             labelText: l10n.tenantFacilityTenantNameLabel,
+            isRequired: true,
             textCapitalization: TextCapitalization.words,
             validator: AppValidators.requiredText(l10n.validationRequired),
           ),
@@ -866,6 +867,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             controller: _nameController,
             enabled: canEdit,
             labelText: l10n.authFacilityNameLabel,
+            isRequired: true,
             textCapitalization: TextCapitalization.words,
             validator: AppValidators.requiredText(l10n.validationRequired),
           ),
@@ -873,6 +875,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             value: _type,
             enabled: canEdit,
             labelText: l10n.authFacilityTypeLabel,
+            isRequired: true,
             options: <AppSelectOption<FacilitySetupType>>[
               for (final type in FacilitySetupType.values)
                 AppSelectOption<FacilitySetupType>(
@@ -1673,6 +1676,7 @@ class _BranchFormDialogState extends ConsumerState<_BranchFormDialog> {
               controller: _nameController,
               enabled: canEdit,
               labelText: l10n.tenantFacilityBranchNameLabel,
+              isRequired: true,
               textCapitalization: TextCapitalization.words,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
@@ -1795,6 +1799,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
               controller: _nameController,
               enabled: canEdit,
               labelText: l10n.tenantFacilityDepartmentNameLabel,
+              isRequired: true,
               textCapitalization: TextCapitalization.words,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
@@ -1807,6 +1812,7 @@ class _DepartmentFormDialogState extends ConsumerState<_DepartmentFormDialog> {
               value: _type,
               enabled: canEdit,
               labelText: l10n.tenantFacilityDepartmentTypeLabel,
+              isRequired: true,
               options: <AppSelectOption<DepartmentSetupType>>[
                 for (final type in DepartmentSetupType.values)
                   AppSelectOption<DepartmentSetupType>(
@@ -1956,6 +1962,7 @@ class _UnitFormDialogState extends ConsumerState<_UnitFormDialog> {
               controller: _nameController,
               enabled: canEdit,
               labelText: l10n.tenantFacilityUnitNameLabel,
+              isRequired: true,
               textCapitalization: TextCapitalization.words,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
@@ -2096,6 +2103,7 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
               controller: _nameController,
               enabled: canEdit,
               labelText: l10n.tenantFacilityWardNameLabel,
+              isRequired: true,
               textCapitalization: TextCapitalization.words,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
@@ -2103,6 +2111,7 @@ class _WardFormDialogState extends ConsumerState<_WardFormDialog> {
               value: _type,
               enabled: canEdit,
               labelText: l10n.tenantFacilityWardTypeLabel,
+              isRequired: true,
               options: <AppSelectOption<WardSetupType>>[
                 for (final type in WardSetupType.values)
                   AppSelectOption<WardSetupType>(
@@ -2256,6 +2265,7 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
               controller: _nameController,
               enabled: canEdit,
               labelText: l10n.tenantFacilityRoomNameLabel,
+              isRequired: true,
               textCapitalization: TextCapitalization.words,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
@@ -2263,6 +2273,7 @@ class _RoomFormDialogState extends ConsumerState<_RoomFormDialog> {
               value: _wardId,
               enabled: canEdit,
               labelText: l10n.tenantFacilityRoomWardLabel,
+              isRequired: true,
               options: <AppSelectOption<String>>[
                 AppSelectOption<String>(
                   value: _noneSelection,
@@ -2393,6 +2404,7 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
               controller: _labelController,
               enabled: canEdit,
               labelText: l10n.tenantFacilityBedLabelLabel,
+              isRequired: true,
               textCapitalization: TextCapitalization.characters,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
@@ -2400,6 +2412,7 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
               value: _wardId,
               enabled: canEdit,
               labelText: l10n.tenantFacilityBedWardLabel,
+              isRequired: true,
               options: <AppSelectOption<String>>[
                 AppSelectOption<String>(
                   value: _noneSelection,
@@ -2451,6 +2464,7 @@ class _BedFormDialogState extends ConsumerState<_BedFormDialog> {
               value: _status,
               enabled: canEdit,
               labelText: l10n.tenantFacilityBedStatusLabel,
+              isRequired: true,
               options: <AppSelectOption<BedSetupStatus>>[
                 for (final status in BedSetupStatus.values)
                   AppSelectOption<BedSetupStatus>(

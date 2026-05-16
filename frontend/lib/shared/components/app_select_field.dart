@@ -117,6 +117,8 @@ class AppSelectField<T> extends StatelessWidget {
                 isExpanded: true,
                 onClear: () => onChanged?.call(null),
               );
+        final bool enableFilter = searchable || filterCallback != null;
+        final bool enableSearch = searchable || searchCallback != null;
 
         return DropdownMenuFormField<T>(
           key: ValueKey<T?>(value),
@@ -125,9 +127,11 @@ class AppSelectField<T> extends StatelessWidget {
           enabled: canSelect,
           width: width,
           menuHeight: effectiveMenuHeight,
-          label: labelText == null
-              ? null
-              : Text(appFieldLabel(labelText, isRequired: isRequired)!),
+          label: appFieldLabelWidget(
+            context,
+            labelText,
+            isRequired: isRequired,
+          ),
           hintText: hintText,
           helperText: helperText,
           trailingIcon: trailingIcon,
@@ -138,11 +142,15 @@ class AppSelectField<T> extends StatelessWidget {
                 : theme.colorScheme.onSurface.withValues(alpha: 0.62),
             fontWeight: FontWeight.w500,
           ),
-          enableFilter: searchable,
-          enableSearch: searchable,
+          enableFilter: enableFilter,
+          enableSearch: enableSearch,
           expandedInsets: EdgeInsets.zero,
-          filterCallback: filterCallback ?? _defaultFilter,
-          searchCallback: searchCallback ?? _defaultSearch,
+          filterCallback: enableFilter
+              ? filterCallback ?? _defaultFilter
+              : null,
+          searchCallback: enableSearch
+              ? searchCallback ?? _defaultSearch
+              : null,
           requestFocusOnTap: true,
           focusNode: focusNode,
           autovalidateMode: autovalidateMode,

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/src/app_field_label.dart';
 
 class AppDialog extends StatelessWidget {
   const AppDialog({
@@ -119,7 +120,10 @@ class _DialogBody extends StatelessWidget {
         theme.textTheme.bodyMedium ?? TextStyle(color: colorScheme.onSurface);
     final Widget? dialogContent = content == null
         ? null
-        : DefaultTextStyle(style: contentStyle, child: content!);
+        : AppFieldRequirementScope(
+            showOptionalIndicators: true,
+            child: DefaultTextStyle(style: contentStyle, child: content!),
+          );
 
     return Column(
       mainAxisSize: MainAxisSize.min,

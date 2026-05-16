@@ -61,6 +61,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
               AppTextField(
                 controller: _currentPasswordController,
                 labelText: l10n.authCurrentPasswordLabel,
+                isRequired: true,
                 obscureText: true,
                 enableObscureTextToggle: true,
                 showObscuredTextLabel: l10n.authShowPasswordLabel,
@@ -78,6 +79,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
               AppTextField(
                 controller: _newPasswordController,
                 labelText: l10n.authNewPasswordLabel,
+                isRequired: true,
                 obscureText: true,
                 enableObscureTextToggle: true,
                 showObscuredTextLabel: l10n.authShowPasswordLabel,
@@ -96,6 +98,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
               AppTextField(
                 controller: _confirmPasswordController,
                 labelText: l10n.authConfirmPasswordLabel,
+                isRequired: true,
                 obscureText: true,
                 enableObscureTextToggle: true,
                 showObscuredTextLabel: l10n.authShowPasswordLabel,

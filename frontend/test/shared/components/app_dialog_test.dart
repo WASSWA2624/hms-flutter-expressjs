@@ -63,4 +63,27 @@ void main() {
 
     expect(openerFocusNode.hasFocus, isTrue);
   });
+
+  testWidgets('AppDialog marks required and optional form fields', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Edit record'),
+        content: Form(
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              AppTextField(labelText: 'Name', isRequired: true),
+              AppTextField(labelText: 'Middle name'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Name *'), findsOneWidget);
+    expect(find.text('Middle name (optional)'), findsOneWidget);
+  });
 }

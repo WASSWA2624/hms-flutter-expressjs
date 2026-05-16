@@ -44,6 +44,29 @@ void main() {
     expect(find.text('Choose a status'), findsOneWidget);
   });
 
+  testWidgets('AppSelectField opens a non-searchable menu without filtering', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppSelectField<String>(
+        labelText: 'Status',
+        options: const <AppSelectOption<String>>[
+          AppSelectOption<String>(value: 'draft', label: 'Draft'),
+          AppSelectOption<String>(value: 'live', label: 'Live'),
+        ],
+        onChanged: (_) {},
+      ),
+    );
+
+    await tester.tap(find.byType(EditableText));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Draft').hitTestable(), findsOneWidget);
+    expect(find.text('Live').hitTestable(), findsOneWidget);
+  });
+
   testWidgets('AppSelectField.searchable filters options in the menu overlay', (
     WidgetTester tester,
   ) async {
