@@ -68,7 +68,6 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
 
     return AppWorkspace(
       title: l10n.tenantFacilitySetupTitle,
-      description: '',
       status: AppWorkspaceStatus(
         label: setupComplete
             ? l10n.tenantFacilitySummaryConfigured

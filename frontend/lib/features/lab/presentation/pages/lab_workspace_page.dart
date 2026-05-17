@@ -105,7 +105,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
 
     return AppWorkspace(
       title: l10n.labTitle,
-      description: l10n.labDescription,
       compactSummaryCards: true,
       status: AppWorkspaceStatus(
         label: state.isSaving ? l10n.labSavingStatus : l10n.labLiveStatus,

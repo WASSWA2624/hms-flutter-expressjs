@@ -96,7 +96,6 @@ class _ClinicalWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.clinicalTitle,
-      description: l10n.clinicalDescription,
       compactSummaryCards: true,
       status: AppWorkspaceStatus(
         label: state.isSaving

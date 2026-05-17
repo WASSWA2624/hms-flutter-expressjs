@@ -127,7 +127,6 @@ class _PatientRegistryContentState
 
     return AppWorkspace(
       title: l10n.patientsTitle,
-      description: '',
       compactSummaryCards: true,
       primaryAction: AppAccessActionGate(
         requirement: _PatientRegistryContent._writeRequirement,

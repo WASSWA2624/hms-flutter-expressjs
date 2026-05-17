@@ -70,7 +70,6 @@ class _RadiologyWorkspaceContent extends ConsumerWidget {
 
     return AppWorkspace(
       title: l10n.radiologyTitle,
-      description: l10n.radiologyDescription,
       status: AppWorkspaceStatus(
         label: state.isMutating
             ? l10n.radiologySavingStatus

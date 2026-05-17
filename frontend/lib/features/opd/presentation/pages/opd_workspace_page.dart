@@ -102,7 +102,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
 
     return AppWorkspace(
       title: l10n.opdTitle,
-      description: '',
       compactSummaryCards: true,
       primaryAction: AppAccessActionGate(
         requirement: _writeRequirement,

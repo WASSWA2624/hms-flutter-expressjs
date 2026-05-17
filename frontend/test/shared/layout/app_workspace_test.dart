@@ -17,7 +17,6 @@ void main() {
       tester,
       AppWorkspace(
         title: 'Admissions',
-        description: 'Manage active queues and admission handoffs.',
         status: const AppWorkspaceStatus(
           label: 'Operational',
           tone: AppWorkspaceStatusTone.success,

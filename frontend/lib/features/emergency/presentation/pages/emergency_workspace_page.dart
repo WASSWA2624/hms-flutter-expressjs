@@ -91,8 +91,6 @@ class _EmergencyWorkspaceContentState
 
     return AppWorkspace(
       title: 'Emergency',
-      description:
-          'Emergency reception, triage, ambulance response, and clinical handoff.',
       compactSummaryCards: true,
       status: AppWorkspaceStatus(
         label: state.isSaving ? 'Saving' : 'Live sync',

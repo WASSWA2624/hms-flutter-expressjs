@@ -95,7 +95,6 @@ class _PharmacyWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.pharmacyTitle,
-      description: l10n.pharmacyDescription,
       compactSummaryCards: true,
       status: AppWorkspaceStatus(
         label: state.isSaving

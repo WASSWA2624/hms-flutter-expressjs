@@ -120,7 +120,6 @@ class _DischargeWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.dischargeWorkspaceTitle,
-      description: l10n.dischargeWorkspaceDescription,
       status: AppWorkspaceStatus(
         label: l10n.dischargeOperationalStatusLabel,
         tone: state.lastFailure == null

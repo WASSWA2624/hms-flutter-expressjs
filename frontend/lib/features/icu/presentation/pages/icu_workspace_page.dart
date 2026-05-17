@@ -97,8 +97,6 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
 
     return AppWorkspace(
       title: 'ICU',
-      description:
-          'Active ICU beds, critical alerts, observations, and transfer readiness.',
       compactSummaryCards: true,
       status: AppWorkspaceStatus(
         label: state.isSaving ? 'Saving' : 'Live sync',

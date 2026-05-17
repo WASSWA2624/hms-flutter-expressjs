@@ -56,8 +56,6 @@ class _BillingWorkspaceContent extends ConsumerWidget {
 
     return AppWorkspace(
       title: 'Billing',
-      description:
-          'Cashier queues for invoice clearance, payments, refunds, approvals, and closeout.',
       status: AppWorkspaceStatus(
         label: state.isSaving ? 'Posting' : 'Live',
         tone: state.isSaving

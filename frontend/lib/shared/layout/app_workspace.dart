@@ -60,7 +60,6 @@ final class AppWorkspacePatientContextField {
 class AppWorkspace extends StatelessWidget {
   const AppWorkspace({
     required this.title,
-    required this.description,
     required this.body,
     this.status,
     this.primaryAction,
@@ -77,7 +76,6 @@ class AppWorkspace extends StatelessWidget {
   });
 
   final String title;
-  final String description;
   final AppWorkspaceStatus? status;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
@@ -102,7 +100,6 @@ class AppWorkspace extends StatelessWidget {
     final List<Widget> children = <Widget>[
       AppWorkspaceHeader(
         title: title,
-        description: description,
         status: status,
         primaryAction: primaryAction,
         secondaryActions: secondaryActions,
@@ -158,7 +155,6 @@ class AppWorkspace extends StatelessWidget {
 class AppWorkspaceHeader extends StatelessWidget {
   const AppWorkspaceHeader({
     required this.title,
-    required this.description,
     this.status,
     this.primaryAction,
     this.secondaryActions = const <Widget>[],
@@ -166,7 +162,6 @@ class AppWorkspaceHeader extends StatelessWidget {
   });
 
   final String title;
-  final String description;
   final AppWorkspaceStatus? status;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
@@ -179,7 +174,6 @@ class AppWorkspaceHeader extends StatelessWidget {
     final List<Widget> actions = <Widget>[...secondaryActions, ?primaryAction];
     final Widget titleBlock = _WorkspaceHeaderText(
       title: title,
-      description: description,
       status: status,
     );
     final Widget actionBar = _WorkspaceHeaderActions(actions: actions);
@@ -1676,14 +1670,9 @@ class _WorkspaceDrawerActions extends StatelessWidget {
 }
 
 class _WorkspaceHeaderText extends StatelessWidget {
-  const _WorkspaceHeaderText({
-    required this.title,
-    required this.description,
-    required this.status,
-  });
+  const _WorkspaceHeaderText({required this.title, required this.status});
 
   final String title;
-  final String description;
   final AppWorkspaceStatus? status;
 
   @override
@@ -1698,16 +1687,10 @@ class _WorkspaceHeaderText extends StatelessWidget {
       AppBreakpoint.md => textTheme.titleLarge,
       _ => textTheme.headlineSmall,
     };
-    final TextStyle? descriptionStyle = textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-    );
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool narrow = constraints.maxWidth < AppBreakpoints.sm;
-        final double descriptionWidth = narrow
-            ? constraints.maxWidth
-            : (constraints.maxWidth * 0.62).clamp(240, 520).toDouble();
 
         if (narrow) {
           return Column(
@@ -1722,15 +1705,6 @@ class _WorkspaceHeaderText extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              if (description.isNotEmpty) ...<Widget>[
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: descriptionStyle,
-                ),
-              ],
               if (status != null) ...<Widget>[
                 SizedBox(height: theme.spacing.xs),
                 AppWorkspaceStatusBadge(status: status!),
@@ -1753,16 +1727,6 @@ class _WorkspaceHeaderText extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            if (description.isNotEmpty)
-              SizedBox(
-                width: descriptionWidth,
-                child: Text(
-                  description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: descriptionStyle,
-                ),
-              ),
             if (status != null) AppWorkspaceStatusBadge(status: status!),
           ],
         );

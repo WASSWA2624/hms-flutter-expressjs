@@ -115,7 +115,6 @@ class _NursingWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.nursingTitle,
-      description: l10n.nursingDescription,
       compactSummaryCards: true,
       status: AppWorkspaceStatus(
         label: state.isSaving

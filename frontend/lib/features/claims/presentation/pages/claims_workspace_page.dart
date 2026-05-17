@@ -119,7 +119,6 @@ class _ClaimsWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.claimsWorkspaceTitle,
-      description: l10n.claimsWorkspaceDescription,
       status: AppWorkspaceStatus(
         label: state.lastFailure == null
             ? l10n.claimsOperationalStatusLabel

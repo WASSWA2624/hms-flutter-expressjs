@@ -57,7 +57,6 @@ class _TheaterWorkspaceContent extends ConsumerWidget {
 
     return AppWorkspace(
       title: l10n.theaterTitle,
-      description: l10n.theaterDescription,
       status: AppWorkspaceStatus(
         label: state.isMutating
             ? l10n.theaterSavingStatus

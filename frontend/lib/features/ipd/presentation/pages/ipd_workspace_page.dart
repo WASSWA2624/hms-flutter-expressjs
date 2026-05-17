@@ -93,7 +93,6 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
 
     return AppWorkspace(
       title: l10n.ipdTitle,
-      description: l10n.ipdDescription,
       compactSummaryCards: true,
       status: AppWorkspaceStatus(
         label: state.isSaving ? l10n.ipdSavingStatus : l10n.ipdLiveStatus,
