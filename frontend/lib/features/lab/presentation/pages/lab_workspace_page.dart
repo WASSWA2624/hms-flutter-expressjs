@@ -193,7 +193,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       filters: AppWorkspaceFilterBar(
         semanticLabel: l10n.labFiltersLabel,
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: l10n.labSearchLabel,
           hintText: l10n.labSearchHint,
@@ -1133,7 +1133,7 @@ class _RequestOrderDialogState extends ConsumerState<_RequestOrderDialog> {
               labelText: l10n.labEncounterIdLabel,
               enabled: !_isSaving,
             ),
-            AppSearchField(
+            AppSearchBar(
               controller: _searchController,
               semanticLabel: l10n.labCatalogSearchLabel,
               hintText: l10n.labCatalogSearchHint,
@@ -2091,7 +2091,7 @@ class _CatalogDialogState extends State<_CatalogDialog> {
       scrollable: true,
       content: AppFormSection(
         children: <Widget>[
-          AppSearchField(
+          AppSearchBar(
             controller: _searchController,
             semanticLabel: l10n.labCatalogSearchLabel,
             hintText: l10n.labCatalogSearchHint,

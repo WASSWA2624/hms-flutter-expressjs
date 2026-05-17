@@ -197,7 +197,7 @@ class _NursingWorkspaceContentState
       filters: AppWorkspaceFilterBar(
         semanticLabel: l10n.nursingFiltersLabel,
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: l10n.nursingSearchLabel,
           hintText: l10n.nursingSearchHint,

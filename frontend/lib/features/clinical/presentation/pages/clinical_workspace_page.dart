@@ -165,7 +165,7 @@ class _ClinicalWorkspaceContentState
       filters: AppWorkspaceFilterBar(
         semanticLabel: l10n.clinicalFiltersLabel,
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: l10n.clinicalSearchLabel,
           hintText: l10n.clinicalSearchHint,

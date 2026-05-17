@@ -171,7 +171,7 @@ class _DischargeWorkspaceContentState
       ],
       filters: AppWorkspaceFilterBar(
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: l10n.dischargeQueueSearchLabel,
           hintText: l10n.dischargeQueueSearchHint,

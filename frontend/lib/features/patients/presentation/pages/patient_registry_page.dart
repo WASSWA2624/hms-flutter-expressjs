@@ -487,7 +487,7 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
   Widget _buildSearchField(BuildContext context) {
     final l10n = context.l10n;
 
-    return AppSearchField(
+    return AppSearchBar(
       controller: widget.searchController,
       semanticLabel: l10n.patientsSearchLabel,
       hintText: l10n.patientsSearchHint,

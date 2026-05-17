@@ -212,7 +212,7 @@ class _RadiologyFilterBarState extends ConsumerState<_RadiologyFilterBar> {
     return AppWorkspaceFilterBar(
       semanticLabel: l10n.radiologyFiltersLabel,
       expandSearch: true,
-      search: AppSearchField(
+      search: AppSearchBar(
         controller: _searchController,
         semanticLabel: l10n.radiologySearchLabel,
         hintText: l10n.radiologySearchHint,

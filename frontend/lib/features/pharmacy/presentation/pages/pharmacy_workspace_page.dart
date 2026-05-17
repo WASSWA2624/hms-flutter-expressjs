@@ -162,7 +162,7 @@ class _PharmacyWorkspaceContentState
       filters: AppWorkspaceFilterBar(
         semanticLabel: l10n.pharmacyFiltersSemanticLabel,
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: l10n.pharmacySearchLabel,
           hintText: l10n.pharmacySearchHint,
@@ -790,7 +790,7 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
           AppWorkspaceFilterBar(
             semanticLabel: l10n.pharmacyDrugFiltersSemanticLabel,
             expandSearch: true,
-            search: AppSearchField(
+            search: AppSearchBar(
               controller: _searchController,
               semanticLabel: l10n.pharmacyDrugSearchLabel,
               hintText: l10n.pharmacyDrugSearchHint,

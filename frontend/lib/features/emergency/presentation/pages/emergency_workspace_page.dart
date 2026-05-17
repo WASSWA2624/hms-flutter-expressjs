@@ -162,7 +162,7 @@ class _EmergencyWorkspaceContentState
       filters: AppWorkspaceFilterBar(
         semanticLabel: 'Emergency board filters',
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: 'Search emergency cases',
           hintText: 'Search patient, case, ambulance, or status',

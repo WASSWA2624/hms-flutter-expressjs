@@ -157,7 +157,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       filters: AppWorkspaceFilterBar(
         semanticLabel: 'ICU board filters',
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: 'Search ICU',
           hintText: 'Search patient, admission, bed, or alert',

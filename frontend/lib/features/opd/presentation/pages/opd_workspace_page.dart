@@ -779,7 +779,7 @@ class _OpdFiltersState extends State<_OpdFilters> {
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool useAdvancedModal = breakpoint.isMobile;
     final List<String> statuses = _tableStatuses(context, widget.state);
-    final Widget searchField = AppSearchField(
+    final Widget searchField = AppSearchBar(
       controller: _searchController,
       semanticLabel: l10n.opdSearchLabel,
       hintText: l10n.opdSearchHint,

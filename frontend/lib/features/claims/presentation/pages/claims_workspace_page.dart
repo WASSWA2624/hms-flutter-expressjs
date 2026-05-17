@@ -206,7 +206,7 @@ class _ClaimsWorkspaceContentState
       ],
       filters: AppWorkspaceFilterBar(
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: l10n.claimsSearchSemanticLabel,
           hintText: l10n.claimsSearchHint,

@@ -1,6 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/shared/search/search.dart';
+
+enum AppSortDirection { ascending, descending }
+
+@immutable
+final class AppSortDescriptor {
+  const AppSortDescriptor({
+    required this.field,
+    this.direction = AppSortDirection.ascending,
+  });
+
+  final String field;
+  final AppSortDirection direction;
+
+  AppSortDescriptor copyWith({String? field, AppSortDirection? direction}) {
+    return AppSortDescriptor(
+      field: field ?? this.field,
+      direction: direction ?? this.direction,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AppSortDescriptor &&
+        other.field == field &&
+        other.direction == direction;
+  }
+
+  @override
+  int get hashCode => Object.hash(field, direction);
+}
 
 @immutable
 final class AppSortOption {

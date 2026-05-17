@@ -163,7 +163,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       filters: AppWorkspaceFilterBar(
         semanticLabel: l10n.ipdFiltersLabel,
         expandSearch: true,
-        search: AppSearchField(
+        search: AppSearchBar(
           controller: _searchController,
           semanticLabel: l10n.ipdSearchLabel,
           hintText: l10n.ipdSearchHint,
