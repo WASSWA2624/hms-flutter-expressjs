@@ -113,7 +113,7 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
       AppPermissions.emergencyRead,
     ],
-    requiredActiveModules: <String>['opd-flow'],
+    requiredActiveModules: <String>['scheduling-queue'],
   );
   static const AppRouteData emergency = AppRouteData(
     name: 'emergency',
@@ -131,7 +131,7 @@ abstract final class AppRoutes {
     path: '/ipd',
     access: AppRouteAccess.authenticated,
     requiredAnyPermissions: <AppPermission>[AppPermissions.clinicalRead],
-    requiredActiveModules: <String>['ipd-flow'],
+    requiredActiveModules: <String>['inpatient-bed-management'],
   );
   static const AppRouteData icu = AppRouteData(
     name: 'icu',
@@ -142,7 +142,7 @@ abstract final class AppRoutes {
       AppPermissions.emergencyRead,
       AppPermissions.operationsRead,
     ],
-    requiredActiveModules: <String>['inpatient-bed-management'],
+    requiredActiveModules: <String>['icu-critical-care'],
   );
   static const AppRouteData nursing = AppRouteData(
     name: 'nursing',
@@ -198,6 +198,7 @@ abstract final class AppRoutes {
       AppPermissions.pharmacyRead,
       AppPermissions.operationsRead,
     ],
+    requiredActiveModules: <String>['pharmacy-dispensing'],
   );
   static const AppRouteData discharge = AppRouteData(
     name: 'discharge',

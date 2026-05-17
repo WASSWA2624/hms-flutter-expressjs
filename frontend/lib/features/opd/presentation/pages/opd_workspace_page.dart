@@ -72,7 +72,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       AppPermissions.operationsWrite,
       AppPermissions.emergencyWrite,
     ],
-    activeModules: <String>['opd-flow'],
+    activeModules: <String>['scheduling-queue'],
   );
 
   final ValueNotifier<_OpdTableFilter> _filterNotifier =
@@ -3490,7 +3490,7 @@ const AccessRequirement _opdReceptionRequirement = AccessRequirement(
     AppPermissions.clinicalWrite,
     AppPermissions.emergencyWrite,
   ],
-  activeModules: <String>['opd-flow'],
+  activeModules: <String>['scheduling-queue'],
 );
 
 const AccessRequirement _opdTriageRequirement = AccessRequirement(
@@ -3498,12 +3498,12 @@ const AccessRequirement _opdTriageRequirement = AccessRequirement(
     AppPermissions.clinicalWrite,
     AppPermissions.emergencyWrite,
   ],
-  activeModules: <String>['opd-flow'],
+  activeModules: <String>['scheduling-queue'],
 );
 
 const AccessRequirement _opdDoctorRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-  activeModules: <String>['opd-flow'],
+  activeModules: <String>['scheduling-queue'],
 );
 
 const AccessRequirement _opdBillingRequirement = AccessRequirement(
@@ -3511,7 +3511,7 @@ const AccessRequirement _opdBillingRequirement = AccessRequirement(
     AppPermissions.billingWrite,
     AppPermissions.patientWrite,
   ],
-  activeModules: <String>['opd-flow'],
+  activeModules: <String>['scheduling-queue'],
 );
 
 class FlowActionsDialog extends ConsumerStatefulWidget {

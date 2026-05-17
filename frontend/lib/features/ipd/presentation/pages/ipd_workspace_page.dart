@@ -57,7 +57,7 @@ class _IpdWorkspaceContent extends ConsumerStatefulWidget {
 class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   static const AccessRequirement _writeRequirement = AccessRequirement(
     anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-    activeModules: <String>['ipd-flow'],
+    activeModules: <String>['inpatient-bed-management'],
   );
 
   late final TextEditingController _searchController;

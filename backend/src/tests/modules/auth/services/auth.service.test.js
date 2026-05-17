@@ -112,7 +112,7 @@ describe('Auth Service', () => {
       }));
     });
 
-    it('should include direct permissions in the token and auth user payload', async () => {
+    it('should include direct and role permissions in the token and auth user payload', async () => {
       const loginData = {
         email: 'test@example.com',
         password: 'Password123!',
@@ -129,7 +129,14 @@ describe('Auth Service', () => {
           { permission_id: 'perm-1', permission: { id: 'perm-1', name: 'patient:read' } },
           { permission_id: 'perm-2', permission: { id: 'perm-2', name: 'patient:write' } },
         ],
-        roles: [{ role: { name: 'DOCTOR', permissions: [] } }],
+        roles: [{
+          role: {
+            name: 'DOCTOR',
+            permissions: [
+              { permission_id: 'perm-3', permission: { id: 'perm-3', name: 'clinical:read' } },
+            ],
+          },
+        }],
       };
 
       authRepository.findUserByEmailAndTenant.mockResolvedValue(mockUser);
@@ -142,9 +149,12 @@ describe('Auth Service', () => {
       const result = await authService.login(loginData);
 
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: ['patient:read', 'patient:write'],
+        permissions: ['patient:read', 'patient:write', 'clinical:read'],
       }));
-      expect(result.user.permissions).toEqual(['patient:read', 'patient:write']);
+      expect(result.user.permissions).toEqual(['patient:read', 'patient:write', 'clinical:read']);
+      expect(result.user.permission_names).toEqual(['patient:read', 'patient:write', 'clinical:read']);
+      expect(result.user.direct_permissions).toEqual(['patient:read', 'patient:write']);
+      expect(result.user.role_permissions).toEqual(['clinical:read']);
     });
 
     it('should login user with phone number', async () => {
@@ -587,7 +597,14 @@ describe('Auth Service', () => {
           id: 'user-123',
           tenant_id: 'tenant-123',
           status: 'ACTIVE',
-          roles: [{ role: { name: 'DOCTOR' } }]
+          roles: [{
+            role: {
+              name: 'DOCTOR',
+              permissions: [
+                { permission: { name: 'clinical:read' } },
+              ],
+            },
+          }]
         }
       };
 
@@ -602,6 +619,9 @@ describe('Auth Service', () => {
 
       expect(result).toHaveProperty('access_token', 'new-access-token');
       expect(result).toHaveProperty('refresh_token', 'new-refresh-token');
+      expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
+        permissions: ['clinical:read'],
+      }));
       expect(authRepository.revokeSession).toHaveBeenCalledWith('session-123');
       expect(authRepository.createSession).toHaveBeenCalled();
     });

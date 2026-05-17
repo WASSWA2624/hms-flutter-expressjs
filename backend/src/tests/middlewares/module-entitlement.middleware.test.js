@@ -216,6 +216,49 @@ describe('module entitlement middleware', () => {
     );
   });
 
+  test.each([
+    ['/triage', 'scheduling-queue'],
+    ['/opd-flows', 'scheduling-queue'],
+    ['/emergency-cases', 'scheduling-queue'],
+    ['/triage-assessments', 'scheduling-queue'],
+    ['/ambulance-trips', 'scheduling-queue'],
+    ['/icu-stays', 'icu-critical-care'],
+    ['/critical-alerts', 'icu-critical-care'],
+    ['/pre-authorizations', 'billing-insurance'],
+    ['/insurance-claims', 'billing-insurance'],
+    ['/hr/workspace', 'hr-rosters'],
+    ['/maintenance-requests', 'facilities-maintenance'],
+    ['/biomedical/workspace', 'biomedical-engineering-suite'],
+    ['/reports-workspace/workspace', 'reporting-analytics'],
+    ['/subscriptions-workspace/workspace', 'subscription-controls'],
+    ['/integrations', 'integrations-core'],
+  ])('maps %s to catalog module slug %s', async (path, expectedSlug) => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path,
+      user: { tenant_id: 'tenant-entitled-workspace', roles: ['SUPER_ADMIN'] },
+    };
+
+    subscriptionRepository.count.mockResolvedValue(1);
+    moduleRepository.count.mockImplementation(async (filters = {}) =>
+      filters.slug === expectedSlug ? 1 : 0
+    );
+    moduleSubscriptionRepository.count.mockResolvedValue(1);
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(moduleRepository.count).toHaveBeenCalledWith({ slug: expectedSlug });
+    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        is_active: true,
+        module: expect.objectContaining({
+          slug: expectedSlug,
+        }),
+      })
+    );
+  });
+
   test('allows mortuary from the core catalog fallback when module metadata is missing', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
@@ -262,7 +305,7 @@ describe('module entitlement middleware', () => {
     expect(error.errors).toEqual([
       expect.objectContaining({
         tenant_id: 'tenant-legacy',
-        module: 'equipment-work-order',
+        module: 'biomedical-engineering-suite',
         reason: 'subscription_required',
       }),
     ]);
@@ -288,7 +331,7 @@ describe('module entitlement middleware', () => {
     expect(error.errors).toEqual([
       expect.objectContaining({
         tenant_id: 'tenant-missing-module',
-        module: 'equipment-work-order',
+        module: 'biomedical-engineering-suite',
         reason: 'module_metadata_missing',
       }),
     ]);

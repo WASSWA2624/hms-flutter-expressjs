@@ -97,15 +97,25 @@ const resolveRolePermissionNames = (user = {}) => uniqueValues(
     .filter(Boolean)
 );
 
+const resolveEffectivePermissionNames = (user = {}) => uniqueValues([
+  ...resolveDirectPermissionNames(user),
+  ...resolveRolePermissionNames(user),
+]);
+
 const buildAuthUserPayload = (user = {}) => {
   const { password_hash, permissions, ...userData } = user;
   const directPermissions = resolveDirectPermissionNames(user);
   const rolePermissions = resolveRolePermissionNames(user);
+  const effectivePermissions = uniqueValues([
+    ...directPermissions,
+    ...rolePermissions,
+  ]);
 
   return {
     ...userData,
-    permissions: directPermissions,
-    permission_names: directPermissions,
+    permissions: effectivePermissions,
+    permission_names: effectivePermissions,
+    direct_permissions: directPermissions,
     role_permissions: rolePermissions,
   };
 };
@@ -942,7 +952,7 @@ const login = async (data) => {
     facilityId: selectedFacilityId,
     email: user.email,
     roles: roleNames,
-    permissions: resolveDirectPermissionNames(user),
+    permissions: resolveEffectivePermissionNames(user),
   });
 
   const refreshToken = generateRefreshToken();
@@ -1207,7 +1217,7 @@ const refresh = async (data) => {
     facilityId: session.user.facility_id,
     email: session.user.email,
     roles: session.user.roles?.map(ur => ur.role.name) || [],
-    permissions: resolveDirectPermissionNames(session.user),
+    permissions: resolveEffectivePermissionNames(session.user),
   });
 
   const newRefreshToken = generateRefreshToken();

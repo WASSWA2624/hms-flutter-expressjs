@@ -14,6 +14,8 @@ void main() {
         'status': 'active',
         'position_title': 'tenant_admin',
         'permission_names': <String>['settings.read'],
+        'direct_permissions': <String>['profile.read'],
+        'role_permissions': <String>['billing.read'],
         'module_subscriptions': <Object?>[
           <String, Object?>{
             'module_slug': 'clinical-care',
@@ -57,6 +59,8 @@ void main() {
     expect(session.subject, 'admin@example.com');
     expect(session.permissions.map((permission) => permission.value), [
       'settings.read',
+      'profile.read',
+      'billing.read',
     ]);
     expect(session.moduleEntitlements['CLINICAL_CARE']?.isAvailable, isTrue);
     expect(session.moduleEntitlements['BILLING']?.isAvailable, isFalse);

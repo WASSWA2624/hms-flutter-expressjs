@@ -61,7 +61,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       AppPermissions.clinicalWrite,
       AppPermissions.emergencyWrite,
     ],
-    activeModules: <String>['inpatient-bed-management'],
+    activeModules: <String>['icu-critical-care'],
   );
 
   late final TextEditingController _searchController;

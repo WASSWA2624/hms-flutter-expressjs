@@ -95,7 +95,12 @@ final class AuthSessionDto {
 
   static List<AppPermission> _permissionsFromUser(Map<String, Object?> user) {
     final permissions = <AppPermission>[];
-    for (final key in <String>['permissions', 'permission_names']) {
+    for (final key in <String>[
+      'permissions',
+      'permission_names',
+      'direct_permissions',
+      'role_permissions',
+    ]) {
       final values = user[key];
       if (values is Iterable<Object?>) {
         permissions.addAll(_permissionsFromValues(values));
