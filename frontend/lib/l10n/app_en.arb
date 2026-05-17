@@ -1400,6 +1400,10 @@
   "@patientsSystolicLabel": {
     "description": "Patient systolic blood pressure field label."
   },
+  "patientsBloodPressureLabel": "Blood pressure",
+  "@patientsBloodPressureLabel": {
+    "description": "Patient blood pressure vital signs group label."
+  },
   "patientsDiastolicLabel": "Diastolic",
   "@patientsDiastolicLabel": {
     "description": "Patient diastolic blood pressure field label."

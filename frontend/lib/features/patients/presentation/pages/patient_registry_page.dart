@@ -2655,8 +2655,8 @@ class _PatientFlowQuickDialogState
       TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
-  String _systolicUnit = _bloodPressureUnitMmHg;
-  String _diastolicUnit = _bloodPressureUnitMmHg;
+  String _bloodPressureUnit = _bloodPressureUnitMmHg;
+  String _selectedTemperatureUnit = _temperatureUnitCelsius;
   String? _facilityId;
   String? _providerId;
   String? _wardId;
@@ -2845,52 +2845,25 @@ class _PatientFlowQuickDialogState
           title: l10n.patientsVitalsSectionTitle,
           density: AppFormSectionDensity.compact,
           children: <Widget>[
-            _ResponsiveFieldPair(
-              left: _vitalSignInput(
-                context,
-                controller: _systolicController,
-                labelText: l10n.patientsSystolicLabel,
-                range: vitalsReference.systolic.forBloodPressureUnit(
-                  _systolicUnit,
-                ),
-                unit: _systolicUnit,
-                profileLabel: vitalsReference.profileLabel,
-                unitOptions: _bloodPressureUnitSelectOptions,
-                onUnitChanged: (String? value) {
-                  setState(() {
-                    _systolicUnit = value ?? _bloodPressureUnitMmHg;
-                  });
-                },
-                pairedController: _diastolicController,
-              ),
-              right: _vitalSignInput(
-                context,
-                controller: _diastolicController,
-                labelText: l10n.patientsDiastolicLabel,
-                range: vitalsReference.diastolic.forBloodPressureUnit(
-                  _diastolicUnit,
-                ),
-                unit: _diastolicUnit,
-                profileLabel: vitalsReference.profileLabel,
-                unitOptions: _bloodPressureUnitSelectOptions,
-                onUnitChanged: (String? value) {
-                  setState(() {
-                    _diastolicUnit = value ?? _bloodPressureUnitMmHg;
-                  });
-                },
-                pairedController: _systolicController,
-              ),
-            ),
-            _ResponsiveFieldPair(
-              left: _vitalSignInput(
+            _bloodPressureInput(context, vitalsReference),
+            _vitalSignsGrid(context, <Widget>[
+              _vitalSignInput(
                 context,
                 controller: _temperatureController,
                 labelText: l10n.patientsTemperatureLabel,
-                range: vitalsReference.temperature,
-                unit: _temperatureUnit,
+                range: vitalsReference.temperature.forTemperatureUnit(
+                  _selectedTemperatureUnit,
+                ),
+                unit: _selectedTemperatureUnit,
                 profileLabel: vitalsReference.profileLabel,
+                unitOptions: _temperatureUnitSelectOptions,
+                onUnitChanged: (String? value) {
+                  setState(() {
+                    _selectedTemperatureUnit = value ?? _temperatureUnitCelsius;
+                  });
+                },
               ),
-              right: _vitalSignInput(
+              _vitalSignInput(
                 context,
                 controller: _heartRateController,
                 labelText: l10n.patientsHeartRateLabel,
@@ -2898,9 +2871,7 @@ class _PatientFlowQuickDialogState
                 unit: _heartRateUnit,
                 profileLabel: vitalsReference.profileLabel,
               ),
-            ),
-            _ResponsiveFieldPair(
-              left: _vitalSignInput(
+              _vitalSignInput(
                 context,
                 controller: _respiratoryRateController,
                 labelText: l10n.patientsRespiratoryRateLabel,
@@ -2908,7 +2879,7 @@ class _PatientFlowQuickDialogState
                 unit: _respiratoryRateUnit,
                 profileLabel: vitalsReference.profileLabel,
               ),
-              right: _vitalSignInput(
+              _vitalSignInput(
                 context,
                 controller: _oxygenSaturationController,
                 labelText: l10n.patientsOxygenSaturationLabel,
@@ -2916,9 +2887,7 @@ class _PatientFlowQuickDialogState
                 unit: _oxygenSaturationUnit,
                 profileLabel: vitalsReference.profileLabel,
               ),
-            ),
-            _ResponsiveFieldPair(
-              left: _vitalSignInput(
+              _vitalSignInput(
                 context,
                 controller: _weightController,
                 labelText: l10n.patientsWeightLabel,
@@ -2926,7 +2895,7 @@ class _PatientFlowQuickDialogState
                 unit: _weightUnit,
                 profileLabel: vitalsReference.profileLabel,
               ),
-              right: _vitalSignInput(
+              _vitalSignInput(
                 context,
                 controller: _heightController,
                 labelText: l10n.patientsHeightLabel,
@@ -2934,7 +2903,7 @@ class _PatientFlowQuickDialogState
                 unit: _heightUnit,
                 profileLabel: vitalsReference.profileLabel,
               ),
-            ),
+            ]),
           ],
         ),
       ],
@@ -3059,6 +3028,73 @@ class _PatientFlowQuickDialogState
         setState(() {
           _currency = value ?? appDefaultCurrencyCode;
         });
+      },
+    );
+  }
+
+  Widget _bloodPressureInput(
+    BuildContext context,
+    _PatientVitalsReference vitalsReference,
+  ) {
+    final l10n = context.l10n;
+    final _VitalReferenceRange systolicRange = vitalsReference.systolic
+        .forBloodPressureUnit(_bloodPressureUnit);
+    final _VitalReferenceRange diastolicRange = vitalsReference.diastolic
+        .forBloodPressureUnit(_bloodPressureUnit);
+
+    return _BloodPressureInput(
+      title: l10n.patientsBloodPressureLabel,
+      systolicController: _systolicController,
+      diastolicController: _diastolicController,
+      systolicLabelText: l10n.patientsSystolicLabel,
+      diastolicLabelText: l10n.patientsDiastolicLabel,
+      unit: _bloodPressureUnit,
+      unitLabelText: l10n.patientsVitalUnitLabel,
+      unitOptions: _bloodPressureUnitSelectOptions,
+      profileLabel: vitalsReference.profileLabel,
+      systolicRange: systolicRange,
+      diastolicRange: diastolicRange,
+      enabled: !_isSaving,
+      onUnitChanged: (String? value) {
+        setState(() {
+          _bloodPressureUnit = value ?? _bloodPressureUnitMmHg;
+        });
+      },
+      systolicValidator: (String? value) => _validateVitalValue(
+        context,
+        value,
+        systolicRange,
+        isRequired: normalizeCurrencyAmount(
+          _diastolicController.text,
+        ).isNotEmpty,
+      ),
+      diastolicValidator: (String? value) => _validateVitalValue(
+        context,
+        value,
+        diastolicRange,
+        isRequired: normalizeCurrencyAmount(
+          _systolicController.text,
+        ).isNotEmpty,
+      ),
+    );
+  }
+
+  Widget _vitalSignsGrid(BuildContext context, List<Widget> children) {
+    final ThemeData theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int columns = constraints.maxWidth >= 720 ? 2 : 1;
+        final double gap = theme.spacing.md;
+        final double width =
+            (constraints.maxWidth - (gap * (columns - 1))) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: theme.spacing.md,
+          children: <Widget>[
+            for (final Widget child in children)
+              SizedBox(width: math.max(width, 0), child: child),
+          ],
+        );
       },
     );
   }
@@ -3526,11 +3562,11 @@ class _PatientFlowQuickDialogState
     final String now = DateTime.now().toUtc().toIso8601String();
     final String systolic = _bloodPressurePayloadValue(
       _systolicController,
-      _systolicUnit,
+      _bloodPressureUnit,
     );
     final String diastolic = _bloodPressurePayloadValue(
       _diastolicController,
-      _diastolicUnit,
+      _bloodPressureUnit,
     );
     if (systolic.isNotEmpty && diastolic.isNotEmpty) {
       vitals.add(<String, Object?>{
@@ -3558,7 +3594,7 @@ class _PatientFlowQuickDialogState
       });
     }
 
-    addScalar(_temperatureController, 'TEMPERATURE', _temperatureUnit);
+    addScalar(_temperatureController, 'TEMPERATURE', _selectedTemperatureUnit);
     addScalar(_heartRateController, 'HEART_RATE', _heartRateUnit);
     addScalar(
       _respiratoryRateController,
@@ -3588,6 +3624,224 @@ class _PatientFlowQuickDialogState
         ? value / _bloodPressureKpaFactor
         : value;
     return _formatVitalNumber(mmHg, decimals: 2);
+  }
+}
+
+class _BloodPressureInput extends StatelessWidget {
+  const _BloodPressureInput({
+    required this.title,
+    required this.systolicController,
+    required this.diastolicController,
+    required this.systolicLabelText,
+    required this.diastolicLabelText,
+    required this.unit,
+    required this.unitLabelText,
+    required this.unitOptions,
+    required this.profileLabel,
+    required this.systolicRange,
+    required this.diastolicRange,
+    required this.enabled,
+    required this.onUnitChanged,
+    required this.systolicValidator,
+    required this.diastolicValidator,
+  });
+
+  final String title;
+  final TextEditingController systolicController;
+  final TextEditingController diastolicController;
+  final String systolicLabelText;
+  final String diastolicLabelText;
+  final String unit;
+  final String unitLabelText;
+  final List<AppSelectOption<String>> unitOptions;
+  final String profileLabel;
+  final _VitalReferenceRange systolicRange;
+  final _VitalReferenceRange diastolicRange;
+  final bool enabled;
+  final ValueChanged<String?> onUnitChanged;
+  final FormFieldValidator<String> systolicValidator;
+  final FormFieldValidator<String> diastolicValidator;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: AnimatedBuilder(
+          animation: Listenable.merge(<Listenable>[
+            systolicController,
+            diastolicController,
+          ]),
+          builder: (BuildContext context, _) {
+            final _VitalSignStatus? systolicStatus = _statusForVitalText(
+              systolicController.text,
+              systolicRange,
+            );
+            final _VitalSignStatus? diastolicStatus = _statusForVitalText(
+              diastolicController.text,
+              diastolicRange,
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final Widget heading = Text(
+                      title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    );
+                    final Widget unitField = SizedBox(
+                      width: 136,
+                      child: AppSelectField<String>(
+                        value: unit,
+                        labelText: unitLabelText,
+                        enabled: enabled,
+                        options: unitOptions,
+                        onChanged: onUnitChanged,
+                        menuHeight: 144,
+                      ),
+                    );
+
+                    if (constraints.maxWidth < 520) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          heading,
+                          SizedBox(height: theme.spacing.sm),
+                          unitField,
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(child: heading),
+                        SizedBox(width: theme.spacing.md),
+                        unitField,
+                      ],
+                    );
+                  },
+                ),
+                SizedBox(height: theme.spacing.sm),
+                _BloodPressureFieldPair(
+                  left: _bloodPressureValueField(
+                    context,
+                    controller: systolicController,
+                    labelText: systolicLabelText,
+                    status: systolicStatus,
+                    validator: systolicValidator,
+                  ),
+                  right: _bloodPressureValueField(
+                    context,
+                    controller: diastolicController,
+                    labelText: diastolicLabelText,
+                    status: diastolicStatus,
+                    validator: diastolicValidator,
+                  ),
+                ),
+                SizedBox(height: theme.spacing.xs),
+                _BloodPressureFieldPair(
+                  left: _VitalRangeCaption(
+                    status: systolicStatus,
+                    range: systolicRange,
+                    profileLabel: profileLabel,
+                  ),
+                  right: _VitalRangeCaption(
+                    status: diastolicStatus,
+                    range: diastolicRange,
+                    profileLabel: profileLabel,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _bloodPressureValueField(
+    BuildContext context, {
+    required TextEditingController controller,
+    required String labelText,
+    required _VitalSignStatus? status,
+    required FormFieldValidator<String> validator,
+  }) {
+    final Color? statusColor = _statusColor(context, status);
+    return AppTextField(
+      controller: controller,
+      labelText: labelText,
+      semanticLabel: '$labelText $unit',
+      enabled: enabled,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: <TextInputFormatter>[CurrencyAmountInputFormatter()],
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: validator,
+      suffixIcon: status == null
+          ? null
+          : Icon(_statusIcon(status), color: statusColor),
+    );
+  }
+
+  Color? _statusColor(BuildContext context, _VitalSignStatus? status) {
+    final AppStatusColors statusColors = Theme.of(context).statusColors;
+    return switch (status) {
+      _VitalSignStatus.normal => statusColors.success,
+      _VitalSignStatus.abnormal => statusColors.warning,
+      null => null,
+    };
+  }
+
+  IconData _statusIcon(_VitalSignStatus status) {
+    return switch (status) {
+      _VitalSignStatus.normal => Icons.check_circle_outline,
+      _VitalSignStatus.abnormal => Icons.warning_amber_outlined,
+    };
+  }
+}
+
+class _BloodPressureFieldPair extends StatelessWidget {
+  const _BloodPressureFieldPair({required this.left, required this.right});
+
+  final Widget left;
+  final Widget right;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth < 560) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              left,
+              SizedBox(height: theme.spacing.sm),
+              right,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(child: left),
+            SizedBox(width: theme.spacing.md),
+            Expanded(child: right),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -3621,8 +3875,15 @@ class _VitalSignInput extends StatelessWidget {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (BuildContext context, TextEditingValue value, _) {
-        final _VitalSignStatus? status = _statusFor(value.text);
+        final _VitalSignStatus? status = _statusForVitalText(value.text, range);
         final Color? statusColor = _statusColor(context, status);
+        final Widget? statusIcon = status == null
+            ? null
+            : Icon(
+                _statusIcon(status),
+                color: statusColor,
+                size: Theme.of(context).appTokens.listIconSize,
+              );
         final Widget input = AppTextField(
           controller: controller,
           labelText: labelText,
@@ -3632,12 +3893,14 @@ class _VitalSignInput extends StatelessWidget {
           inputFormatters: <TextInputFormatter>[CurrencyAmountInputFormatter()],
           autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: validator,
-          suffixIcon: status == null
+          suffixIcon: unitOptions == null
+              ? _VitalFieldSuffix(unit: unit, statusIcon: statusIcon)
+              : status == null
               ? null
-              : Icon(_statusIcon(status), color: statusColor),
+              : statusIcon,
         );
-        final Widget unitControl = unitOptions == null
-            ? _VitalUnitBadge(unit: unit)
+        final Widget? unitControl = unitOptions == null
+            ? null
             : AppSelectField<String>(
                 value: unit,
                 labelText: unitLabelText,
@@ -3646,41 +3909,41 @@ class _VitalSignInput extends StatelessWidget {
                 onChanged: onUnitChanged,
                 menuHeight: 144,
               );
-        final double unitWidth = unitOptions == null
-            ? (unit.length > 10 ? 148 : 94)
-            : 104;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final bool stacked =
-                    constraints.hasBoundedWidth && constraints.maxWidth < 360;
-                if (stacked) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+            if (unitControl == null)
+              input
+            else
+              LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool stacked =
+                      constraints.hasBoundedWidth && constraints.maxWidth < 360;
+                  if (stacked) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        input,
+                        SizedBox(height: Theme.of(context).spacing.sm),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: SizedBox(width: 104, child: unitControl),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      input,
-                      SizedBox(height: Theme.of(context).spacing.sm),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: SizedBox(width: unitWidth, child: unitControl),
-                      ),
+                      Expanded(child: input),
+                      SizedBox(width: Theme.of(context).spacing.sm),
+                      SizedBox(width: 104, child: unitControl),
                     ],
                   );
-                }
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(child: input),
-                    SizedBox(width: Theme.of(context).spacing.sm),
-                    SizedBox(width: unitWidth, child: unitControl),
-                  ],
-                );
-              },
-            ),
+                },
+              ),
             SizedBox(height: Theme.of(context).spacing.xs),
             _VitalRangeCaption(
               status: status,
@@ -3691,16 +3954,6 @@ class _VitalSignInput extends StatelessWidget {
         );
       },
     );
-  }
-
-  _VitalSignStatus? _statusFor(String text) {
-    final double? value = _parseVitalInput(text);
-    if (value == null) {
-      return null;
-    }
-    return range.containsNormal(value)
-        ? _VitalSignStatus.normal
-        : _VitalSignStatus.abnormal;
   }
 
   Color? _statusColor(BuildContext context, _VitalSignStatus? status) {
@@ -3720,37 +3973,37 @@ class _VitalSignInput extends StatelessWidget {
   }
 }
 
-class _VitalUnitBadge extends StatelessWidget {
-  const _VitalUnitBadge({required this.unit});
+class _VitalFieldSuffix extends StatelessWidget {
+  const _VitalFieldSuffix({required this.unit, required this.statusIcon});
 
   final String unit;
+  final Widget? statusIcon;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 48),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.zero,
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-          child: Center(
-            child: Text(
-              unit,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: theme.spacing.xs,
+        end: theme.spacing.sm,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            unit,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w800,
             ),
           ),
-        ),
+          if (statusIcon != null) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            statusIcon!,
+          ],
+        ],
       ),
     );
   }
@@ -3803,6 +4056,16 @@ class _VitalRangeCaption extends StatelessWidget {
 
 enum _VitalSignStatus { normal, abnormal }
 
+_VitalSignStatus? _statusForVitalText(String text, _VitalReferenceRange range) {
+  final double? value = _parseVitalInput(text);
+  if (value == null) {
+    return null;
+  }
+  return range.containsNormal(value)
+      ? _VitalSignStatus.normal
+      : _VitalSignStatus.abnormal;
+}
+
 @immutable
 final class _PatientVitalsReference {
   const _PatientVitalsReference({
@@ -3829,7 +4092,7 @@ final class _PatientVitalsReference {
         normalMax: 37.5,
         validMin: 25,
         validMax: 45,
-        unit: _temperatureUnit,
+        unit: _temperatureUnitCelsius,
         decimals: 1,
       ),
       heartRate: _heartRateRange(ageBand),
@@ -3907,11 +4170,27 @@ final class _VitalReferenceRange {
       decimals: 1,
     );
   }
+
+  _VitalReferenceRange forTemperatureUnit(String selectedUnit) {
+    if (selectedUnit != _temperatureUnitFahrenheit) {
+      return this;
+    }
+
+    return _VitalReferenceRange(
+      normalMin: _celsiusToFahrenheit(normalMin),
+      normalMax: _celsiusToFahrenheit(normalMax),
+      validMin: _celsiusToFahrenheit(validMin),
+      validMax: _celsiusToFahrenheit(validMax),
+      unit: _temperatureUnitFahrenheit,
+      decimals: 1,
+    );
+  }
 }
 
 const String _bloodPressureUnitMmHg = 'mmHg';
 const String _bloodPressureUnitKpa = 'kPa';
-const String _temperatureUnit = '°C';
+const String _temperatureUnitCelsius = '\u00B0C';
+const String _temperatureUnitFahrenheit = '\u00B0F';
 const String _heartRateUnit = 'beats per minute';
 const String _respiratoryRateUnit = 'breaths per minute';
 const String _oxygenSaturationUnit = '%';
@@ -3930,6 +4209,22 @@ const List<AppSelectOption<String>> _bloodPressureUnitSelectOptions =
         label: _bloodPressureUnitKpa,
       ),
     ];
+
+const List<AppSelectOption<String>> _temperatureUnitSelectOptions =
+    <AppSelectOption<String>>[
+      AppSelectOption<String>(
+        value: _temperatureUnitCelsius,
+        label: _temperatureUnitCelsius,
+      ),
+      AppSelectOption<String>(
+        value: _temperatureUnitFahrenheit,
+        label: _temperatureUnitFahrenheit,
+      ),
+    ];
+
+double _celsiusToFahrenheit(double value) {
+  return (value * 9 / 5) + 32;
+}
 
 String _resolveVitalAgeBand(DateTime? dateOfBirth) {
   if (dateOfBirth == null) {

@@ -2128,6 +2128,12 @@ abstract class AppLocalizations {
   /// **'Systolic'**
   String get patientsSystolicLabel;
 
+  /// Patient blood pressure vital signs group label.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood pressure'**
+  String get patientsBloodPressureLabel;
+
   /// Patient diastolic blood pressure field label.
   ///
   /// In en, this message translates to:

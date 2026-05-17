@@ -1074,6 +1074,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsSystolicLabel => 'Systolic';
 
   @override
+  String get patientsBloodPressureLabel => 'Blood pressure';
+
+  @override
   String get patientsDiastolicLabel => 'Diastolic';
 
   @override

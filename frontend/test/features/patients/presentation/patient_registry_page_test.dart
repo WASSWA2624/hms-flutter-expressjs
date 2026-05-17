@@ -304,6 +304,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Triage intake'), findsOneWidget);
+    expect(find.text('Blood pressure'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (Widget widget) =>
@@ -311,8 +312,9 @@ void main() {
       ),
       findsNWidgets(2),
     );
-    expect(find.text('mmHg'), findsNWidgets(2));
-    expect(find.text('°C'), findsOneWidget);
+    expect(find.text('mmHg'), findsOneWidget);
+    expect(find.text('\u00B0C'), findsOneWidget);
+    expect(find.text('\u00B0F'), findsNothing);
     expect(find.text('beats per minute'), findsOneWidget);
     expect(find.text('breaths per minute'), findsOneWidget);
     expect(find.text('%'), findsOneWidget);
