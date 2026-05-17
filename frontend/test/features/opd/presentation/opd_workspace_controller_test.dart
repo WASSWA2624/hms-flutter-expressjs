@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
@@ -79,6 +80,59 @@ void main() {
         isNotNull,
       );
       verifyNever(() => repository.updateAppointment(any(), any()));
+    });
+
+    test('disposeFlow sends route context for triage decisions', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdFlowSummary flow = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        providerUserId: 'DOC000001',
+        stage: 'WAITING_DOCTOR_ASSIGNMENT',
+        triageLevel: 'LEVEL_2',
+      );
+      const OpdFlowDetail detail = OpdFlowDetail(summary: flow);
+      Map<String, Object?>? submittedPayload;
+
+      _stubInitialLoad(
+        repository,
+        flows: <OpdFlowSummary>[flow],
+        triageQueue: <OpdFlowSummary>[flow],
+      );
+      when(() => repository.routeTriage(any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        submittedPayload =
+            invocation.positionalArguments[1] as Map<String, Object?>;
+        return const Result<OpdFlowDetail>.success(detail);
+      });
+      when(
+        () => repository.getOpdFlow(any()),
+      ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [opdRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .disposeFlow(
+            flow,
+            'CONSULTATION',
+            'Priority review',
+            providerUserId: 'DOC000001',
+            triageLevel: 'LEVEL_2',
+            emergency: true,
+          );
+
+      expect(failure, isNull);
+      expect(submittedPayload, containsPair('route_to', 'CONSULTATION'));
+      expect(submittedPayload, containsPair('provider_user_id', 'DOC000001'));
+      expect(submittedPayload, containsPair('triage_level', 'LEVEL_2'));
+      expect(submittedPayload, containsPair('emergency', true));
+      expect(submittedPayload, containsPair('notes', 'Priority review'));
     });
   });
 }

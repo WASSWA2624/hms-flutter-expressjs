@@ -499,13 +499,19 @@ final class OpdWorkspaceController
   Future<AppFailure?> disposeFlow(
     OpdFlowSummary flow,
     String decision,
-    String? notes,
-  ) {
+    String? notes, {
+    String? providerUserId,
+    String? triageLevel,
+    bool emergency = false,
+  }) {
     return _mutateFlow(
       () => _repository.routeTriage(flow.apiId, <String, Object?>{
         'route_to': decision,
         'decision': decision,
         'notes': notes,
+        'provider_user_id': providerUserId,
+        'triage_level': triageLevel,
+        'emergency': emergency,
       }),
       refreshAfter: true,
     );

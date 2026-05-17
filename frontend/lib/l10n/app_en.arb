@@ -343,6 +343,83 @@
   "opdOxygenSaturationLabel": "Oxygen saturation",
   "opdWeightLabel": "Weight",
   "opdTriageNotesLabel": "Triage notes",
+  "opdTriageScopeFilterLabel": "Triage scope",
+  "opdAllTriageScopesOption": "All triage scopes",
+  "opdTriageScopeWaiting": "Waiting",
+  "opdTriageScopeUrgent": "Urgent",
+  "opdTriageScopeEmergency": "Emergency",
+  "opdTriageScopeRoutine": "Routine",
+  "opdTriageScopeServiceOnly": "Service-only",
+  "opdWaitDurationShort": "Wait {duration}",
+  "@opdWaitDurationShort": {
+    "description": "Short wait duration label for OPD queue rows.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "opdSymptomsLabel": "Symptoms",
+  "opdPainSeverityLabel": "Pain severity",
+  "opdAllergiesLabel": "Allergies",
+  "opdRiskFlagsLabel": "Risk flags",
+  "opdRiskFlagFall": "Fall risk",
+  "opdRiskFlagPregnancy": "Pregnancy",
+  "opdRiskFlagInfection": "Infection risk",
+  "opdRiskFlagAlteredMentalState": "Altered mental state",
+  "opdRiskFlagBleeding": "Bleeding",
+  "opdNoRouteDecisionLabel": "Do not route yet",
+  "@opdTriageScopeFilterLabel": {
+    "description": "Triage worklist scope filter label."
+  },
+  "@opdAllTriageScopesOption": {
+    "description": "All triage scopes filter option."
+  },
+  "@opdTriageScopeWaiting": {
+    "description": "Triage scope option for waiting patients."
+  },
+  "@opdTriageScopeUrgent": {
+    "description": "Triage scope option for urgent patients."
+  },
+  "@opdTriageScopeEmergency": {
+    "description": "Triage scope option for emergency patients."
+  },
+  "@opdTriageScopeRoutine": {
+    "description": "Triage scope option for routine patients."
+  },
+  "@opdTriageScopeServiceOnly": {
+    "description": "Triage scope option for direct service patients."
+  },
+  "@opdSymptomsLabel": {
+    "description": "Symptoms field label in triage capture."
+  },
+  "@opdPainSeverityLabel": {
+    "description": "Pain severity field label in triage capture."
+  },
+  "@opdAllergiesLabel": {
+    "description": "Allergies field label in triage capture."
+  },
+  "@opdRiskFlagsLabel": {
+    "description": "Risk flags section label in triage capture."
+  },
+  "@opdRiskFlagFall": {
+    "description": "Fall risk triage flag label."
+  },
+  "@opdRiskFlagPregnancy": {
+    "description": "Pregnancy triage flag label."
+  },
+  "@opdRiskFlagInfection": {
+    "description": "Infection risk triage flag label."
+  },
+  "@opdRiskFlagAlteredMentalState": {
+    "description": "Altered mental state triage flag label."
+  },
+  "@opdRiskFlagBleeding": {
+    "description": "Bleeding triage flag label."
+  },
+  "@opdNoRouteDecisionLabel": {
+    "description": "Option for saving triage without routing yet."
+  },
   "@opdTitle": {
     "description": "OPD workspace title."
   },

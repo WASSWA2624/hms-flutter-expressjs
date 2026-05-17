@@ -13,8 +13,10 @@ void main() {
             'status': 'OPEN',
           },
           'flow': <String, Object?>{
+            'queued_at': '2026-05-17T07:45:00.000Z',
             'stage': 'WAITING_VITALS',
             'next_step': 'RECORD_VITALS',
+            'emergency_indicator': true,
             'consultation': <String, Object?>{
               'require_payment': true,
               'is_paid': true,
@@ -33,5 +35,7 @@ void main() {
     expect(detail.consultationPaid, isTrue);
     expect(detail.consultationInvoiceId, 'INV0001');
     expect(detail.consultationPaymentId, 'PAY0001');
+    expect(detail.summary.queuedAt, DateTime.parse('2026-05-17T07:45:00.000Z'));
+    expect(detail.summary.emergencyIndicator, isTrue);
   });
 }

@@ -1324,6 +1324,114 @@ abstract class AppLocalizations {
   /// **'Triage notes'**
   String get opdTriageNotesLabel;
 
+  /// Triage worklist scope filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage scope'**
+  String get opdTriageScopeFilterLabel;
+
+  /// All triage scopes filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'All triage scopes'**
+  String get opdAllTriageScopesOption;
+
+  /// Triage scope option for waiting patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get opdTriageScopeWaiting;
+
+  /// Triage scope option for urgent patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get opdTriageScopeUrgent;
+
+  /// Triage scope option for emergency patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get opdTriageScopeEmergency;
+
+  /// Triage scope option for routine patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Routine'**
+  String get opdTriageScopeRoutine;
+
+  /// Triage scope option for direct service patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Service-only'**
+  String get opdTriageScopeServiceOnly;
+
+  /// Short wait duration label for OPD queue rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait {duration}'**
+  String opdWaitDurationShort(String duration);
+
+  /// Symptoms field label in triage capture.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptoms'**
+  String get opdSymptomsLabel;
+
+  /// Pain severity field label in triage capture.
+  ///
+  /// In en, this message translates to:
+  /// **'Pain severity'**
+  String get opdPainSeverityLabel;
+
+  /// Allergies field label in triage capture.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergies'**
+  String get opdAllergiesLabel;
+
+  /// Risk flags section label in triage capture.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk flags'**
+  String get opdRiskFlagsLabel;
+
+  /// Fall risk triage flag label.
+  ///
+  /// In en, this message translates to:
+  /// **'Fall risk'**
+  String get opdRiskFlagFall;
+
+  /// Pregnancy triage flag label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pregnancy'**
+  String get opdRiskFlagPregnancy;
+
+  /// Infection risk triage flag label.
+  ///
+  /// In en, this message translates to:
+  /// **'Infection risk'**
+  String get opdRiskFlagInfection;
+
+  /// Altered mental state triage flag label.
+  ///
+  /// In en, this message translates to:
+  /// **'Altered mental state'**
+  String get opdRiskFlagAlteredMentalState;
+
+  /// Bleeding triage flag label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bleeding'**
+  String get opdRiskFlagBleeding;
+
+  /// Option for saving triage without routing yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not route yet'**
+  String get opdNoRouteDecisionLabel;
+
   /// Patient registry screen title.
   ///
   /// In en, this message translates to:

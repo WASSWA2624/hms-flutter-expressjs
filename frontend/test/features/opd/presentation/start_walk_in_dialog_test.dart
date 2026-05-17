@@ -104,4 +104,53 @@ void main() {
     expect(submittedPayload?['require_consultation_payment'], isTrue);
     expect(submittedPayload?['create_consultation_invoice'], isTrue);
   });
+
+  testWidgets(
+    'RecordVitalsDialog exposes triage assessment and routing fields',
+    (WidgetTester tester) async {
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+
+      when(
+        () => opdRepository.listProviders(search: any(named: 'search')),
+      ).thenAnswer(
+        (_) async => const Result<List<OpdProviderOption>>.success(
+          <OpdProviderOption>[],
+        ),
+      );
+      when(() => opdRepository.listProviders()).thenAnswer(
+        (_) async => const Result<List<OpdProviderOption>>.success(
+          <OpdProviderOption>[],
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [opdRepositoryProvider.overrideWithValue(opdRepository)],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: const Scaffold(
+              body: RecordVitalsDialog(
+                flow: OpdFlowSummary(
+                  id: 'encounter-1',
+                  publicId: 'ENC000001',
+                  stage: 'WAITING_VITALS',
+                  chiefComplaint: 'Headache',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Symptoms (optional)'), findsOneWidget);
+      expect(find.text('Pain severity (optional)'), findsOneWidget);
+      expect(find.text('Allergies (optional)'), findsOneWidget);
+      expect(find.text('Risk flags'), findsOneWidget);
+      expect(find.text('Do not route yet'), findsOneWidget);
+    },
+  );
 }

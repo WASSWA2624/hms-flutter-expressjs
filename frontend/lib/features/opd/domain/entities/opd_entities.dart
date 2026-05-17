@@ -317,6 +317,7 @@ final class OpdFlowSummary {
     this.encounterType,
     this.status,
     this.startedAt,
+    this.queuedAt,
     this.endedAt,
     this.stage,
     this.nextStep,
@@ -330,6 +331,7 @@ final class OpdFlowSummary {
     this.triagePriorityRank,
     this.triageNotes,
     this.chiefComplaint,
+    this.emergencyIndicator = false,
     this.lastRouteTo,
     this.facilityName,
   });
@@ -343,6 +345,7 @@ final class OpdFlowSummary {
   final String? encounterType;
   final String? status;
   final DateTime? startedAt;
+  final DateTime? queuedAt;
   final DateTime? endedAt;
   final String? stage;
   final String? nextStep;
@@ -356,6 +359,7 @@ final class OpdFlowSummary {
   final int? triagePriorityRank;
   final String? triageNotes;
   final String? chiefComplaint;
+  final bool emergencyIndicator;
   final String? lastRouteTo;
   final String? facilityName;
 
@@ -384,6 +388,7 @@ final class OpdFlowSummary {
     String? encounterType,
     String? status,
     DateTime? startedAt,
+    DateTime? queuedAt,
     DateTime? endedAt,
     String? stage,
     String? nextStep,
@@ -397,6 +402,7 @@ final class OpdFlowSummary {
     int? triagePriorityRank,
     String? triageNotes,
     String? chiefComplaint,
+    bool? emergencyIndicator,
     String? lastRouteTo,
     String? facilityName,
   }) {
@@ -410,6 +416,7 @@ final class OpdFlowSummary {
       encounterType: encounterType ?? this.encounterType,
       status: status ?? this.status,
       startedAt: startedAt ?? this.startedAt,
+      queuedAt: queuedAt ?? this.queuedAt,
       endedAt: endedAt ?? this.endedAt,
       stage: stage ?? this.stage,
       nextStep: nextStep ?? this.nextStep,
@@ -423,6 +430,7 @@ final class OpdFlowSummary {
       triagePriorityRank: triagePriorityRank ?? this.triagePriorityRank,
       triageNotes: triageNotes ?? this.triageNotes,
       chiefComplaint: chiefComplaint ?? this.chiefComplaint,
+      emergencyIndicator: emergencyIndicator ?? this.emergencyIndicator,
       lastRouteTo: lastRouteTo ?? this.lastRouteTo,
       facilityName: facilityName ?? this.facilityName,
     );

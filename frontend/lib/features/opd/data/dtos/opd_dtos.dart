@@ -189,6 +189,7 @@ final class OpdFlowSummaryDto {
       encounterType: _string(encounter['encounter_type']),
       status: _string(encounter['status']),
       startedAt: _date(encounter['started_at']),
+      queuedAt: _date(flow['queued_at']),
       endedAt: _date(encounter['ended_at']),
       stage: _string(flow['stage']),
       nextStep: _string(flow['next_step']),
@@ -203,6 +204,7 @@ final class OpdFlowSummaryDto {
       triagePriorityRank: _intOrNull(flow['triage_priority_rank']),
       triageNotes: _string(flow['triage_notes']),
       chiefComplaint: _string(flow['chief_complaint']),
+      emergencyIndicator: _bool(flow['emergency_indicator']),
       lastRouteTo: _string(
         _nullableMap(flow['last_triage_route'])?['route_to'],
       ),

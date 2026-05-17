@@ -778,7 +778,7 @@ class _OpdFiltersState extends State<_OpdFilters> {
     final l10n = context.l10n;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool useAdvancedModal = breakpoint.isMobile;
-    final List<String> statuses = _tableStatuses(widget.state);
+    final List<String> statuses = _tableStatuses(context, widget.state);
     final Widget searchField = AppSearchField(
       controller: _searchController,
       semanticLabel: l10n.opdSearchLabel,
@@ -853,6 +853,22 @@ class _OpdFiltersState extends State<_OpdFilters> {
                   );
                 },
               ),
+              AppSelectField<String>.searchable(
+                value: widget.filter.triageScope ?? _opdFilterAll,
+                labelText: l10n.opdTriageScopeFilterLabel,
+                semanticLabel: l10n.opdTriageScopeFilterLabel,
+                options: _triageScopeFilterOptions(context),
+                onChanged: (String? value) {
+                  final bool clearValue =
+                      value == null || value == _opdFilterAll;
+                  widget.onFilterChanged(
+                    widget.filter.copyWith(
+                      triageScope: clearValue ? null : value,
+                      clearTriageScope: clearValue,
+                    ),
+                  );
+                },
+              ),
             ],
       actions: <Widget>[
         if (!useAdvancedModal && widget.filter.isActive)
@@ -873,7 +889,7 @@ class _OpdFiltersState extends State<_OpdFilters> {
       barrierDismissible: false,
       builder: (_) => _OpdFilterDialog(
         initialFilter: widget.filter,
-        statuses: _tableStatuses(widget.state),
+        statuses: _tableStatuses(context, widget.state),
       ),
     );
     if (value != null) {
@@ -909,7 +925,7 @@ class _OpdWorkspaceBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<_OpdTableItem> items = _tableItems(state)
+    final List<_OpdTableItem> items = _tableItems(context, state)
         .where((_OpdTableItem item) => filter.matches(item))
         .toList(growable: false);
 
@@ -926,8 +942,8 @@ class _OpdWorkspaceBody extends StatelessWidget {
   }
 }
 
-List<String> _tableStatuses(OpdWorkspaceState state) {
-  return _tableItems(state)
+List<String> _tableStatuses(BuildContext context, OpdWorkspaceState state) {
+  return _tableItems(context, state)
       .map((_OpdTableItem item) => item.status)
       .whereType<String>()
       .where((String value) => value.trim().isNotEmpty)
@@ -977,31 +993,74 @@ List<AppSelectOption<String>> _statusFilterOptions(
   ];
 }
 
+List<AppSelectOption<String>> _triageScopeFilterOptions(BuildContext context) {
+  final l10n = context.l10n;
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: _opdFilterAll,
+      label: l10n.opdAllTriageScopesOption,
+    ),
+    AppSelectOption<String>(
+      value: _triageScopeWaiting,
+      label: l10n.opdTriageScopeWaiting,
+    ),
+    AppSelectOption<String>(
+      value: _triageScopeUrgent,
+      label: l10n.opdTriageScopeUrgent,
+    ),
+    AppSelectOption<String>(
+      value: _triageScopeEmergency,
+      label: l10n.opdTriageScopeEmergency,
+    ),
+    AppSelectOption<String>(
+      value: _triageScopeRoutine,
+      label: l10n.opdTriageScopeRoutine,
+    ),
+    AppSelectOption<String>(
+      value: _triageScopeServiceOnly,
+      label: l10n.opdTriageScopeServiceOnly,
+    ),
+  ];
+}
+
 @immutable
 final class _OpdTableFilter {
-  const _OpdTableFilter({this.search = '', this.category, this.status});
+  const _OpdTableFilter({
+    this.search = '',
+    this.category,
+    this.status,
+    this.triageScope,
+  });
 
   final String search;
   final String? category;
   final String? status;
+  final String? triageScope;
 
   bool get isActive =>
-      search.trim().isNotEmpty || _isNonEmpty(category) || _isNonEmpty(status);
+      search.trim().isNotEmpty ||
+      _isNonEmpty(category) ||
+      _isNonEmpty(status) ||
+      _isNonEmpty(triageScope);
 
-  bool get hasAdvancedFilters => _isNonEmpty(category) || _isNonEmpty(status);
+  bool get hasAdvancedFilters =>
+      _isNonEmpty(category) || _isNonEmpty(status) || _isNonEmpty(triageScope);
 
   _OpdTableFilter copyWith({
     String? search,
     String? category,
     String? status,
+    String? triageScope,
     bool clearSearch = false,
     bool clearCategory = false,
     bool clearStatus = false,
+    bool clearTriageScope = false,
   }) {
     return _OpdTableFilter(
       search: clearSearch ? '' : search ?? this.search,
       category: clearCategory ? null : category ?? this.category,
       status: clearStatus ? null : status ?? this.status,
+      triageScope: clearTriageScope ? null : triageScope ?? this.triageScope,
     );
   }
 
@@ -1015,6 +1074,9 @@ final class _OpdTableFilter {
     if (_isNonEmpty(status) && item.status != status) {
       return false;
     }
+    if (_isNonEmpty(triageScope) && !_matchesTriageScope(item, triageScope!)) {
+      return false;
+    }
     return true;
   }
 
@@ -1023,11 +1085,12 @@ final class _OpdTableFilter {
     return other is _OpdTableFilter &&
         other.search == search &&
         other.category == category &&
-        other.status == status;
+        other.status == status &&
+        other.triageScope == triageScope;
   }
 
   @override
-  int get hashCode => Object.hash(search, category, status);
+  int get hashCode => Object.hash(search, category, status, triageScope);
 }
 
 @immutable
@@ -1103,7 +1166,7 @@ final class _OpdTableItem {
   }
 }
 
-List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
+List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
   final Set<String> usedPatientKeys = <String>{};
   final List<_OpdTableItem> items = <_OpdTableItem>[];
 
@@ -1119,11 +1182,13 @@ List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
       subtitle: _joinDisplay(<String?>[
         flow.patientIdentifier,
         flow.patientPhone,
+        _arrivalTypeLabel(context, flow),
+        _flowWaitLabel(context, flow),
         flow.chiefComplaint,
       ]),
       provider: flow.providerDisplayName,
-      nextStep: flow.stage,
-      time: flow.startedAt,
+      nextStep: _triageNextStep(flow),
+      time: flow.queuedAt ?? flow.startedAt,
       urgencyRank: _flowUrgencyRank(flow),
       flow: flow,
     );
@@ -1143,10 +1208,13 @@ List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
       subtitle: _joinDisplay(<String?>[
         flow.patientIdentifier,
         flow.patientPhone,
+        _arrivalTypeLabel(context, flow),
+        _flowWaitLabel(context, flow),
+        flow.lastRouteTo == null ? null : _apiLabel(flow.lastRouteTo!),
       ]),
       provider: flow.providerDisplayName,
       nextStep: flow.nextStep,
-      time: flow.startedAt,
+      time: flow.queuedAt ?? flow.startedAt,
       urgencyRank: _flowUrgencyRank(flow),
       flow: flow,
     );
@@ -1203,15 +1271,15 @@ List<_OpdTableItem> _tableItems(OpdWorkspaceState state) {
   }
 
   items.sort((_OpdTableItem left, _OpdTableItem right) {
+    final int urgencyCompare = left.urgencyRank.compareTo(right.urgencyRank);
+    if (urgencyCompare != 0) {
+      return urgencyCompare;
+    }
     final int timeCompare = (left.time ?? _unknownArrivalTime).compareTo(
       right.time ?? _unknownArrivalTime,
     );
     if (timeCompare != 0) {
       return timeCompare;
-    }
-    final int urgencyCompare = left.urgencyRank.compareTo(right.urgencyRank);
-    if (urgencyCompare != 0) {
-      return urgencyCompare;
     }
     return _categorySort(
       left.category,
@@ -1233,8 +1301,8 @@ int _flowUrgencyRank(OpdFlowSummary flow) {
   if (triageRank != null) {
     return triageRank;
   }
-  if ((flow.encounterType ?? '').toUpperCase() == 'EMERGENCY') {
-    return 10;
+  if (_isEmergencyFlow(flow)) {
+    return 0;
   }
   return _statusUrgencyRank(flow.stage ?? flow.status);
 }
@@ -1250,6 +1318,105 @@ int _statusUrgencyRank(String? status) {
     'WAITING_CONSULTATION_PAYMENT' => 30,
     _ => _defaultUrgencyRank,
   };
+}
+
+bool _matchesTriageScope(_OpdTableItem item, String scope) {
+  final String normalized = scope.toUpperCase();
+  final OpdFlowSummary? flow = item.flow;
+  if (normalized == _triageScopeWaiting) {
+    return item.category == _opdCategoryTriage &&
+        _isWaitingTriageStage(flow?.stage);
+  }
+  if (normalized == _triageScopeUrgent) {
+    return flow != null && _flowUrgencyRank(flow) <= 1;
+  }
+  if (normalized == _triageScopeEmergency) {
+    return flow != null && _isEmergencyFlow(flow);
+  }
+  if (normalized == _triageScopeRoutine) {
+    return flow != null && _isRoutineTriageFlow(flow);
+  }
+  if (normalized == _triageScopeServiceOnly) {
+    return flow != null && _isServiceOnlyFlow(flow);
+  }
+  return true;
+}
+
+bool _isWaitingTriageStage(String? stage) {
+  return switch ((stage ?? '').toUpperCase()) {
+    'WAITING_VITALS' || 'WAITING_DOCTOR_ASSIGNMENT' => true,
+    _ => false,
+  };
+}
+
+bool _isEmergencyFlow(OpdFlowSummary flow) {
+  return flow.emergencyIndicator ||
+      (flow.encounterType ?? '').toUpperCase() == 'EMERGENCY' ||
+      (flow.triageLevel ?? '').toUpperCase() == 'LEVEL_1' ||
+      (flow.triageLevel ?? '').toUpperCase() == 'IMMEDIATE';
+}
+
+bool _isRoutineTriageFlow(OpdFlowSummary flow) {
+  return switch ((flow.triageLevel ?? '').toUpperCase()) {
+    'LEVEL_3' ||
+    'LEVEL_4' ||
+    'LEVEL_5' ||
+    'LESS_URGENT' ||
+    'NON_URGENT' => true,
+    _ =>
+      !_isEmergencyFlow(flow) &&
+          !_isServiceOnlyFlow(flow) &&
+          _isWaitingTriageStage(flow.stage),
+  };
+}
+
+bool _isServiceOnlyFlow(OpdFlowSummary flow) {
+  final String stage = (flow.stage ?? '').toUpperCase();
+  final String route = (flow.lastRouteTo ?? '').toUpperCase();
+  return _serviceOnlyStages.contains(stage) ||
+      _serviceOnlyRoutes.contains(route);
+}
+
+String _triageNextStep(OpdFlowSummary flow) {
+  final String route = flow.lastRouteTo ?? '';
+  if (route.isNotEmpty) {
+    return route;
+  }
+  return flow.nextStep ?? flow.stage ?? '';
+}
+
+String? _arrivalTypeLabel(BuildContext context, OpdFlowSummary flow) {
+  if (_isEmergencyFlow(flow)) {
+    return context.l10n.opdTriageScopeEmergency;
+  }
+  final String encounterType = _apiLabel(flow.encounterType ?? '');
+  return encounterType.isEmpty ? null : encounterType;
+}
+
+String? _flowWaitLabel(BuildContext context, OpdFlowSummary flow) {
+  final DateTime? queuedAt = flow.queuedAt ?? flow.startedAt;
+  if (queuedAt == null || flow.isTerminal) {
+    return null;
+  }
+
+  final Duration duration = DateTime.now().difference(queuedAt.toLocal());
+  if (duration.isNegative) {
+    return null;
+  }
+  return context.l10n.opdWaitDurationShort(_formatShortDuration(duration));
+}
+
+String _formatShortDuration(Duration duration) {
+  final int minutes = duration.inMinutes;
+  if (minutes < 60) {
+    return '${minutes}m';
+  }
+  final int hours = duration.inHours;
+  final int remainingMinutes = minutes.remainder(60);
+  if (remainingMinutes == 0) {
+    return '${hours}h';
+  }
+  return '${hours}h ${remainingMinutes}m';
 }
 
 List<_OpdTableColumnId> _normalizeTableColumns(
@@ -1421,10 +1588,11 @@ class _OpdColumnHeader extends StatelessWidget {
 
 int _categorySort(String category) {
   return switch (category) {
-    _opdCategoryActiveFlow => 0,
-    _opdCategoryQueue => 1,
-    _opdCategoryArrival => 2,
-    _ => 3,
+    _opdCategoryTriage => 0,
+    _opdCategoryActiveFlow => 1,
+    _opdCategoryQueue => 2,
+    _opdCategoryArrival => 3,
+    _ => 4,
   };
 }
 
@@ -1584,12 +1752,14 @@ class _OpdFilterDialog extends StatefulWidget {
 class _OpdFilterDialogState extends State<_OpdFilterDialog> {
   String? _category;
   String? _status;
+  String? _triageScope;
 
   @override
   void initState() {
     super.initState();
     _category = widget.initialFilter.category;
     _status = widget.initialFilter.status;
+    _triageScope = widget.initialFilter.triageScope;
   }
 
   @override
@@ -1632,6 +1802,23 @@ class _OpdFilterDialogState extends State<_OpdFilterDialog> {
               });
             },
           ),
+          AppSelectField<String>.searchable(
+            value: _triageScope ?? _opdFilterAll,
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdTriageScopeFilterLabel,
+            ),
+            semanticLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdTriageScopeFilterLabel,
+            ),
+            options: _triageScopeFilterOptions(context),
+            onChanged: (String? value) {
+              setState(() {
+                _triageScope = value == _opdFilterAll ? null : value;
+              });
+            },
+          ),
         ],
       ),
       actions: <Widget>[
@@ -1647,8 +1834,10 @@ class _OpdFilterDialogState extends State<_OpdFilterDialog> {
               widget.initialFilter.copyWith(
                 category: _category,
                 status: _status,
+                triageScope: _triageScope,
                 clearCategory: _category == null,
                 clearStatus: _status == null,
+                clearTriageScope: _triageScope == null,
               ),
             );
           },
@@ -3985,6 +4174,8 @@ class RecordVitalsDialog extends ConsumerStatefulWidget {
 
 class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   late final TextEditingController _chiefComplaintController;
+  late final TextEditingController _symptomsController;
+  late final TextEditingController _allergiesController;
   late final TextEditingController _temperatureController;
   late final TextEditingController _systolicController;
   late final TextEditingController _diastolicController;
@@ -3994,7 +4185,13 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   late final TextEditingController _weightController;
   late final TextEditingController _notesController;
   String? _triageLevel;
+  String? _painSeverity;
+  String? _routeDecision;
+  String? _providerId;
+  final Set<String> _riskFlags = <String>{};
+  List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
   bool _emergencyIndicator = false;
+  bool _isLoadingProviders = false;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -4004,6 +4201,8 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     _chiefComplaintController = TextEditingController(
       text: widget.flow.chiefComplaint ?? '',
     );
+    _symptomsController = TextEditingController();
+    _allergiesController = TextEditingController();
     _temperatureController = TextEditingController();
     _systolicController = TextEditingController();
     _diastolicController = TextEditingController();
@@ -4012,11 +4211,16 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     _oxygenSaturationController = TextEditingController();
     _weightController = TextEditingController();
     _notesController = TextEditingController();
+    _triageLevel = widget.flow.triageLevel;
+    _providerId = widget.flow.providerUserId;
+    unawaited(_loadProviderOptions());
   }
 
   @override
   void dispose() {
     _chiefComplaintController.dispose();
+    _symptomsController.dispose();
+    _allergiesController.dispose();
     _temperatureController.dispose();
     _systolicController.dispose();
     _diastolicController.dispose();
@@ -4051,6 +4255,37 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
             enabled: !_isSaving,
             maxLines: 2,
           ),
+          AppTextField(
+            controller: _symptomsController,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdSymptomsLabel),
+            enabled: !_isSaving,
+            maxLines: 2,
+          ),
+          _WalkInFieldRow(
+            children: <Widget>[
+              AppSelectField<String>.searchable(
+                value: _painSeverity,
+                labelText: _opdOptionalFieldLabel(
+                  l10n,
+                  l10n.opdPainSeverityLabel,
+                ),
+                semanticLabel: _opdOptionalFieldLabel(
+                  l10n,
+                  l10n.opdPainSeverityLabel,
+                ),
+                enabled: !_isSaving,
+                onChanged: (String? value) {
+                  setState(() => _painSeverity = value);
+                },
+                options: _painSeverityOptions,
+              ),
+              AppTextField(
+                controller: _allergiesController,
+                labelText: _opdOptionalFieldLabel(l10n, l10n.opdAllergiesLabel),
+                enabled: !_isSaving,
+              ),
+            ],
+          ),
           AppSwitchField(
             title: l10n.opdEmergencyIndicatorsLabel,
             value: _emergencyIndicator,
@@ -4062,8 +4297,16 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
                 if (value && _triageLevel == null) {
                   _triageLevel = 'LEVEL_1';
                 }
+                if (value && _routeDecision == null) {
+                  _routeDecision = 'EMERGENCY';
+                }
               });
             },
+          ),
+          _TriageRiskFlags(
+            selected: _riskFlags,
+            enabled: !_isSaving,
+            onChanged: _setRiskFlag,
           ),
           AppSelectField<String>.searchable(
             value: _triageLevel,
@@ -4076,6 +4319,41 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
             onChanged: (String? value) => setState(() => _triageLevel = value),
             options: _statusOptions(_triageLevelOptions),
           ),
+          AppSelectField<String>.searchable(
+            value: _routeDecision ?? _opdNoRouteDecisionValue,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdRouteDecisionLabel),
+            semanticLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdRouteDecisionLabel,
+            ),
+            enabled: !_isSaving,
+            onChanged: (String? value) {
+              setState(() {
+                _routeDecision =
+                    value == null || value == _opdNoRouteDecisionValue
+                    ? null
+                    : value;
+              });
+            },
+            options: _routeDecisionOptions(context),
+          ),
+          if (_routeDecision == 'CONSULTATION')
+            _ProviderSelectField(
+              value: _providerId,
+              providers: _providerOptions,
+              schedules: const <OpdProviderSchedule>[],
+              labelText: _opdOptionalFieldLabel(
+                l10n,
+                l10n.opdSearchProviderLabel,
+              ),
+              helperText: l10n.opdSearchProviderHelper,
+              emptyHelperText: l10n.opdNoProvidersHelper,
+              enabled: !_isSaving,
+              isLoading: _isLoadingProviders,
+              onChanged: (String? value) {
+                setState(() => _providerId = value);
+              },
+            ),
           AppTextField(
             controller: _temperatureController,
             labelText: _opdOptionalFieldLabel(l10n, l10n.opdTemperatureLabel),
@@ -4169,11 +4447,21 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       setState(() => _failure = AppFailure.validation());
       return;
     }
+    if (!_hasCompleteBloodPressureInput()) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
+    if (_routeDecision == 'CONSULTATION' &&
+        !_isNonEmpty(_providerId ?? widget.flow.providerUserId)) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
 
     setState(() {
       _isSaving = true;
       _failure = null;
     });
+    final String triageNotes = _triageNotesPayload(context.l10n);
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .recordVitals(widget.flow, <String, Object?>{
@@ -4182,19 +4470,44 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           'triage_priority': _triageLevel,
           'chief_complaint': _chiefComplaintController.text.trim(),
           'emergency': _emergencyIndicator,
-          'triage_notes': _notesController.text.trim(),
+          'triage_notes': triageNotes,
         });
     if (!mounted) {
       return;
     }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
+    if (failure != null) {
+      setState(() {
+        _failure = failure;
+        _isSaving = false;
+      });
       return;
     }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
+
+    final String? routeDecision = _routeDecision;
+    if (_isNonEmpty(routeDecision)) {
+      final AppFailure? routeFailure = await ref
+          .read(opdWorkspaceControllerProvider.notifier)
+          .disposeFlow(
+            widget.flow,
+            routeDecision!.trim(),
+            triageNotes,
+            providerUserId: _providerId,
+            triageLevel: _triageLevel,
+            emergency: _emergencyIndicator,
+          );
+      if (!mounted) {
+        return;
+      }
+      if (routeFailure != null) {
+        setState(() {
+          _failure = routeFailure;
+          _isSaving = false;
+        });
+        return;
+      }
+    }
+
+    Navigator.of(context).pop(true);
   }
 
   List<Map<String, Object?>> _vitalsPayload() {
@@ -4237,7 +4550,156 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     addSimpleVital(_weightController, 'WEIGHT', 'kg');
     return vitals;
   }
+
+  bool _hasCompleteBloodPressureInput() {
+    final bool hasSystolic = _systolicController.text.trim().isNotEmpty;
+    final bool hasDiastolic = _diastolicController.text.trim().isNotEmpty;
+    return hasSystolic == hasDiastolic;
+  }
+
+  void _setRiskFlag(String flag, bool selected) {
+    setState(() {
+      if (selected) {
+        _riskFlags.add(flag);
+      } else {
+        _riskFlags.remove(flag);
+      }
+    });
+  }
+
+  Future<void> _loadProviderOptions() async {
+    setState(() {
+      _isLoadingProviders = true;
+    });
+    final Result<List<OpdProviderOption>> result = await ref
+        .read(opdRepositoryProvider)
+        .listProviders();
+    if (!mounted) {
+      return;
+    }
+
+    result.when(
+      success: (List<OpdProviderOption> providers) {
+        setState(() {
+          _providerOptions = providers;
+          _isLoadingProviders = false;
+        });
+      },
+      failure: (_) {
+        setState(() {
+          _isLoadingProviders = false;
+        });
+      },
+    );
+  }
+
+  String _triageNotesPayload(AppLocalizations l10n) {
+    final List<String> lines = <String>[];
+    void add(String label, String value) {
+      final String normalized = value.trim();
+      if (normalized.isNotEmpty) {
+        lines.add('$label: $normalized');
+      }
+    }
+
+    add(l10n.opdSymptomsLabel, _symptomsController.text);
+    add(l10n.opdPainSeverityLabel, _painSeverity ?? '');
+    add(l10n.opdAllergiesLabel, _allergiesController.text);
+    if (_riskFlags.isNotEmpty) {
+      lines.add(
+        '${l10n.opdRiskFlagsLabel}: ${_riskFlags.map((String flag) => _riskFlagLabel(l10n, flag)).join(', ')}',
+      );
+    }
+    add(l10n.opdTriageNotesLabel, _notesController.text);
+    return lines.join('\n');
+  }
 }
+
+class _TriageRiskFlags extends StatelessWidget {
+  const _TriageRiskFlags({
+    required this.selected,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final Set<String> selected;
+  final bool enabled;
+  final void Function(String flag, bool selected) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: AppFormSection(
+          title: l10n.opdRiskFlagsLabel,
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double tileWidth = _responsiveTileWidth(
+                  availableWidth: constraints.maxWidth,
+                  itemCount: _triageRiskFlagOptions.length,
+                  maxColumns: 2,
+                  spacing: theme.spacing.sm,
+                  minWidth: 220,
+                );
+                return Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    for (final String flag in _triageRiskFlagOptions)
+                      SizedBox(
+                        width: tileWidth,
+                        child: AppCheckboxField(
+                          title: _riskFlagLabel(l10n, flag),
+                          value: selected.contains(flag),
+                          enabled: enabled,
+                          onChanged: (bool value) => onChanged(flag, value),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _riskFlagLabel(AppLocalizations l10n, String flag) {
+  return switch (flag) {
+    _riskFlagFall => l10n.opdRiskFlagFall,
+    _riskFlagPregnancy => l10n.opdRiskFlagPregnancy,
+    _riskFlagInfection => l10n.opdRiskFlagInfection,
+    _riskFlagAlteredMentalState => l10n.opdRiskFlagAlteredMentalState,
+    _riskFlagBleeding => l10n.opdRiskFlagBleeding,
+    _ => _apiLabel(flag),
+  };
+}
+
+List<AppSelectOption<String>> _routeDecisionOptions(BuildContext context) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: _opdNoRouteDecisionValue,
+      label: context.l10n.opdNoRouteDecisionLabel,
+    ),
+    ..._statusOptions(_triageRouteOptions),
+  ];
+}
+
+final List<AppSelectOption<String>> _painSeverityOptions =
+    List<AppSelectOption<String>>.unmodifiable(<AppSelectOption<String>>[
+      for (int value = 0; value <= 10; value += 1)
+        AppSelectOption<String>(value: '$value', label: value.toString()),
+    ]);
 
 class DoctorReviewDialog extends ConsumerStatefulWidget {
   const DoctorReviewDialog({required this.flow, super.key});
@@ -4305,6 +4767,21 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final Result<OpdWorkspaceState>? workspaceResult = ref
+        .watch(opdWorkspaceControllerProvider)
+        .asData
+        ?.value;
+    final OpdWorkspaceState? workspaceState = workspaceResult?.when(
+      success: (OpdWorkspaceState state) => state,
+      failure: (_) => null,
+    );
+    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+    final OpdFlowDetail? detail =
+        selected == null || !_isSameFlow(selected.summary, widget.flow)
+        ? null
+        : selected;
+    final OpdFlowSummary flow = detail?.summary ?? widget.flow;
+
     return AppDialog(
       title: Text(l10n.opdDoctorReviewAction),
       icon: const Icon(Icons.edit_note_outlined),
@@ -4313,6 +4790,13 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
+          _OpdWorkflowStatusSummary(flow: flow, detail: detail),
+          _OpdVitalIndicatorsPanel(
+            detail: detail,
+            thresholds:
+                workspaceState?.clinicalAlertThresholds ??
+                const <OpdClinicalAlertThreshold>[],
+          ),
           AppTextField(
             controller: _noteController,
             labelText: _opdRequiredFieldLabel(l10n, l10n.opdClinicalNoteLabel),
@@ -5606,10 +6090,10 @@ List<String> _splitTokens(String value) {
 AppWorkspaceStatusTone _stageTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
     'COMPLETED' || 'DISCHARGED' || 'ADMITTED' => AppWorkspaceStatusTone.success,
-    'NORMAL' => AppWorkspaceStatusTone.success,
+    'NORMAL' || 'ROUTINE' => AppWorkspaceStatusTone.success,
     'CANCELLED' || 'NO_SHOW' => AppWorkspaceStatusTone.error,
     'CRITICAL' => AppWorkspaceStatusTone.error,
-    'ABNORMAL' => AppWorkspaceStatusTone.warning,
+    'ABNORMAL' || 'SERVICE_ONLY' => AppWorkspaceStatusTone.warning,
     'WAITING_CONSULTATION_PAYMENT' ||
     'WAITING_VITALS' ||
     'WAITING_DOCTOR_ASSIGNMENT' => AppWorkspaceStatusTone.warning,
@@ -5635,6 +6119,41 @@ const String _opdCategoryQueue = 'QUEUE';
 const String _opdCategoryTriage = 'TRIAGE';
 const String _opdCategoryActiveFlow = 'ACTIVE_FLOW';
 const String _opdFilterAll = 'ALL';
+const String _triageScopeWaiting = 'WAITING';
+const String _triageScopeUrgent = 'URGENT';
+const String _triageScopeEmergency = 'EMERGENCY';
+const String _triageScopeRoutine = 'ROUTINE';
+const String _triageScopeServiceOnly = 'SERVICE_ONLY';
+const String _opdNoRouteDecisionValue = 'NO_ROUTE_DECISION';
+const String _riskFlagFall = 'FALL_RISK';
+const String _riskFlagPregnancy = 'PREGNANCY';
+const String _riskFlagInfection = 'INFECTION_RISK';
+const String _riskFlagAlteredMentalState = 'ALTERED_MENTAL_STATE';
+const String _riskFlagBleeding = 'BLEEDING';
+
+const List<String> _triageRiskFlagOptions = <String>[
+  _riskFlagFall,
+  _riskFlagPregnancy,
+  _riskFlagInfection,
+  _riskFlagAlteredMentalState,
+  _riskFlagBleeding,
+];
+
+const Set<String> _serviceOnlyStages = <String>{
+  'LAB_REQUESTED',
+  'RADIOLOGY_REQUESTED',
+  'LAB_AND_RADIOLOGY_REQUESTED',
+  'PHARMACY_REQUESTED',
+};
+
+const Set<String> _serviceOnlyRoutes = <String>{
+  'LAB',
+  'RADIOLOGY',
+  'LAB_AND_RADIOLOGY',
+  'PHYSIOTHERAPY',
+  'OTHER_SERVICE',
+  'MINOR_PROCEDURE',
+};
 
 const List<String> _queueStatuses = <String>[
   'SCHEDULED',

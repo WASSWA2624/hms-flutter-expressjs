@@ -656,6 +656,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdTriageNotesLabel => 'Triage notes';
 
   @override
+  String get opdTriageScopeFilterLabel => 'Triage scope';
+
+  @override
+  String get opdAllTriageScopesOption => 'All triage scopes';
+
+  @override
+  String get opdTriageScopeWaiting => 'Waiting';
+
+  @override
+  String get opdTriageScopeUrgent => 'Urgent';
+
+  @override
+  String get opdTriageScopeEmergency => 'Emergency';
+
+  @override
+  String get opdTriageScopeRoutine => 'Routine';
+
+  @override
+  String get opdTriageScopeServiceOnly => 'Service-only';
+
+  @override
+  String opdWaitDurationShort(String duration) {
+    return 'Wait $duration';
+  }
+
+  @override
+  String get opdSymptomsLabel => 'Symptoms';
+
+  @override
+  String get opdPainSeverityLabel => 'Pain severity';
+
+  @override
+  String get opdAllergiesLabel => 'Allergies';
+
+  @override
+  String get opdRiskFlagsLabel => 'Risk flags';
+
+  @override
+  String get opdRiskFlagFall => 'Fall risk';
+
+  @override
+  String get opdRiskFlagPregnancy => 'Pregnancy';
+
+  @override
+  String get opdRiskFlagInfection => 'Infection risk';
+
+  @override
+  String get opdRiskFlagAlteredMentalState => 'Altered mental state';
+
+  @override
+  String get opdRiskFlagBleeding => 'Bleeding';
+
+  @override
+  String get opdNoRouteDecisionLabel => 'Do not route yet';
+
+  @override
   String get patientsTitle => 'Patient registry';
 
   @override
