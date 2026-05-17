@@ -358,7 +358,9 @@ final class EmergencyAmbulanceTrip {
 
 @immutable
 final class EmergencyReferenceData {
-  const EmergencyReferenceData({this.ambulances = const <EmergencyAmbulance>[]});
+  const EmergencyReferenceData({
+    this.ambulances = const <EmergencyAmbulance>[],
+  });
 
   final List<EmergencyAmbulance> ambulances;
 
@@ -399,7 +401,9 @@ final class EmergencyCaseDetail {
   }
 
   EmergencyAmbulanceTrip? get activeTrip {
-    return trips.where((EmergencyAmbulanceTrip trip) => trip.isActive).firstOrNull ??
+    return trips
+            .where((EmergencyAmbulanceTrip trip) => trip.isActive)
+            .firstOrNull ??
         summary.activeTrip;
   }
 
@@ -445,6 +449,28 @@ final class EmergencyQuickArrivalInput {
   final String? phone;
   final String? triageLevel;
   final String? notes;
+
+  EmergencyQuickArrivalInput copyWith({
+    String? firstName,
+    String? lastName,
+    String? severity,
+    String? tenantId,
+    String? facilityId,
+    String? phone,
+    String? triageLevel,
+    String? notes,
+  }) {
+    return EmergencyQuickArrivalInput(
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      severity: severity ?? this.severity,
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
+      phone: phone ?? this.phone,
+      triageLevel: triageLevel ?? this.triageLevel,
+      notes: notes ?? this.notes,
+    );
+  }
 }
 
 @immutable
@@ -475,9 +501,7 @@ final class EmergencyWorkspaceState {
 
   int get criticalCount {
     return board.items
-        .where(
-          (EmergencyCaseSummary item) => item.isOpen && item.isCritical,
-        )
+        .where((EmergencyCaseSummary item) => item.isOpen && item.isCritical)
         .length;
   }
 

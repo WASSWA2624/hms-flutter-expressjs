@@ -8,6 +8,7 @@ enum AppRole {
   doctor('DOCTOR'),
   nurse('NURSE'),
   labTech('LAB_TECH'),
+  radiologyTech('RADIOLOGY_TECH'),
   pharmacist('PHARMACIST'),
   receptionist('RECEPTIONIST'),
   billing('BILLING'),
@@ -45,6 +46,8 @@ abstract final class AppPermissions {
   static const emergencyDelete = AppPermission('emergency:delete');
   static const labRead = AppPermission('lab:read');
   static const labWrite = AppPermission('lab:write');
+  static const radiologyRead = AppPermission('radiology:read');
+  static const radiologyWrite = AppPermission('radiology:write');
   static const pharmacyRead = AppPermission('pharmacy:read');
   static const pharmacyWrite = AppPermission('pharmacy:write');
   static const billingRead = AppPermission('billing:read');
@@ -110,6 +113,8 @@ abstract final class AppPermissions {
     emergencyDelete,
     labRead,
     labWrite,
+    radiologyRead,
+    radiologyWrite,
     pharmacyRead,
     pharmacyWrite,
     billingRead,
@@ -359,6 +364,14 @@ final class AppAccessPolicy {
         AppPermissions.communicationsRead,
         AppPermissions.communicationsWrite,
         AppPermissions.profileRead,
+      ],
+      AppRole.radiologyTech => const <AppPermission>[
+        AppPermissions.radiologyRead,
+        AppPermissions.radiologyWrite,
+        AppPermissions.communicationsRead,
+        AppPermissions.communicationsWrite,
+        AppPermissions.profileRead,
+        AppPermissions.patientRead,
       ],
       AppRole.pharmacist => const <AppPermission>[
         AppPermissions.pharmacyRead,

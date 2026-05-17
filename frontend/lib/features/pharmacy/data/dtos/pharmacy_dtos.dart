@@ -22,9 +22,7 @@ final class PharmacyWorkbenchDto {
 
     return PharmacyWorkbenchDto(
       workbench: PharmacyWorkbench(
-        summary: PharmacyWorkbenchSummaryDto(
-          _map(data['summary']),
-        ).toEntity(),
+        summary: PharmacyWorkbenchSummaryDto(_map(data['summary'])).toEntity(),
         orders: AppPage<PharmacyOrder>(
           items: orders,
           request: request,
@@ -44,8 +42,7 @@ final class PharmacyWorkbenchSummaryDto {
     return PharmacyWorkbenchSummary(
       totalOrders: _int(json['total_orders']) ?? 0,
       orderedQueue: _int(json['ordered_queue']) ?? 0,
-      partiallyDispensedQueue:
-          _int(json['partially_dispensed_queue']) ?? 0,
+      partiallyDispensedQueue: _int(json['partially_dispensed_queue']) ?? 0,
       dispensedOrders: _int(json['dispensed_orders']) ?? 0,
       cancelledOrders: _int(json['cancelled_orders']) ?? 0,
       pendingAttestations: _int(json['pending_attestations']) ?? 0,
@@ -64,7 +61,9 @@ final class PharmacyOrderWorkflowDto {
   }
 
   PharmacyOrderWorkflow toEntity() {
-    final PharmacyOrder order = PharmacyOrderDto(_map(json['order'])).toEntity();
+    final PharmacyOrder order = PharmacyOrderDto(
+      _map(json['order']),
+    ).toEntity();
     final List<PharmacyOrderItem> items = _list(json['items'])
         .map(PharmacyOrderItemDto.new)
         .map((PharmacyOrderItemDto dto) => dto.toEntity())
@@ -148,8 +147,7 @@ final class PharmacyOrderDto {
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
       itemCount: _int(json['item_count']) ?? items.length,
-      quantityPrescribedTotal:
-          _number(json['quantity_prescribed_total']) ?? 0,
+      quantityPrescribedTotal: _number(json['quantity_prescribed_total']) ?? 0,
       quantityDispensedTotal: _number(json['quantity_dispensed_total']) ?? 0,
       quantityPendingTotal: _number(json['quantity_pending_total']) ?? 0,
       quantityReturnedTotal: _number(json['quantity_returned_total']) ?? 0,
@@ -228,7 +226,9 @@ final class PharmacyOrderItemDto {
           .toList(growable: false),
       stockMappings: mappings,
       defaultStockMapping: _map(json['default_stock_mapping']).isEmpty
-          ? mappings.where((PharmacyStockMapping item) => item.isDefault).firstOrNull
+          ? mappings
+                .where((PharmacyStockMapping item) => item.isDefault)
+                .firstOrNull
           : PharmacyStockMappingDto(
               _map(json['default_stock_mapping']),
             ).toEntity(),

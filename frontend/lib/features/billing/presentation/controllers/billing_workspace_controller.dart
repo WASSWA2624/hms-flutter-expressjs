@@ -123,7 +123,9 @@ final class BillingWorkspaceController
     if (selected == null) {
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
-    return _submitAction(() => _repository.issueInvoice(selected.id, notes: notes));
+    return _submitAction(
+      () => _repository.issueInvoice(selected.id, notes: notes),
+    );
   }
 
   Future<AppFailure?> sendSelectedInvoice({String? recipientEmail}) {
@@ -132,7 +134,8 @@ final class BillingWorkspaceController
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
     return _submitAction(
-      () => _repository.sendInvoice(selected.id, recipientEmail: recipientEmail),
+      () =>
+          _repository.sendInvoice(selected.id, recipientEmail: recipientEmail),
     );
   }
 
@@ -156,13 +159,20 @@ final class BillingWorkspaceController
     return _submitAction(() => _repository.requestAdjustment(selected, draft));
   }
 
-  Future<AppFailure?> requestInvoiceVoid({required String reason, String? notes}) {
+  Future<AppFailure?> requestInvoiceVoid({
+    required String reason,
+    String? notes,
+  }) {
     final BillingWorkItem? selected = _selectedInvoice;
     if (selected == null) {
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
     return _submitAction(
-      () => _repository.requestInvoiceVoid(selected, reason: reason, notes: notes),
+      () => _repository.requestInvoiceVoid(
+        selected,
+        reason: reason,
+        notes: notes,
+      ),
     );
   }
 
@@ -174,7 +184,9 @@ final class BillingWorkspaceController
     return _submitAction(() => _repository.closeDay(draft));
   }
 
-  Future<AppFailure?> _submitAction(Future<Result<void>> Function() submit) async {
+  Future<AppFailure?> _submitAction(
+    Future<Result<void>> Function() submit,
+  ) async {
     final BillingWorkspaceState? current = _currentState;
     if (current == null) {
       return _missingSelectionFailure();

@@ -82,6 +82,26 @@ abstract final class AppRoutes {
     access: AppRouteAccess.authenticated,
     requiredPermissions: <AppPermission>[AppPermissions.patientRead],
   );
+  static const AppRouteData billing = AppRouteData(
+    name: 'billing',
+    path: '/billing',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.billingRead,
+      AppPermissions.billingWrite,
+    ],
+  );
+  static const AppRouteData claims = AppRouteData(
+    name: 'claims',
+    path: '/claims',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.billingRead,
+      AppPermissions.billingWrite,
+      AppPermissions.financialApprove,
+    ],
+    requiredActiveModules: <String>['billing-insurance'],
+  );
   static const AppRouteData opd = AppRouteData(
     name: 'opd',
     path: '/opd',
@@ -94,6 +114,17 @@ abstract final class AppRoutes {
       AppPermissions.emergencyRead,
     ],
     requiredActiveModules: <String>['opd-flow'],
+  );
+  static const AppRouteData emergency = AppRouteData(
+    name: 'emergency',
+    path: '/emergency',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.emergencyRead,
+      AppPermissions.emergencyWrite,
+      AppPermissions.operationsRead,
+    ],
+    requiresTenantContext: true,
   );
   static const AppRouteData ipd = AppRouteData(
     name: 'ipd',
@@ -134,6 +165,39 @@ abstract final class AppRoutes {
       AppPermissions.clinicalWrite,
     ],
     requiredActiveModules: <String>['encounters-vitals'],
+  );
+  static const AppRouteData lab = AppRouteData(
+    name: 'lab',
+    path: '/lab',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.labRead,
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+    ],
+    requiredActiveModules: <String>['lab-workflows'],
+  );
+  static const AppRouteData radiology = AppRouteData(
+    name: 'radiology',
+    path: '/radiology',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.radiologyRead,
+      AppPermissions.radiologyWrite,
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+      AppPermissions.billingRead,
+    ],
+    requiredActiveModules: <String>['radiology-workflows'],
+  );
+  static const AppRouteData pharmacy = AppRouteData(
+    name: 'pharmacy',
+    path: '/pharmacy',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.pharmacyRead,
+      AppPermissions.operationsRead,
+    ],
   );
   static const AppRouteData discharge = AppRouteData(
     name: 'discharge',
@@ -211,11 +275,17 @@ abstract final class AppRoutes {
   static const List<AppRouteData> all = <AppRouteData>[
     home,
     patients,
+    billing,
+    claims,
     opd,
+    emergency,
     ipd,
     icu,
     nursing,
     clinical,
+    lab,
+    radiology,
+    pharmacy,
     discharge,
     theater,
     settings,
@@ -232,11 +302,17 @@ abstract final class AppRoutes {
   static const List<AppRouteData> shellRoutes = <AppRouteData>[
     home,
     patients,
+    billing,
+    claims,
     opd,
+    emergency,
     ipd,
     icu,
     nursing,
     clinical,
+    lab,
+    radiology,
+    pharmacy,
     discharge,
     theater,
     settings,

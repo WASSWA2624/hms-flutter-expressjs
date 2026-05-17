@@ -3,9 +3,7 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/shared/data/data.dart';
 
 abstract interface class PharmacyRepository {
-  Future<Result<PharmacyWorkbench>> loadWorkbench(
-    PharmacyWorkbenchQuery query,
-  );
+  Future<Result<PharmacyWorkbench>> loadWorkbench(PharmacyWorkbenchQuery query);
 
   Future<Result<PharmacyOrderWorkflow>> loadOrderWorkflow(String orderId);
 

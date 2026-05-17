@@ -55,7 +55,8 @@ final class PreAuthorizationDto {
     return PreAuthorizationRecord(
       id: id,
       displayId: displayId,
-      coveragePlanId: _string(json['coverage_plan_id']) ?? coveragePlanDisplayId,
+      coveragePlanId:
+          _string(json['coverage_plan_id']) ?? coveragePlanDisplayId,
       coveragePlanDisplayId: coveragePlanDisplayId,
       status: _string(json['status']) ?? 'PENDING',
       requestedAt: _date(json['requested_at']),
@@ -122,7 +123,8 @@ final class InsuranceClaimDto {
     return InsuranceClaimRecord(
       id: id,
       displayId: displayId,
-      coveragePlanId: _string(json['coverage_plan_id']) ?? coveragePlanDisplayId,
+      coveragePlanId:
+          _string(json['coverage_plan_id']) ?? coveragePlanDisplayId,
       coveragePlanDisplayId: coveragePlanDisplayId,
       invoiceId: _string(json['invoice_id']) ?? invoiceDisplayId,
       invoiceDisplayId: invoiceDisplayId,

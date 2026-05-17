@@ -25,7 +25,11 @@ final class BillingRepositoryImpl implements BillingRepository {
   ) {
     final AppPageRequest request = query.pageRequest;
     return _apiClient.get<BillingWorkspaceOverview>(
-      ApiEndpoints.nested(HmsApiResource.billing, 'workspace', const <String>[]),
+      ApiEndpoints.nested(
+        HmsApiResource.billing,
+        'workspace',
+        const <String>[],
+      ),
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
@@ -43,7 +47,11 @@ final class BillingRepositoryImpl implements BillingRepository {
   ) {
     final AppPageRequest request = query.pageRequest;
     return _apiClient.get<AppPage<BillingWorkItem>>(
-      ApiEndpoints.nested(HmsApiResource.billing, 'work-items', const <String>[]),
+      ApiEndpoints.nested(
+        HmsApiResource.billing,
+        'work-items',
+        const <String>[],
+      ),
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
@@ -72,9 +80,7 @@ final class BillingRepositoryImpl implements BillingRepository {
   Future<Result<void>> sendInvoice(String invoiceId, {String? recipientEmail}) {
     return _apiClient.post<void>(
       ApiEndpoints.apiV1(<String>['billing', 'invoices', invoiceId, 'send']),
-      data: _withoutEmpty(<String, Object?>{
-        'recipient_email': recipientEmail,
-      }),
+      data: _withoutEmpty(<String, Object?>{'recipient_email': recipientEmail}),
       decoder: (_) {},
     );
   }

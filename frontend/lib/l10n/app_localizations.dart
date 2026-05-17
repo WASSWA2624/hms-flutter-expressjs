@@ -8001,6 +8001,1488 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The discharge queue could not be loaded. Refresh to try again.'**
   String get dischargeLoadErrorBody;
+
+  /// Navigation destination label for the pharmacy workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get navigationPharmacyLabel;
+
+  /// Pharmacy workspace loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading pharmacy workspace'**
+  String get pharmacyLoadingTitle;
+
+  /// Pharmacy workspace loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading pharmacy orders, dispense state, and stock visibility.'**
+  String get pharmacyLoadingBody;
+
+  /// Pharmacy workspace title.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get pharmacyTitle;
+
+  /// Pharmacy workspace header description.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage prescriptions, dispense handoff, returns, and drug stock visibility from one queue.'**
+  String get pharmacyDescription;
+
+  /// Pharmacy workspace saving status.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get pharmacyStatusSaving;
+
+  /// Pharmacy workspace live synchronization status.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get pharmacyStatusLiveSync;
+
+  /// Semantic label for pharmacy queue filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy queue filters'**
+  String get pharmacyFiltersSemanticLabel;
+
+  /// Pharmacy queue search semantic label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search pharmacy'**
+  String get pharmacySearchLabel;
+
+  /// Pharmacy queue search hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, order, encounter, medication, or batch'**
+  String get pharmacySearchHint;
+
+  /// Pharmacy queue filter field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue filter'**
+  String get pharmacyQueueFilterLabel;
+
+  /// Pharmacy summary label for ready orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get pharmacySummaryReadyLabel;
+
+  /// Pharmacy summary label for partially dispensed orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get pharmacySummaryPartialLabel;
+
+  /// Pharmacy summary label for dispense batches awaiting attestation.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting attest'**
+  String get pharmacySummaryAttestationLabel;
+
+  /// Pharmacy summary label for completed orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get pharmacySummaryCompletedLabel;
+
+  /// Pharmacy order queue panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Order queue'**
+  String get pharmacyQueuePanelTitle;
+
+  /// Pharmacy order queue panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend-backed pharmacy orders with dispense and return actions.'**
+  String get pharmacyQueuePanelDescription;
+
+  /// Empty pharmacy order queue title.
+  ///
+  /// In en, this message translates to:
+  /// **'No pharmacy orders'**
+  String get pharmacyNoOrdersTitle;
+
+  /// Empty pharmacy order queue body.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders matching this search and filter will appear here.'**
+  String get pharmacyNoOrdersBody;
+
+  /// Pharmacy patient column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get pharmacyPatientColumnLabel;
+
+  /// Pharmacy order column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get pharmacyOrderColumnLabel;
+
+  /// Pharmacy items column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get pharmacyItemsColumnLabel;
+
+  /// Pharmacy dispense progress column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense'**
+  String get pharmacyDispenseColumnLabel;
+
+  /// Pharmacy status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get pharmacyStatusColumnLabel;
+
+  /// Status label for a pending dispense batch.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending batch'**
+  String get pharmacyPendingBatchLabel;
+
+  /// Pharmacy prescription detail loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading prescription'**
+  String get pharmacyDetailLoadingTitle;
+
+  /// Pharmacy prescription detail loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading medicines, dispense history, and workflow actions.'**
+  String get pharmacyDetailLoadingBody;
+
+  /// Pharmacy detail empty title.
+  ///
+  /// In en, this message translates to:
+  /// **'No prescription selected'**
+  String get pharmacyNoSelectionTitle;
+
+  /// Pharmacy detail empty body.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an order to review medicines, stock mapping, billing gate visibility, and dispense history.'**
+  String get pharmacyNoSelectionBody;
+
+  /// Pharmacy label for unavailable billing gate data.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing gate unavailable'**
+  String get pharmacyBillingGateUnavailableTitle;
+
+  /// Pharmacy patient context order field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get pharmacyOrderFieldLabel;
+
+  /// Pharmacy patient context encounter field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get pharmacyEncounterFieldLabel;
+
+  /// Pharmacy patient context source field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get pharmacySourceFieldLabel;
+
+  /// Pharmacy patient context ordered date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get pharmacyOrderedFieldLabel;
+
+  /// Pharmacy action panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get pharmacyActionsPanelTitle;
+
+  /// Pharmacy dispense action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense'**
+  String get pharmacyDispenseAction;
+
+  /// Pharmacy prepare dispense submit label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare dispense'**
+  String get pharmacyPrepareDispenseAction;
+
+  /// Pharmacy dispense attestation action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Attest'**
+  String get pharmacyAttestAction;
+
+  /// Pharmacy return action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Return'**
+  String get pharmacyReturnAction;
+
+  /// Pharmacy cancel order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get pharmacyCancelOrderAction;
+
+  /// Pharmacy print medication instructions action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Print instructions'**
+  String get pharmacyPrintInstructionsAction;
+
+  /// Pharmacy medication panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines'**
+  String get pharmacyMedicationPanelTitle;
+
+  /// Pharmacy medication panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug, dose, route, frequency, duration, quantity, instructions, and dispense state.'**
+  String get pharmacyMedicationPanelDescription;
+
+  /// Empty pharmacy medicines title.
+  ///
+  /// In en, this message translates to:
+  /// **'No medicines'**
+  String get pharmacyNoMedicationTitle;
+
+  /// Empty pharmacy medicines body.
+  ///
+  /// In en, this message translates to:
+  /// **'This order has no medicines exposed by the pharmacy workflow API.'**
+  String get pharmacyNoMedicationBody;
+
+  /// Pharmacy medication column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication'**
+  String get pharmacyMedicationColumnLabel;
+
+  /// Pharmacy dose column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose'**
+  String get pharmacyDoseColumnLabel;
+
+  /// Pharmacy quantity column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get pharmacyQuantityColumnLabel;
+
+  /// Pharmacy stock column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get pharmacyStockColumnLabel;
+
+  /// Pharmacy backend gaps panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend sync gaps'**
+  String get pharmacyBackendGapsTitle;
+
+  /// Pharmacy backend gaps panel body.
+  ///
+  /// In en, this message translates to:
+  /// **'The confirmed API does not yet expose every state requested by the pharmacy plan.'**
+  String get pharmacyBackendGapsBody;
+
+  /// Pharmacy backend gap for payment authorization.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment and authorization status is not present on pharmacy order workflow responses.'**
+  String get pharmacyGapPaymentAuthorization;
+
+  /// Pharmacy backend gap for batch availability.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug batch availability is not attached to order items; only inventory item mapping is available.'**
+  String get pharmacyGapBatchAvailability;
+
+  /// Pharmacy backend gap for hold and substitution actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold and drug substitution actions do not have confirmed pharmacy workflow routes.'**
+  String get pharmacyGapHoldSubstitution;
+
+  /// Pharmacy backend gap for report templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication printouts use local HTML until report-template routes expose pharmacy templates.'**
+  String get pharmacyGapReportTemplates;
+
+  /// Pharmacy timeline panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense history'**
+  String get pharmacyTimelinePanelTitle;
+
+  /// Pharmacy timeline panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Order placement, prepare, attest, dispense, and return events from the workflow API.'**
+  String get pharmacyTimelinePanelDescription;
+
+  /// Pharmacy empty timeline body.
+  ///
+  /// In en, this message translates to:
+  /// **'No dispense history is available yet.'**
+  String get pharmacyNoTimelineBody;
+
+  /// Pharmacy drug and stock panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Formulary and stock'**
+  String get pharmacyDrugPanelTitle;
+
+  /// Pharmacy drug and stock panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Search configured drugs and review aggregate stock visibility from the confirmed pharmacy API.'**
+  String get pharmacyDrugPanelDescription;
+
+  /// Semantic label for pharmacy drug stock filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug stock filters'**
+  String get pharmacyDrugFiltersSemanticLabel;
+
+  /// Pharmacy drug search semantic label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search drugs'**
+  String get pharmacyDrugSearchLabel;
+
+  /// Pharmacy drug search hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search drug, code, form, or strength'**
+  String get pharmacyDrugSearchHint;
+
+  /// Pharmacy stock status filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock status'**
+  String get pharmacyStockStatusFilterLabel;
+
+  /// Empty pharmacy drug search title.
+  ///
+  /// In en, this message translates to:
+  /// **'No drugs found'**
+  String get pharmacyNoDrugsTitle;
+
+  /// Empty pharmacy drug search body.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching formulary drugs and stock rows will appear here.'**
+  String get pharmacyNoDrugsBody;
+
+  /// Pharmacy drug column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug'**
+  String get pharmacyDrugColumnLabel;
+
+  /// Pharmacy available quantity column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get pharmacyAvailableColumnLabel;
+
+  /// Pharmacy stock status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock status'**
+  String get pharmacyStockStatusColumnLabel;
+
+  /// Pharmacy available quantity label.
+  ///
+  /// In en, this message translates to:
+  /// **'{quantity} available'**
+  String pharmacyAvailableQuantityLabel(String quantity);
+
+  /// Pharmacy dispense dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare dispense'**
+  String get pharmacyDispenseDialogTitle;
+
+  /// Pharmacy attest dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Attest dispense'**
+  String get pharmacyAttestDialogTitle;
+
+  /// Pharmacy attest dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the prepared batch after physical medication handoff.'**
+  String get pharmacyAttestDialogBody;
+
+  /// Pharmacy return dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Return medicines'**
+  String get pharmacyReturnDialogTitle;
+
+  /// Pharmacy return dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Record returned quantities so order status and stock are synchronized.'**
+  String get pharmacyReturnDialogBody;
+
+  /// Pharmacy cancel dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel pharmacy order'**
+  String get pharmacyCancelDialogTitle;
+
+  /// Pharmacy cancel dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel only when the order should no longer be dispensed.'**
+  String get pharmacyCancelDialogBody;
+
+  /// Pharmacy billing gate unavailable body.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment clearance is visible as a backend gap because the pharmacy workflow response does not include invoice or payment state.'**
+  String get pharmacyBillingGateUnavailableBody;
+
+  /// Pharmacy dispense batch reference field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch reference'**
+  String get pharmacyBatchRefLabel;
+
+  /// Pharmacy statement field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement'**
+  String get pharmacyStatementLabel;
+
+  /// Pharmacy reason field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get pharmacyReasonLabel;
+
+  /// Pharmacy notes field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get pharmacyNotesLabel;
+
+  /// Pharmacy quantity field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get pharmacyQuantityFieldLabel;
+
+  /// Pharmacy inventory item selector label.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory item'**
+  String get pharmacyInventoryItemLabel;
+
+  /// Pharmacy quantity validation label.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a quantity from 0 to {maximum}.'**
+  String pharmacyQuantityValidationLabel(String maximum);
+
+  /// Pharmacy success snackbar message.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy workflow updated.'**
+  String get pharmacySavedMessage;
+
+  /// Pharmacy all orders filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'All orders'**
+  String get pharmacyFilterAll;
+
+  /// Pharmacy ready filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get pharmacyFilterReady;
+
+  /// Pharmacy partial filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get pharmacyFilterPartial;
+
+  /// Pharmacy completed filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get pharmacyFilterCompleted;
+
+  /// Pharmacy cancelled filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get pharmacyFilterCancelled;
+
+  /// Pharmacy unsupported pending payment filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending payment - backend gap'**
+  String get pharmacyFilterPendingPayment;
+
+  /// Pharmacy unsupported partial stock filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial stock - backend gap'**
+  String get pharmacyFilterPartialStock;
+
+  /// Pharmacy unsupported urgent filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent - backend gap'**
+  String get pharmacyFilterUrgent;
+
+  /// Pharmacy unsupported discharge filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge - backend gap'**
+  String get pharmacyFilterDischarge;
+
+  /// Pharmacy in stock label.
+  ///
+  /// In en, this message translates to:
+  /// **'In stock'**
+  String get pharmacyStockInStock;
+
+  /// Pharmacy almost out of stock label.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost out'**
+  String get pharmacyStockAlmostOut;
+
+  /// Pharmacy low stock label.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get pharmacyStockLow;
+
+  /// Pharmacy out of stock label.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get pharmacyStockOut;
+
+  /// Pharmacy unknown stock label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock unknown'**
+  String get pharmacyStockUnknown;
+
+  /// Pharmacy unknown status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get pharmacyUnknownStatusLabel;
+
+  /// Pharmacy unavailable stock mapping label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock mapping unavailable'**
+  String get pharmacyStockMappingUnavailable;
+
+  /// Pharmacy medication timeline event label.
+  ///
+  /// In en, this message translates to:
+  /// **'{medication} {status}'**
+  String pharmacyTimelineMedicationEvent(String medication, String status);
+
+  /// Pharmacy batch timeline event label.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} {batch}'**
+  String pharmacyTimelineBatchEvent(String type, String batch);
+
+  /// Pharmacy order placed timeline label.
+  ///
+  /// In en, this message translates to:
+  /// **'Order placed'**
+  String get pharmacyTimelineOrderPlaced;
+
+  /// Pharmacy dispense progress label.
+  ///
+  /// In en, this message translates to:
+  /// **'{dispensed} / {prescribed}'**
+  String pharmacyDispenseProgressLabel(String dispensed, String prescribed);
+
+  /// Pharmacy medication printout title.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication instructions'**
+  String get pharmacyReportTitle;
+
+  /// Pharmacy report patient label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get pharmacyReportPatientLabel;
+
+  /// Pharmacy report order label.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get pharmacyReportOrderLabel;
+
+  /// Pharmacy report generated label.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated'**
+  String get pharmacyReportGeneratedLabel;
+
+  /// Pharmacy report footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from confirmed pharmacy workflow data.'**
+  String get pharmacyReportFooter;
+
+  /// Localized text for navigationClaimsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims'**
+  String get navigationClaimsLabel;
+
+  /// Localized text for claimsWorkspaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance and claims'**
+  String get claimsWorkspaceTitle;
+
+  /// Localized text for claimsWorkspaceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage authorizations, payer responses, claim submission, resubmission, and invoice follow-up.'**
+  String get claimsWorkspaceDescription;
+
+  /// Localized text for claimsOperationalStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing synced'**
+  String get claimsOperationalStatusLabel;
+
+  /// Localized text for claimsNeedsAttentionStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get claimsNeedsAttentionStatusLabel;
+
+  /// Localized text for claimsLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading claims'**
+  String get claimsLoadingTitle;
+
+  /// Localized text for claimsLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching authorization and claim queues.'**
+  String get claimsLoadingBody;
+
+  /// Localized text for claimsLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims unavailable'**
+  String get claimsLoadErrorTitle;
+
+  /// Localized text for claimsLoadErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The claims workspace could not be loaded.'**
+  String get claimsLoadErrorBody;
+
+  /// Localized text for claimsRequestAuthorizationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request authorization'**
+  String get claimsRequestAuthorizationAction;
+
+  /// Localized text for claimsPrepareClaimAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare claim'**
+  String get claimsPrepareClaimAction;
+
+  /// Localized text for claimsAuthorizationPendingSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Auth pending'**
+  String get claimsAuthorizationPendingSummaryLabel;
+
+  /// Localized text for claimsAuthorizationApprovedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Auth approved'**
+  String get claimsAuthorizationApprovedSummaryLabel;
+
+  /// Localized text for claimsSubmittedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted'**
+  String get claimsSubmittedSummaryLabel;
+
+  /// Localized text for claimsRejectedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get claimsRejectedSummaryLabel;
+
+  /// Localized text for claimsApprovedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get claimsApprovedSummaryLabel;
+
+  /// Localized text for claimsPaidClosedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid/closed'**
+  String get claimsPaidClosedSummaryLabel;
+
+  /// Localized text for claimsSearchSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search claims and authorizations'**
+  String get claimsSearchSemanticLabel;
+
+  /// Localized text for claimsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search reference, coverage, invoice, or patient'**
+  String get claimsSearchHint;
+
+  /// Localized text for claimsQueueFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get claimsQueueFilterLabel;
+
+  /// Localized text for claimsWorklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims worklist'**
+  String get claimsWorklistTitle;
+
+  /// Localized text for claimsWorklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review pre-authorizations and claim records backed by the billing API.'**
+  String get claimsWorklistDescription;
+
+  /// Localized text for claimsPreviousPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous claims page'**
+  String get claimsPreviousPageLabel;
+
+  /// Localized text for claimsNextPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next claims page'**
+  String get claimsNextPageLabel;
+
+  /// No description provided for @claimsPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} - {end} of {total}'**
+  String claimsPageLabel(int start, int end, int total);
+
+  /// Localized text for claimsEmptyQueueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No claims found'**
+  String get claimsEmptyQueueTitle;
+
+  /// Localized text for claimsEmptyQueueBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No authorization or claim records match the current queue.'**
+  String get claimsEmptyQueueBody;
+
+  /// Localized text for claimsTypeColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get claimsTypeColumnLabel;
+
+  /// Localized text for claimsReferenceColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get claimsReferenceColumnLabel;
+
+  /// Localized text for claimsCoverageColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get claimsCoverageColumnLabel;
+
+  /// Localized text for claimsInvoiceColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get claimsInvoiceColumnLabel;
+
+  /// Localized text for claimsStatusColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get claimsStatusColumnLabel;
+
+  /// Localized text for claimsTimelineColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get claimsTimelineColumnLabel;
+
+  /// No description provided for @claimsMobileQueueSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage {coverage} | Link {link}'**
+  String claimsMobileQueueSubtitle(String coverage, String link);
+
+  /// Localized text for claimsDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim detail'**
+  String get claimsDetailTitle;
+
+  /// Localized text for claimsDetailLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading detail'**
+  String get claimsDetailLoadingTitle;
+
+  /// Localized text for claimsDetailLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching payer, invoice, and coverage context.'**
+  String get claimsDetailLoadingBody;
+
+  /// Localized text for claimsNoSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a record'**
+  String get claimsNoSelectionTitle;
+
+  /// Localized text for claimsNoSelectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a row to review coverage, billing impact, and next actions.'**
+  String get claimsNoSelectionBody;
+
+  /// Localized text for claimsPrintStatementAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Print statement'**
+  String get claimsPrintStatementAction;
+
+  /// Localized text for claimsPatientContextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim patient and coverage context'**
+  String get claimsPatientContextLabel;
+
+  /// Localized text for claimsCoverageFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get claimsCoverageFieldLabel;
+
+  /// Localized text for claimsPayerFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payer'**
+  String get claimsPayerFieldLabel;
+
+  /// Localized text for claimsUnknownPayerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payer not recorded'**
+  String get claimsUnknownPayerLabel;
+
+  /// Localized text for claimsInvoiceFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get claimsInvoiceFieldLabel;
+
+  /// Localized text for claimsAmountFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get claimsAmountFieldLabel;
+
+  /// Localized text for claimsBillingImpactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing impact'**
+  String get claimsBillingImpactTitle;
+
+  /// Localized text for claimsAuthorizationBillingImpactBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Service clearance should wait for payer response where authorization is required.'**
+  String get claimsAuthorizationBillingImpactBody;
+
+  /// Localized text for claimsCoveragePercentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get claimsCoveragePercentLabel;
+
+  /// No description provided for @claimsCoveragePercentValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String claimsCoveragePercentValue(String percent);
+
+  /// Localized text for claimsInvoiceStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice status'**
+  String get claimsInvoiceStatusLabel;
+
+  /// Localized text for claimsPatientBalanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient balance'**
+  String get claimsPatientBalanceLabel;
+
+  /// Localized text for claimsBillingInvoiceUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice details are not available, so the patient balance cannot be confirmed here.'**
+  String get claimsBillingInvoiceUnavailableBody;
+
+  /// Localized text for claimsBillingAuthorizedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized by payer. Confirm any uncovered balance before final clearance.'**
+  String get claimsBillingAuthorizedBody;
+
+  /// Localized text for claimsBillingPaidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim is paid or closed. Billing can use the latest invoice status for follow-up.'**
+  String get claimsBillingPaidBody;
+
+  /// Localized text for claimsBillingRejectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected by payer. Billing staff should prepare resubmission or patient balance follow-up.'**
+  String get claimsBillingRejectedBody;
+
+  /// Localized text for claimsBillingPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending payer response. Keep billing clearance visible until the response is recorded.'**
+  String get claimsBillingPendingBody;
+
+  /// Localized text for claimsBillingNeutralBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Review invoice and payer state before clearing the service.'**
+  String get claimsBillingNeutralBody;
+
+  /// Localized text for claimsRequiredDocumentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Required documents'**
+  String get claimsRequiredDocumentsTitle;
+
+  /// Localized text for claimsRequiredDocumentsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Document readiness is shown from available claim, invoice, and coverage data.'**
+  String get claimsRequiredDocumentsBody;
+
+  /// Localized text for claimsDocumentInvoiceSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice summary'**
+  String get claimsDocumentInvoiceSummary;
+
+  /// Localized text for claimsDocumentCoveragePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage plan'**
+  String get claimsDocumentCoveragePlan;
+
+  /// Localized text for claimsDocumentPayerResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Payer response'**
+  String get claimsDocumentPayerResponse;
+
+  /// Localized text for claimsTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get claimsTimelineTitle;
+
+  /// Localized text for claimsTimelineDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization, submission, and response timestamps from the backend.'**
+  String get claimsTimelineDescription;
+
+  /// Localized text for claimsTimelineAuthorizationRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization requested'**
+  String get claimsTimelineAuthorizationRequested;
+
+  /// Localized text for claimsTimelineAuthorizationResponded.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization responded'**
+  String get claimsTimelineAuthorizationResponded;
+
+  /// Localized text for claimsTimelineClaimSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim submitted'**
+  String get claimsTimelineClaimSubmitted;
+
+  /// Localized text for claimsTimelineCurrentStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Current status'**
+  String get claimsTimelineCurrentStatus;
+
+  /// Localized text for claimsBackendGapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend gaps'**
+  String get claimsBackendGapTitle;
+
+  /// Localized text for claimsBackendGapDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These items are shown as integration gaps because the current API does not expose dedicated endpoints for them.'**
+  String get claimsBackendGapDescription;
+
+  /// Localized text for claimsBackendGapDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim draft queue'**
+  String get claimsBackendGapDraftTitle;
+
+  /// Localized text for claimsBackendGapDraftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The claim API supports submitted, approved, rejected, paid, and cancelled states, but no draft status.'**
+  String get claimsBackendGapDraftBody;
+
+  /// Localized text for claimsBackendGapDocumentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Document upload and requests'**
+  String get claimsBackendGapDocumentsTitle;
+
+  /// Localized text for claimsBackendGapDocumentsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Required document tracking is not yet backed by a document request endpoint.'**
+  String get claimsBackendGapDocumentsBody;
+
+  /// Localized text for claimsBackendGapReportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated payer packs'**
+  String get claimsBackendGapReportsTitle;
+
+  /// Localized text for claimsBackendGapReportsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Printable payer packs should move to report templates when the reports plan is implemented.'**
+  String get claimsBackendGapReportsBody;
+
+  /// Localized text for claimsCoveragePlanFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage plan'**
+  String get claimsCoveragePlanFieldLabel;
+
+  /// Localized text for claimsCoveragePlanHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select payer coverage'**
+  String get claimsCoveragePlanHint;
+
+  /// Localized text for claimsCoveragePlanRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a coverage plan.'**
+  String get claimsCoveragePlanRequiredMessage;
+
+  /// Localized text for claimsCoverageUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage plans unavailable'**
+  String get claimsCoverageUnavailableTitle;
+
+  /// Localized text for claimsCoverageUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage plans could not be loaded, so authorization cannot be requested yet.'**
+  String get claimsCoverageUnavailableBody;
+
+  /// Localized text for claimsRequestAuthorizationSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request authorization'**
+  String get claimsRequestAuthorizationSubmitAction;
+
+  /// Localized text for claimsPrepareClaimDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare claim'**
+  String get claimsPrepareClaimDialogTitle;
+
+  /// Localized text for claimsPrepareClaimSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare and submit'**
+  String get claimsPrepareClaimSubmitAction;
+
+  /// Localized text for claimsInvoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select invoice'**
+  String get claimsInvoiceHint;
+
+  /// Localized text for claimsInvoiceRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an invoice.'**
+  String get claimsInvoiceRequiredMessage;
+
+  /// Localized text for claimsPrepareClaimUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim inputs unavailable'**
+  String get claimsPrepareClaimUnavailableTitle;
+
+  /// Localized text for claimsPrepareClaimUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A coverage plan and invoice are required before a claim can be prepared.'**
+  String get claimsPrepareClaimUnavailableBody;
+
+  /// Localized text for claimsAuthorizationStatusFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization status'**
+  String get claimsAuthorizationStatusFieldLabel;
+
+  /// Localized text for claimsStatusRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a status.'**
+  String get claimsStatusRequiredMessage;
+
+  /// Localized text for claimsUpdateStatusSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update status'**
+  String get claimsUpdateStatusSubmitAction;
+
+  /// Localized text for claimsNotesFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get claimsNotesFieldLabel;
+
+  /// Localized text for claimsSubmitClaimSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit claim'**
+  String get claimsSubmitClaimSubmitAction;
+
+  /// Localized text for claimsClaimResponseFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payer response'**
+  String get claimsClaimResponseFieldLabel;
+
+  /// Localized text for claimsSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims workspace updated.'**
+  String get claimsSavedMessage;
+
+  /// Localized text for claimsRequestAuthorizationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request pre-authorization'**
+  String get claimsRequestAuthorizationDialogTitle;
+
+  /// Localized text for claimsUpdateAuthorizationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update authorization status'**
+  String get claimsUpdateAuthorizationDialogTitle;
+
+  /// Localized text for claimsSubmitClaimDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit claim'**
+  String get claimsSubmitClaimDialogTitle;
+
+  /// Localized text for claimsRecordResponseDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record payer response'**
+  String get claimsRecordResponseDialogTitle;
+
+  /// Localized text for claimsRecordResponseSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Record response'**
+  String get claimsRecordResponseSubmitAction;
+
+  /// Localized text for claimsCloseClaimDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close claim'**
+  String get claimsCloseClaimDialogTitle;
+
+  /// Localized text for claimsCloseClaimSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close as paid'**
+  String get claimsCloseClaimSubmitAction;
+
+  /// Localized text for claimsUpdateStatusAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update status'**
+  String get claimsUpdateStatusAction;
+
+  /// Localized text for claimsSubmitClaimAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit claim'**
+  String get claimsSubmitClaimAction;
+
+  /// Localized text for claimsResubmitClaimAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Resubmit claim'**
+  String get claimsResubmitClaimAction;
+
+  /// Localized text for claimsRecordResponseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Record response'**
+  String get claimsRecordResponseAction;
+
+  /// Localized text for claimsCloseClaimAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close as paid'**
+  String get claimsCloseClaimAction;
+
+  /// Localized text for claimsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All queues'**
+  String get claimsFilterAll;
+
+  /// Localized text for claimsFilterAuthorizationPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization pending'**
+  String get claimsFilterAuthorizationPending;
+
+  /// Localized text for claimsFilterAuthorizationApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization approved'**
+  String get claimsFilterAuthorizationApproved;
+
+  /// Localized text for claimsFilterAuthorizationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization denied'**
+  String get claimsFilterAuthorizationDenied;
+
+  /// Localized text for claimsFilterAuthorizationExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization expired'**
+  String get claimsFilterAuthorizationExpired;
+
+  /// Localized text for claimsFilterClaimSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim submitted'**
+  String get claimsFilterClaimSubmitted;
+
+  /// Localized text for claimsFilterClaimApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim approved'**
+  String get claimsFilterClaimApproved;
+
+  /// Localized text for claimsFilterClaimRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim rejected'**
+  String get claimsFilterClaimRejected;
+
+  /// Localized text for claimsFilterClaimPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim paid'**
+  String get claimsFilterClaimPaid;
+
+  /// Localized text for claimsFilterClaimCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim cancelled'**
+  String get claimsFilterClaimCancelled;
+
+  /// Localized text for claimsStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get claimsStatusPending;
+
+  /// Localized text for claimsStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get claimsStatusApproved;
+
+  /// Localized text for claimsStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get claimsStatusDenied;
+
+  /// Localized text for claimsStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get claimsStatusExpired;
+
+  /// Localized text for claimsStatusSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted'**
+  String get claimsStatusSubmitted;
+
+  /// Localized text for claimsStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get claimsStatusRejected;
+
+  /// Localized text for claimsStatusPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get claimsStatusPaid;
+
+  /// Localized text for claimsStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get claimsStatusCancelled;
+
+  /// Localized text for claimsAuthorizationTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization'**
+  String get claimsAuthorizationTypeLabel;
+
+  /// Localized text for claimsClaimTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim'**
+  String get claimsClaimTypeLabel;
+
+  /// Localized text for claimsAuthorizationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage authorization'**
+  String get claimsAuthorizationTitle;
+
+  /// Localized text for claimsClaimPatientTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim patient'**
+  String get claimsClaimPatientTitle;
+
+  /// Localized text for claimsAuthorizationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payer coverage request'**
+  String get claimsAuthorizationSubtitle;
+
+  /// No description provided for @claimsClaimSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim {claimId}'**
+  String claimsClaimSubtitle(String claimId);
+
+  /// Localized text for claimsAuthorizationStatementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-authorization statement'**
+  String get claimsAuthorizationStatementTitle;
+
+  /// Localized text for claimsClaimStatementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim statement'**
+  String get claimsClaimStatementTitle;
+
+  /// Localized text for claimsReportGeneratedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated'**
+  String get claimsReportGeneratedLabel;
+
+  /// Localized text for claimsReportFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from backend-backed claims and billing data.'**
+  String get claimsReportFooter;
 }
 
 class _AppLocalizationsDelegate

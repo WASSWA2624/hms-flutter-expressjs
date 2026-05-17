@@ -5483,5 +5483,1052 @@
   "dischargeLoadErrorBody": "The discharge queue could not be loaded. Refresh to try again.",
   "@dischargeLoadErrorBody": {
     "description": "Discharge workspace load error body."
+  },
+  "navigationPharmacyLabel": "Pharmacy",
+  "@navigationPharmacyLabel": {
+    "description": "Navigation destination label for the pharmacy workspace."
+  },
+  "pharmacyLoadingTitle": "Loading pharmacy workspace",
+  "@pharmacyLoadingTitle": {
+    "description": "Pharmacy workspace loading title."
+  },
+  "pharmacyLoadingBody": "Loading pharmacy orders, dispense state, and stock visibility.",
+  "@pharmacyLoadingBody": {
+    "description": "Pharmacy workspace loading body."
+  },
+  "pharmacyTitle": "Pharmacy",
+  "@pharmacyTitle": {
+    "description": "Pharmacy workspace title."
+  },
+  "pharmacyDescription": "Manage prescriptions, dispense handoff, returns, and drug stock visibility from one queue.",
+  "@pharmacyDescription": {
+    "description": "Pharmacy workspace header description."
+  },
+  "pharmacyStatusSaving": "Saving",
+  "@pharmacyStatusSaving": {
+    "description": "Pharmacy workspace saving status."
+  },
+  "pharmacyStatusLiveSync": "Live sync",
+  "@pharmacyStatusLiveSync": {
+    "description": "Pharmacy workspace live synchronization status."
+  },
+  "pharmacyFiltersSemanticLabel": "Pharmacy queue filters",
+  "@pharmacyFiltersSemanticLabel": {
+    "description": "Semantic label for pharmacy queue filters."
+  },
+  "pharmacySearchLabel": "Search pharmacy",
+  "@pharmacySearchLabel": {
+    "description": "Pharmacy queue search semantic label."
+  },
+  "pharmacySearchHint": "Search patient, order, encounter, medication, or batch",
+  "@pharmacySearchHint": {
+    "description": "Pharmacy queue search hint."
+  },
+  "pharmacyQueueFilterLabel": "Queue filter",
+  "@pharmacyQueueFilterLabel": {
+    "description": "Pharmacy queue filter field label."
+  },
+  "pharmacySummaryReadyLabel": "Ready",
+  "@pharmacySummaryReadyLabel": {
+    "description": "Pharmacy summary label for ready orders."
+  },
+  "pharmacySummaryPartialLabel": "Partial",
+  "@pharmacySummaryPartialLabel": {
+    "description": "Pharmacy summary label for partially dispensed orders."
+  },
+  "pharmacySummaryAttestationLabel": "Awaiting attest",
+  "@pharmacySummaryAttestationLabel": {
+    "description": "Pharmacy summary label for dispense batches awaiting attestation."
+  },
+  "pharmacySummaryCompletedLabel": "Completed",
+  "@pharmacySummaryCompletedLabel": {
+    "description": "Pharmacy summary label for completed orders."
+  },
+  "pharmacyQueuePanelTitle": "Order queue",
+  "@pharmacyQueuePanelTitle": {
+    "description": "Pharmacy order queue panel title."
+  },
+  "pharmacyQueuePanelDescription": "Backend-backed pharmacy orders with dispense and return actions.",
+  "@pharmacyQueuePanelDescription": {
+    "description": "Pharmacy order queue panel description."
+  },
+  "pharmacyNoOrdersTitle": "No pharmacy orders",
+  "@pharmacyNoOrdersTitle": {
+    "description": "Empty pharmacy order queue title."
+  },
+  "pharmacyNoOrdersBody": "Orders matching this search and filter will appear here.",
+  "@pharmacyNoOrdersBody": {
+    "description": "Empty pharmacy order queue body."
+  },
+  "pharmacyPatientColumnLabel": "Patient",
+  "@pharmacyPatientColumnLabel": {
+    "description": "Pharmacy patient column label."
+  },
+  "pharmacyOrderColumnLabel": "Order",
+  "@pharmacyOrderColumnLabel": {
+    "description": "Pharmacy order column label."
+  },
+  "pharmacyItemsColumnLabel": "Items",
+  "@pharmacyItemsColumnLabel": {
+    "description": "Pharmacy items column label."
+  },
+  "pharmacyDispenseColumnLabel": "Dispense",
+  "@pharmacyDispenseColumnLabel": {
+    "description": "Pharmacy dispense progress column label."
+  },
+  "pharmacyStatusColumnLabel": "Status",
+  "@pharmacyStatusColumnLabel": {
+    "description": "Pharmacy status column label."
+  },
+  "pharmacyPendingBatchLabel": "Pending batch",
+  "@pharmacyPendingBatchLabel": {
+    "description": "Status label for a pending dispense batch."
+  },
+  "pharmacyDetailLoadingTitle": "Loading prescription",
+  "@pharmacyDetailLoadingTitle": {
+    "description": "Pharmacy prescription detail loading title."
+  },
+  "pharmacyDetailLoadingBody": "Loading medicines, dispense history, and workflow actions.",
+  "@pharmacyDetailLoadingBody": {
+    "description": "Pharmacy prescription detail loading body."
+  },
+  "pharmacyNoSelectionTitle": "No prescription selected",
+  "@pharmacyNoSelectionTitle": {
+    "description": "Pharmacy detail empty title."
+  },
+  "pharmacyNoSelectionBody": "Select an order to review medicines, stock mapping, billing gate visibility, and dispense history.",
+  "@pharmacyNoSelectionBody": {
+    "description": "Pharmacy detail empty body."
+  },
+  "pharmacyBillingGateUnavailableTitle": "Billing gate unavailable",
+  "@pharmacyBillingGateUnavailableTitle": {
+    "description": "Pharmacy label for unavailable billing gate data."
+  },
+  "pharmacyOrderFieldLabel": "Order",
+  "@pharmacyOrderFieldLabel": {
+    "description": "Pharmacy patient context order field label."
+  },
+  "pharmacyEncounterFieldLabel": "Encounter",
+  "@pharmacyEncounterFieldLabel": {
+    "description": "Pharmacy patient context encounter field label."
+  },
+  "pharmacySourceFieldLabel": "Source",
+  "@pharmacySourceFieldLabel": {
+    "description": "Pharmacy patient context source field label."
+  },
+  "pharmacyOrderedFieldLabel": "Ordered",
+  "@pharmacyOrderedFieldLabel": {
+    "description": "Pharmacy patient context ordered date field label."
+  },
+  "pharmacyActionsPanelTitle": "Actions",
+  "@pharmacyActionsPanelTitle": {
+    "description": "Pharmacy action panel title."
+  },
+  "pharmacyDispenseAction": "Dispense",
+  "@pharmacyDispenseAction": {
+    "description": "Pharmacy dispense action label."
+  },
+  "pharmacyPrepareDispenseAction": "Prepare dispense",
+  "@pharmacyPrepareDispenseAction": {
+    "description": "Pharmacy prepare dispense submit label."
+  },
+  "pharmacyAttestAction": "Attest",
+  "@pharmacyAttestAction": {
+    "description": "Pharmacy dispense attestation action label."
+  },
+  "pharmacyReturnAction": "Return",
+  "@pharmacyReturnAction": {
+    "description": "Pharmacy return action label."
+  },
+  "pharmacyCancelOrderAction": "Cancel order",
+  "@pharmacyCancelOrderAction": {
+    "description": "Pharmacy cancel order action label."
+  },
+  "pharmacyPrintInstructionsAction": "Print instructions",
+  "@pharmacyPrintInstructionsAction": {
+    "description": "Pharmacy print medication instructions action label."
+  },
+  "pharmacyMedicationPanelTitle": "Medicines",
+  "@pharmacyMedicationPanelTitle": {
+    "description": "Pharmacy medication panel title."
+  },
+  "pharmacyMedicationPanelDescription": "Drug, dose, route, frequency, duration, quantity, instructions, and dispense state.",
+  "@pharmacyMedicationPanelDescription": {
+    "description": "Pharmacy medication panel description."
+  },
+  "pharmacyNoMedicationTitle": "No medicines",
+  "@pharmacyNoMedicationTitle": {
+    "description": "Empty pharmacy medicines title."
+  },
+  "pharmacyNoMedicationBody": "This order has no medicines exposed by the pharmacy workflow API.",
+  "@pharmacyNoMedicationBody": {
+    "description": "Empty pharmacy medicines body."
+  },
+  "pharmacyMedicationColumnLabel": "Medication",
+  "@pharmacyMedicationColumnLabel": {
+    "description": "Pharmacy medication column label."
+  },
+  "pharmacyDoseColumnLabel": "Dose",
+  "@pharmacyDoseColumnLabel": {
+    "description": "Pharmacy dose column label."
+  },
+  "pharmacyQuantityColumnLabel": "Quantity",
+  "@pharmacyQuantityColumnLabel": {
+    "description": "Pharmacy quantity column label."
+  },
+  "pharmacyStockColumnLabel": "Stock",
+  "@pharmacyStockColumnLabel": {
+    "description": "Pharmacy stock column label."
+  },
+  "pharmacyBackendGapsTitle": "Backend sync gaps",
+  "@pharmacyBackendGapsTitle": {
+    "description": "Pharmacy backend gaps panel title."
+  },
+  "pharmacyBackendGapsBody": "The confirmed API does not yet expose every state requested by the pharmacy plan.",
+  "@pharmacyBackendGapsBody": {
+    "description": "Pharmacy backend gaps panel body."
+  },
+  "pharmacyGapPaymentAuthorization": "Payment and authorization status is not present on pharmacy order workflow responses.",
+  "@pharmacyGapPaymentAuthorization": {
+    "description": "Pharmacy backend gap for payment authorization."
+  },
+  "pharmacyGapBatchAvailability": "Drug batch availability is not attached to order items; only inventory item mapping is available.",
+  "@pharmacyGapBatchAvailability": {
+    "description": "Pharmacy backend gap for batch availability."
+  },
+  "pharmacyGapHoldSubstitution": "Hold and drug substitution actions do not have confirmed pharmacy workflow routes.",
+  "@pharmacyGapHoldSubstitution": {
+    "description": "Pharmacy backend gap for hold and substitution actions."
+  },
+  "pharmacyGapReportTemplates": "Medication printouts use local HTML until report-template routes expose pharmacy templates.",
+  "@pharmacyGapReportTemplates": {
+    "description": "Pharmacy backend gap for report templates."
+  },
+  "pharmacyTimelinePanelTitle": "Dispense history",
+  "@pharmacyTimelinePanelTitle": {
+    "description": "Pharmacy timeline panel title."
+  },
+  "pharmacyTimelinePanelDescription": "Order placement, prepare, attest, dispense, and return events from the workflow API.",
+  "@pharmacyTimelinePanelDescription": {
+    "description": "Pharmacy timeline panel description."
+  },
+  "pharmacyNoTimelineBody": "No dispense history is available yet.",
+  "@pharmacyNoTimelineBody": {
+    "description": "Pharmacy empty timeline body."
+  },
+  "pharmacyDrugPanelTitle": "Formulary and stock",
+  "@pharmacyDrugPanelTitle": {
+    "description": "Pharmacy drug and stock panel title."
+  },
+  "pharmacyDrugPanelDescription": "Search configured drugs and review aggregate stock visibility from the confirmed pharmacy API.",
+  "@pharmacyDrugPanelDescription": {
+    "description": "Pharmacy drug and stock panel description."
+  },
+  "pharmacyDrugFiltersSemanticLabel": "Drug stock filters",
+  "@pharmacyDrugFiltersSemanticLabel": {
+    "description": "Semantic label for pharmacy drug stock filters."
+  },
+  "pharmacyDrugSearchLabel": "Search drugs",
+  "@pharmacyDrugSearchLabel": {
+    "description": "Pharmacy drug search semantic label."
+  },
+  "pharmacyDrugSearchHint": "Search drug, code, form, or strength",
+  "@pharmacyDrugSearchHint": {
+    "description": "Pharmacy drug search hint."
+  },
+  "pharmacyStockStatusFilterLabel": "Stock status",
+  "@pharmacyStockStatusFilterLabel": {
+    "description": "Pharmacy stock status filter label."
+  },
+  "pharmacyNoDrugsTitle": "No drugs found",
+  "@pharmacyNoDrugsTitle": {
+    "description": "Empty pharmacy drug search title."
+  },
+  "pharmacyNoDrugsBody": "Matching formulary drugs and stock rows will appear here.",
+  "@pharmacyNoDrugsBody": {
+    "description": "Empty pharmacy drug search body."
+  },
+  "pharmacyDrugColumnLabel": "Drug",
+  "@pharmacyDrugColumnLabel": {
+    "description": "Pharmacy drug column label."
+  },
+  "pharmacyAvailableColumnLabel": "Available",
+  "@pharmacyAvailableColumnLabel": {
+    "description": "Pharmacy available quantity column label."
+  },
+  "pharmacyStockStatusColumnLabel": "Stock status",
+  "@pharmacyStockStatusColumnLabel": {
+    "description": "Pharmacy stock status column label."
+  },
+  "pharmacyAvailableQuantityLabel": "{quantity} available",
+  "@pharmacyAvailableQuantityLabel": {
+    "description": "Pharmacy available quantity label.",
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDispenseDialogTitle": "Prepare dispense",
+  "@pharmacyDispenseDialogTitle": {
+    "description": "Pharmacy dispense dialog title."
+  },
+  "pharmacyAttestDialogTitle": "Attest dispense",
+  "@pharmacyAttestDialogTitle": {
+    "description": "Pharmacy attest dialog title."
+  },
+  "pharmacyAttestDialogBody": "Confirm the prepared batch after physical medication handoff.",
+  "@pharmacyAttestDialogBody": {
+    "description": "Pharmacy attest dialog body."
+  },
+  "pharmacyReturnDialogTitle": "Return medicines",
+  "@pharmacyReturnDialogTitle": {
+    "description": "Pharmacy return dialog title."
+  },
+  "pharmacyReturnDialogBody": "Record returned quantities so order status and stock are synchronized.",
+  "@pharmacyReturnDialogBody": {
+    "description": "Pharmacy return dialog body."
+  },
+  "pharmacyCancelDialogTitle": "Cancel pharmacy order",
+  "@pharmacyCancelDialogTitle": {
+    "description": "Pharmacy cancel dialog title."
+  },
+  "pharmacyCancelDialogBody": "Cancel only when the order should no longer be dispensed.",
+  "@pharmacyCancelDialogBody": {
+    "description": "Pharmacy cancel dialog body."
+  },
+  "pharmacyBillingGateUnavailableBody": "Payment clearance is visible as a backend gap because the pharmacy workflow response does not include invoice or payment state.",
+  "@pharmacyBillingGateUnavailableBody": {
+    "description": "Pharmacy billing gate unavailable body."
+  },
+  "pharmacyBatchRefLabel": "Batch reference",
+  "@pharmacyBatchRefLabel": {
+    "description": "Pharmacy dispense batch reference field label."
+  },
+  "pharmacyStatementLabel": "Statement",
+  "@pharmacyStatementLabel": {
+    "description": "Pharmacy statement field label."
+  },
+  "pharmacyReasonLabel": "Reason",
+  "@pharmacyReasonLabel": {
+    "description": "Pharmacy reason field label."
+  },
+  "pharmacyNotesLabel": "Notes",
+  "@pharmacyNotesLabel": {
+    "description": "Pharmacy notes field label."
+  },
+  "pharmacyQuantityFieldLabel": "Quantity",
+  "@pharmacyQuantityFieldLabel": {
+    "description": "Pharmacy quantity field label."
+  },
+  "pharmacyInventoryItemLabel": "Inventory item",
+  "@pharmacyInventoryItemLabel": {
+    "description": "Pharmacy inventory item selector label."
+  },
+  "pharmacyQuantityValidationLabel": "Enter a quantity from 0 to {maximum}.",
+  "@pharmacyQuantityValidationLabel": {
+    "description": "Pharmacy quantity validation label.",
+    "placeholders": {
+      "maximum": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacySavedMessage": "Pharmacy workflow updated.",
+  "@pharmacySavedMessage": {
+    "description": "Pharmacy success snackbar message."
+  },
+  "pharmacyFilterAll": "All orders",
+  "@pharmacyFilterAll": {
+    "description": "Pharmacy all orders filter label."
+  },
+  "pharmacyFilterReady": "Ready",
+  "@pharmacyFilterReady": {
+    "description": "Pharmacy ready filter label."
+  },
+  "pharmacyFilterPartial": "Partial",
+  "@pharmacyFilterPartial": {
+    "description": "Pharmacy partial filter label."
+  },
+  "pharmacyFilterCompleted": "Completed",
+  "@pharmacyFilterCompleted": {
+    "description": "Pharmacy completed filter label."
+  },
+  "pharmacyFilterCancelled": "Cancelled",
+  "@pharmacyFilterCancelled": {
+    "description": "Pharmacy cancelled filter label."
+  },
+  "pharmacyFilterPendingPayment": "Pending payment - backend gap",
+  "@pharmacyFilterPendingPayment": {
+    "description": "Pharmacy unsupported pending payment filter label."
+  },
+  "pharmacyFilterPartialStock": "Partial stock - backend gap",
+  "@pharmacyFilterPartialStock": {
+    "description": "Pharmacy unsupported partial stock filter label."
+  },
+  "pharmacyFilterUrgent": "Urgent - backend gap",
+  "@pharmacyFilterUrgent": {
+    "description": "Pharmacy unsupported urgent filter label."
+  },
+  "pharmacyFilterDischarge": "Discharge - backend gap",
+  "@pharmacyFilterDischarge": {
+    "description": "Pharmacy unsupported discharge filter label."
+  },
+  "pharmacyStockInStock": "In stock",
+  "@pharmacyStockInStock": {
+    "description": "Pharmacy in stock label."
+  },
+  "pharmacyStockAlmostOut": "Almost out",
+  "@pharmacyStockAlmostOut": {
+    "description": "Pharmacy almost out of stock label."
+  },
+  "pharmacyStockLow": "Low stock",
+  "@pharmacyStockLow": {
+    "description": "Pharmacy low stock label."
+  },
+  "pharmacyStockOut": "Out of stock",
+  "@pharmacyStockOut": {
+    "description": "Pharmacy out of stock label."
+  },
+  "pharmacyStockUnknown": "Stock unknown",
+  "@pharmacyStockUnknown": {
+    "description": "Pharmacy unknown stock label."
+  },
+  "pharmacyUnknownStatusLabel": "Unknown",
+  "@pharmacyUnknownStatusLabel": {
+    "description": "Pharmacy unknown status label."
+  },
+  "pharmacyStockMappingUnavailable": "Stock mapping unavailable",
+  "@pharmacyStockMappingUnavailable": {
+    "description": "Pharmacy unavailable stock mapping label."
+  },
+  "pharmacyTimelineMedicationEvent": "{medication} {status}",
+  "@pharmacyTimelineMedicationEvent": {
+    "description": "Pharmacy medication timeline event label.",
+    "placeholders": {
+      "medication": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyTimelineBatchEvent": "{type} {batch}",
+  "@pharmacyTimelineBatchEvent": {
+    "description": "Pharmacy batch timeline event label.",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "batch": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyTimelineOrderPlaced": "Order placed",
+  "@pharmacyTimelineOrderPlaced": {
+    "description": "Pharmacy order placed timeline label."
+  },
+  "pharmacyDispenseProgressLabel": "{dispensed} / {prescribed}",
+  "@pharmacyDispenseProgressLabel": {
+    "description": "Pharmacy dispense progress label.",
+    "placeholders": {
+      "dispensed": {
+        "type": "String"
+      },
+      "prescribed": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyReportTitle": "Medication instructions",
+  "@pharmacyReportTitle": {
+    "description": "Pharmacy medication printout title."
+  },
+  "pharmacyReportPatientLabel": "Patient",
+  "@pharmacyReportPatientLabel": {
+    "description": "Pharmacy report patient label."
+  },
+  "pharmacyReportOrderLabel": "Order",
+  "@pharmacyReportOrderLabel": {
+    "description": "Pharmacy report order label."
+  },
+  "pharmacyReportGeneratedLabel": "Generated",
+  "@pharmacyReportGeneratedLabel": {
+    "description": "Pharmacy report generated label."
+  },
+  "pharmacyReportFooter": "Generated from confirmed pharmacy workflow data.",
+  "@pharmacyReportFooter": {
+    "description": "Pharmacy report footer."
+  },
+  "navigationClaimsLabel": "Claims",
+  "@navigationClaimsLabel": {
+    "description": "Localized text for navigationClaimsLabel."
+  },
+  "claimsWorkspaceTitle": "Insurance and claims",
+  "@claimsWorkspaceTitle": {
+    "description": "Localized text for claimsWorkspaceTitle."
+  },
+  "claimsWorkspaceDescription": "Manage authorizations, payer responses, claim submission, resubmission, and invoice follow-up.",
+  "@claimsWorkspaceDescription": {
+    "description": "Localized text for claimsWorkspaceDescription."
+  },
+  "claimsOperationalStatusLabel": "Billing synced",
+  "@claimsOperationalStatusLabel": {
+    "description": "Localized text for claimsOperationalStatusLabel."
+  },
+  "claimsNeedsAttentionStatusLabel": "Needs attention",
+  "@claimsNeedsAttentionStatusLabel": {
+    "description": "Localized text for claimsNeedsAttentionStatusLabel."
+  },
+  "claimsLoadingTitle": "Loading claims",
+  "@claimsLoadingTitle": {
+    "description": "Localized text for claimsLoadingTitle."
+  },
+  "claimsLoadingBody": "Fetching authorization and claim queues.",
+  "@claimsLoadingBody": {
+    "description": "Localized text for claimsLoadingBody."
+  },
+  "claimsLoadErrorTitle": "Claims unavailable",
+  "@claimsLoadErrorTitle": {
+    "description": "Localized text for claimsLoadErrorTitle."
+  },
+  "claimsLoadErrorBody": "The claims workspace could not be loaded.",
+  "@claimsLoadErrorBody": {
+    "description": "Localized text for claimsLoadErrorBody."
+  },
+  "claimsRequestAuthorizationAction": "Request authorization",
+  "@claimsRequestAuthorizationAction": {
+    "description": "Localized text for claimsRequestAuthorizationAction."
+  },
+  "claimsPrepareClaimAction": "Prepare claim",
+  "@claimsPrepareClaimAction": {
+    "description": "Localized text for claimsPrepareClaimAction."
+  },
+  "claimsAuthorizationPendingSummaryLabel": "Auth pending",
+  "@claimsAuthorizationPendingSummaryLabel": {
+    "description": "Localized text for claimsAuthorizationPendingSummaryLabel."
+  },
+  "claimsAuthorizationApprovedSummaryLabel": "Auth approved",
+  "@claimsAuthorizationApprovedSummaryLabel": {
+    "description": "Localized text for claimsAuthorizationApprovedSummaryLabel."
+  },
+  "claimsSubmittedSummaryLabel": "Submitted",
+  "@claimsSubmittedSummaryLabel": {
+    "description": "Localized text for claimsSubmittedSummaryLabel."
+  },
+  "claimsRejectedSummaryLabel": "Rejected",
+  "@claimsRejectedSummaryLabel": {
+    "description": "Localized text for claimsRejectedSummaryLabel."
+  },
+  "claimsApprovedSummaryLabel": "Approved",
+  "@claimsApprovedSummaryLabel": {
+    "description": "Localized text for claimsApprovedSummaryLabel."
+  },
+  "claimsPaidClosedSummaryLabel": "Paid/closed",
+  "@claimsPaidClosedSummaryLabel": {
+    "description": "Localized text for claimsPaidClosedSummaryLabel."
+  },
+  "claimsSearchSemanticLabel": "Search claims and authorizations",
+  "@claimsSearchSemanticLabel": {
+    "description": "Localized text for claimsSearchSemanticLabel."
+  },
+  "claimsSearchHint": "Search reference, coverage, invoice, or patient",
+  "@claimsSearchHint": {
+    "description": "Localized text for claimsSearchHint."
+  },
+  "claimsQueueFilterLabel": "Queue",
+  "@claimsQueueFilterLabel": {
+    "description": "Localized text for claimsQueueFilterLabel."
+  },
+  "claimsWorklistTitle": "Claims worklist",
+  "@claimsWorklistTitle": {
+    "description": "Localized text for claimsWorklistTitle."
+  },
+  "claimsWorklistDescription": "Review pre-authorizations and claim records backed by the billing API.",
+  "@claimsWorklistDescription": {
+    "description": "Localized text for claimsWorklistDescription."
+  },
+  "claimsPreviousPageLabel": "Previous claims page",
+  "@claimsPreviousPageLabel": {
+    "description": "Localized text for claimsPreviousPageLabel."
+  },
+  "claimsNextPageLabel": "Next claims page",
+  "@claimsNextPageLabel": {
+    "description": "Localized text for claimsNextPageLabel."
+  },
+  "claimsPageLabel": "{start} - {end} of {total}",
+  "@claimsPageLabel": {
+    "placeholders": {
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "claimsEmptyQueueTitle": "No claims found",
+  "@claimsEmptyQueueTitle": {
+    "description": "Localized text for claimsEmptyQueueTitle."
+  },
+  "claimsEmptyQueueBody": "No authorization or claim records match the current queue.",
+  "@claimsEmptyQueueBody": {
+    "description": "Localized text for claimsEmptyQueueBody."
+  },
+  "claimsTypeColumnLabel": "Type",
+  "@claimsTypeColumnLabel": {
+    "description": "Localized text for claimsTypeColumnLabel."
+  },
+  "claimsReferenceColumnLabel": "Reference",
+  "@claimsReferenceColumnLabel": {
+    "description": "Localized text for claimsReferenceColumnLabel."
+  },
+  "claimsCoverageColumnLabel": "Coverage",
+  "@claimsCoverageColumnLabel": {
+    "description": "Localized text for claimsCoverageColumnLabel."
+  },
+  "claimsInvoiceColumnLabel": "Invoice",
+  "@claimsInvoiceColumnLabel": {
+    "description": "Localized text for claimsInvoiceColumnLabel."
+  },
+  "claimsStatusColumnLabel": "Status",
+  "@claimsStatusColumnLabel": {
+    "description": "Localized text for claimsStatusColumnLabel."
+  },
+  "claimsTimelineColumnLabel": "Updated",
+  "@claimsTimelineColumnLabel": {
+    "description": "Localized text for claimsTimelineColumnLabel."
+  },
+  "claimsMobileQueueSubtitle": "Coverage {coverage} | Link {link}",
+  "@claimsMobileQueueSubtitle": {
+    "placeholders": {
+      "coverage": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "claimsDetailTitle": "Claim detail",
+  "@claimsDetailTitle": {
+    "description": "Localized text for claimsDetailTitle."
+  },
+  "claimsDetailLoadingTitle": "Loading detail",
+  "@claimsDetailLoadingTitle": {
+    "description": "Localized text for claimsDetailLoadingTitle."
+  },
+  "claimsDetailLoadingBody": "Fetching payer, invoice, and coverage context.",
+  "@claimsDetailLoadingBody": {
+    "description": "Localized text for claimsDetailLoadingBody."
+  },
+  "claimsNoSelectionTitle": "Select a record",
+  "@claimsNoSelectionTitle": {
+    "description": "Localized text for claimsNoSelectionTitle."
+  },
+  "claimsNoSelectionBody": "Choose a row to review coverage, billing impact, and next actions.",
+  "@claimsNoSelectionBody": {
+    "description": "Localized text for claimsNoSelectionBody."
+  },
+  "claimsPrintStatementAction": "Print statement",
+  "@claimsPrintStatementAction": {
+    "description": "Localized text for claimsPrintStatementAction."
+  },
+  "claimsPatientContextLabel": "Claim patient and coverage context",
+  "@claimsPatientContextLabel": {
+    "description": "Localized text for claimsPatientContextLabel."
+  },
+  "claimsCoverageFieldLabel": "Coverage",
+  "@claimsCoverageFieldLabel": {
+    "description": "Localized text for claimsCoverageFieldLabel."
+  },
+  "claimsPayerFieldLabel": "Payer",
+  "@claimsPayerFieldLabel": {
+    "description": "Localized text for claimsPayerFieldLabel."
+  },
+  "claimsUnknownPayerLabel": "Payer not recorded",
+  "@claimsUnknownPayerLabel": {
+    "description": "Localized text for claimsUnknownPayerLabel."
+  },
+  "claimsInvoiceFieldLabel": "Invoice",
+  "@claimsInvoiceFieldLabel": {
+    "description": "Localized text for claimsInvoiceFieldLabel."
+  },
+  "claimsAmountFieldLabel": "Amount",
+  "@claimsAmountFieldLabel": {
+    "description": "Localized text for claimsAmountFieldLabel."
+  },
+  "claimsBillingImpactTitle": "Billing impact",
+  "@claimsBillingImpactTitle": {
+    "description": "Localized text for claimsBillingImpactTitle."
+  },
+  "claimsAuthorizationBillingImpactBody": "Service clearance should wait for payer response where authorization is required.",
+  "@claimsAuthorizationBillingImpactBody": {
+    "description": "Localized text for claimsAuthorizationBillingImpactBody."
+  },
+  "claimsCoveragePercentLabel": "Coverage",
+  "@claimsCoveragePercentLabel": {
+    "description": "Localized text for claimsCoveragePercentLabel."
+  },
+  "claimsCoveragePercentValue": "{percent}%",
+  "@claimsCoveragePercentValue": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "claimsInvoiceStatusLabel": "Invoice status",
+  "@claimsInvoiceStatusLabel": {
+    "description": "Localized text for claimsInvoiceStatusLabel."
+  },
+  "claimsPatientBalanceLabel": "Patient balance",
+  "@claimsPatientBalanceLabel": {
+    "description": "Localized text for claimsPatientBalanceLabel."
+  },
+  "claimsBillingInvoiceUnavailableBody": "Invoice details are not available, so the patient balance cannot be confirmed here.",
+  "@claimsBillingInvoiceUnavailableBody": {
+    "description": "Localized text for claimsBillingInvoiceUnavailableBody."
+  },
+  "claimsBillingAuthorizedBody": "Authorized by payer. Confirm any uncovered balance before final clearance.",
+  "@claimsBillingAuthorizedBody": {
+    "description": "Localized text for claimsBillingAuthorizedBody."
+  },
+  "claimsBillingPaidBody": "Claim is paid or closed. Billing can use the latest invoice status for follow-up.",
+  "@claimsBillingPaidBody": {
+    "description": "Localized text for claimsBillingPaidBody."
+  },
+  "claimsBillingRejectedBody": "Rejected by payer. Billing staff should prepare resubmission or patient balance follow-up.",
+  "@claimsBillingRejectedBody": {
+    "description": "Localized text for claimsBillingRejectedBody."
+  },
+  "claimsBillingPendingBody": "Pending payer response. Keep billing clearance visible until the response is recorded.",
+  "@claimsBillingPendingBody": {
+    "description": "Localized text for claimsBillingPendingBody."
+  },
+  "claimsBillingNeutralBody": "Review invoice and payer state before clearing the service.",
+  "@claimsBillingNeutralBody": {
+    "description": "Localized text for claimsBillingNeutralBody."
+  },
+  "claimsRequiredDocumentsTitle": "Required documents",
+  "@claimsRequiredDocumentsTitle": {
+    "description": "Localized text for claimsRequiredDocumentsTitle."
+  },
+  "claimsRequiredDocumentsBody": "Document readiness is shown from available claim, invoice, and coverage data.",
+  "@claimsRequiredDocumentsBody": {
+    "description": "Localized text for claimsRequiredDocumentsBody."
+  },
+  "claimsDocumentInvoiceSummary": "Invoice summary",
+  "@claimsDocumentInvoiceSummary": {
+    "description": "Localized text for claimsDocumentInvoiceSummary."
+  },
+  "claimsDocumentCoveragePlan": "Coverage plan",
+  "@claimsDocumentCoveragePlan": {
+    "description": "Localized text for claimsDocumentCoveragePlan."
+  },
+  "claimsDocumentPayerResponse": "Payer response",
+  "@claimsDocumentPayerResponse": {
+    "description": "Localized text for claimsDocumentPayerResponse."
+  },
+  "claimsTimelineTitle": "Activity",
+  "@claimsTimelineTitle": {
+    "description": "Localized text for claimsTimelineTitle."
+  },
+  "claimsTimelineDescription": "Authorization, submission, and response timestamps from the backend.",
+  "@claimsTimelineDescription": {
+    "description": "Localized text for claimsTimelineDescription."
+  },
+  "claimsTimelineAuthorizationRequested": "Authorization requested",
+  "@claimsTimelineAuthorizationRequested": {
+    "description": "Localized text for claimsTimelineAuthorizationRequested."
+  },
+  "claimsTimelineAuthorizationResponded": "Authorization responded",
+  "@claimsTimelineAuthorizationResponded": {
+    "description": "Localized text for claimsTimelineAuthorizationResponded."
+  },
+  "claimsTimelineClaimSubmitted": "Claim submitted",
+  "@claimsTimelineClaimSubmitted": {
+    "description": "Localized text for claimsTimelineClaimSubmitted."
+  },
+  "claimsTimelineCurrentStatus": "Current status",
+  "@claimsTimelineCurrentStatus": {
+    "description": "Localized text for claimsTimelineCurrentStatus."
+  },
+  "claimsBackendGapTitle": "Backend gaps",
+  "@claimsBackendGapTitle": {
+    "description": "Localized text for claimsBackendGapTitle."
+  },
+  "claimsBackendGapDescription": "These items are shown as integration gaps because the current API does not expose dedicated endpoints for them.",
+  "@claimsBackendGapDescription": {
+    "description": "Localized text for claimsBackendGapDescription."
+  },
+  "claimsBackendGapDraftTitle": "Claim draft queue",
+  "@claimsBackendGapDraftTitle": {
+    "description": "Localized text for claimsBackendGapDraftTitle."
+  },
+  "claimsBackendGapDraftBody": "The claim API supports submitted, approved, rejected, paid, and cancelled states, but no draft status.",
+  "@claimsBackendGapDraftBody": {
+    "description": "Localized text for claimsBackendGapDraftBody."
+  },
+  "claimsBackendGapDocumentsTitle": "Document upload and requests",
+  "@claimsBackendGapDocumentsTitle": {
+    "description": "Localized text for claimsBackendGapDocumentsTitle."
+  },
+  "claimsBackendGapDocumentsBody": "Required document tracking is not yet backed by a document request endpoint.",
+  "@claimsBackendGapDocumentsBody": {
+    "description": "Localized text for claimsBackendGapDocumentsBody."
+  },
+  "claimsBackendGapReportsTitle": "Generated payer packs",
+  "@claimsBackendGapReportsTitle": {
+    "description": "Localized text for claimsBackendGapReportsTitle."
+  },
+  "claimsBackendGapReportsBody": "Printable payer packs should move to report templates when the reports plan is implemented.",
+  "@claimsBackendGapReportsBody": {
+    "description": "Localized text for claimsBackendGapReportsBody."
+  },
+  "claimsCoveragePlanFieldLabel": "Coverage plan",
+  "@claimsCoveragePlanFieldLabel": {
+    "description": "Localized text for claimsCoveragePlanFieldLabel."
+  },
+  "claimsCoveragePlanHint": "Select payer coverage",
+  "@claimsCoveragePlanHint": {
+    "description": "Localized text for claimsCoveragePlanHint."
+  },
+  "claimsCoveragePlanRequiredMessage": "Select a coverage plan.",
+  "@claimsCoveragePlanRequiredMessage": {
+    "description": "Localized text for claimsCoveragePlanRequiredMessage."
+  },
+  "claimsCoverageUnavailableTitle": "Coverage plans unavailable",
+  "@claimsCoverageUnavailableTitle": {
+    "description": "Localized text for claimsCoverageUnavailableTitle."
+  },
+  "claimsCoverageUnavailableBody": "Coverage plans could not be loaded, so authorization cannot be requested yet.",
+  "@claimsCoverageUnavailableBody": {
+    "description": "Localized text for claimsCoverageUnavailableBody."
+  },
+  "claimsRequestAuthorizationSubmitAction": "Request authorization",
+  "@claimsRequestAuthorizationSubmitAction": {
+    "description": "Localized text for claimsRequestAuthorizationSubmitAction."
+  },
+  "claimsPrepareClaimDialogTitle": "Prepare claim",
+  "@claimsPrepareClaimDialogTitle": {
+    "description": "Localized text for claimsPrepareClaimDialogTitle."
+  },
+  "claimsPrepareClaimSubmitAction": "Prepare and submit",
+  "@claimsPrepareClaimSubmitAction": {
+    "description": "Localized text for claimsPrepareClaimSubmitAction."
+  },
+  "claimsInvoiceHint": "Select invoice",
+  "@claimsInvoiceHint": {
+    "description": "Localized text for claimsInvoiceHint."
+  },
+  "claimsInvoiceRequiredMessage": "Select an invoice.",
+  "@claimsInvoiceRequiredMessage": {
+    "description": "Localized text for claimsInvoiceRequiredMessage."
+  },
+  "claimsPrepareClaimUnavailableTitle": "Claim inputs unavailable",
+  "@claimsPrepareClaimUnavailableTitle": {
+    "description": "Localized text for claimsPrepareClaimUnavailableTitle."
+  },
+  "claimsPrepareClaimUnavailableBody": "A coverage plan and invoice are required before a claim can be prepared.",
+  "@claimsPrepareClaimUnavailableBody": {
+    "description": "Localized text for claimsPrepareClaimUnavailableBody."
+  },
+  "claimsAuthorizationStatusFieldLabel": "Authorization status",
+  "@claimsAuthorizationStatusFieldLabel": {
+    "description": "Localized text for claimsAuthorizationStatusFieldLabel."
+  },
+  "claimsStatusRequiredMessage": "Select a status.",
+  "@claimsStatusRequiredMessage": {
+    "description": "Localized text for claimsStatusRequiredMessage."
+  },
+  "claimsUpdateStatusSubmitAction": "Update status",
+  "@claimsUpdateStatusSubmitAction": {
+    "description": "Localized text for claimsUpdateStatusSubmitAction."
+  },
+  "claimsNotesFieldLabel": "Notes",
+  "@claimsNotesFieldLabel": {
+    "description": "Localized text for claimsNotesFieldLabel."
+  },
+  "claimsSubmitClaimSubmitAction": "Submit claim",
+  "@claimsSubmitClaimSubmitAction": {
+    "description": "Localized text for claimsSubmitClaimSubmitAction."
+  },
+  "claimsClaimResponseFieldLabel": "Payer response",
+  "@claimsClaimResponseFieldLabel": {
+    "description": "Localized text for claimsClaimResponseFieldLabel."
+  },
+  "claimsSavedMessage": "Claims workspace updated.",
+  "@claimsSavedMessage": {
+    "description": "Localized text for claimsSavedMessage."
+  },
+  "claimsRequestAuthorizationDialogTitle": "Request pre-authorization",
+  "@claimsRequestAuthorizationDialogTitle": {
+    "description": "Localized text for claimsRequestAuthorizationDialogTitle."
+  },
+  "claimsUpdateAuthorizationDialogTitle": "Update authorization status",
+  "@claimsUpdateAuthorizationDialogTitle": {
+    "description": "Localized text for claimsUpdateAuthorizationDialogTitle."
+  },
+  "claimsSubmitClaimDialogTitle": "Submit claim",
+  "@claimsSubmitClaimDialogTitle": {
+    "description": "Localized text for claimsSubmitClaimDialogTitle."
+  },
+  "claimsRecordResponseDialogTitle": "Record payer response",
+  "@claimsRecordResponseDialogTitle": {
+    "description": "Localized text for claimsRecordResponseDialogTitle."
+  },
+  "claimsRecordResponseSubmitAction": "Record response",
+  "@claimsRecordResponseSubmitAction": {
+    "description": "Localized text for claimsRecordResponseSubmitAction."
+  },
+  "claimsCloseClaimDialogTitle": "Close claim",
+  "@claimsCloseClaimDialogTitle": {
+    "description": "Localized text for claimsCloseClaimDialogTitle."
+  },
+  "claimsCloseClaimSubmitAction": "Close as paid",
+  "@claimsCloseClaimSubmitAction": {
+    "description": "Localized text for claimsCloseClaimSubmitAction."
+  },
+  "claimsUpdateStatusAction": "Update status",
+  "@claimsUpdateStatusAction": {
+    "description": "Localized text for claimsUpdateStatusAction."
+  },
+  "claimsSubmitClaimAction": "Submit claim",
+  "@claimsSubmitClaimAction": {
+    "description": "Localized text for claimsSubmitClaimAction."
+  },
+  "claimsResubmitClaimAction": "Resubmit claim",
+  "@claimsResubmitClaimAction": {
+    "description": "Localized text for claimsResubmitClaimAction."
+  },
+  "claimsRecordResponseAction": "Record response",
+  "@claimsRecordResponseAction": {
+    "description": "Localized text for claimsRecordResponseAction."
+  },
+  "claimsCloseClaimAction": "Close as paid",
+  "@claimsCloseClaimAction": {
+    "description": "Localized text for claimsCloseClaimAction."
+  },
+  "claimsFilterAll": "All queues",
+  "@claimsFilterAll": {
+    "description": "Localized text for claimsFilterAll."
+  },
+  "claimsFilterAuthorizationPending": "Authorization pending",
+  "@claimsFilterAuthorizationPending": {
+    "description": "Localized text for claimsFilterAuthorizationPending."
+  },
+  "claimsFilterAuthorizationApproved": "Authorization approved",
+  "@claimsFilterAuthorizationApproved": {
+    "description": "Localized text for claimsFilterAuthorizationApproved."
+  },
+  "claimsFilterAuthorizationDenied": "Authorization denied",
+  "@claimsFilterAuthorizationDenied": {
+    "description": "Localized text for claimsFilterAuthorizationDenied."
+  },
+  "claimsFilterAuthorizationExpired": "Authorization expired",
+  "@claimsFilterAuthorizationExpired": {
+    "description": "Localized text for claimsFilterAuthorizationExpired."
+  },
+  "claimsFilterClaimSubmitted": "Claim submitted",
+  "@claimsFilterClaimSubmitted": {
+    "description": "Localized text for claimsFilterClaimSubmitted."
+  },
+  "claimsFilterClaimApproved": "Claim approved",
+  "@claimsFilterClaimApproved": {
+    "description": "Localized text for claimsFilterClaimApproved."
+  },
+  "claimsFilterClaimRejected": "Claim rejected",
+  "@claimsFilterClaimRejected": {
+    "description": "Localized text for claimsFilterClaimRejected."
+  },
+  "claimsFilterClaimPaid": "Claim paid",
+  "@claimsFilterClaimPaid": {
+    "description": "Localized text for claimsFilterClaimPaid."
+  },
+  "claimsFilterClaimCancelled": "Claim cancelled",
+  "@claimsFilterClaimCancelled": {
+    "description": "Localized text for claimsFilterClaimCancelled."
+  },
+  "claimsStatusPending": "Pending",
+  "@claimsStatusPending": {
+    "description": "Localized text for claimsStatusPending."
+  },
+  "claimsStatusApproved": "Approved",
+  "@claimsStatusApproved": {
+    "description": "Localized text for claimsStatusApproved."
+  },
+  "claimsStatusDenied": "Denied",
+  "@claimsStatusDenied": {
+    "description": "Localized text for claimsStatusDenied."
+  },
+  "claimsStatusExpired": "Expired",
+  "@claimsStatusExpired": {
+    "description": "Localized text for claimsStatusExpired."
+  },
+  "claimsStatusSubmitted": "Submitted",
+  "@claimsStatusSubmitted": {
+    "description": "Localized text for claimsStatusSubmitted."
+  },
+  "claimsStatusRejected": "Rejected",
+  "@claimsStatusRejected": {
+    "description": "Localized text for claimsStatusRejected."
+  },
+  "claimsStatusPaid": "Paid",
+  "@claimsStatusPaid": {
+    "description": "Localized text for claimsStatusPaid."
+  },
+  "claimsStatusCancelled": "Cancelled",
+  "@claimsStatusCancelled": {
+    "description": "Localized text for claimsStatusCancelled."
+  },
+  "claimsAuthorizationTypeLabel": "Authorization",
+  "@claimsAuthorizationTypeLabel": {
+    "description": "Localized text for claimsAuthorizationTypeLabel."
+  },
+  "claimsClaimTypeLabel": "Claim",
+  "@claimsClaimTypeLabel": {
+    "description": "Localized text for claimsClaimTypeLabel."
+  },
+  "claimsAuthorizationTitle": "Coverage authorization",
+  "@claimsAuthorizationTitle": {
+    "description": "Localized text for claimsAuthorizationTitle."
+  },
+  "claimsClaimPatientTitle": "Claim patient",
+  "@claimsClaimPatientTitle": {
+    "description": "Localized text for claimsClaimPatientTitle."
+  },
+  "claimsAuthorizationSubtitle": "Payer coverage request",
+  "@claimsAuthorizationSubtitle": {
+    "description": "Localized text for claimsAuthorizationSubtitle."
+  },
+  "claimsClaimSubtitle": "Claim {claimId}",
+  "@claimsClaimSubtitle": {
+    "placeholders": {
+      "claimId": {
+        "type": "String"
+      }
+    }
+  },
+  "claimsAuthorizationStatementTitle": "Pre-authorization statement",
+  "@claimsAuthorizationStatementTitle": {
+    "description": "Localized text for claimsAuthorizationStatementTitle."
+  },
+  "claimsClaimStatementTitle": "Claim statement",
+  "@claimsClaimStatementTitle": {
+    "description": "Localized text for claimsClaimStatementTitle."
+  },
+  "claimsReportGeneratedLabel": "Generated",
+  "@claimsReportGeneratedLabel": {
+    "description": "Localized text for claimsReportGeneratedLabel."
+  },
+  "claimsReportFooter": "Generated from backend-backed claims and billing data.",
+  "@claimsReportFooter": {
+    "description": "Localized text for claimsReportFooter."
   }
 }

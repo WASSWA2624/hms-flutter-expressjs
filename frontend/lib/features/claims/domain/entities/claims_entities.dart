@@ -316,9 +316,7 @@ final class ClaimsWorkspaceState {
         ClaimsQueueKind.authorization =>
           status == 'PENDING' || status == 'DENIED',
         ClaimsQueueKind.claim =>
-          status == 'SUBMITTED' ||
-              status == 'APPROVED' ||
-              status == 'REJECTED',
+          status == 'SUBMITTED' || status == 'APPROVED' || status == 'REJECTED',
       };
     }).length;
   }
@@ -349,10 +347,7 @@ final class ClaimsWorkspaceState {
     );
   }
 
-  int _count({
-    required ClaimsQueueKind kind,
-    required Set<String> statuses,
-  }) {
+  int _count({required ClaimsQueueKind kind, required Set<String> statuses}) {
     return queue.items.where((ClaimsQueueItem item) {
       return item.kind == kind && statuses.contains(item.status.toUpperCase());
     }).length;

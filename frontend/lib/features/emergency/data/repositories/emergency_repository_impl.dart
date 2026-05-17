@@ -77,7 +77,9 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
             trips: trips,
           ),
         )
-        .where((EmergencyCaseSummary item) => _belongsToScope(item, query.scope))
+        .where(
+          (EmergencyCaseSummary item) => _belongsToScope(item, query.scope),
+        )
         .toList(growable: false);
 
     return Result<AppPage<EmergencyCaseSummary>>.success(
@@ -429,10 +431,8 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
     String? notes,
     bool closeCase = true,
   }) async {
-    final String handoffNote = _joinDisplay(<String?>[
-          'Handoff to $destination.',
-          notes,
-        ]) ??
+    final String handoffNote =
+        _joinDisplay(<String?>['Handoff to $destination.', notes]) ??
         'Handoff to $destination.';
     final Result<EmergencyResponseRecord> responseResult = await _apiClient
         .post<EmergencyResponseRecord>(

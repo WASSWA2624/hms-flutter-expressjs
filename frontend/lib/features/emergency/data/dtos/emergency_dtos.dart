@@ -53,7 +53,8 @@ final class EmergencyCaseDto {
 
     return EmergencyCaseSummary(
       id: id,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       tenantId: _string(json['tenant_id']),
       tenantLabel:
           _string(json['tenant_display_id']) ??
@@ -68,7 +69,8 @@ final class EmergencyCaseDto {
       patientDisplayId:
           _string(json['patient_display_id']) ??
           _string(patient['human_friendly_id']),
-      patientDisplayName: _string(json['patient_display_name']) ?? nestedPatientName,
+      patientDisplayName:
+          _string(json['patient_display_name']) ?? nestedPatientName,
       severity: _string(json['severity']),
       status: _string(json['status']),
       createdAt: _date(json['created_at']),
@@ -85,7 +87,8 @@ final class EmergencyTriageAssessmentDto {
   EmergencyTriageAssessment toEntity() {
     return EmergencyTriageAssessment(
       id: _string(json['id']) ?? _string(json['display_id']) ?? '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       emergencyCaseId: _string(json['emergency_case_id']),
       emergencyCaseDisplayId: _string(json['emergency_case_display_id']),
       patientDisplayId: _string(json['patient_display_id']),
@@ -106,7 +109,8 @@ final class EmergencyResponseRecordDto {
   EmergencyResponseRecord toEntity() {
     return EmergencyResponseRecord(
       id: _string(json['id']) ?? _string(json['display_id']) ?? '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       emergencyCaseId: _string(json['emergency_case_id']),
       emergencyCaseDisplayId: _string(json['emergency_case_display_id']),
       patientDisplayId: _string(json['patient_display_id']),
@@ -128,8 +132,10 @@ final class EmergencyAmbulanceDto {
     final EmergencyJsonMap facility = _map(json['facility']);
     return EmergencyAmbulance(
       id: _string(json['id']) ?? _string(json['display_id']) ?? '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
-      identifier: _string(json['ambulance_label']) ?? _string(json['identifier']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      identifier:
+          _string(json['ambulance_label']) ?? _string(json['identifier']),
       status: _string(json['status']),
       facilityId: _string(json['facility_id']),
       facilityLabel:
@@ -148,7 +154,8 @@ final class EmergencyAmbulanceDispatchDto {
   EmergencyAmbulanceDispatch toEntity() {
     return EmergencyAmbulanceDispatch(
       id: _string(json['id']) ?? _string(json['display_id']) ?? '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       emergencyCaseId: _string(json['emergency_case_id']),
       emergencyCaseDisplayId: _string(json['emergency_case_display_id']),
       ambulanceId: _string(json['ambulance_id']),
@@ -174,7 +181,8 @@ final class EmergencyAmbulanceTripDto {
   EmergencyAmbulanceTrip toEntity() {
     return EmergencyAmbulanceTrip(
       id: _string(json['id']) ?? _string(json['display_id']) ?? '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       emergencyCaseId: _string(json['emergency_case_id']),
       emergencyCaseDisplayId: _string(json['emergency_case_display_id']),
       ambulanceId: _string(json['ambulance_id']),

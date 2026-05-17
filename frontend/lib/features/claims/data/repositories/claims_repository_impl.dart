@@ -59,10 +59,13 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
       }
     }
 
-    final List<ClaimsQueueItem> visibleItems = items
-        .where((ClaimsQueueItem item) => matchesClaimsSearch(item, query.search))
-        .toList(growable: false)
-      ..sort(_compareQueueItems);
+    final List<ClaimsQueueItem> visibleItems =
+        items
+            .where(
+              (ClaimsQueueItem item) => matchesClaimsSearch(item, query.search),
+            )
+            .toList(growable: false)
+          ..sort(_compareQueueItems);
     final bool isSearching = query.search.trim().isNotEmpty;
 
     return Result<AppPage<ClaimsQueueItem>>.success(
@@ -86,8 +89,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
   @override
   Future<Result<ClaimsReferenceData>> loadReferenceData() async {
     final AppPageRequest request = const AppPageRequest(pageSize: 50);
-    final Result<AppPage<CoveragePlanOption>> coverageResult =
-        await _apiClient.get<AppPage<CoveragePlanOption>>(
+    final Result<AppPage<CoveragePlanOption>> coverageResult = await _apiClient
+        .get<AppPage<CoveragePlanOption>>(
           ApiEndpoints.collection(HmsApiResource.coveragePlans),
           queryParameters: _withoutEmpty(<String, Object?>{
             'page': 1,
@@ -98,8 +101,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
           decoder: (Object? data) =>
               CoveragePlanPageDto.fromResponse(data, request).page,
         );
-    final Result<AppPage<ClaimInvoiceOption>> invoiceResult =
-        await _apiClient.get<AppPage<ClaimInvoiceOption>>(
+    final Result<AppPage<ClaimInvoiceOption>> invoiceResult = await _apiClient
+        .get<AppPage<ClaimInvoiceOption>>(
           ApiEndpoints.collection(HmsApiResource.invoices),
           queryParameters: _withoutEmpty(<String, Object?>{
             'page': 1,
@@ -159,7 +162,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
     return _apiClient.post<InsuranceClaimRecord>(
       ApiEndpoints.collection(HmsApiResource.insuranceClaims),
       data: _withoutEmpty(payload),
-      decoder: (Object? data) => InsuranceClaimDto.fromResponse(data).toEntity(),
+      decoder: (Object? data) =>
+          InsuranceClaimDto.fromResponse(data).toEntity(),
     );
   }
 
@@ -173,7 +177,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
         'submit',
       ]),
       data: _withoutEmpty(payload),
-      decoder: (Object? data) => InsuranceClaimDto.fromResponse(data).toEntity(),
+      decoder: (Object? data) =>
+          InsuranceClaimDto.fromResponse(data).toEntity(),
     );
   }
 
@@ -187,7 +192,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
         'reconcile',
       ]),
       data: _withoutEmpty(payload),
-      decoder: (Object? data) => InsuranceClaimDto.fromResponse(data).toEntity(),
+      decoder: (Object? data) =>
+          InsuranceClaimDto.fromResponse(data).toEntity(),
     );
   }
 
@@ -302,7 +308,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
     final Result<CoveragePlanOption> result = await _apiClient
         .get<CoveragePlanOption>(
           ApiEndpoints.byId(HmsApiResource.coveragePlans, id),
-          decoder: (Object? data) => CoveragePlanDto.fromResponse(data).toEntity(),
+          decoder: (Object? data) =>
+              CoveragePlanDto.fromResponse(data).toEntity(),
         );
 
     return result.when(
@@ -319,7 +326,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
     final Result<ClaimInvoiceOption> result = await _apiClient
         .get<ClaimInvoiceOption>(
           ApiEndpoints.byId(HmsApiResource.invoices, id),
-          decoder: (Object? data) => ClaimInvoiceDto.fromResponse(data).toEntity(),
+          decoder: (Object? data) =>
+              ClaimInvoiceDto.fromResponse(data).toEntity(),
         );
 
     return result.when(
@@ -351,7 +359,8 @@ int? _sumTotals(int? left, int? right) {
 }
 
 int _compareQueueItems(ClaimsQueueItem left, ClaimsQueueItem right) {
-  final DateTime leftDate = left.timelineAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  final DateTime leftDate =
+      left.timelineAt ?? DateTime.fromMillisecondsSinceEpoch(0);
   final DateTime rightDate =
       right.timelineAt ?? DateTime.fromMillisecondsSinceEpoch(0);
   return rightDate.compareTo(leftDate);

@@ -180,39 +180,49 @@ final class PharmacyOrder {
   final List<PharmacyAttestation> attestations;
 
   String get displayTitle {
-    return _firstNonEmpty(<String?>[patientDisplayName, patientId, displayId, id]) ??
+    return _firstNonEmpty(<String?>[
+          patientDisplayName,
+          patientId,
+          displayId,
+          id,
+        ]) ??
         id;
   }
 
   bool get hasPendingAttestation {
-    return pendingAttestationBatchCount > 0 || pendingAttestationBatches.isNotEmpty;
+    return pendingAttestationBatchCount > 0 ||
+        pendingAttestationBatches.isNotEmpty;
   }
 
   bool get canPrepareDispense {
-    return <String>['ORDERED', 'PARTIALLY_DISPENSED'].contains(
-          (status ?? '').toUpperCase(),
-        ) &&
+    return <String>[
+          'ORDERED',
+          'PARTIALLY_DISPENSED',
+        ].contains((status ?? '').toUpperCase()) &&
         !hasPendingAttestation &&
         items.any((PharmacyOrderItem item) => item.quantityRemaining > 0);
   }
 
   bool get canAttestDispense {
-    return <String>['ORDERED', 'PARTIALLY_DISPENSED'].contains(
-          (status ?? '').toUpperCase(),
-        ) &&
+    return <String>[
+          'ORDERED',
+          'PARTIALLY_DISPENSED',
+        ].contains((status ?? '').toUpperCase()) &&
         hasPendingAttestation;
   }
 
   bool get canCancel {
-    return <String>['ORDERED', 'PARTIALLY_DISPENSED'].contains(
-      (status ?? '').toUpperCase(),
-    );
+    return <String>[
+      'ORDERED',
+      'PARTIALLY_DISPENSED',
+    ].contains((status ?? '').toUpperCase());
   }
 
   bool get canReturn {
-    return <String>['DISPENSED', 'PARTIALLY_DISPENSED'].contains(
-          (status ?? '').toUpperCase(),
-        ) &&
+    return <String>[
+          'DISPENSED',
+          'PARTIALLY_DISPENSED',
+        ].contains((status ?? '').toUpperCase()) &&
         items.any((PharmacyOrderItem item) => item.quantityDispensed > 0);
   }
 

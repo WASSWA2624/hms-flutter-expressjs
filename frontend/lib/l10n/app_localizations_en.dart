@@ -4256,4 +4256,809 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dischargeLoadErrorBody =>
       'The discharge queue could not be loaded. Refresh to try again.';
+
+  @override
+  String get navigationPharmacyLabel => 'Pharmacy';
+
+  @override
+  String get pharmacyLoadingTitle => 'Loading pharmacy workspace';
+
+  @override
+  String get pharmacyLoadingBody =>
+      'Loading pharmacy orders, dispense state, and stock visibility.';
+
+  @override
+  String get pharmacyTitle => 'Pharmacy';
+
+  @override
+  String get pharmacyDescription =>
+      'Manage prescriptions, dispense handoff, returns, and drug stock visibility from one queue.';
+
+  @override
+  String get pharmacyStatusSaving => 'Saving';
+
+  @override
+  String get pharmacyStatusLiveSync => 'Live sync';
+
+  @override
+  String get pharmacyFiltersSemanticLabel => 'Pharmacy queue filters';
+
+  @override
+  String get pharmacySearchLabel => 'Search pharmacy';
+
+  @override
+  String get pharmacySearchHint =>
+      'Search patient, order, encounter, medication, or batch';
+
+  @override
+  String get pharmacyQueueFilterLabel => 'Queue filter';
+
+  @override
+  String get pharmacySummaryReadyLabel => 'Ready';
+
+  @override
+  String get pharmacySummaryPartialLabel => 'Partial';
+
+  @override
+  String get pharmacySummaryAttestationLabel => 'Awaiting attest';
+
+  @override
+  String get pharmacySummaryCompletedLabel => 'Completed';
+
+  @override
+  String get pharmacyQueuePanelTitle => 'Order queue';
+
+  @override
+  String get pharmacyQueuePanelDescription =>
+      'Backend-backed pharmacy orders with dispense and return actions.';
+
+  @override
+  String get pharmacyNoOrdersTitle => 'No pharmacy orders';
+
+  @override
+  String get pharmacyNoOrdersBody =>
+      'Orders matching this search and filter will appear here.';
+
+  @override
+  String get pharmacyPatientColumnLabel => 'Patient';
+
+  @override
+  String get pharmacyOrderColumnLabel => 'Order';
+
+  @override
+  String get pharmacyItemsColumnLabel => 'Items';
+
+  @override
+  String get pharmacyDispenseColumnLabel => 'Dispense';
+
+  @override
+  String get pharmacyStatusColumnLabel => 'Status';
+
+  @override
+  String get pharmacyPendingBatchLabel => 'Pending batch';
+
+  @override
+  String get pharmacyDetailLoadingTitle => 'Loading prescription';
+
+  @override
+  String get pharmacyDetailLoadingBody =>
+      'Loading medicines, dispense history, and workflow actions.';
+
+  @override
+  String get pharmacyNoSelectionTitle => 'No prescription selected';
+
+  @override
+  String get pharmacyNoSelectionBody =>
+      'Select an order to review medicines, stock mapping, billing gate visibility, and dispense history.';
+
+  @override
+  String get pharmacyBillingGateUnavailableTitle => 'Billing gate unavailable';
+
+  @override
+  String get pharmacyOrderFieldLabel => 'Order';
+
+  @override
+  String get pharmacyEncounterFieldLabel => 'Encounter';
+
+  @override
+  String get pharmacySourceFieldLabel => 'Source';
+
+  @override
+  String get pharmacyOrderedFieldLabel => 'Ordered';
+
+  @override
+  String get pharmacyActionsPanelTitle => 'Actions';
+
+  @override
+  String get pharmacyDispenseAction => 'Dispense';
+
+  @override
+  String get pharmacyPrepareDispenseAction => 'Prepare dispense';
+
+  @override
+  String get pharmacyAttestAction => 'Attest';
+
+  @override
+  String get pharmacyReturnAction => 'Return';
+
+  @override
+  String get pharmacyCancelOrderAction => 'Cancel order';
+
+  @override
+  String get pharmacyPrintInstructionsAction => 'Print instructions';
+
+  @override
+  String get pharmacyMedicationPanelTitle => 'Medicines';
+
+  @override
+  String get pharmacyMedicationPanelDescription =>
+      'Drug, dose, route, frequency, duration, quantity, instructions, and dispense state.';
+
+  @override
+  String get pharmacyNoMedicationTitle => 'No medicines';
+
+  @override
+  String get pharmacyNoMedicationBody =>
+      'This order has no medicines exposed by the pharmacy workflow API.';
+
+  @override
+  String get pharmacyMedicationColumnLabel => 'Medication';
+
+  @override
+  String get pharmacyDoseColumnLabel => 'Dose';
+
+  @override
+  String get pharmacyQuantityColumnLabel => 'Quantity';
+
+  @override
+  String get pharmacyStockColumnLabel => 'Stock';
+
+  @override
+  String get pharmacyBackendGapsTitle => 'Backend sync gaps';
+
+  @override
+  String get pharmacyBackendGapsBody =>
+      'The confirmed API does not yet expose every state requested by the pharmacy plan.';
+
+  @override
+  String get pharmacyGapPaymentAuthorization =>
+      'Payment and authorization status is not present on pharmacy order workflow responses.';
+
+  @override
+  String get pharmacyGapBatchAvailability =>
+      'Drug batch availability is not attached to order items; only inventory item mapping is available.';
+
+  @override
+  String get pharmacyGapHoldSubstitution =>
+      'Hold and drug substitution actions do not have confirmed pharmacy workflow routes.';
+
+  @override
+  String get pharmacyGapReportTemplates =>
+      'Medication printouts use local HTML until report-template routes expose pharmacy templates.';
+
+  @override
+  String get pharmacyTimelinePanelTitle => 'Dispense history';
+
+  @override
+  String get pharmacyTimelinePanelDescription =>
+      'Order placement, prepare, attest, dispense, and return events from the workflow API.';
+
+  @override
+  String get pharmacyNoTimelineBody => 'No dispense history is available yet.';
+
+  @override
+  String get pharmacyDrugPanelTitle => 'Formulary and stock';
+
+  @override
+  String get pharmacyDrugPanelDescription =>
+      'Search configured drugs and review aggregate stock visibility from the confirmed pharmacy API.';
+
+  @override
+  String get pharmacyDrugFiltersSemanticLabel => 'Drug stock filters';
+
+  @override
+  String get pharmacyDrugSearchLabel => 'Search drugs';
+
+  @override
+  String get pharmacyDrugSearchHint => 'Search drug, code, form, or strength';
+
+  @override
+  String get pharmacyStockStatusFilterLabel => 'Stock status';
+
+  @override
+  String get pharmacyNoDrugsTitle => 'No drugs found';
+
+  @override
+  String get pharmacyNoDrugsBody =>
+      'Matching formulary drugs and stock rows will appear here.';
+
+  @override
+  String get pharmacyDrugColumnLabel => 'Drug';
+
+  @override
+  String get pharmacyAvailableColumnLabel => 'Available';
+
+  @override
+  String get pharmacyStockStatusColumnLabel => 'Stock status';
+
+  @override
+  String pharmacyAvailableQuantityLabel(String quantity) {
+    return '$quantity available';
+  }
+
+  @override
+  String get pharmacyDispenseDialogTitle => 'Prepare dispense';
+
+  @override
+  String get pharmacyAttestDialogTitle => 'Attest dispense';
+
+  @override
+  String get pharmacyAttestDialogBody =>
+      'Confirm the prepared batch after physical medication handoff.';
+
+  @override
+  String get pharmacyReturnDialogTitle => 'Return medicines';
+
+  @override
+  String get pharmacyReturnDialogBody =>
+      'Record returned quantities so order status and stock are synchronized.';
+
+  @override
+  String get pharmacyCancelDialogTitle => 'Cancel pharmacy order';
+
+  @override
+  String get pharmacyCancelDialogBody =>
+      'Cancel only when the order should no longer be dispensed.';
+
+  @override
+  String get pharmacyBillingGateUnavailableBody =>
+      'Payment clearance is visible as a backend gap because the pharmacy workflow response does not include invoice or payment state.';
+
+  @override
+  String get pharmacyBatchRefLabel => 'Batch reference';
+
+  @override
+  String get pharmacyStatementLabel => 'Statement';
+
+  @override
+  String get pharmacyReasonLabel => 'Reason';
+
+  @override
+  String get pharmacyNotesLabel => 'Notes';
+
+  @override
+  String get pharmacyQuantityFieldLabel => 'Quantity';
+
+  @override
+  String get pharmacyInventoryItemLabel => 'Inventory item';
+
+  @override
+  String pharmacyQuantityValidationLabel(String maximum) {
+    return 'Enter a quantity from 0 to $maximum.';
+  }
+
+  @override
+  String get pharmacySavedMessage => 'Pharmacy workflow updated.';
+
+  @override
+  String get pharmacyFilterAll => 'All orders';
+
+  @override
+  String get pharmacyFilterReady => 'Ready';
+
+  @override
+  String get pharmacyFilterPartial => 'Partial';
+
+  @override
+  String get pharmacyFilterCompleted => 'Completed';
+
+  @override
+  String get pharmacyFilterCancelled => 'Cancelled';
+
+  @override
+  String get pharmacyFilterPendingPayment => 'Pending payment - backend gap';
+
+  @override
+  String get pharmacyFilterPartialStock => 'Partial stock - backend gap';
+
+  @override
+  String get pharmacyFilterUrgent => 'Urgent - backend gap';
+
+  @override
+  String get pharmacyFilterDischarge => 'Discharge - backend gap';
+
+  @override
+  String get pharmacyStockInStock => 'In stock';
+
+  @override
+  String get pharmacyStockAlmostOut => 'Almost out';
+
+  @override
+  String get pharmacyStockLow => 'Low stock';
+
+  @override
+  String get pharmacyStockOut => 'Out of stock';
+
+  @override
+  String get pharmacyStockUnknown => 'Stock unknown';
+
+  @override
+  String get pharmacyUnknownStatusLabel => 'Unknown';
+
+  @override
+  String get pharmacyStockMappingUnavailable => 'Stock mapping unavailable';
+
+  @override
+  String pharmacyTimelineMedicationEvent(String medication, String status) {
+    return '$medication $status';
+  }
+
+  @override
+  String pharmacyTimelineBatchEvent(String type, String batch) {
+    return '$type $batch';
+  }
+
+  @override
+  String get pharmacyTimelineOrderPlaced => 'Order placed';
+
+  @override
+  String pharmacyDispenseProgressLabel(String dispensed, String prescribed) {
+    return '$dispensed / $prescribed';
+  }
+
+  @override
+  String get pharmacyReportTitle => 'Medication instructions';
+
+  @override
+  String get pharmacyReportPatientLabel => 'Patient';
+
+  @override
+  String get pharmacyReportOrderLabel => 'Order';
+
+  @override
+  String get pharmacyReportGeneratedLabel => 'Generated';
+
+  @override
+  String get pharmacyReportFooter =>
+      'Generated from confirmed pharmacy workflow data.';
+
+  @override
+  String get navigationClaimsLabel => 'Claims';
+
+  @override
+  String get claimsWorkspaceTitle => 'Insurance and claims';
+
+  @override
+  String get claimsWorkspaceDescription =>
+      'Manage authorizations, payer responses, claim submission, resubmission, and invoice follow-up.';
+
+  @override
+  String get claimsOperationalStatusLabel => 'Billing synced';
+
+  @override
+  String get claimsNeedsAttentionStatusLabel => 'Needs attention';
+
+  @override
+  String get claimsLoadingTitle => 'Loading claims';
+
+  @override
+  String get claimsLoadingBody => 'Fetching authorization and claim queues.';
+
+  @override
+  String get claimsLoadErrorTitle => 'Claims unavailable';
+
+  @override
+  String get claimsLoadErrorBody => 'The claims workspace could not be loaded.';
+
+  @override
+  String get claimsRequestAuthorizationAction => 'Request authorization';
+
+  @override
+  String get claimsPrepareClaimAction => 'Prepare claim';
+
+  @override
+  String get claimsAuthorizationPendingSummaryLabel => 'Auth pending';
+
+  @override
+  String get claimsAuthorizationApprovedSummaryLabel => 'Auth approved';
+
+  @override
+  String get claimsSubmittedSummaryLabel => 'Submitted';
+
+  @override
+  String get claimsRejectedSummaryLabel => 'Rejected';
+
+  @override
+  String get claimsApprovedSummaryLabel => 'Approved';
+
+  @override
+  String get claimsPaidClosedSummaryLabel => 'Paid/closed';
+
+  @override
+  String get claimsSearchSemanticLabel => 'Search claims and authorizations';
+
+  @override
+  String get claimsSearchHint =>
+      'Search reference, coverage, invoice, or patient';
+
+  @override
+  String get claimsQueueFilterLabel => 'Queue';
+
+  @override
+  String get claimsWorklistTitle => 'Claims worklist';
+
+  @override
+  String get claimsWorklistDescription =>
+      'Review pre-authorizations and claim records backed by the billing API.';
+
+  @override
+  String get claimsPreviousPageLabel => 'Previous claims page';
+
+  @override
+  String get claimsNextPageLabel => 'Next claims page';
+
+  @override
+  String claimsPageLabel(int start, int end, int total) {
+    return '$start - $end of $total';
+  }
+
+  @override
+  String get claimsEmptyQueueTitle => 'No claims found';
+
+  @override
+  String get claimsEmptyQueueBody =>
+      'No authorization or claim records match the current queue.';
+
+  @override
+  String get claimsTypeColumnLabel => 'Type';
+
+  @override
+  String get claimsReferenceColumnLabel => 'Reference';
+
+  @override
+  String get claimsCoverageColumnLabel => 'Coverage';
+
+  @override
+  String get claimsInvoiceColumnLabel => 'Invoice';
+
+  @override
+  String get claimsStatusColumnLabel => 'Status';
+
+  @override
+  String get claimsTimelineColumnLabel => 'Updated';
+
+  @override
+  String claimsMobileQueueSubtitle(String coverage, String link) {
+    return 'Coverage $coverage | Link $link';
+  }
+
+  @override
+  String get claimsDetailTitle => 'Claim detail';
+
+  @override
+  String get claimsDetailLoadingTitle => 'Loading detail';
+
+  @override
+  String get claimsDetailLoadingBody =>
+      'Fetching payer, invoice, and coverage context.';
+
+  @override
+  String get claimsNoSelectionTitle => 'Select a record';
+
+  @override
+  String get claimsNoSelectionBody =>
+      'Choose a row to review coverage, billing impact, and next actions.';
+
+  @override
+  String get claimsPrintStatementAction => 'Print statement';
+
+  @override
+  String get claimsPatientContextLabel => 'Claim patient and coverage context';
+
+  @override
+  String get claimsCoverageFieldLabel => 'Coverage';
+
+  @override
+  String get claimsPayerFieldLabel => 'Payer';
+
+  @override
+  String get claimsUnknownPayerLabel => 'Payer not recorded';
+
+  @override
+  String get claimsInvoiceFieldLabel => 'Invoice';
+
+  @override
+  String get claimsAmountFieldLabel => 'Amount';
+
+  @override
+  String get claimsBillingImpactTitle => 'Billing impact';
+
+  @override
+  String get claimsAuthorizationBillingImpactBody =>
+      'Service clearance should wait for payer response where authorization is required.';
+
+  @override
+  String get claimsCoveragePercentLabel => 'Coverage';
+
+  @override
+  String claimsCoveragePercentValue(String percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get claimsInvoiceStatusLabel => 'Invoice status';
+
+  @override
+  String get claimsPatientBalanceLabel => 'Patient balance';
+
+  @override
+  String get claimsBillingInvoiceUnavailableBody =>
+      'Invoice details are not available, so the patient balance cannot be confirmed here.';
+
+  @override
+  String get claimsBillingAuthorizedBody =>
+      'Authorized by payer. Confirm any uncovered balance before final clearance.';
+
+  @override
+  String get claimsBillingPaidBody =>
+      'Claim is paid or closed. Billing can use the latest invoice status for follow-up.';
+
+  @override
+  String get claimsBillingRejectedBody =>
+      'Rejected by payer. Billing staff should prepare resubmission or patient balance follow-up.';
+
+  @override
+  String get claimsBillingPendingBody =>
+      'Pending payer response. Keep billing clearance visible until the response is recorded.';
+
+  @override
+  String get claimsBillingNeutralBody =>
+      'Review invoice and payer state before clearing the service.';
+
+  @override
+  String get claimsRequiredDocumentsTitle => 'Required documents';
+
+  @override
+  String get claimsRequiredDocumentsBody =>
+      'Document readiness is shown from available claim, invoice, and coverage data.';
+
+  @override
+  String get claimsDocumentInvoiceSummary => 'Invoice summary';
+
+  @override
+  String get claimsDocumentCoveragePlan => 'Coverage plan';
+
+  @override
+  String get claimsDocumentPayerResponse => 'Payer response';
+
+  @override
+  String get claimsTimelineTitle => 'Activity';
+
+  @override
+  String get claimsTimelineDescription =>
+      'Authorization, submission, and response timestamps from the backend.';
+
+  @override
+  String get claimsTimelineAuthorizationRequested => 'Authorization requested';
+
+  @override
+  String get claimsTimelineAuthorizationResponded => 'Authorization responded';
+
+  @override
+  String get claimsTimelineClaimSubmitted => 'Claim submitted';
+
+  @override
+  String get claimsTimelineCurrentStatus => 'Current status';
+
+  @override
+  String get claimsBackendGapTitle => 'Backend gaps';
+
+  @override
+  String get claimsBackendGapDescription =>
+      'These items are shown as integration gaps because the current API does not expose dedicated endpoints for them.';
+
+  @override
+  String get claimsBackendGapDraftTitle => 'Claim draft queue';
+
+  @override
+  String get claimsBackendGapDraftBody =>
+      'The claim API supports submitted, approved, rejected, paid, and cancelled states, but no draft status.';
+
+  @override
+  String get claimsBackendGapDocumentsTitle => 'Document upload and requests';
+
+  @override
+  String get claimsBackendGapDocumentsBody =>
+      'Required document tracking is not yet backed by a document request endpoint.';
+
+  @override
+  String get claimsBackendGapReportsTitle => 'Generated payer packs';
+
+  @override
+  String get claimsBackendGapReportsBody =>
+      'Printable payer packs should move to report templates when the reports plan is implemented.';
+
+  @override
+  String get claimsCoveragePlanFieldLabel => 'Coverage plan';
+
+  @override
+  String get claimsCoveragePlanHint => 'Select payer coverage';
+
+  @override
+  String get claimsCoveragePlanRequiredMessage => 'Select a coverage plan.';
+
+  @override
+  String get claimsCoverageUnavailableTitle => 'Coverage plans unavailable';
+
+  @override
+  String get claimsCoverageUnavailableBody =>
+      'Coverage plans could not be loaded, so authorization cannot be requested yet.';
+
+  @override
+  String get claimsRequestAuthorizationSubmitAction => 'Request authorization';
+
+  @override
+  String get claimsPrepareClaimDialogTitle => 'Prepare claim';
+
+  @override
+  String get claimsPrepareClaimSubmitAction => 'Prepare and submit';
+
+  @override
+  String get claimsInvoiceHint => 'Select invoice';
+
+  @override
+  String get claimsInvoiceRequiredMessage => 'Select an invoice.';
+
+  @override
+  String get claimsPrepareClaimUnavailableTitle => 'Claim inputs unavailable';
+
+  @override
+  String get claimsPrepareClaimUnavailableBody =>
+      'A coverage plan and invoice are required before a claim can be prepared.';
+
+  @override
+  String get claimsAuthorizationStatusFieldLabel => 'Authorization status';
+
+  @override
+  String get claimsStatusRequiredMessage => 'Select a status.';
+
+  @override
+  String get claimsUpdateStatusSubmitAction => 'Update status';
+
+  @override
+  String get claimsNotesFieldLabel => 'Notes';
+
+  @override
+  String get claimsSubmitClaimSubmitAction => 'Submit claim';
+
+  @override
+  String get claimsClaimResponseFieldLabel => 'Payer response';
+
+  @override
+  String get claimsSavedMessage => 'Claims workspace updated.';
+
+  @override
+  String get claimsRequestAuthorizationDialogTitle =>
+      'Request pre-authorization';
+
+  @override
+  String get claimsUpdateAuthorizationDialogTitle =>
+      'Update authorization status';
+
+  @override
+  String get claimsSubmitClaimDialogTitle => 'Submit claim';
+
+  @override
+  String get claimsRecordResponseDialogTitle => 'Record payer response';
+
+  @override
+  String get claimsRecordResponseSubmitAction => 'Record response';
+
+  @override
+  String get claimsCloseClaimDialogTitle => 'Close claim';
+
+  @override
+  String get claimsCloseClaimSubmitAction => 'Close as paid';
+
+  @override
+  String get claimsUpdateStatusAction => 'Update status';
+
+  @override
+  String get claimsSubmitClaimAction => 'Submit claim';
+
+  @override
+  String get claimsResubmitClaimAction => 'Resubmit claim';
+
+  @override
+  String get claimsRecordResponseAction => 'Record response';
+
+  @override
+  String get claimsCloseClaimAction => 'Close as paid';
+
+  @override
+  String get claimsFilterAll => 'All queues';
+
+  @override
+  String get claimsFilterAuthorizationPending => 'Authorization pending';
+
+  @override
+  String get claimsFilterAuthorizationApproved => 'Authorization approved';
+
+  @override
+  String get claimsFilterAuthorizationDenied => 'Authorization denied';
+
+  @override
+  String get claimsFilterAuthorizationExpired => 'Authorization expired';
+
+  @override
+  String get claimsFilterClaimSubmitted => 'Claim submitted';
+
+  @override
+  String get claimsFilterClaimApproved => 'Claim approved';
+
+  @override
+  String get claimsFilterClaimRejected => 'Claim rejected';
+
+  @override
+  String get claimsFilterClaimPaid => 'Claim paid';
+
+  @override
+  String get claimsFilterClaimCancelled => 'Claim cancelled';
+
+  @override
+  String get claimsStatusPending => 'Pending';
+
+  @override
+  String get claimsStatusApproved => 'Approved';
+
+  @override
+  String get claimsStatusDenied => 'Denied';
+
+  @override
+  String get claimsStatusExpired => 'Expired';
+
+  @override
+  String get claimsStatusSubmitted => 'Submitted';
+
+  @override
+  String get claimsStatusRejected => 'Rejected';
+
+  @override
+  String get claimsStatusPaid => 'Paid';
+
+  @override
+  String get claimsStatusCancelled => 'Cancelled';
+
+  @override
+  String get claimsAuthorizationTypeLabel => 'Authorization';
+
+  @override
+  String get claimsClaimTypeLabel => 'Claim';
+
+  @override
+  String get claimsAuthorizationTitle => 'Coverage authorization';
+
+  @override
+  String get claimsClaimPatientTitle => 'Claim patient';
+
+  @override
+  String get claimsAuthorizationSubtitle => 'Payer coverage request';
+
+  @override
+  String claimsClaimSubtitle(String claimId) {
+    return 'Claim $claimId';
+  }
+
+  @override
+  String get claimsAuthorizationStatementTitle => 'Pre-authorization statement';
+
+  @override
+  String get claimsClaimStatementTitle => 'Claim statement';
+
+  @override
+  String get claimsReportGeneratedLabel => 'Generated';
+
+  @override
+  String get claimsReportFooter =>
+      'Generated from backend-backed claims and billing data.';
 }

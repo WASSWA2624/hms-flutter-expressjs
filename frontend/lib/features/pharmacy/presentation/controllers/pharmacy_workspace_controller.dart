@@ -8,10 +8,11 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
-final pharmacyWorkspaceControllerProvider = AsyncNotifierProvider<
-  PharmacyWorkspaceController,
-  Result<PharmacyWorkspaceState>
->(PharmacyWorkspaceController.new);
+final pharmacyWorkspaceControllerProvider =
+    AsyncNotifierProvider<
+      PharmacyWorkspaceController,
+      Result<PharmacyWorkspaceState>
+    >(PharmacyWorkspaceController.new);
 
 final class PharmacyWorkspaceController
     extends AsyncNotifier<Result<PharmacyWorkspaceState>> {
@@ -118,10 +119,7 @@ final class PharmacyWorkspaceController
         final PharmacyWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingDetail: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
           );
         }
         return failure;
@@ -218,10 +216,7 @@ final class PharmacyWorkspaceController
     );
   }
 
-  Future<AppFailure?> cancelOrder({
-    required String reason,
-    String? notes,
-  }) {
+  Future<AppFailure?> cancelOrder({required String reason, String? notes}) {
     return _mutateSelected(
       (PharmacyOrderWorkflow workflow) => _repository.cancelOrder(
         orderId: workflow.order.id,

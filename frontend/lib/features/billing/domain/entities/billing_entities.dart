@@ -89,7 +89,11 @@ final class BillingSummary {
   final num refundsTodayTotal;
 
   int get workloadCount {
-    return needsIssue + pendingPayment + claimsPending + approvalRequired + overdue;
+    return needsIssue +
+        pendingPayment +
+        claimsPending +
+        approvalRequired +
+        overdue;
   }
 
   int countFor(BillingQueueType queue) {

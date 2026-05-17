@@ -80,9 +80,11 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         'dispense_batch_ref': dispenseBatchRef,
         'statement': statement,
         'reason': reason,
-        'items': items.map((PharmacyDispenseLineInput item) {
-          return _withoutEmpty(item.toJson());
-        }).toList(growable: false),
+        'items': items
+            .map((PharmacyDispenseLineInput item) {
+              return _withoutEmpty(item.toJson());
+            })
+            .toList(growable: false),
       }),
       decoder: (Object? data) =>
           PharmacyMutationResultDto.fromResponse(data).toEntity(),
@@ -118,10 +120,7 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   }) {
     return _apiClient.post<PharmacyMutationResult>(
       _pharmacyOrderEndpoint(orderId, 'cancel'),
-      data: _withoutEmpty(<String, Object?>{
-        'reason': reason,
-        'notes': notes,
-      }),
+      data: _withoutEmpty(<String, Object?>{'reason': reason, 'notes': notes}),
       decoder: (Object? data) =>
           PharmacyMutationResultDto.fromResponse(data).toEntity(),
     );
@@ -139,9 +138,11 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
       data: _withoutEmpty(<String, Object?>{
         'reason': reason,
         'notes': notes,
-        'items': items.map((PharmacyReturnLineInput item) {
-          return _withoutEmpty(item.toJson());
-        }).toList(growable: false),
+        'items': items
+            .map((PharmacyReturnLineInput item) {
+              return _withoutEmpty(item.toJson());
+            })
+            .toList(growable: false),
       }),
       decoder: (Object? data) =>
           PharmacyMutationResultDto.fromResponse(data).toEntity(),

@@ -7,9 +7,10 @@ import 'package:hosspi_hms/features/claims/domain/repositories/claims_repository
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final claimsWorkspaceControllerProvider =
-    AsyncNotifierProvider<ClaimsWorkspaceController, Result<ClaimsWorkspaceState>>(
-      ClaimsWorkspaceController.new,
-    );
+    AsyncNotifierProvider<
+      ClaimsWorkspaceController,
+      Result<ClaimsWorkspaceState>
+    >(ClaimsWorkspaceController.new);
 
 final class ClaimsWorkspaceController
     extends AsyncNotifier<Result<ClaimsWorkspaceState>> {
@@ -221,14 +222,13 @@ final class ClaimsWorkspaceController
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<InsuranceClaimRecord> result = await _repository.prepareClaim(
-      <String, Object?>{
-        'coverage_plan_id': coveragePlanId,
-        'invoice_id': invoiceId,
-        'status': 'SUBMITTED',
-        'submitted_at': _nowIso(),
-      },
-    );
+    final Result<InsuranceClaimRecord> result = await _repository
+        .prepareClaim(<String, Object?>{
+          'coverage_plan_id': coveragePlanId,
+          'invoice_id': invoiceId,
+          'status': 'SUBMITTED',
+          'submitted_at': _nowIso(),
+        });
 
     return result.when<Future<AppFailure?>>(
       success: (InsuranceClaimRecord claim) async {

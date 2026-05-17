@@ -15,12 +15,21 @@ import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
+import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
+import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
+import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
+import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
+import 'package:hosspi_hms/features/claims/presentation/controllers/claims_workspace_controller.dart';
+import 'package:hosspi_hms/features/claims/presentation/pages/claims_workspace_page.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
 import 'package:hosspi_hms/features/discharge/presentation/pages/discharge_workspace_page.dart';
+import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
+import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
+import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
@@ -28,6 +37,9 @@ import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.da
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
+import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
+import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
+import 'package:hosspi_hms/features/lab/presentation/pages/lab_workspace_page.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
@@ -35,6 +47,9 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
 import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
@@ -89,9 +104,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const PatientRegistryPage(),
           ),
           GoRoute(
+            path: AppRoutes.billing.path,
+            name: AppRoutes.billing.name,
+            builder: (_, _) => const BillingWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.claims.path,
+            name: AppRoutes.claims.name,
+            builder: (_, _) => const ClaimsWorkspacePage(),
+          ),
+          GoRoute(
             path: AppRoutes.opd.path,
             name: AppRoutes.opd.name,
             builder: (_, _) => const OpdWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.emergency.path,
+            name: AppRoutes.emergency.name,
+            builder: (_, _) => const EmergencyWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.ipd.path,
@@ -112,6 +142,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.clinical.path,
             name: AppRoutes.clinical.name,
             builder: (_, _) => const ClinicalWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.lab.path,
+            name: AppRoutes.lab.name,
+            builder: (_, _) => const LabWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.pharmacy.path,
+            name: AppRoutes.pharmacy.name,
+            builder: (_, _) => const PharmacyWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.discharge.path,
@@ -197,11 +237,16 @@ final class _ShellDestinationRoute {
 
 List<_ShellDestinationRoute> _localizedShellDestinations(
   AppLocalizations l10n, {
+  int? billingWorkloadCount,
+  int? claimsWorkloadCount,
   int? opdWorkloadCount,
+  int? emergencyWorkloadCount,
   int? ipdWorkloadCount,
   int? icuCriticalCount,
   int? nursingWorkloadCount,
   int? clinicalWorkloadCount,
+  int? labWorkloadCount,
+  int? pharmacyWorkloadCount,
   int? dischargeWorkloadCount,
   int? theaterWorkloadCount,
 }) {
@@ -223,12 +268,39 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.billing,
+      destination: ResponsiveShellDestination(
+        label: 'Billing',
+        icon: Icons.point_of_sale_outlined,
+        selectedIcon: Icons.point_of_sale,
+        badgeCount: billingWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.claims,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationClaimsLabel,
+        icon: Icons.policy_outlined,
+        selectedIcon: Icons.policy,
+        badgeCount: claimsWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.opd,
       destination: ResponsiveShellDestination(
         label: l10n.navigationOpdLabel,
         icon: Icons.local_hospital_outlined,
         selectedIcon: Icons.local_hospital,
         badgeCount: opdWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.emergency,
+      destination: ResponsiveShellDestination(
+        label: 'Emergency',
+        icon: Icons.emergency_outlined,
+        selectedIcon: Icons.emergency,
+        badgeCount: emergencyWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -265,6 +337,24 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         icon: Icons.medical_information_outlined,
         selectedIcon: Icons.medical_information,
         badgeCount: clinicalWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.lab,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationLabLabel,
+        icon: Icons.science_outlined,
+        selectedIcon: Icons.science,
+        badgeCount: labWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.pharmacy,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationPharmacyLabel,
+        icon: Icons.medication_liquid_outlined,
+        selectedIcon: Icons.medication_liquid,
+        badgeCount: pharmacyWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -314,7 +404,19 @@ class _AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canAccessBilling = _canAccessShellRoute(
+      AppRoutes.billing,
+      accessPolicy,
+    );
+    final bool canAccessClaims = _canAccessShellRoute(
+      AppRoutes.claims,
+      accessPolicy,
+    );
     final bool canAccessOpd = _canAccessShellRoute(AppRoutes.opd, accessPolicy);
+    final bool canAccessEmergency = _canAccessShellRoute(
+      AppRoutes.emergency,
+      accessPolicy,
+    );
     final bool canAccessIpd = _canAccessShellRoute(AppRoutes.ipd, accessPolicy);
     final bool canAccessIcu = _canAccessShellRoute(AppRoutes.icu, accessPolicy);
     final bool canAccessNursing = _canAccessShellRoute(
@@ -323,6 +425,11 @@ class _AppShell extends ConsumerWidget {
     );
     final bool canAccessClinical = _canAccessShellRoute(
       AppRoutes.clinical,
+      accessPolicy,
+    );
+    final bool canAccessLab = _canAccessShellRoute(AppRoutes.lab, accessPolicy);
+    final bool canAccessPharmacy = _canAccessShellRoute(
+      AppRoutes.pharmacy,
       accessPolicy,
     );
     final bool canAccessDischarge = _canAccessShellRoute(
@@ -340,6 +447,18 @@ class _AppShell extends ConsumerWidget {
               ?.value
               .when(
                 success: (OpdWorkspaceState state) => state.workloadCount,
+                failure: (_) => null,
+              )
+        : null;
+    final int? emergencyWorkloadCount = canAccessEmergency
+        ? ref
+              .watch(emergencyWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (EmergencyWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
                 failure: (_) => null,
               )
         : null;
@@ -395,6 +514,54 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
+    final int? labWorkloadCount = canAccessLab
+        ? ref
+              .watch(labWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (LabWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? billingWorkloadCount = canAccessBilling
+        ? ref
+              .watch(billingWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (BillingWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? claimsWorkloadCount = canAccessClaims
+        ? ref
+              .watch(claimsWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (ClaimsWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? pharmacyWorkloadCount = canAccessPharmacy
+        ? ref
+              .watch(pharmacyWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (PharmacyWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
     final int? dischargeWorkloadCount = canAccessDischarge
         ? ref
               .watch(dischargeWorkspaceControllerProvider)
@@ -422,11 +589,16 @@ class _AppShell extends ConsumerWidget {
     final List<_ShellDestinationRoute> shellDestinations =
         _localizedShellDestinations(
               l10n,
+              billingWorkloadCount: billingWorkloadCount,
+              claimsWorkloadCount: claimsWorkloadCount,
               opdWorkloadCount: opdWorkloadCount,
+              emergencyWorkloadCount: emergencyWorkloadCount,
               ipdWorkloadCount: ipdWorkloadCount,
               icuCriticalCount: icuCriticalCount,
               nursingWorkloadCount: nursingWorkloadCount,
               clinicalWorkloadCount: clinicalWorkloadCount,
+              labWorkloadCount: labWorkloadCount,
+              pharmacyWorkloadCount: pharmacyWorkloadCount,
               dischargeWorkloadCount: dischargeWorkloadCount,
               theaterWorkloadCount: theaterWorkloadCount,
             )

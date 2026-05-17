@@ -116,7 +116,8 @@ final class BillingWorkItemDto {
         json['human_friendly_id'],
       ]),
       kind: kind,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       tenantId: _string(json['tenant_id']),
       facilityId: _string(json['facility_id']),
       patientId: _string(json['patient_id']),
@@ -238,7 +239,8 @@ final class BillingPaymentDto {
         json['display_id'],
         json['human_friendly_id'],
       ]),
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       status: _string(json['status']),
       method: _string(json['method']),
       amount: _num(json['amount']) ?? 0,
@@ -260,7 +262,8 @@ final class BillingAdjustmentDto {
         json['display_id'],
         json['human_friendly_id'],
       ]),
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       status: _string(json['status']),
       amount: _num(json['amount']) ?? 0,
       reason: _string(json['reason']),
@@ -330,7 +333,8 @@ BillingWorkItemKind _kind(BillingJsonMap json, BillingQueueType fallbackQueue) {
   if (type == 'ADJUSTMENT') {
     return BillingWorkItemKind.adjustment;
   }
-  if (type == 'APPROVAL' || fallbackQueue == BillingQueueType.approvalRequired) {
+  if (type == 'APPROVAL' ||
+      fallbackQueue == BillingQueueType.approvalRequired) {
     return BillingWorkItemKind.approval;
   }
   if (type == 'PRE_AUTH') {
@@ -358,9 +362,10 @@ List<BillingJsonMap> _list(Object? value) {
   if (value is! List) {
     return const <BillingJsonMap>[];
   }
-  return value.map(_map).where((BillingJsonMap item) => item.isNotEmpty).toList(
-        growable: false,
-      );
+  return value
+      .map(_map)
+      .where((BillingJsonMap item) => item.isNotEmpty)
+      .toList(growable: false);
 }
 
 String _firstString(Iterable<Object?> values) {
