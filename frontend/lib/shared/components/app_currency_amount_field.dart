@@ -324,7 +324,7 @@ class _AppCurrencyAmountFieldState extends State<AppCurrencyAmountField> {
 }
 
 class CurrencyAmountInputFormatter extends TextInputFormatter {
-  const CurrencyAmountInputFormatter({this.decimalDigits = 2});
+  const CurrencyAmountInputFormatter({this.decimalDigits});
 
   final int? decimalDigits;
 
