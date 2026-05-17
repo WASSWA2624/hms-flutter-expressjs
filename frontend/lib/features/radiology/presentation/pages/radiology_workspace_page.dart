@@ -1278,6 +1278,7 @@ Future<void> _showStudyDialog(
   WidgetRef ref,
   RadiologyOrder order,
 ) async {
+  final AppLocalizations l10n = context.l10n;
   final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
     context: context,
     title: Text(l10n.radiologyPerformStudyDialogTitle),
@@ -1577,7 +1578,6 @@ Future<void> _showFinalizationNoteDialog(
   String submitLabel,
   _RadiologyResultMutation submit,
 ) async {
-  final AppLocalizations l10n = context.l10n;
   final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
     context: context,
     title: Text(title),

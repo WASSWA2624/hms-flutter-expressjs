@@ -607,7 +607,10 @@ final class RadiologyReferenceOption {
 
   String get displayLabel {
     final String normalizedSubtitle = subtitle?.trim() ?? '';
-    return normalizedSubtitle.isEmpty ? label : '$label | $normalizedSubtitle';
+    if (normalizedSubtitle.isEmpty) {
+      return label;
+    }
+    return '$label | $normalizedSubtitle';
   }
 }
 

@@ -351,7 +351,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
     _ShellDestinationRoute(
       route: AppRoutes.lab,
       destination: ResponsiveShellDestination(
-        label: 'Lab',
+        label: l10n.navigationLabLabel,
         icon: Icons.science_outlined,
         selectedIcon: Icons.science,
         badgeCount: labWorkloadCount,
@@ -360,7 +360,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
     _ShellDestinationRoute(
       route: AppRoutes.radiology,
       destination: ResponsiveShellDestination(
-        label: 'Radiology',
+        label: l10n.navigationRadiologyLabel,
         icon: Icons.image_search_outlined,
         selectedIcon: Icons.image_search,
         badgeCount: radiologyWorkloadCount,

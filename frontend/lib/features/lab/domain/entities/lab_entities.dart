@@ -49,7 +49,7 @@ final class LabWorkbenchSummary {
     this.rejectedSamples = 0,
   });
 
-  const LabWorkbenchSummary.empty();
+  const LabWorkbenchSummary.empty() : this();
 
   final int totalOrders;
   final int collectionQueue;

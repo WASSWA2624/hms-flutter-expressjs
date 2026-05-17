@@ -2440,7 +2440,6 @@ AppWorkspaceStatus _resultStatus(BuildContext context, LabOrderSummary order) {
   }
   return AppWorkspaceStatus(
     label: context.l10n.labStatusOrdered,
-    tone: AppWorkspaceStatusTone.neutral,
     icon: Icons.radio_button_unchecked,
   );
 }
