@@ -266,7 +266,7 @@ class _NursingWorklistPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.nursingWorklistTitle,
       description: l10n.nursingWorklistDescription,
-      child: AppPaginatedDataList<NursingPatientSummary>(
+      child: AppPaginatedListTable<NursingPatientSummary>(
         page: state.worklist,
         isLoading: state.isRefreshing,
         previousPageLabel: l10n.opdPreviousPageLabel,
@@ -282,32 +282,32 @@ class _NursingWorklistPanel extends ConsumerWidget {
           body: l10n.nursingNoWorklistBody,
           icon: Icons.assignment_outlined,
         ),
-        columns: <AppDataColumn<NursingPatientSummary>>[
-          AppDataColumn<NursingPatientSummary>(
+        columns: <AppListTableColumn<NursingPatientSummary>>[
+          AppListTableColumn<NursingPatientSummary>(
             label: l10n.opdPatientColumnLabel,
             cellBuilder: (BuildContext context, NursingPatientSummary item) {
               return _NursingPatientCell(item: item);
             },
           ),
-          AppDataColumn<NursingPatientSummary>(
+          AppListTableColumn<NursingPatientSummary>(
             label: l10n.nursingLocationColumnLabel,
             cellBuilder: (BuildContext context, NursingPatientSummary item) {
               return Text(item.locationLabel ?? l10n.profileUnknownValue);
             },
           ),
-          AppDataColumn<NursingPatientSummary>(
+          AppListTableColumn<NursingPatientSummary>(
             label: l10n.opdStatusColumnLabel,
             cellBuilder: (BuildContext context, NursingPatientSummary item) {
               return AppWorkspaceStatusBadge(status: _summaryStatus(item));
             },
           ),
-          AppDataColumn<NursingPatientSummary>(
+          AppListTableColumn<NursingPatientSummary>(
             label: l10n.nursingDueActionColumnLabel,
             cellBuilder: (BuildContext context, NursingPatientSummary item) {
               return Text(_dueActionLabel(context, item));
             },
           ),
-          AppDataColumn<NursingPatientSummary>(
+          AppListTableColumn<NursingPatientSummary>(
             label: l10n.nursingLastObservationColumnLabel,
             cellBuilder: (BuildContext context, NursingPatientSummary item) {
               return Text(_lastObservationLabel(context, item));

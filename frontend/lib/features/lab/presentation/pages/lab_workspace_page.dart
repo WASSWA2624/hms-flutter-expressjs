@@ -256,7 +256,7 @@ class _LabWorklistPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.labWorklistTitle,
       description: l10n.labWorklistDescription,
-      child: AppPaginatedDataList<LabOrderSummary>(
+      child: AppPaginatedListTable<LabOrderSummary>(
         page: state.worklist,
         isLoading: state.isRefreshing,
         previousPageLabel: l10n.labPreviousPageLabel,
@@ -271,26 +271,26 @@ class _LabWorklistPanel extends ConsumerWidget {
           body: l10n.labNoOrdersBody,
           icon: Icons.science_outlined,
         ),
-        columns: <AppDataColumn<LabOrderSummary>>[
-          AppDataColumn<LabOrderSummary>(
+        columns: <AppListTableColumn<LabOrderSummary>>[
+          AppListTableColumn<LabOrderSummary>(
             label: l10n.labPatientColumnLabel,
             cellBuilder: (_, LabOrderSummary item) {
               return _LabOrderIdentity(order: item);
             },
           ),
-          AppDataColumn<LabOrderSummary>(
+          AppListTableColumn<LabOrderSummary>(
             label: l10n.labOrderColumnLabel,
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return Text(item.displayId ?? item.id);
             },
           ),
-          AppDataColumn<LabOrderSummary>(
+          AppListTableColumn<LabOrderSummary>(
             label: l10n.labTestsColumnLabel,
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return Text(item.testsLabel ?? l10n.profileUnknownValue);
             },
           ),
-          AppDataColumn<LabOrderSummary>(
+          AppListTableColumn<LabOrderSummary>(
             label: l10n.labSampleColumnLabel,
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return AppWorkspaceStatusBadge(
@@ -298,7 +298,7 @@ class _LabWorklistPanel extends ConsumerWidget {
               );
             },
           ),
-          AppDataColumn<LabOrderSummary>(
+          AppListTableColumn<LabOrderSummary>(
             label: l10n.labResultColumnLabel,
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return AppWorkspaceStatusBadge(
@@ -306,7 +306,7 @@ class _LabWorklistPanel extends ConsumerWidget {
               );
             },
           ),
-          AppDataColumn<LabOrderSummary>(
+          AppListTableColumn<LabOrderSummary>(
             label: l10n.labNextActionColumnLabel,
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return Text(_nextActionLabel(context, item));

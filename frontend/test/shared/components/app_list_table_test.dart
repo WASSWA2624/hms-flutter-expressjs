@@ -12,14 +12,14 @@ void main() {
     _RowItem(id: '2', title: 'Beta', status: 'Draft'),
   ];
 
-  testWidgets('AppDataList uses mobile row builders on small screens', (
+  testWidgets('AppListTable uses mobile row builders on small screens', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
       tester,
       SizedBox(
         height: 360,
-        child: AppDataList<_RowItem>(
+        child: AppListTable<_RowItem>(
           items: items,
           columns: _columns,
           itemKeyBuilder: (_RowItem item) => ValueKey<String>(item.id),
@@ -38,7 +38,7 @@ void main() {
     expect(find.text('Title'), findsNothing);
   });
 
-  testWidgets('AppDataList mobile rows activate from the keyboard', (
+  testWidgets('AppListTable mobile rows activate from the keyboard', (
     WidgetTester tester,
   ) async {
     _RowItem? selectedItem;
@@ -47,7 +47,7 @@ void main() {
       tester,
       SizedBox(
         height: 360,
-        child: AppDataList<_RowItem>(
+        child: AppListTable<_RowItem>(
           items: items,
           columns: _columns,
           mobileItemBuilder: (BuildContext context, _RowItem item) {
@@ -69,14 +69,14 @@ void main() {
     expect(selectedItem, items.first);
   });
 
-  testWidgets('AppDataList uses table columns on wider screens', (
+  testWidgets('AppListTable uses table columns on wider screens', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
       tester,
       SizedBox(
         height: 360,
-        child: AppDataList<_RowItem>(
+        child: AppListTable<_RowItem>(
           items: items,
           columns: _columns,
           mobileItemBuilder: (BuildContext context, _RowItem item) {
@@ -92,7 +92,30 @@ void main() {
     expect(find.text('Alpha'), findsOneWidget);
   });
 
-  testWidgets('AppDataList builds mobile rows lazily', (
+  testWidgets('AppListTable can force list rendering on wide screens', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          displayMode: AppListTableDisplayMode.list,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return ListTile(title: Text('List ${item.title}'));
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.byType(DataTable), findsNothing);
+    expect(find.text('List Alpha'), findsOneWidget);
+  });
+
+  testWidgets('AppListTable builds mobile rows lazily', (
     WidgetTester tester,
   ) async {
     final pagedItems = List<_RowItem>.generate(1000, (int index) {
@@ -104,7 +127,7 @@ void main() {
       tester,
       SizedBox(
         height: 120,
-        child: AppDataList<_RowItem>(
+        child: AppListTable<_RowItem>(
           items: pagedItems,
           columns: _columns,
           mobileItemBuilder: (BuildContext context, _RowItem item) {
@@ -121,7 +144,57 @@ void main() {
     expect(find.text('Item 999'), findsNothing);
   });
 
-  testWidgets('AppPaginatedDataList wires page controls to page requests', (
+  testWidgets('AppListTable attaches AppSearchBar and filters visible items', (
+    WidgetTester tester,
+  ) async {
+    final searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 420,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          search: AppListTableSearch<_RowItem>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            hintText: 'Search',
+            clearLabel: 'Clear search',
+            matcher: (_RowItem item, String query) {
+              final String normalizedQuery = query.toLowerCase();
+              return item.title.toLowerCase().contains(normalizedQuery) ||
+                  item.status.toLowerCase().contains(normalizedQuery);
+            },
+          ),
+          emptyBuilder: (_) => const Text('No rows'),
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    expect(find.byType(AppSearchBar), findsOneWidget);
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Beta'), findsOneWidget);
+
+    await tester.enterText(find.byType(EditableText), 'draft');
+    await tester.pump();
+
+    expect(find.text('Alpha'), findsNothing);
+    expect(find.text('Beta'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Clear search'));
+    await tester.pump();
+
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Beta'), findsOneWidget);
+  });
+
+  testWidgets('AppPaginatedListTable wires page controls to page requests', (
     WidgetTester tester,
   ) async {
     AppPageRequest? nextRequest;
@@ -130,7 +203,7 @@ void main() {
       tester,
       SizedBox(
         height: 360,
-        child: AppPaginatedDataList<_RowItem>(
+        child: AppPaginatedListTable<_RowItem>(
           page: const AppPage<_RowItem>(
             items: items,
             request: AppPageRequest(pageIndex: 1, pageSize: 2),
@@ -187,7 +260,7 @@ void main() {
     expect(nextRequest, const AppPageRequest(pageIndex: 2));
   });
 
-  testWidgets('AppSearchablePaginatedDataList filters rows in real time', (
+  testWidgets('AppSearchablePaginatedListTable filters rows in real time', (
     WidgetTester tester,
   ) async {
     final ValueNotifier<String> searchQuery = ValueNotifier<String>('');
@@ -197,7 +270,7 @@ void main() {
       tester,
       SizedBox(
         height: 360,
-        child: AppSearchablePaginatedDataList<_RowItem>(
+        child: AppSearchablePaginatedListTable<_RowItem>(
           page: const AppPage<_RowItem>(
             items: items,
             request: AppPageRequest(pageIndex: 1, pageSize: 2),
@@ -244,10 +317,11 @@ void main() {
   });
 }
 
-const List<AppDataColumn<_RowItem>> _columns = <AppDataColumn<_RowItem>>[
-  AppDataColumn<_RowItem>(label: 'Title', cellBuilder: _titleCell),
-  AppDataColumn<_RowItem>(label: 'Status', cellBuilder: _statusCell),
-];
+const List<AppListTableColumn<_RowItem>> _columns =
+    <AppListTableColumn<_RowItem>>[
+      AppListTableColumn<_RowItem>(label: 'Title', cellBuilder: _titleCell),
+      AppListTableColumn<_RowItem>(label: 'Status', cellBuilder: _statusCell),
+    ];
 
 Widget _titleCell(BuildContext context, _RowItem item) {
   return Text(item.title);

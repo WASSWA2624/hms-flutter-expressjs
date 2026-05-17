@@ -220,7 +220,7 @@ class _IpdBoardPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.ipdBoardTitle,
       description: l10n.ipdBoardDescription,
-      child: AppPaginatedDataList<IpdAdmissionSummary>(
+      child: AppPaginatedListTable<IpdAdmissionSummary>(
         page: state.admissions,
         isLoading: state.isRefreshing,
         previousPageLabel: l10n.opdPreviousPageLabel,
@@ -237,14 +237,14 @@ class _IpdBoardPanel extends ConsumerWidget {
           body: l10n.ipdNoAdmissionsBody,
           icon: Icons.bed_outlined,
         ),
-        columns: <AppDataColumn<IpdAdmissionSummary>>[
-          AppDataColumn<IpdAdmissionSummary>(
+        columns: <AppListTableColumn<IpdAdmissionSummary>>[
+          AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.opdPatientColumnLabel,
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return _IpdPatientCell(admission: item);
             },
           ),
-          AppDataColumn<IpdAdmissionSummary>(
+          AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.opdStatusColumnLabel,
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return AppWorkspaceStatusBadge(
@@ -252,19 +252,19 @@ class _IpdBoardPanel extends ConsumerWidget {
               );
             },
           ),
-          AppDataColumn<IpdAdmissionSummary>(
+          AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.ipdLocationColumnLabel,
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return Text(item.location ?? context.l10n.profileUnknownValue);
             },
           ),
-          AppDataColumn<IpdAdmissionSummary>(
+          AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.ipdPendingActionColumnLabel,
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return Text(_nextStepLabel(context, item.nextStep));
             },
           ),
-          AppDataColumn<IpdAdmissionSummary>(
+          AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.ipdAdmittedAtColumnLabel,
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return Text(_dateTimeLabel(context, item.admittedAt));

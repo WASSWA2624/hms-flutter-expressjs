@@ -4,20 +4,143 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
-typedef AppDataCellBuilder<T> = Widget Function(BuildContext context, T item);
-typedef AppDataMobileItemBuilder<T> =
+typedef AppListTableCellBuilder<T> =
     Widget Function(BuildContext context, T item);
-typedef AppDataItemKeyBuilder<T> = LocalKey Function(T item);
-typedef AppDataPageLabelBuilder<T> = String Function(AppPage<T> page);
-typedef AppDataRowColorBuilder<T> =
+typedef AppListTableMobileItemBuilder<T> =
+    Widget Function(BuildContext context, T item);
+typedef AppListTableItemKeyBuilder<T> = LocalKey Function(T item);
+typedef AppListTablePageLabelBuilder<T> = String Function(AppPage<T> page);
+typedef AppListTableRowColorBuilder<T> =
     Color? Function(BuildContext context, T item);
-typedef AppDataHeaderBuilder = Widget Function(BuildContext context);
-typedef AppDataSearchMatcher<T> = bool Function(T item, String query);
+typedef AppListTableHeaderBuilder = Widget Function(BuildContext context);
+typedef AppListTableSearchMatcher<T> = bool Function(T item, String query);
 
-class AppDataColumn<T> {
-  const AppDataColumn({
+enum AppListTableDisplayMode { adaptive, table, list }
+
+@immutable
+final class AppListTableSearch<T> {
+  const AppListTableSearch({
+    required this.controller,
+    required this.semanticLabel,
+    required this.matcher,
+    this.hintText,
+    this.clearLabel,
+    this.onChanged,
+    this.onSubmitted,
+    this.onClear,
+    this.enabled = true,
+    this.isLoading = false,
+    this.autofocus = false,
+    this.showClearButton = true,
+    this.focusNode,
+    this.showAdvancedFilterButton = false,
+    this.onAdvancedFilterPressed,
+    this.advancedFilterButtonLabel,
+    this.advancedFilterTitle,
+    this.advancedFilterApplyLabel,
+    this.advancedFilterResetLabel,
+    this.advancedFilterCancelLabel,
+    this.searchFields = const <AppSearchBarFieldChoice>[],
+    this.searchFieldLabel,
+    this.allFieldsLabel,
+    this.enableDateFilter = true,
+    this.dateFilterLabel,
+    this.dateFromLabel,
+    this.dateToLabel,
+    this.datePickerButtonLabel,
+    this.invalidDateMessage,
+    this.firstDate,
+    this.lastDate,
+    this.currentDate,
+    this.filterGroups = const <AppSearchBarFilterGroup>[],
+    this.filterValue = AppSearchBarFilterValue.empty,
+    this.onFilterChanged,
+    this.hasActiveFilters = false,
+  });
+
+  final TextEditingController controller;
+  final String semanticLabel;
+  final AppListTableSearchMatcher<T> matcher;
+  final String? hintText;
+  final String? clearLabel;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final VoidCallback? onClear;
+  final bool enabled;
+  final bool isLoading;
+  final bool autofocus;
+  final bool showClearButton;
+  final FocusNode? focusNode;
+  final bool showAdvancedFilterButton;
+  final VoidCallback? onAdvancedFilterPressed;
+  final String? advancedFilterButtonLabel;
+  final String? advancedFilterTitle;
+  final String? advancedFilterApplyLabel;
+  final String? advancedFilterResetLabel;
+  final String? advancedFilterCancelLabel;
+  final List<AppSearchBarFieldChoice> searchFields;
+  final String? searchFieldLabel;
+  final String? allFieldsLabel;
+  final bool enableDateFilter;
+  final String? dateFilterLabel;
+  final String? dateFromLabel;
+  final String? dateToLabel;
+  final String? datePickerButtonLabel;
+  final String? invalidDateMessage;
+  final DateTime? firstDate;
+  final DateTime? lastDate;
+  final DateTime? currentDate;
+  final List<AppSearchBarFilterGroup> filterGroups;
+  final AppSearchBarFilterValue filterValue;
+  final ValueChanged<AppSearchBarFilterValue>? onFilterChanged;
+  final bool hasActiveFilters;
+
+  Widget buildSearchBar(BuildContext context) {
+    return AppSearchBar(
+      controller: controller,
+      semanticLabel: semanticLabel,
+      hintText: hintText,
+      clearLabel: clearLabel,
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      onClear: onClear,
+      enabled: enabled,
+      isLoading: isLoading,
+      autofocus: autofocus,
+      showClearButton: showClearButton,
+      focusNode: focusNode,
+      showAdvancedFilterButton: showAdvancedFilterButton,
+      onAdvancedFilterPressed: onAdvancedFilterPressed,
+      advancedFilterButtonLabel: advancedFilterButtonLabel,
+      advancedFilterTitle: advancedFilterTitle,
+      advancedFilterApplyLabel: advancedFilterApplyLabel,
+      advancedFilterResetLabel: advancedFilterResetLabel,
+      advancedFilterCancelLabel: advancedFilterCancelLabel,
+      searchFields: searchFields,
+      searchFieldLabel: searchFieldLabel,
+      allFieldsLabel: allFieldsLabel,
+      enableDateFilter: enableDateFilter,
+      dateFilterLabel: dateFilterLabel,
+      dateFromLabel: dateFromLabel,
+      dateToLabel: dateToLabel,
+      datePickerButtonLabel: datePickerButtonLabel,
+      invalidDateMessage: invalidDateMessage,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      currentDate: currentDate,
+      filterGroups: filterGroups,
+      filterValue: filterValue,
+      onFilterChanged: onFilterChanged,
+      hasActiveFilters: hasActiveFilters,
+    );
+  }
+}
+
+class AppListTableColumn<T> {
+  const AppListTableColumn({
     required this.label,
     required this.cellBuilder,
     this.headerBuilder,
@@ -26,14 +149,14 @@ class AppDataColumn<T> {
   });
 
   final String label;
-  final AppDataCellBuilder<T> cellBuilder;
-  final AppDataHeaderBuilder? headerBuilder;
+  final AppListTableCellBuilder<T> cellBuilder;
+  final AppListTableHeaderBuilder? headerBuilder;
   final bool numeric;
   final String? tooltip;
 }
 
-class AppDataList<T> extends StatelessWidget {
-  const AppDataList({
+class AppListTable<T> extends StatelessWidget {
+  const AppListTable({
     required this.items,
     required this.columns,
     required this.mobileItemBuilder,
@@ -48,47 +171,72 @@ class AppDataList<T> extends StatelessWidget {
     this.error,
     this.shrinkWrap = false,
     this.physics,
+    this.displayMode = AppListTableDisplayMode.adaptive,
+    this.search,
     super.key,
   });
 
   final List<T> items;
-  final List<AppDataColumn<T>> columns;
-  final AppDataMobileItemBuilder<T> mobileItemBuilder;
-  final AppDataItemKeyBuilder<T>? itemKeyBuilder;
+  final List<AppListTableColumn<T>> columns;
+  final AppListTableMobileItemBuilder<T> mobileItemBuilder;
+  final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
   final WidgetBuilder? emptyBuilder;
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext context, Object error)? errorBuilder;
   final Widget? footer;
-  final AppDataRowColorBuilder<T>? rowColorBuilder;
+  final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final bool isLoading;
   final Object? error;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
+  final AppListTableDisplayMode displayMode;
+  final AppListTableSearch<T>? search;
 
   @override
   Widget build(BuildContext context) {
+    final AppListTableSearch<T>? resolvedSearch = search;
+    if (resolvedSearch == null) {
+      return _buildForItems(context, items);
+    }
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: resolvedSearch.controller,
+      builder: (BuildContext context, TextEditingValue value, _) {
+        final List<T> visibleItems = _filteredItems(
+          items,
+          value.text,
+          resolvedSearch.matcher,
+        );
+
+        return _ListTableSearchLayout(
+          searchBar: resolvedSearch.buildSearchBar(context),
+          shrinkWrap: shrinkWrap,
+          child: _buildForItems(context, visibleItems),
+        );
+      },
+    );
+  }
+
+  Widget _buildForItems(BuildContext context, List<T> visibleItems) {
     final Object? resolvedError = error;
     if (resolvedError != null && errorBuilder != null) {
       return errorBuilder!(context, resolvedError);
     }
 
     if (isLoading) {
-      return loadingBuilder?.call(context) ?? const _DefaultDataListLoading();
+      return loadingBuilder?.call(context) ?? const _DefaultListTableLoading();
     }
 
-    if (items.isEmpty && emptyBuilder != null) {
+    if (visibleItems.isEmpty && emptyBuilder != null) {
       return emptyBuilder!(context);
     }
 
     final Widget content = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final AppBreakpoint breakpoint = AppBreakpoints.fromConstraints(
-          constraints,
-        );
-        if (breakpoint.isMobile) {
-          return _MobileDataList<T>(
-            items: items,
+        if (_usesListLayout(constraints)) {
+          return _MobileListTable<T>(
+            items: visibleItems,
             itemBuilder: mobileItemBuilder,
             itemKeyBuilder: itemKeyBuilder,
             onRowSelected: onRowSelected,
@@ -98,8 +246,8 @@ class AppDataList<T> extends StatelessWidget {
           );
         }
 
-        return _DesktopDataTable<T>(
-          items: items,
+        return _DesktopListTable<T>(
+          items: visibleItems,
           columns: columns,
           itemKeyBuilder: itemKeyBuilder,
           onRowSelected: onRowSelected,
@@ -128,10 +276,63 @@ class AppDataList<T> extends StatelessWidget {
       ],
     );
   }
+
+  bool _usesListLayout(BoxConstraints constraints) {
+    return switch (displayMode) {
+      AppListTableDisplayMode.list => true,
+      AppListTableDisplayMode.table => false,
+      AppListTableDisplayMode.adaptive => AppBreakpoints.fromConstraints(
+        constraints,
+      ).isMobile,
+    };
+  }
+
+  List<T> _filteredItems(
+    List<T> sourceItems,
+    String query,
+    AppListTableSearchMatcher<T> matcher,
+  ) {
+    final String normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) {
+      return sourceItems;
+    }
+
+    return sourceItems
+        .where((T item) => matcher(item, normalizedQuery))
+        .toList(growable: false);
+  }
 }
 
-class AppPaginatedDataList<T> extends StatelessWidget {
-  const AppPaginatedDataList({
+class _ListTableSearchLayout extends StatelessWidget {
+  const _ListTableSearchLayout({
+    required this.searchBar,
+    required this.child,
+    required this.shrinkWrap,
+  });
+
+  final Widget searchBar;
+  final Widget child;
+  final bool shrinkWrap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<Widget> children = <Widget>[
+      searchBar,
+      SizedBox(height: theme.spacing.sm),
+      if (shrinkWrap) child else Expanded(child: child),
+    ];
+
+    return Column(
+      mainAxisSize: shrinkWrap ? MainAxisSize.min : MainAxisSize.max,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
+  }
+}
+
+class AppPaginatedListTable<T> extends StatelessWidget {
+  const AppPaginatedListTable({
     required this.page,
     required this.columns,
     required this.mobileItemBuilder,
@@ -149,30 +350,32 @@ class AppPaginatedDataList<T> extends StatelessWidget {
     this.error,
     this.shrinkWrap = false,
     this.physics,
+    this.displayMode = AppListTableDisplayMode.adaptive,
     super.key,
   });
 
   final AppPage<T> page;
-  final List<AppDataColumn<T>> columns;
-  final AppDataMobileItemBuilder<T> mobileItemBuilder;
-  final AppDataPageLabelBuilder<T> pageLabelBuilder;
+  final List<AppListTableColumn<T>> columns;
+  final AppListTableMobileItemBuilder<T> mobileItemBuilder;
+  final AppListTablePageLabelBuilder<T> pageLabelBuilder;
   final String previousPageLabel;
   final String nextPageLabel;
-  final AppDataItemKeyBuilder<T>? itemKeyBuilder;
+  final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
   final ValueChanged<AppPageRequest>? onPageChanged;
   final WidgetBuilder? emptyBuilder;
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext context, Object error)? errorBuilder;
-  final AppDataRowColorBuilder<T>? rowColorBuilder;
+  final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final bool isLoading;
   final Object? error;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
+  final AppListTableDisplayMode displayMode;
 
   @override
   Widget build(BuildContext context) {
-    return AppDataList<T>(
+    return AppListTable<T>(
       items: page.items,
       columns: columns,
       mobileItemBuilder: mobileItemBuilder,
@@ -186,6 +389,7 @@ class AppPaginatedDataList<T> extends StatelessWidget {
       error: error,
       shrinkWrap: shrinkWrap,
       physics: physics,
+      displayMode: displayMode,
       footer: AppPaginationControls(
         pageRequest: page.request,
         hasPreviousPage: page.hasPreviousPage,
@@ -199,8 +403,8 @@ class AppPaginatedDataList<T> extends StatelessWidget {
   }
 }
 
-class AppSearchablePaginatedDataList<T> extends StatelessWidget {
-  const AppSearchablePaginatedDataList({
+class AppSearchablePaginatedListTable<T> extends StatelessWidget {
+  const AppSearchablePaginatedListTable({
     required this.page,
     required this.columns,
     required this.mobileItemBuilder,
@@ -220,28 +424,30 @@ class AppSearchablePaginatedDataList<T> extends StatelessWidget {
     this.error,
     this.shrinkWrap = false,
     this.physics,
+    this.displayMode = AppListTableDisplayMode.adaptive,
     super.key,
   });
 
   final AppPage<T> page;
-  final List<AppDataColumn<T>> columns;
-  final AppDataMobileItemBuilder<T> mobileItemBuilder;
-  final AppDataPageLabelBuilder<T> pageLabelBuilder;
+  final List<AppListTableColumn<T>> columns;
+  final AppListTableMobileItemBuilder<T> mobileItemBuilder;
+  final AppListTablePageLabelBuilder<T> pageLabelBuilder;
   final String previousPageLabel;
   final String nextPageLabel;
   final ValueListenable<String> searchListenable;
-  final AppDataSearchMatcher<T> searchMatcher;
-  final AppDataItemKeyBuilder<T>? itemKeyBuilder;
+  final AppListTableSearchMatcher<T> searchMatcher;
+  final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
   final ValueChanged<AppPageRequest>? onPageChanged;
   final WidgetBuilder? emptyBuilder;
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext context, Object error)? errorBuilder;
-  final AppDataRowColorBuilder<T>? rowColorBuilder;
+  final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final bool isLoading;
   final Object? error;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
+  final AppListTableDisplayMode displayMode;
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +460,7 @@ class AppSearchablePaginatedDataList<T> extends StatelessWidget {
             ? _filteredPage(normalizedQuery)
             : page;
 
-        return AppPaginatedDataList<T>(
+        return AppPaginatedListTable<T>(
           page: visiblePage,
           columns: columns,
           mobileItemBuilder: mobileItemBuilder,
@@ -272,6 +478,7 @@ class AppSearchablePaginatedDataList<T> extends StatelessWidget {
           error: error,
           shrinkWrap: shrinkWrap,
           physics: physics,
+          displayMode: displayMode,
         );
       },
     );
@@ -351,8 +558,8 @@ class AppPaginationControls extends StatelessWidget {
   }
 }
 
-class _MobileDataList<T> extends StatelessWidget {
-  const _MobileDataList({
+class _MobileListTable<T> extends StatelessWidget {
+  const _MobileListTable({
     required this.items,
     required this.itemBuilder,
     required this.itemKeyBuilder,
@@ -363,12 +570,12 @@ class _MobileDataList<T> extends StatelessWidget {
   });
 
   final List<T> items;
-  final AppDataMobileItemBuilder<T> itemBuilder;
-  final AppDataItemKeyBuilder<T>? itemKeyBuilder;
+  final AppListTableMobileItemBuilder<T> itemBuilder;
+  final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
-  final AppDataRowColorBuilder<T>? rowColorBuilder;
+  final AppListTableRowColorBuilder<T>? rowColorBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -454,8 +661,8 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
   }
 }
 
-class _DesktopDataTable<T> extends StatefulWidget {
-  const _DesktopDataTable({
+class _DesktopListTable<T> extends StatefulWidget {
+  const _DesktopListTable({
     required this.items,
     required this.columns,
     required this.itemKeyBuilder,
@@ -465,17 +672,17 @@ class _DesktopDataTable<T> extends StatefulWidget {
   });
 
   final List<T> items;
-  final List<AppDataColumn<T>> columns;
-  final AppDataItemKeyBuilder<T>? itemKeyBuilder;
+  final List<AppListTableColumn<T>> columns;
+  final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
   final double minWidth;
-  final AppDataRowColorBuilder<T>? rowColorBuilder;
+  final AppListTableRowColorBuilder<T>? rowColorBuilder;
 
   @override
-  State<_DesktopDataTable<T>> createState() => _DesktopDataTableState<T>();
+  State<_DesktopListTable<T>> createState() => _DesktopListTableState<T>();
 }
 
-class _DesktopDataTableState<T> extends State<_DesktopDataTable<T>> {
+class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   late final ScrollController _horizontalController;
 
   @override
@@ -495,7 +702,7 @@ class _DesktopDataTableState<T> extends State<_DesktopDataTable<T>> {
     final Widget table = DataTable(
       showCheckboxColumn: false,
       columns: <DataColumn>[
-        for (final AppDataColumn<T> column in widget.columns)
+        for (final AppListTableColumn<T> column in widget.columns)
           DataColumn(
             numeric: column.numeric,
             tooltip: column.tooltip,
@@ -513,7 +720,7 @@ class _DesktopDataTableState<T> extends State<_DesktopDataTable<T>> {
                     widget.onRowSelected!(item);
                   },
             cells: <DataCell>[
-              for (final AppDataColumn<T> column in widget.columns)
+              for (final AppListTableColumn<T> column in widget.columns)
                 DataCell(column.cellBuilder(context, item)),
             ],
           ),
@@ -538,7 +745,7 @@ class _DesktopDataTableState<T> extends State<_DesktopDataTable<T>> {
   }
 
   WidgetStateProperty<Color?>? _rowColor(BuildContext context, T item) {
-    final AppDataRowColorBuilder<T>? builder = widget.rowColorBuilder;
+    final AppListTableRowColorBuilder<T>? builder = widget.rowColorBuilder;
     if (builder == null) {
       return null;
     }
@@ -559,8 +766,8 @@ class _DesktopDataTableState<T> extends State<_DesktopDataTable<T>> {
   }
 }
 
-class _DefaultDataListLoading extends StatelessWidget {
-  const _DefaultDataListLoading();
+class _DefaultListTableLoading extends StatelessWidget {
+  const _DefaultListTableLoading();
 
   @override
   Widget build(BuildContext context) {

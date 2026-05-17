@@ -224,7 +224,7 @@ class _EmergencyBoardPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: 'Emergency board',
       description: 'Open cases remain actionable without billing checkpoints.',
-      child: AppPaginatedDataList<EmergencyCaseSummary>(
+      child: AppPaginatedListTable<EmergencyCaseSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
         previousPageLabel: 'Previous emergency cases',
@@ -241,38 +241,38 @@ class _EmergencyBoardPanel extends ConsumerWidget {
           body: 'Emergency arrivals and ambulance calls will appear here.',
           icon: Icons.emergency_outlined,
         ),
-        columns: <AppDataColumn<EmergencyCaseSummary>>[
-          AppDataColumn<EmergencyCaseSummary>(
+        columns: <AppListTableColumn<EmergencyCaseSummary>>[
+          AppListTableColumn<EmergencyCaseSummary>(
             label: 'Patient',
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return _EmergencyCaseCell(item: item);
             },
           ),
-          AppDataColumn<EmergencyCaseSummary>(
+          AppListTableColumn<EmergencyCaseSummary>(
             label: 'Priority',
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return AppWorkspaceStatusBadge(status: _severityStatus(item));
             },
           ),
-          AppDataColumn<EmergencyCaseSummary>(
+          AppListTableColumn<EmergencyCaseSummary>(
             label: 'Arrival',
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(_dateTimeLabel(context, item.createdAt));
             },
           ),
-          AppDataColumn<EmergencyCaseSummary>(
+          AppListTableColumn<EmergencyCaseSummary>(
             label: 'Response',
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return AppWorkspaceStatusBadge(status: _responseStatus(item));
             },
           ),
-          AppDataColumn<EmergencyCaseSummary>(
+          AppListTableColumn<EmergencyCaseSummary>(
             label: 'Location',
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(item.currentLocation);
             },
           ),
-          AppDataColumn<EmergencyCaseSummary>(
+          AppListTableColumn<EmergencyCaseSummary>(
             label: 'Next',
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(item.nextAction);

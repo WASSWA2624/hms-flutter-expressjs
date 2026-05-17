@@ -267,7 +267,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       description: l10n.claimsWorklistDescription,
       child: SizedBox(
         height: 520,
-        child: AppPaginatedDataList<ClaimsQueueItem>(
+        child: AppPaginatedListTable<ClaimsQueueItem>(
           page: state.queue,
           isLoading: state.isRefreshing,
           previousPageLabel: l10n.claimsPreviousPageLabel,
@@ -290,32 +290,32 @@ class _ClaimsQueuePanel extends ConsumerWidget {
             body: l10n.claimsEmptyQueueBody,
             icon: Icons.inbox_outlined,
           ),
-          columns: <AppDataColumn<ClaimsQueueItem>>[
-            AppDataColumn<ClaimsQueueItem>(
+          columns: <AppListTableColumn<ClaimsQueueItem>>[
+            AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsTypeColumnLabel,
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(_kindLabel(context, item.kind));
               },
             ),
-            AppDataColumn<ClaimsQueueItem>(
+            AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsReferenceColumnLabel,
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(item.displayId);
               },
             ),
-            AppDataColumn<ClaimsQueueItem>(
+            AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsCoverageColumnLabel,
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(_fallback(context, item.coveragePlanDisplayId));
               },
             ),
-            AppDataColumn<ClaimsQueueItem>(
+            AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsInvoiceColumnLabel,
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(_fallback(context, item.invoiceDisplayId));
               },
             ),
-            AppDataColumn<ClaimsQueueItem>(
+            AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsStatusColumnLabel,
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return AppWorkspaceStatusBadge(
@@ -323,7 +323,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
                 );
               },
             ),
-            AppDataColumn<ClaimsQueueItem>(
+            AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsTimelineColumnLabel,
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(_dateTimeLabel(context, item.timelineAt));

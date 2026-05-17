@@ -202,7 +202,7 @@ class _IcuBoardPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: 'ICU board',
       description: 'Grouped by bed state and alert level.',
-      child: AppPaginatedDataList<IcuPatientSummary>(
+      child: AppPaginatedListTable<IcuPatientSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
         previousPageLabel: l10n.opdPreviousPageLabel,
@@ -224,32 +224,32 @@ class _IcuBoardPanel extends ConsumerWidget {
               'Active ICU admissions will appear here after IPD admission and ICU transfer.',
           icon: Icons.bed_outlined,
         ),
-        columns: <AppDataColumn<IcuPatientSummary>>[
-          AppDataColumn<IcuPatientSummary>(
+        columns: <AppListTableColumn<IcuPatientSummary>>[
+          AppListTableColumn<IcuPatientSummary>(
             label: l10n.opdPatientColumnLabel,
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return _IcuPatientCell(item: item);
             },
           ),
-          AppDataColumn<IcuPatientSummary>(
+          AppListTableColumn<IcuPatientSummary>(
             label: 'Bed',
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return Text(item.locationLabel);
             },
           ),
-          AppDataColumn<IcuPatientSummary>(
+          AppListTableColumn<IcuPatientSummary>(
             label: 'Alert',
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return AppWorkspaceStatusBadge(status: _alertStatus(item));
             },
           ),
-          AppDataColumn<IcuPatientSummary>(
+          AppListTableColumn<IcuPatientSummary>(
             label: l10n.opdStatusColumnLabel,
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return AppWorkspaceStatusBadge(status: _icuStatus(item));
             },
           ),
-          AppDataColumn<IcuPatientSummary>(
+          AppListTableColumn<IcuPatientSummary>(
             label: 'Transfer',
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return Text(

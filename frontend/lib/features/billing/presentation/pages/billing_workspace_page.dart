@@ -269,7 +269,7 @@ class _BillingQueuePanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: _queueLabel(state.query.queue),
       description: 'Simple cashier worklist backed by billing APIs.',
-      child: AppPaginatedDataList<BillingWorkItem>(
+      child: AppPaginatedListTable<BillingWorkItem>(
         page: state.workItems,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -290,8 +290,8 @@ class _BillingQueuePanel extends ConsumerWidget {
             variant: AppStateViewVariant.empty,
           );
         },
-        columns: <AppDataColumn<BillingWorkItem>>[
-          AppDataColumn<BillingWorkItem>(
+        columns: <AppListTableColumn<BillingWorkItem>>[
+          AppListTableColumn<BillingWorkItem>(
             label: 'Patient',
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return _TwoLineCell(
@@ -303,34 +303,34 @@ class _BillingQueuePanel extends ConsumerWidget {
               );
             },
           ),
-          AppDataColumn<BillingWorkItem>(
+          AppListTableColumn<BillingWorkItem>(
             label: 'Status',
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return BillingGateBadge(state: item.clearanceState);
             },
           ),
-          AppDataColumn<BillingWorkItem>(
+          AppListTableColumn<BillingWorkItem>(
             label: 'Amount',
             numeric: true,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.effectiveTotal, item.currency));
             },
           ),
-          AppDataColumn<BillingWorkItem>(
+          AppListTableColumn<BillingWorkItem>(
             label: 'Paid',
             numeric: true,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.paidAmount, item.currency));
             },
           ),
-          AppDataColumn<BillingWorkItem>(
+          AppListTableColumn<BillingWorkItem>(
             label: 'Balance',
             numeric: true,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.balanceDue, item.currency));
             },
           ),
-          AppDataColumn<BillingWorkItem>(
+          AppListTableColumn<BillingWorkItem>(
             label: 'Updated',
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_dateTime(context, item.timelineAt));

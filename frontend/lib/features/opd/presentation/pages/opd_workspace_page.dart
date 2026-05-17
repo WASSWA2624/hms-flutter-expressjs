@@ -1476,7 +1476,7 @@ String _opdTableColumnLabel(BuildContext context, _OpdTableColumnId column) {
   };
 }
 
-AppDataColumn<_OpdTableItem> _opdDataColumn(
+AppListTableColumn<_OpdTableItem> _opdDataColumn(
   BuildContext context,
   List<_OpdTableColumnId> selectedColumns,
   int index,
@@ -1485,7 +1485,7 @@ AppDataColumn<_OpdTableItem> _opdDataColumn(
   final _OpdTableColumnId column = selectedColumns[index];
   final String label = _opdTableColumnLabel(context, column);
 
-  return AppDataColumn<_OpdTableItem>(
+  return AppListTableColumn<_OpdTableItem>(
     label: label,
     headerBuilder: (BuildContext context) => _OpdColumnHeader(
       column: column,
@@ -1646,14 +1646,14 @@ class _OpdMainTable extends ConsumerWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: AppDataList<_OpdTableItem>(
+      child: AppListTable<_OpdTableItem>(
         items: items,
         isLoading: isLoading,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         emptyBuilder: (_) =>
             _EmptyPanel(title: l10n.opdNoFlowsTitle, body: l10n.opdNoFlowsBody),
-        columns: <AppDataColumn<_OpdTableItem>>[
+        columns: <AppListTableColumn<_OpdTableItem>>[
           for (int index = 0; index < visibleColumns.length; index += 1)
             _opdDataColumn(context, visibleColumns, index, onColumnsChanged),
         ],

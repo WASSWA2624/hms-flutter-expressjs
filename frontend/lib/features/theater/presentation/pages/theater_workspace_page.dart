@@ -279,7 +279,7 @@ class _TheaterCaseBoard extends StatelessWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.theaterCasesTitle,
       description: l10n.theaterCasesDescription,
-      child: AppPaginatedDataList<TheaterCase>(
+      child: AppPaginatedListTable<TheaterCase>(
         page: state.cases,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -303,8 +303,8 @@ class _TheaterCaseBoard extends StatelessWidget {
             variant: AppStateViewVariant.empty,
           );
         },
-        columns: <AppDataColumn<TheaterCase>>[
-          AppDataColumn<TheaterCase>(
+        columns: <AppListTableColumn<TheaterCase>>[
+          AppListTableColumn<TheaterCase>(
             label: l10n.theaterPatientColumnLabel,
             cellBuilder: (BuildContext context, TheaterCase item) {
               return _TwoLineCell(
@@ -316,31 +316,31 @@ class _TheaterCaseBoard extends StatelessWidget {
               );
             },
           ),
-          AppDataColumn<TheaterCase>(
+          AppListTableColumn<TheaterCase>(
             label: l10n.theaterTimeColumnLabel,
             cellBuilder: (BuildContext context, TheaterCase item) {
               return Text(_formatDateTime(context, item.scheduledAt));
             },
           ),
-          AppDataColumn<TheaterCase>(
+          AppListTableColumn<TheaterCase>(
             label: l10n.theaterRoomColumnLabel,
             cellBuilder: (BuildContext context, TheaterCase item) {
               return Text(_roomLabel(context, item));
             },
           ),
-          AppDataColumn<TheaterCase>(
+          AppListTableColumn<TheaterCase>(
             label: l10n.theaterStatusColumnLabel,
             cellBuilder: (BuildContext context, TheaterCase item) {
               return _TheaterStatusBadge(status: item.status);
             },
           ),
-          AppDataColumn<TheaterCase>(
+          AppListTableColumn<TheaterCase>(
             label: l10n.theaterReadinessColumnLabel,
             cellBuilder: (BuildContext context, TheaterCase item) {
               return Text(_readinessLabel(context, item));
             },
           ),
-          AppDataColumn<TheaterCase>(
+          AppListTableColumn<TheaterCase>(
             label: l10n.theaterNextActionColumnLabel,
             cellBuilder: (BuildContext context, TheaterCase item) {
               return Text(_nextActionLabel(context, item));

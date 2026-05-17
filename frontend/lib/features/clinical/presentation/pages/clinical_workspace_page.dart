@@ -209,7 +209,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalWorklistTitle,
       description: l10n.clinicalWorklistDescription,
-      child: AppPaginatedDataList<ClinicalWorklistEntry>(
+      child: AppPaginatedListTable<ClinicalWorklistEntry>(
         page: state.worklist,
         isLoading: state.isRefreshing,
         previousPageLabel: l10n.opdPreviousPageLabel,
@@ -227,32 +227,32 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
           body: l10n.clinicalNoWorklistBody,
           icon: Icons.assignment_outlined,
         ),
-        columns: <AppDataColumn<ClinicalWorklistEntry>>[
-          AppDataColumn<ClinicalWorklistEntry>(
+        columns: <AppListTableColumn<ClinicalWorklistEntry>>[
+          AppListTableColumn<ClinicalWorklistEntry>(
             label: l10n.opdPatientColumnLabel,
             cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
               return _ClinicalPatientCell(item: item);
             },
           ),
-          AppDataColumn<ClinicalWorklistEntry>(
+          AppListTableColumn<ClinicalWorklistEntry>(
             label: l10n.clinicalSourceQueueLabel,
             cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
               return Text(_apiLabel(item.sourceQueue));
             },
           ),
-          AppDataColumn<ClinicalWorklistEntry>(
+          AppListTableColumn<ClinicalWorklistEntry>(
             label: l10n.opdStatusColumnLabel,
             cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
               return AppWorkspaceStatusBadge(status: _entryStatus(item));
             },
           ),
-          AppDataColumn<ClinicalWorklistEntry>(
+          AppListTableColumn<ClinicalWorklistEntry>(
             label: l10n.opdProviderColumnLabel,
             cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
               return Text(item.providerDisplayName ?? l10n.profileUnknownValue);
             },
           ),
-          AppDataColumn<ClinicalWorklistEntry>(
+          AppListTableColumn<ClinicalWorklistEntry>(
             label: l10n.clinicalLastUpdatedLabel,
             cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
               return Text(

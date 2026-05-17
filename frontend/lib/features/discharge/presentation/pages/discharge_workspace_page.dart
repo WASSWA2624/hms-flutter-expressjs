@@ -232,7 +232,7 @@ class _DischargeQueuePanel extends ConsumerWidget {
       description: l10n.dischargeWorklistDescription,
       child: SizedBox(
         height: 520,
-        child: AppPaginatedDataList<IpdAdmissionSummary>(
+        child: AppPaginatedListTable<IpdAdmissionSummary>(
           page: state.queue,
           isLoading: state.isRefreshing,
           previousPageLabel: l10n.dischargePreviousPageLabel,
@@ -251,20 +251,20 @@ class _DischargeQueuePanel extends ConsumerWidget {
             body: l10n.dischargeEmptyQueueBody,
             icon: Icons.inbox_outlined,
           ),
-          columns: <AppDataColumn<IpdAdmissionSummary>>[
-            AppDataColumn<IpdAdmissionSummary>(
+          columns: <AppListTableColumn<IpdAdmissionSummary>>[
+            AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargePatientColumnLabel,
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return _QueuePatientCell(item: item);
               },
             ),
-            AppDataColumn<IpdAdmissionSummary>(
+            AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargeLocationColumnLabel,
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return Text(_locationLabel(context, item));
               },
             ),
-            AppDataColumn<IpdAdmissionSummary>(
+            AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargeStatusColumnLabel,
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return AppWorkspaceStatusBadge(
@@ -272,13 +272,13 @@ class _DischargeQueuePanel extends ConsumerWidget {
                 );
               },
             ),
-            AppDataColumn<IpdAdmissionSummary>(
+            AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargeNextActionColumnLabel,
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return Text(_nextActionLabel(context, item));
               },
             ),
-            AppDataColumn<IpdAdmissionSummary>(
+            AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargeTargetColumnLabel,
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return Text(_dateLabel(context, item.dischargedAt));

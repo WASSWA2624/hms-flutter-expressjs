@@ -1052,7 +1052,7 @@ class _PatientList extends ConsumerWidget {
     final l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
 
-    return AppSearchablePaginatedDataList<Patient>(
+    return AppSearchablePaginatedListTable<Patient>(
       page: state.page,
       searchListenable: searchListenable,
       searchMatcher: (Patient patient, String query) {
@@ -1061,18 +1061,18 @@ class _PatientList extends ConsumerWidget {
       isLoading: state.isRefreshingList,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      columns: <AppDataColumn<Patient>>[
-        AppDataColumn<Patient>(
+      columns: <AppListTableColumn<Patient>>[
+        AppListTableColumn<Patient>(
           label: l10n.patientsPatientColumnLabel,
           cellBuilder: (_, Patient patient) =>
               _PatientNameCell(patient: patient),
         ),
-        AppDataColumn<Patient>(
+        AppListTableColumn<Patient>(
           label: l10n.patientsIdentifierColumnLabel,
           cellBuilder: (_, Patient patient) =>
               Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
         ),
-        AppDataColumn<Patient>(
+        AppListTableColumn<Patient>(
           label: l10n.patientsContactColumnLabel,
           cellBuilder: (_, Patient patient) => Text(
             patient.primaryPhone ??
@@ -1080,7 +1080,7 @@ class _PatientList extends ConsumerWidget {
                 l10n.profileUnknownValue,
           ),
         ),
-        AppDataColumn<Patient>(
+        AppListTableColumn<Patient>(
           label: l10n.patientsDobColumnLabel,
           cellBuilder: (_, Patient patient) => Text(
             patient.dateOfBirth == null
@@ -1088,7 +1088,7 @@ class _PatientList extends ConsumerWidget {
                 : AppFormatters.mediumDate(patient.dateOfBirth!, locale),
           ),
         ),
-        AppDataColumn<Patient>(
+        AppListTableColumn<Patient>(
           label: l10n.patientsStatusColumnLabel,
           cellBuilder: (_, Patient patient) =>
               _StatusText(isActive: patient.isActive),
@@ -1365,23 +1365,23 @@ class _SummaryPatientList extends ConsumerWidget {
     final l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
 
-    return AppPaginatedDataList<Patient>(
+    return AppPaginatedListTable<Patient>(
       page: page,
       isLoading: isLoading,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      columns: <AppDataColumn<Patient>>[
-        AppDataColumn<Patient>(
+      columns: <AppListTableColumn<Patient>>[
+        AppListTableColumn<Patient>(
           label: l10n.patientsPatientColumnLabel,
           cellBuilder: (_, Patient patient) =>
               _PatientNameCell(patient: patient),
         ),
-        AppDataColumn<Patient>(
+        AppListTableColumn<Patient>(
           label: l10n.patientsIdentifierColumnLabel,
           cellBuilder: (_, Patient patient) =>
               Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
         ),
-        AppDataColumn<Patient>(
+        AppListTableColumn<Patient>(
           label: l10n.patientsDobColumnLabel,
           cellBuilder: (_, Patient patient) => Text(
             patient.dateOfBirth == null

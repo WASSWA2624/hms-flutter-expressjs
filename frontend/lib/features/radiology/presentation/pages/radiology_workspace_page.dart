@@ -304,7 +304,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.radiologyWorklistTitle,
       description: l10n.radiologyWorklistDescription,
-      child: AppPaginatedDataList<RadiologyOrder>(
+      child: AppPaginatedListTable<RadiologyOrder>(
         page: state.orders,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -332,8 +332,8 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             icon: Icons.inbox_outlined,
           );
         },
-        columns: <AppDataColumn<RadiologyOrder>>[
-          AppDataColumn<RadiologyOrder>(
+        columns: <AppListTableColumn<RadiologyOrder>>[
+          AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyPatientColumnLabel,
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return _TwoLineCell(
@@ -345,13 +345,13 @@ class _RadiologyOrderBoard extends ConsumerWidget {
               );
             },
           ),
-          AppDataColumn<RadiologyOrder>(
+          AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyOrderColumnLabel,
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return Text(item.effectiveDisplayId);
             },
           ),
-          AppDataColumn<RadiologyOrder>(
+          AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyStudyColumnLabel,
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return _TwoLineCell(
@@ -364,19 +364,19 @@ class _RadiologyOrderBoard extends ConsumerWidget {
               );
             },
           ),
-          AppDataColumn<RadiologyOrder>(
+          AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyPriorityColumnLabel,
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return Text(_valueOrUnknown(context, item.priority));
             },
           ),
-          AppDataColumn<RadiologyOrder>(
+          AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyPaymentAuthColumnLabel,
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return Text(_billingGateLabel(context, item));
             },
           ),
-          AppDataColumn<RadiologyOrder>(
+          AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyStatusColumnLabel,
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return AppWorkspaceStatusBadge(
@@ -384,7 +384,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
               );
             },
           ),
-          AppDataColumn<RadiologyOrder>(
+          AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyNextActionColumnLabel,
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return Text(_nextActionLabel(context, item));

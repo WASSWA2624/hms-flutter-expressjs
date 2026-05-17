@@ -208,7 +208,7 @@ class _PharmacyQueuePanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyQueuePanelTitle,
       description: l10n.pharmacyQueuePanelDescription,
-      child: AppPaginatedDataList<PharmacyOrder>(
+      child: AppPaginatedListTable<PharmacyOrder>(
         page: state.workbench.orders,
         isLoading: state.isRefreshingOrders,
         previousPageLabel: l10n.opdPreviousPageLabel,
@@ -225,33 +225,33 @@ class _PharmacyQueuePanel extends ConsumerWidget {
           body: l10n.pharmacyNoOrdersBody,
           icon: Icons.medication_liquid_outlined,
         ),
-        columns: <AppDataColumn<PharmacyOrder>>[
-          AppDataColumn<PharmacyOrder>(
+        columns: <AppListTableColumn<PharmacyOrder>>[
+          AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyPatientColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return _PharmacyOrderPatientCell(order: item);
             },
           ),
-          AppDataColumn<PharmacyOrder>(
+          AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyOrderColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return Text(item.displayId ?? item.id);
             },
           ),
-          AppDataColumn<PharmacyOrder>(
+          AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyItemsColumnLabel,
             numeric: true,
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return Text(_numberLabel(item.itemCount));
             },
           ),
-          AppDataColumn<PharmacyOrder>(
+          AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyDispenseColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return Text(_dispenseProgressLabel(context, item));
             },
           ),
-          AppDataColumn<PharmacyOrder>(
+          AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyStatusColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return AppWorkspaceStatusBadge(
@@ -515,7 +515,7 @@ class _MedicationItemsPanel extends StatelessWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyMedicationPanelTitle,
       description: l10n.pharmacyMedicationPanelDescription,
-      child: AppDataList<PharmacyOrderItem>(
+      child: AppListTable<PharmacyOrderItem>(
         items: workflow.items.isEmpty ? workflow.order.items : workflow.items,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -526,26 +526,26 @@ class _MedicationItemsPanel extends StatelessWidget {
           icon: Icons.medication_outlined,
           minHeight: 180,
         ),
-        columns: <AppDataColumn<PharmacyOrderItem>>[
-          AppDataColumn<PharmacyOrderItem>(
+        columns: <AppListTableColumn<PharmacyOrderItem>>[
+          AppListTableColumn<PharmacyOrderItem>(
             label: l10n.pharmacyMedicationColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return _MedicationCell(item: item);
             },
           ),
-          AppDataColumn<PharmacyOrderItem>(
+          AppListTableColumn<PharmacyOrderItem>(
             label: l10n.pharmacyDoseColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return Text(item.doseLine);
             },
           ),
-          AppDataColumn<PharmacyOrderItem>(
+          AppListTableColumn<PharmacyOrderItem>(
             label: l10n.pharmacyQuantityColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return Text(item.quantityLine);
             },
           ),
-          AppDataColumn<PharmacyOrderItem>(
+          AppListTableColumn<PharmacyOrderItem>(
             label: l10n.pharmacyStockColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return Text(_stockMappingLabel(context, item));
@@ -806,7 +806,7 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
             ],
           ),
           SizedBox(height: Theme.of(context).spacing.md),
-          AppPaginatedDataList<PharmacyDrug>(
+          AppPaginatedListTable<PharmacyDrug>(
             page: state.drugs,
             isLoading: state.isRefreshingDrugs,
             previousPageLabel: l10n.opdPreviousPageLabel,
@@ -822,21 +822,21 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
               icon: Icons.inventory_2_outlined,
               minHeight: 180,
             ),
-            columns: <AppDataColumn<PharmacyDrug>>[
-              AppDataColumn<PharmacyDrug>(
+            columns: <AppListTableColumn<PharmacyDrug>>[
+              AppListTableColumn<PharmacyDrug>(
                 label: l10n.pharmacyDrugColumnLabel,
                 cellBuilder: (BuildContext context, PharmacyDrug item) {
                   return _DrugCell(drug: item);
                 },
               ),
-              AppDataColumn<PharmacyDrug>(
+              AppListTableColumn<PharmacyDrug>(
                 label: l10n.pharmacyAvailableColumnLabel,
                 numeric: true,
                 cellBuilder: (BuildContext context, PharmacyDrug item) {
                   return Text(_numberLabel(item.availableQuantity));
                 },
               ),
-              AppDataColumn<PharmacyDrug>(
+              AppListTableColumn<PharmacyDrug>(
                 label: l10n.pharmacyStockStatusColumnLabel,
                 cellBuilder: (BuildContext context, PharmacyDrug item) {
                   return AppWorkspaceStatusBadge(
