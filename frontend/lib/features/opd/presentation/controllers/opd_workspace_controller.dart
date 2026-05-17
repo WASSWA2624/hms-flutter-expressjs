@@ -350,17 +350,17 @@ final class OpdWorkspaceController
     );
   }
 
-  Future<AppFailure?> checkInAppointment(OpdAppointment appointment) async {
-    final AppFailure? failure = await _mutateAppointment(
-      () => _repository.updateAppointment(appointment.apiId, <String, Object?>{
-        'status': 'IN_PROGRESS',
+  Future<AppFailure?> checkInAppointment(OpdAppointment appointment) {
+    return _mutateFlow(
+      () => _repository.startOpdFlow(<String, Object?>{
+        'arrival_mode': 'ONLINE_APPOINTMENT',
+        'appointment_id': appointment.apiId,
+        'facility_id': appointment.facilityId,
+        'provider_user_id': appointment.providerUserId,
+        'queued_at': DateTime.now().toUtc().toIso8601String(),
       }),
+      refreshAfter: true,
     );
-    if (failure != null) {
-      return failure;
-    }
-
-    return _syncVisibleData();
   }
 
   Future<AppFailure?> rescheduleAppointment(
