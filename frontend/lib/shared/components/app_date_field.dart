@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/src/app_field_label.dart';
 
 class AppDateField extends StatefulWidget {
@@ -127,9 +127,9 @@ class _AppDateFieldState extends State<AppDateField> {
 
   void _handleFocusChanged() {
     if (!_hasFocus) {
-      final DateTime? parsed = _parseParts();
-      if (parsed != null) {
-        _syncControllersFromDate(parsed);
+      final _DatePartsValidationResult result = _validateParts();
+      if (result.isValid) {
+        _syncControllersFromDate(result.date);
       }
     }
     if (mounted) {
@@ -144,115 +144,105 @@ class _AppDateFieldState extends State<AppDateField> {
 
     return FormField<DateTime>(
       initialValue: widget.value,
+      enabled: canChange,
       validator: (_) => _validate(),
       onSaved: (_) => widget.onSaved?.call(_parseParts()),
       autovalidateMode: widget.autovalidateMode,
       forceErrorText: widget.errorText,
+      onReset: () => _syncControllersFromDate(widget.value),
       builder: (FormFieldState<DateTime> field) {
-        Widget dateField = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            if (widget.labelText != null) ...<Widget>[
-              appFieldLabelWidget(
-                context,
-                widget.labelText,
-                isRequired: widget.isRequired,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              )!,
-              const SizedBox(height: 8),
-            ],
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final bool hasError = field.errorText != null;
-                final bool isFocused = _hasFocus;
-                final Color borderColor = !canChange
-                    ? theme.disabledColor
-                    : hasError
-                    ? theme.colorScheme.error
-                    : isFocused
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outline;
-                final Widget dayField = _DatePartTextField(
-                  controller: _dayController,
-                  focusNode: _dayFocusNode,
-                  labelText: widget.dayLabelText,
-                  hintText: widget.hintText,
-                  maxLength: 2,
-                  enabled: canChange,
-                  restorationId: _partRestorationId('day'),
-                  textInputAction: TextInputAction.next,
-                  onChanged: () => _handlePartsChanged(field),
-                );
-                final Widget monthField = _DatePartTextField(
-                  controller: _monthController,
-                  focusNode: _monthFocusNode,
-                  labelText: widget.monthLabelText,
-                  maxLength: 2,
-                  enabled: canChange,
-                  restorationId: _partRestorationId('month'),
-                  textInputAction: TextInputAction.next,
-                  onChanged: () => _handlePartsChanged(field),
-                );
-                final Widget yearField = _DatePartTextField(
-                  controller: _yearController,
-                  focusNode: _yearFocusNode,
-                  labelText: widget.yearLabelText,
-                  maxLength: 4,
-                  enabled: canChange,
-                  restorationId: _partRestorationId('year'),
-                  textInputAction: TextInputAction.done,
-                  onChanged: () => _handlePartsChanged(field),
-                );
-                final Widget pickerButton = AppIconButton(
-                  semanticLabel: widget.pickerButtonLabel,
-                  tooltip: widget.pickerButtonLabel,
-                  onPressed: canChange
-                      ? () => _selectDate(context, field)
-                      : null,
-                  icon: Icons.calendar_today_outlined,
-                );
-
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: borderColor),
-                  ),
-                  padding: const EdgeInsetsDirectional.only(
-                    start: 12,
-                    end: 6,
-                    top: 6,
-                    bottom: 6,
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(flex: 9, child: dayField),
-                      _DatePartSeparator(enabled: canChange),
-                      Expanded(flex: 9, child: monthField),
-                      _DatePartSeparator(enabled: canChange),
-                      Expanded(flex: 12, child: yearField),
-                      const SizedBox(width: 4),
-                      pickerButton,
-                    ],
-                  ),
-                );
-              },
+        Widget dateField = InputDecorator(
+          isFocused: _hasFocus,
+          isEmpty: _allPartsEmpty,
+          decoration: InputDecoration(
+            enabled: canChange,
+            label: appFieldLabelWidget(
+              context,
+              widget.labelText,
+              isRequired: widget.isRequired,
             ),
-            if (widget.helperText != null || field.errorText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6, left: 12),
-                child: Text(
-                  field.errorText ?? widget.helperText!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: field.errorText == null
-                        ? theme.colorScheme.onSurfaceVariant
-                        : theme.colorScheme.error,
+            helperText: widget.helperText,
+            errorText: field.errorText,
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            contentPadding: EdgeInsetsDirectional.fromSTEB(
+              theme.spacing.md,
+              theme.spacing.md,
+              theme.spacing.xs,
+              theme.spacing.sm,
+            ),
+            suffixIcon: _DatePickerButton(
+              label: widget.pickerButtonLabel,
+              onPressed: canChange ? () => _selectDate(context, field) : null,
+            ),
+            suffixIconConstraints: BoxConstraints(
+              minWidth:
+                  theme.appTokens.minInteractiveDimension + theme.spacing.md,
+              minHeight:
+                  theme.inputDecorationTheme.constraints?.minHeight ?? 48,
+            ),
+          ).applyDefaults(theme.inputDecorationTheme),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
+              children: <Widget>[
+                Flexible(
+                  flex: 2,
+                  child: SizedBox(
+                    width: 30,
+                    child: _DatePartTextField(
+                      controller: _dayController,
+                      focusNode: _dayFocusNode,
+                      nextFocusNode: _monthFocusNode,
+                      labelText: widget.dayLabelText,
+                      hintText: _partHint(0, widget.dayLabelText),
+                      maxLength: 2,
+                      enabled: canChange,
+                      restorationId: _partRestorationId('day'),
+                      textInputAction: TextInputAction.next,
+                      onChanged: () => _handlePartsChanged(field),
+                    ),
                   ),
                 ),
-              ),
-          ],
+                _DatePartSeparator(enabled: canChange),
+                Flexible(
+                  flex: 2,
+                  child: SizedBox(
+                    width: 30,
+                    child: _DatePartTextField(
+                      controller: _monthController,
+                      focusNode: _monthFocusNode,
+                      nextFocusNode: _yearFocusNode,
+                      labelText: widget.monthLabelText,
+                      hintText: _partHint(1, widget.monthLabelText),
+                      maxLength: 2,
+                      enabled: canChange,
+                      restorationId: _partRestorationId('month'),
+                      textInputAction: TextInputAction.next,
+                      onChanged: () => _handlePartsChanged(field),
+                    ),
+                  ),
+                ),
+                _DatePartSeparator(enabled: canChange),
+                Flexible(
+                  flex: 3,
+                  child: SizedBox(
+                    width: 54,
+                    child: _DatePartTextField(
+                      controller: _yearController,
+                      focusNode: _yearFocusNode,
+                      labelText: widget.yearLabelText,
+                      hintText: _partHint(2, widget.yearLabelText),
+                      maxLength: 4,
+                      enabled: canChange,
+                      restorationId: _partRestorationId('year'),
+                      textInputAction: TextInputAction.done,
+                      onChanged: () => _handlePartsChanged(field),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
 
         if (widget.semanticLabel != null) {
@@ -278,22 +268,33 @@ class _AppDateFieldState extends State<AppDateField> {
     if (_isSyncing) {
       return;
     }
-    final DateTime? parsed = _parseParts();
-    field.didChange(parsed);
-    widget.onChanged?.call(_allPartsEmpty ? null : parsed);
+    final _DatePartsValidationResult result = _validateParts();
+    final DateTime? validDate = result.isValid ? result.date : null;
+    field.didChange(validDate);
+    widget.onChanged?.call(result.isEmpty ? null : validDate);
   }
 
   Future<void> _selectDate(
     BuildContext context,
     FormFieldState<DateTime> field,
   ) async {
-    final DateTime initialDate = _resolveInitialDate(field.value);
+    final _DatePartsValidationResult partsResult = _validateParts();
+    final DateTime? initialDate = _resolveInitialDate(
+      partsResult.date ?? field.value,
+    );
+    if (initialDate == null) {
+      field.validate();
+      return;
+    }
+
     final DateTime? selectedDate = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: widget.firstDate,
-      lastDate: widget.lastDate,
-      currentDate: widget.currentDate,
+      firstDate: _dateOnly(widget.firstDate),
+      lastDate: _dateOnly(widget.lastDate),
+      currentDate: widget.currentDate == null
+          ? null
+          : _dateOnly(widget.currentDate!),
       initialEntryMode: widget.initialEntryMode,
       selectableDayPredicate: widget.selectableDayPredicate,
     );
@@ -307,55 +308,74 @@ class _AppDateFieldState extends State<AppDateField> {
     widget.onChanged?.call(selectedDate);
   }
 
-  DateTime _resolveInitialDate(DateTime? fieldValue) {
-    final DateTime fallback =
-        fieldValue ??
-        widget.value ??
-        widget.initialPickerDate ??
-        DateTime.now();
-
-    if (fallback.isBefore(widget.firstDate)) {
-      return widget.firstDate;
+  DateTime? _resolveInitialDate(DateTime? fieldValue) {
+    final DateTime firstDate = _dateOnly(widget.firstDate);
+    final DateTime lastDate = _dateOnly(widget.lastDate);
+    if (lastDate.isBefore(firstDate)) {
+      return null;
     }
 
-    if (fallback.isAfter(widget.lastDate)) {
-      return widget.lastDate;
+    final DateTime fallback = _dateOnly(
+      fieldValue ?? widget.value ?? widget.initialPickerDate ?? DateTime.now(),
+    );
+    final DateTime clampedDate = _clampDate(fallback, firstDate, lastDate);
+
+    if (_isSelectableDate(clampedDate)) {
+      return clampedDate;
     }
 
-    return fallback;
+    return _nearestSelectableDate(clampedDate, firstDate, lastDate);
   }
 
   String? _validate() {
-    if (_allPartsEmpty) {
-      return widget.validator?.call(null);
-    }
-
-    final DateTime? parsed = _parseParts();
-    if (parsed == null ||
-        parsed.isBefore(_dateOnly(widget.firstDate)) ||
-        parsed.isAfter(_dateOnly(widget.lastDate)) ||
-        widget.selectableDayPredicate?.call(parsed) == false) {
-      return widget.invalidDateMessage;
-    }
-
-    return widget.validator?.call(parsed);
+    final _DatePartsValidationResult result = _validateParts();
+    return switch (result.status) {
+      _DatePartsValidationStatus.empty => widget.validator?.call(null),
+      _DatePartsValidationStatus.valid => widget.validator?.call(result.date),
+      _ => widget.invalidDateMessage,
+    };
   }
 
   DateTime? _parseParts() {
+    final _DatePartsValidationResult result = _validateParts();
+    return result.isValid ? result.date : null;
+  }
+
+  _DatePartsValidationResult _validateParts() {
     final String year = _yearController.text.trim();
     final String month = _monthController.text.trim();
     final String day = _dayController.text.trim();
     if (year.isEmpty && month.isEmpty && day.isEmpty) {
-      return null;
+      return const _DatePartsValidationResult.empty();
     }
     if (year.length != 4 || month.isEmpty || day.isEmpty) {
-      return null;
+      return const _DatePartsValidationResult.incomplete();
     }
-    return _safeDate(
+
+    final DateTime? date = _safeDate(
       int.tryParse(year),
       int.tryParse(month),
       int.tryParse(day),
     );
+    if (date == null) {
+      return const _DatePartsValidationResult.invalid();
+    }
+
+    final DateTime firstDate = _dateOnly(widget.firstDate);
+    final DateTime lastDate = _dateOnly(widget.lastDate);
+    if (lastDate.isBefore(firstDate)) {
+      return _DatePartsValidationResult.invalidRange(date);
+    }
+
+    if (date.isBefore(firstDate) || date.isAfter(lastDate)) {
+      return _DatePartsValidationResult.outOfRange(date);
+    }
+
+    if (!_isSelectableDate(date)) {
+      return _DatePartsValidationResult.unselectable(date);
+    }
+
+    return _DatePartsValidationResult.valid(date);
   }
 
   DateTime? _safeDate(int? year, int? month, int? day) {
@@ -374,6 +394,47 @@ class _AppDateFieldState extends State<AppDateField> {
 
   DateTime _dateOnly(DateTime value) {
     return DateTime(value.year, value.month, value.day);
+  }
+
+  DateTime _clampDate(DateTime value, DateTime firstDate, DateTime lastDate) {
+    if (value.isBefore(firstDate)) {
+      return firstDate;
+    }
+
+    if (value.isAfter(lastDate)) {
+      return lastDate;
+    }
+
+    return value;
+  }
+
+  DateTime? _nearestSelectableDate(
+    DateTime value,
+    DateTime firstDate,
+    DateTime lastDate,
+  ) {
+    for (int offset = 1; ; offset += 1) {
+      final DateTime previousDate = value.subtract(Duration(days: offset));
+      final DateTime nextDate = value.add(Duration(days: offset));
+      final bool canUsePrevious = !previousDate.isBefore(firstDate);
+      final bool canUseNext = !nextDate.isAfter(lastDate);
+
+      if (!canUsePrevious && !canUseNext) {
+        return null;
+      }
+
+      if (canUseNext && _isSelectableDate(nextDate)) {
+        return nextDate;
+      }
+
+      if (canUsePrevious && _isSelectableDate(previousDate)) {
+        return previousDate;
+      }
+    }
+  }
+
+  bool _isSelectableDate(DateTime date) {
+    return widget.selectableDayPredicate?.call(date) ?? true;
   }
 
   void _syncControllersFromDate(DateTime? value) {
@@ -400,6 +461,114 @@ class _AppDateFieldState extends State<AppDateField> {
     final String? restorationId = widget.restorationId;
     return restorationId == null ? null : '${restorationId}_$part';
   }
+
+  String _partHint(int index, String fallback) {
+    final String? hintText = widget.hintText;
+    if (hintText == null || hintText.trim().isEmpty) {
+      return fallback;
+    }
+
+    final List<String> parts = hintText
+        .split(RegExp(r'[/\-\.\s]+'))
+        .where((String part) => part.isNotEmpty)
+        .toList(growable: false);
+
+    if (parts.length != 3) {
+      return fallback;
+    }
+
+    return parts[index];
+  }
+}
+
+enum _DatePartsValidationStatus {
+  empty,
+  incomplete,
+  invalid,
+  invalidRange,
+  outOfRange,
+  unselectable,
+  valid,
+}
+
+class _DatePartsValidationResult {
+  const _DatePartsValidationResult._(this.status, this.date);
+
+  const _DatePartsValidationResult.empty()
+    : this._(_DatePartsValidationStatus.empty, null);
+
+  const _DatePartsValidationResult.incomplete()
+    : this._(_DatePartsValidationStatus.incomplete, null);
+
+  const _DatePartsValidationResult.invalid()
+    : this._(_DatePartsValidationStatus.invalid, null);
+
+  const _DatePartsValidationResult.invalidRange(DateTime date)
+    : this._(_DatePartsValidationStatus.invalidRange, date);
+
+  const _DatePartsValidationResult.outOfRange(DateTime date)
+    : this._(_DatePartsValidationStatus.outOfRange, date);
+
+  const _DatePartsValidationResult.unselectable(DateTime date)
+    : this._(_DatePartsValidationStatus.unselectable, date);
+
+  const _DatePartsValidationResult.valid(DateTime date)
+    : this._(_DatePartsValidationStatus.valid, date);
+
+  final _DatePartsValidationStatus status;
+  final DateTime? date;
+
+  bool get isEmpty => status == _DatePartsValidationStatus.empty;
+
+  bool get isValid => status == _DatePartsValidationStatus.valid;
+}
+
+class _DatePickerButton extends StatelessWidget {
+  const _DatePickerButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool enabled = onPressed != null;
+    final double buttonSize = theme.appTokens.minInteractiveDimension;
+    final Color disabledColor = theme.colorScheme.onSurface.withValues(
+      alpha: 0.38,
+    );
+
+    return Padding(
+      padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: label,
+        child: IconButton(
+          tooltip: label,
+          onPressed: onPressed,
+          icon: Icon(
+            Icons.calendar_today_outlined,
+            size: theme.appTokens.listIconSize,
+          ),
+          color: enabled ? theme.colorScheme.onSurfaceVariant : disabledColor,
+          style: IconButton.styleFrom(
+            backgroundColor: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: enabled ? 0.72 : 0.32),
+            disabledBackgroundColor: theme.colorScheme.onSurface.withValues(
+              alpha: 0.08,
+            ),
+            fixedSize: Size.square(buttonSize),
+            minimumSize: Size.square(buttonSize),
+            padding: EdgeInsets.zero,
+            shape: const CircleBorder(),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _DatePartTextField extends StatelessWidget {
@@ -412,6 +581,7 @@ class _DatePartTextField extends StatelessWidget {
     required this.textInputAction,
     required this.onChanged,
     this.hintText,
+    this.nextFocusNode,
     this.restorationId,
   });
 
@@ -424,10 +594,15 @@ class _DatePartTextField extends StatelessWidget {
   final TextInputAction textInputAction;
   final VoidCallback onChanged;
   final String? restorationId;
+  final FocusNode? nextFocusNode;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final Color textColor = enabled
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.onSurface.withValues(alpha: 0.62);
+
     return TextField(
       controller: controller,
       enabled: enabled,
@@ -440,16 +615,30 @@ class _DatePartTextField extends StatelessWidget {
         FilteringTextInputFormatter.digitsOnly,
         LengthLimitingTextInputFormatter(maxLength),
       ],
-      onChanged: (_) => onChanged(),
+      onChanged: (String value) {
+        onChanged();
+        if (value.length == maxLength) {
+          nextFocusNode?.requestFocus();
+        }
+      },
+      onSubmitted: (_) {
+        final FocusNode? nextNode = nextFocusNode;
+        if (nextNode == null) {
+          focusNode.unfocus();
+          return;
+        }
+
+        nextNode.requestFocus();
+      },
       style: theme.textTheme.bodyLarge?.copyWith(
-        color: enabled
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.onSurface.withValues(alpha: 0.62),
+        color: textColor,
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
         hintText: hintText ?? labelText,
+        hintStyle: theme.inputDecorationTheme.hintStyle,
         counterText: '',
+        filled: false,
         border: InputBorder.none,
         enabledBorder: InputBorder.none,
         focusedBorder: InputBorder.none,
@@ -458,6 +647,7 @@ class _DatePartTextField extends StatelessWidget {
         focusedErrorBorder: InputBorder.none,
         isDense: true,
         contentPadding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
       ),
     );
   }
@@ -471,15 +661,15 @@ class _DatePartSeparator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final Color color = enabled
+        ? theme.colorScheme.onSurfaceVariant
+        : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
       child: Text(
         '/',
-        style: theme.textTheme.titleMedium?.copyWith(
-          color: enabled
-              ? theme.colorScheme.onSurfaceVariant
-              : theme.disabledColor,
-        ),
+        style: theme.textTheme.titleMedium?.copyWith(color: color),
       ),
     );
   }

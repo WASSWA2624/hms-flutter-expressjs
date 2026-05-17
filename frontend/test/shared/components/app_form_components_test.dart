@@ -417,6 +417,165 @@ void main() {
     expect(pickerButton.onPressed, isNotNull);
   });
 
+  testWidgets('AppDateField emits dates from editable parts', (
+    WidgetTester tester,
+  ) async {
+    DateTime? selectedDate;
+
+    await pumpComponent(
+      tester,
+      AppDateField(
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2030),
+        pickerButtonLabel: 'Open date picker',
+        invalidDateMessage: 'Enter a valid date.',
+        hintText: 'DD/MM/YYYY',
+        onChanged: (DateTime? value) {
+          selectedDate = value;
+        },
+      ),
+    );
+
+    final Finder textFields = find.byType(TextField);
+
+    await tester.enterText(textFields.at(0), '17');
+    await tester.enterText(textFields.at(1), '08');
+    await tester.enterText(textFields.at(2), '2023');
+    await tester.pump();
+
+    expect(selectedDate, DateTime(2023, 8, 17));
+  });
+
+  testWidgets('AppDateField date picker syncs the editable parts', (
+    WidgetTester tester,
+  ) async {
+    DateTime? selectedDate;
+
+    await pumpComponent(
+      tester,
+      AppDateField(
+        value: DateTime(2026, 5, 13),
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2030),
+        pickerButtonLabel: 'Open date picker',
+        invalidDateMessage: 'Enter a valid date.',
+        onChanged: (DateTime? value) {
+          selectedDate = value;
+        },
+      ),
+    );
+
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('14').hitTestable().first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    final List<EditableText> fields = tester
+        .widgetList<EditableText>(find.byType(EditableText))
+        .toList(growable: false);
+
+    expect(selectedDate, DateTime(2026, 5, 14));
+    expect(
+      fields.map((EditableText field) => field.controller.text),
+      containsAllInOrder(<String>['14', '05', '2026']),
+    );
+  });
+
+  testWidgets('AppDateField validates constrained manual dates', (
+    WidgetTester tester,
+  ) async {
+    final formKey = GlobalKey<FormState>();
+
+    await pumpComponent(
+      tester,
+      Form(
+        key: formKey,
+        child: AppDateField(
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+          pickerButtonLabel: 'Open date picker',
+          invalidDateMessage: 'Enter a valid date.',
+          hintText: 'DD/MM/YYYY',
+          selectableDayPredicate: (DateTime date) {
+            return date.weekday != DateTime.saturday;
+          },
+        ),
+      ),
+    );
+
+    final Finder textFields = find.byType(TextField);
+
+    await tester.enterText(textFields.at(0), '31');
+    await tester.enterText(textFields.at(1), '02');
+    await tester.enterText(textFields.at(2), '2026');
+    expect(formKey.currentState!.validate(), isFalse);
+    await tester.pump();
+    expect(find.text('Enter a valid date.'), findsOneWidget);
+
+    await tester.enterText(textFields.at(0), '29');
+    await tester.enterText(textFields.at(1), '02');
+    await tester.enterText(textFields.at(2), '2024');
+    expect(formKey.currentState!.validate(), isTrue);
+    await tester.pump();
+    expect(find.text('Enter a valid date.'), findsNothing);
+
+    await tester.enterText(textFields.at(0), '19');
+    await tester.enterText(textFields.at(1), '08');
+    await tester.enterText(textFields.at(2), '2023');
+    expect(formKey.currentState!.validate(), isFalse);
+    await tester.pump();
+    expect(find.text('Enter a valid date.'), findsOneWidget);
+  });
+
+  testWidgets('AppDateField picker uses nearest selectable date', (
+    WidgetTester tester,
+  ) async {
+    DateTime? selectedDate;
+
+    await pumpComponent(
+      tester,
+      AppDateField(
+        value: DateTime(2026, 5, 13),
+        firstDate: DateTime(2026, 5),
+        lastDate: DateTime(2026, 5, 31),
+        pickerButtonLabel: 'Open date picker',
+        invalidDateMessage: 'Enter a valid date.',
+        selectableDayPredicate: (DateTime date) => date.day != 13,
+        onChanged: (DateTime? value) {
+          selectedDate = value;
+        },
+      ),
+    );
+
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(selectedDate, DateTime(2026, 5, 14));
+  });
+
+  testWidgets('AppDateField fits compact widths', (WidgetTester tester) async {
+    await pumpComponent(
+      tester,
+      AppDateField(
+        value: DateTime(2026, 5, 13),
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2030),
+        labelText: 'Date',
+        pickerButtonLabel: 'Open date picker',
+        invalidDateMessage: 'Enter a valid date.',
+        hintText: 'DD/MM/YYYY',
+        onChanged: (_) {},
+      ),
+      size: const Size(240, 320),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('AppPhoneField composes one international phone value', (
     WidgetTester tester,
   ) async {

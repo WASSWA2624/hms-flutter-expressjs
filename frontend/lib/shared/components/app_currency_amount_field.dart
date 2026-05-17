@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/shared/components/app_select_field.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
+import 'package:hosspi_hms/shared/components/src/app_field_label.dart';
 
 const String appDefaultCurrencyCode = 'UGX';
 
@@ -15,17 +18,26 @@ class AppCurrencyOption {
     required this.code,
     required this.name,
     required this.country,
+    this.flagCode,
   });
 
   final String code;
   final String name;
   final String country;
+  final String? flagCode;
 
-  String get label => '$code - $name';
-  String get searchText => '$code $name $country'.toLowerCase();
+  String get normalizedCode => code.trim().toUpperCase();
+  String get label => '$normalizedCode - $name';
+  String? get effectiveFlagCode =>
+      flagCode ?? _currencyFlagCodes[normalizedCode];
+  String? get flagEmoji => _flagEmojiForRegionCode(effectiveFlagCode);
+  String get searchText {
+    return '$normalizedCode $name $country ${effectiveFlagCode ?? ''}'
+        .toLowerCase();
+  }
 }
 
-class AppCurrencyAmountField extends StatelessWidget {
+class AppCurrencyAmountField extends StatefulWidget {
   const AppCurrencyAmountField({
     required this.amountController,
     required this.currency,
@@ -34,14 +46,33 @@ class AppCurrencyAmountField extends StatelessWidget {
     required this.currencyLabelText,
     this.amountHintText,
     this.currencyHintText,
+    this.helperText,
+    this.errorText,
     this.amountSemanticLabel,
     this.currencySemanticLabel,
+    this.currencySearchLabelText,
+    this.currencyNoResultsText = 'No matching currencies found.',
+    this.requiredMessage = 'This field is required.',
+    this.amountInvalidMessage = 'Enter a valid amount.',
+    this.currencyInvalidMessage = 'Choose a supported currency.',
     this.enabled = true,
+    this.isLoading = false,
     this.isRequired = false,
+    this.allowZero = true,
+    this.decimalDigits = 2,
+    this.maxAmount,
     this.validator,
+    this.onAmountChanged,
+    this.onSaved,
+    this.onFieldSubmitted,
+    this.onFocusChanged,
+    this.focusNode,
+    this.autovalidateMode,
+    this.restorationId,
+    this.textInputAction,
     this.currencyOptions = appCurrencyOptions,
     super.key,
-  });
+  }) : assert(decimalDigits == null || decimalDigits >= 0);
 
   final TextEditingController amountController;
   final String currency;
@@ -50,101 +81,253 @@ class AppCurrencyAmountField extends StatelessWidget {
   final String currencyLabelText;
   final String? amountHintText;
   final String? currencyHintText;
+  final String? helperText;
+  final String? errorText;
   final String? amountSemanticLabel;
   final String? currencySemanticLabel;
+  final String? currencySearchLabelText;
+  final String currencyNoResultsText;
+  final String requiredMessage;
+  final String amountInvalidMessage;
+  final String currencyInvalidMessage;
   final bool enabled;
+  final bool isLoading;
   final bool isRequired;
+  final bool allowZero;
+  final int? decimalDigits;
+  final num? maxAmount;
   final FormFieldValidator<String>? validator;
+  final ValueChanged<String>? onAmountChanged;
+  final FormFieldSetter<String>? onSaved;
+  final ValueChanged<String>? onFieldSubmitted;
+  final ValueChanged<bool>? onFocusChanged;
+  final FocusNode? focusNode;
+  final AutovalidateMode? autovalidateMode;
+  final String? restorationId;
+  final TextInputAction? textInputAction;
   final List<AppCurrencyOption> currencyOptions;
 
   @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final List<AppSelectOption<String>> options = currencyOptions
-        .map(
-          (AppCurrencyOption option) => AppSelectOption<String>(
-            value: option.code,
-            label: option.label,
-            labelWidget: _CurrencyOptionLabel(option: option),
-          ),
-        )
-        .toList(growable: false);
-    AppCurrencyOption? optionByCode(String code) {
-      for (final AppCurrencyOption option in currencyOptions) {
-        if (option.code == code) {
-          return option;
-        }
-      }
-      return null;
+  State<AppCurrencyAmountField> createState() => _AppCurrencyAmountFieldState();
+}
+
+class _AppCurrencyAmountFieldState extends State<AppCurrencyAmountField> {
+  final GlobalKey<FormFieldState<String>> _fieldKey =
+      GlobalKey<FormFieldState<String>>();
+  late FocusNode _amountFocusNode;
+  late bool _ownsFocusNode;
+  bool _isPickerOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _attachFocusNode();
+    widget.amountController.addListener(_handleAmountControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(AppCurrencyAmountField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.amountController != widget.amountController) {
+      oldWidget.amountController.removeListener(_handleAmountControllerChanged);
+      widget.amountController.addListener(_handleAmountControllerChanged);
+      _fieldKey.currentState?.didChange(widget.amountController.text);
     }
+    if (oldWidget.focusNode != widget.focusNode) {
+      _detachFocusNode();
+      _attachFocusNode();
+    }
+  }
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool stacked =
-            !constraints.hasBoundedWidth || constraints.maxWidth < 520;
-        final Widget amountField = AppTextField(
-          controller: amountController,
-          labelText: amountLabelText,
-          hintText: amountHintText,
-          semanticLabel: amountSemanticLabel ?? amountLabelText,
-          enabled: enabled,
-          isRequired: isRequired,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: <TextInputFormatter>[CurrencyAmountInputFormatter()],
-          validator: validator,
-        );
-        final Widget currencyField = AppSelectField<String>.searchable(
-          value: currency,
-          labelText: currencyLabelText,
-          hintText: currencyHintText,
-          semanticLabel: currencySemanticLabel ?? currencyLabelText,
-          enabled: enabled,
-          options: options,
-          onChanged: onCurrencyChanged,
-          filterCallback:
-              (List<DropdownMenuEntry<String>> entries, String query) {
-                final String normalized = query.trim().toLowerCase();
-                if (normalized.isEmpty) {
-                  return entries;
-                }
+  @override
+  void dispose() {
+    widget.amountController.removeListener(_handleAmountControllerChanged);
+    _detachFocusNode();
+    super.dispose();
+  }
 
-                return entries
-                    .where((DropdownMenuEntry<String> entry) {
-                      final AppCurrencyOption? option = optionByCode(
-                        entry.value,
-                      );
-                      return option == null
-                          ? entry.label.toLowerCase().contains(normalized)
-                          : option.searchText.contains(normalized);
-                    })
-                    .toList(growable: false);
-              },
-        );
-
-        if (stacked) {
-          return Column(
-            children: <Widget>[
-              amountField,
-              SizedBox(height: theme.appTokens.formGapCompact),
-              currencyField,
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(flex: 3, child: amountField),
-            SizedBox(width: theme.spacing.md),
-            Expanded(flex: 2, child: currencyField),
-          ],
+  @override
+  Widget build(BuildContext context) {
+    final bool canEdit = widget.enabled && !widget.isLoading;
+    Widget field = FormField<String>(
+      key: _fieldKey,
+      initialValue: widget.amountController.text,
+      autovalidateMode: widget.autovalidateMode,
+      validator: _validateAmount,
+      onSaved: (_) => widget.onSaved?.call(widget.amountController.text),
+      builder: (FormFieldState<String> formField) {
+        return InputDecorator(
+          isFocused: _amountFocusNode.hasFocus || _isPickerOpen,
+          isEmpty: widget.amountController.text.trim().isEmpty,
+          decoration: InputDecoration(
+            enabled: canEdit,
+            label: appFieldLabelWidget(
+              context,
+              widget.amountLabelText,
+              isRequired: widget.isRequired,
+            ),
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            helperText: widget.helperText,
+            errorText: widget.errorText ?? formField.errorText,
+            contentPadding: EdgeInsets.zero,
+          ),
+          child: _UnifiedCurrencyAmountInput(
+            amountController: widget.amountController,
+            amountFocusNode: _amountFocusNode,
+            amountHintText: widget.amountHintText,
+            currencyHintText: widget.currencyHintText,
+            currency: widget.currency,
+            selectedCurrency: _optionForCode(widget.currency),
+            currencyLabelText:
+                widget.currencySemanticLabel ?? widget.currencyLabelText,
+            canEdit: canEdit,
+            isLoading: widget.isLoading,
+            decimalDigits: widget.decimalDigits,
+            restorationId: widget.restorationId,
+            textInputAction: widget.textInputAction,
+            onAmountChanged: (String value) {
+              formField.didChange(value);
+              widget.onAmountChanged?.call(value);
+            },
+            onFieldSubmitted: widget.onFieldSubmitted,
+            onSelectCurrency: () => _selectCurrency(formField),
+          ),
         );
       },
     );
+
+    final String semanticLabel =
+        widget.amountSemanticLabel ?? widget.amountLabelText;
+    if (semanticLabel.isNotEmpty) {
+      field = Semantics(
+        textField: true,
+        enabled: canEdit,
+        label: semanticLabel,
+        child: field,
+      );
+    }
+
+    return field;
   }
+
+  void _attachFocusNode() {
+    _ownsFocusNode = widget.focusNode == null;
+    _amountFocusNode = widget.focusNode ?? FocusNode();
+    _amountFocusNode.addListener(_handleFocusChanged);
+  }
+
+  void _detachFocusNode() {
+    _amountFocusNode.removeListener(_handleFocusChanged);
+    if (_ownsFocusNode) {
+      _amountFocusNode.dispose();
+    }
+  }
+
+  void _handleFocusChanged() {
+    widget.onFocusChanged?.call(_amountFocusNode.hasFocus);
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _handleAmountControllerChanged() {
+    _fieldKey.currentState?.didChange(widget.amountController.text);
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _selectCurrency(FormFieldState<String> formField) async {
+    if (!widget.enabled || widget.isLoading || widget.currencyOptions.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isPickerOpen = true;
+    });
+    final AppCurrencyOption? selected = await showAppDialog<AppCurrencyOption>(
+      context: context,
+      builder: (_) => _CurrencyPickerDialog(
+        title: widget.currencyLabelText,
+        searchLabelText: widget.currencySearchLabelText,
+        noResultsText: widget.currencyNoResultsText,
+        selectedCode: widget.currency,
+        options: widget.currencyOptions,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isPickerOpen = false;
+    });
+
+    if (selected == null || selected.normalizedCode == _normalizedCurrency) {
+      return;
+    }
+
+    widget.onCurrencyChanged(selected.normalizedCode);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        formField.validate();
+      }
+    });
+  }
+
+  String? _validateAmount(String? _) {
+    final String rawValue = widget.amountController.text;
+    final String normalized = normalizeCurrencyAmount(rawValue);
+    if (normalized.isEmpty) {
+      return widget.validator?.call(rawValue) ??
+          (widget.isRequired ? widget.requiredMessage : null);
+    }
+
+    if (!_validCurrencyAmountPattern.hasMatch(normalized)) {
+      return widget.amountInvalidMessage;
+    }
+
+    final List<String> parts = normalized.split('.');
+    if (parts.length == 2 &&
+        widget.decimalDigits != null &&
+        parts.last.length > widget.decimalDigits!) {
+      return widget.amountInvalidMessage;
+    }
+
+    final double? parsed = double.tryParse(normalized);
+    if (parsed == null || parsed.isNaN || parsed.isInfinite || parsed < 0) {
+      return widget.amountInvalidMessage;
+    }
+    if (!widget.allowZero && parsed == 0) {
+      return widget.amountInvalidMessage;
+    }
+    if (widget.maxAmount != null && parsed > widget.maxAmount!) {
+      return widget.amountInvalidMessage;
+    }
+    if (_optionForCode(widget.currency) == null) {
+      return widget.currencyInvalidMessage;
+    }
+
+    return widget.validator?.call(rawValue);
+  }
+
+  AppCurrencyOption? _optionForCode(String code) {
+    final String normalized = code.trim().toUpperCase();
+    for (final AppCurrencyOption option in widget.currencyOptions) {
+      if (option.normalizedCode == normalized) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  String get _normalizedCurrency => widget.currency.trim().toUpperCase();
 }
 
 class CurrencyAmountInputFormatter extends TextInputFormatter {
+  const CurrencyAmountInputFormatter({this.decimalDigits = 2});
+
+  final int? decimalDigits;
+
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
@@ -166,6 +349,11 @@ class CurrencyAmountInputFormatter extends TextInputFormatter {
     if (parts.length > 2) {
       return oldValue;
     }
+    if (parts.length == 2 &&
+        decimalDigits != null &&
+        parts.last.length > decimalDigits!) {
+      return oldValue;
+    }
 
     final String integerPart = parts.first;
     final String decimalPart = parts.length == 2 ? parts.last : '';
@@ -173,10 +361,14 @@ class CurrencyAmountInputFormatter extends TextInputFormatter {
     final String formatted = parts.length == 2
         ? '$formattedInteger.$decimalPart'
         : formattedInteger;
+    final int offsetFromEnd = newValue.text.length - newValue.selection.end;
+    final int selectionOffset = math.max(0, formatted.length - offsetFromEnd);
 
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: TextSelection.collapsed(
+        offset: math.min(selectionOffset, formatted.length),
+      ),
     );
   }
 
@@ -197,31 +389,604 @@ class CurrencyAmountInputFormatter extends TextInputFormatter {
   }
 }
 
-class _CurrencyOptionLabel extends StatelessWidget {
-  const _CurrencyOptionLabel({required this.option});
+class _UnifiedCurrencyAmountInput extends StatelessWidget {
+  const _UnifiedCurrencyAmountInput({
+    required this.amountController,
+    required this.amountFocusNode,
+    required this.currency,
+    required this.currencyLabelText,
+    required this.canEdit,
+    required this.isLoading,
+    required this.onAmountChanged,
+    required this.onSelectCurrency,
+    this.amountHintText,
+    this.currencyHintText,
+    this.selectedCurrency,
+    this.decimalDigits,
+    this.restorationId,
+    this.textInputAction,
+    this.onFieldSubmitted,
+  });
 
-  final AppCurrencyOption option;
+  final TextEditingController amountController;
+  final FocusNode amountFocusNode;
+  final String currency;
+  final String currencyLabelText;
+  final bool canEdit;
+  final bool isLoading;
+  final ValueChanged<String> onAmountChanged;
+  final VoidCallback onSelectCurrency;
+  final String? amountHintText;
+  final String? currencyHintText;
+  final AppCurrencyOption? selectedCurrency;
+  final int? decimalDigits;
+  final String? restorationId;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(option.label, maxLines: 1, overflow: TextOverflow.ellipsis),
-        Text(
-          option.country,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double availableWidth =
+            constraints.hasBoundedWidth && constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 360;
+        final bool veryCompact = availableWidth < 280;
+        final bool compact = availableWidth < 420;
+        final double currencyWidth = _currencyButtonWidth(availableWidth);
+
+        return SizedBox(
+          height: 56,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  controller: amountController,
+                  focusNode: amountFocusNode,
+                  enabled: canEdit,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textInputAction: textInputAction,
+                  inputFormatters: <TextInputFormatter>[
+                    CurrencyAmountInputFormatter(decimalDigits: decimalDigits),
+                  ],
+                  autofillHints: const <String>[
+                    AutofillHints.transactionAmount,
+                  ],
+                  restorationId: restorationId,
+                  onChanged: onAmountChanged,
+                  onSubmitted: onFieldSubmitted,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  style:
+                      (compact
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.titleLarge)
+                          ?.copyWith(
+                            color: canEdit
+                                ? colorScheme.onSurface
+                                : colorScheme.onSurface.withValues(alpha: 0.62),
+                            fontWeight: FontWeight.w700,
+                          ),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    fillColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    filled: false,
+                    isDense: true,
+                    hintText: amountHintText,
+                    contentPadding: EdgeInsetsDirectional.only(
+                      start: veryCompact ? theme.spacing.md : theme.spacing.lg,
+                      end: theme.spacing.sm,
+                      top: 17,
+                      bottom: 15,
+                    ),
+                    counterText: '',
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+                child: VerticalDivider(
+                  width: theme.appTokens.dividerThickness,
+                  thickness: theme.appTokens.dividerThickness,
+                  color: colorScheme.outlineVariant,
+                ),
+              ),
+              SizedBox(
+                width: currencyWidth,
+                child: _CurrencySelectButton(
+                  option: selectedCurrency,
+                  currency: currency,
+                  hintText: currencyHintText,
+                  labelText: currencyLabelText,
+                  enabled: canEdit,
+                  isLoading: isLoading,
+                  compact: compact,
+                  veryCompact: veryCompact,
+                  onPressed: onSelectCurrency,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  double _currencyButtonWidth(double availableWidth) {
+    if (availableWidth < 220) {
+      return math.max(76, availableWidth * 0.44);
+    }
+    if (availableWidth < 280) {
+      return 104;
+    }
+    if (availableWidth < 420) {
+      return 124;
+    }
+    return 156;
+  }
+}
+
+class _CurrencySelectButton extends StatelessWidget {
+  const _CurrencySelectButton({
+    required this.option,
+    required this.currency,
+    required this.labelText,
+    required this.enabled,
+    required this.isLoading,
+    required this.compact,
+    required this.veryCompact,
+    required this.onPressed,
+    this.hintText,
+  });
+
+  final AppCurrencyOption? option;
+  final String currency;
+  final String labelText;
+  final bool enabled;
+  final bool isLoading;
+  final bool compact;
+  final bool veryCompact;
+  final VoidCallback onPressed;
+  final String? hintText;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String normalizedCurrency = currency.trim().toUpperCase();
+    final String code =
+        option?.normalizedCode ??
+        (normalizedCurrency.isEmpty
+            ? hintText ?? labelText
+            : normalizedCurrency);
+    final bool hasCurrency = option != null || normalizedCurrency.isNotEmpty;
+    final Color contentColor = enabled
+        ? colorScheme.onSurface
+        : colorScheme.onSurface.withValues(alpha: 0.62);
+    final Color iconColor = enabled
+        ? colorScheme.onSurfaceVariant
+        : colorScheme.onSurface.withValues(alpha: 0.38);
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: '$labelText $code',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: veryCompact ? theme.spacing.xs : theme.spacing.sm,
+              end: theme.spacing.sm,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                if (!veryCompact) ...<Widget>[
+                  _CurrencyFlagIcon(
+                    option: hasCurrency ? option : null,
+                    size: compact ? 26 : 30,
+                    enabled: enabled,
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                ],
+                Flexible(
+                  child: Text(
+                    code,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        (compact
+                                ? theme.textTheme.titleMedium
+                                : theme.textTheme.headlineSmall)
+                            ?.copyWith(
+                              color: hasCurrency
+                                  ? contentColor
+                                  : colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w800,
+                            ),
+                  ),
+                ),
+                if (isLoading) ...<Widget>[
+                  SizedBox(width: theme.spacing.xs),
+                  SizedBox.square(
+                    dimension: theme.appTokens.listIconSize,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ] else ...<Widget>[
+                  SizedBox(
+                    width: veryCompact ? theme.spacing.xs : theme.spacing.sm,
+                  ),
+                  Icon(Icons.keyboard_arrow_down, color: iconColor),
+                ],
+              ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
+
+class _CurrencyPickerDialog extends StatefulWidget {
+  const _CurrencyPickerDialog({
+    required this.title,
+    required this.noResultsText,
+    required this.selectedCode,
+    required this.options,
+    this.searchLabelText,
+  });
+
+  final String title;
+  final String? searchLabelText;
+  final String noResultsText;
+  final String selectedCode;
+  final List<AppCurrencyOption> options;
+
+  @override
+  State<_CurrencyPickerDialog> createState() => _CurrencyPickerDialogState();
+}
+
+class _CurrencyPickerDialogState extends State<_CurrencyPickerDialog> {
+  late final TextEditingController _searchController;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<AppCurrencyOption> options = _filteredOptions;
+
+    return AppDialog(
+      title: Text(widget.title),
+      icon: const Icon(Icons.payments_outlined),
+      maxWidth: 520,
+      content: SizedBox(
+        height: math.min(MediaQuery.sizeOf(context).height * 0.62, 480),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTextField(
+              controller: _searchController,
+              labelText:
+                  widget.searchLabelText ??
+                  MaterialLocalizations.of(context).searchFieldLabel,
+              prefixIcon: const Icon(Icons.search),
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              onChanged: (String value) {
+                setState(() {
+                  _query = value.trim().toLowerCase();
+                });
+              },
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Expanded(
+              child: options.isEmpty
+                  ? Center(
+                      child: Text(
+                        widget.noResultsText,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: options.length,
+                      separatorBuilder: (_, _) =>
+                          Divider(height: 1, color: colorScheme.outlineVariant),
+                      itemBuilder: (BuildContext context, int index) {
+                        final AppCurrencyOption option = options[index];
+                        final bool selected =
+                            option.normalizedCode ==
+                            widget.selectedCode.trim().toUpperCase();
+
+                        return ListTile(
+                          leading: _CurrencyFlagIcon(option: option),
+                          title: Text(
+                            option.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            option.country,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: selected
+                              ? Icon(Icons.check, color: colorScheme.primary)
+                              : null,
+                          onTap: () {
+                            Navigator.of(context).pop(option);
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<AppCurrencyOption> get _filteredOptions {
+    if (_query.isEmpty) {
+      return widget.options;
+    }
+
+    return widget.options
+        .where((AppCurrencyOption option) => option.searchText.contains(_query))
+        .toList(growable: false);
+  }
+}
+
+class _CurrencyFlagIcon extends StatelessWidget {
+  const _CurrencyFlagIcon({
+    required this.option,
+    this.size = 32,
+    this.enabled = true,
+  });
+
+  final AppCurrencyOption? option;
+  final double size;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String? emoji = option?.flagEmoji;
+
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: enabled
+            ? colorScheme.surfaceContainerHighest
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.62),
+        shape: BoxShape.circle,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: emoji == null
+          ? Icon(
+              Icons.public_outlined,
+              size: size * 0.58,
+              color: enabled
+                  ? colorScheme.onSurfaceVariant
+                  : colorScheme.onSurface.withValues(alpha: 0.38),
+            )
+          : Text(
+              emoji,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: size * 0.62,
+                height: 1,
+                color: enabled
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurface.withValues(alpha: 0.62),
+              ),
+            ),
+    );
+  }
+}
+
+String? _flagEmojiForRegionCode(String? regionCode) {
+  final String normalized = regionCode?.trim().toUpperCase() ?? '';
+  if (!_regionCodePattern.hasMatch(normalized)) {
+    return null;
+  }
+
+  return String.fromCharCodes(
+    normalized.codeUnits.map((int unit) => 0x1F1E6 + unit - 0x41),
+  );
+}
+
+final RegExp _regionCodePattern = RegExp(r'^[A-Z]{2}$');
+final RegExp _validCurrencyAmountPattern = RegExp(r'^\d+(?:\.\d*)?$');
+
+const Map<String, String> _currencyFlagCodes = <String, String>{
+  'AED': 'AE',
+  'AFN': 'AF',
+  'ALL': 'AL',
+  'AMD': 'AM',
+  'ANG': 'CW',
+  'AOA': 'AO',
+  'ARS': 'AR',
+  'AUD': 'AU',
+  'AWG': 'AW',
+  'AZN': 'AZ',
+  'BAM': 'BA',
+  'BBD': 'BB',
+  'BDT': 'BD',
+  'BGN': 'BG',
+  'BHD': 'BH',
+  'BIF': 'BI',
+  'BMD': 'BM',
+  'BND': 'BN',
+  'BOB': 'BO',
+  'BRL': 'BR',
+  'BSD': 'BS',
+  'BTN': 'BT',
+  'BWP': 'BW',
+  'BYN': 'BY',
+  'BZD': 'BZ',
+  'CAD': 'CA',
+  'CDF': 'CD',
+  'CHF': 'CH',
+  'CLP': 'CL',
+  'CNY': 'CN',
+  'COP': 'CO',
+  'CRC': 'CR',
+  'CUP': 'CU',
+  'CVE': 'CV',
+  'CZK': 'CZ',
+  'DJF': 'DJ',
+  'DKK': 'DK',
+  'DOP': 'DO',
+  'DZD': 'DZ',
+  'EGP': 'EG',
+  'ERN': 'ER',
+  'ETB': 'ET',
+  'EUR': 'EU',
+  'FJD': 'FJ',
+  'FKP': 'FK',
+  'GBP': 'GB',
+  'GEL': 'GE',
+  'GHS': 'GH',
+  'GIP': 'GI',
+  'GMD': 'GM',
+  'GNF': 'GN',
+  'GTQ': 'GT',
+  'GYD': 'GY',
+  'HKD': 'HK',
+  'HNL': 'HN',
+  'HTG': 'HT',
+  'HUF': 'HU',
+  'IDR': 'ID',
+  'ILS': 'IL',
+  'INR': 'IN',
+  'IQD': 'IQ',
+  'IRR': 'IR',
+  'ISK': 'IS',
+  'JMD': 'JM',
+  'JOD': 'JO',
+  'JPY': 'JP',
+  'KES': 'KE',
+  'KGS': 'KG',
+  'KHR': 'KH',
+  'KMF': 'KM',
+  'KRW': 'KR',
+  'KWD': 'KW',
+  'KYD': 'KY',
+  'KZT': 'KZ',
+  'LAK': 'LA',
+  'LBP': 'LB',
+  'LKR': 'LK',
+  'LRD': 'LR',
+  'LSL': 'LS',
+  'LYD': 'LY',
+  'MAD': 'MA',
+  'MDL': 'MD',
+  'MGA': 'MG',
+  'MKD': 'MK',
+  'MMK': 'MM',
+  'MNT': 'MN',
+  'MOP': 'MO',
+  'MRU': 'MR',
+  'MUR': 'MU',
+  'MVR': 'MV',
+  'MWK': 'MW',
+  'MXN': 'MX',
+  'MYR': 'MY',
+  'MZN': 'MZ',
+  'NAD': 'NA',
+  'NGN': 'NG',
+  'NIO': 'NI',
+  'NOK': 'NO',
+  'NPR': 'NP',
+  'NZD': 'NZ',
+  'OMR': 'OM',
+  'PAB': 'PA',
+  'PEN': 'PE',
+  'PGK': 'PG',
+  'PHP': 'PH',
+  'PKR': 'PK',
+  'PLN': 'PL',
+  'PYG': 'PY',
+  'QAR': 'QA',
+  'RON': 'RO',
+  'RSD': 'RS',
+  'RUB': 'RU',
+  'RWF': 'RW',
+  'SAR': 'SA',
+  'SBD': 'SB',
+  'SCR': 'SC',
+  'SDG': 'SD',
+  'SEK': 'SE',
+  'SGD': 'SG',
+  'SHP': 'SH',
+  'SLE': 'SL',
+  'SOS': 'SO',
+  'SRD': 'SR',
+  'SSP': 'SS',
+  'STN': 'ST',
+  'SYP': 'SY',
+  'SZL': 'SZ',
+  'THB': 'TH',
+  'TJS': 'TJ',
+  'TMT': 'TM',
+  'TND': 'TN',
+  'TOP': 'TO',
+  'TRY': 'TR',
+  'TTD': 'TT',
+  'TWD': 'TW',
+  'TZS': 'TZ',
+  'UAH': 'UA',
+  'UGX': 'UG',
+  'USD': 'US',
+  'UYU': 'UY',
+  'UZS': 'UZ',
+  'VES': 'VE',
+  'VND': 'VN',
+  'VUV': 'VU',
+  'WST': 'WS',
+  'XAF': 'CM',
+  'XCD': 'AG',
+  'XOF': 'SN',
+  'XPF': 'PF',
+  'YER': 'YE',
+  'ZAR': 'ZA',
+  'ZMW': 'ZM',
+  'ZWL': 'ZW',
+};
 
 const List<AppCurrencyOption> appCurrencyOptions = <AppCurrencyOption>[
   AppCurrencyOption(code: 'UGX', name: 'Uganda Shilling', country: 'Uganda'),

@@ -3784,7 +3784,9 @@ class _BloodPressureInput extends StatelessWidget {
       semanticLabel: '$labelText $unit',
       enabled: enabled,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: <TextInputFormatter>[CurrencyAmountInputFormatter()],
+      inputFormatters: <TextInputFormatter>[
+        const CurrencyAmountInputFormatter(),
+      ],
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: validator,
       suffixIcon: status == null
@@ -3890,7 +3892,9 @@ class _VitalSignInput extends StatelessWidget {
           semanticLabel: '$labelText $unit',
           enabled: enabled,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: <TextInputFormatter>[CurrencyAmountInputFormatter()],
+          inputFormatters: <TextInputFormatter>[
+            const CurrencyAmountInputFormatter(),
+          ],
           autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: validator,
           suffixIcon: unitOptions == null
