@@ -122,10 +122,7 @@ final class ClinicalWorkspaceController
         final ClinicalWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingDetail: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
           );
         }
         return failure;
@@ -219,12 +216,12 @@ final class ClinicalWorkspaceController
         'patient_id': entry.apiPatientId,
         'ordered_at': DateTime.now().toUtc().toIso8601String(),
         'requested_tests': <Map<String, Object?>>[
-          for (final String id in labTestIds) <String, Object?>{'lab_test_id': id},
+          for (final String id in labTestIds)
+            <String, Object?>{'lab_test_id': id},
         ],
         'requested_panels': <Map<String, Object?>>[
-          for (final String id in labPanelIds) <String, Object?>{
-            'lab_panel_id': id,
-          },
+          for (final String id in labPanelIds)
+            <String, Object?>{'lab_panel_id': id},
         ],
       }),
     );
@@ -356,12 +353,12 @@ final class ClinicalWorkspaceController
     final String? opdFlowApiId = entry.opdFlowApiId;
     if (opdFlowApiId != null) {
       return _mutateSelectedEncounter(
-        () => _opdRepository.disposition(opdFlowApiId, <String, Object?>{
-          'decision': 'DISCHARGE',
-          'notes': notes,
-        }).then(
-          (Result<OpdFlowDetail> result) => result.map<void>((_) {}),
-        ),
+        () => _opdRepository
+            .disposition(opdFlowApiId, <String, Object?>{
+              'decision': 'DISCHARGE',
+              'notes': notes,
+            })
+            .then((Result<OpdFlowDetail> result) => result.map<void>((_) {})),
       );
     }
 
@@ -435,7 +432,9 @@ final class ClinicalWorkspaceController
     }
 
     try {
-      final AppFailure? failure = await _refreshWorklist(showLoading: showLoading);
+      final AppFailure? failure = await _refreshWorklist(
+        showLoading: showLoading,
+      );
       if (failure != null) {
         return failure;
       }
@@ -457,9 +456,7 @@ final class ClinicalWorkspaceController
     } finally {
       final ClinicalWorkspaceState? latest = _currentState;
       if (showLoading && latest != null) {
-        _emit(
-          latest.copyWith(isRefreshing: false, isRefreshingDetail: false),
-        );
+        _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
     }
@@ -491,12 +488,7 @@ final class ClinicalWorkspaceController
       failure: (AppFailure failure) {
         final ClinicalWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(
-            latest.copyWith(
-              isRefreshing: false,
-              lastFailure: failure,
-            ),
-          );
+          _emit(latest.copyWith(isRefreshing: false, lastFailure: failure));
         }
         return failure;
       },
@@ -506,25 +498,30 @@ final class ClinicalWorkspaceController
   Future<Result<AppPage<ClinicalWorklistEntry>>> _loadWorklist(
     ClinicalWorklistQuery query,
   ) async {
-    final results = await Future.wait(<Future<Result<AppPage<ClinicalWorklistEntry>>>>[
-      _repository.listEncounters(query),
-      _repository.listAdmissions(query),
-      _opdFlows(query),
-      _triageFlows(query),
-    ]);
+    final results =
+        await Future.wait(<Future<Result<AppPage<ClinicalWorklistEntry>>>>[
+          _repository.listEncounters(query),
+          _repository.listAdmissions(query),
+          _opdFlows(query),
+          _triageFlows(query),
+        ]);
 
     final AppFailure? failure = _firstFailure(results);
     if (failure != null) {
       return Result<AppPage<ClinicalWorklistEntry>>.failure(failure);
     }
 
-    final List<ClinicalWorklistEntry> items = <ClinicalWorklistEntry>[
-      for (final Result<AppPage<ClinicalWorklistEntry>> result in results)
-        ..._successOrEmpty(result).items,
-    ].where((ClinicalWorklistEntry item) {
-      return item.matchesSearch(query.search) &&
-          clinicalWorklistEntryMatchesScope(item, query.scope);
-    }).toList(growable: false);
+    final List<ClinicalWorklistEntry> items =
+        <ClinicalWorklistEntry>[
+              for (final Result<AppPage<ClinicalWorklistEntry>> result
+                  in results)
+                ..._successOrEmpty(result).items,
+            ]
+            .where((ClinicalWorklistEntry item) {
+              return item.matchesSearch(query.search) &&
+                  clinicalWorklistEntryMatchesScope(item, query.scope);
+            })
+            .toList(growable: false);
 
     final List<ClinicalWorklistEntry> sorted = items.toList(growable: true)
       ..sort(_compareEntries);
@@ -552,7 +549,6 @@ final class ClinicalWorkspaceController
         .listOpdFlows(
           OpdFlowQuery(
             search: query.search,
-            queueScope: 'ALL',
             pageRequest: const AppPageRequest(),
           ),
         );
@@ -575,7 +571,6 @@ final class ClinicalWorkspaceController
         .listTriageQueue(
           OpdTriageQueueQuery(
             search: query.search,
-            queueScope: 'ALL',
             pageRequest: const AppPageRequest(),
           ),
         );
@@ -591,10 +586,7 @@ final class ClinicalWorkspaceController
     );
   }
 
-  ClinicalWorklistEntry _entryFromOpd(
-    OpdFlowSummary item,
-    String sourceQueue,
-  ) {
+  ClinicalWorklistEntry _entryFromOpd(OpdFlowSummary item, String sourceQueue) {
     final String triageLevel = (item.triageLevel ?? '').toUpperCase();
     return ClinicalWorklistEntry(
       id: '${sourceQueue}_${item.id}',
@@ -696,9 +688,13 @@ final class ClinicalWorkspaceController
       return left.isUrgent ? -1 : 1;
     }
     final DateTime leftDate =
-        left.updatedAt ?? left.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        left.updatedAt ??
+        left.startedAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
     final DateTime rightDate =
-        right.updatedAt ?? right.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        right.updatedAt ??
+        right.startedAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
     return rightDate.compareTo(leftDate);
   }
 

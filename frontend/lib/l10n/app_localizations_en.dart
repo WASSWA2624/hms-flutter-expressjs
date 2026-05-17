@@ -2555,4 +2555,177 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorUnexpectedMessage => 'Something went wrong. Try again.';
+
+  @override
+  String get navigationClinicalLabel => 'Clinical';
+
+  @override
+  String get clinicalTitle => 'Clinical workspace';
+
+  @override
+  String get clinicalDescription =>
+      'Review clinical queues, document care, order services, prescribe, refer, admit, and complete encounters.';
+
+  @override
+  String get clinicalLoadingTitle => 'Loading clinical workspace';
+
+  @override
+  String get clinicalLoadingBody =>
+      'Loading provider worklist and encounter context.';
+
+  @override
+  String get clinicalLiveStatus => 'Live sync';
+
+  @override
+  String get clinicalSavingStatus => 'Saving';
+
+  @override
+  String get clinicalSavedMessage => 'Clinical changes saved.';
+
+  @override
+  String get clinicalFiltersLabel => 'Clinical filters';
+
+  @override
+  String get clinicalSearchLabel => 'Search clinical worklist';
+
+  @override
+  String get clinicalSearchHint =>
+      'Patient, encounter, queue, provider, or location';
+
+  @override
+  String get clinicalScopeFilterLabel => 'Queue scope';
+
+  @override
+  String get clinicalTodayScopeLabel => 'Today';
+
+  @override
+  String get clinicalWaitingReviewSummaryLabel => 'Waiting review';
+
+  @override
+  String get clinicalUrgentSummaryLabel => 'Urgent';
+
+  @override
+  String get clinicalResultsReadySummaryLabel => 'Results ready';
+
+  @override
+  String get clinicalInConsultationSummaryLabel => 'In consultation';
+
+  @override
+  String get clinicalCompletedSummaryLabel => 'Completed';
+
+  @override
+  String get clinicalWorklistTitle => 'Provider worklist';
+
+  @override
+  String get clinicalWorklistDescription =>
+      'Open consultations, admissions, triage handoffs, and result-review queues.';
+
+  @override
+  String get clinicalNoWorklistTitle => 'No clinical work';
+
+  @override
+  String get clinicalNoWorklistBody =>
+      'No encounters match the current search and queue scope.';
+
+  @override
+  String get clinicalNoSelectionTitle => 'No encounter selected';
+
+  @override
+  String get clinicalNoSelectionBody =>
+      'Open a patient from the worklist to review context, document care, and place orders.';
+
+  @override
+  String get clinicalSourceQueueLabel => 'Queue';
+
+  @override
+  String get clinicalLastUpdatedLabel => 'Last updated';
+
+  @override
+  String get clinicalEncounterNumberLabel => 'Encounter';
+
+  @override
+  String get clinicalLocationLabel => 'Location';
+
+  @override
+  String get clinicalActionsTitle => 'Clinical actions';
+
+  @override
+  String get clinicalAddNoteAction => 'Add note';
+
+  @override
+  String get clinicalAddDiagnosisAction => 'Add diagnosis';
+
+  @override
+  String get clinicalRequestLabAction => 'Request lab';
+
+  @override
+  String get clinicalRequestRadiologyAction => 'Request radiology';
+
+  @override
+  String get clinicalPrescribeAction => 'Prescribe';
+
+  @override
+  String get clinicalRequestProcedureAction => 'Add procedure';
+
+  @override
+  String get clinicalCarePlanAction => 'Care plan';
+
+  @override
+  String get clinicalRequestAdmissionAction => 'Request admission';
+
+  @override
+  String get clinicalCompleteConsultationAction => 'Complete consultation';
+
+  @override
+  String get clinicalPrintSummaryAction => 'Print summary';
+
+  @override
+  String get clinicalResultReviewTitle => 'Result review';
+
+  @override
+  String get clinicalResultReviewBody =>
+      'Released diagnostic results are ready for clinical review.';
+
+  @override
+  String get clinicalNoResultsReadyBody =>
+      'No released lab or radiology results are ready for review.';
+
+  @override
+  String get clinicalDiagnosesTitle => 'Diagnoses';
+
+  @override
+  String get clinicalCarePlansTitle => 'Care plans';
+
+  @override
+  String get clinicalOrdersTitle => 'Orders';
+
+  @override
+  String get clinicalHandoffsTitle => 'Handoffs';
+
+  @override
+  String get clinicalTermSearchLabel => 'Clinical term';
+
+  @override
+  String get clinicalCarePlanLabel => 'Care plan';
+
+  @override
+  String get clinicalDoseAmountLabel => 'Dose amount';
+
+  @override
+  String get clinicalDoseUnitLabel => 'Dose unit';
+
+  @override
+  String get clinicalDurationValueLabel => 'Duration';
+
+  @override
+  String get clinicalDurationUnitLabel => 'Duration unit';
+
+  @override
+  String get clinicalInstructionsLabel => 'Instructions';
+
+  @override
+  String get clinicalAvailableBedLabel => 'Available bed';
+
+  @override
+  String get clinicalConsultationSummaryTitle => 'Consultation summary';
 }

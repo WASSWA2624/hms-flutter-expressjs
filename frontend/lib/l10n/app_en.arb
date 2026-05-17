@@ -3272,58 +3272,223 @@
     "description": "Generic safe error message for unexpected recoverable failures."
   },
   "navigationClinicalLabel": "Clinical",
+  "@navigationClinicalLabel": {
+    "description": "Navigation label for the clinical workspace."
+  },
   "clinicalTitle": "Clinical workspace",
+  "@clinicalTitle": {
+    "description": "Clinical workspace page title."
+  },
   "clinicalDescription": "Review clinical queues, document care, order services, prescribe, refer, admit, and complete encounters.",
+  "@clinicalDescription": {
+    "description": "Clinical workspace page description."
+  },
   "clinicalLoadingTitle": "Loading clinical workspace",
+  "@clinicalLoadingTitle": {
+    "description": "Clinical workspace loading title."
+  },
   "clinicalLoadingBody": "Loading provider worklist and encounter context.",
+  "@clinicalLoadingBody": {
+    "description": "Clinical workspace loading body."
+  },
   "clinicalLiveStatus": "Live sync",
+  "@clinicalLiveStatus": {
+    "description": "Clinical workspace live synchronization status."
+  },
   "clinicalSavingStatus": "Saving",
+  "@clinicalSavingStatus": {
+    "description": "Clinical workspace saving status."
+  },
   "clinicalSavedMessage": "Clinical changes saved.",
+  "@clinicalSavedMessage": {
+    "description": "Clinical workspace successful save message."
+  },
   "clinicalFiltersLabel": "Clinical filters",
+  "@clinicalFiltersLabel": {
+    "description": "Semantic label for clinical workspace filters."
+  },
   "clinicalSearchLabel": "Search clinical worklist",
+  "@clinicalSearchLabel": {
+    "description": "Clinical worklist search field label."
+  },
   "clinicalSearchHint": "Patient, encounter, queue, provider, or location",
+  "@clinicalSearchHint": {
+    "description": "Clinical worklist search field hint."
+  },
   "clinicalScopeFilterLabel": "Queue scope",
+  "@clinicalScopeFilterLabel": {
+    "description": "Clinical queue scope filter label."
+  },
   "clinicalTodayScopeLabel": "Today",
+  "@clinicalTodayScopeLabel": {
+    "description": "Clinical queue scope label for today."
+  },
   "clinicalWaitingReviewSummaryLabel": "Waiting review",
+  "@clinicalWaitingReviewSummaryLabel": {
+    "description": "Clinical summary label for encounters waiting review."
+  },
   "clinicalUrgentSummaryLabel": "Urgent",
+  "@clinicalUrgentSummaryLabel": {
+    "description": "Clinical summary label for urgent encounters."
+  },
   "clinicalResultsReadySummaryLabel": "Results ready",
+  "@clinicalResultsReadySummaryLabel": {
+    "description": "Clinical summary label for encounters with results ready."
+  },
   "clinicalInConsultationSummaryLabel": "In consultation",
+  "@clinicalInConsultationSummaryLabel": {
+    "description": "Clinical summary label for encounters in consultation."
+  },
   "clinicalCompletedSummaryLabel": "Completed",
+  "@clinicalCompletedSummaryLabel": {
+    "description": "Clinical summary label for completed encounters."
+  },
   "clinicalWorklistTitle": "Provider worklist",
+  "@clinicalWorklistTitle": {
+    "description": "Clinical provider worklist title."
+  },
   "clinicalWorklistDescription": "Open consultations, admissions, triage handoffs, and result-review queues.",
+  "@clinicalWorklistDescription": {
+    "description": "Clinical provider worklist description."
+  },
   "clinicalNoWorklistTitle": "No clinical work",
+  "@clinicalNoWorklistTitle": {
+    "description": "Clinical empty worklist title."
+  },
   "clinicalNoWorklistBody": "No encounters match the current search and queue scope.",
+  "@clinicalNoWorklistBody": {
+    "description": "Clinical empty worklist body."
+  },
   "clinicalNoSelectionTitle": "No encounter selected",
+  "@clinicalNoSelectionTitle": {
+    "description": "Clinical no selection title."
+  },
   "clinicalNoSelectionBody": "Open a patient from the worklist to review context, document care, and place orders.",
+  "@clinicalNoSelectionBody": {
+    "description": "Clinical no selection body."
+  },
   "clinicalSourceQueueLabel": "Queue",
+  "@clinicalSourceQueueLabel": {
+    "description": "Clinical source queue label."
+  },
   "clinicalLastUpdatedLabel": "Last updated",
+  "@clinicalLastUpdatedLabel": {
+    "description": "Clinical worklist last updated column label."
+  },
   "clinicalEncounterNumberLabel": "Encounter",
+  "@clinicalEncounterNumberLabel": {
+    "description": "Clinical encounter number label."
+  },
   "clinicalLocationLabel": "Location",
+  "@clinicalLocationLabel": {
+    "description": "Clinical location label."
+  },
   "clinicalActionsTitle": "Clinical actions",
+  "@clinicalActionsTitle": {
+    "description": "Clinical actions panel title."
+  },
   "clinicalAddNoteAction": "Add note",
+  "@clinicalAddNoteAction": {
+    "description": "Clinical add note action label."
+  },
   "clinicalAddDiagnosisAction": "Add diagnosis",
+  "@clinicalAddDiagnosisAction": {
+    "description": "Clinical add diagnosis action label."
+  },
   "clinicalRequestLabAction": "Request lab",
+  "@clinicalRequestLabAction": {
+    "description": "Clinical request lab action label."
+  },
   "clinicalRequestRadiologyAction": "Request radiology",
+  "@clinicalRequestRadiologyAction": {
+    "description": "Clinical request radiology action label."
+  },
   "clinicalPrescribeAction": "Prescribe",
+  "@clinicalPrescribeAction": {
+    "description": "Clinical prescribe action label."
+  },
   "clinicalRequestProcedureAction": "Add procedure",
+  "@clinicalRequestProcedureAction": {
+    "description": "Clinical add procedure action label."
+  },
   "clinicalCarePlanAction": "Care plan",
+  "@clinicalCarePlanAction": {
+    "description": "Clinical care plan action label."
+  },
   "clinicalRequestAdmissionAction": "Request admission",
+  "@clinicalRequestAdmissionAction": {
+    "description": "Clinical request admission action label."
+  },
   "clinicalCompleteConsultationAction": "Complete consultation",
+  "@clinicalCompleteConsultationAction": {
+    "description": "Clinical complete consultation action label."
+  },
   "clinicalPrintSummaryAction": "Print summary",
+  "@clinicalPrintSummaryAction": {
+    "description": "Clinical print summary action label."
+  },
   "clinicalResultReviewTitle": "Result review",
+  "@clinicalResultReviewTitle": {
+    "description": "Clinical result review panel title."
+  },
   "clinicalResultReviewBody": "Released diagnostic results are ready for clinical review.",
+  "@clinicalResultReviewBody": {
+    "description": "Clinical result review panel body."
+  },
   "clinicalNoResultsReadyBody": "No released lab or radiology results are ready for review.",
+  "@clinicalNoResultsReadyBody": {
+    "description": "Clinical no results ready body."
+  },
   "clinicalDiagnosesTitle": "Diagnoses",
+  "@clinicalDiagnosesTitle": {
+    "description": "Clinical diagnoses section title."
+  },
   "clinicalCarePlansTitle": "Care plans",
+  "@clinicalCarePlansTitle": {
+    "description": "Clinical care plans section title."
+  },
   "clinicalOrdersTitle": "Orders",
+  "@clinicalOrdersTitle": {
+    "description": "Clinical orders section title."
+  },
   "clinicalHandoffsTitle": "Handoffs",
+  "@clinicalHandoffsTitle": {
+    "description": "Clinical handoffs section title."
+  },
   "clinicalTermSearchLabel": "Clinical term",
+  "@clinicalTermSearchLabel": {
+    "description": "Clinical term search field label."
+  },
   "clinicalCarePlanLabel": "Care plan",
+  "@clinicalCarePlanLabel": {
+    "description": "Clinical care plan field label."
+  },
   "clinicalDoseAmountLabel": "Dose amount",
+  "@clinicalDoseAmountLabel": {
+    "description": "Clinical prescription dose amount field label."
+  },
   "clinicalDoseUnitLabel": "Dose unit",
+  "@clinicalDoseUnitLabel": {
+    "description": "Clinical prescription dose unit field label."
+  },
   "clinicalDurationValueLabel": "Duration",
+  "@clinicalDurationValueLabel": {
+    "description": "Clinical prescription duration value field label."
+  },
   "clinicalDurationUnitLabel": "Duration unit",
+  "@clinicalDurationUnitLabel": {
+    "description": "Clinical prescription duration unit field label."
+  },
   "clinicalInstructionsLabel": "Instructions",
+  "@clinicalInstructionsLabel": {
+    "description": "Clinical prescription instructions field label."
+  },
   "clinicalAvailableBedLabel": "Available bed",
-  "clinicalConsultationSummaryTitle": "Consultation summary"
+  "@clinicalAvailableBedLabel": {
+    "description": "Clinical admission available bed field label."
+  },
+  "clinicalConsultationSummaryTitle": "Consultation summary",
+  "@clinicalConsultationSummaryTitle": {
+    "description": "Clinical consultation summary print title."
+  }
 }

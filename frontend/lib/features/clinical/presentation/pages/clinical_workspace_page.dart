@@ -255,7 +255,9 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
           AppDataColumn<ClinicalWorklistEntry>(
             label: l10n.clinicalLastUpdatedLabel,
             cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-              return Text(_dateTimeLabel(context, item.updatedAt ?? item.startedAt));
+              return Text(
+                _dateTimeLabel(context, item.updatedAt ?? item.startedAt),
+              );
             },
           ),
         ],
@@ -281,7 +283,10 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
                       _joinDisplay(<String?>[
                         _apiLabel(item.sourceQueue),
                         item.providerDisplayName,
-                        _dateTimeLabel(context, item.updatedAt ?? item.startedAt),
+                        _dateTimeLabel(
+                          context,
+                          item.updatedAt ?? item.startedAt,
+                        ),
                       ]),
                       style: theme.textTheme.bodySmall,
                     ),
@@ -370,10 +375,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
 }
 
 class _ClinicalActionBar extends ConsumerWidget {
-  const _ClinicalActionBar({
-    required this.bundle,
-    required this.referenceData,
-  });
+  const _ClinicalActionBar({required this.bundle, required this.referenceData});
 
   final ClinicalEncounterBundle bundle;
   final ClinicalReferenceData referenceData;
@@ -421,7 +423,8 @@ class _ClinicalActionBar extends ConsumerWidget {
                 label: l10n.clinicalPrescribeAction,
                 icon: Icons.medication_outlined,
                 enabled: isAllowed,
-                onPressed: () => _openPrescriptionDialog(context, referenceData),
+                onPressed: () =>
+                    _openPrescriptionDialog(context, referenceData),
               ),
               _actionButton(
                 label: l10n.clinicalRequestProcedureAction,
@@ -495,12 +498,12 @@ class _ClinicalResultReview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<ClinicalRelatedRecord> results = <ClinicalRelatedRecord>[
-      ...bundle.labOrders,
-      ...bundle.radiologyOrders,
-    ].where((ClinicalRelatedRecord record) {
-      return (record.status ?? '').toUpperCase() == 'COMPLETED';
-    }).toList(growable: false);
+    final List<ClinicalRelatedRecord> results =
+        <ClinicalRelatedRecord>[...bundle.labOrders, ...bundle.radiologyOrders]
+            .where((ClinicalRelatedRecord record) {
+              return (record.status ?? '').toUpperCase() == 'COMPLETED';
+            })
+            .toList(growable: false);
 
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalResultReviewTitle,
@@ -570,10 +573,7 @@ class _ClinicalRecordSections extends StatelessWidget {
 }
 
 class _ClinicalRecordSection extends StatelessWidget {
-  const _ClinicalRecordSection({
-    required this.title,
-    required this.records,
-  });
+  const _ClinicalRecordSection({required this.title, required this.records});
 
   final String title;
   final List<ClinicalRelatedRecord> records;
@@ -591,10 +591,7 @@ class _ClinicalRecordSection extends StatelessWidget {
 }
 
 class _ClinicalRecordList extends StatelessWidget {
-  const _ClinicalRecordList({
-    required this.records,
-    required this.emptyLabel,
-  });
+  const _ClinicalRecordList({required this.records, required this.emptyLabel});
 
   final List<ClinicalRelatedRecord> records;
   final String emptyLabel;
@@ -646,10 +643,7 @@ class _ClinicalRecordRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  _joinDisplay(<String?>[
-                    record.title,
-                    record.subtitle,
-                  ]),
+                  _joinDisplay(<String?>[record.title, record.subtitle]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -883,7 +877,12 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
           ],
         ),
       ),
-      actions: _dialogActions(context, l10n.clinicalAddDiagnosisAction, _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.clinicalAddDiagnosisAction,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1002,7 +1001,12 @@ class _ProcedureDialogState extends ConsumerState<_ProcedureDialog> {
           ],
         ),
       ),
-      actions: _dialogActions(context, l10n.clinicalRequestProcedureAction, _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.clinicalRequestProcedureAction,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1085,7 +1089,12 @@ class _CarePlanDialogState extends ConsumerState<_CarePlanDialog> {
           ],
         ),
       ),
-      actions: _dialogActions(context, l10n.clinicalCarePlanAction, _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.clinicalCarePlanAction,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1099,7 +1108,10 @@ class _CarePlanDialogState extends ConsumerState<_CarePlanDialog> {
     });
     final AppFailure? failure = await ref
         .read(clinicalWorkspaceControllerProvider.notifier)
-        .addCarePlan(plan: _planController.text.trim(), startDate: DateTime.now());
+        .addCarePlan(
+          plan: _planController.text.trim(),
+          startDate: DateTime.now(),
+        );
     _finishSubmit(failure);
   }
 
@@ -1158,7 +1170,12 @@ class _LabOrderDialogState extends ConsumerState<_LabOrderDialog> {
           ),
         ],
       ),
-      actions: _dialogActions(context, l10n.clinicalRequestLabAction, _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.clinicalRequestLabAction,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1249,7 +1266,12 @@ class _RadiologyOrderDialogState extends ConsumerState<_RadiologyOrderDialog> {
           ),
         ],
       ),
-      actions: _dialogActions(context, l10n.clinicalRequestRadiologyAction, _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.clinicalRequestRadiologyAction,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1410,7 +1432,12 @@ class _PrescriptionDialogState extends ConsumerState<_PrescriptionDialog> {
           ],
         ),
       ),
-      actions: _dialogActions(context, l10n.clinicalPrescribeAction, _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.clinicalPrescribeAction,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
@@ -1606,12 +1633,19 @@ class _FollowUpDialogState extends ConsumerState<_FollowUpDialog> {
           ),
         ],
       ),
-      actions: _dialogActions(context, l10n.opdFollowUpAction, _isSaving, _submit),
+      actions: _dialogActions(
+        context,
+        l10n.opdFollowUpAction,
+        _isSaving,
+        _submit,
+      ),
     );
   }
 
   Future<void> _submit() async {
-    final DateTime? scheduledAt = DateTime.tryParse(_dateController.text.trim());
+    final DateTime? scheduledAt = DateTime.tryParse(
+      _dateController.text.trim(),
+    );
     if (scheduledAt == null) {
       setState(() => _failure = AppFailure.validation());
       return;
@@ -1952,7 +1986,8 @@ List<AppSelectOption<String>> _statusOptions(List<String> values) {
 }
 
 AppWorkspaceStatus _entryStatus(ClinicalWorklistEntry item) {
-  final String value = item.stage ?? item.status ?? item.nextStep ?? item.sourceQueue;
+  final String value =
+      item.stage ?? item.status ?? item.nextStep ?? item.sourceQueue;
   return AppWorkspaceStatus(label: _apiLabel(value), tone: _statusTone(value));
 }
 
@@ -2044,7 +2079,9 @@ String _consultationSummaryHtml(
   final StringBuffer buffer = StringBuffer()
     ..write('<h1>${_escapeHtml(l10n.clinicalConsultationSummaryTitle)}</h1>')
     ..write('<p>${_escapeHtml(entry.displayTitle)}</p>')
-    ..write('<p>${_escapeHtml(entry.encounterPublicId ?? entry.encounterId)}</p>')
+    ..write(
+      '<p>${_escapeHtml(entry.encounterPublicId ?? entry.encounterId)}</p>',
+    )
     ..write('<h2>${_escapeHtml(l10n.opdClinicalNotesSummaryLabel)}</h2>')
     ..write(_recordsHtml(bundle.clinicalNotes))
     ..write('<h2>${_escapeHtml(l10n.clinicalDiagnosesTitle)}</h2>')
@@ -2068,11 +2105,15 @@ String _recordsHtml(List<ClinicalRelatedRecord> records) {
   for (final ClinicalRelatedRecord record in records) {
     buffer
       ..write('<li>')
-      ..write(_escapeHtml(_joinDisplay(<String?>[
-        record.title,
-        record.subtitle,
-        record.status == null ? null : _apiLabel(record.status!),
-      ])))
+      ..write(
+        _escapeHtml(
+          _joinDisplay(<String?>[
+            record.title,
+            record.subtitle,
+            record.status == null ? null : _apiLabel(record.status!),
+          ]),
+        ),
+      )
       ..write('</li>');
   }
   buffer.write('</ul>');

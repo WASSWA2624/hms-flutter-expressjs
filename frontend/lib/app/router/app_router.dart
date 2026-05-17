@@ -257,10 +257,10 @@ class _AppShell extends ConsumerWidget {
         : null;
     final List<_ShellDestinationRoute> shellDestinations =
         _localizedShellDestinations(
-          l10n,
-          opdWorkloadCount: opdWorkloadCount,
-          clinicalWorkloadCount: clinicalWorkloadCount,
-        )
+              l10n,
+              opdWorkloadCount: opdWorkloadCount,
+              clinicalWorkloadCount: clinicalWorkloadCount,
+            )
             .where((_ShellDestinationRoute destination) {
               return _canAccessShellRoute(destination.route, accessPolicy);
             })

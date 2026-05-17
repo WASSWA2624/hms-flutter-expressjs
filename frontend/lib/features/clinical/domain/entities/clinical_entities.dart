@@ -286,13 +286,15 @@ final class ClinicalEncounterBundle {
 
   int get openActionCount {
     return <ClinicalRelatedRecord>[
-      ...labOrders,
-      ...radiologyOrders,
-      ...pharmacyOrders,
-      ...referrals,
-      ...followUps,
-      ...admissions,
-    ].where((ClinicalRelatedRecord record) => !_isTerminal(record.status)).length;
+          ...labOrders,
+          ...radiologyOrders,
+          ...pharmacyOrders,
+          ...referrals,
+          ...followUps,
+          ...admissions,
+        ]
+        .where((ClinicalRelatedRecord record) => !_isTerminal(record.status))
+        .length;
   }
 
   ClinicalEncounterBundle copyWith({
@@ -398,15 +400,16 @@ final class ClinicalWorkspaceState {
 
   int get urgentCount {
     return worklist.items
-        .where((ClinicalWorklistEntry item) => item.isUrgent && !item.isTerminal)
+        .where(
+          (ClinicalWorklistEntry item) => item.isUrgent && !item.isTerminal,
+        )
         .length;
   }
 
   int get resultsReadyCount {
     return worklist.items
         .where(
-          (ClinicalWorklistEntry item) =>
-              item.resultsReady && !item.isTerminal,
+          (ClinicalWorklistEntry item) => item.resultsReady && !item.isTerminal,
         )
         .length;
   }
@@ -421,7 +424,9 @@ final class ClinicalWorkspaceState {
   }
 
   int get completedCount {
-    return worklist.items.where((ClinicalWorklistEntry item) => item.isTerminal).length;
+    return worklist.items
+        .where((ClinicalWorklistEntry item) => item.isTerminal)
+        .length;
   }
 
   ClinicalWorkspaceState copyWith({
@@ -466,7 +471,8 @@ bool clinicalWorklistEntryMatchesScope(
 }
 
 bool _matchesReviewState(ClinicalWorklistEntry item) {
-  final String value = '${item.stage ?? ''} ${item.nextStep ?? ''}'.toUpperCase();
+  final String value = '${item.stage ?? ''} ${item.nextStep ?? ''}'
+      .toUpperCase();
   return value.contains('REVIEW') || value.contains('DOCTOR');
 }
 

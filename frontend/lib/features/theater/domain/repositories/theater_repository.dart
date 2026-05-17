@@ -9,6 +9,11 @@ abstract interface class TheaterRepository {
 
   Future<Result<TheaterCase>> scheduleCase(Map<String, Object?> payload);
 
+  Future<Result<TheaterCase>> updateCaseSchedule(
+    String caseId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<TheaterCase>> updateStage(
     String caseId,
     Map<String, Object?> payload,

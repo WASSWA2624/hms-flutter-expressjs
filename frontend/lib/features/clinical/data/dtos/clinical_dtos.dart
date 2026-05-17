@@ -57,7 +57,8 @@ final class ClinicalEncounterDto {
   ClinicalWorklistEntry toWorklistEntry({String sourceQueue = 'ENCOUNTER'}) {
     final ClinicalJsonMap? patient = _nullableMap(json['patient']);
     final ClinicalJsonMap? provider = _nullableMap(json['provider']);
-    final DateTime? updatedAt = _date(json['updated_at']) ?? _date(json['ended_at']);
+    final DateTime? updatedAt =
+        _date(json['updated_at']) ?? _date(json['ended_at']);
 
     return ClinicalWorklistEntry(
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
@@ -79,7 +80,8 @@ final class ClinicalEncounterDto {
       currentLocation: _string(json['current_location']),
       providerUserId: _string(json['provider_user_id']),
       providerDisplayName:
-          _providerDisplayName(provider) ?? _string(json['provider_display_name']),
+          _providerDisplayName(provider) ??
+          _string(json['provider_display_name']),
       startedAt: _date(json['started_at']),
       updatedAt: updatedAt,
       isUrgent: _isUrgentEncounter(json),
@@ -93,9 +95,9 @@ final class ClinicalAdmissionDto {
   final ClinicalJsonMap json;
 
   ClinicalWorklistEntry toWorklistEntry() {
-    final ClinicalJsonMap? activeAssignment = _list(json['bed_assignments'])
-        .cast<ClinicalJsonMap?>()
-        .firstOrNull;
+    final ClinicalJsonMap? activeAssignment = _list(
+      json['bed_assignments'],
+    ).cast<ClinicalJsonMap?>().firstOrNull;
     final ClinicalJsonMap? bed = _nullableMap(activeAssignment?['bed']);
     final ClinicalJsonMap? ward = _nullableMap(bed?['ward']);
     final ClinicalJsonMap? room = _nullableMap(bed?['room']);
@@ -249,7 +251,10 @@ ClinicalEncounterBundle decodeEncounterBundle(
   );
 }
 
-List<ClinicalRelatedRecord> decodeRelatedRecords(Object? responseData, String kind) {
+List<ClinicalRelatedRecord> decodeRelatedRecords(
+  Object? responseData,
+  String kind,
+) {
   final ClinicalJsonMap response = _expectMap(responseData);
   return _list(response['data'])
       .map((ClinicalJsonMap json) => ClinicalRelatedRecordDto(json, kind))

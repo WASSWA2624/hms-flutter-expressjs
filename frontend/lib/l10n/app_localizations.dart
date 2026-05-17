@@ -4755,6 +4755,336 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong. Try again.'**
   String get errorUnexpectedMessage;
+
+  /// Navigation label for the clinical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical'**
+  String get navigationClinicalLabel;
+
+  /// Clinical workspace page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical workspace'**
+  String get clinicalTitle;
+
+  /// Clinical workspace page description.
+  ///
+  /// In en, this message translates to:
+  /// **'Review clinical queues, document care, order services, prescribe, refer, admit, and complete encounters.'**
+  String get clinicalDescription;
+
+  /// Clinical workspace loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading clinical workspace'**
+  String get clinicalLoadingTitle;
+
+  /// Clinical workspace loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading provider worklist and encounter context.'**
+  String get clinicalLoadingBody;
+
+  /// Clinical workspace live synchronization status.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get clinicalLiveStatus;
+
+  /// Clinical workspace saving status.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get clinicalSavingStatus;
+
+  /// Clinical workspace successful save message.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical changes saved.'**
+  String get clinicalSavedMessage;
+
+  /// Semantic label for clinical workspace filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical filters'**
+  String get clinicalFiltersLabel;
+
+  /// Clinical worklist search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search clinical worklist'**
+  String get clinicalSearchLabel;
+
+  /// Clinical worklist search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient, encounter, queue, provider, or location'**
+  String get clinicalSearchHint;
+
+  /// Clinical queue scope filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue scope'**
+  String get clinicalScopeFilterLabel;
+
+  /// Clinical queue scope label for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get clinicalTodayScopeLabel;
+
+  /// Clinical summary label for encounters waiting review.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting review'**
+  String get clinicalWaitingReviewSummaryLabel;
+
+  /// Clinical summary label for urgent encounters.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get clinicalUrgentSummaryLabel;
+
+  /// Clinical summary label for encounters with results ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Results ready'**
+  String get clinicalResultsReadySummaryLabel;
+
+  /// Clinical summary label for encounters in consultation.
+  ///
+  /// In en, this message translates to:
+  /// **'In consultation'**
+  String get clinicalInConsultationSummaryLabel;
+
+  /// Clinical summary label for completed encounters.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get clinicalCompletedSummaryLabel;
+
+  /// Clinical provider worklist title.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider worklist'**
+  String get clinicalWorklistTitle;
+
+  /// Clinical provider worklist description.
+  ///
+  /// In en, this message translates to:
+  /// **'Open consultations, admissions, triage handoffs, and result-review queues.'**
+  String get clinicalWorklistDescription;
+
+  /// Clinical empty worklist title.
+  ///
+  /// In en, this message translates to:
+  /// **'No clinical work'**
+  String get clinicalNoWorklistTitle;
+
+  /// Clinical empty worklist body.
+  ///
+  /// In en, this message translates to:
+  /// **'No encounters match the current search and queue scope.'**
+  String get clinicalNoWorklistBody;
+
+  /// Clinical no selection title.
+  ///
+  /// In en, this message translates to:
+  /// **'No encounter selected'**
+  String get clinicalNoSelectionTitle;
+
+  /// Clinical no selection body.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a patient from the worklist to review context, document care, and place orders.'**
+  String get clinicalNoSelectionBody;
+
+  /// Clinical source queue label.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get clinicalSourceQueueLabel;
+
+  /// Clinical worklist last updated column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get clinicalLastUpdatedLabel;
+
+  /// Clinical encounter number label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get clinicalEncounterNumberLabel;
+
+  /// Clinical location label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get clinicalLocationLabel;
+
+  /// Clinical actions panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical actions'**
+  String get clinicalActionsTitle;
+
+  /// Clinical add note action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get clinicalAddNoteAction;
+
+  /// Clinical add diagnosis action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add diagnosis'**
+  String get clinicalAddDiagnosisAction;
+
+  /// Clinical request lab action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Request lab'**
+  String get clinicalRequestLabAction;
+
+  /// Clinical request radiology action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Request radiology'**
+  String get clinicalRequestRadiologyAction;
+
+  /// Clinical prescribe action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescribe'**
+  String get clinicalPrescribeAction;
+
+  /// Clinical add procedure action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add procedure'**
+  String get clinicalRequestProcedureAction;
+
+  /// Clinical care plan action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Care plan'**
+  String get clinicalCarePlanAction;
+
+  /// Clinical request admission action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Request admission'**
+  String get clinicalRequestAdmissionAction;
+
+  /// Clinical complete consultation action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete consultation'**
+  String get clinicalCompleteConsultationAction;
+
+  /// Clinical print summary action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Print summary'**
+  String get clinicalPrintSummaryAction;
+
+  /// Clinical result review panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Result review'**
+  String get clinicalResultReviewTitle;
+
+  /// Clinical result review panel body.
+  ///
+  /// In en, this message translates to:
+  /// **'Released diagnostic results are ready for clinical review.'**
+  String get clinicalResultReviewBody;
+
+  /// Clinical no results ready body.
+  ///
+  /// In en, this message translates to:
+  /// **'No released lab or radiology results are ready for review.'**
+  String get clinicalNoResultsReadyBody;
+
+  /// Clinical diagnoses section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnoses'**
+  String get clinicalDiagnosesTitle;
+
+  /// Clinical care plans section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Care plans'**
+  String get clinicalCarePlansTitle;
+
+  /// Clinical orders section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get clinicalOrdersTitle;
+
+  /// Clinical handoffs section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Handoffs'**
+  String get clinicalHandoffsTitle;
+
+  /// Clinical term search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical term'**
+  String get clinicalTermSearchLabel;
+
+  /// Clinical care plan field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Care plan'**
+  String get clinicalCarePlanLabel;
+
+  /// Clinical prescription dose amount field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose amount'**
+  String get clinicalDoseAmountLabel;
+
+  /// Clinical prescription dose unit field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose unit'**
+  String get clinicalDoseUnitLabel;
+
+  /// Clinical prescription duration value field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get clinicalDurationValueLabel;
+
+  /// Clinical prescription duration unit field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration unit'**
+  String get clinicalDurationUnitLabel;
+
+  /// Clinical prescription instructions field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get clinicalInstructionsLabel;
+
+  /// Clinical admission available bed field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Available bed'**
+  String get clinicalAvailableBedLabel;
+
+  /// Clinical consultation summary print title.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation summary'**
+  String get clinicalConsultationSummaryTitle;
 }
 
 class _AppLocalizationsDelegate
