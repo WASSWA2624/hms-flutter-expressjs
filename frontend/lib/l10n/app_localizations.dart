@@ -6639,6 +6639,522 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refused'**
   String get ipdMedicationRefused;
+
+  /// Navigation label for the nursing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing'**
+  String get navigationNursingLabel;
+
+  /// Nursing workspace page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing'**
+  String get nursingTitle;
+
+  /// Nursing workspace page description.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor ward queues, observations, medication administration, handovers, transfers, and escalation.'**
+  String get nursingDescription;
+
+  /// Nursing workspace loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading nursing workspace'**
+  String get nursingLoadingTitle;
+
+  /// Nursing workspace loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading ward patients, observations, medications, and handovers.'**
+  String get nursingLoadingBody;
+
+  /// Nursing workspace live synchronization status.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get nursingLiveStatus;
+
+  /// Nursing workspace saving status.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get nursingSavingStatus;
+
+  /// Snackbar message after a nursing workspace mutation succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing changes saved.'**
+  String get nursingSavedMessage;
+
+  /// Nursing summary label for assigned ward patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned ward'**
+  String get nursingAssignedWardSummaryLabel;
+
+  /// Nursing summary label for urgent ward patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get nursingUrgentSummaryLabel;
+
+  /// Nursing summary label for patients with medication due.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication due'**
+  String get nursingMedicationDueSummaryLabel;
+
+  /// Nursing summary label for pending handovers.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover pending'**
+  String get nursingHandoverPendingSummaryLabel;
+
+  /// Nursing summary label for pending transfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer pending'**
+  String get nursingTransferPendingSummaryLabel;
+
+  /// Nursing summary label for pending discharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge pending'**
+  String get nursingDischargePendingSummaryLabel;
+
+  /// Accessibility label for nursing workspace filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing filters'**
+  String get nursingFiltersLabel;
+
+  /// Nursing worklist search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search nursing worklist'**
+  String get nursingSearchLabel;
+
+  /// Nursing worklist search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient, admission, encounter, ward, bed, or observation'**
+  String get nursingSearchHint;
+
+  /// Nursing queue scope filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue scope'**
+  String get nursingScopeFilterLabel;
+
+  /// Nursing ward or bed filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward or bed'**
+  String get nursingWardFilterLabel;
+
+  /// Nursing ward or bed filter hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by ward or bed'**
+  String get nursingWardFilterHint;
+
+  /// Nursing queue scope option for assigned ward patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned ward'**
+  String get nursingScopeAssignedWardLabel;
+
+  /// Nursing queue scope option for urgent patients.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get nursingScopeUrgentLabel;
+
+  /// Nursing queue scope option for medication due.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication due'**
+  String get nursingScopeMedicationDueLabel;
+
+  /// Nursing queue scope option for handover pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover pending'**
+  String get nursingScopeHandoverPendingLabel;
+
+  /// Nursing queue scope option for transfer pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer pending'**
+  String get nursingScopeTransferPendingLabel;
+
+  /// Nursing queue scope option for discharge pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge pending'**
+  String get nursingScopeDischargePendingLabel;
+
+  /// Nursing queue scope option for all ward patients.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get nursingScopeAllLabel;
+
+  /// Nursing ward worklist panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward worklist'**
+  String get nursingWorklistTitle;
+
+  /// Nursing ward worklist panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients needing observations, medication, handover, transfer, or discharge coordination.'**
+  String get nursingWorklistDescription;
+
+  /// Nursing empty worklist title.
+  ///
+  /// In en, this message translates to:
+  /// **'No nursing work'**
+  String get nursingNoWorklistTitle;
+
+  /// Nursing empty worklist body.
+  ///
+  /// In en, this message translates to:
+  /// **'No ward patients match the current search and queue scope.'**
+  String get nursingNoWorklistBody;
+
+  /// Nursing detail empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No ward patient selected'**
+  String get nursingNoSelectionTitle;
+
+  /// Nursing detail empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a patient from the worklist to review observations, medications, handovers, and ward activity.'**
+  String get nursingNoSelectionBody;
+
+  /// Accessibility label for the selected nursing patient context header.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected nursing patient context'**
+  String get nursingPatientContextLabel;
+
+  /// Nursing worklist location column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get nursingLocationColumnLabel;
+
+  /// Nursing worklist due action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Due action'**
+  String get nursingDueActionColumnLabel;
+
+  /// Nursing worklist last observation column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last observation'**
+  String get nursingLastObservationColumnLabel;
+
+  /// Nursing patient context admission field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission'**
+  String get nursingAdmissionLabel;
+
+  /// Nursing patient context encounter field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get nursingEncounterLabel;
+
+  /// Nursing patient context location field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get nursingLocationLabel;
+
+  /// Nursing patient context facility field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get nursingFacilityLabel;
+
+  /// Nursing patient context ICU field label.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU'**
+  String get nursingIcuLabel;
+
+  /// Nursing patient context bed field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed'**
+  String get nursingBedLabel;
+
+  /// Nursing actions panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing actions'**
+  String get nursingActionsTitle;
+
+  /// Action label for recording nursing vitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Record vitals'**
+  String get nursingActionRecordVitals;
+
+  /// Action label for adding a nursing note.
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get nursingActionAddNote;
+
+  /// Action label for administering medication.
+  ///
+  /// In en, this message translates to:
+  /// **'Administer medication'**
+  String get nursingActionAdministerMedication;
+
+  /// Action label for completing a nursing task.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete task'**
+  String get nursingActionCompleteTask;
+
+  /// Action label for creating a nursing handover.
+  ///
+  /// In en, this message translates to:
+  /// **'Create handover'**
+  String get nursingActionCreateHandover;
+
+  /// Action label for escalating nursing care.
+  ///
+  /// In en, this message translates to:
+  /// **'Escalate'**
+  String get nursingActionEscalate;
+
+  /// Action label for acknowledging or updating a transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge transfer'**
+  String get nursingActionAcknowledgeTransfer;
+
+  /// Action label for accepting a nursing handover.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept handover'**
+  String get nursingActionAcceptHandover;
+
+  /// Nursing observations section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Observations'**
+  String get nursingObservationsTitle;
+
+  /// Nursing medications section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Medications'**
+  String get nursingMedicationsTitle;
+
+  /// Nursing notes section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing notes'**
+  String get nursingNotesTitle;
+
+  /// Nursing care plans section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Care plans'**
+  String get nursingCarePlansTitle;
+
+  /// Nursing handovers section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Handovers'**
+  String get nursingHandoversTitle;
+
+  /// Nursing ward activity section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward activity'**
+  String get nursingWardActivityTitle;
+
+  /// Nursing record list empty label.
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet'**
+  String get nursingNoRecordsLabel;
+
+  /// Nursing vitals type field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vital type'**
+  String get nursingVitalsTypeLabel;
+
+  /// Nursing vital value field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get nursingVitalValueLabel;
+
+  /// Nursing vital unit field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get nursingVitalUnitLabel;
+
+  /// Nursing blood pressure systolic field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic'**
+  String get nursingSystolicLabel;
+
+  /// Nursing blood pressure diastolic field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic'**
+  String get nursingDiastolicLabel;
+
+  /// Nursing mean arterial pressure field label.
+  ///
+  /// In en, this message translates to:
+  /// **'MAP'**
+  String get nursingMapLabel;
+
+  /// Nursing vital recorded-at field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded at'**
+  String get nursingRecordedAtLabel;
+
+  /// Nursing medication administered-at field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Administered at'**
+  String get nursingAdministeredAtLabel;
+
+  /// Hint for ISO-8601 date time entry in nursing forms.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DDTHH:mm:ssZ'**
+  String get nursingDateTimeHint;
+
+  /// Nursing note field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get nursingNoteLabel;
+
+  /// Nursing task field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get nursingTaskLabel;
+
+  /// Nursing medication selection field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication'**
+  String get nursingMedicationLabel;
+
+  /// Nursing medication dose field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose'**
+  String get nursingDoseLabel;
+
+  /// Nursing medication route field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get nursingRouteLabel;
+
+  /// Nursing medication administration status field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Administration status'**
+  String get nursingAdministrationStatusLabel;
+
+  /// Nursing medication frequency field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get nursingFrequencyLabel;
+
+  /// Nursing medication administration note field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Administration note'**
+  String get nursingAdministrationNoteLabel;
+
+  /// Nursing medication reminder scheduling checkbox label.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule reminders'**
+  String get nursingScheduleRemindersLabel;
+
+  /// Nursing medication administration confirmation checkbox label.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm medication administration'**
+  String get nursingConfirmMedicationLabel;
+
+  /// Nursing medication administration confirmation checkbox helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify the patient, medication, dose, route, and time before saving.'**
+  String get nursingConfirmMedicationSubtitle;
+
+  /// Nursing handover recipient user ID field label.
+  ///
+  /// In en, this message translates to:
+  /// **'To user ID'**
+  String get nursingHandoverToUserLabel;
+
+  /// Nursing handover notes field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover notes'**
+  String get nursingHandoverNotesLabel;
+
+  /// Nursing escalation message field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Escalation message'**
+  String get nursingEscalationMessageLabel;
+
+  /// Nursing escalation confirmation checkbox label.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm escalation'**
+  String get nursingConfirmEscalationLabel;
+
+  /// Nursing transfer action field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer action'**
+  String get nursingTransferActionLabel;
+
+  /// Nursing transfer destination bed ID field label.
+  ///
+  /// In en, this message translates to:
+  /// **'To bed ID'**
+  String get nursingToBedLabel;
+
+  /// Nursing transfer confirmation checkbox label.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm transfer update'**
+  String get nursingConfirmTransferLabel;
 }
 
 class _AppLocalizationsDelegate

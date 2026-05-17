@@ -3530,4 +3530,270 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ipdMedicationRefused => 'Refused';
+
+  @override
+  String get navigationNursingLabel => 'Nursing';
+
+  @override
+  String get nursingTitle => 'Nursing';
+
+  @override
+  String get nursingDescription =>
+      'Monitor ward queues, observations, medication administration, handovers, transfers, and escalation.';
+
+  @override
+  String get nursingLoadingTitle => 'Loading nursing workspace';
+
+  @override
+  String get nursingLoadingBody =>
+      'Loading ward patients, observations, medications, and handovers.';
+
+  @override
+  String get nursingLiveStatus => 'Live sync';
+
+  @override
+  String get nursingSavingStatus => 'Saving';
+
+  @override
+  String get nursingSavedMessage => 'Nursing changes saved.';
+
+  @override
+  String get nursingAssignedWardSummaryLabel => 'Assigned ward';
+
+  @override
+  String get nursingUrgentSummaryLabel => 'Urgent';
+
+  @override
+  String get nursingMedicationDueSummaryLabel => 'Medication due';
+
+  @override
+  String get nursingHandoverPendingSummaryLabel => 'Handover pending';
+
+  @override
+  String get nursingTransferPendingSummaryLabel => 'Transfer pending';
+
+  @override
+  String get nursingDischargePendingSummaryLabel => 'Discharge pending';
+
+  @override
+  String get nursingFiltersLabel => 'Nursing filters';
+
+  @override
+  String get nursingSearchLabel => 'Search nursing worklist';
+
+  @override
+  String get nursingSearchHint =>
+      'Patient, admission, encounter, ward, bed, or observation';
+
+  @override
+  String get nursingScopeFilterLabel => 'Queue scope';
+
+  @override
+  String get nursingWardFilterLabel => 'Ward or bed';
+
+  @override
+  String get nursingWardFilterHint => 'Filter by ward or bed';
+
+  @override
+  String get nursingScopeAssignedWardLabel => 'Assigned ward';
+
+  @override
+  String get nursingScopeUrgentLabel => 'Urgent';
+
+  @override
+  String get nursingScopeMedicationDueLabel => 'Medication due';
+
+  @override
+  String get nursingScopeHandoverPendingLabel => 'Handover pending';
+
+  @override
+  String get nursingScopeTransferPendingLabel => 'Transfer pending';
+
+  @override
+  String get nursingScopeDischargePendingLabel => 'Discharge pending';
+
+  @override
+  String get nursingScopeAllLabel => 'All';
+
+  @override
+  String get nursingWorklistTitle => 'Ward worklist';
+
+  @override
+  String get nursingWorklistDescription =>
+      'Patients needing observations, medication, handover, transfer, or discharge coordination.';
+
+  @override
+  String get nursingNoWorklistTitle => 'No nursing work';
+
+  @override
+  String get nursingNoWorklistBody =>
+      'No ward patients match the current search and queue scope.';
+
+  @override
+  String get nursingNoSelectionTitle => 'No ward patient selected';
+
+  @override
+  String get nursingNoSelectionBody =>
+      'Open a patient from the worklist to review observations, medications, handovers, and ward activity.';
+
+  @override
+  String get nursingPatientContextLabel => 'Selected nursing patient context';
+
+  @override
+  String get nursingLocationColumnLabel => 'Location';
+
+  @override
+  String get nursingDueActionColumnLabel => 'Due action';
+
+  @override
+  String get nursingLastObservationColumnLabel => 'Last observation';
+
+  @override
+  String get nursingAdmissionLabel => 'Admission';
+
+  @override
+  String get nursingEncounterLabel => 'Encounter';
+
+  @override
+  String get nursingLocationLabel => 'Location';
+
+  @override
+  String get nursingFacilityLabel => 'Facility';
+
+  @override
+  String get nursingIcuLabel => 'ICU';
+
+  @override
+  String get nursingBedLabel => 'Bed';
+
+  @override
+  String get nursingActionsTitle => 'Nursing actions';
+
+  @override
+  String get nursingActionRecordVitals => 'Record vitals';
+
+  @override
+  String get nursingActionAddNote => 'Add note';
+
+  @override
+  String get nursingActionAdministerMedication => 'Administer medication';
+
+  @override
+  String get nursingActionCompleteTask => 'Complete task';
+
+  @override
+  String get nursingActionCreateHandover => 'Create handover';
+
+  @override
+  String get nursingActionEscalate => 'Escalate';
+
+  @override
+  String get nursingActionAcknowledgeTransfer => 'Acknowledge transfer';
+
+  @override
+  String get nursingActionAcceptHandover => 'Accept handover';
+
+  @override
+  String get nursingObservationsTitle => 'Observations';
+
+  @override
+  String get nursingMedicationsTitle => 'Medications';
+
+  @override
+  String get nursingNotesTitle => 'Nursing notes';
+
+  @override
+  String get nursingCarePlansTitle => 'Care plans';
+
+  @override
+  String get nursingHandoversTitle => 'Handovers';
+
+  @override
+  String get nursingWardActivityTitle => 'Ward activity';
+
+  @override
+  String get nursingNoRecordsLabel => 'No records yet';
+
+  @override
+  String get nursingVitalsTypeLabel => 'Vital type';
+
+  @override
+  String get nursingVitalValueLabel => 'Value';
+
+  @override
+  String get nursingVitalUnitLabel => 'Unit';
+
+  @override
+  String get nursingSystolicLabel => 'Systolic';
+
+  @override
+  String get nursingDiastolicLabel => 'Diastolic';
+
+  @override
+  String get nursingMapLabel => 'MAP';
+
+  @override
+  String get nursingRecordedAtLabel => 'Recorded at';
+
+  @override
+  String get nursingAdministeredAtLabel => 'Administered at';
+
+  @override
+  String get nursingDateTimeHint => 'YYYY-MM-DDTHH:mm:ssZ';
+
+  @override
+  String get nursingNoteLabel => 'Note';
+
+  @override
+  String get nursingTaskLabel => 'Task';
+
+  @override
+  String get nursingMedicationLabel => 'Medication';
+
+  @override
+  String get nursingDoseLabel => 'Dose';
+
+  @override
+  String get nursingRouteLabel => 'Route';
+
+  @override
+  String get nursingAdministrationStatusLabel => 'Administration status';
+
+  @override
+  String get nursingFrequencyLabel => 'Frequency';
+
+  @override
+  String get nursingAdministrationNoteLabel => 'Administration note';
+
+  @override
+  String get nursingScheduleRemindersLabel => 'Schedule reminders';
+
+  @override
+  String get nursingConfirmMedicationLabel =>
+      'Confirm medication administration';
+
+  @override
+  String get nursingConfirmMedicationSubtitle =>
+      'Verify the patient, medication, dose, route, and time before saving.';
+
+  @override
+  String get nursingHandoverToUserLabel => 'To user ID';
+
+  @override
+  String get nursingHandoverNotesLabel => 'Handover notes';
+
+  @override
+  String get nursingEscalationMessageLabel => 'Escalation message';
+
+  @override
+  String get nursingConfirmEscalationLabel => 'Confirm escalation';
+
+  @override
+  String get nursingTransferActionLabel => 'Transfer action';
+
+  @override
+  String get nursingToBedLabel => 'To bed ID';
+
+  @override
+  String get nursingConfirmTransferLabel => 'Confirm transfer update';
 }

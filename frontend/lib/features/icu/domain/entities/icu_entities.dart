@@ -8,7 +8,7 @@ final class IcuBoardQuery {
   const IcuBoardQuery({
     this.search = '',
     this.scope = IcuBoardScope.active,
-    this.pageRequest = const AppPageRequest(pageSize: 20),
+    this.pageRequest = const AppPageRequest(),
   });
 
   final String search;

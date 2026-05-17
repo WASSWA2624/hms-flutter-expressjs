@@ -40,7 +40,6 @@ final class IcuPatientDetailDto {
   }
 
   IcuPatientDetail toEntity() {
-    final IcuJsonMap admission = _map(json['admission']);
     final IcuJsonMap patient = _map(json['patient']);
     final IcuJsonMap facility = _map(json['facility']);
     final IcuJsonMap icu = _map(json['icu']);

@@ -17,7 +17,7 @@ final class IpdAdmissionQuery {
     this.search = '',
     this.scope = IpdQueueScope.admissionQueue,
     this.wardId,
-    this.pageRequest = const AppPageRequest(pageSize: 20),
+    this.pageRequest = const AppPageRequest(),
   });
 
   final String search;

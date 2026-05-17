@@ -113,6 +113,18 @@ abstract final class AppRoutes {
     ],
     requiredActiveModules: <String>['inpatient-bed-management'],
   );
+  static const AppRouteData nursing = AppRouteData(
+    name: 'nursing',
+    path: '/nursing',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.patientRead,
+      AppPermissions.lastOfficeRead,
+      AppPermissions.operationsRead,
+    ],
+    requiredActiveModules: <String>['inpatient-bed-management'],
+  );
   static const AppRouteData clinical = AppRouteData(
     name: 'clinical',
     path: '/clinical',
@@ -122,6 +134,19 @@ abstract final class AppRoutes {
       AppPermissions.clinicalWrite,
     ],
     requiredActiveModules: <String>['encounters-vitals'],
+  );
+  static const AppRouteData discharge = AppRouteData(
+    name: 'discharge',
+    path: '/discharge',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+      AppPermissions.pharmacyRead,
+      AppPermissions.billingRead,
+      AppPermissions.operationsRead,
+    ],
+    requiredActiveModules: <String>['inpatient-bed-management'],
   );
   static const AppRouteData theater = AppRouteData(
     name: 'theater',
@@ -189,7 +214,9 @@ abstract final class AppRoutes {
     opd,
     ipd,
     icu,
+    nursing,
     clinical,
+    discharge,
     theater,
     settings,
     tenantFacilitySetup,
@@ -208,7 +235,9 @@ abstract final class AppRoutes {
     opd,
     ipd,
     icu,
+    nursing,
     clinical,
+    discharge,
     theater,
     settings,
     tenantFacilitySetup,

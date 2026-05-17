@@ -122,7 +122,10 @@ final class NursingWorkspaceController
           _emit(
             latest.copyWith(
               selectedDetail: detail,
-              worklist: _replaceSummary(latest.worklist, detail.enrichedSummary),
+              worklist: _replaceSummary(
+                latest.worklist,
+                detail.enrichedSummary,
+              ),
               isRefreshingDetail: false,
             ),
           );
@@ -133,10 +136,7 @@ final class NursingWorkspaceController
         final NursingWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingDetail: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
           );
         }
         return failure;
@@ -159,21 +159,19 @@ final class NursingWorkspaceController
     }
 
     return _mutateSelected(
-      (NursingPatientSummary summary) => _repository.recordVitals(
-        summary,
-        <String, Object?>{
-          'encounter_id': detail.summary.encounterDisplayId,
-          'vital_type': vitalType,
-          'value': value,
-          'unit': unit,
-          'systolic_value': systolicValue,
-          'diastolic_value': diastolicValue,
-          'map_value': mapValue,
-          'recorded_at': (recordedAt ?? DateTime.now())
-              .toUtc()
-              .toIso8601String(),
-        },
-      ),
+      (NursingPatientSummary summary) =>
+          _repository.recordVitals(summary, <String, Object?>{
+            'encounter_id': detail.summary.encounterDisplayId,
+            'vital_type': vitalType,
+            'value': value,
+            'unit': unit,
+            'systolic_value': systolicValue,
+            'diastolic_value': diastolicValue,
+            'map_value': mapValue,
+            'recorded_at': (recordedAt ?? DateTime.now())
+                .toUtc()
+                .toIso8601String(),
+          }),
     );
   }
 
@@ -181,18 +179,12 @@ final class NursingWorkspaceController
     return _mutateSelected(
       (NursingPatientSummary summary) => _repository.addNursingNote(
         summary,
-        <String, Object?>{
-          'nurse_user_id': _currentUserId,
-          'note': note,
-        },
+        <String, Object?>{'nurse_user_id': _currentUserId, 'note': note},
       ),
     );
   }
 
-  Future<AppFailure?> completeTask({
-    required String task,
-    String? notes,
-  }) {
+  Future<AppFailure?> completeTask({required String task, String? notes}) {
     final String combinedNote = <String>[
       '[TASK COMPLETED] ${task.trim()}',
       if (notes != null && notes.trim().isNotEmpty) notes.trim(),
@@ -220,21 +212,19 @@ final class NursingWorkspaceController
     }
 
     return _mutateSelected(
-      (NursingPatientSummary summary) => _repository.createHandover(
-        summary,
-        <String, Object?>{
-          'to_user_id': toUserId,
-          'signoff_notes': notes,
-          'items_json': <String, Object?>{
-            'type': reason ?? 'NURSING_HANDOVER',
-            'admission_id': summary.admissionId,
-            'patient_id': summary.patientDisplayId,
-            'patient_name': summary.patientDisplayName,
-            'location': summary.locationLabel,
-            'stage': summary.stage,
-          },
-        },
-      ),
+      (NursingPatientSummary summary) =>
+          _repository.createHandover(summary, <String, Object?>{
+            'to_user_id': toUserId,
+            'signoff_notes': notes,
+            'items_json': <String, Object?>{
+              'type': reason ?? 'NURSING_HANDOVER',
+              'admission_id': summary.admissionId,
+              'patient_id': summary.patientDisplayId,
+              'patient_name': summary.patientDisplayName,
+              'location': summary.locationLabel,
+              'stage': summary.stage,
+            },
+          }),
     );
   }
 
@@ -279,14 +269,12 @@ final class NursingWorkspaceController
     }
 
     return _mutateSelected(
-      (NursingPatientSummary summary) => _repository.updateTransfer(
-        summary,
-        <String, Object?>{
-          'transfer_request_id': detail.activeTransfer?.id,
-          'action': action,
-          'to_bed_id': toBedId,
-        },
-      ),
+      (NursingPatientSummary summary) =>
+          _repository.updateTransfer(summary, <String, Object?>{
+            'transfer_request_id': detail.activeTransfer?.id,
+            'action': action,
+            'to_bed_id': toBedId,
+          }),
     );
   }
 
@@ -365,9 +353,7 @@ final class NursingWorkspaceController
     } finally {
       final NursingWorkspaceState? latest = _currentState;
       if (showLoading && latest != null) {
-        _emit(
-          latest.copyWith(isRefreshing: false, isRefreshingDetail: false),
-        );
+        _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
     }
@@ -502,7 +488,10 @@ final class NursingWorkspaceController
           _emit(
             latest.copyWith(
               selectedDetail: updated,
-              worklist: _replaceSummary(latest.worklist, updated.enrichedSummary),
+              worklist: _replaceSummary(
+                latest.worklist,
+                updated.enrichedSummary,
+              ),
               isSaving: false,
             ),
           );

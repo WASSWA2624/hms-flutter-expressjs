@@ -18,6 +18,9 @@ import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_di
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
+import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
+import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
+import 'package:hosspi_hms/features/discharge/presentation/pages/discharge_workspace_page.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
@@ -25,6 +28,9 @@ import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.da
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
+import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
+import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
+import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
@@ -98,9 +104,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const IcuWorkspacePage(),
           ),
           GoRoute(
+            path: AppRoutes.nursing.path,
+            name: AppRoutes.nursing.name,
+            builder: (_, _) => const NursingWorkspacePage(),
+          ),
+          GoRoute(
             path: AppRoutes.clinical.path,
             name: AppRoutes.clinical.name,
             builder: (_, _) => const ClinicalWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.discharge.path,
+            name: AppRoutes.discharge.name,
+            builder: (_, _) => const DischargeWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.theater.path,
@@ -184,7 +200,9 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   int? opdWorkloadCount,
   int? ipdWorkloadCount,
   int? icuCriticalCount,
+  int? nursingWorkloadCount,
   int? clinicalWorkloadCount,
+  int? dischargeWorkloadCount,
   int? theaterWorkloadCount,
 }) {
   return <_ShellDestinationRoute>[
@@ -232,12 +250,30 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.nursing,
+      destination: ResponsiveShellDestination(
+        label: 'Nursing',
+        icon: Icons.local_hospital_outlined,
+        selectedIcon: Icons.local_hospital,
+        badgeCount: nursingWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.clinical,
       destination: ResponsiveShellDestination(
         label: l10n.navigationClinicalLabel,
         icon: Icons.medical_information_outlined,
         selectedIcon: Icons.medical_information,
         badgeCount: clinicalWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.discharge,
+      destination: ResponsiveShellDestination(
+        label: 'Discharge',
+        icon: Icons.exit_to_app_outlined,
+        selectedIcon: Icons.exit_to_app,
+        badgeCount: dischargeWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -281,8 +317,16 @@ class _AppShell extends ConsumerWidget {
     final bool canAccessOpd = _canAccessShellRoute(AppRoutes.opd, accessPolicy);
     final bool canAccessIpd = _canAccessShellRoute(AppRoutes.ipd, accessPolicy);
     final bool canAccessIcu = _canAccessShellRoute(AppRoutes.icu, accessPolicy);
+    final bool canAccessNursing = _canAccessShellRoute(
+      AppRoutes.nursing,
+      accessPolicy,
+    );
     final bool canAccessClinical = _canAccessShellRoute(
       AppRoutes.clinical,
+      accessPolicy,
+    );
+    final bool canAccessDischarge = _canAccessShellRoute(
+      AppRoutes.discharge,
       accessPolicy,
     );
     final bool canAccessTheater = _canAccessShellRoute(
@@ -323,6 +367,18 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
+    final int? nursingWorkloadCount = canAccessNursing
+        ? ref
+              .watch(nursingWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (NursingWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
     final int? clinicalWorkloadCount = canAccessClinical
         ? ref
               .watch(clinicalWorkspaceControllerProvider)
@@ -335,6 +391,18 @@ class _AppShell extends ConsumerWidget {
                       state.urgentCount +
                       state.resultsReadyCount;
                   return count > 0 ? count : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? dischargeWorkloadCount = canAccessDischarge
+        ? ref
+              .watch(dischargeWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (DischargeWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
                 },
                 failure: (_) => null,
               )
@@ -357,7 +425,9 @@ class _AppShell extends ConsumerWidget {
               opdWorkloadCount: opdWorkloadCount,
               ipdWorkloadCount: ipdWorkloadCount,
               icuCriticalCount: icuCriticalCount,
+              nursingWorkloadCount: nursingWorkloadCount,
               clinicalWorkloadCount: clinicalWorkloadCount,
+              dischargeWorkloadCount: dischargeWorkloadCount,
               theaterWorkloadCount: theaterWorkloadCount,
             )
             .where((_ShellDestinationRoute destination) {

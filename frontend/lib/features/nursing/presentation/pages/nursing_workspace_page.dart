@@ -146,7 +146,8 @@ class _NursingWorkspaceContentState
           value: state.assignedWardCount,
           icon: Icons.local_hospital_outlined,
           tone: AppWorkspaceStatusTone.info,
-          onPressed: () => controller.applyScope(NursingQueueScope.assignedWard),
+          onPressed: () =>
+              controller.applyScope(NursingQueueScope.assignedWard),
         ),
         _summaryCard(
           context,
@@ -238,7 +239,10 @@ class _NursingWorkspaceContentState
   }) {
     return AppWorkspaceSummaryCard(
       label: label,
-      value: AppFormatters.compactNumber(value, Localizations.localeOf(context)),
+      value: AppFormatters.compactNumber(
+        value,
+        Localizations.localeOf(context),
+      ),
       icon: icon,
       tone: tone,
       compact: true,
@@ -375,10 +379,12 @@ class _NursingDetailPanel extends ConsumerWidget {
           patientName: summary.displayTitle,
           patientNumber: summary.patientDisplayId ?? summary.admissionId,
           demographics: _joinDisplay(<String?>[
-            detail.patientGender == null ? null : _apiLabel(detail.patientGender!),
+            detail.patientGender == null
+                ? null
+                : _apiLabel(detail.patientGender!),
             detail.patientDateOfBirth == null
                 ? null
-                : AppFormatters.date(
+                : AppFormatters.mediumDate(
                     detail.patientDateOfBirth!,
                     Localizations.localeOf(context),
                   ),
@@ -425,7 +431,9 @@ class _NursingDetailPanel extends ConsumerWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.nursingIcuLabel,
-              value: summary.icuStatus == null ? '' : _apiLabel(summary.icuStatus!),
+              value: summary.icuStatus == null
+                  ? ''
+                  : _apiLabel(summary.icuStatus!),
               icon: Icons.monitor_heart_outlined,
               tone: summary.hasCriticalAlert
                   ? AppWorkspaceStatusTone.error
@@ -1532,10 +1540,7 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
     });
     final AppFailure? failure = await ref
         .read(nursingWorkspaceControllerProvider.notifier)
-        .updateTransfer(
-          action: _action,
-          toBedId: _bedController.text.trim(),
-        );
+        .updateTransfer(action: _action, toBedId: _bedController.text.trim());
     _finishSubmit(failure);
   }
 
@@ -1902,18 +1907,26 @@ AppWorkspaceStatus? _statusFromValue(String? value) {
 
 AppWorkspaceStatusTone _statusTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
-    'DISCHARGED' || 'COMPLETED' || 'ACCEPTED' || 'NORMAL' || 'GIVEN' =>
-      AppWorkspaceStatusTone.success,
-    'CRITICAL' || 'HIGH' || 'MISSED' || 'REFUSED' || 'CANCELLED' =>
-      AppWorkspaceStatusTone.error,
+    'DISCHARGED' ||
+    'COMPLETED' ||
+    'ACCEPTED' ||
+    'NORMAL' ||
+    'GIVEN' => AppWorkspaceStatusTone.success,
+    'CRITICAL' ||
+    'HIGH' ||
+    'MISSED' ||
+    'REFUSED' ||
+    'CANCELLED' => AppWorkspaceStatusTone.error,
     'TRANSFER_REQUESTED' ||
     'TRANSFER_IN_PROGRESS' ||
     'DISCHARGE_PLANNED' ||
     'REQUESTED' ||
     'PENDING' ||
     'DELAYED' => AppWorkspaceStatusTone.warning,
-    'ADMITTED_IN_BED' || 'ACTIVE' || 'APPROVED' || 'IN_PROGRESS' =>
-      AppWorkspaceStatusTone.info,
+    'ADMITTED_IN_BED' ||
+    'ACTIVE' ||
+    'APPROVED' ||
+    'IN_PROGRESS' => AppWorkspaceStatusTone.info,
     _ => AppWorkspaceStatusTone.neutral,
   };
 }
@@ -1981,7 +1994,7 @@ String? _dateLabel(BuildContext context, DateTime? value) {
   if (value == null) {
     return null;
   }
-  return AppFormatters.date(value, Localizations.localeOf(context));
+  return AppFormatters.mediumDate(value, Localizations.localeOf(context));
 }
 
 String _apiLabel(String value) {

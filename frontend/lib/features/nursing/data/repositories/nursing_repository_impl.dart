@@ -44,8 +44,9 @@ final class NursingRepositoryImpl implements NursingRepository {
   Future<Result<NursingPatientDetail>> loadPatientDetail(
     NursingPatientSummary summary,
   ) async {
-    final Result<NursingPatientDetail> snapshotResult =
-        await _loadIpdSnapshot(summary);
+    final Result<NursingPatientDetail> snapshotResult = await _loadIpdSnapshot(
+      summary,
+    );
 
     return snapshotResult.when(
       success: (NursingPatientDetail detail) async {
@@ -116,9 +117,11 @@ final class NursingRepositoryImpl implements NursingRepository {
     Map<String, Object?> payload,
   ) async {
     final Result<void> result = await _apiClient.post<void>(
-      ApiEndpoints.nested(HmsApiResource.ipdFlows, summary.apiAdmissionId, <String>[
-        'add-nursing-note',
-      ]),
+      ApiEndpoints.nested(
+        HmsApiResource.ipdFlows,
+        summary.apiAdmissionId,
+        <String>['add-nursing-note'],
+      ),
       data: _withoutEmpty(payload),
       decoder: (_) {},
     );
@@ -131,9 +134,11 @@ final class NursingRepositoryImpl implements NursingRepository {
     Map<String, Object?> payload,
   ) async {
     final Result<void> result = await _apiClient.post<void>(
-      ApiEndpoints.nested(HmsApiResource.ipdFlows, summary.apiAdmissionId, <String>[
-        'add-medication-administration',
-      ]),
+      ApiEndpoints.nested(
+        HmsApiResource.ipdFlows,
+        summary.apiAdmissionId,
+        <String>['add-medication-administration'],
+      ),
       data: _withoutEmpty(payload),
       decoder: (_) {},
     );
@@ -186,9 +191,11 @@ final class NursingRepositoryImpl implements NursingRepository {
     Map<String, Object?> payload,
   ) async {
     final Result<void> result = await _apiClient.post<void>(
-      ApiEndpoints.nested(HmsApiResource.ipdFlows, summary.apiAdmissionId, <String>[
-        'update-transfer',
-      ]),
+      ApiEndpoints.nested(
+        HmsApiResource.ipdFlows,
+        summary.apiAdmissionId,
+        <String>['update-transfer'],
+      ),
       data: _withoutEmpty(payload),
       decoder: (_) {},
     );
@@ -217,8 +224,8 @@ final class NursingRepositoryImpl implements NursingRepository {
       return const <NursingVitalSign>[];
     }
 
-    final Result<List<NursingVitalSign>> result =
-        await _apiClient.get<List<NursingVitalSign>>(
+    final Result<List<NursingVitalSign>> result = await _apiClient
+        .get<List<NursingVitalSign>>(
           ApiEndpoints.collection(HmsApiResource.vitalSigns),
           queryParameters: _withoutEmpty(<String, Object?>{
             'page': 1,
@@ -241,8 +248,8 @@ final class NursingRepositoryImpl implements NursingRepository {
       return const <NursingCarePlan>[];
     }
 
-    final Result<List<NursingCarePlan>> result =
-        await _apiClient.get<List<NursingCarePlan>>(
+    final Result<List<NursingCarePlan>> result = await _apiClient
+        .get<List<NursingCarePlan>>(
           ApiEndpoints.collection(HmsApiResource.carePlans),
           queryParameters: _withoutEmpty(<String, Object?>{
             'page': 1,
@@ -288,9 +295,9 @@ final class NursingRepositoryImpl implements NursingRepository {
       failure: (AppFailure failure) {
         if (_isAccessDenied(failure) ||
             failure.category == AppFailureCategory.validation) {
-          return const <T>[];
+          return <T>[];
         }
-        return const <T>[];
+        return <T>[];
       },
     );
   }

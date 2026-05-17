@@ -4556,5 +4556,349 @@
   "ipdMedicationRefused": "Refused",
   "@ipdMedicationRefused": {
     "description": "Medication administration status option for refused."
+  },
+  "navigationNursingLabel": "Nursing",
+  "@navigationNursingLabel": {
+    "description": "Navigation label for the nursing workspace."
+  },
+  "nursingTitle": "Nursing",
+  "@nursingTitle": {
+    "description": "Nursing workspace page title."
+  },
+  "nursingDescription": "Monitor ward queues, observations, medication administration, handovers, transfers, and escalation.",
+  "@nursingDescription": {
+    "description": "Nursing workspace page description."
+  },
+  "nursingLoadingTitle": "Loading nursing workspace",
+  "@nursingLoadingTitle": {
+    "description": "Nursing workspace loading title."
+  },
+  "nursingLoadingBody": "Loading ward patients, observations, medications, and handovers.",
+  "@nursingLoadingBody": {
+    "description": "Nursing workspace loading body."
+  },
+  "nursingLiveStatus": "Live sync",
+  "@nursingLiveStatus": {
+    "description": "Nursing workspace live synchronization status."
+  },
+  "nursingSavingStatus": "Saving",
+  "@nursingSavingStatus": {
+    "description": "Nursing workspace saving status."
+  },
+  "nursingSavedMessage": "Nursing changes saved.",
+  "@nursingSavedMessage": {
+    "description": "Snackbar message after a nursing workspace mutation succeeds."
+  },
+  "nursingAssignedWardSummaryLabel": "Assigned ward",
+  "@nursingAssignedWardSummaryLabel": {
+    "description": "Nursing summary label for assigned ward patients."
+  },
+  "nursingUrgentSummaryLabel": "Urgent",
+  "@nursingUrgentSummaryLabel": {
+    "description": "Nursing summary label for urgent ward patients."
+  },
+  "nursingMedicationDueSummaryLabel": "Medication due",
+  "@nursingMedicationDueSummaryLabel": {
+    "description": "Nursing summary label for patients with medication due."
+  },
+  "nursingHandoverPendingSummaryLabel": "Handover pending",
+  "@nursingHandoverPendingSummaryLabel": {
+    "description": "Nursing summary label for pending handovers."
+  },
+  "nursingTransferPendingSummaryLabel": "Transfer pending",
+  "@nursingTransferPendingSummaryLabel": {
+    "description": "Nursing summary label for pending transfers."
+  },
+  "nursingDischargePendingSummaryLabel": "Discharge pending",
+  "@nursingDischargePendingSummaryLabel": {
+    "description": "Nursing summary label for pending discharges."
+  },
+  "nursingFiltersLabel": "Nursing filters",
+  "@nursingFiltersLabel": {
+    "description": "Accessibility label for nursing workspace filters."
+  },
+  "nursingSearchLabel": "Search nursing worklist",
+  "@nursingSearchLabel": {
+    "description": "Nursing worklist search field label."
+  },
+  "nursingSearchHint": "Patient, admission, encounter, ward, bed, or observation",
+  "@nursingSearchHint": {
+    "description": "Nursing worklist search field hint."
+  },
+  "nursingScopeFilterLabel": "Queue scope",
+  "@nursingScopeFilterLabel": {
+    "description": "Nursing queue scope filter label."
+  },
+  "nursingWardFilterLabel": "Ward or bed",
+  "@nursingWardFilterLabel": {
+    "description": "Nursing ward or bed filter label."
+  },
+  "nursingWardFilterHint": "Filter by ward or bed",
+  "@nursingWardFilterHint": {
+    "description": "Nursing ward or bed filter hint."
+  },
+  "nursingScopeAssignedWardLabel": "Assigned ward",
+  "@nursingScopeAssignedWardLabel": {
+    "description": "Nursing queue scope option for assigned ward patients."
+  },
+  "nursingScopeUrgentLabel": "Urgent",
+  "@nursingScopeUrgentLabel": {
+    "description": "Nursing queue scope option for urgent patients."
+  },
+  "nursingScopeMedicationDueLabel": "Medication due",
+  "@nursingScopeMedicationDueLabel": {
+    "description": "Nursing queue scope option for medication due."
+  },
+  "nursingScopeHandoverPendingLabel": "Handover pending",
+  "@nursingScopeHandoverPendingLabel": {
+    "description": "Nursing queue scope option for handover pending."
+  },
+  "nursingScopeTransferPendingLabel": "Transfer pending",
+  "@nursingScopeTransferPendingLabel": {
+    "description": "Nursing queue scope option for transfer pending."
+  },
+  "nursingScopeDischargePendingLabel": "Discharge pending",
+  "@nursingScopeDischargePendingLabel": {
+    "description": "Nursing queue scope option for discharge pending."
+  },
+  "nursingScopeAllLabel": "All",
+  "@nursingScopeAllLabel": {
+    "description": "Nursing queue scope option for all ward patients."
+  },
+  "nursingWorklistTitle": "Ward worklist",
+  "@nursingWorklistTitle": {
+    "description": "Nursing ward worklist panel title."
+  },
+  "nursingWorklistDescription": "Patients needing observations, medication, handover, transfer, or discharge coordination.",
+  "@nursingWorklistDescription": {
+    "description": "Nursing ward worklist panel description."
+  },
+  "nursingNoWorklistTitle": "No nursing work",
+  "@nursingNoWorklistTitle": {
+    "description": "Nursing empty worklist title."
+  },
+  "nursingNoWorklistBody": "No ward patients match the current search and queue scope.",
+  "@nursingNoWorklistBody": {
+    "description": "Nursing empty worklist body."
+  },
+  "nursingNoSelectionTitle": "No ward patient selected",
+  "@nursingNoSelectionTitle": {
+    "description": "Nursing detail empty state title."
+  },
+  "nursingNoSelectionBody": "Open a patient from the worklist to review observations, medications, handovers, and ward activity.",
+  "@nursingNoSelectionBody": {
+    "description": "Nursing detail empty state body."
+  },
+  "nursingPatientContextLabel": "Selected nursing patient context",
+  "@nursingPatientContextLabel": {
+    "description": "Accessibility label for the selected nursing patient context header."
+  },
+  "nursingLocationColumnLabel": "Location",
+  "@nursingLocationColumnLabel": {
+    "description": "Nursing worklist location column label."
+  },
+  "nursingDueActionColumnLabel": "Due action",
+  "@nursingDueActionColumnLabel": {
+    "description": "Nursing worklist due action column label."
+  },
+  "nursingLastObservationColumnLabel": "Last observation",
+  "@nursingLastObservationColumnLabel": {
+    "description": "Nursing worklist last observation column label."
+  },
+  "nursingAdmissionLabel": "Admission",
+  "@nursingAdmissionLabel": {
+    "description": "Nursing patient context admission field label."
+  },
+  "nursingEncounterLabel": "Encounter",
+  "@nursingEncounterLabel": {
+    "description": "Nursing patient context encounter field label."
+  },
+  "nursingLocationLabel": "Location",
+  "@nursingLocationLabel": {
+    "description": "Nursing patient context location field label."
+  },
+  "nursingFacilityLabel": "Facility",
+  "@nursingFacilityLabel": {
+    "description": "Nursing patient context facility field label."
+  },
+  "nursingIcuLabel": "ICU",
+  "@nursingIcuLabel": {
+    "description": "Nursing patient context ICU field label."
+  },
+  "nursingBedLabel": "Bed",
+  "@nursingBedLabel": {
+    "description": "Nursing patient context bed field label."
+  },
+  "nursingActionsTitle": "Nursing actions",
+  "@nursingActionsTitle": {
+    "description": "Nursing actions panel title."
+  },
+  "nursingActionRecordVitals": "Record vitals",
+  "@nursingActionRecordVitals": {
+    "description": "Action label for recording nursing vitals."
+  },
+  "nursingActionAddNote": "Add note",
+  "@nursingActionAddNote": {
+    "description": "Action label for adding a nursing note."
+  },
+  "nursingActionAdministerMedication": "Administer medication",
+  "@nursingActionAdministerMedication": {
+    "description": "Action label for administering medication."
+  },
+  "nursingActionCompleteTask": "Complete task",
+  "@nursingActionCompleteTask": {
+    "description": "Action label for completing a nursing task."
+  },
+  "nursingActionCreateHandover": "Create handover",
+  "@nursingActionCreateHandover": {
+    "description": "Action label for creating a nursing handover."
+  },
+  "nursingActionEscalate": "Escalate",
+  "@nursingActionEscalate": {
+    "description": "Action label for escalating nursing care."
+  },
+  "nursingActionAcknowledgeTransfer": "Acknowledge transfer",
+  "@nursingActionAcknowledgeTransfer": {
+    "description": "Action label for acknowledging or updating a transfer."
+  },
+  "nursingActionAcceptHandover": "Accept handover",
+  "@nursingActionAcceptHandover": {
+    "description": "Action label for accepting a nursing handover."
+  },
+  "nursingObservationsTitle": "Observations",
+  "@nursingObservationsTitle": {
+    "description": "Nursing observations section title."
+  },
+  "nursingMedicationsTitle": "Medications",
+  "@nursingMedicationsTitle": {
+    "description": "Nursing medications section title."
+  },
+  "nursingNotesTitle": "Nursing notes",
+  "@nursingNotesTitle": {
+    "description": "Nursing notes section title."
+  },
+  "nursingCarePlansTitle": "Care plans",
+  "@nursingCarePlansTitle": {
+    "description": "Nursing care plans section title."
+  },
+  "nursingHandoversTitle": "Handovers",
+  "@nursingHandoversTitle": {
+    "description": "Nursing handovers section title."
+  },
+  "nursingWardActivityTitle": "Ward activity",
+  "@nursingWardActivityTitle": {
+    "description": "Nursing ward activity section title."
+  },
+  "nursingNoRecordsLabel": "No records yet",
+  "@nursingNoRecordsLabel": {
+    "description": "Nursing record list empty label."
+  },
+  "nursingVitalsTypeLabel": "Vital type",
+  "@nursingVitalsTypeLabel": {
+    "description": "Nursing vitals type field label."
+  },
+  "nursingVitalValueLabel": "Value",
+  "@nursingVitalValueLabel": {
+    "description": "Nursing vital value field label."
+  },
+  "nursingVitalUnitLabel": "Unit",
+  "@nursingVitalUnitLabel": {
+    "description": "Nursing vital unit field label."
+  },
+  "nursingSystolicLabel": "Systolic",
+  "@nursingSystolicLabel": {
+    "description": "Nursing blood pressure systolic field label."
+  },
+  "nursingDiastolicLabel": "Diastolic",
+  "@nursingDiastolicLabel": {
+    "description": "Nursing blood pressure diastolic field label."
+  },
+  "nursingMapLabel": "MAP",
+  "@nursingMapLabel": {
+    "description": "Nursing mean arterial pressure field label."
+  },
+  "nursingRecordedAtLabel": "Recorded at",
+  "@nursingRecordedAtLabel": {
+    "description": "Nursing vital recorded-at field label."
+  },
+  "nursingAdministeredAtLabel": "Administered at",
+  "@nursingAdministeredAtLabel": {
+    "description": "Nursing medication administered-at field label."
+  },
+  "nursingDateTimeHint": "YYYY-MM-DDTHH:mm:ssZ",
+  "@nursingDateTimeHint": {
+    "description": "Hint for ISO-8601 date time entry in nursing forms."
+  },
+  "nursingNoteLabel": "Note",
+  "@nursingNoteLabel": {
+    "description": "Nursing note field label."
+  },
+  "nursingTaskLabel": "Task",
+  "@nursingTaskLabel": {
+    "description": "Nursing task field label."
+  },
+  "nursingMedicationLabel": "Medication",
+  "@nursingMedicationLabel": {
+    "description": "Nursing medication selection field label."
+  },
+  "nursingDoseLabel": "Dose",
+  "@nursingDoseLabel": {
+    "description": "Nursing medication dose field label."
+  },
+  "nursingRouteLabel": "Route",
+  "@nursingRouteLabel": {
+    "description": "Nursing medication route field label."
+  },
+  "nursingAdministrationStatusLabel": "Administration status",
+  "@nursingAdministrationStatusLabel": {
+    "description": "Nursing medication administration status field label."
+  },
+  "nursingFrequencyLabel": "Frequency",
+  "@nursingFrequencyLabel": {
+    "description": "Nursing medication frequency field label."
+  },
+  "nursingAdministrationNoteLabel": "Administration note",
+  "@nursingAdministrationNoteLabel": {
+    "description": "Nursing medication administration note field label."
+  },
+  "nursingScheduleRemindersLabel": "Schedule reminders",
+  "@nursingScheduleRemindersLabel": {
+    "description": "Nursing medication reminder scheduling checkbox label."
+  },
+  "nursingConfirmMedicationLabel": "Confirm medication administration",
+  "@nursingConfirmMedicationLabel": {
+    "description": "Nursing medication administration confirmation checkbox label."
+  },
+  "nursingConfirmMedicationSubtitle": "Verify the patient, medication, dose, route, and time before saving.",
+  "@nursingConfirmMedicationSubtitle": {
+    "description": "Nursing medication administration confirmation checkbox helper text."
+  },
+  "nursingHandoverToUserLabel": "To user ID",
+  "@nursingHandoverToUserLabel": {
+    "description": "Nursing handover recipient user ID field label."
+  },
+  "nursingHandoverNotesLabel": "Handover notes",
+  "@nursingHandoverNotesLabel": {
+    "description": "Nursing handover notes field label."
+  },
+  "nursingEscalationMessageLabel": "Escalation message",
+  "@nursingEscalationMessageLabel": {
+    "description": "Nursing escalation message field label."
+  },
+  "nursingConfirmEscalationLabel": "Confirm escalation",
+  "@nursingConfirmEscalationLabel": {
+    "description": "Nursing escalation confirmation checkbox label."
+  },
+  "nursingTransferActionLabel": "Transfer action",
+  "@nursingTransferActionLabel": {
+    "description": "Nursing transfer action field label."
+  },
+  "nursingToBedLabel": "To bed ID",
+  "@nursingToBedLabel": {
+    "description": "Nursing transfer destination bed ID field label."
+  },
+  "nursingConfirmTransferLabel": "Confirm transfer update",
+  "@nursingConfirmTransferLabel": {
+    "description": "Nursing transfer confirmation checkbox label."
   }
 }

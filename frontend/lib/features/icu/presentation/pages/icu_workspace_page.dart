@@ -159,7 +159,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
         expandSearch: true,
         search: AppSearchField(
           controller: _searchController,
-          labelText: 'Search ICU',
+          semanticLabel: 'Search ICU',
           hintText: 'Search patient, admission, bed, or alert',
           onSubmitted: (String value) {
             controller.applySearch(value);
@@ -207,7 +207,9 @@ class _IcuBoardPanel extends ConsumerWidget {
         isLoading: state.isRefreshingBoard,
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
-        pageLabelBuilder: _pageLabel,
+        pageLabelBuilder: (AppPage<IcuPatientSummary> page) {
+          return _pageLabel(context, page);
+        },
         onPageChanged: (AppPageRequest request) {
           controller.changePage(request);
         },
@@ -215,7 +217,7 @@ class _IcuBoardPanel extends ConsumerWidget {
           controller.selectPatient(summary);
         },
         rowColorBuilder: _rowColor,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        emptyBuilder: (_) => const AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
           title: 'No ICU patients',
           body:
@@ -353,7 +355,7 @@ class _IcuDetailPanel extends ConsumerWidget {
       );
     }
     if (detail == null) {
-      return AppWorkspaceStatePanel.state(
+      return const AppWorkspaceStatePanel.state(
         variant: AppStateViewVariant.empty,
         title: 'No ICU stay selected',
         body:
@@ -1766,7 +1768,7 @@ String _dateLabel(BuildContext context, DateTime? value) {
   if (value == null) {
     return '';
   }
-  return AppFormatters.date(value, Localizations.localeOf(context));
+  return AppFormatters.mediumDate(value, Localizations.localeOf(context));
 }
 
 String _dateTimeLabel(BuildContext context, DateTime? value) {

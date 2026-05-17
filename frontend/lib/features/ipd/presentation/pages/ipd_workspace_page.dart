@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -164,9 +165,10 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
         expandSearch: true,
         search: AppSearchField(
           controller: _searchController,
-          labelText: l10n.ipdSearchLabel,
+          semanticLabel: l10n.ipdSearchLabel,
           hintText: l10n.ipdSearchHint,
           onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
         ),
         filters: <Widget>[
           AppSelectField<IpdQueueScope>(
@@ -396,7 +398,7 @@ class _IpdDetailPanel extends ConsumerWidget {
                   : _apiLabel(admission.patientGender!),
               admission.patientDateOfBirth == null
                   ? null
-                  : AppFormatters.date(
+                  : AppFormatters.mediumDate(
                       admission.patientDateOfBirth!,
                       Localizations.localeOf(context),
                     ),
@@ -842,7 +844,6 @@ class _IpdTimelineSection extends StatelessWidget {
             subtitle: _dateTimeLabel(context, item.occurredAt),
             description: item.label,
             icon: Icons.timeline_outlined,
-            tone: AppWorkspaceStatusTone.neutral,
           ),
         )
         .toList(growable: false);

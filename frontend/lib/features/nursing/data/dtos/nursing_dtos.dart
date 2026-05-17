@@ -42,7 +42,8 @@ final class NursingPatientSummaryDto {
     return NursingPatientSummary(
       id: id,
       admissionId: _string(json['admission_id']) ?? id,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       patientId: _string(json['patient_id']),
       patientDisplayId: _string(json['patient_display_id']),
       patientDisplayName: _string(json['patient_display_name']),
@@ -66,8 +67,8 @@ final class NursingPatientSummaryDto {
       hasCriticalAlert: _bool(json['has_critical_alert']),
       criticalSeverity: _string(json['critical_severity']),
       activeIcuStayId: _string(json['active_icu_stay_id']),
-      hasActiveBed: _bool(json['has_active_bed']) ||
-          _bool(flowSummary['has_active_bed']),
+      hasActiveBed:
+          _bool(json['has_active_bed']) || _bool(flowSummary['has_active_bed']),
       medicationDueCount: _int(json['medication_due_count']),
       pendingHandoverCount: _int(json['pending_handover_count']),
       lastObservation: _string(json['last_observation']),
@@ -108,9 +109,7 @@ final class NursingPatientDetailDto {
     final NursingJsonMap icu = _map(json['icu']);
 
     final String id =
-        _string(json['id']) ??
-        _string(admission['id']) ??
-        fallback.admissionId;
+        _string(json['id']) ?? _string(admission['id']) ?? fallback.admissionId;
     final String? patientId =
         _string(json['patient_display_id']) ?? _string(patient['id']);
     final String? encounterId =

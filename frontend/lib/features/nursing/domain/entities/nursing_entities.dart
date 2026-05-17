@@ -309,7 +309,8 @@ final class NursingPatientDetail {
       medicationDueCount: medicationDueCount,
       pendingHandoverCount: pendingHandoverCount,
       lastObservation: _lastTimelineItem?.label ?? summary.lastObservation,
-      lastObservationAt: _lastTimelineItem?.occurredAt ?? summary.lastObservationAt,
+      lastObservationAt:
+          _lastTimelineItem?.occurredAt ?? summary.lastObservationAt,
     );
   }
 
@@ -644,9 +645,12 @@ final class NursingWorkspaceState {
 
   int get assignedWardCount => _filtered(NursingQueueScope.assignedWard).length;
   int get urgentCount => _filtered(NursingQueueScope.urgent).length;
-  int get medicationDueCount => _filtered(NursingQueueScope.medicationDue).length;
+  int get medicationDueCount =>
+      _filtered(NursingQueueScope.medicationDue).length;
   int get handoverPendingCount {
-    return pendingHandovers.where((NursingHandover item) => item.isPending).length;
+    return pendingHandovers
+        .where((NursingHandover item) => item.isPending)
+        .length;
   }
 
   int get transferPendingCount =>
