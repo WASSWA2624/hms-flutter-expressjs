@@ -95,6 +95,16 @@ abstract final class AppRoutes {
     ],
     requiredActiveModules: <String>['opd-flow'],
   );
+  static const AppRouteData clinical = AppRouteData(
+    name: 'clinical',
+    path: '/clinical',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+    ],
+    requiredActiveModules: <String>['encounters-vitals'],
+  );
   static const AppRouteData tenantFacilitySetup = AppRouteData(
     name: 'tenantFacilitySetup',
     path: '/admin/setup',
@@ -147,6 +157,7 @@ abstract final class AppRoutes {
     home,
     patients,
     opd,
+    clinical,
     settings,
     tenantFacilitySetup,
     profile,
@@ -162,6 +173,7 @@ abstract final class AppRoutes {
     home,
     patients,
     opd,
+    clinical,
     settings,
     tenantFacilitySetup,
     profile,

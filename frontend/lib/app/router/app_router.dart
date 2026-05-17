@@ -15,6 +15,9 @@ import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
+import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
@@ -74,6 +77,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.opd.path,
             name: AppRoutes.opd.name,
             builder: (_, _) => const OpdWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.clinical.path,
+            name: AppRoutes.clinical.name,
+            builder: (_, _) => const ClinicalWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.settings.path,
@@ -150,6 +158,7 @@ final class _ShellDestinationRoute {
 List<_ShellDestinationRoute> _localizedShellDestinations(
   AppLocalizations l10n, {
   int? opdWorkloadCount,
+  int? clinicalWorkloadCount,
 }) {
   return <_ShellDestinationRoute>[
     _ShellDestinationRoute(
@@ -175,6 +184,15 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         icon: Icons.local_hospital_outlined,
         selectedIcon: Icons.local_hospital,
         badgeCount: opdWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.clinical,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationClinicalLabel,
+        icon: Icons.medical_information_outlined,
+        selectedIcon: Icons.medical_information,
+        badgeCount: clinicalWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -207,6 +225,10 @@ class _AppShell extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canAccessOpd = _canAccessShellRoute(AppRoutes.opd, accessPolicy);
+    final bool canAccessClinical = _canAccessShellRoute(
+      AppRoutes.clinical,
+      accessPolicy,
+    );
     final int? opdWorkloadCount = canAccessOpd
         ? ref
               .watch(opdWorkspaceControllerProvider)
@@ -217,8 +239,28 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
+    final int? clinicalWorkloadCount = canAccessClinical
+        ? ref
+              .watch(clinicalWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (ClinicalWorkspaceState state) {
+                  final int count =
+                      state.waitingReviewCount +
+                      state.urgentCount +
+                      state.resultsReadyCount;
+                  return count > 0 ? count : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
     final List<_ShellDestinationRoute> shellDestinations =
-        _localizedShellDestinations(l10n, opdWorkloadCount: opdWorkloadCount)
+        _localizedShellDestinations(
+          l10n,
+          opdWorkloadCount: opdWorkloadCount,
+          clinicalWorkloadCount: clinicalWorkloadCount,
+        )
             .where((_ShellDestinationRoute destination) {
               return _canAccessShellRoute(destination.route, accessPolicy);
             })
