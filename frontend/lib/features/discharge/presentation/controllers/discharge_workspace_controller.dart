@@ -19,7 +19,7 @@ final class DischargeWorkspaceController
 
   @override
   Future<Result<DischargeWorkspaceState>> build() async {
-    final DischargeWorklistQuery query = const DischargeWorklistQuery();
+    const DischargeWorklistQuery query = DischargeWorklistQuery();
     final Result<AppPage<IpdAdmissionSummary>> queueResult = await _repository
         .listQueue(query);
 
@@ -128,9 +128,7 @@ final class DischargeWorkspaceController
       return refresh();
     }
 
-    _emit(
-      current.copyWith(isRefreshingDetail: true, clearLastFailure: true),
-    );
+    _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
     final Result<DischargeAdmissionDetail> result = await _repository
         .getAdmissionDetail(admission.apiId);
 
@@ -171,13 +169,23 @@ final class DischargeWorkspaceController
   Future<AppFailure?> completeDischarge({String? summary}) {
     final String? normalizedSummary = _nonEmpty(summary);
     return _submitSelectedAction((DischargeAdmissionDetail detail) {
-      return _repository.finalizeDischarge(
-        detail.summary.apiId,
-        <String, Object?>{
-          'summary': normalizedSummary ?? detail.summaryText,
-          'discharged_at': DateTime.now().toUtc().toIso8601String(),
-        },
-      );
+      if (detail.blockingItems.isNotEmpty) {
+        return Future<Result<void>>.value(
+          Result<void>.failure(
+            AppFailure.validation(
+              validationFields: detail.blockingItems
+                  .map((DischargeClearanceItem item) => item.code.name)
+                  .toSet(),
+            ),
+          ),
+        );
+      }
+
+      return _repository
+          .finalizeDischarge(detail.summary.apiId, <String, Object?>{
+            'summary': normalizedSummary ?? detail.summaryText,
+            'discharged_at': DateTime.now().toUtc().toIso8601String(),
+          });
     });
   }
 
@@ -338,9 +346,12 @@ String? _dateToIso(DateTime? value) {
     return null;
   }
 
-  return DateTime(value.year, value.month, value.day, 12)
-      .toUtc()
-      .toIso8601String();
+  return DateTime(
+    value.year,
+    value.month,
+    value.day,
+    12,
+  ).toUtc().toIso8601String();
 }
 
 String? _nonEmpty(String? value) {

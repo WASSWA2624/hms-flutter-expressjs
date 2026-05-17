@@ -50,7 +50,8 @@ final class DischargeRepositoryImpl implements DischargeRepository {
         return AppPage<IpdAdmissionSummary>(
           items: filtered,
           request: page.request,
-          totalItemCount: stage == null && query.status != DischargeStatusFilter.all
+          totalItemCount:
+              stage == null && query.status != DischargeStatusFilter.all
               ? filtered.length
               : page.totalItemCount,
         );
@@ -73,8 +74,9 @@ final class DischargeRepositoryImpl implements DischargeRepository {
 
     return detailResult.when<Future<Result<DischargeAdmissionDetail>>>(
       success: (Object? responseData) async {
-        final DischargeAdmissionDetail base =
-            DischargeAdmissionDetailDto(responseData: responseData).toEntity();
+        final DischargeAdmissionDetail base = DischargeAdmissionDetailDto(
+          responseData: responseData,
+        ).toEntity();
         final _OptionalRelatedRecords pharmacy = await _fetchPharmacyOrders(
           encounterId: base.encounterId,
           patientId: base.patientId,

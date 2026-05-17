@@ -7155,6 +7155,852 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm transfer update'**
   String get nursingConfirmTransferLabel;
+
+  /// Navigation label for the discharge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge'**
+  String get navigationDischargeLabel;
+
+  /// Discharge workspace page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge workspace'**
+  String get dischargeWorkspaceTitle;
+
+  /// Discharge workspace page description.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinate discharge plans, clearances, medicines, final billing, documents, and bed release.'**
+  String get dischargeWorkspaceDescription;
+
+  /// Discharge workspace operational status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge desk active'**
+  String get dischargeOperationalStatusLabel;
+
+  /// Discharge summary card label for planned discharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get dischargePlannedSummaryLabel;
+
+  /// Discharge summary card label for admissions awaiting a discharge summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary pending'**
+  String get dischargeSummaryPendingSummaryLabel;
+
+  /// Discharge summary card label for generated discharge documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents ready'**
+  String get dischargeDocumentsReadySummaryLabel;
+
+  /// Discharge summary card label for completed discharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get dischargeCompletedSummaryLabel;
+
+  /// Accessible label for discharge queue search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search discharge queue'**
+  String get dischargeQueueSearchLabel;
+
+  /// Hint text for discharge queue search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, admission, or ward'**
+  String get dischargeQueueSearchHint;
+
+  /// Discharge queue status filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge status'**
+  String get dischargeStatusFilterLabel;
+
+  /// Discharge status filter option for all statuses.
+  ///
+  /// In en, this message translates to:
+  /// **'All discharges'**
+  String get dischargeStatusAll;
+
+  /// Discharge status filter option for planned discharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get dischargeStatusPlanned;
+
+  /// Discharge status filter option for admissions awaiting summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary pending'**
+  String get dischargeStatusSummaryPending;
+
+  /// Discharge status filter option for pharmacy clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy pending'**
+  String get dischargeStatusPharmacyPending;
+
+  /// Discharge status filter option for nursing clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing pending'**
+  String get dischargeStatusNursingPending;
+
+  /// Discharge status filter option for billing clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing pending'**
+  String get dischargeStatusBillingPending;
+
+  /// Discharge status filter option for insurance clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance pending'**
+  String get dischargeStatusInsurancePending;
+
+  /// Discharge status filter option for document readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents ready'**
+  String get dischargeStatusDocumentsReady;
+
+  /// Discharge status filter option for completed discharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get dischargeStatusCompleted;
+
+  /// Discharge queue panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge worklist'**
+  String get dischargeWorklistTitle;
+
+  /// Discharge queue panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients with a discharge plan, pending clearance, or recent completion.'**
+  String get dischargeWorklistDescription;
+
+  /// Discharge queue previous page button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous discharges'**
+  String get dischargePreviousPageLabel;
+
+  /// Discharge queue next page button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next discharges'**
+  String get dischargeNextPageLabel;
+
+  /// Pagination label for discharge data lists.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String dischargePageLabel(int from, int to, int total);
+
+  /// Empty state title for discharge queue.
+  ///
+  /// In en, this message translates to:
+  /// **'No discharges in this view'**
+  String get dischargeEmptyQueueTitle;
+
+  /// Empty state body for discharge queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the status filter or search term to find discharge work.'**
+  String get dischargeEmptyQueueBody;
+
+  /// Discharge queue patient column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get dischargePatientColumnLabel;
+
+  /// Discharge queue location column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward and bed'**
+  String get dischargeLocationColumnLabel;
+
+  /// Discharge queue status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get dischargeStatusColumnLabel;
+
+  /// Discharge queue next action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get dischargeNextActionColumnLabel;
+
+  /// Discharge queue target date column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get dischargeTargetColumnLabel;
+
+  /// Discharge detail panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge detail'**
+  String get dischargeDetailTitle;
+
+  /// Discharge detail loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading discharge detail'**
+  String get dischargeDetailLoadingTitle;
+
+  /// Discharge detail loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading patient context, clearance, medicines, billing, and documents.'**
+  String get dischargeDetailLoadingBody;
+
+  /// Discharge detail empty selection title.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a discharge'**
+  String get dischargeNoSelectionTitle;
+
+  /// Discharge detail empty selection body.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a patient from the worklist to coordinate discharge.'**
+  String get dischargeNoSelectionBody;
+
+  /// Discharge summary print action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Print discharge summary'**
+  String get dischargePrintSummaryAction;
+
+  /// Accessible label for discharge patient context card.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient discharge context'**
+  String get dischargePatientContextLabel;
+
+  /// Discharge patient context admission field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission'**
+  String get dischargeAdmissionFieldLabel;
+
+  /// Discharge patient context encounter field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get dischargeEncounterFieldLabel;
+
+  /// Discharge patient context location field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get dischargeLocationFieldLabel;
+
+  /// Discharge patient context target field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Target discharge'**
+  String get dischargeTargetFieldLabel;
+
+  /// Action label to start a discharge plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Start discharge plan'**
+  String get dischargeStartPlanAction;
+
+  /// Action label to edit the discharge summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit summary'**
+  String get dischargeEditSummaryAction;
+
+  /// Action label to request final billing for discharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Request final billing'**
+  String get dischargeRequestBillingAction;
+
+  /// Action label to request discharge medicines.
+  ///
+  /// In en, this message translates to:
+  /// **'Request medicines'**
+  String get dischargeRequestPharmacyAction;
+
+  /// Action label to complete discharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete discharge'**
+  String get dischargeCompleteAction;
+
+  /// Discharge clearance checklist title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearance checklist'**
+  String get dischargeChecklistTitle;
+
+  /// Discharge clearance checklist body.
+  ///
+  /// In en, this message translates to:
+  /// **'Track clinical, nursing, pharmacy, billing, documents, and bed release readiness.'**
+  String get dischargeChecklistBody;
+
+  /// Clearance status for completed discharge checklist item.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get dischargeClearanceComplete;
+
+  /// Clearance status for pending discharge checklist item.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get dischargeClearancePending;
+
+  /// Clearance status for discharge checklist item without backend support.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend gap'**
+  String get dischargeClearanceBackendGap;
+
+  /// Clearance status for discharge data that could not be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get dischargeClearanceUnavailable;
+
+  /// Discharge checklist doctor clearance label.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor summary'**
+  String get dischargeClearanceDoctor;
+
+  /// Discharge checklist nursing clearance label.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing handover'**
+  String get dischargeClearanceNursing;
+
+  /// Discharge checklist pharmacy clearance label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy medicines'**
+  String get dischargeClearancePharmacy;
+
+  /// Discharge checklist billing clearance label.
+  ///
+  /// In en, this message translates to:
+  /// **'Final billing'**
+  String get dischargeClearanceBilling;
+
+  /// Discharge checklist insurance clearance label.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance clearance'**
+  String get dischargeClearanceInsurance;
+
+  /// Discharge checklist documents label.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get dischargeClearanceDocuments;
+
+  /// Discharge checklist bed release label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed release'**
+  String get dischargeClearanceBedRelease;
+
+  /// Discharge checklist housekeeping label.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping'**
+  String get dischargeClearanceHousekeeping;
+
+  /// Discharge clinical summary section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical summary'**
+  String get dischargeSummarySectionTitle;
+
+  /// Discharge clinical summary section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture diagnosis, treatment, medicines, advice, follow-up, warnings, and signature context.'**
+  String get dischargeSummarySectionBody;
+
+  /// Empty state title for missing discharge summary.
+  ///
+  /// In en, this message translates to:
+  /// **'No summary recorded'**
+  String get dischargeEmptySummaryTitle;
+
+  /// Empty state body for missing discharge summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a discharge plan to prepare the printable summary.'**
+  String get dischargeEmptySummaryBody;
+
+  /// Discharge generated document preview title.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated document preview'**
+  String get dischargeGeneratedDocumentsTitle;
+
+  /// Discharge medicines section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge medicines'**
+  String get dischargeMedicinesSectionTitle;
+
+  /// Empty state body for discharge medicines.
+  ///
+  /// In en, this message translates to:
+  /// **'No discharge medicine orders are linked to this admission.'**
+  String get dischargeNoMedicinesBody;
+
+  /// Unavailable state body for pharmacy order data.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy orders could not be loaded. Refresh before completing discharge.'**
+  String get dischargePharmacyUnavailableBody;
+
+  /// Discharge billing section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing clearance'**
+  String get dischargeBillingSectionTitle;
+
+  /// Empty state body for discharge billing records.
+  ///
+  /// In en, this message translates to:
+  /// **'No final invoices are linked to this admission.'**
+  String get dischargeNoInvoicesBody;
+
+  /// Unavailable state body for billing data.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing records could not be loaded. Refresh before completing discharge.'**
+  String get dischargeBillingUnavailableBody;
+
+  /// Generic empty state title for discharge related records.
+  ///
+  /// In en, this message translates to:
+  /// **'No records'**
+  String get dischargeNoRecordsTitle;
+
+  /// Discharge admission timeline section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission timeline'**
+  String get dischargeTimelineSectionTitle;
+
+  /// Empty state title for discharge timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline activity'**
+  String get dischargeNoTimelineTitle;
+
+  /// Empty state body for discharge timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission timeline events will appear after activity is recorded.'**
+  String get dischargeNoTimelineBody;
+
+  /// Discharge backend gaps section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend gaps'**
+  String get dischargeBackendGapsTitle;
+
+  /// Discharge backend gaps empty body.
+  ///
+  /// In en, this message translates to:
+  /// **'These workflow actions are shown as gaps because no confirmed backend contract exists yet.'**
+  String get dischargeBackendGapsBody;
+
+  /// Subtitle for discharge workflow backend gap items.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend endpoint required'**
+  String get dischargeGapBackendSubtitle;
+
+  /// Discharge backend gap title for checklist persistence.
+  ///
+  /// In en, this message translates to:
+  /// **'Persistent clearance checklist'**
+  String get dischargeGapChecklistTitle;
+
+  /// Discharge backend gap body for checklist persistence.
+  ///
+  /// In en, this message translates to:
+  /// **'No confirmed endpoint persists individual doctor, nursing, pharmacy, billing, document, or exit checklist decisions.'**
+  String get dischargeGapChecklistBody;
+
+  /// Discharge backend gap title for insurance clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance clearance workflow'**
+  String get dischargeGapInsuranceTitle;
+
+  /// Discharge backend gap body for insurance clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'No confirmed insurance clearance endpoint is tied to the discharge workflow.'**
+  String get dischargeGapInsuranceBody;
+
+  /// Discharge backend gap title for document readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Document ready state'**
+  String get dischargeGapDocumentsTitle;
+
+  /// Discharge backend gap body for document readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge documents can be generated from the summary, but no confirmed endpoint marks handover documents ready.'**
+  String get dischargeGapDocumentsBody;
+
+  /// Discharge backend gap title for housekeeping task creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping task handoff'**
+  String get dischargeGapHousekeepingTitle;
+
+  /// Discharge backend gap body for housekeeping task creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Final discharge releases the bed, but no confirmed atomic housekeeping task creation is part of that workflow.'**
+  String get dischargeGapHousekeepingBody;
+
+  /// Discharge plan dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge plan'**
+  String get dischargePlanDialogTitle;
+
+  /// Discharge plan dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare the clinical discharge summary and target discharge date.'**
+  String get dischargePlanDialogBody;
+
+  /// Discharge summary text field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge summary'**
+  String get dischargeSummaryFieldLabel;
+
+  /// Discharge summary field helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Include diagnosis, treatment, medicines, advice, follow-up, warning signs, and signature context.'**
+  String get dischargeSummaryHelperText;
+
+  /// Validation message for required discharge summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the discharge summary.'**
+  String get dischargeSummaryRequiredMessage;
+
+  /// Discharge target date field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Target discharge date'**
+  String get dischargeTargetDateLabel;
+
+  /// Discharge date picker button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose date'**
+  String get dischargeDatePickerLabel;
+
+  /// Validation message for invalid discharge date.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid discharge date.'**
+  String get dischargeInvalidDateMessage;
+
+  /// Discharge save plan action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Save plan'**
+  String get dischargeSavePlanAction;
+
+  /// Discharge final billing dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Final billing request'**
+  String get dischargeBillingDialogTitle;
+
+  /// Discharge final billing dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a final invoice request for billing clearance.'**
+  String get dischargeBillingDialogBody;
+
+  /// Discharge billing amount field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get dischargeBillingAmountLabel;
+
+  /// Validation message for required billing amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the final billing amount.'**
+  String get dischargeBillingAmountRequiredMessage;
+
+  /// Discharge billing currency field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get dischargeBillingCurrencyLabel;
+
+  /// Validation message for required billing currency.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the billing currency.'**
+  String get dischargeBillingCurrencyRequiredMessage;
+
+  /// Submit action label for discharge billing request.
+  ///
+  /// In en, this message translates to:
+  /// **'Create invoice request'**
+  String get dischargeRequestBillingSubmitAction;
+
+  /// Discharge pharmacy medicines dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge medicines'**
+  String get dischargePharmacyDialogTitle;
+
+  /// Discharge pharmacy medicines dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Send discharge medicines to pharmacy using the confirmed order route.'**
+  String get dischargePharmacyDialogBody;
+
+  /// Discharge medicine drug field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine'**
+  String get dischargeDrugFieldLabel;
+
+  /// Validation message for required discharge medicine.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a medicine.'**
+  String get dischargeDrugRequiredMessage;
+
+  /// Discharge prescription field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescription'**
+  String get dischargePrescriptionFieldLabel;
+
+  /// Discharge prescription helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'State dose, duration, and any patient instructions.'**
+  String get dischargePrescriptionHelperText;
+
+  /// Validation message for required discharge prescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the discharge prescription.'**
+  String get dischargePrescriptionRequiredMessage;
+
+  /// Discharge medicine quantity field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get dischargeQuantityFieldLabel;
+
+  /// Discharge medicine route field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get dischargeMedicationRouteLabel;
+
+  /// Discharge medicine frequency field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get dischargeMedicationFrequencyLabel;
+
+  /// Discharge medicine instructions field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get dischargeMedicineInstructionsLabel;
+
+  /// Submit action label for discharge pharmacy request.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to pharmacy'**
+  String get dischargeRequestPharmacySubmitAction;
+
+  /// Complete discharge dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete discharge'**
+  String get dischargeCompleteDialogTitle;
+
+  /// Complete discharge dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the patient exit only after required clinical, nursing, pharmacy, billing, and document checks are complete.'**
+  String get dischargeCompleteDialogBody;
+
+  /// Complete discharge blocker state title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearance still pending'**
+  String get dischargeCompletionBlockersTitle;
+
+  /// Complete discharge blocker state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve pending or unavailable clearance items before finalizing the admission.'**
+  String get dischargeCompletionBlockersBody;
+
+  /// Complete discharge confirmation checkbox label.
+  ///
+  /// In en, this message translates to:
+  /// **'I confirm the patient has exited and documents were handed over.'**
+  String get dischargeCompleteConfirmLabel;
+
+  /// Validation message for complete discharge confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm patient exit before completing discharge.'**
+  String get dischargeCompleteConfirmRequiredMessage;
+
+  /// Complete discharge submit action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize discharge'**
+  String get dischargeCompleteSubmitAction;
+
+  /// Next action label for completed discharge rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge completed'**
+  String get dischargeNextActionCompleted;
+
+  /// Next action label for discharge rows awaiting clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear pending items'**
+  String get dischargeNextActionClearance;
+
+  /// Next action label for discharge rows awaiting a plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Start summary'**
+  String get dischargeNextActionStartPlan;
+
+  /// Discharge patient demographic age and sex label.
+  ///
+  /// In en, this message translates to:
+  /// **'{age} / {sex}'**
+  String dischargePatientAgeSexLabel(String age, String sex);
+
+  /// Snackbar shown after a discharge workflow update succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge workflow updated.'**
+  String get dischargeSavedMessage;
+
+  /// Printable discharge report title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge summary'**
+  String get dischargeReportTitle;
+
+  /// Printable discharge report patient label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get dischargeReportPatientLabel;
+
+  /// Printable discharge report patient number label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient number'**
+  String get dischargeReportPatientNoLabel;
+
+  /// Printable discharge report admission label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission'**
+  String get dischargeReportAdmissionLabel;
+
+  /// Printable discharge report location label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get dischargeReportLocationLabel;
+
+  /// Printable discharge report generated date label.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated'**
+  String get dischargeReportGeneratedLabel;
+
+  /// Printable discharge report doctor signature label.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor signature'**
+  String get dischargeDoctorSignatureLabel;
+
+  /// Printable discharge report nurse signature label.
+  ///
+  /// In en, this message translates to:
+  /// **'Nurse signature'**
+  String get dischargeNurseSignatureLabel;
+
+  /// Printable discharge report footer.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from confirmed discharge workflow data.'**
+  String get dischargeReportFooter;
+
+  /// Discharge workspace loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading discharge workspace'**
+  String get dischargeLoadingTitle;
+
+  /// Discharge workspace loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading discharge queue and reference data.'**
+  String get dischargeLoadingBody;
+
+  /// Discharge workspace load error title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge workspace unavailable'**
+  String get dischargeLoadErrorTitle;
+
+  /// Discharge workspace load error body.
+  ///
+  /// In en, this message translates to:
+  /// **'The discharge queue could not be loaded. Refresh to try again.'**
+  String get dischargeLoadErrorBody;
 }
 
 class _AppLocalizationsDelegate

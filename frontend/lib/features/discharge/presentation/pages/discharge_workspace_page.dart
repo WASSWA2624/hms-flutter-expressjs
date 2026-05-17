@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
@@ -266,7 +267,9 @@ class _DischargeQueuePanel extends ConsumerWidget {
             AppDataColumn<IpdAdmissionSummary>(
               label: l10n.dischargeStatusColumnLabel,
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-                return AppWorkspaceStatusBadge(status: _statusFor(context, item));
+                return AppWorkspaceStatusBadge(
+                  status: _statusFor(context, item),
+                );
               },
             ),
             AppDataColumn<IpdAdmissionSummary>(
@@ -383,7 +386,10 @@ class _DischargeDetailContent extends ConsumerWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.dischargeTargetFieldLabel,
-              value: _dateLabel(context, detail.latestDischargeSummary?.dischargedAt),
+              value: _dateLabel(
+                context,
+                detail.latestDischargeSummary?.dischargedAt,
+              ),
               icon: Icons.event_outlined,
             ),
           ],
@@ -412,7 +418,10 @@ class _DischargeDetailContent extends ConsumerWidget {
               label: l10n.dischargeCompleteAction,
               leadingIcon: Icons.exit_to_app_outlined,
               isLoading: state.isSaving,
-              enabled: detail.hasSummary && !detail.isCompleted,
+              enabled:
+                  detail.hasSummary &&
+                  !detail.isCompleted &&
+                  detail.blockingItems.isEmpty,
               onPressed: () => _openCompleteDialog(context, controller, detail),
             ),
           ],
@@ -464,10 +473,7 @@ class _ClearanceChecklist extends StatelessWidget {
         runSpacing: theme.spacing.sm,
         children: <Widget>[
           for (final DischargeClearanceItem item in detail.clearanceItems)
-            SizedBox(
-              width: 230,
-              child: _ClearanceTile(item: item),
-            ),
+            SizedBox(width: 230, child: _ClearanceTile(item: item)),
         ],
       ),
     );
@@ -628,7 +634,6 @@ class _TimelineSection extends StatelessWidget {
             title: item.label ?? _apiLabel(item.type),
             subtitle: _dateLabel(context, item.occurredAt),
             icon: Icons.history_outlined,
-            tone: AppWorkspaceStatusTone.neutral,
           ),
       ],
     );
@@ -741,10 +746,7 @@ class _MobileQueueItem extends StatelessWidget {
 }
 
 class _PlanDischargeDialog extends StatefulWidget {
-  const _PlanDischargeDialog({
-    required this.detail,
-    required this.onSubmit,
-  });
+  const _PlanDischargeDialog({required this.detail, required this.onSubmit});
 
   final DischargeAdmissionDetail detail;
   final Future<AppFailure?> Function(String summary, DateTime? targetDate)
@@ -783,7 +785,9 @@ class _PlanDischargeDialogState extends State<_PlanDischargeDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         Text(l10n.dischargePlanDialogBody),
         AppTextField(
@@ -880,7 +884,9 @@ class _BillingDialogState extends State<_BillingDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         Text(l10n.dischargeBillingDialogBody),
         AppTextField(
@@ -940,10 +946,7 @@ class _BillingDialogState extends State<_BillingDialog> {
 }
 
 class _PharmacyDialog extends StatefulWidget {
-  const _PharmacyDialog({
-    required this.drugs,
-    required this.onSubmit,
-  });
+  const _PharmacyDialog({required this.drugs, required this.onSubmit});
 
   final List<DischargeDrugOption> drugs;
   final Future<AppFailure?> Function({
@@ -985,7 +988,9 @@ class _PharmacyDialogState extends State<_PharmacyDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         Text(l10n.dischargePharmacyDialogBody),
         AppSelectField<String>(
@@ -1113,10 +1118,7 @@ class _PharmacyDialogState extends State<_PharmacyDialog> {
 }
 
 class _CompleteDialog extends StatefulWidget {
-  const _CompleteDialog({
-    required this.detail,
-    required this.onSubmit,
-  });
+  const _CompleteDialog({required this.detail, required this.onSubmit});
 
   final DischargeAdmissionDetail detail;
   final Future<AppFailure?> Function() onSubmit;
@@ -1137,7 +1139,9 @@ class _CompleteDialogState extends State<_CompleteDialog> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         Text(l10n.dischargeCompleteDialogBody),
         if (widget.detail.blockingItems.isNotEmpty)
@@ -1164,6 +1168,7 @@ class _CompleteDialogState extends State<_CompleteDialog> {
           submitLabel: l10n.dischargeCompleteSubmitAction,
           submitIcon: Icons.exit_to_app_outlined,
           isSubmitting: _isSubmitting,
+          enabled: widget.detail.blockingItems.isEmpty,
           onCancel: () => Navigator.of(context).pop(false),
           onSubmit: _submit,
         ),
@@ -1268,7 +1273,6 @@ Future<void> _openCompleteDialog(
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
-    barrierDismissible: false,
     title: Text(l10n.dischargeCompleteDialogTitle),
     content: _CompleteDialog(
       detail: detail,
@@ -1391,11 +1395,15 @@ AppWorkspaceStatus _recordStatus(
 ) {
   final String status = record.billingStatus ?? record.status ?? '';
   return AppWorkspaceStatus(
-    label: status.isEmpty ? context.l10n.profileUnknownValue : _apiLabel(status),
+    label: status.isEmpty
+        ? context.l10n.profileUnknownValue
+        : _apiLabel(status),
     tone: switch (status.toUpperCase()) {
       'PAID' || 'DISPENSED' || 'CANCELLED' => AppWorkspaceStatusTone.success,
-      'PARTIAL' || 'PARTIALLY_DISPENSED' || 'ISSUED' || 'SENT' =>
-        AppWorkspaceStatusTone.warning,
+      'PARTIAL' ||
+      'PARTIALLY_DISPENSED' ||
+      'ISSUED' ||
+      'SENT' => AppWorkspaceStatusTone.warning,
       'OVERDUE' => AppWorkspaceStatusTone.error,
       _ => AppWorkspaceStatusTone.neutral,
     },
@@ -1447,7 +1455,10 @@ String _dateLabel(BuildContext context, DateTime? value) {
   if (value == null) {
     return context.l10n.profileUnknownValue;
   }
-  return AppFormatters.dateTime(value.toLocal(), Localizations.localeOf(context));
+  return AppFormatters.dateTime(
+    value.toLocal(),
+    Localizations.localeOf(context),
+  );
 }
 
 String _patientDemographics(
@@ -1512,15 +1523,15 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   if (failure == null) {
     return;
   }
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(context.l10n.failureMessage(failure))),
-  );
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
 }
 
 void _showSaved(BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(context.l10n.dischargeSavedMessage)),
-  );
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.dischargeSavedMessage)));
 }
 
 String _dischargeSummaryHtml(

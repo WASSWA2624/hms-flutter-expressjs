@@ -64,10 +64,7 @@ List<DischargeRelatedRecord> decodeDischargePharmacyOrders(
   return _list(response['data'])
       .map(
         (DischargeJsonMap json) => DischargeRelatedRecord(
-          id:
-              _string(json['human_friendly_id']) ??
-              _string(json['id']) ??
-              '',
+          id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
           kind: 'pharmacy_order',
           status: _string(json['status']),
           title:
@@ -88,10 +85,7 @@ List<DischargeRelatedRecord> decodeDischargeInvoices(Object? responseData) {
   return _list(response['data'])
       .map(
         (DischargeJsonMap json) => DischargeRelatedRecord(
-          id:
-              _string(json['human_friendly_id']) ??
-              _string(json['id']) ??
-              '',
+          id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
           kind: 'invoice',
           status: _string(json['status']),
           billingStatus: _string(json['billing_status']),
@@ -114,10 +108,7 @@ List<DischargeDrugOption> decodeDischargeDrugOptions(Object? responseData) {
   return _list(response['data'])
       .map(
         (DischargeJsonMap json) => DischargeDrugOption(
-          id:
-              _string(json['human_friendly_id']) ??
-              _string(json['id']) ??
-              '',
+          id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
           name: _string(json['name']),
           form: _string(json['form']),
           strength: _string(json['strength']),

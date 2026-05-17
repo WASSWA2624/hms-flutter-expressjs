@@ -275,10 +275,15 @@ final class DischargeAdmissionDetail {
   }
 
   List<DischargeClearanceItem> get blockingItems {
-    return clearanceItems.where((DischargeClearanceItem item) {
-      return item.state == DischargeClearanceState.pending ||
-          item.state == DischargeClearanceState.unavailable;
-    }).toList(growable: false);
+    return clearanceItems
+        .where((DischargeClearanceItem item) {
+          if (item.code == DischargeClearanceCode.bedRelease) {
+            return false;
+          }
+          return item.state == DischargeClearanceState.pending ||
+              item.state == DischargeClearanceState.unavailable;
+        })
+        .toList(growable: false);
   }
 
   DischargeAdmissionDetail copyWith({
@@ -308,9 +313,7 @@ final class DischargeAdmissionDetail {
 
 @immutable
 final class DischargeReferenceData {
-  const DischargeReferenceData({
-    this.drugs = const <DischargeDrugOption>[],
-  });
+  const DischargeReferenceData({this.drugs = const <DischargeDrugOption>[]});
 
   final List<DischargeDrugOption> drugs;
 }
@@ -391,9 +394,11 @@ final class DischargeWorkspaceState {
 }
 
 bool isCompletedDischarge(IpdAdmissionSummary item) {
-  return switch ((
-    item.stage ?? item.admissionStatus ?? item.dischargeStatus ?? ''
-  ).toUpperCase()) {
+  return switch ((item.stage ??
+          item.admissionStatus ??
+          item.dischargeStatus ??
+          '')
+      .toUpperCase()) {
     'DISCHARGED' || 'COMPLETED' => true,
     _ => (item.dischargeStatus ?? '').toUpperCase() == 'COMPLETED',
   };

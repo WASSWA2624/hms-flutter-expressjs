@@ -252,7 +252,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
     _ShellDestinationRoute(
       route: AppRoutes.nursing,
       destination: ResponsiveShellDestination(
-        label: 'Nursing',
+        label: l10n.navigationNursingLabel,
         icon: Icons.local_hospital_outlined,
         selectedIcon: Icons.local_hospital,
         badgeCount: nursingWorkloadCount,

@@ -3796,4 +3796,464 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nursingConfirmTransferLabel => 'Confirm transfer update';
+
+  @override
+  String get navigationDischargeLabel => 'Discharge';
+
+  @override
+  String get dischargeWorkspaceTitle => 'Discharge workspace';
+
+  @override
+  String get dischargeWorkspaceDescription =>
+      'Coordinate discharge plans, clearances, medicines, final billing, documents, and bed release.';
+
+  @override
+  String get dischargeOperationalStatusLabel => 'Discharge desk active';
+
+  @override
+  String get dischargePlannedSummaryLabel => 'Planned';
+
+  @override
+  String get dischargeSummaryPendingSummaryLabel => 'Summary pending';
+
+  @override
+  String get dischargeDocumentsReadySummaryLabel => 'Documents ready';
+
+  @override
+  String get dischargeCompletedSummaryLabel => 'Completed';
+
+  @override
+  String get dischargeQueueSearchLabel => 'Search discharge queue';
+
+  @override
+  String get dischargeQueueSearchHint => 'Search patient, admission, or ward';
+
+  @override
+  String get dischargeStatusFilterLabel => 'Discharge status';
+
+  @override
+  String get dischargeStatusAll => 'All discharges';
+
+  @override
+  String get dischargeStatusPlanned => 'Planned';
+
+  @override
+  String get dischargeStatusSummaryPending => 'Summary pending';
+
+  @override
+  String get dischargeStatusPharmacyPending => 'Pharmacy pending';
+
+  @override
+  String get dischargeStatusNursingPending => 'Nursing pending';
+
+  @override
+  String get dischargeStatusBillingPending => 'Billing pending';
+
+  @override
+  String get dischargeStatusInsurancePending => 'Insurance pending';
+
+  @override
+  String get dischargeStatusDocumentsReady => 'Documents ready';
+
+  @override
+  String get dischargeStatusCompleted => 'Completed';
+
+  @override
+  String get dischargeWorklistTitle => 'Discharge worklist';
+
+  @override
+  String get dischargeWorklistDescription =>
+      'Patients with a discharge plan, pending clearance, or recent completion.';
+
+  @override
+  String get dischargePreviousPageLabel => 'Previous discharges';
+
+  @override
+  String get dischargeNextPageLabel => 'Next discharges';
+
+  @override
+  String dischargePageLabel(int from, int to, int total) {
+    return '$from-$to of $total';
+  }
+
+  @override
+  String get dischargeEmptyQueueTitle => 'No discharges in this view';
+
+  @override
+  String get dischargeEmptyQueueBody =>
+      'Adjust the status filter or search term to find discharge work.';
+
+  @override
+  String get dischargePatientColumnLabel => 'Patient';
+
+  @override
+  String get dischargeLocationColumnLabel => 'Ward and bed';
+
+  @override
+  String get dischargeStatusColumnLabel => 'Status';
+
+  @override
+  String get dischargeNextActionColumnLabel => 'Next action';
+
+  @override
+  String get dischargeTargetColumnLabel => 'Target';
+
+  @override
+  String get dischargeDetailTitle => 'Discharge detail';
+
+  @override
+  String get dischargeDetailLoadingTitle => 'Loading discharge detail';
+
+  @override
+  String get dischargeDetailLoadingBody =>
+      'Loading patient context, clearance, medicines, billing, and documents.';
+
+  @override
+  String get dischargeNoSelectionTitle => 'Select a discharge';
+
+  @override
+  String get dischargeNoSelectionBody =>
+      'Choose a patient from the worklist to coordinate discharge.';
+
+  @override
+  String get dischargePrintSummaryAction => 'Print discharge summary';
+
+  @override
+  String get dischargePatientContextLabel => 'Patient discharge context';
+
+  @override
+  String get dischargeAdmissionFieldLabel => 'Admission';
+
+  @override
+  String get dischargeEncounterFieldLabel => 'Encounter';
+
+  @override
+  String get dischargeLocationFieldLabel => 'Location';
+
+  @override
+  String get dischargeTargetFieldLabel => 'Target discharge';
+
+  @override
+  String get dischargeStartPlanAction => 'Start discharge plan';
+
+  @override
+  String get dischargeEditSummaryAction => 'Edit summary';
+
+  @override
+  String get dischargeRequestBillingAction => 'Request final billing';
+
+  @override
+  String get dischargeRequestPharmacyAction => 'Request medicines';
+
+  @override
+  String get dischargeCompleteAction => 'Complete discharge';
+
+  @override
+  String get dischargeChecklistTitle => 'Clearance checklist';
+
+  @override
+  String get dischargeChecklistBody =>
+      'Track clinical, nursing, pharmacy, billing, documents, and bed release readiness.';
+
+  @override
+  String get dischargeClearanceComplete => 'Complete';
+
+  @override
+  String get dischargeClearancePending => 'Pending';
+
+  @override
+  String get dischargeClearanceBackendGap => 'Backend gap';
+
+  @override
+  String get dischargeClearanceUnavailable => 'Unavailable';
+
+  @override
+  String get dischargeClearanceDoctor => 'Doctor summary';
+
+  @override
+  String get dischargeClearanceNursing => 'Nursing handover';
+
+  @override
+  String get dischargeClearancePharmacy => 'Pharmacy medicines';
+
+  @override
+  String get dischargeClearanceBilling => 'Final billing';
+
+  @override
+  String get dischargeClearanceInsurance => 'Insurance clearance';
+
+  @override
+  String get dischargeClearanceDocuments => 'Documents';
+
+  @override
+  String get dischargeClearanceBedRelease => 'Bed release';
+
+  @override
+  String get dischargeClearanceHousekeeping => 'Housekeeping';
+
+  @override
+  String get dischargeSummarySectionTitle => 'Clinical summary';
+
+  @override
+  String get dischargeSummarySectionBody =>
+      'Capture diagnosis, treatment, medicines, advice, follow-up, warnings, and signature context.';
+
+  @override
+  String get dischargeEmptySummaryTitle => 'No summary recorded';
+
+  @override
+  String get dischargeEmptySummaryBody =>
+      'Start a discharge plan to prepare the printable summary.';
+
+  @override
+  String get dischargeGeneratedDocumentsTitle => 'Generated document preview';
+
+  @override
+  String get dischargeMedicinesSectionTitle => 'Discharge medicines';
+
+  @override
+  String get dischargeNoMedicinesBody =>
+      'No discharge medicine orders are linked to this admission.';
+
+  @override
+  String get dischargePharmacyUnavailableBody =>
+      'Pharmacy orders could not be loaded. Refresh before completing discharge.';
+
+  @override
+  String get dischargeBillingSectionTitle => 'Billing clearance';
+
+  @override
+  String get dischargeNoInvoicesBody =>
+      'No final invoices are linked to this admission.';
+
+  @override
+  String get dischargeBillingUnavailableBody =>
+      'Billing records could not be loaded. Refresh before completing discharge.';
+
+  @override
+  String get dischargeNoRecordsTitle => 'No records';
+
+  @override
+  String get dischargeTimelineSectionTitle => 'Admission timeline';
+
+  @override
+  String get dischargeNoTimelineTitle => 'No timeline activity';
+
+  @override
+  String get dischargeNoTimelineBody =>
+      'Admission timeline events will appear after activity is recorded.';
+
+  @override
+  String get dischargeBackendGapsTitle => 'Backend gaps';
+
+  @override
+  String get dischargeBackendGapsBody =>
+      'These workflow actions are shown as gaps because no confirmed backend contract exists yet.';
+
+  @override
+  String get dischargeGapBackendSubtitle => 'Backend endpoint required';
+
+  @override
+  String get dischargeGapChecklistTitle => 'Persistent clearance checklist';
+
+  @override
+  String get dischargeGapChecklistBody =>
+      'No confirmed endpoint persists individual doctor, nursing, pharmacy, billing, document, or exit checklist decisions.';
+
+  @override
+  String get dischargeGapInsuranceTitle => 'Insurance clearance workflow';
+
+  @override
+  String get dischargeGapInsuranceBody =>
+      'No confirmed insurance clearance endpoint is tied to the discharge workflow.';
+
+  @override
+  String get dischargeGapDocumentsTitle => 'Document ready state';
+
+  @override
+  String get dischargeGapDocumentsBody =>
+      'Discharge documents can be generated from the summary, but no confirmed endpoint marks handover documents ready.';
+
+  @override
+  String get dischargeGapHousekeepingTitle => 'Housekeeping task handoff';
+
+  @override
+  String get dischargeGapHousekeepingBody =>
+      'Final discharge releases the bed, but no confirmed atomic housekeeping task creation is part of that workflow.';
+
+  @override
+  String get dischargePlanDialogTitle => 'Discharge plan';
+
+  @override
+  String get dischargePlanDialogBody =>
+      'Prepare the clinical discharge summary and target discharge date.';
+
+  @override
+  String get dischargeSummaryFieldLabel => 'Discharge summary';
+
+  @override
+  String get dischargeSummaryHelperText =>
+      'Include diagnosis, treatment, medicines, advice, follow-up, warning signs, and signature context.';
+
+  @override
+  String get dischargeSummaryRequiredMessage => 'Enter the discharge summary.';
+
+  @override
+  String get dischargeTargetDateLabel => 'Target discharge date';
+
+  @override
+  String get dischargeDatePickerLabel => 'Choose date';
+
+  @override
+  String get dischargeInvalidDateMessage => 'Enter a valid discharge date.';
+
+  @override
+  String get dischargeSavePlanAction => 'Save plan';
+
+  @override
+  String get dischargeBillingDialogTitle => 'Final billing request';
+
+  @override
+  String get dischargeBillingDialogBody =>
+      'Create a final invoice request for billing clearance.';
+
+  @override
+  String get dischargeBillingAmountLabel => 'Amount';
+
+  @override
+  String get dischargeBillingAmountRequiredMessage =>
+      'Enter the final billing amount.';
+
+  @override
+  String get dischargeBillingCurrencyLabel => 'Currency';
+
+  @override
+  String get dischargeBillingCurrencyRequiredMessage =>
+      'Enter the billing currency.';
+
+  @override
+  String get dischargeRequestBillingSubmitAction => 'Create invoice request';
+
+  @override
+  String get dischargePharmacyDialogTitle => 'Discharge medicines';
+
+  @override
+  String get dischargePharmacyDialogBody =>
+      'Send discharge medicines to pharmacy using the confirmed order route.';
+
+  @override
+  String get dischargeDrugFieldLabel => 'Medicine';
+
+  @override
+  String get dischargeDrugRequiredMessage => 'Select a medicine.';
+
+  @override
+  String get dischargePrescriptionFieldLabel => 'Prescription';
+
+  @override
+  String get dischargePrescriptionHelperText =>
+      'State dose, duration, and any patient instructions.';
+
+  @override
+  String get dischargePrescriptionRequiredMessage =>
+      'Enter the discharge prescription.';
+
+  @override
+  String get dischargeQuantityFieldLabel => 'Quantity';
+
+  @override
+  String get dischargeMedicationRouteLabel => 'Route';
+
+  @override
+  String get dischargeMedicationFrequencyLabel => 'Frequency';
+
+  @override
+  String get dischargeMedicineInstructionsLabel => 'Instructions';
+
+  @override
+  String get dischargeRequestPharmacySubmitAction => 'Send to pharmacy';
+
+  @override
+  String get dischargeCompleteDialogTitle => 'Complete discharge';
+
+  @override
+  String get dischargeCompleteDialogBody =>
+      'Confirm the patient exit only after required clinical, nursing, pharmacy, billing, and document checks are complete.';
+
+  @override
+  String get dischargeCompletionBlockersTitle => 'Clearance still pending';
+
+  @override
+  String get dischargeCompletionBlockersBody =>
+      'Resolve pending or unavailable clearance items before finalizing the admission.';
+
+  @override
+  String get dischargeCompleteConfirmLabel =>
+      'I confirm the patient has exited and documents were handed over.';
+
+  @override
+  String get dischargeCompleteConfirmRequiredMessage =>
+      'Confirm patient exit before completing discharge.';
+
+  @override
+  String get dischargeCompleteSubmitAction => 'Finalize discharge';
+
+  @override
+  String get dischargeNextActionCompleted => 'Discharge completed';
+
+  @override
+  String get dischargeNextActionClearance => 'Clear pending items';
+
+  @override
+  String get dischargeNextActionStartPlan => 'Start summary';
+
+  @override
+  String dischargePatientAgeSexLabel(String age, String sex) {
+    return '$age / $sex';
+  }
+
+  @override
+  String get dischargeSavedMessage => 'Discharge workflow updated.';
+
+  @override
+  String get dischargeReportTitle => 'Discharge summary';
+
+  @override
+  String get dischargeReportPatientLabel => 'Patient';
+
+  @override
+  String get dischargeReportPatientNoLabel => 'Patient number';
+
+  @override
+  String get dischargeReportAdmissionLabel => 'Admission';
+
+  @override
+  String get dischargeReportLocationLabel => 'Location';
+
+  @override
+  String get dischargeReportGeneratedLabel => 'Generated';
+
+  @override
+  String get dischargeDoctorSignatureLabel => 'Doctor signature';
+
+  @override
+  String get dischargeNurseSignatureLabel => 'Nurse signature';
+
+  @override
+  String get dischargeReportFooter =>
+      'Generated from confirmed discharge workflow data.';
+
+  @override
+  String get dischargeLoadingTitle => 'Loading discharge workspace';
+
+  @override
+  String get dischargeLoadingBody =>
+      'Loading discharge queue and reference data.';
+
+  @override
+  String get dischargeLoadErrorTitle => 'Discharge workspace unavailable';
+
+  @override
+  String get dischargeLoadErrorBody =>
+      'The discharge queue could not be loaded. Refresh to try again.';
 }

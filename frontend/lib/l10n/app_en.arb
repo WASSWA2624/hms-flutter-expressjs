@@ -4900,5 +4900,588 @@
   "nursingConfirmTransferLabel": "Confirm transfer update",
   "@nursingConfirmTransferLabel": {
     "description": "Nursing transfer confirmation checkbox label."
+  },
+  "navigationDischargeLabel": "Discharge",
+  "@navigationDischargeLabel": {
+    "description": "Navigation label for the discharge workspace."
+  },
+  "dischargeWorkspaceTitle": "Discharge workspace",
+  "@dischargeWorkspaceTitle": {
+    "description": "Discharge workspace page title."
+  },
+  "dischargeWorkspaceDescription": "Coordinate discharge plans, clearances, medicines, final billing, documents, and bed release.",
+  "@dischargeWorkspaceDescription": {
+    "description": "Discharge workspace page description."
+  },
+  "dischargeOperationalStatusLabel": "Discharge desk active",
+  "@dischargeOperationalStatusLabel": {
+    "description": "Discharge workspace operational status label."
+  },
+  "dischargePlannedSummaryLabel": "Planned",
+  "@dischargePlannedSummaryLabel": {
+    "description": "Discharge summary card label for planned discharges."
+  },
+  "dischargeSummaryPendingSummaryLabel": "Summary pending",
+  "@dischargeSummaryPendingSummaryLabel": {
+    "description": "Discharge summary card label for admissions awaiting a discharge summary."
+  },
+  "dischargeDocumentsReadySummaryLabel": "Documents ready",
+  "@dischargeDocumentsReadySummaryLabel": {
+    "description": "Discharge summary card label for generated discharge documents."
+  },
+  "dischargeCompletedSummaryLabel": "Completed",
+  "@dischargeCompletedSummaryLabel": {
+    "description": "Discharge summary card label for completed discharges."
+  },
+  "dischargeQueueSearchLabel": "Search discharge queue",
+  "@dischargeQueueSearchLabel": {
+    "description": "Accessible label for discharge queue search."
+  },
+  "dischargeQueueSearchHint": "Search patient, admission, or ward",
+  "@dischargeQueueSearchHint": {
+    "description": "Hint text for discharge queue search."
+  },
+  "dischargeStatusFilterLabel": "Discharge status",
+  "@dischargeStatusFilterLabel": {
+    "description": "Discharge queue status filter label."
+  },
+  "dischargeStatusAll": "All discharges",
+  "@dischargeStatusAll": {
+    "description": "Discharge status filter option for all statuses."
+  },
+  "dischargeStatusPlanned": "Planned",
+  "@dischargeStatusPlanned": {
+    "description": "Discharge status filter option for planned discharges."
+  },
+  "dischargeStatusSummaryPending": "Summary pending",
+  "@dischargeStatusSummaryPending": {
+    "description": "Discharge status filter option for admissions awaiting summary."
+  },
+  "dischargeStatusPharmacyPending": "Pharmacy pending",
+  "@dischargeStatusPharmacyPending": {
+    "description": "Discharge status filter option for pharmacy clearance."
+  },
+  "dischargeStatusNursingPending": "Nursing pending",
+  "@dischargeStatusNursingPending": {
+    "description": "Discharge status filter option for nursing clearance."
+  },
+  "dischargeStatusBillingPending": "Billing pending",
+  "@dischargeStatusBillingPending": {
+    "description": "Discharge status filter option for billing clearance."
+  },
+  "dischargeStatusInsurancePending": "Insurance pending",
+  "@dischargeStatusInsurancePending": {
+    "description": "Discharge status filter option for insurance clearance."
+  },
+  "dischargeStatusDocumentsReady": "Documents ready",
+  "@dischargeStatusDocumentsReady": {
+    "description": "Discharge status filter option for document readiness."
+  },
+  "dischargeStatusCompleted": "Completed",
+  "@dischargeStatusCompleted": {
+    "description": "Discharge status filter option for completed discharges."
+  },
+  "dischargeWorklistTitle": "Discharge worklist",
+  "@dischargeWorklistTitle": {
+    "description": "Discharge queue panel title."
+  },
+  "dischargeWorklistDescription": "Patients with a discharge plan, pending clearance, or recent completion.",
+  "@dischargeWorklistDescription": {
+    "description": "Discharge queue panel description."
+  },
+  "dischargePreviousPageLabel": "Previous discharges",
+  "@dischargePreviousPageLabel": {
+    "description": "Discharge queue previous page button label."
+  },
+  "dischargeNextPageLabel": "Next discharges",
+  "@dischargeNextPageLabel": {
+    "description": "Discharge queue next page button label."
+  },
+  "dischargePageLabel": "{from}-{to} of {total}",
+  "@dischargePageLabel": {
+    "description": "Pagination label for discharge data lists.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "dischargeEmptyQueueTitle": "No discharges in this view",
+  "@dischargeEmptyQueueTitle": {
+    "description": "Empty state title for discharge queue."
+  },
+  "dischargeEmptyQueueBody": "Adjust the status filter or search term to find discharge work.",
+  "@dischargeEmptyQueueBody": {
+    "description": "Empty state body for discharge queue."
+  },
+  "dischargePatientColumnLabel": "Patient",
+  "@dischargePatientColumnLabel": {
+    "description": "Discharge queue patient column label."
+  },
+  "dischargeLocationColumnLabel": "Ward and bed",
+  "@dischargeLocationColumnLabel": {
+    "description": "Discharge queue location column label."
+  },
+  "dischargeStatusColumnLabel": "Status",
+  "@dischargeStatusColumnLabel": {
+    "description": "Discharge queue status column label."
+  },
+  "dischargeNextActionColumnLabel": "Next action",
+  "@dischargeNextActionColumnLabel": {
+    "description": "Discharge queue next action column label."
+  },
+  "dischargeTargetColumnLabel": "Target",
+  "@dischargeTargetColumnLabel": {
+    "description": "Discharge queue target date column label."
+  },
+  "dischargeDetailTitle": "Discharge detail",
+  "@dischargeDetailTitle": {
+    "description": "Discharge detail panel title."
+  },
+  "dischargeDetailLoadingTitle": "Loading discharge detail",
+  "@dischargeDetailLoadingTitle": {
+    "description": "Discharge detail loading title."
+  },
+  "dischargeDetailLoadingBody": "Loading patient context, clearance, medicines, billing, and documents.",
+  "@dischargeDetailLoadingBody": {
+    "description": "Discharge detail loading body."
+  },
+  "dischargeNoSelectionTitle": "Select a discharge",
+  "@dischargeNoSelectionTitle": {
+    "description": "Discharge detail empty selection title."
+  },
+  "dischargeNoSelectionBody": "Choose a patient from the worklist to coordinate discharge.",
+  "@dischargeNoSelectionBody": {
+    "description": "Discharge detail empty selection body."
+  },
+  "dischargePrintSummaryAction": "Print discharge summary",
+  "@dischargePrintSummaryAction": {
+    "description": "Discharge summary print action label."
+  },
+  "dischargePatientContextLabel": "Patient discharge context",
+  "@dischargePatientContextLabel": {
+    "description": "Accessible label for discharge patient context card."
+  },
+  "dischargeAdmissionFieldLabel": "Admission",
+  "@dischargeAdmissionFieldLabel": {
+    "description": "Discharge patient context admission field label."
+  },
+  "dischargeEncounterFieldLabel": "Encounter",
+  "@dischargeEncounterFieldLabel": {
+    "description": "Discharge patient context encounter field label."
+  },
+  "dischargeLocationFieldLabel": "Location",
+  "@dischargeLocationFieldLabel": {
+    "description": "Discharge patient context location field label."
+  },
+  "dischargeTargetFieldLabel": "Target discharge",
+  "@dischargeTargetFieldLabel": {
+    "description": "Discharge patient context target field label."
+  },
+  "dischargeStartPlanAction": "Start discharge plan",
+  "@dischargeStartPlanAction": {
+    "description": "Action label to start a discharge plan."
+  },
+  "dischargeEditSummaryAction": "Edit summary",
+  "@dischargeEditSummaryAction": {
+    "description": "Action label to edit the discharge summary."
+  },
+  "dischargeRequestBillingAction": "Request final billing",
+  "@dischargeRequestBillingAction": {
+    "description": "Action label to request final billing for discharge."
+  },
+  "dischargeRequestPharmacyAction": "Request medicines",
+  "@dischargeRequestPharmacyAction": {
+    "description": "Action label to request discharge medicines."
+  },
+  "dischargeCompleteAction": "Complete discharge",
+  "@dischargeCompleteAction": {
+    "description": "Action label to complete discharge."
+  },
+  "dischargeChecklistTitle": "Clearance checklist",
+  "@dischargeChecklistTitle": {
+    "description": "Discharge clearance checklist title."
+  },
+  "dischargeChecklistBody": "Track clinical, nursing, pharmacy, billing, documents, and bed release readiness.",
+  "@dischargeChecklistBody": {
+    "description": "Discharge clearance checklist body."
+  },
+  "dischargeClearanceComplete": "Complete",
+  "@dischargeClearanceComplete": {
+    "description": "Clearance status for completed discharge checklist item."
+  },
+  "dischargeClearancePending": "Pending",
+  "@dischargeClearancePending": {
+    "description": "Clearance status for pending discharge checklist item."
+  },
+  "dischargeClearanceBackendGap": "Backend gap",
+  "@dischargeClearanceBackendGap": {
+    "description": "Clearance status for discharge checklist item without backend support."
+  },
+  "dischargeClearanceUnavailable": "Unavailable",
+  "@dischargeClearanceUnavailable": {
+    "description": "Clearance status for discharge data that could not be loaded."
+  },
+  "dischargeClearanceDoctor": "Doctor summary",
+  "@dischargeClearanceDoctor": {
+    "description": "Discharge checklist doctor clearance label."
+  },
+  "dischargeClearanceNursing": "Nursing handover",
+  "@dischargeClearanceNursing": {
+    "description": "Discharge checklist nursing clearance label."
+  },
+  "dischargeClearancePharmacy": "Pharmacy medicines",
+  "@dischargeClearancePharmacy": {
+    "description": "Discharge checklist pharmacy clearance label."
+  },
+  "dischargeClearanceBilling": "Final billing",
+  "@dischargeClearanceBilling": {
+    "description": "Discharge checklist billing clearance label."
+  },
+  "dischargeClearanceInsurance": "Insurance clearance",
+  "@dischargeClearanceInsurance": {
+    "description": "Discharge checklist insurance clearance label."
+  },
+  "dischargeClearanceDocuments": "Documents",
+  "@dischargeClearanceDocuments": {
+    "description": "Discharge checklist documents label."
+  },
+  "dischargeClearanceBedRelease": "Bed release",
+  "@dischargeClearanceBedRelease": {
+    "description": "Discharge checklist bed release label."
+  },
+  "dischargeClearanceHousekeeping": "Housekeeping",
+  "@dischargeClearanceHousekeeping": {
+    "description": "Discharge checklist housekeeping label."
+  },
+  "dischargeSummarySectionTitle": "Clinical summary",
+  "@dischargeSummarySectionTitle": {
+    "description": "Discharge clinical summary section title."
+  },
+  "dischargeSummarySectionBody": "Capture diagnosis, treatment, medicines, advice, follow-up, warnings, and signature context.",
+  "@dischargeSummarySectionBody": {
+    "description": "Discharge clinical summary section body."
+  },
+  "dischargeEmptySummaryTitle": "No summary recorded",
+  "@dischargeEmptySummaryTitle": {
+    "description": "Empty state title for missing discharge summary."
+  },
+  "dischargeEmptySummaryBody": "Start a discharge plan to prepare the printable summary.",
+  "@dischargeEmptySummaryBody": {
+    "description": "Empty state body for missing discharge summary."
+  },
+  "dischargeGeneratedDocumentsTitle": "Generated document preview",
+  "@dischargeGeneratedDocumentsTitle": {
+    "description": "Discharge generated document preview title."
+  },
+  "dischargeMedicinesSectionTitle": "Discharge medicines",
+  "@dischargeMedicinesSectionTitle": {
+    "description": "Discharge medicines section title."
+  },
+  "dischargeNoMedicinesBody": "No discharge medicine orders are linked to this admission.",
+  "@dischargeNoMedicinesBody": {
+    "description": "Empty state body for discharge medicines."
+  },
+  "dischargePharmacyUnavailableBody": "Pharmacy orders could not be loaded. Refresh before completing discharge.",
+  "@dischargePharmacyUnavailableBody": {
+    "description": "Unavailable state body for pharmacy order data."
+  },
+  "dischargeBillingSectionTitle": "Billing clearance",
+  "@dischargeBillingSectionTitle": {
+    "description": "Discharge billing section title."
+  },
+  "dischargeNoInvoicesBody": "No final invoices are linked to this admission.",
+  "@dischargeNoInvoicesBody": {
+    "description": "Empty state body for discharge billing records."
+  },
+  "dischargeBillingUnavailableBody": "Billing records could not be loaded. Refresh before completing discharge.",
+  "@dischargeBillingUnavailableBody": {
+    "description": "Unavailable state body for billing data."
+  },
+  "dischargeNoRecordsTitle": "No records",
+  "@dischargeNoRecordsTitle": {
+    "description": "Generic empty state title for discharge related records."
+  },
+  "dischargeTimelineSectionTitle": "Admission timeline",
+  "@dischargeTimelineSectionTitle": {
+    "description": "Discharge admission timeline section title."
+  },
+  "dischargeNoTimelineTitle": "No timeline activity",
+  "@dischargeNoTimelineTitle": {
+    "description": "Empty state title for discharge timeline."
+  },
+  "dischargeNoTimelineBody": "Admission timeline events will appear after activity is recorded.",
+  "@dischargeNoTimelineBody": {
+    "description": "Empty state body for discharge timeline."
+  },
+  "dischargeBackendGapsTitle": "Backend gaps",
+  "@dischargeBackendGapsTitle": {
+    "description": "Discharge backend gaps section title."
+  },
+  "dischargeBackendGapsBody": "These workflow actions are shown as gaps because no confirmed backend contract exists yet.",
+  "@dischargeBackendGapsBody": {
+    "description": "Discharge backend gaps empty body."
+  },
+  "dischargeGapBackendSubtitle": "Backend endpoint required",
+  "@dischargeGapBackendSubtitle": {
+    "description": "Subtitle for discharge workflow backend gap items."
+  },
+  "dischargeGapChecklistTitle": "Persistent clearance checklist",
+  "@dischargeGapChecklistTitle": {
+    "description": "Discharge backend gap title for checklist persistence."
+  },
+  "dischargeGapChecklistBody": "No confirmed endpoint persists individual doctor, nursing, pharmacy, billing, document, or exit checklist decisions.",
+  "@dischargeGapChecklistBody": {
+    "description": "Discharge backend gap body for checklist persistence."
+  },
+  "dischargeGapInsuranceTitle": "Insurance clearance workflow",
+  "@dischargeGapInsuranceTitle": {
+    "description": "Discharge backend gap title for insurance clearance."
+  },
+  "dischargeGapInsuranceBody": "No confirmed insurance clearance endpoint is tied to the discharge workflow.",
+  "@dischargeGapInsuranceBody": {
+    "description": "Discharge backend gap body for insurance clearance."
+  },
+  "dischargeGapDocumentsTitle": "Document ready state",
+  "@dischargeGapDocumentsTitle": {
+    "description": "Discharge backend gap title for document readiness."
+  },
+  "dischargeGapDocumentsBody": "Discharge documents can be generated from the summary, but no confirmed endpoint marks handover documents ready.",
+  "@dischargeGapDocumentsBody": {
+    "description": "Discharge backend gap body for document readiness."
+  },
+  "dischargeGapHousekeepingTitle": "Housekeeping task handoff",
+  "@dischargeGapHousekeepingTitle": {
+    "description": "Discharge backend gap title for housekeeping task creation."
+  },
+  "dischargeGapHousekeepingBody": "Final discharge releases the bed, but no confirmed atomic housekeeping task creation is part of that workflow.",
+  "@dischargeGapHousekeepingBody": {
+    "description": "Discharge backend gap body for housekeeping task creation."
+  },
+  "dischargePlanDialogTitle": "Discharge plan",
+  "@dischargePlanDialogTitle": {
+    "description": "Discharge plan dialog title."
+  },
+  "dischargePlanDialogBody": "Prepare the clinical discharge summary and target discharge date.",
+  "@dischargePlanDialogBody": {
+    "description": "Discharge plan dialog body."
+  },
+  "dischargeSummaryFieldLabel": "Discharge summary",
+  "@dischargeSummaryFieldLabel": {
+    "description": "Discharge summary text field label."
+  },
+  "dischargeSummaryHelperText": "Include diagnosis, treatment, medicines, advice, follow-up, warning signs, and signature context.",
+  "@dischargeSummaryHelperText": {
+    "description": "Discharge summary field helper text."
+  },
+  "dischargeSummaryRequiredMessage": "Enter the discharge summary.",
+  "@dischargeSummaryRequiredMessage": {
+    "description": "Validation message for required discharge summary."
+  },
+  "dischargeTargetDateLabel": "Target discharge date",
+  "@dischargeTargetDateLabel": {
+    "description": "Discharge target date field label."
+  },
+  "dischargeDatePickerLabel": "Choose date",
+  "@dischargeDatePickerLabel": {
+    "description": "Discharge date picker button label."
+  },
+  "dischargeInvalidDateMessage": "Enter a valid discharge date.",
+  "@dischargeInvalidDateMessage": {
+    "description": "Validation message for invalid discharge date."
+  },
+  "dischargeSavePlanAction": "Save plan",
+  "@dischargeSavePlanAction": {
+    "description": "Discharge save plan action label."
+  },
+  "dischargeBillingDialogTitle": "Final billing request",
+  "@dischargeBillingDialogTitle": {
+    "description": "Discharge final billing dialog title."
+  },
+  "dischargeBillingDialogBody": "Create a final invoice request for billing clearance.",
+  "@dischargeBillingDialogBody": {
+    "description": "Discharge final billing dialog body."
+  },
+  "dischargeBillingAmountLabel": "Amount",
+  "@dischargeBillingAmountLabel": {
+    "description": "Discharge billing amount field label."
+  },
+  "dischargeBillingAmountRequiredMessage": "Enter the final billing amount.",
+  "@dischargeBillingAmountRequiredMessage": {
+    "description": "Validation message for required billing amount."
+  },
+  "dischargeBillingCurrencyLabel": "Currency",
+  "@dischargeBillingCurrencyLabel": {
+    "description": "Discharge billing currency field label."
+  },
+  "dischargeBillingCurrencyRequiredMessage": "Enter the billing currency.",
+  "@dischargeBillingCurrencyRequiredMessage": {
+    "description": "Validation message for required billing currency."
+  },
+  "dischargeRequestBillingSubmitAction": "Create invoice request",
+  "@dischargeRequestBillingSubmitAction": {
+    "description": "Submit action label for discharge billing request."
+  },
+  "dischargePharmacyDialogTitle": "Discharge medicines",
+  "@dischargePharmacyDialogTitle": {
+    "description": "Discharge pharmacy medicines dialog title."
+  },
+  "dischargePharmacyDialogBody": "Send discharge medicines to pharmacy using the confirmed order route.",
+  "@dischargePharmacyDialogBody": {
+    "description": "Discharge pharmacy medicines dialog body."
+  },
+  "dischargeDrugFieldLabel": "Medicine",
+  "@dischargeDrugFieldLabel": {
+    "description": "Discharge medicine drug field label."
+  },
+  "dischargeDrugRequiredMessage": "Select a medicine.",
+  "@dischargeDrugRequiredMessage": {
+    "description": "Validation message for required discharge medicine."
+  },
+  "dischargePrescriptionFieldLabel": "Prescription",
+  "@dischargePrescriptionFieldLabel": {
+    "description": "Discharge prescription field label."
+  },
+  "dischargePrescriptionHelperText": "State dose, duration, and any patient instructions.",
+  "@dischargePrescriptionHelperText": {
+    "description": "Discharge prescription helper text."
+  },
+  "dischargePrescriptionRequiredMessage": "Enter the discharge prescription.",
+  "@dischargePrescriptionRequiredMessage": {
+    "description": "Validation message for required discharge prescription."
+  },
+  "dischargeQuantityFieldLabel": "Quantity",
+  "@dischargeQuantityFieldLabel": {
+    "description": "Discharge medicine quantity field label."
+  },
+  "dischargeMedicationRouteLabel": "Route",
+  "@dischargeMedicationRouteLabel": {
+    "description": "Discharge medicine route field label."
+  },
+  "dischargeMedicationFrequencyLabel": "Frequency",
+  "@dischargeMedicationFrequencyLabel": {
+    "description": "Discharge medicine frequency field label."
+  },
+  "dischargeMedicineInstructionsLabel": "Instructions",
+  "@dischargeMedicineInstructionsLabel": {
+    "description": "Discharge medicine instructions field label."
+  },
+  "dischargeRequestPharmacySubmitAction": "Send to pharmacy",
+  "@dischargeRequestPharmacySubmitAction": {
+    "description": "Submit action label for discharge pharmacy request."
+  },
+  "dischargeCompleteDialogTitle": "Complete discharge",
+  "@dischargeCompleteDialogTitle": {
+    "description": "Complete discharge dialog title."
+  },
+  "dischargeCompleteDialogBody": "Confirm the patient exit only after required clinical, nursing, pharmacy, billing, and document checks are complete.",
+  "@dischargeCompleteDialogBody": {
+    "description": "Complete discharge dialog body."
+  },
+  "dischargeCompletionBlockersTitle": "Clearance still pending",
+  "@dischargeCompletionBlockersTitle": {
+    "description": "Complete discharge blocker state title."
+  },
+  "dischargeCompletionBlockersBody": "Resolve pending or unavailable clearance items before finalizing the admission.",
+  "@dischargeCompletionBlockersBody": {
+    "description": "Complete discharge blocker state body."
+  },
+  "dischargeCompleteConfirmLabel": "I confirm the patient has exited and documents were handed over.",
+  "@dischargeCompleteConfirmLabel": {
+    "description": "Complete discharge confirmation checkbox label."
+  },
+  "dischargeCompleteConfirmRequiredMessage": "Confirm patient exit before completing discharge.",
+  "@dischargeCompleteConfirmRequiredMessage": {
+    "description": "Validation message for complete discharge confirmation."
+  },
+  "dischargeCompleteSubmitAction": "Finalize discharge",
+  "@dischargeCompleteSubmitAction": {
+    "description": "Complete discharge submit action label."
+  },
+  "dischargeNextActionCompleted": "Discharge completed",
+  "@dischargeNextActionCompleted": {
+    "description": "Next action label for completed discharge rows."
+  },
+  "dischargeNextActionClearance": "Clear pending items",
+  "@dischargeNextActionClearance": {
+    "description": "Next action label for discharge rows awaiting clearance."
+  },
+  "dischargeNextActionStartPlan": "Start summary",
+  "@dischargeNextActionStartPlan": {
+    "description": "Next action label for discharge rows awaiting a plan."
+  },
+  "dischargePatientAgeSexLabel": "{age} / {sex}",
+  "@dischargePatientAgeSexLabel": {
+    "description": "Discharge patient demographic age and sex label.",
+    "placeholders": {
+      "age": {
+        "type": "String"
+      },
+      "sex": {
+        "type": "String"
+      }
+    }
+  },
+  "dischargeSavedMessage": "Discharge workflow updated.",
+  "@dischargeSavedMessage": {
+    "description": "Snackbar shown after a discharge workflow update succeeds."
+  },
+  "dischargeReportTitle": "Discharge summary",
+  "@dischargeReportTitle": {
+    "description": "Printable discharge report title."
+  },
+  "dischargeReportPatientLabel": "Patient",
+  "@dischargeReportPatientLabel": {
+    "description": "Printable discharge report patient label."
+  },
+  "dischargeReportPatientNoLabel": "Patient number",
+  "@dischargeReportPatientNoLabel": {
+    "description": "Printable discharge report patient number label."
+  },
+  "dischargeReportAdmissionLabel": "Admission",
+  "@dischargeReportAdmissionLabel": {
+    "description": "Printable discharge report admission label."
+  },
+  "dischargeReportLocationLabel": "Location",
+  "@dischargeReportLocationLabel": {
+    "description": "Printable discharge report location label."
+  },
+  "dischargeReportGeneratedLabel": "Generated",
+  "@dischargeReportGeneratedLabel": {
+    "description": "Printable discharge report generated date label."
+  },
+  "dischargeDoctorSignatureLabel": "Doctor signature",
+  "@dischargeDoctorSignatureLabel": {
+    "description": "Printable discharge report doctor signature label."
+  },
+  "dischargeNurseSignatureLabel": "Nurse signature",
+  "@dischargeNurseSignatureLabel": {
+    "description": "Printable discharge report nurse signature label."
+  },
+  "dischargeReportFooter": "Generated from confirmed discharge workflow data.",
+  "@dischargeReportFooter": {
+    "description": "Printable discharge report footer."
+  },
+  "dischargeLoadingTitle": "Loading discharge workspace",
+  "@dischargeLoadingTitle": {
+    "description": "Discharge workspace loading title."
+  },
+  "dischargeLoadingBody": "Loading discharge queue and reference data.",
+  "@dischargeLoadingBody": {
+    "description": "Discharge workspace loading body."
+  },
+  "dischargeLoadErrorTitle": "Discharge workspace unavailable",
+  "@dischargeLoadErrorTitle": {
+    "description": "Discharge workspace load error title."
+  },
+  "dischargeLoadErrorBody": "The discharge queue could not be loaded. Refresh to try again.",
+  "@dischargeLoadErrorBody": {
+    "description": "Discharge workspace load error body."
   }
 }
