@@ -5484,9 +5484,651 @@
   "@dischargeLoadErrorBody": {
     "description": "Discharge workspace load error body."
   },
+  "radiologyTitle": "Radiology",
+  "@radiologyTitle": {
+    "description": "Localized text for radiologyTitle."
+  },
+  "radiologyDescription": "Manage imaging requests, modality worklists, study capture, PACS links, reporting, and release.",
+  "@radiologyDescription": {
+    "description": "Localized text for radiologyDescription."
+  },
+  "radiologyLoadingTitle": "Loading radiology workspace",
+  "@radiologyLoadingTitle": {
+    "description": "Localized text for radiologyLoadingTitle."
+  },
+  "radiologyLoadingBody": "Loading imaging orders, reports, studies, and reference data.",
+  "@radiologyLoadingBody": {
+    "description": "Localized text for radiologyLoadingBody."
+  },
+  "radiologyLiveStatus": "Live sync",
+  "@radiologyLiveStatus": {
+    "description": "Localized text for radiologyLiveStatus."
+  },
+  "radiologySavingStatus": "Saving",
+  "@radiologySavingStatus": {
+    "description": "Localized text for radiologySavingStatus."
+  },
+  "radiologySavedMessage": "Radiology workflow updated.",
+  "@radiologySavedMessage": {
+    "description": "Localized text for radiologySavedMessage."
+  },
+  "radiologyRequestImagingAction": "Request imaging",
+  "@radiologyRequestImagingAction": {
+    "description": "Localized text for radiologyRequestImagingAction."
+  },
+  "radiologyRefreshCatalogAction": "Refresh catalog",
+  "@radiologyRefreshCatalogAction": {
+    "description": "Localized text for radiologyRefreshCatalogAction."
+  },
+  "radiologyTotalOrdersSummaryLabel": "Total orders",
+  "@radiologyTotalOrdersSummaryLabel": {
+    "description": "Localized text for radiologyTotalOrdersSummaryLabel."
+  },
+  "radiologyWaitingImagingSummaryLabel": "Waiting imaging",
+  "@radiologyWaitingImagingSummaryLabel": {
+    "description": "Localized text for radiologyWaitingImagingSummaryLabel."
+  },
+  "radiologyReportingSummaryLabel": "Reporting",
+  "@radiologyReportingSummaryLabel": {
+    "description": "Localized text for radiologyReportingSummaryLabel."
+  },
+  "radiologyReleasedSummaryLabel": "Released",
+  "@radiologyReleasedSummaryLabel": {
+    "description": "Localized text for radiologyReleasedSummaryLabel."
+  },
+  "radiologyUnsyncedSummaryLabel": "PACS sync due",
+  "@radiologyUnsyncedSummaryLabel": {
+    "description": "Localized text for radiologyUnsyncedSummaryLabel."
+  },
+  "radiologyFiltersLabel": "Radiology filters",
+  "@radiologyFiltersLabel": {
+    "description": "Localized text for radiologyFiltersLabel."
+  },
+  "radiologySearchLabel": "Search radiology",
+  "@radiologySearchLabel": {
+    "description": "Localized text for radiologySearchLabel."
+  },
+  "radiologySearchHint": "Search patient, order, encounter, study, report, or PACS text",
+  "@radiologySearchHint": {
+    "description": "Localized text for radiologySearchHint."
+  },
+  "radiologyOrderDateFilterLabel": "Order date",
+  "@radiologyOrderDateFilterLabel": {
+    "description": "Localized text for radiologyOrderDateFilterLabel."
+  },
+  "radiologyPickOrderDateAction": "Pick order date",
+  "@radiologyPickOrderDateAction": {
+    "description": "Localized text for radiologyPickOrderDateAction."
+  },
+  "radiologyStageFilterLabel": "Stage",
+  "@radiologyStageFilterLabel": {
+    "description": "Localized text for radiologyStageFilterLabel."
+  },
+  "radiologyStatusFilterLabel": "Status",
+  "@radiologyStatusFilterLabel": {
+    "description": "Localized text for radiologyStatusFilterLabel."
+  },
+  "radiologyModalityFilterLabel": "Modality",
+  "@radiologyModalityFilterLabel": {
+    "description": "Localized text for radiologyModalityFilterLabel."
+  },
+  "radiologyClearFiltersAction": "Clear filters",
+  "@radiologyClearFiltersAction": {
+    "description": "Localized text for radiologyClearFiltersAction."
+  },
+  "radiologyWorklistTitle": "Imaging worklist",
+  "@radiologyWorklistTitle": {
+    "description": "Localized text for radiologyWorklistTitle."
+  },
+  "radiologyWorklistDescription": "Backend-backed imaging orders with modality workflow and report status.",
+  "@radiologyWorklistDescription": {
+    "description": "Localized text for radiologyWorklistDescription."
+  },
+  "radiologyPreviousPageLabel": "Previous orders",
+  "@radiologyPreviousPageLabel": {
+    "description": "Localized text for radiologyPreviousPageLabel."
+  },
+  "radiologyNextPageLabel": "Next orders",
+  "@radiologyNextPageLabel": {
+    "description": "Localized text for radiologyNextPageLabel."
+  },
+  "radiologyPageLabel": "Showing {from}-{to} of {total}",
+  "@radiologyPageLabel": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "radiologyNoOrdersTitle": "No radiology orders",
+  "@radiologyNoOrdersTitle": {
+    "description": "Localized text for radiologyNoOrdersTitle."
+  },
+  "radiologyNoOrdersBody": "Orders matching this search and filter will appear here.",
+  "@radiologyNoOrdersBody": {
+    "description": "Localized text for radiologyNoOrdersBody."
+  },
+  "radiologyPatientColumnLabel": "Patient",
+  "@radiologyPatientColumnLabel": {
+    "description": "Localized text for radiologyPatientColumnLabel."
+  },
+  "radiologyOrderColumnLabel": "Order",
+  "@radiologyOrderColumnLabel": {
+    "description": "Localized text for radiologyOrderColumnLabel."
+  },
+  "radiologyStudyColumnLabel": "Study",
+  "@radiologyStudyColumnLabel": {
+    "description": "Localized text for radiologyStudyColumnLabel."
+  },
+  "radiologyPriorityColumnLabel": "Priority",
+  "@radiologyPriorityColumnLabel": {
+    "description": "Localized text for radiologyPriorityColumnLabel."
+  },
+  "radiologyPaymentAuthColumnLabel": "Billing",
+  "@radiologyPaymentAuthColumnLabel": {
+    "description": "Localized text for radiologyPaymentAuthColumnLabel."
+  },
+  "radiologyStatusColumnLabel": "Status",
+  "@radiologyStatusColumnLabel": {
+    "description": "Localized text for radiologyStatusColumnLabel."
+  },
+  "radiologyNextActionColumnLabel": "Next action",
+  "@radiologyNextActionColumnLabel": {
+    "description": "Localized text for radiologyNextActionColumnLabel."
+  },
+  "radiologyDetailTitle": "Radiology workflow",
+  "@radiologyDetailTitle": {
+    "description": "Localized text for radiologyDetailTitle."
+  },
+  "radiologyDetailLoadingTitle": "Loading order",
+  "@radiologyDetailLoadingTitle": {
+    "description": "Localized text for radiologyDetailLoadingTitle."
+  },
+  "radiologyDetailLoadingBody": "Loading selected imaging workflow.",
+  "@radiologyDetailLoadingBody": {
+    "description": "Localized text for radiologyDetailLoadingBody."
+  },
+  "radiologyNoSelectionTitle": "Select an order",
+  "@radiologyNoSelectionTitle": {
+    "description": "Localized text for radiologyNoSelectionTitle."
+  },
+  "radiologyNoSelectionBody": "Choose an imaging request to view study, report, and release details.",
+  "@radiologyNoSelectionBody": {
+    "description": "Localized text for radiologyNoSelectionBody."
+  },
+  "radiologyPatientContextLabel": "Radiology patient context",
+  "@radiologyPatientContextLabel": {
+    "description": "Localized text for radiologyPatientContextLabel."
+  },
+  "radiologyBillingGateUnavailable": "Billing gate unavailable",
+  "@radiologyBillingGateUnavailable": {
+    "description": "Localized text for radiologyBillingGateUnavailable."
+  },
+  "radiologyEncounterLabel": "Encounter",
+  "@radiologyEncounterLabel": {
+    "description": "Localized text for radiologyEncounterLabel."
+  },
+  "radiologyOrderedAtLabel": "Ordered",
+  "@radiologyOrderedAtLabel": {
+    "description": "Localized text for radiologyOrderedAtLabel."
+  },
+  "radiologyModalityLabel": "Modality",
+  "@radiologyModalityLabel": {
+    "description": "Localized text for radiologyModalityLabel."
+  },
+  "radiologyPaymentLabel": "Payment",
+  "@radiologyPaymentLabel": {
+    "description": "Localized text for radiologyPaymentLabel."
+  },
+  "radiologyAuthorizationLabel": "Authorization",
+  "@radiologyAuthorizationLabel": {
+    "description": "Localized text for radiologyAuthorizationLabel."
+  },
+  "radiologyAssignAction": "Assign",
+  "@radiologyAssignAction": {
+    "description": "Localized text for radiologyAssignAction."
+  },
+  "radiologyStartImagingAction": "Start imaging",
+  "@radiologyStartImagingAction": {
+    "description": "Localized text for radiologyStartImagingAction."
+  },
+  "radiologyStartDialogTitle": "Start imaging order",
+  "@radiologyStartDialogTitle": {
+    "description": "Localized text for radiologyStartDialogTitle."
+  },
+  "radiologyNotesLabel": "Notes",
+  "@radiologyNotesLabel": {
+    "description": "Localized text for radiologyNotesLabel."
+  },
+  "radiologyPerformStudyAction": "Perform study",
+  "@radiologyPerformStudyAction": {
+    "description": "Localized text for radiologyPerformStudyAction."
+  },
+  "radiologyCancelOrderAction": "Cancel order",
+  "@radiologyCancelOrderAction": {
+    "description": "Localized text for radiologyCancelOrderAction."
+  },
+  "radiologyRequestDetailsTitle": "Request details",
+  "@radiologyRequestDetailsTitle": {
+    "description": "Localized text for radiologyRequestDetailsTitle."
+  },
+  "radiologyStudyLabel": "Study",
+  "@radiologyStudyLabel": {
+    "description": "Localized text for radiologyStudyLabel."
+  },
+  "radiologyPriorityLabel": "Priority",
+  "@radiologyPriorityLabel": {
+    "description": "Localized text for radiologyPriorityLabel."
+  },
+  "radiologyBodyRegionLabel": "Body region",
+  "@radiologyBodyRegionLabel": {
+    "description": "Localized text for radiologyBodyRegionLabel."
+  },
+  "radiologyLateralityLabel": "Laterality",
+  "@radiologyLateralityLabel": {
+    "description": "Localized text for radiologyLateralityLabel."
+  },
+  "radiologyClinicalNotesLabel": "Clinical notes",
+  "@radiologyClinicalNotesLabel": {
+    "description": "Localized text for radiologyClinicalNotesLabel."
+  },
+  "radiologyReportSectionTitle": "Report",
+  "@radiologyReportSectionTitle": {
+    "description": "Localized text for radiologyReportSectionTitle."
+  },
+  "radiologyReportSectionBody": "Draft, finalize, attest, and amend radiology reports using backend workflow actions.",
+  "@radiologyReportSectionBody": {
+    "description": "Localized text for radiologyReportSectionBody."
+  },
+  "radiologyDraftReportAction": "Draft report",
+  "@radiologyDraftReportAction": {
+    "description": "Localized text for radiologyDraftReportAction."
+  },
+  "radiologyReleaseReportAction": "Release report",
+  "@radiologyReleaseReportAction": {
+    "description": "Localized text for radiologyReleaseReportAction."
+  },
+  "radiologyRequestFinalizationAction": "Request finalization",
+  "@radiologyRequestFinalizationAction": {
+    "description": "Localized text for radiologyRequestFinalizationAction."
+  },
+  "radiologyRequestFinalizationDialogTitle": "Request report finalization",
+  "@radiologyRequestFinalizationDialogTitle": {
+    "description": "Localized text for radiologyRequestFinalizationDialogTitle."
+  },
+  "radiologyAttestFinalizationAction": "Attest finalization",
+  "@radiologyAttestFinalizationAction": {
+    "description": "Localized text for radiologyAttestFinalizationAction."
+  },
+  "radiologyAttestFinalizationDialogTitle": "Attest report finalization",
+  "@radiologyAttestFinalizationDialogTitle": {
+    "description": "Localized text for radiologyAttestFinalizationDialogTitle."
+  },
+  "radiologyAddendumAction": "Add addendum",
+  "@radiologyAddendumAction": {
+    "description": "Localized text for radiologyAddendumAction."
+  },
+  "radiologyPendingAttestationLabel": "Pending attestation",
+  "@radiologyPendingAttestationLabel": {
+    "description": "Localized text for radiologyPendingAttestationLabel."
+  },
+  "radiologyNoReportTitle": "No report yet",
+  "@radiologyNoReportTitle": {
+    "description": "Localized text for radiologyNoReportTitle."
+  },
+  "radiologyNoReportBody": "A draft or final report will appear after reporting begins.",
+  "@radiologyNoReportBody": {
+    "description": "Localized text for radiologyNoReportBody."
+  },
+  "radiologyReportedAtLabel": "Reported",
+  "@radiologyReportedAtLabel": {
+    "description": "Localized text for radiologyReportedAtLabel."
+  },
+  "radiologyGeneratedReportPreviewTitle": "Generated report preview",
+  "@radiologyGeneratedReportPreviewTitle": {
+    "description": "Localized text for radiologyGeneratedReportPreviewTitle."
+  },
+  "radiologyEmptyReportBody": "No report text captured.",
+  "@radiologyEmptyReportBody": {
+    "description": "Localized text for radiologyEmptyReportBody."
+  },
+  "radiologyStudiesAssetsTitle": "Studies and assets",
+  "@radiologyStudiesAssetsTitle": {
+    "description": "Localized text for radiologyStudiesAssetsTitle."
+  },
+  "radiologyStudiesAssetsBody": "Track imaging studies, uploaded assets, and PACS synchronization state.",
+  "@radiologyStudiesAssetsBody": {
+    "description": "Localized text for radiologyStudiesAssetsBody."
+  },
+  "radiologyNoStudiesTitle": "No imaging studies",
+  "@radiologyNoStudiesTitle": {
+    "description": "Localized text for radiologyNoStudiesTitle."
+  },
+  "radiologyNoStudiesBody": "Studies will appear after imaging is performed.",
+  "@radiologyNoStudiesBody": {
+    "description": "Localized text for radiologyNoStudiesBody."
+  },
+  "radiologySyncPacsAction": "Sync PACS",
+  "@radiologySyncPacsAction": {
+    "description": "Localized text for radiologySyncPacsAction."
+  },
+  "radiologyAssetsLabel": "Assets",
+  "@radiologyAssetsLabel": {
+    "description": "Localized text for radiologyAssetsLabel."
+  },
+  "radiologyNoAssetsLabel": "No assets recorded",
+  "@radiologyNoAssetsLabel": {
+    "description": "Localized text for radiologyNoAssetsLabel."
+  },
+  "radiologyPacsLinksLabel": "PACS links",
+  "@radiologyPacsLinksLabel": {
+    "description": "Localized text for radiologyPacsLinksLabel."
+  },
+  "radiologyNoPacsLinksLabel": "No PACS links recorded",
+  "@radiologyNoPacsLinksLabel": {
+    "description": "Localized text for radiologyNoPacsLinksLabel."
+  },
+  "radiologyDoctorReviewTitle": "Doctor review",
+  "@radiologyDoctorReviewTitle": {
+    "description": "Localized text for radiologyDoctorReviewTitle."
+  },
+  "radiologyDoctorReviewReleasedBody": "The latest report is released for clinical review.",
+  "@radiologyDoctorReviewReleasedBody": {
+    "description": "Localized text for radiologyDoctorReviewReleasedBody."
+  },
+  "radiologyDoctorReviewPendingBody": "Clinical review becomes available after report release.",
+  "@radiologyDoctorReviewPendingBody": {
+    "description": "Localized text for radiologyDoctorReviewPendingBody."
+  },
+  "radiologyDoctorReviewReadyLabel": "Ready for review",
+  "@radiologyDoctorReviewReadyLabel": {
+    "description": "Localized text for radiologyDoctorReviewReadyLabel."
+  },
+  "radiologyDoctorReviewPendingLabel": "Pending release",
+  "@radiologyDoctorReviewPendingLabel": {
+    "description": "Localized text for radiologyDoctorReviewPendingLabel."
+  },
+  "radiologyTimelineTitle": "Workflow timeline",
+  "@radiologyTimelineTitle": {
+    "description": "Localized text for radiologyTimelineTitle."
+  },
+  "radiologyNoTimelineTitle": "No timeline events",
+  "@radiologyNoTimelineTitle": {
+    "description": "Localized text for radiologyNoTimelineTitle."
+  },
+  "radiologyNoTimelineBody": "Workflow events will appear as the order progresses.",
+  "@radiologyNoTimelineBody": {
+    "description": "Localized text for radiologyNoTimelineBody."
+  },
+  "radiologyBackendGapsTitle": "Backend gaps",
+  "@radiologyBackendGapsTitle": {
+    "description": "Localized text for radiologyBackendGapsTitle."
+  },
+  "radiologyBackendGapsBody": "These controls are shown as unavailable until backend support is added.",
+  "@radiologyBackendGapsBody": {
+    "description": "Localized text for radiologyBackendGapsBody."
+  },
+  "radiologyGapSchedulingTitle": "Room scheduling",
+  "@radiologyGapSchedulingTitle": {
+    "description": "Localized text for radiologyGapSchedulingTitle."
+  },
+  "radiologyGapBackendSubtitle": "Not exposed by API",
+  "@radiologyGapBackendSubtitle": {
+    "description": "Localized text for radiologyGapBackendSubtitle."
+  },
+  "radiologyGapSchedulingBody": "The current radiology API has no room or appointment assignment fields.",
+  "@radiologyGapSchedulingBody": {
+    "description": "Localized text for radiologyGapSchedulingBody."
+  },
+  "radiologyGapBillingTitle": "Billing authorization",
+  "@radiologyGapBillingTitle": {
+    "description": "Localized text for radiologyGapBillingTitle."
+  },
+  "radiologyGapBillingBody": "Payment and authorization status is displayed only when returned by the backend.",
+  "@radiologyGapBillingBody": {
+    "description": "Localized text for radiologyGapBillingBody."
+  },
+  "radiologyCreateOrderDialogTitle": "Request imaging",
+  "@radiologyCreateOrderDialogTitle": {
+    "description": "Localized text for radiologyCreateOrderDialogTitle."
+  },
+  "radiologyReferenceSearchLabel": "Catalog search",
+  "@radiologyReferenceSearchLabel": {
+    "description": "Localized text for radiologyReferenceSearchLabel."
+  },
+  "radiologyReferenceSearchHint": "Search test code, name, modality, or body region",
+  "@radiologyReferenceSearchHint": {
+    "description": "Localized text for radiologyReferenceSearchHint."
+  },
+  "radiologySearchReferenceAction": "Search catalog",
+  "@radiologySearchReferenceAction": {
+    "description": "Localized text for radiologySearchReferenceAction."
+  },
+  "radiologyPatientLabel": "Patient",
+  "@radiologyPatientLabel": {
+    "description": "Localized text for radiologyPatientLabel."
+  },
+  "radiologyFieldRequiredLabel": "{label} is required.",
+  "@radiologyFieldRequiredLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyAssignDialogTitle": "Assign imaging order",
+  "@radiologyAssignDialogTitle": {
+    "description": "Localized text for radiologyAssignDialogTitle."
+  },
+  "radiologyAssigneeLabel": "Assignee",
+  "@radiologyAssigneeLabel": {
+    "description": "Localized text for radiologyAssigneeLabel."
+  },
+  "radiologyPerformStudyDialogTitle": "Perform imaging study",
+  "@radiologyPerformStudyDialogTitle": {
+    "description": "Localized text for radiologyPerformStudyDialogTitle."
+  },
+  "radiologyPerformedAtLabel": "Performed at",
+  "@radiologyPerformedAtLabel": {
+    "description": "Localized text for radiologyPerformedAtLabel."
+  },
+  "radiologyDateTimeHint": "YYYY-MM-DD HH:MM",
+  "@radiologyDateTimeHint": {
+    "description": "Localized text for radiologyDateTimeHint."
+  },
+  "radiologyReportDialogTitle": "Draft radiology report",
+  "@radiologyReportDialogTitle": {
+    "description": "Localized text for radiologyReportDialogTitle."
+  },
+  "radiologyFindingsLabel": "Findings",
+  "@radiologyFindingsLabel": {
+    "description": "Localized text for radiologyFindingsLabel."
+  },
+  "radiologyImpressionLabel": "Impression",
+  "@radiologyImpressionLabel": {
+    "description": "Localized text for radiologyImpressionLabel."
+  },
+  "radiologyReportTextLabel": "Report text",
+  "@radiologyReportTextLabel": {
+    "description": "Localized text for radiologyReportTextLabel."
+  },
+  "radiologyReportTextHelper": "Leave blank to combine findings and impression.",
+  "@radiologyReportTextHelper": {
+    "description": "Localized text for radiologyReportTextHelper."
+  },
+  "radiologyReleaseReportDialogTitle": "Release report",
+  "@radiologyReleaseReportDialogTitle": {
+    "description": "Localized text for radiologyReleaseReportDialogTitle."
+  },
+  "radiologyReleaseNotesLabel": "Release notes",
+  "@radiologyReleaseNotesLabel": {
+    "description": "Localized text for radiologyReleaseNotesLabel."
+  },
+  "radiologyFinalizationStatementLabel": "Finalization statement",
+  "@radiologyFinalizationStatementLabel": {
+    "description": "Localized text for radiologyFinalizationStatementLabel."
+  },
+  "radiologyFinalizationReasonLabel": "Reason",
+  "@radiologyFinalizationReasonLabel": {
+    "description": "Localized text for radiologyFinalizationReasonLabel."
+  },
+  "radiologyAddendumDialogTitle": "Add report addendum",
+  "@radiologyAddendumDialogTitle": {
+    "description": "Localized text for radiologyAddendumDialogTitle."
+  },
+  "radiologyAddendumTextLabel": "Addendum text",
+  "@radiologyAddendumTextLabel": {
+    "description": "Localized text for radiologyAddendumTextLabel."
+  },
+  "radiologyCancelDialogTitle": "Cancel radiology order",
+  "@radiologyCancelDialogTitle": {
+    "description": "Localized text for radiologyCancelDialogTitle."
+  },
+  "radiologyCancellationReasonLabel": "Cancellation reason",
+  "@radiologyCancellationReasonLabel": {
+    "description": "Localized text for radiologyCancellationReasonLabel."
+  },
+  "radiologyPacsSyncDialogTitle": "Sync study to PACS",
+  "@radiologyPacsSyncDialogTitle": {
+    "description": "Localized text for radiologyPacsSyncDialogTitle."
+  },
+  "radiologyStudyUidLabel": "Study UID",
+  "@radiologyStudyUidLabel": {
+    "description": "Localized text for radiologyStudyUidLabel."
+  },
+  "radiologyStageAll": "All",
+  "@radiologyStageAll": {
+    "description": "Localized text for radiologyStageAll."
+  },
+  "radiologyStageOrdered": "Ordered",
+  "@radiologyStageOrdered": {
+    "description": "Localized text for radiologyStageOrdered."
+  },
+  "radiologyStageProcessing": "Processing",
+  "@radiologyStageProcessing": {
+    "description": "Localized text for radiologyStageProcessing."
+  },
+  "radiologyStageReporting": "Reporting",
+  "@radiologyStageReporting": {
+    "description": "Localized text for radiologyStageReporting."
+  },
+  "radiologyStageCompleted": "Completed",
+  "@radiologyStageCompleted": {
+    "description": "Localized text for radiologyStageCompleted."
+  },
+  "radiologyStageCancelled": "Cancelled",
+  "@radiologyStageCancelled": {
+    "description": "Localized text for radiologyStageCancelled."
+  },
+  "radiologyStatusOrdered": "Ordered",
+  "@radiologyStatusOrdered": {
+    "description": "Localized text for radiologyStatusOrdered."
+  },
+  "radiologyStatusInProcess": "In process",
+  "@radiologyStatusInProcess": {
+    "description": "Localized text for radiologyStatusInProcess."
+  },
+  "radiologyStatusCompleted": "Completed",
+  "@radiologyStatusCompleted": {
+    "description": "Localized text for radiologyStatusCompleted."
+  },
+  "radiologyStatusCancelled": "Cancelled",
+  "@radiologyStatusCancelled": {
+    "description": "Localized text for radiologyStatusCancelled."
+  },
+  "radiologyResultDraft": "Draft",
+  "@radiologyResultDraft": {
+    "description": "Localized text for radiologyResultDraft."
+  },
+  "radiologyResultFinal": "Final",
+  "@radiologyResultFinal": {
+    "description": "Localized text for radiologyResultFinal."
+  },
+  "radiologyResultAmended": "Amended",
+  "@radiologyResultAmended": {
+    "description": "Localized text for radiologyResultAmended."
+  },
+  "radiologyModalityXray": "X-ray",
+  "@radiologyModalityXray": {
+    "description": "Localized text for radiologyModalityXray."
+  },
+  "radiologyModalityCt": "CT",
+  "@radiologyModalityCt": {
+    "description": "Localized text for radiologyModalityCt."
+  },
+  "radiologyModalityMri": "MRI",
+  "@radiologyModalityMri": {
+    "description": "Localized text for radiologyModalityMri."
+  },
+  "radiologyModalityUltrasound": "Ultrasound",
+  "@radiologyModalityUltrasound": {
+    "description": "Localized text for radiologyModalityUltrasound."
+  },
+  "radiologyModalityPet": "PET",
+  "@radiologyModalityPet": {
+    "description": "Localized text for radiologyModalityPet."
+  },
+  "radiologyModalityEcg": "ECG",
+  "@radiologyModalityEcg": {
+    "description": "Localized text for radiologyModalityEcg."
+  },
+  "radiologyModalityEcho": "Echo",
+  "@radiologyModalityEcho": {
+    "description": "Localized text for radiologyModalityEcho."
+  },
+  "radiologyModalityEndo": "Endoscopy",
+  "@radiologyModalityEndo": {
+    "description": "Localized text for radiologyModalityEndo."
+  },
+  "radiologyModalityGastro": "Gastro",
+  "@radiologyModalityGastro": {
+    "description": "Localized text for radiologyModalityGastro."
+  },
+  "radiologyModalityOther": "Other",
+  "@radiologyModalityOther": {
+    "description": "Localized text for radiologyModalityOther."
+  },
+  "radiologyNextActionConfirmBilling": "Confirm billing",
+  "@radiologyNextActionConfirmBilling": {
+    "description": "Localized text for radiologyNextActionConfirmBilling."
+  },
+  "radiologyNextActionStartImaging": "Start imaging",
+  "@radiologyNextActionStartImaging": {
+    "description": "Localized text for radiologyNextActionStartImaging."
+  },
+  "radiologyNextActionPerformStudy": "Perform study",
+  "@radiologyNextActionPerformStudy": {
+    "description": "Localized text for radiologyNextActionPerformStudy."
+  },
+  "radiologyNextActionReleaseReport": "Release report",
+  "@radiologyNextActionReleaseReport": {
+    "description": "Localized text for radiologyNextActionReleaseReport."
+  },
+  "radiologyNextActionDoctorReview": "Doctor review",
+  "@radiologyNextActionDoctorReview": {
+    "description": "Localized text for radiologyNextActionDoctorReview."
+  },
+  "radiologyNextActionReportPending": "Report pending",
+  "@radiologyNextActionReportPending": {
+    "description": "Localized text for radiologyNextActionReportPending."
+  },
   "navigationPharmacyLabel": "Pharmacy",
   "@navigationPharmacyLabel": {
     "description": "Navigation destination label for the pharmacy workspace."
+  },
+  "navigationLabLabel": "Lab",
+  "@navigationLabLabel": {
+    "description": "Navigation destination label for the lab workspace."
+  },
+  "navigationRadiologyLabel": "Radiology",
+  "@navigationRadiologyLabel": {
+    "description": "Navigation destination label for the radiology workspace."
   },
   "pharmacyLoadingTitle": "Loading pharmacy workspace",
   "@pharmacyLoadingTitle": {
@@ -6530,5 +7172,551 @@
   "claimsReportFooter": "Generated from backend-backed claims and billing data.",
   "@claimsReportFooter": {
     "description": "Localized text for claimsReportFooter."
+  },
+  "labTitle": "Laboratory",
+  "@labTitle": {
+    "description": "Localized text for labTitle."
+  },
+  "labDescription": "Manage lab catalog, order queues, samples, result release, QC, and clinician review handoff.",
+  "@labDescription": {
+    "description": "Localized text for labDescription."
+  },
+  "labLoadingTitle": "Loading laboratory",
+  "@labLoadingTitle": {
+    "description": "Localized text for labLoadingTitle."
+  },
+  "labLoadingBody": "Loading lab queues, catalog, samples, results, and QC logs.",
+  "@labLoadingBody": {
+    "description": "Localized text for labLoadingBody."
+  },
+  "labLiveStatus": "Live sync",
+  "@labLiveStatus": {
+    "description": "Localized text for labLiveStatus."
+  },
+  "labSavingStatus": "Saving",
+  "@labSavingStatus": {
+    "description": "Localized text for labSavingStatus."
+  },
+  "labSavedMessage": "Laboratory workflow updated.",
+  "@labSavedMessage": {
+    "description": "Localized text for labSavedMessage."
+  },
+  "labRequestOrderAction": "Request lab",
+  "@labRequestOrderAction": {
+    "description": "Localized text for labRequestOrderAction."
+  },
+  "labRecordQcAction": "Record QC",
+  "@labRecordQcAction": {
+    "description": "Localized text for labRecordQcAction."
+  },
+  "labTotalOrdersSummaryLabel": "Total orders",
+  "@labTotalOrdersSummaryLabel": {
+    "description": "Localized text for labTotalOrdersSummaryLabel."
+  },
+  "labWaitingSampleSummaryLabel": "Waiting sample",
+  "@labWaitingSampleSummaryLabel": {
+    "description": "Localized text for labWaitingSampleSummaryLabel."
+  },
+  "labProcessingSummaryLabel": "Processing",
+  "@labProcessingSummaryLabel": {
+    "description": "Localized text for labProcessingSummaryLabel."
+  },
+  "labResultPendingSummaryLabel": "Result pending",
+  "@labResultPendingSummaryLabel": {
+    "description": "Localized text for labResultPendingSummaryLabel."
+  },
+  "labCriticalSummaryLabel": "Critical",
+  "@labCriticalSummaryLabel": {
+    "description": "Localized text for labCriticalSummaryLabel."
+  },
+  "labCompletedSummaryLabel": "Released",
+  "@labCompletedSummaryLabel": {
+    "description": "Localized text for labCompletedSummaryLabel."
+  },
+  "labFiltersLabel": "Laboratory filters",
+  "@labFiltersLabel": {
+    "description": "Localized text for labFiltersLabel."
+  },
+  "labSearchLabel": "Search laboratory",
+  "@labSearchLabel": {
+    "description": "Localized text for labSearchLabel."
+  },
+  "labSearchHint": "Search patient, order, sample, test, or encounter",
+  "@labSearchHint": {
+    "description": "Localized text for labSearchHint."
+  },
+  "labScopeFilterLabel": "Queue",
+  "@labScopeFilterLabel": {
+    "description": "Localized text for labScopeFilterLabel."
+  },
+  "labScopeAll": "All",
+  "@labScopeAll": {
+    "description": "Localized text for labScopeAll."
+  },
+  "labScopeCollection": "Waiting sample",
+  "@labScopeCollection": {
+    "description": "Localized text for labScopeCollection."
+  },
+  "labScopeProcessing": "Processing",
+  "@labScopeProcessing": {
+    "description": "Localized text for labScopeProcessing."
+  },
+  "labScopeResults": "Result pending",
+  "@labScopeResults": {
+    "description": "Localized text for labScopeResults."
+  },
+  "labScopeCritical": "Critical",
+  "@labScopeCritical": {
+    "description": "Localized text for labScopeCritical."
+  },
+  "labScopeCompleted": "Released",
+  "@labScopeCompleted": {
+    "description": "Localized text for labScopeCompleted."
+  },
+  "labScopeCancelled": "Cancelled",
+  "@labScopeCancelled": {
+    "description": "Localized text for labScopeCancelled."
+  },
+  "labWorklistTitle": "Lab queue",
+  "@labWorklistTitle": {
+    "description": "Localized text for labWorklistTitle."
+  },
+  "labWorklistDescription": "Actionable lab orders with sample, processing, result, and release state.",
+  "@labWorklistDescription": {
+    "description": "Localized text for labWorklistDescription."
+  },
+  "labNoOrdersTitle": "No lab orders",
+  "@labNoOrdersTitle": {
+    "description": "Localized text for labNoOrdersTitle."
+  },
+  "labNoOrdersBody": "Adjust the queue filter or search term to find laboratory work.",
+  "@labNoOrdersBody": {
+    "description": "Localized text for labNoOrdersBody."
+  },
+  "labPatientColumnLabel": "Patient",
+  "@labPatientColumnLabel": {
+    "description": "Localized text for labPatientColumnLabel."
+  },
+  "labOrderColumnLabel": "Order",
+  "@labOrderColumnLabel": {
+    "description": "Localized text for labOrderColumnLabel."
+  },
+  "labTestsColumnLabel": "Tests",
+  "@labTestsColumnLabel": {
+    "description": "Localized text for labTestsColumnLabel."
+  },
+  "labSampleColumnLabel": "Sample",
+  "@labSampleColumnLabel": {
+    "description": "Localized text for labSampleColumnLabel."
+  },
+  "labResultColumnLabel": "Result",
+  "@labResultColumnLabel": {
+    "description": "Localized text for labResultColumnLabel."
+  },
+  "labNextActionColumnLabel": "Next action",
+  "@labNextActionColumnLabel": {
+    "description": "Localized text for labNextActionColumnLabel."
+  },
+  "labPageLabel": "{from}-{to} of {total}",
+  "@labPageLabel": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "labPreviousPageLabel": "Previous lab page",
+  "@labPreviousPageLabel": {
+    "description": "Localized text for labPreviousPageLabel."
+  },
+  "labNextPageLabel": "Next lab page",
+  "@labNextPageLabel": {
+    "description": "Localized text for labNextPageLabel."
+  },
+  "labDetailTitle": "Lab detail",
+  "@labDetailTitle": {
+    "description": "Localized text for labDetailTitle."
+  },
+  "labDetailLoadingTitle": "Loading lab detail",
+  "@labDetailLoadingTitle": {
+    "description": "Localized text for labDetailLoadingTitle."
+  },
+  "labDetailLoadingBody": "Loading samples, results, timeline, and available workflow actions.",
+  "@labDetailLoadingBody": {
+    "description": "Localized text for labDetailLoadingBody."
+  },
+  "labNoSelectionTitle": "Select an order",
+  "@labNoSelectionTitle": {
+    "description": "Localized text for labNoSelectionTitle."
+  },
+  "labNoSelectionBody": "Choose a lab order from the queue to collect samples, process results, and release reports.",
+  "@labNoSelectionBody": {
+    "description": "Localized text for labNoSelectionBody."
+  },
+  "labPatientContextLabel": "Lab patient context",
+  "@labPatientContextLabel": {
+    "description": "Localized text for labPatientContextLabel."
+  },
+  "labOrderFieldLabel": "Lab order",
+  "@labOrderFieldLabel": {
+    "description": "Localized text for labOrderFieldLabel."
+  },
+  "labEncounterFieldLabel": "Encounter",
+  "@labEncounterFieldLabel": {
+    "description": "Localized text for labEncounterFieldLabel."
+  },
+  "labOrderedAtFieldLabel": "Ordered at",
+  "@labOrderedAtFieldLabel": {
+    "description": "Localized text for labOrderedAtFieldLabel."
+  },
+  "labItemsSectionTitle": "Order items",
+  "@labItemsSectionTitle": {
+    "description": "Localized text for labItemsSectionTitle."
+  },
+  "labSamplesSectionTitle": "Samples",
+  "@labSamplesSectionTitle": {
+    "description": "Localized text for labSamplesSectionTitle."
+  },
+  "labResultsSectionTitle": "Results",
+  "@labResultsSectionTitle": {
+    "description": "Localized text for labResultsSectionTitle."
+  },
+  "labTimelineSectionTitle": "Timeline",
+  "@labTimelineSectionTitle": {
+    "description": "Localized text for labTimelineSectionTitle."
+  },
+  "labNoSamplesLabel": "No samples recorded",
+  "@labNoSamplesLabel": {
+    "description": "Localized text for labNoSamplesLabel."
+  },
+  "labNoResultsLabel": "No released results",
+  "@labNoResultsLabel": {
+    "description": "Localized text for labNoResultsLabel."
+  },
+  "labNoTimelineLabel": "No timeline entries",
+  "@labNoTimelineLabel": {
+    "description": "Localized text for labNoTimelineLabel."
+  },
+  "labReferenceRangeLabel": "Reference range",
+  "@labReferenceRangeLabel": {
+    "description": "Localized text for labReferenceRangeLabel."
+  },
+  "labReportedAtLabel": "Reported",
+  "@labReportedAtLabel": {
+    "description": "Localized text for labReportedAtLabel."
+  },
+  "labCollectSampleAction": "Collect sample",
+  "@labCollectSampleAction": {
+    "description": "Localized text for labCollectSampleAction."
+  },
+  "labReceiveSampleAction": "Receive sample",
+  "@labReceiveSampleAction": {
+    "description": "Localized text for labReceiveSampleAction."
+  },
+  "labRejectSampleAction": "Reject sample",
+  "@labRejectSampleAction": {
+    "description": "Localized text for labRejectSampleAction."
+  },
+  "labReleaseResultAction": "Release result",
+  "@labReleaseResultAction": {
+    "description": "Localized text for labReleaseResultAction."
+  },
+  "labReverseWorkflowAction": "Reverse step",
+  "@labReverseWorkflowAction": {
+    "description": "Localized text for labReverseWorkflowAction."
+  },
+  "labViewCatalogAction": "View catalog",
+  "@labViewCatalogAction": {
+    "description": "Localized text for labViewCatalogAction."
+  },
+  "labCatalogQcTitle": "Catalog and QC",
+  "@labCatalogQcTitle": {
+    "description": "Localized text for labCatalogQcTitle."
+  },
+  "labCatalogTitle": "Lab catalog",
+  "@labCatalogTitle": {
+    "description": "Localized text for labCatalogTitle."
+  },
+  "labQcTitle": "Quality control",
+  "@labQcTitle": {
+    "description": "Localized text for labQcTitle."
+  },
+  "labBackendGapsTitle": "Backend gaps",
+  "@labBackendGapsTitle": {
+    "description": "Localized text for labBackendGapsTitle."
+  },
+  "labBackendGapsBody": "No confirmed backend gaps are blocking the displayed lab queue.",
+  "@labBackendGapsBody": {
+    "description": "Localized text for labBackendGapsBody."
+  },
+  "labNoCatalogItemsLabel": "No catalog items found",
+  "@labNoCatalogItemsLabel": {
+    "description": "Localized text for labNoCatalogItemsLabel."
+  },
+  "labNoQcLogsLabel": "No QC logs recorded",
+  "@labNoQcLogsLabel": {
+    "description": "Localized text for labNoQcLogsLabel."
+  },
+  "labTestsTabLabel": "Tests",
+  "@labTestsTabLabel": {
+    "description": "Localized text for labTestsTabLabel."
+  },
+  "labPanelsTabLabel": "Panels",
+  "@labPanelsTabLabel": {
+    "description": "Localized text for labPanelsTabLabel."
+  },
+  "labRequestOrderDialogTitle": "Request lab order",
+  "@labRequestOrderDialogTitle": {
+    "description": "Localized text for labRequestOrderDialogTitle."
+  },
+  "labPatientIdLabel": "Patient ID",
+  "@labPatientIdLabel": {
+    "description": "Localized text for labPatientIdLabel."
+  },
+  "labEncounterIdLabel": "Encounter ID",
+  "@labEncounterIdLabel": {
+    "description": "Localized text for labEncounterIdLabel."
+  },
+  "labCatalogSearchLabel": "Search lab catalog",
+  "@labCatalogSearchLabel": {
+    "description": "Localized text for labCatalogSearchLabel."
+  },
+  "labCatalogSearchHint": "Search tests, panels, codes, category, or specimen",
+  "@labCatalogSearchHint": {
+    "description": "Localized text for labCatalogSearchHint."
+  },
+  "labCreateOrderSubmitAction": "Create lab order",
+  "@labCreateOrderSubmitAction": {
+    "description": "Localized text for labCreateOrderSubmitAction."
+  },
+  "labCollectDialogTitle": "Collect sample",
+  "@labCollectDialogTitle": {
+    "description": "Localized text for labCollectDialogTitle."
+  },
+  "labCollectedAtLabel": "Collected at",
+  "@labCollectedAtLabel": {
+    "description": "Localized text for labCollectedAtLabel."
+  },
+  "labDateTimeHint": "YYYY-MM-DDTHH:MM:SS",
+  "@labDateTimeHint": {
+    "description": "Localized text for labDateTimeHint."
+  },
+  "labNotesLabel": "Notes",
+  "@labNotesLabel": {
+    "description": "Localized text for labNotesLabel."
+  },
+  "labReceiveDialogTitle": "Receive sample",
+  "@labReceiveDialogTitle": {
+    "description": "Localized text for labReceiveDialogTitle."
+  },
+  "labSampleFieldLabel": "Sample",
+  "@labSampleFieldLabel": {
+    "description": "Localized text for labSampleFieldLabel."
+  },
+  "labReceivedAtLabel": "Received at",
+  "@labReceivedAtLabel": {
+    "description": "Localized text for labReceivedAtLabel."
+  },
+  "labRejectDialogTitle": "Reject sample",
+  "@labRejectDialogTitle": {
+    "description": "Localized text for labRejectDialogTitle."
+  },
+  "labRejectReasonLabel": "Rejection reason",
+  "@labRejectReasonLabel": {
+    "description": "Localized text for labRejectReasonLabel."
+  },
+  "labReleaseDialogTitle": "Release lab result",
+  "@labReleaseDialogTitle": {
+    "description": "Localized text for labReleaseDialogTitle."
+  },
+  "labOrderItemFieldLabel": "Order item",
+  "@labOrderItemFieldLabel": {
+    "description": "Localized text for labOrderItemFieldLabel."
+  },
+  "labResultStatusLabel": "Result status",
+  "@labResultStatusLabel": {
+    "description": "Localized text for labResultStatusLabel."
+  },
+  "labResultValueLabel": "Result value",
+  "@labResultValueLabel": {
+    "description": "Localized text for labResultValueLabel."
+  },
+  "labResultUnitLabel": "Result unit",
+  "@labResultUnitLabel": {
+    "description": "Localized text for labResultUnitLabel."
+  },
+  "labResultTextLabel": "Result comments",
+  "@labResultTextLabel": {
+    "description": "Localized text for labResultTextLabel."
+  },
+  "labReportedAtInputLabel": "Reported at",
+  "@labReportedAtInputLabel": {
+    "description": "Localized text for labReportedAtInputLabel."
+  },
+  "labReverseDialogTitle": "Reverse lab workflow",
+  "@labReverseDialogTitle": {
+    "description": "Localized text for labReverseDialogTitle."
+  },
+  "labReverseReasonLabel": "Reason",
+  "@labReverseReasonLabel": {
+    "description": "Localized text for labReverseReasonLabel."
+  },
+  "labRecordQcDialogTitle": "Record quality control",
+  "@labRecordQcDialogTitle": {
+    "description": "Localized text for labRecordQcDialogTitle."
+  },
+  "labQcTestFieldLabel": "Lab test",
+  "@labQcTestFieldLabel": {
+    "description": "Localized text for labQcTestFieldLabel."
+  },
+  "labQcStatusFieldLabel": "QC status",
+  "@labQcStatusFieldLabel": {
+    "description": "Localized text for labQcStatusFieldLabel."
+  },
+  "labLoggedAtLabel": "Logged at",
+  "@labLoggedAtLabel": {
+    "description": "Localized text for labLoggedAtLabel."
+  },
+  "labQcNotesLabel": "QC notes",
+  "@labQcNotesLabel": {
+    "description": "Localized text for labQcNotesLabel."
+  },
+  "labStatusOrdered": "Ordered",
+  "@labStatusOrdered": {
+    "description": "Localized text for labStatusOrdered."
+  },
+  "labStatusCollected": "Collected",
+  "@labStatusCollected": {
+    "description": "Localized text for labStatusCollected."
+  },
+  "labStatusInProcess": "In process",
+  "@labStatusInProcess": {
+    "description": "Localized text for labStatusInProcess."
+  },
+  "labStatusCompleted": "Released",
+  "@labStatusCompleted": {
+    "description": "Localized text for labStatusCompleted."
+  },
+  "labStatusCancelled": "Cancelled",
+  "@labStatusCancelled": {
+    "description": "Localized text for labStatusCancelled."
+  },
+  "labStatusPending": "Pending",
+  "@labStatusPending": {
+    "description": "Localized text for labStatusPending."
+  },
+  "labStatusNormal": "Normal",
+  "@labStatusNormal": {
+    "description": "Localized text for labStatusNormal."
+  },
+  "labStatusAbnormal": "Abnormal",
+  "@labStatusAbnormal": {
+    "description": "Localized text for labStatusAbnormal."
+  },
+  "labStatusCritical": "Critical",
+  "@labStatusCritical": {
+    "description": "Localized text for labStatusCritical."
+  },
+  "labStatusRejected": "Rejected",
+  "@labStatusRejected": {
+    "description": "Localized text for labStatusRejected."
+  },
+  "labStatusReceived": "Received",
+  "@labStatusReceived": {
+    "description": "Localized text for labStatusReceived."
+  },
+  "labNextActionCancelled": "Order cancelled",
+  "@labNextActionCancelled": {
+    "description": "Localized text for labNextActionCancelled."
+  },
+  "labNextActionCollect": "Collect sample",
+  "@labNextActionCollect": {
+    "description": "Localized text for labNextActionCollect."
+  },
+  "labNextActionReceive": "Receive sample",
+  "@labNextActionReceive": {
+    "description": "Localized text for labNextActionReceive."
+  },
+  "labNextActionRelease": "Enter and release result",
+  "@labNextActionRelease": {
+    "description": "Localized text for labNextActionRelease."
+  },
+  "labNextActionReviewCritical": "Escalate critical result",
+  "@labNextActionReviewCritical": {
+    "description": "Localized text for labNextActionReviewCritical."
+  },
+  "labNextActionCompleted": "Ready for doctor review",
+  "@labNextActionCompleted": {
+    "description": "Localized text for labNextActionCompleted."
+  },
+  "labNextActionWatch": "Review order",
+  "@labNextActionWatch": {
+    "description": "Localized text for labNextActionWatch."
+  },
+  "labReportPreviewTitle": "Result report preview",
+  "@labReportPreviewTitle": {
+    "description": "Localized text for labReportPreviewTitle."
+  },
+  "labReportTitle": "Laboratory result report",
+  "@labReportTitle": {
+    "description": "Localized text for labReportTitle."
+  },
+  "labCopyReportAction": "Copy report",
+  "@labCopyReportAction": {
+    "description": "Localized text for labCopyReportAction."
+  },
+  "labReportPatientLabel": "Patient",
+  "@labReportPatientLabel": {
+    "description": "Localized text for labReportPatientLabel."
+  },
+  "labReportOrderLabel": "Order",
+  "@labReportOrderLabel": {
+    "description": "Localized text for labReportOrderLabel."
+  },
+  "labReportResultLabel": "Result",
+  "@labReportResultLabel": {
+    "description": "Localized text for labReportResultLabel."
+  },
+  "labReportRangeLabel": "Reference range",
+  "@labReportRangeLabel": {
+    "description": "Localized text for labReportRangeLabel."
+  },
+  "labReportVerifiedLabel": "Released",
+  "@labReportVerifiedLabel": {
+    "description": "Localized text for labReportVerifiedLabel."
+  },
+  "labReportFooter": "Generated from confirmed laboratory workflow data.",
+  "@labReportFooter": {
+    "description": "Localized text for labReportFooter."
+  },
+  "labGapBillingTitle": "Payment and authorization gate",
+  "@labGapBillingTitle": {
+    "description": "Localized text for labGapBillingTitle."
+  },
+  "labGapBillingBody": "The current lab workbench contract does not expose payment or authorization blockers.",
+  "@labGapBillingBody": {
+    "description": "Localized text for labGapBillingBody."
+  },
+  "labGapVerificationTitle": "Separate verification step",
+  "@labGapVerificationTitle": {
+    "description": "Localized text for labGapVerificationTitle."
+  },
+  "labGapVerificationBody": "The confirmed workflow releases an order item result, but does not expose a separate verified-before-release state.",
+  "@labGapVerificationBody": {
+    "description": "Localized text for labGapVerificationBody."
+  },
+  "labGapReportGenerationTitle": "Generated report endpoint",
+  "@labGapReportGenerationTitle": {
+    "description": "Localized text for labGapReportGenerationTitle."
+  },
+  "labGapReportGenerationBody": "The frontend shows a shared report preview; no confirmed lab-specific generated PDF endpoint is exposed.",
+  "@labGapReportGenerationBody": {
+    "description": "Localized text for labGapReportGenerationBody."
   }
 }

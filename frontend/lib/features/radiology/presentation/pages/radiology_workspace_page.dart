@@ -338,7 +338,10 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return _TwoLineCell(
                 title: item.patientDisplayName ?? l10n.profileUnknownValue,
-                subtitle: _joinDisplay(<String?>[item.patientId, item.encounterId]),
+                subtitle: _joinDisplay(<String?>[
+                  item.patientId,
+                  item.encounterId,
+                ]),
               );
             },
           ),
@@ -586,9 +589,7 @@ class _RadiologyDetailBody extends ConsumerWidget {
                         notesLabel: l10n.radiologyNotesLabel,
                         submitLabel: l10n.radiologyStartImagingAction,
                         submit: ref
-                            .read(
-                              radiologyWorkspaceControllerProvider.notifier,
-                            )
+                            .read(radiologyWorkspaceControllerProvider.notifier)
                             .startOrder,
                       ),
                     ),
@@ -612,17 +613,9 @@ class _RadiologyDetailBody extends ConsumerWidget {
         SizedBox(height: theme.spacing.lg),
         _RequestSection(order: order),
         SizedBox(height: theme.spacing.lg),
-        _ReportingSection(
-          state: state,
-          workflow: workflow,
-          canWork: canWork,
-        ),
+        _ReportingSection(state: state, workflow: workflow, canWork: canWork),
         SizedBox(height: theme.spacing.lg),
-        _StudiesSection(
-          state: state,
-          workflow: workflow,
-          canWork: canWork,
-        ),
+        _StudiesSection(state: state, workflow: workflow, canWork: canWork),
         SizedBox(height: theme.spacing.lg),
         _DoctorReviewPanel(order: order),
         SizedBox(height: theme.spacing.lg),
@@ -648,10 +641,7 @@ class _RequestSection extends StatelessWidget {
           label: l10n.radiologyStudyLabel,
           value: order.testDisplayName,
         ),
-        _DetailLine(
-          label: l10n.radiologyPriorityLabel,
-          value: order.priority,
-        ),
+        _DetailLine(label: l10n.radiologyPriorityLabel, value: order.priority),
         _DetailLine(
           label: l10n.radiologyBodyRegionLabel,
           value: order.bodyRegion,
@@ -845,7 +835,8 @@ class _StudiesSection extends ConsumerWidget {
                 for (final ImagingStudy study in studies) ...<Widget>[
                   _StudyBlock(
                     study: study,
-                    canSync: canWork &&
+                    canSync:
+                        canWork &&
                         state.isMutating == false &&
                         workflow.nextActions.canPacsSync &&
                         study.hasAssets,
@@ -925,7 +916,10 @@ class _StudyBlock extends StatelessWidget {
                   ]),
                 ),
             SizedBox(height: theme.spacing.md),
-            Text(l10n.radiologyPacsLinksLabel, style: theme.textTheme.labelLarge),
+            Text(
+              l10n.radiologyPacsLinksLabel,
+              style: theme.textTheme.labelLarge,
+            ),
             SizedBox(height: theme.spacing.xs),
             if (study.pacsLinks.isEmpty)
               Text(
@@ -1097,7 +1091,8 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
         ? references.encounters
         : references.encounters
               .where((RadiologyReferenceOption option) {
-                return option.patientId == null || option.patientId == _patientId;
+                return option.patientId == null ||
+                    option.patientId == _patientId;
               })
               .toList(growable: false);
 
@@ -1141,7 +1136,8 @@ class _CreateOrderFormState extends ConsumerState<_CreateOrderForm> {
             setState(() {
               _patientId = value;
               if (!encounterOptions.any(
-                (RadiologyReferenceOption option) => option.value == _encounterId,
+                (RadiologyReferenceOption option) =>
+                    option.value == _encounterId,
               )) {
                 _encounterId = null;
               }
@@ -1282,7 +1278,6 @@ Future<void> _showStudyDialog(
   WidgetRef ref,
   RadiologyOrder order,
 ) async {
-  final AppLocalizations l10n = context.l10n;
   final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
     context: context,
     title: Text(l10n.radiologyPerformStudyDialogTitle),
@@ -1978,10 +1973,7 @@ List<AppSelectOption<String>> _referenceOptions(
 ) {
   return <AppSelectOption<String>>[
     for (final RadiologyReferenceOption option in options)
-      AppSelectOption<String>(
-        value: option.value,
-        label: option.displayLabel,
-      ),
+      AppSelectOption<String>(value: option.value, label: option.displayLabel),
   ];
 }
 
@@ -2260,10 +2252,20 @@ AppWorkspaceStatusTone _gateTone(String? value) {
   if (normalized.isEmpty) {
     return AppWorkspaceStatusTone.neutral;
   }
-  if (<String>['PAID', 'APPROVED', 'AUTHORIZED', 'CLEARED'].contains(normalized)) {
+  if (<String>[
+    'PAID',
+    'APPROVED',
+    'AUTHORIZED',
+    'CLEARED',
+  ].contains(normalized)) {
     return AppWorkspaceStatusTone.success;
   }
-  if (<String>['DECLINED', 'DENIED', 'FAILED', 'CANCELLED'].contains(normalized)) {
+  if (<String>[
+    'DECLINED',
+    'DENIED',
+    'FAILED',
+    'CANCELLED',
+  ].contains(normalized)) {
     return AppWorkspaceStatusTone.error;
   }
   return AppWorkspaceStatusTone.warning;

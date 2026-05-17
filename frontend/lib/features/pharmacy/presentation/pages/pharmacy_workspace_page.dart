@@ -5,6 +5,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/platform/app_print.dart';
@@ -427,7 +428,7 @@ class _PharmacyDetailPanel extends ConsumerWidget {
         SizedBox(height: theme.spacing.md),
         _MedicationItemsPanel(workflow: workflow),
         SizedBox(height: theme.spacing.md),
-        _BillingGapPanel(),
+        const _BillingGapPanel(),
         SizedBox(height: theme.spacing.md),
         _TimelinePanel(workflow: workflow),
       ],

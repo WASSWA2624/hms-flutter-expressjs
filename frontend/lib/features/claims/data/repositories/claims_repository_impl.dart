@@ -88,7 +88,7 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
 
   @override
   Future<Result<ClaimsReferenceData>> loadReferenceData() async {
-    final AppPageRequest request = const AppPageRequest(pageSize: 50);
+    const AppPageRequest request = AppPageRequest(pageSize: 50);
     final Result<AppPage<CoveragePlanOption>> coverageResult = await _apiClient
         .get<AppPage<CoveragePlanOption>>(
           ApiEndpoints.collection(HmsApiResource.coveragePlans),
@@ -313,7 +313,8 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
         );
 
     return result.when(
-      success: (CoveragePlanOption value) => _OptionalCoveragePlan(value),
+      success: (CoveragePlanOption value) =>
+          _OptionalCoveragePlan(value: value),
       failure: (_) => const _OptionalCoveragePlan(unavailable: true),
     );
   }
@@ -331,21 +332,21 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
         );
 
     return result.when(
-      success: (ClaimInvoiceOption value) => _OptionalInvoice(value),
+      success: (ClaimInvoiceOption value) => _OptionalInvoice(value: value),
       failure: (_) => const _OptionalInvoice(unavailable: true),
     );
   }
 }
 
 final class _OptionalCoveragePlan {
-  const _OptionalCoveragePlan([this.value, this.unavailable = false]);
+  const _OptionalCoveragePlan({this.value, this.unavailable = false});
 
   final CoveragePlanOption? value;
   final bool unavailable;
 }
 
 final class _OptionalInvoice {
-  const _OptionalInvoice([this.value, this.unavailable = false]);
+  const _OptionalInvoice({this.value, this.unavailable = false});
 
   final ClaimInvoiceOption? value;
   final bool unavailable;

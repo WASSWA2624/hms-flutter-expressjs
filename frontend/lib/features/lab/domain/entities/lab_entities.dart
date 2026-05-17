@@ -262,11 +262,7 @@ final class LabOrderSummary {
   }
 
   String? get displaySubtitle {
-    return _joinDisplay(<String?>[
-      patientId,
-      encounterId,
-      displayId ?? id,
-    ]);
+    return _joinDisplay(<String?>[patientId, encounterId, displayId ?? id]);
   }
 
   String? get testsLabel {

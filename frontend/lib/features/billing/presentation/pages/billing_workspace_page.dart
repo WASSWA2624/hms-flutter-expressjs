@@ -1345,6 +1345,9 @@ Future<void> _showPaymentDialog(
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .receivePayment(draft);
+  if (!context.mounted) {
+    return;
+  }
   _showMutationResult(context, failure);
 }
 
@@ -1365,6 +1368,9 @@ Future<void> _showRefundDialog(
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .requestRefund(draft);
+  if (!context.mounted) {
+    return;
+  }
   _showMutationResult(context, failure);
 }
 
@@ -1385,6 +1391,9 @@ Future<void> _showAdjustmentDialog(
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .requestAdjustment(draft);
+  if (!context.mounted) {
+    return;
+  }
   _showMutationResult(context, failure);
 }
 
@@ -1407,6 +1416,9 @@ Future<void> _showVoidDialog(BuildContext context, WidgetRef ref) async {
         reason: payload['reason'] ?? '',
         notes: payload['notes'],
       );
+  if (!context.mounted) {
+    return;
+  }
   _showMutationResult(context, failure);
 }
 
@@ -1423,6 +1435,9 @@ Future<void> _showIssueDialog(BuildContext context, WidgetRef ref) async {
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .issueSelectedInvoice(notes: notes);
+  if (!context.mounted) {
+    return;
+  }
   _showMutationResult(context, failure);
 }
 
@@ -1439,6 +1454,9 @@ Future<void> _showSendDialog(BuildContext context, WidgetRef ref) async {
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .sendSelectedInvoice(recipientEmail: recipientEmail);
+  if (!context.mounted) {
+    return;
+  }
   _showMutationResult(context, failure);
 }
 
@@ -1455,6 +1473,9 @@ Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .closeShift(draft);
+  if (!context.mounted) {
+    return;
+  }
   _showMutationResult(context, failure);
 }
 
@@ -1471,6 +1492,9 @@ Future<void> _showDayCloseDialog(BuildContext context, WidgetRef ref) async {
   final AppFailure? failure = await ref
       .read(billingWorkspaceControllerProvider.notifier)
       .closeDay(draft);
+  if (!context.mounted) {
+    return;
+  }
   _showMutationResult(context, failure);
 }
 

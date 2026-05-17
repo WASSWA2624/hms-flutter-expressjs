@@ -47,9 +47,8 @@ final class LabRepositoryImpl implements LabRepository {
         orderId,
         'workflow',
       ]),
-      decoder: (Object? data) => LabOrderWorkflowDto.fromResponse(
-        data,
-      ).toEntity(),
+      decoder: (Object? data) =>
+          LabOrderWorkflowDto.fromResponse(data).toEntity(),
     );
   }
 
@@ -112,10 +111,12 @@ final class LabRepositoryImpl implements LabRepository {
     String orderId,
     Map<String, Object?> payload,
   ) {
-    return _postWorkflow(
-      <String>[HmsApiResource.lab.path, 'orders', orderId, 'collect'],
-      payload,
-    );
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'orders',
+      orderId,
+      'collect',
+    ], payload);
   }
 
   @override
@@ -123,10 +124,12 @@ final class LabRepositoryImpl implements LabRepository {
     String sampleId,
     Map<String, Object?> payload,
   ) {
-    return _postWorkflow(
-      <String>[HmsApiResource.lab.path, 'samples', sampleId, 'receive'],
-      payload,
-    );
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'samples',
+      sampleId,
+      'receive',
+    ], payload);
   }
 
   @override
@@ -134,10 +137,12 @@ final class LabRepositoryImpl implements LabRepository {
     String sampleId,
     Map<String, Object?> payload,
   ) {
-    return _postWorkflow(
-      <String>[HmsApiResource.lab.path, 'samples', sampleId, 'reject'],
-      payload,
-    );
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'samples',
+      sampleId,
+      'reject',
+    ], payload);
   }
 
   @override
@@ -145,10 +150,12 @@ final class LabRepositoryImpl implements LabRepository {
     String itemId,
     Map<String, Object?> payload,
   ) {
-    return _postWorkflow(
-      <String>[HmsApiResource.lab.path, 'order-items', itemId, 'release'],
-      payload,
-    );
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'order-items',
+      itemId,
+      'release',
+    ], payload);
   }
 
   @override
@@ -156,10 +163,12 @@ final class LabRepositoryImpl implements LabRepository {
     String orderId,
     Map<String, Object?> payload,
   ) {
-    return _postWorkflow(
-      <String>[HmsApiResource.lab.path, 'orders', orderId, 'reverse'],
-      payload,
-    );
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'orders',
+      orderId,
+      'reverse',
+    ], payload);
   }
 
   @override
@@ -178,9 +187,8 @@ final class LabRepositoryImpl implements LabRepository {
     return _apiClient.post<LabOrderWorkflow>(
       ApiEndpoints.apiV1(pathSegments),
       data: _withoutEmpty(payload),
-      decoder: (Object? data) => LabOrderWorkflowDto.fromResponse(
-        data,
-      ).toEntity(),
+      decoder: (Object? data) =>
+          LabOrderWorkflowDto.fromResponse(data).toEntity(),
     );
   }
 

@@ -4258,7 +4258,502 @@ class AppLocalizationsEn extends AppLocalizations {
       'The discharge queue could not be loaded. Refresh to try again.';
 
   @override
+  String get radiologyTitle => 'Radiology';
+
+  @override
+  String get radiologyDescription =>
+      'Manage imaging requests, modality worklists, study capture, PACS links, reporting, and release.';
+
+  @override
+  String get radiologyLoadingTitle => 'Loading radiology workspace';
+
+  @override
+  String get radiologyLoadingBody =>
+      'Loading imaging orders, reports, studies, and reference data.';
+
+  @override
+  String get radiologyLiveStatus => 'Live sync';
+
+  @override
+  String get radiologySavingStatus => 'Saving';
+
+  @override
+  String get radiologySavedMessage => 'Radiology workflow updated.';
+
+  @override
+  String get radiologyRequestImagingAction => 'Request imaging';
+
+  @override
+  String get radiologyRefreshCatalogAction => 'Refresh catalog';
+
+  @override
+  String get radiologyTotalOrdersSummaryLabel => 'Total orders';
+
+  @override
+  String get radiologyWaitingImagingSummaryLabel => 'Waiting imaging';
+
+  @override
+  String get radiologyReportingSummaryLabel => 'Reporting';
+
+  @override
+  String get radiologyReleasedSummaryLabel => 'Released';
+
+  @override
+  String get radiologyUnsyncedSummaryLabel => 'PACS sync due';
+
+  @override
+  String get radiologyFiltersLabel => 'Radiology filters';
+
+  @override
+  String get radiologySearchLabel => 'Search radiology';
+
+  @override
+  String get radiologySearchHint =>
+      'Search patient, order, encounter, study, report, or PACS text';
+
+  @override
+  String get radiologyOrderDateFilterLabel => 'Order date';
+
+  @override
+  String get radiologyPickOrderDateAction => 'Pick order date';
+
+  @override
+  String get radiologyStageFilterLabel => 'Stage';
+
+  @override
+  String get radiologyStatusFilterLabel => 'Status';
+
+  @override
+  String get radiologyModalityFilterLabel => 'Modality';
+
+  @override
+  String get radiologyClearFiltersAction => 'Clear filters';
+
+  @override
+  String get radiologyWorklistTitle => 'Imaging worklist';
+
+  @override
+  String get radiologyWorklistDescription =>
+      'Backend-backed imaging orders with modality workflow and report status.';
+
+  @override
+  String get radiologyPreviousPageLabel => 'Previous orders';
+
+  @override
+  String get radiologyNextPageLabel => 'Next orders';
+
+  @override
+  String radiologyPageLabel(int from, int to, int total) {
+    return 'Showing $from-$to of $total';
+  }
+
+  @override
+  String get radiologyNoOrdersTitle => 'No radiology orders';
+
+  @override
+  String get radiologyNoOrdersBody =>
+      'Orders matching this search and filter will appear here.';
+
+  @override
+  String get radiologyPatientColumnLabel => 'Patient';
+
+  @override
+  String get radiologyOrderColumnLabel => 'Order';
+
+  @override
+  String get radiologyStudyColumnLabel => 'Study';
+
+  @override
+  String get radiologyPriorityColumnLabel => 'Priority';
+
+  @override
+  String get radiologyPaymentAuthColumnLabel => 'Billing';
+
+  @override
+  String get radiologyStatusColumnLabel => 'Status';
+
+  @override
+  String get radiologyNextActionColumnLabel => 'Next action';
+
+  @override
+  String get radiologyDetailTitle => 'Radiology workflow';
+
+  @override
+  String get radiologyDetailLoadingTitle => 'Loading order';
+
+  @override
+  String get radiologyDetailLoadingBody => 'Loading selected imaging workflow.';
+
+  @override
+  String get radiologyNoSelectionTitle => 'Select an order';
+
+  @override
+  String get radiologyNoSelectionBody =>
+      'Choose an imaging request to view study, report, and release details.';
+
+  @override
+  String get radiologyPatientContextLabel => 'Radiology patient context';
+
+  @override
+  String get radiologyBillingGateUnavailable => 'Billing gate unavailable';
+
+  @override
+  String get radiologyEncounterLabel => 'Encounter';
+
+  @override
+  String get radiologyOrderedAtLabel => 'Ordered';
+
+  @override
+  String get radiologyModalityLabel => 'Modality';
+
+  @override
+  String get radiologyPaymentLabel => 'Payment';
+
+  @override
+  String get radiologyAuthorizationLabel => 'Authorization';
+
+  @override
+  String get radiologyAssignAction => 'Assign';
+
+  @override
+  String get radiologyStartImagingAction => 'Start imaging';
+
+  @override
+  String get radiologyStartDialogTitle => 'Start imaging order';
+
+  @override
+  String get radiologyNotesLabel => 'Notes';
+
+  @override
+  String get radiologyPerformStudyAction => 'Perform study';
+
+  @override
+  String get radiologyCancelOrderAction => 'Cancel order';
+
+  @override
+  String get radiologyRequestDetailsTitle => 'Request details';
+
+  @override
+  String get radiologyStudyLabel => 'Study';
+
+  @override
+  String get radiologyPriorityLabel => 'Priority';
+
+  @override
+  String get radiologyBodyRegionLabel => 'Body region';
+
+  @override
+  String get radiologyLateralityLabel => 'Laterality';
+
+  @override
+  String get radiologyClinicalNotesLabel => 'Clinical notes';
+
+  @override
+  String get radiologyReportSectionTitle => 'Report';
+
+  @override
+  String get radiologyReportSectionBody =>
+      'Draft, finalize, attest, and amend radiology reports using backend workflow actions.';
+
+  @override
+  String get radiologyDraftReportAction => 'Draft report';
+
+  @override
+  String get radiologyReleaseReportAction => 'Release report';
+
+  @override
+  String get radiologyRequestFinalizationAction => 'Request finalization';
+
+  @override
+  String get radiologyRequestFinalizationDialogTitle =>
+      'Request report finalization';
+
+  @override
+  String get radiologyAttestFinalizationAction => 'Attest finalization';
+
+  @override
+  String get radiologyAttestFinalizationDialogTitle =>
+      'Attest report finalization';
+
+  @override
+  String get radiologyAddendumAction => 'Add addendum';
+
+  @override
+  String get radiologyPendingAttestationLabel => 'Pending attestation';
+
+  @override
+  String get radiologyNoReportTitle => 'No report yet';
+
+  @override
+  String get radiologyNoReportBody =>
+      'A draft or final report will appear after reporting begins.';
+
+  @override
+  String get radiologyReportedAtLabel => 'Reported';
+
+  @override
+  String get radiologyGeneratedReportPreviewTitle => 'Generated report preview';
+
+  @override
+  String get radiologyEmptyReportBody => 'No report text captured.';
+
+  @override
+  String get radiologyStudiesAssetsTitle => 'Studies and assets';
+
+  @override
+  String get radiologyStudiesAssetsBody =>
+      'Track imaging studies, uploaded assets, and PACS synchronization state.';
+
+  @override
+  String get radiologyNoStudiesTitle => 'No imaging studies';
+
+  @override
+  String get radiologyNoStudiesBody =>
+      'Studies will appear after imaging is performed.';
+
+  @override
+  String get radiologySyncPacsAction => 'Sync PACS';
+
+  @override
+  String get radiologyAssetsLabel => 'Assets';
+
+  @override
+  String get radiologyNoAssetsLabel => 'No assets recorded';
+
+  @override
+  String get radiologyPacsLinksLabel => 'PACS links';
+
+  @override
+  String get radiologyNoPacsLinksLabel => 'No PACS links recorded';
+
+  @override
+  String get radiologyDoctorReviewTitle => 'Doctor review';
+
+  @override
+  String get radiologyDoctorReviewReleasedBody =>
+      'The latest report is released for clinical review.';
+
+  @override
+  String get radiologyDoctorReviewPendingBody =>
+      'Clinical review becomes available after report release.';
+
+  @override
+  String get radiologyDoctorReviewReadyLabel => 'Ready for review';
+
+  @override
+  String get radiologyDoctorReviewPendingLabel => 'Pending release';
+
+  @override
+  String get radiologyTimelineTitle => 'Workflow timeline';
+
+  @override
+  String get radiologyNoTimelineTitle => 'No timeline events';
+
+  @override
+  String get radiologyNoTimelineBody =>
+      'Workflow events will appear as the order progresses.';
+
+  @override
+  String get radiologyBackendGapsTitle => 'Backend gaps';
+
+  @override
+  String get radiologyBackendGapsBody =>
+      'These controls are shown as unavailable until backend support is added.';
+
+  @override
+  String get radiologyGapSchedulingTitle => 'Room scheduling';
+
+  @override
+  String get radiologyGapBackendSubtitle => 'Not exposed by API';
+
+  @override
+  String get radiologyGapSchedulingBody =>
+      'The current radiology API has no room or appointment assignment fields.';
+
+  @override
+  String get radiologyGapBillingTitle => 'Billing authorization';
+
+  @override
+  String get radiologyGapBillingBody =>
+      'Payment and authorization status is displayed only when returned by the backend.';
+
+  @override
+  String get radiologyCreateOrderDialogTitle => 'Request imaging';
+
+  @override
+  String get radiologyReferenceSearchLabel => 'Catalog search';
+
+  @override
+  String get radiologyReferenceSearchHint =>
+      'Search test code, name, modality, or body region';
+
+  @override
+  String get radiologySearchReferenceAction => 'Search catalog';
+
+  @override
+  String get radiologyPatientLabel => 'Patient';
+
+  @override
+  String radiologyFieldRequiredLabel(String label) {
+    return '$label is required.';
+  }
+
+  @override
+  String get radiologyAssignDialogTitle => 'Assign imaging order';
+
+  @override
+  String get radiologyAssigneeLabel => 'Assignee';
+
+  @override
+  String get radiologyPerformStudyDialogTitle => 'Perform imaging study';
+
+  @override
+  String get radiologyPerformedAtLabel => 'Performed at';
+
+  @override
+  String get radiologyDateTimeHint => 'YYYY-MM-DD HH:MM';
+
+  @override
+  String get radiologyReportDialogTitle => 'Draft radiology report';
+
+  @override
+  String get radiologyFindingsLabel => 'Findings';
+
+  @override
+  String get radiologyImpressionLabel => 'Impression';
+
+  @override
+  String get radiologyReportTextLabel => 'Report text';
+
+  @override
+  String get radiologyReportTextHelper =>
+      'Leave blank to combine findings and impression.';
+
+  @override
+  String get radiologyReleaseReportDialogTitle => 'Release report';
+
+  @override
+  String get radiologyReleaseNotesLabel => 'Release notes';
+
+  @override
+  String get radiologyFinalizationStatementLabel => 'Finalization statement';
+
+  @override
+  String get radiologyFinalizationReasonLabel => 'Reason';
+
+  @override
+  String get radiologyAddendumDialogTitle => 'Add report addendum';
+
+  @override
+  String get radiologyAddendumTextLabel => 'Addendum text';
+
+  @override
+  String get radiologyCancelDialogTitle => 'Cancel radiology order';
+
+  @override
+  String get radiologyCancellationReasonLabel => 'Cancellation reason';
+
+  @override
+  String get radiologyPacsSyncDialogTitle => 'Sync study to PACS';
+
+  @override
+  String get radiologyStudyUidLabel => 'Study UID';
+
+  @override
+  String get radiologyStageAll => 'All';
+
+  @override
+  String get radiologyStageOrdered => 'Ordered';
+
+  @override
+  String get radiologyStageProcessing => 'Processing';
+
+  @override
+  String get radiologyStageReporting => 'Reporting';
+
+  @override
+  String get radiologyStageCompleted => 'Completed';
+
+  @override
+  String get radiologyStageCancelled => 'Cancelled';
+
+  @override
+  String get radiologyStatusOrdered => 'Ordered';
+
+  @override
+  String get radiologyStatusInProcess => 'In process';
+
+  @override
+  String get radiologyStatusCompleted => 'Completed';
+
+  @override
+  String get radiologyStatusCancelled => 'Cancelled';
+
+  @override
+  String get radiologyResultDraft => 'Draft';
+
+  @override
+  String get radiologyResultFinal => 'Final';
+
+  @override
+  String get radiologyResultAmended => 'Amended';
+
+  @override
+  String get radiologyModalityXray => 'X-ray';
+
+  @override
+  String get radiologyModalityCt => 'CT';
+
+  @override
+  String get radiologyModalityMri => 'MRI';
+
+  @override
+  String get radiologyModalityUltrasound => 'Ultrasound';
+
+  @override
+  String get radiologyModalityPet => 'PET';
+
+  @override
+  String get radiologyModalityEcg => 'ECG';
+
+  @override
+  String get radiologyModalityEcho => 'Echo';
+
+  @override
+  String get radiologyModalityEndo => 'Endoscopy';
+
+  @override
+  String get radiologyModalityGastro => 'Gastro';
+
+  @override
+  String get radiologyModalityOther => 'Other';
+
+  @override
+  String get radiologyNextActionConfirmBilling => 'Confirm billing';
+
+  @override
+  String get radiologyNextActionStartImaging => 'Start imaging';
+
+  @override
+  String get radiologyNextActionPerformStudy => 'Perform study';
+
+  @override
+  String get radiologyNextActionReleaseReport => 'Release report';
+
+  @override
+  String get radiologyNextActionDoctorReview => 'Doctor review';
+
+  @override
+  String get radiologyNextActionReportPending => 'Report pending';
+
+  @override
   String get navigationPharmacyLabel => 'Pharmacy';
+
+  @override
+  String get navigationLabLabel => 'Lab';
+
+  @override
+  String get navigationRadiologyLabel => 'Radiology';
 
   @override
   String get pharmacyLoadingTitle => 'Loading pharmacy workspace';
@@ -5061,4 +5556,421 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get claimsReportFooter =>
       'Generated from backend-backed claims and billing data.';
+
+  @override
+  String get labTitle => 'Laboratory';
+
+  @override
+  String get labDescription =>
+      'Manage lab catalog, order queues, samples, result release, QC, and clinician review handoff.';
+
+  @override
+  String get labLoadingTitle => 'Loading laboratory';
+
+  @override
+  String get labLoadingBody =>
+      'Loading lab queues, catalog, samples, results, and QC logs.';
+
+  @override
+  String get labLiveStatus => 'Live sync';
+
+  @override
+  String get labSavingStatus => 'Saving';
+
+  @override
+  String get labSavedMessage => 'Laboratory workflow updated.';
+
+  @override
+  String get labRequestOrderAction => 'Request lab';
+
+  @override
+  String get labRecordQcAction => 'Record QC';
+
+  @override
+  String get labTotalOrdersSummaryLabel => 'Total orders';
+
+  @override
+  String get labWaitingSampleSummaryLabel => 'Waiting sample';
+
+  @override
+  String get labProcessingSummaryLabel => 'Processing';
+
+  @override
+  String get labResultPendingSummaryLabel => 'Result pending';
+
+  @override
+  String get labCriticalSummaryLabel => 'Critical';
+
+  @override
+  String get labCompletedSummaryLabel => 'Released';
+
+  @override
+  String get labFiltersLabel => 'Laboratory filters';
+
+  @override
+  String get labSearchLabel => 'Search laboratory';
+
+  @override
+  String get labSearchHint =>
+      'Search patient, order, sample, test, or encounter';
+
+  @override
+  String get labScopeFilterLabel => 'Queue';
+
+  @override
+  String get labScopeAll => 'All';
+
+  @override
+  String get labScopeCollection => 'Waiting sample';
+
+  @override
+  String get labScopeProcessing => 'Processing';
+
+  @override
+  String get labScopeResults => 'Result pending';
+
+  @override
+  String get labScopeCritical => 'Critical';
+
+  @override
+  String get labScopeCompleted => 'Released';
+
+  @override
+  String get labScopeCancelled => 'Cancelled';
+
+  @override
+  String get labWorklistTitle => 'Lab queue';
+
+  @override
+  String get labWorklistDescription =>
+      'Actionable lab orders with sample, processing, result, and release state.';
+
+  @override
+  String get labNoOrdersTitle => 'No lab orders';
+
+  @override
+  String get labNoOrdersBody =>
+      'Adjust the queue filter or search term to find laboratory work.';
+
+  @override
+  String get labPatientColumnLabel => 'Patient';
+
+  @override
+  String get labOrderColumnLabel => 'Order';
+
+  @override
+  String get labTestsColumnLabel => 'Tests';
+
+  @override
+  String get labSampleColumnLabel => 'Sample';
+
+  @override
+  String get labResultColumnLabel => 'Result';
+
+  @override
+  String get labNextActionColumnLabel => 'Next action';
+
+  @override
+  String labPageLabel(int from, int to, int total) {
+    return '$from-$to of $total';
+  }
+
+  @override
+  String get labPreviousPageLabel => 'Previous lab page';
+
+  @override
+  String get labNextPageLabel => 'Next lab page';
+
+  @override
+  String get labDetailTitle => 'Lab detail';
+
+  @override
+  String get labDetailLoadingTitle => 'Loading lab detail';
+
+  @override
+  String get labDetailLoadingBody =>
+      'Loading samples, results, timeline, and available workflow actions.';
+
+  @override
+  String get labNoSelectionTitle => 'Select an order';
+
+  @override
+  String get labNoSelectionBody =>
+      'Choose a lab order from the queue to collect samples, process results, and release reports.';
+
+  @override
+  String get labPatientContextLabel => 'Lab patient context';
+
+  @override
+  String get labOrderFieldLabel => 'Lab order';
+
+  @override
+  String get labEncounterFieldLabel => 'Encounter';
+
+  @override
+  String get labOrderedAtFieldLabel => 'Ordered at';
+
+  @override
+  String get labItemsSectionTitle => 'Order items';
+
+  @override
+  String get labSamplesSectionTitle => 'Samples';
+
+  @override
+  String get labResultsSectionTitle => 'Results';
+
+  @override
+  String get labTimelineSectionTitle => 'Timeline';
+
+  @override
+  String get labNoSamplesLabel => 'No samples recorded';
+
+  @override
+  String get labNoResultsLabel => 'No released results';
+
+  @override
+  String get labNoTimelineLabel => 'No timeline entries';
+
+  @override
+  String get labReferenceRangeLabel => 'Reference range';
+
+  @override
+  String get labReportedAtLabel => 'Reported';
+
+  @override
+  String get labCollectSampleAction => 'Collect sample';
+
+  @override
+  String get labReceiveSampleAction => 'Receive sample';
+
+  @override
+  String get labRejectSampleAction => 'Reject sample';
+
+  @override
+  String get labReleaseResultAction => 'Release result';
+
+  @override
+  String get labReverseWorkflowAction => 'Reverse step';
+
+  @override
+  String get labViewCatalogAction => 'View catalog';
+
+  @override
+  String get labCatalogQcTitle => 'Catalog and QC';
+
+  @override
+  String get labCatalogTitle => 'Lab catalog';
+
+  @override
+  String get labQcTitle => 'Quality control';
+
+  @override
+  String get labBackendGapsTitle => 'Backend gaps';
+
+  @override
+  String get labBackendGapsBody =>
+      'No confirmed backend gaps are blocking the displayed lab queue.';
+
+  @override
+  String get labNoCatalogItemsLabel => 'No catalog items found';
+
+  @override
+  String get labNoQcLogsLabel => 'No QC logs recorded';
+
+  @override
+  String get labTestsTabLabel => 'Tests';
+
+  @override
+  String get labPanelsTabLabel => 'Panels';
+
+  @override
+  String get labRequestOrderDialogTitle => 'Request lab order';
+
+  @override
+  String get labPatientIdLabel => 'Patient ID';
+
+  @override
+  String get labEncounterIdLabel => 'Encounter ID';
+
+  @override
+  String get labCatalogSearchLabel => 'Search lab catalog';
+
+  @override
+  String get labCatalogSearchHint =>
+      'Search tests, panels, codes, category, or specimen';
+
+  @override
+  String get labCreateOrderSubmitAction => 'Create lab order';
+
+  @override
+  String get labCollectDialogTitle => 'Collect sample';
+
+  @override
+  String get labCollectedAtLabel => 'Collected at';
+
+  @override
+  String get labDateTimeHint => 'YYYY-MM-DDTHH:MM:SS';
+
+  @override
+  String get labNotesLabel => 'Notes';
+
+  @override
+  String get labReceiveDialogTitle => 'Receive sample';
+
+  @override
+  String get labSampleFieldLabel => 'Sample';
+
+  @override
+  String get labReceivedAtLabel => 'Received at';
+
+  @override
+  String get labRejectDialogTitle => 'Reject sample';
+
+  @override
+  String get labRejectReasonLabel => 'Rejection reason';
+
+  @override
+  String get labReleaseDialogTitle => 'Release lab result';
+
+  @override
+  String get labOrderItemFieldLabel => 'Order item';
+
+  @override
+  String get labResultStatusLabel => 'Result status';
+
+  @override
+  String get labResultValueLabel => 'Result value';
+
+  @override
+  String get labResultUnitLabel => 'Result unit';
+
+  @override
+  String get labResultTextLabel => 'Result comments';
+
+  @override
+  String get labReportedAtInputLabel => 'Reported at';
+
+  @override
+  String get labReverseDialogTitle => 'Reverse lab workflow';
+
+  @override
+  String get labReverseReasonLabel => 'Reason';
+
+  @override
+  String get labRecordQcDialogTitle => 'Record quality control';
+
+  @override
+  String get labQcTestFieldLabel => 'Lab test';
+
+  @override
+  String get labQcStatusFieldLabel => 'QC status';
+
+  @override
+  String get labLoggedAtLabel => 'Logged at';
+
+  @override
+  String get labQcNotesLabel => 'QC notes';
+
+  @override
+  String get labStatusOrdered => 'Ordered';
+
+  @override
+  String get labStatusCollected => 'Collected';
+
+  @override
+  String get labStatusInProcess => 'In process';
+
+  @override
+  String get labStatusCompleted => 'Released';
+
+  @override
+  String get labStatusCancelled => 'Cancelled';
+
+  @override
+  String get labStatusPending => 'Pending';
+
+  @override
+  String get labStatusNormal => 'Normal';
+
+  @override
+  String get labStatusAbnormal => 'Abnormal';
+
+  @override
+  String get labStatusCritical => 'Critical';
+
+  @override
+  String get labStatusRejected => 'Rejected';
+
+  @override
+  String get labStatusReceived => 'Received';
+
+  @override
+  String get labNextActionCancelled => 'Order cancelled';
+
+  @override
+  String get labNextActionCollect => 'Collect sample';
+
+  @override
+  String get labNextActionReceive => 'Receive sample';
+
+  @override
+  String get labNextActionRelease => 'Enter and release result';
+
+  @override
+  String get labNextActionReviewCritical => 'Escalate critical result';
+
+  @override
+  String get labNextActionCompleted => 'Ready for doctor review';
+
+  @override
+  String get labNextActionWatch => 'Review order';
+
+  @override
+  String get labReportPreviewTitle => 'Result report preview';
+
+  @override
+  String get labReportTitle => 'Laboratory result report';
+
+  @override
+  String get labCopyReportAction => 'Copy report';
+
+  @override
+  String get labReportPatientLabel => 'Patient';
+
+  @override
+  String get labReportOrderLabel => 'Order';
+
+  @override
+  String get labReportResultLabel => 'Result';
+
+  @override
+  String get labReportRangeLabel => 'Reference range';
+
+  @override
+  String get labReportVerifiedLabel => 'Released';
+
+  @override
+  String get labReportFooter =>
+      'Generated from confirmed laboratory workflow data.';
+
+  @override
+  String get labGapBillingTitle => 'Payment and authorization gate';
+
+  @override
+  String get labGapBillingBody =>
+      'The current lab workbench contract does not expose payment or authorization blockers.';
+
+  @override
+  String get labGapVerificationTitle => 'Separate verification step';
+
+  @override
+  String get labGapVerificationBody =>
+      'The confirmed workflow releases an order item result, but does not expose a separate verified-before-release state.';
+
+  @override
+  String get labGapReportGenerationTitle => 'Generated report endpoint';
+
+  @override
+  String get labGapReportGenerationBody =>
+      'The frontend shows a shared report preview; no confirmed lab-specific generated PDF endpoint is exposed.';
 }

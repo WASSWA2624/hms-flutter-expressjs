@@ -117,7 +117,9 @@ final class RadiologyWorkspaceState {
   final AppFailure? lastFailure;
 
   int get workloadCount {
-    return summary.orderedQueue + summary.processingQueue + summary.draftReports;
+    return summary.orderedQueue +
+        summary.processingQueue +
+        summary.draftReports;
   }
 
   int get reportingCount {

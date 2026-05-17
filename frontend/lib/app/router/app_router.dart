@@ -51,6 +51,9 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
 import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
+import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
+import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
+import 'package:hosspi_hms/features/radiology/presentation/pages/radiology_workspace_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
@@ -147,6 +150,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.lab.path,
             name: AppRoutes.lab.name,
             builder: (_, _) => const LabWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.radiology.path,
+            name: AppRoutes.radiology.name,
+            builder: (_, _) => const RadiologyWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.pharmacy.path,
@@ -246,6 +254,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   int? nursingWorkloadCount,
   int? clinicalWorkloadCount,
   int? labWorkloadCount,
+  int? radiologyWorkloadCount,
   int? pharmacyWorkloadCount,
   int? dischargeWorkloadCount,
   int? theaterWorkloadCount,
@@ -342,10 +351,19 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
     _ShellDestinationRoute(
       route: AppRoutes.lab,
       destination: ResponsiveShellDestination(
-        label: l10n.navigationLabLabel,
+        label: 'Lab',
         icon: Icons.science_outlined,
         selectedIcon: Icons.science,
         badgeCount: labWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.radiology,
+      destination: ResponsiveShellDestination(
+        label: 'Radiology',
+        icon: Icons.image_search_outlined,
+        selectedIcon: Icons.image_search,
+        badgeCount: radiologyWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -428,6 +446,10 @@ class _AppShell extends ConsumerWidget {
       accessPolicy,
     );
     final bool canAccessLab = _canAccessShellRoute(AppRoutes.lab, accessPolicy);
+    final bool canAccessRadiology = _canAccessShellRoute(
+      AppRoutes.radiology,
+      accessPolicy,
+    );
     final bool canAccessPharmacy = _canAccessShellRoute(
       AppRoutes.pharmacy,
       accessPolicy,
@@ -526,6 +548,18 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
+    final int? radiologyWorkloadCount = canAccessRadiology
+        ? ref
+              .watch(radiologyWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (RadiologyWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
     final int? billingWorkloadCount = canAccessBilling
         ? ref
               .watch(billingWorkspaceControllerProvider)
@@ -598,6 +632,7 @@ class _AppShell extends ConsumerWidget {
               nursingWorkloadCount: nursingWorkloadCount,
               clinicalWorkloadCount: clinicalWorkloadCount,
               labWorkloadCount: labWorkloadCount,
+              radiologyWorkloadCount: radiologyWorkloadCount,
               pharmacyWorkloadCount: pharmacyWorkloadCount,
               dischargeWorkloadCount: dischargeWorkloadCount,
               theaterWorkloadCount: theaterWorkloadCount,

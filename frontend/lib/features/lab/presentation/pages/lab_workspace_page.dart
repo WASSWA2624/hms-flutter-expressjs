@@ -293,13 +293,17 @@ class _LabWorklistPanel extends ConsumerWidget {
           AppDataColumn<LabOrderSummary>(
             label: l10n.labSampleColumnLabel,
             cellBuilder: (BuildContext context, LabOrderSummary item) {
-              return AppWorkspaceStatusBadge(status: _sampleStatus(context, item));
+              return AppWorkspaceStatusBadge(
+                status: _sampleStatus(context, item),
+              );
             },
           ),
           AppDataColumn<LabOrderSummary>(
             label: l10n.labResultColumnLabel,
             cellBuilder: (BuildContext context, LabOrderSummary item) {
-              return AppWorkspaceStatusBadge(status: _resultStatus(context, item));
+              return AppWorkspaceStatusBadge(
+                status: _resultStatus(context, item),
+              );
             },
           ),
           AppDataColumn<LabOrderSummary>(
@@ -332,9 +336,15 @@ class _LabWorklistPanel extends ConsumerWidget {
                   spacing: theme.spacing.xs,
                   runSpacing: theme.spacing.xs,
                   children: <Widget>[
-                    AppWorkspaceStatusBadge(status: _orderStatus(context, item.status)),
-                    AppWorkspaceStatusBadge(status: _sampleStatus(context, item)),
-                    AppWorkspaceStatusBadge(status: _resultStatus(context, item)),
+                    AppWorkspaceStatusBadge(
+                      status: _orderStatus(context, item.status),
+                    ),
+                    AppWorkspaceStatusBadge(
+                      status: _sampleStatus(context, item),
+                    ),
+                    AppWorkspaceStatusBadge(
+                      status: _resultStatus(context, item),
+                    ),
                   ],
                 ),
                 SizedBox(height: theme.spacing.xs),
@@ -460,7 +470,7 @@ class _LabDetailPanel extends ConsumerWidget {
             icon: Icons.undo_outlined,
             semanticLabel: l10n.labReverseWorkflowAction,
             tooltip: l10n.labReverseWorkflowAction,
-            onPressed: () => _openReverseDialog(context, workflow),
+            onPressed: () => _openReverseDialog(context),
           ),
       ],
       child: Column(
@@ -767,9 +777,9 @@ class _LabReportPreview extends StatelessWidget {
                 ClipboardData(text: _reportText(context, workflow)),
               );
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.labSavedMessage)),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(l10n.labSavedMessage)));
               }
             },
           ),
@@ -951,9 +961,10 @@ class _CatalogPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<LabCatalogItem> items = <LabCatalogItem>[...tests, ...panels]
-        .take(6)
-        .toList(growable: false);
+    final List<LabCatalogItem> items = <LabCatalogItem>[
+      ...tests,
+      ...panels,
+    ].take(6).toList(growable: false);
     return _PreviewGroup(
       title: title,
       emptyText: l10n.labNoCatalogItemsLabel,
@@ -1225,14 +1236,12 @@ class _RequestOrderDialogState extends ConsumerState<_RequestOrderDialog> {
           'patient_id': _patientController.text.trim(),
           'encounter_id': _encounterController.text.trim(),
           'requested_tests': <Map<String, Object?>>[
-            for (final String id in _selectedTestIds) <String, Object?>{
-              'lab_test_id': id,
-            },
+            for (final String id in _selectedTestIds)
+              <String, Object?>{'lab_test_id': id},
           ],
           'requested_panels': <Map<String, Object?>>[
-            for (final String id in _selectedPanelIds) <String, Object?>{
-              'lab_panel_id': id,
-            },
+            for (final String id in _selectedPanelIds)
+              <String, Object?>{'lab_panel_id': id},
           ],
         });
     if (failure == null) {
@@ -1442,8 +1451,8 @@ class _ReceiveSampleDialogState extends ConsumerState<_ReceiveSampleDialog> {
               options: <AppSelectOption<String>>[
                 for (final LabSample sample
                     in widget.workflow.order.samples.where(
-                  (LabSample sample) => sample.canReceive,
-                ))
+                      (LabSample sample) => sample.canReceive,
+                    ))
                   AppSelectOption<String>(
                     value: sample.apiId,
                     label: sample.displayId ?? sample.id,
@@ -1565,8 +1574,8 @@ class _RejectSampleDialogState extends ConsumerState<_RejectSampleDialog> {
               options: <AppSelectOption<String>>[
                 for (final LabSample sample
                     in widget.workflow.order.samples.where(
-                  (LabSample sample) => sample.canReject,
-                ))
+                      (LabSample sample) => sample.canReject,
+                    ))
                   AppSelectOption<String>(
                     value: sample.apiId,
                     label: sample.displayId ?? sample.id,
@@ -2257,10 +2266,7 @@ Future<void> _openReleaseDialog(
   );
 }
 
-Future<void> _openReverseDialog(
-  BuildContext context,
-  LabOrderWorkflow workflow,
-) async {
+Future<void> _openReverseDialog(BuildContext context) async {
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -2287,9 +2293,9 @@ Future<void> _showActionResult(
 ) async {
   final bool? saved = await result;
   if (saved == true && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.labSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.labSavedMessage)));
   }
 }
 
@@ -2319,9 +2325,9 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
     return;
   }
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(context.l10n.failureMessage(failure))),
-  );
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
 }
 
 List<AppSelectOption<LabQueueScope>> _scopeOptions(AppLocalizations l10n) {
@@ -2370,10 +2376,7 @@ AppWorkspaceStatus _orderStatus(BuildContext context, String? value) {
   return _statusBadge(context, value);
 }
 
-AppWorkspaceStatus _sampleStatus(
-  BuildContext context,
-  LabOrderSummary order,
-) {
+AppWorkspaceStatus _sampleStatus(BuildContext context, LabOrderSummary order) {
   if (order.hasRejectedSample) {
     return AppWorkspaceStatus(
       label: context.l10n.labStatusRejected,
@@ -2405,15 +2408,14 @@ AppWorkspaceStatus _sampleStatus(
     label: collected
         ? context.l10n.labStatusCollected
         : context.l10n.labStatusPending,
-    tone: collected ? AppWorkspaceStatusTone.info : AppWorkspaceStatusTone.warning,
+    tone: collected
+        ? AppWorkspaceStatusTone.info
+        : AppWorkspaceStatusTone.warning,
     icon: collected ? Icons.biotech_outlined : Icons.pending_outlined,
   );
 }
 
-AppWorkspaceStatus _resultStatus(
-  BuildContext context,
-  LabOrderSummary order,
-) {
+AppWorkspaceStatus _resultStatus(BuildContext context, LabOrderSummary order) {
   if (order.hasCriticalResult) {
     return AppWorkspaceStatus(
       label: context.l10n.labStatusCritical,
@@ -2421,7 +2423,8 @@ AppWorkspaceStatus _resultStatus(
       icon: Icons.priority_high_outlined,
     );
   }
-  if (order.completedItemCount > 0 && order.completedItemCount >= order.itemCount) {
+  if (order.completedItemCount > 0 &&
+      order.completedItemCount >= order.itemCount) {
     return AppWorkspaceStatus(
       label: context.l10n.labStatusCompleted,
       tone: AppWorkspaceStatusTone.success,
@@ -2500,7 +2503,10 @@ String _dateTimeLabel(BuildContext context, DateTime? value) {
   if (value == null) {
     return context.l10n.profileUnknownValue;
   }
-  return AppFormatters.dateTime(value.toLocal(), Localizations.localeOf(context));
+  return AppFormatters.dateTime(
+    value.toLocal(),
+    Localizations.localeOf(context),
+  );
 }
 
 String _apiLabel(String value) {

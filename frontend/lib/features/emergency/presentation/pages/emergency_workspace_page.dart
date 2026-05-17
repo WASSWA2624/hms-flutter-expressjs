@@ -5,6 +5,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/platform/app_print.dart';
@@ -228,7 +229,9 @@ class _EmergencyBoardPanel extends ConsumerWidget {
         isLoading: state.isRefreshingBoard,
         previousPageLabel: 'Previous emergency cases',
         nextPageLabel: 'Next emergency cases',
-        pageLabelBuilder: _pageLabel,
+        pageLabelBuilder: (AppPage<EmergencyCaseSummary> page) {
+          return _pageLabel(context, page);
+        },
         onPageChanged: controller.changePage,
         onRowSelected: controller.selectCase,
         rowColorBuilder: _rowColor,
@@ -776,6 +779,10 @@ class _EmergencyTimelinePanel extends StatelessWidget {
               subtitle: _dateTimeLabel(context, item.createdAt),
               body: item.notes,
               icon: Icons.monitor_heart_outlined,
+              sortAt:
+                  item.updatedAt ??
+                  item.createdAt ??
+                  DateTime.fromMillisecondsSinceEpoch(0),
               status: _triageStatus(item.triageLevel),
             ),
           for (final EmergencyResponseRecord item in detail.responses)
@@ -787,6 +794,10 @@ class _EmergencyTimelinePanel extends StatelessWidget {
               ),
               body: item.notes,
               icon: Icons.medical_services_outlined,
+              sortAt:
+                  item.responseAt ??
+                  item.createdAt ??
+                  DateTime.fromMillisecondsSinceEpoch(0),
               status: const AppWorkspaceStatus(
                 label: 'Responded',
                 tone: AppWorkspaceStatusTone.success,
@@ -836,6 +847,10 @@ class _AmbulancePanel extends StatelessWidget {
                 item.dispatchedAt ?? item.createdAt,
               ),
               icon: Icons.airport_shuttle_outlined,
+              sortAt:
+                  item.dispatchedAt ??
+                  item.createdAt ??
+                  DateTime.fromMillisecondsSinceEpoch(0),
               status: AppWorkspaceStatus(
                 label: _apiLabel(item.status ?? 'DISPATCHED'),
                 tone: _ambulanceTone(item.status),
@@ -856,6 +871,11 @@ class _AmbulancePanel extends StatelessWidget {
                     : 'Ended ${_dateTimeLabel(context, item.endedAt)}',
               ]),
               icon: Icons.route_outlined,
+              sortAt:
+                  item.endedAt ??
+                  item.startedAt ??
+                  item.createdAt ??
+                  DateTime.fromMillisecondsSinceEpoch(0),
               status: AppWorkspaceStatus(
                 label: item.isActive ? 'Transporting' : 'Completed',
                 tone: item.isActive
@@ -1659,13 +1679,14 @@ final class _HandoffInput {
 
 @immutable
 final class _TimelineItem {
-  _TimelineItem({
+  const _TimelineItem({
     required this.title,
     required this.subtitle,
     required this.icon,
+    required this.sortAt,
     this.body,
     this.status,
-  }) : sortAt = DateTime.now();
+  });
 
   final String title;
   final String subtitle;

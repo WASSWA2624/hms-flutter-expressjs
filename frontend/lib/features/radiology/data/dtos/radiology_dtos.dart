@@ -73,8 +73,9 @@ final class RadiologyWorkflowDto {
   }
 
   RadiologyWorkflow toEntity() {
-    final RadiologyOrder order = RadiologyOrderDto(_map(json['order']))
-        .toEntity();
+    final RadiologyOrder order = RadiologyOrderDto(
+      _map(json['order']),
+    ).toEntity();
     final List<RadiologyResult> results = _list(json['results'])
         .map(RadiologyResultDto.new)
         .map((RadiologyResultDto dto) => dto.toEntity())
@@ -129,8 +130,7 @@ final class RadiologyOrderDto {
   final RadiologyJsonMap json;
 
   RadiologyOrder toEntity() {
-    final String id =
-        _string(json['id']) ?? _string(json['display_id']) ?? '';
+    final String id = _string(json['id']) ?? _string(json['display_id']) ?? '';
 
     return RadiologyOrder(
       id: id,
@@ -204,8 +204,7 @@ final class RadiologyResultDto {
   final RadiologyJsonMap json;
 
   RadiologyResult toEntity() {
-    final String id =
-        _string(json['id']) ?? _string(json['display_id']) ?? '';
+    final String id = _string(json['id']) ?? _string(json['display_id']) ?? '';
 
     return RadiologyResult(
       id: id,
@@ -257,8 +256,7 @@ final class RadiologyResultAttestationDto {
   final RadiologyJsonMap json;
 
   RadiologyResultAttestation toEntity() {
-    final String id =
-        _string(json['id']) ?? _string(json['display_id']) ?? '';
+    final String id = _string(json['id']) ?? _string(json['display_id']) ?? '';
 
     return RadiologyResultAttestation(
       id: id,
@@ -282,8 +280,7 @@ final class ImagingStudyDto {
   final RadiologyJsonMap json;
 
   ImagingStudy toEntity() {
-    final String id =
-        _string(json['id']) ?? _string(json['display_id']) ?? '';
+    final String id = _string(json['id']) ?? _string(json['display_id']) ?? '';
 
     return ImagingStudy(
       id: id,
@@ -316,8 +313,7 @@ final class ImagingAssetDto {
   final RadiologyJsonMap json;
 
   ImagingAsset toEntity() {
-    final String id =
-        _string(json['id']) ?? _string(json['display_id']) ?? '';
+    final String id = _string(json['id']) ?? _string(json['display_id']) ?? '';
 
     return ImagingAsset(
       id: id,
@@ -338,8 +334,7 @@ final class PacsLinkDto {
   final RadiologyJsonMap json;
 
   PacsLink toEntity() {
-    final String id =
-        _string(json['id']) ?? _string(json['display_id']) ?? '';
+    final String id = _string(json['id']) ?? _string(json['display_id']) ?? '';
 
     return PacsLink(
       id: id,

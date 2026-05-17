@@ -663,7 +663,7 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
   List<T> _successOrEmpty<T>(Result<List<T>> result) {
     return result.when(
       success: (List<T> value) => value,
-      failure: (_) => const <T>[],
+      failure: (_) => List<T>.empty(),
     );
   }
 

@@ -8002,11 +8002,953 @@ abstract class AppLocalizations {
   /// **'The discharge queue could not be loaded. Refresh to try again.'**
   String get dischargeLoadErrorBody;
 
+  /// Localized text for radiologyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology'**
+  String get radiologyTitle;
+
+  /// Localized text for radiologyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage imaging requests, modality worklists, study capture, PACS links, reporting, and release.'**
+  String get radiologyDescription;
+
+  /// Localized text for radiologyLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading radiology workspace'**
+  String get radiologyLoadingTitle;
+
+  /// Localized text for radiologyLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading imaging orders, reports, studies, and reference data.'**
+  String get radiologyLoadingBody;
+
+  /// Localized text for radiologyLiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get radiologyLiveStatus;
+
+  /// Localized text for radiologySavingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get radiologySavingStatus;
+
+  /// Localized text for radiologySavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology workflow updated.'**
+  String get radiologySavedMessage;
+
+  /// Localized text for radiologyRequestImagingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request imaging'**
+  String get radiologyRequestImagingAction;
+
+  /// Localized text for radiologyRefreshCatalogAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh catalog'**
+  String get radiologyRefreshCatalogAction;
+
+  /// Localized text for radiologyTotalOrdersSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total orders'**
+  String get radiologyTotalOrdersSummaryLabel;
+
+  /// Localized text for radiologyWaitingImagingSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting imaging'**
+  String get radiologyWaitingImagingSummaryLabel;
+
+  /// Localized text for radiologyReportingSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reporting'**
+  String get radiologyReportingSummaryLabel;
+
+  /// Localized text for radiologyReleasedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get radiologyReleasedSummaryLabel;
+
+  /// Localized text for radiologyUnsyncedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PACS sync due'**
+  String get radiologyUnsyncedSummaryLabel;
+
+  /// Localized text for radiologyFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology filters'**
+  String get radiologyFiltersLabel;
+
+  /// Localized text for radiologySearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search radiology'**
+  String get radiologySearchLabel;
+
+  /// Localized text for radiologySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, order, encounter, study, report, or PACS text'**
+  String get radiologySearchHint;
+
+  /// Localized text for radiologyOrderDateFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order date'**
+  String get radiologyOrderDateFilterLabel;
+
+  /// Localized text for radiologyPickOrderDateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick order date'**
+  String get radiologyPickOrderDateAction;
+
+  /// Localized text for radiologyStageFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage'**
+  String get radiologyStageFilterLabel;
+
+  /// Localized text for radiologyStatusFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get radiologyStatusFilterLabel;
+
+  /// Localized text for radiologyModalityFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Modality'**
+  String get radiologyModalityFilterLabel;
+
+  /// Localized text for radiologyClearFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get radiologyClearFiltersAction;
+
+  /// Localized text for radiologyWorklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging worklist'**
+  String get radiologyWorklistTitle;
+
+  /// Localized text for radiologyWorklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend-backed imaging orders with modality workflow and report status.'**
+  String get radiologyWorklistDescription;
+
+  /// Localized text for radiologyPreviousPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous orders'**
+  String get radiologyPreviousPageLabel;
+
+  /// Localized text for radiologyNextPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next orders'**
+  String get radiologyNextPageLabel;
+
+  /// No description provided for @radiologyPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {from}-{to} of {total}'**
+  String radiologyPageLabel(int from, int to, int total);
+
+  /// Localized text for radiologyNoOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No radiology orders'**
+  String get radiologyNoOrdersTitle;
+
+  /// Localized text for radiologyNoOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders matching this search and filter will appear here.'**
+  String get radiologyNoOrdersBody;
+
+  /// Localized text for radiologyPatientColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get radiologyPatientColumnLabel;
+
+  /// Localized text for radiologyOrderColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get radiologyOrderColumnLabel;
+
+  /// Localized text for radiologyStudyColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Study'**
+  String get radiologyStudyColumnLabel;
+
+  /// Localized text for radiologyPriorityColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get radiologyPriorityColumnLabel;
+
+  /// Localized text for radiologyPaymentAuthColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get radiologyPaymentAuthColumnLabel;
+
+  /// Localized text for radiologyStatusColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get radiologyStatusColumnLabel;
+
+  /// Localized text for radiologyNextActionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get radiologyNextActionColumnLabel;
+
+  /// Localized text for radiologyDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology workflow'**
+  String get radiologyDetailTitle;
+
+  /// Localized text for radiologyDetailLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading order'**
+  String get radiologyDetailLoadingTitle;
+
+  /// Localized text for radiologyDetailLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading selected imaging workflow.'**
+  String get radiologyDetailLoadingBody;
+
+  /// Localized text for radiologyNoSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an order'**
+  String get radiologyNoSelectionTitle;
+
+  /// Localized text for radiologyNoSelectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an imaging request to view study, report, and release details.'**
+  String get radiologyNoSelectionBody;
+
+  /// Localized text for radiologyPatientContextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology patient context'**
+  String get radiologyPatientContextLabel;
+
+  /// Localized text for radiologyBillingGateUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing gate unavailable'**
+  String get radiologyBillingGateUnavailable;
+
+  /// Localized text for radiologyEncounterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get radiologyEncounterLabel;
+
+  /// Localized text for radiologyOrderedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get radiologyOrderedAtLabel;
+
+  /// Localized text for radiologyModalityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Modality'**
+  String get radiologyModalityLabel;
+
+  /// Localized text for radiologyPaymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get radiologyPaymentLabel;
+
+  /// Localized text for radiologyAuthorizationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization'**
+  String get radiologyAuthorizationLabel;
+
+  /// Localized text for radiologyAssignAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign'**
+  String get radiologyAssignAction;
+
+  /// Localized text for radiologyStartImagingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Start imaging'**
+  String get radiologyStartImagingAction;
+
+  /// Localized text for radiologyStartDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start imaging order'**
+  String get radiologyStartDialogTitle;
+
+  /// Localized text for radiologyNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get radiologyNotesLabel;
+
+  /// Localized text for radiologyPerformStudyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform study'**
+  String get radiologyPerformStudyAction;
+
+  /// Localized text for radiologyCancelOrderAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get radiologyCancelOrderAction;
+
+  /// Localized text for radiologyRequestDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request details'**
+  String get radiologyRequestDetailsTitle;
+
+  /// Localized text for radiologyStudyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Study'**
+  String get radiologyStudyLabel;
+
+  /// Localized text for radiologyPriorityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get radiologyPriorityLabel;
+
+  /// Localized text for radiologyBodyRegionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Body region'**
+  String get radiologyBodyRegionLabel;
+
+  /// Localized text for radiologyLateralityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Laterality'**
+  String get radiologyLateralityLabel;
+
+  /// Localized text for radiologyClinicalNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical notes'**
+  String get radiologyClinicalNotesLabel;
+
+  /// Localized text for radiologyReportSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get radiologyReportSectionTitle;
+
+  /// Localized text for radiologyReportSectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft, finalize, attest, and amend radiology reports using backend workflow actions.'**
+  String get radiologyReportSectionBody;
+
+  /// Localized text for radiologyDraftReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft report'**
+  String get radiologyDraftReportAction;
+
+  /// Localized text for radiologyReleaseReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Release report'**
+  String get radiologyReleaseReportAction;
+
+  /// Localized text for radiologyRequestFinalizationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request finalization'**
+  String get radiologyRequestFinalizationAction;
+
+  /// Localized text for radiologyRequestFinalizationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request report finalization'**
+  String get radiologyRequestFinalizationDialogTitle;
+
+  /// Localized text for radiologyAttestFinalizationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Attest finalization'**
+  String get radiologyAttestFinalizationAction;
+
+  /// Localized text for radiologyAttestFinalizationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attest report finalization'**
+  String get radiologyAttestFinalizationDialogTitle;
+
+  /// Localized text for radiologyAddendumAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add addendum'**
+  String get radiologyAddendumAction;
+
+  /// Localized text for radiologyPendingAttestationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending attestation'**
+  String get radiologyPendingAttestationLabel;
+
+  /// Localized text for radiologyNoReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No report yet'**
+  String get radiologyNoReportTitle;
+
+  /// Localized text for radiologyNoReportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A draft or final report will appear after reporting begins.'**
+  String get radiologyNoReportBody;
+
+  /// Localized text for radiologyReportedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported'**
+  String get radiologyReportedAtLabel;
+
+  /// Localized text for radiologyGeneratedReportPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated report preview'**
+  String get radiologyGeneratedReportPreviewTitle;
+
+  /// Localized text for radiologyEmptyReportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No report text captured.'**
+  String get radiologyEmptyReportBody;
+
+  /// Localized text for radiologyStudiesAssetsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Studies and assets'**
+  String get radiologyStudiesAssetsTitle;
+
+  /// Localized text for radiologyStudiesAssetsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Track imaging studies, uploaded assets, and PACS synchronization state.'**
+  String get radiologyStudiesAssetsBody;
+
+  /// Localized text for radiologyNoStudiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No imaging studies'**
+  String get radiologyNoStudiesTitle;
+
+  /// Localized text for radiologyNoStudiesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Studies will appear after imaging is performed.'**
+  String get radiologyNoStudiesBody;
+
+  /// Localized text for radiologySyncPacsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync PACS'**
+  String get radiologySyncPacsAction;
+
+  /// Localized text for radiologyAssetsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assets'**
+  String get radiologyAssetsLabel;
+
+  /// Localized text for radiologyNoAssetsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No assets recorded'**
+  String get radiologyNoAssetsLabel;
+
+  /// Localized text for radiologyPacsLinksLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PACS links'**
+  String get radiologyPacsLinksLabel;
+
+  /// Localized text for radiologyNoPacsLinksLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No PACS links recorded'**
+  String get radiologyNoPacsLinksLabel;
+
+  /// Localized text for radiologyDoctorReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor review'**
+  String get radiologyDoctorReviewTitle;
+
+  /// Localized text for radiologyDoctorReviewReleasedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The latest report is released for clinical review.'**
+  String get radiologyDoctorReviewReleasedBody;
+
+  /// Localized text for radiologyDoctorReviewPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical review becomes available after report release.'**
+  String get radiologyDoctorReviewPendingBody;
+
+  /// Localized text for radiologyDoctorReviewReadyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for review'**
+  String get radiologyDoctorReviewReadyLabel;
+
+  /// Localized text for radiologyDoctorReviewPendingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending release'**
+  String get radiologyDoctorReviewPendingLabel;
+
+  /// Localized text for radiologyTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow timeline'**
+  String get radiologyTimelineTitle;
+
+  /// Localized text for radiologyNoTimelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline events'**
+  String get radiologyNoTimelineTitle;
+
+  /// Localized text for radiologyNoTimelineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow events will appear as the order progresses.'**
+  String get radiologyNoTimelineBody;
+
+  /// Localized text for radiologyBackendGapsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend gaps'**
+  String get radiologyBackendGapsTitle;
+
+  /// Localized text for radiologyBackendGapsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These controls are shown as unavailable until backend support is added.'**
+  String get radiologyBackendGapsBody;
+
+  /// Localized text for radiologyGapSchedulingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Room scheduling'**
+  String get radiologyGapSchedulingTitle;
+
+  /// Localized text for radiologyGapBackendSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not exposed by API'**
+  String get radiologyGapBackendSubtitle;
+
+  /// Localized text for radiologyGapSchedulingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The current radiology API has no room or appointment assignment fields.'**
+  String get radiologyGapSchedulingBody;
+
+  /// Localized text for radiologyGapBillingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing authorization'**
+  String get radiologyGapBillingTitle;
+
+  /// Localized text for radiologyGapBillingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment and authorization status is displayed only when returned by the backend.'**
+  String get radiologyGapBillingBody;
+
+  /// Localized text for radiologyCreateOrderDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request imaging'**
+  String get radiologyCreateOrderDialogTitle;
+
+  /// Localized text for radiologyReferenceSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog search'**
+  String get radiologyReferenceSearchLabel;
+
+  /// Localized text for radiologyReferenceSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search test code, name, modality, or body region'**
+  String get radiologyReferenceSearchHint;
+
+  /// Localized text for radiologySearchReferenceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Search catalog'**
+  String get radiologySearchReferenceAction;
+
+  /// Localized text for radiologyPatientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get radiologyPatientLabel;
+
+  /// No description provided for @radiologyFieldRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} is required.'**
+  String radiologyFieldRequiredLabel(String label);
+
+  /// Localized text for radiologyAssignDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign imaging order'**
+  String get radiologyAssignDialogTitle;
+
+  /// Localized text for radiologyAssigneeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee'**
+  String get radiologyAssigneeLabel;
+
+  /// Localized text for radiologyPerformStudyDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform imaging study'**
+  String get radiologyPerformStudyDialogTitle;
+
+  /// Localized text for radiologyPerformedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Performed at'**
+  String get radiologyPerformedAtLabel;
+
+  /// Localized text for radiologyDateTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DD HH:MM'**
+  String get radiologyDateTimeHint;
+
+  /// Localized text for radiologyReportDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft radiology report'**
+  String get radiologyReportDialogTitle;
+
+  /// Localized text for radiologyFindingsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Findings'**
+  String get radiologyFindingsLabel;
+
+  /// Localized text for radiologyImpressionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Impression'**
+  String get radiologyImpressionLabel;
+
+  /// Localized text for radiologyReportTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report text'**
+  String get radiologyReportTextLabel;
+
+  /// Localized text for radiologyReportTextHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to combine findings and impression.'**
+  String get radiologyReportTextHelper;
+
+  /// Localized text for radiologyReleaseReportDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Release report'**
+  String get radiologyReleaseReportDialogTitle;
+
+  /// Localized text for radiologyReleaseNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Release notes'**
+  String get radiologyReleaseNotesLabel;
+
+  /// Localized text for radiologyFinalizationStatementLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalization statement'**
+  String get radiologyFinalizationStatementLabel;
+
+  /// Localized text for radiologyFinalizationReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get radiologyFinalizationReasonLabel;
+
+  /// Localized text for radiologyAddendumDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add report addendum'**
+  String get radiologyAddendumDialogTitle;
+
+  /// Localized text for radiologyAddendumTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Addendum text'**
+  String get radiologyAddendumTextLabel;
+
+  /// Localized text for radiologyCancelDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel radiology order'**
+  String get radiologyCancelDialogTitle;
+
+  /// Localized text for radiologyCancellationReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason'**
+  String get radiologyCancellationReasonLabel;
+
+  /// Localized text for radiologyPacsSyncDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync study to PACS'**
+  String get radiologyPacsSyncDialogTitle;
+
+  /// Localized text for radiologyStudyUidLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Study UID'**
+  String get radiologyStudyUidLabel;
+
+  /// Localized text for radiologyStageAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get radiologyStageAll;
+
+  /// Localized text for radiologyStageOrdered.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get radiologyStageOrdered;
+
+  /// Localized text for radiologyStageProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get radiologyStageProcessing;
+
+  /// Localized text for radiologyStageReporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Reporting'**
+  String get radiologyStageReporting;
+
+  /// Localized text for radiologyStageCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get radiologyStageCompleted;
+
+  /// Localized text for radiologyStageCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get radiologyStageCancelled;
+
+  /// Localized text for radiologyStatusOrdered.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get radiologyStatusOrdered;
+
+  /// Localized text for radiologyStatusInProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'In process'**
+  String get radiologyStatusInProcess;
+
+  /// Localized text for radiologyStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get radiologyStatusCompleted;
+
+  /// Localized text for radiologyStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get radiologyStatusCancelled;
+
+  /// Localized text for radiologyResultDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get radiologyResultDraft;
+
+  /// Localized text for radiologyResultFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Final'**
+  String get radiologyResultFinal;
+
+  /// Localized text for radiologyResultAmended.
+  ///
+  /// In en, this message translates to:
+  /// **'Amended'**
+  String get radiologyResultAmended;
+
+  /// Localized text for radiologyModalityXray.
+  ///
+  /// In en, this message translates to:
+  /// **'X-ray'**
+  String get radiologyModalityXray;
+
+  /// Localized text for radiologyModalityCt.
+  ///
+  /// In en, this message translates to:
+  /// **'CT'**
+  String get radiologyModalityCt;
+
+  /// Localized text for radiologyModalityMri.
+  ///
+  /// In en, this message translates to:
+  /// **'MRI'**
+  String get radiologyModalityMri;
+
+  /// Localized text for radiologyModalityUltrasound.
+  ///
+  /// In en, this message translates to:
+  /// **'Ultrasound'**
+  String get radiologyModalityUltrasound;
+
+  /// Localized text for radiologyModalityPet.
+  ///
+  /// In en, this message translates to:
+  /// **'PET'**
+  String get radiologyModalityPet;
+
+  /// Localized text for radiologyModalityEcg.
+  ///
+  /// In en, this message translates to:
+  /// **'ECG'**
+  String get radiologyModalityEcg;
+
+  /// Localized text for radiologyModalityEcho.
+  ///
+  /// In en, this message translates to:
+  /// **'Echo'**
+  String get radiologyModalityEcho;
+
+  /// Localized text for radiologyModalityEndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Endoscopy'**
+  String get radiologyModalityEndo;
+
+  /// Localized text for radiologyModalityGastro.
+  ///
+  /// In en, this message translates to:
+  /// **'Gastro'**
+  String get radiologyModalityGastro;
+
+  /// Localized text for radiologyModalityOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get radiologyModalityOther;
+
+  /// Localized text for radiologyNextActionConfirmBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm billing'**
+  String get radiologyNextActionConfirmBilling;
+
+  /// Localized text for radiologyNextActionStartImaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Start imaging'**
+  String get radiologyNextActionStartImaging;
+
+  /// Localized text for radiologyNextActionPerformStudy.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform study'**
+  String get radiologyNextActionPerformStudy;
+
+  /// Localized text for radiologyNextActionReleaseReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Release report'**
+  String get radiologyNextActionReleaseReport;
+
+  /// Localized text for radiologyNextActionDoctorReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor review'**
+  String get radiologyNextActionDoctorReview;
+
+  /// Localized text for radiologyNextActionReportPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Report pending'**
+  String get radiologyNextActionReportPending;
+
   /// Navigation destination label for the pharmacy workspace.
   ///
   /// In en, this message translates to:
   /// **'Pharmacy'**
   String get navigationPharmacyLabel;
+
+  /// Navigation destination label for the lab workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab'**
+  String get navigationLabLabel;
+
+  /// Navigation destination label for the radiology workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology'**
+  String get navigationRadiologyLabel;
 
   /// Pharmacy workspace loading title.
   ///
@@ -9483,6 +10425,810 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generated from backend-backed claims and billing data.'**
   String get claimsReportFooter;
+
+  /// Localized text for labTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory'**
+  String get labTitle;
+
+  /// Localized text for labDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage lab catalog, order queues, samples, result release, QC, and clinician review handoff.'**
+  String get labDescription;
+
+  /// Localized text for labLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading laboratory'**
+  String get labLoadingTitle;
+
+  /// Localized text for labLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading lab queues, catalog, samples, results, and QC logs.'**
+  String get labLoadingBody;
+
+  /// Localized text for labLiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get labLiveStatus;
+
+  /// Localized text for labSavingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get labSavingStatus;
+
+  /// Localized text for labSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory workflow updated.'**
+  String get labSavedMessage;
+
+  /// Localized text for labRequestOrderAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request lab'**
+  String get labRequestOrderAction;
+
+  /// Localized text for labRecordQcAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Record QC'**
+  String get labRecordQcAction;
+
+  /// Localized text for labTotalOrdersSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total orders'**
+  String get labTotalOrdersSummaryLabel;
+
+  /// Localized text for labWaitingSampleSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting sample'**
+  String get labWaitingSampleSummaryLabel;
+
+  /// Localized text for labProcessingSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get labProcessingSummaryLabel;
+
+  /// Localized text for labResultPendingSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result pending'**
+  String get labResultPendingSummaryLabel;
+
+  /// Localized text for labCriticalSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get labCriticalSummaryLabel;
+
+  /// Localized text for labCompletedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get labCompletedSummaryLabel;
+
+  /// Localized text for labFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory filters'**
+  String get labFiltersLabel;
+
+  /// Localized text for labSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search laboratory'**
+  String get labSearchLabel;
+
+  /// Localized text for labSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, order, sample, test, or encounter'**
+  String get labSearchHint;
+
+  /// Localized text for labScopeFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get labScopeFilterLabel;
+
+  /// Localized text for labScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get labScopeAll;
+
+  /// Localized text for labScopeCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting sample'**
+  String get labScopeCollection;
+
+  /// Localized text for labScopeProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get labScopeProcessing;
+
+  /// Localized text for labScopeResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Result pending'**
+  String get labScopeResults;
+
+  /// Localized text for labScopeCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get labScopeCritical;
+
+  /// Localized text for labScopeCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get labScopeCompleted;
+
+  /// Localized text for labScopeCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get labScopeCancelled;
+
+  /// Localized text for labWorklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab queue'**
+  String get labWorklistTitle;
+
+  /// Localized text for labWorklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Actionable lab orders with sample, processing, result, and release state.'**
+  String get labWorklistDescription;
+
+  /// Localized text for labNoOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No lab orders'**
+  String get labNoOrdersTitle;
+
+  /// Localized text for labNoOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the queue filter or search term to find laboratory work.'**
+  String get labNoOrdersBody;
+
+  /// Localized text for labPatientColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get labPatientColumnLabel;
+
+  /// Localized text for labOrderColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get labOrderColumnLabel;
+
+  /// Localized text for labTestsColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tests'**
+  String get labTestsColumnLabel;
+
+  /// Localized text for labSampleColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample'**
+  String get labSampleColumnLabel;
+
+  /// Localized text for labResultColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get labResultColumnLabel;
+
+  /// Localized text for labNextActionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get labNextActionColumnLabel;
+
+  /// No description provided for @labPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String labPageLabel(int from, int to, int total);
+
+  /// Localized text for labPreviousPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous lab page'**
+  String get labPreviousPageLabel;
+
+  /// Localized text for labNextPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next lab page'**
+  String get labNextPageLabel;
+
+  /// Localized text for labDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab detail'**
+  String get labDetailTitle;
+
+  /// Localized text for labDetailLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading lab detail'**
+  String get labDetailLoadingTitle;
+
+  /// Localized text for labDetailLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading samples, results, timeline, and available workflow actions.'**
+  String get labDetailLoadingBody;
+
+  /// Localized text for labNoSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an order'**
+  String get labNoSelectionTitle;
+
+  /// Localized text for labNoSelectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a lab order from the queue to collect samples, process results, and release reports.'**
+  String get labNoSelectionBody;
+
+  /// Localized text for labPatientContextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab patient context'**
+  String get labPatientContextLabel;
+
+  /// Localized text for labOrderFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab order'**
+  String get labOrderFieldLabel;
+
+  /// Localized text for labEncounterFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get labEncounterFieldLabel;
+
+  /// Localized text for labOrderedAtFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered at'**
+  String get labOrderedAtFieldLabel;
+
+  /// Localized text for labItemsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order items'**
+  String get labItemsSectionTitle;
+
+  /// Localized text for labSamplesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Samples'**
+  String get labSamplesSectionTitle;
+
+  /// Localized text for labResultsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Results'**
+  String get labResultsSectionTitle;
+
+  /// Localized text for labTimelineSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get labTimelineSectionTitle;
+
+  /// Localized text for labNoSamplesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No samples recorded'**
+  String get labNoSamplesLabel;
+
+  /// Localized text for labNoResultsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No released results'**
+  String get labNoResultsLabel;
+
+  /// Localized text for labNoTimelineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline entries'**
+  String get labNoTimelineLabel;
+
+  /// Localized text for labReferenceRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference range'**
+  String get labReferenceRangeLabel;
+
+  /// Localized text for labReportedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported'**
+  String get labReportedAtLabel;
+
+  /// Localized text for labCollectSampleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect sample'**
+  String get labCollectSampleAction;
+
+  /// Localized text for labReceiveSampleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive sample'**
+  String get labReceiveSampleAction;
+
+  /// Localized text for labRejectSampleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject sample'**
+  String get labRejectSampleAction;
+
+  /// Localized text for labReleaseResultAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Release result'**
+  String get labReleaseResultAction;
+
+  /// Localized text for labReverseWorkflowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse step'**
+  String get labReverseWorkflowAction;
+
+  /// Localized text for labViewCatalogAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View catalog'**
+  String get labViewCatalogAction;
+
+  /// Localized text for labCatalogQcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog and QC'**
+  String get labCatalogQcTitle;
+
+  /// Localized text for labCatalogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab catalog'**
+  String get labCatalogTitle;
+
+  /// Localized text for labQcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality control'**
+  String get labQcTitle;
+
+  /// Localized text for labBackendGapsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend gaps'**
+  String get labBackendGapsTitle;
+
+  /// Localized text for labBackendGapsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No confirmed backend gaps are blocking the displayed lab queue.'**
+  String get labBackendGapsBody;
+
+  /// Localized text for labNoCatalogItemsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No catalog items found'**
+  String get labNoCatalogItemsLabel;
+
+  /// Localized text for labNoQcLogsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No QC logs recorded'**
+  String get labNoQcLogsLabel;
+
+  /// Localized text for labTestsTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tests'**
+  String get labTestsTabLabel;
+
+  /// Localized text for labPanelsTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Panels'**
+  String get labPanelsTabLabel;
+
+  /// Localized text for labRequestOrderDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request lab order'**
+  String get labRequestOrderDialogTitle;
+
+  /// Localized text for labPatientIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get labPatientIdLabel;
+
+  /// Localized text for labEncounterIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter ID'**
+  String get labEncounterIdLabel;
+
+  /// Localized text for labCatalogSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search lab catalog'**
+  String get labCatalogSearchLabel;
+
+  /// Localized text for labCatalogSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tests, panels, codes, category, or specimen'**
+  String get labCatalogSearchHint;
+
+  /// Localized text for labCreateOrderSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create lab order'**
+  String get labCreateOrderSubmitAction;
+
+  /// Localized text for labCollectDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect sample'**
+  String get labCollectDialogTitle;
+
+  /// Localized text for labCollectedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collected at'**
+  String get labCollectedAtLabel;
+
+  /// Localized text for labDateTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DDTHH:MM:SS'**
+  String get labDateTimeHint;
+
+  /// Localized text for labNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get labNotesLabel;
+
+  /// Localized text for labReceiveDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive sample'**
+  String get labReceiveDialogTitle;
+
+  /// Localized text for labSampleFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample'**
+  String get labSampleFieldLabel;
+
+  /// Localized text for labReceivedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Received at'**
+  String get labReceivedAtLabel;
+
+  /// Localized text for labRejectDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject sample'**
+  String get labRejectDialogTitle;
+
+  /// Localized text for labRejectReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejection reason'**
+  String get labRejectReasonLabel;
+
+  /// Localized text for labReleaseDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Release lab result'**
+  String get labReleaseDialogTitle;
+
+  /// Localized text for labOrderItemFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order item'**
+  String get labOrderItemFieldLabel;
+
+  /// Localized text for labResultStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result status'**
+  String get labResultStatusLabel;
+
+  /// Localized text for labResultValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result value'**
+  String get labResultValueLabel;
+
+  /// Localized text for labResultUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result unit'**
+  String get labResultUnitLabel;
+
+  /// Localized text for labResultTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result comments'**
+  String get labResultTextLabel;
+
+  /// Localized text for labReportedAtInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported at'**
+  String get labReportedAtInputLabel;
+
+  /// Localized text for labReverseDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse lab workflow'**
+  String get labReverseDialogTitle;
+
+  /// Localized text for labReverseReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get labReverseReasonLabel;
+
+  /// Localized text for labRecordQcDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record quality control'**
+  String get labRecordQcDialogTitle;
+
+  /// Localized text for labQcTestFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab test'**
+  String get labQcTestFieldLabel;
+
+  /// Localized text for labQcStatusFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'QC status'**
+  String get labQcStatusFieldLabel;
+
+  /// Localized text for labLoggedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged at'**
+  String get labLoggedAtLabel;
+
+  /// Localized text for labQcNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'QC notes'**
+  String get labQcNotesLabel;
+
+  /// Localized text for labStatusOrdered.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get labStatusOrdered;
+
+  /// Localized text for labStatusCollected.
+  ///
+  /// In en, this message translates to:
+  /// **'Collected'**
+  String get labStatusCollected;
+
+  /// Localized text for labStatusInProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'In process'**
+  String get labStatusInProcess;
+
+  /// Localized text for labStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get labStatusCompleted;
+
+  /// Localized text for labStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get labStatusCancelled;
+
+  /// Localized text for labStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get labStatusPending;
+
+  /// Localized text for labStatusNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get labStatusNormal;
+
+  /// Localized text for labStatusAbnormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Abnormal'**
+  String get labStatusAbnormal;
+
+  /// Localized text for labStatusCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get labStatusCritical;
+
+  /// Localized text for labStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get labStatusRejected;
+
+  /// Localized text for labStatusReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get labStatusReceived;
+
+  /// Localized text for labNextActionCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Order cancelled'**
+  String get labNextActionCancelled;
+
+  /// Localized text for labNextActionCollect.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect sample'**
+  String get labNextActionCollect;
+
+  /// Localized text for labNextActionReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive sample'**
+  String get labNextActionReceive;
+
+  /// Localized text for labNextActionRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter and release result'**
+  String get labNextActionRelease;
+
+  /// Localized text for labNextActionReviewCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Escalate critical result'**
+  String get labNextActionReviewCritical;
+
+  /// Localized text for labNextActionCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for doctor review'**
+  String get labNextActionCompleted;
+
+  /// Localized text for labNextActionWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Review order'**
+  String get labNextActionWatch;
+
+  /// Localized text for labReportPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Result report preview'**
+  String get labReportPreviewTitle;
+
+  /// Localized text for labReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory result report'**
+  String get labReportTitle;
+
+  /// Localized text for labCopyReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy report'**
+  String get labCopyReportAction;
+
+  /// Localized text for labReportPatientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get labReportPatientLabel;
+
+  /// Localized text for labReportOrderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get labReportOrderLabel;
+
+  /// Localized text for labReportResultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get labReportResultLabel;
+
+  /// Localized text for labReportRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference range'**
+  String get labReportRangeLabel;
+
+  /// Localized text for labReportVerifiedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get labReportVerifiedLabel;
+
+  /// Localized text for labReportFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from confirmed laboratory workflow data.'**
+  String get labReportFooter;
+
+  /// Localized text for labGapBillingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment and authorization gate'**
+  String get labGapBillingTitle;
+
+  /// Localized text for labGapBillingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The current lab workbench contract does not expose payment or authorization blockers.'**
+  String get labGapBillingBody;
+
+  /// Localized text for labGapVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate verification step'**
+  String get labGapVerificationTitle;
+
+  /// Localized text for labGapVerificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The confirmed workflow releases an order item result, but does not expose a separate verified-before-release state.'**
+  String get labGapVerificationBody;
+
+  /// Localized text for labGapReportGenerationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated report endpoint'**
+  String get labGapReportGenerationTitle;
+
+  /// Localized text for labGapReportGenerationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The frontend shows a shared report preview; no confirmed lab-specific generated PDF endpoint is exposed.'**
+  String get labGapReportGenerationBody;
 }
 
 class _AppLocalizationsDelegate

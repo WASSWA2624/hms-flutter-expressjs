@@ -295,8 +295,7 @@ final class RadiologyWorkspaceController
     Map<String, Object?> payload,
   ) {
     return _mutate(
-      () =>
-          _repository.requestFinalization(result.effectiveDisplayId, payload),
+      () => _repository.requestFinalization(result.effectiveDisplayId, payload),
     );
   }
 
