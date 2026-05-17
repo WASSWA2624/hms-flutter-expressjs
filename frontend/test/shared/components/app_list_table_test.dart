@@ -92,6 +92,30 @@ void main() {
     expect(find.text('Alpha'), findsOneWidget);
   });
 
+  testWidgets('AppListTable uses a compact table on tablet screens', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(700, 600),
+    );
+
+    final DataTable table = tester.widget<DataTable>(find.byType(DataTable));
+    expect(find.text('Title'), findsOneWidget);
+    expect(table.horizontalMargin, 8);
+    expect(table.columnSpacing, 12);
+  });
+
   testWidgets('AppListTable can force list rendering on wide screens', (
     WidgetTester tester,
   ) async {

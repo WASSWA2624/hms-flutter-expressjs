@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -200,21 +202,18 @@ class AppListTable<T> extends StatelessWidget {
       return _buildForItems(context, items);
     }
 
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: resolvedSearch.controller,
-      builder: (BuildContext context, TextEditingValue value, _) {
-        final List<T> visibleItems = _filteredItems(
-          items,
-          value.text,
-          resolvedSearch.matcher,
-        );
-
-        return _ListTableSearchLayout(
-          searchBar: resolvedSearch.buildSearchBar(context),
-          shrinkWrap: shrinkWrap,
-          child: _buildForItems(context, visibleItems),
-        );
-      },
+    return _ListTableSearchLayout(
+      searchBar: resolvedSearch.buildSearchBar(context),
+      shrinkWrap: shrinkWrap,
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: resolvedSearch.controller,
+        builder: (BuildContext context, TextEditingValue value, _) {
+          return _buildForItems(
+            context,
+            _filteredItems(items, value.text, resolvedSearch.matcher),
+          );
+        },
+      ),
     );
   }
 
@@ -251,8 +250,9 @@ class AppListTable<T> extends StatelessWidget {
           columns: columns,
           itemKeyBuilder: itemKeyBuilder,
           onRowSelected: onRowSelected,
-          minWidth: constraints.maxWidth,
+          minWidth: _tableMinWidth(constraints),
           rowColorBuilder: rowColorBuilder,
+          compact: _usesCompactTableLayout(constraints),
         );
       },
     );
@@ -281,10 +281,26 @@ class AppListTable<T> extends StatelessWidget {
     return switch (displayMode) {
       AppListTableDisplayMode.list => true,
       AppListTableDisplayMode.table => false,
-      AppListTableDisplayMode.adaptive => AppBreakpoints.fromConstraints(
-        constraints,
-      ).isMobile,
+      AppListTableDisplayMode.adaptive =>
+        switch (AppBreakpoints.fromConstraints(constraints)) {
+          AppBreakpoint.xs || AppBreakpoint.sm => true,
+          _ => false,
+        },
     };
+  }
+
+  bool _usesCompactTableLayout(BoxConstraints constraints) {
+    return AppBreakpoints.fromConstraints(constraints) == AppBreakpoint.md;
+  }
+
+  double _tableMinWidth(BoxConstraints constraints) {
+    if (columns.isEmpty) {
+      return constraints.maxWidth;
+    }
+
+    final bool compact = _usesCompactTableLayout(constraints);
+    final double minColumnWidth = compact ? 128 : 148;
+    return math.max(constraints.maxWidth, columns.length * minColumnWidth);
   }
 
   List<T> _filteredItems(
@@ -669,6 +685,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     required this.onRowSelected,
     required this.minWidth,
     required this.rowColorBuilder,
+    required this.compact,
   });
 
   final List<T> items;
@@ -677,6 +694,7 @@ class _DesktopListTable<T> extends StatefulWidget {
   final ValueChanged<T>? onRowSelected;
   final double minWidth;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
+  final bool compact;
 
   @override
   State<_DesktopListTable<T>> createState() => _DesktopListTableState<T>();
@@ -699,8 +717,32 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double horizontalMargin = widget.compact
+        ? theme.spacing.sm
+        : theme.spacing.md;
+    final double columnSpacing = widget.compact
+        ? theme.spacing.md
+        : theme.spacing.xl;
+    final double rowMinHeight = widget.compact ? 38 : 40;
+    final double rowMaxHeight = widget.compact ? 42 : 46;
+
     final Widget table = DataTable(
       showCheckboxColumn: false,
+      horizontalMargin: horizontalMargin,
+      columnSpacing: columnSpacing,
+      headingRowHeight: widget.compact ? 38 : 42,
+      dataRowMinHeight: rowMinHeight,
+      dataRowMaxHeight: rowMaxHeight,
+      headingTextStyle: theme.textTheme.labelMedium?.copyWith(
+        color: colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w800,
+      ),
+      dataTextStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: colorScheme.onSurface,
+        fontWeight: FontWeight.w500,
+      ),
       columns: <DataColumn>[
         for (final AppListTableColumn<T> column in widget.columns)
           DataColumn(
