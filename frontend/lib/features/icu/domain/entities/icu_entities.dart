@@ -431,11 +431,7 @@ final class IcuVitalSign {
 
 @immutable
 final class IcuTimelineItem {
-  const IcuTimelineItem({
-    required this.type,
-    required this.label,
-    this.at,
-  });
+  const IcuTimelineItem({required this.type, required this.label, this.at});
 
   final String type;
   final String label;
@@ -578,7 +574,9 @@ final class IcuWorkspaceState {
   final bool isSaving;
 
   int get activeCount {
-    return board.items.where((IcuPatientSummary item) => item.isActiveIcu).length;
+    return board.items
+        .where((IcuPatientSummary item) => item.isActiveIcu)
+        .length;
   }
 
   int get criticalCount {
@@ -588,7 +586,9 @@ final class IcuWorkspaceState {
   }
 
   int get transferCount {
-    return board.items.where((IcuPatientSummary item) => item.hasOpenTransfer).length;
+    return board.items
+        .where((IcuPatientSummary item) => item.hasOpenTransfer)
+        .length;
   }
 
   int get dischargeReadyCount {

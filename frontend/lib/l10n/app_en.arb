@@ -153,6 +153,494 @@
   "@navigationOpdLabel": {
     "description": "Navigation label for the OPD workflow destination."
   },
+  "navigationTheaterLabel": "Theater",
+  "@navigationTheaterLabel": {
+    "description": "Navigation label for the theater workflow destination."
+  },
+  "theaterTitle": "Theater",
+  "@theaterTitle": {
+    "description": "Title for the theater workspace."
+  },
+  "theaterDescription": "Manage daily cases, readiness, room and team allocation, anesthesia, post-op notes, and handover.",
+  "@theaterDescription": {
+    "description": "Description for the theater workspace."
+  },
+  "theaterLoadingTitle": "Loading theater",
+  "@theaterLoadingTitle": {
+    "description": "Loading title for the theater workspace."
+  },
+  "theaterLoadingBody": "Loading theater cases and clinical records.",
+  "@theaterLoadingBody": {
+    "description": "Loading body for the theater workspace."
+  },
+  "theaterLiveStatus": "Live sync",
+  "@theaterLiveStatus": {
+    "description": "Status label when theater data is synced."
+  },
+  "theaterSavingStatus": "Saving",
+  "@theaterSavingStatus": {
+    "description": "Status label when theater data is being saved."
+  },
+  "theaterSavedMessage": "Theater changes saved.",
+  "@theaterSavedMessage": {
+    "description": "Snackbar message after theater mutations succeed."
+  },
+  "theaterScheduleCaseAction": "Schedule case",
+  "@theaterScheduleCaseAction": {
+    "description": "Action label for scheduling a theater case."
+  },
+  "theaterScheduledSummaryLabel": "Scheduled",
+  "@theaterScheduledSummaryLabel": {
+    "description": "Summary card label for scheduled theater cases."
+  },
+  "theaterInTheaterSummaryLabel": "In theater",
+  "@theaterInTheaterSummaryLabel": {
+    "description": "Summary card label for active theater cases."
+  },
+  "theaterReadySummaryLabel": "Ready",
+  "@theaterReadySummaryLabel": {
+    "description": "Summary card label for ready theater cases."
+  },
+  "theaterCompletedSummaryLabel": "Completed",
+  "@theaterCompletedSummaryLabel": {
+    "description": "Summary card label for completed theater cases."
+  },
+  "theaterFiltersLabel": "Theater filters",
+  "@theaterFiltersLabel": {
+    "description": "Accessibility label for theater filters."
+  },
+  "theaterSearchLabel": "Search theater",
+  "@theaterSearchLabel": {
+    "description": "Label for theater search field."
+  },
+  "theaterSearchHint": "Search patient, case, encounter, notes, or record text",
+  "@theaterSearchHint": {
+    "description": "Hint for theater search field."
+  },
+  "theaterScheduleDateFilterLabel": "Schedule date",
+  "@theaterScheduleDateFilterLabel": {
+    "description": "Label for theater schedule date filter."
+  },
+  "theaterPickScheduleDateAction": "Pick schedule date",
+  "@theaterPickScheduleDateAction": {
+    "description": "Action label for picking a theater schedule date."
+  },
+  "theaterStatusFilterLabel": "Status",
+  "@theaterStatusFilterLabel": {
+    "description": "Label for theater status filter."
+  },
+  "theaterStageFilterLabel": "Stage",
+  "@theaterStageFilterLabel": {
+    "description": "Label for theater stage filter."
+  },
+  "theaterResourceFiltersAction": "Resource filters",
+  "@theaterResourceFiltersAction": {
+    "description": "Action label for opening theater resource filters."
+  },
+  "theaterClearFiltersAction": "Clear filters",
+  "@theaterClearFiltersAction": {
+    "description": "Action label for clearing theater filters."
+  },
+  "theaterCasesTitle": "Daily cases",
+  "@theaterCasesTitle": {
+    "description": "Title for theater case board."
+  },
+  "theaterCasesDescription": "Select a case to review readiness, records, resources, and handover.",
+  "@theaterCasesDescription": {
+    "description": "Description for theater case board."
+  },
+  "theaterNoCasesTitle": "No theater cases",
+  "@theaterNoCasesTitle": {
+    "description": "Empty-state title when no theater cases match filters."
+  },
+  "theaterNoCasesBody": "Scheduled and active theater cases will appear here.",
+  "@theaterNoCasesBody": {
+    "description": "Empty-state body when no theater cases match filters."
+  },
+  "theaterNoCaseSelectedTitle": "No case selected",
+  "@theaterNoCaseSelectedTitle": {
+    "description": "Empty detail title when no theater case is selected."
+  },
+  "theaterNoCaseSelectedBody": "Select a theater case to review readiness, records, and handover.",
+  "@theaterNoCaseSelectedBody": {
+    "description": "Empty detail body when no theater case is selected."
+  },
+  "theaterPatientColumnLabel": "Patient",
+  "@theaterPatientColumnLabel": {
+    "description": "Theater case list patient column label."
+  },
+  "theaterTimeColumnLabel": "Time",
+  "@theaterTimeColumnLabel": {
+    "description": "Theater case list time column label."
+  },
+  "theaterRoomColumnLabel": "Room",
+  "@theaterRoomColumnLabel": {
+    "description": "Theater case list room column label."
+  },
+  "theaterStatusColumnLabel": "Status",
+  "@theaterStatusColumnLabel": {
+    "description": "Theater case list status column label."
+  },
+  "theaterReadinessColumnLabel": "Readiness",
+  "@theaterReadinessColumnLabel": {
+    "description": "Theater case list readiness column label."
+  },
+  "theaterNextActionColumnLabel": "Next action",
+  "@theaterNextActionColumnLabel": {
+    "description": "Theater case list next action column label."
+  },
+  "theaterPageLabel": "{from}-{to} of {total}",
+  "@theaterPageLabel": {
+    "description": "Pagination label for theater data lists.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "theaterCaseDetailTitle": "Case detail",
+  "@theaterCaseDetailTitle": {
+    "description": "Title for theater case detail panel."
+  },
+  "theaterRescheduleAction": "Reschedule",
+  "@theaterRescheduleAction": {
+    "description": "Action label for rescheduling a theater case."
+  },
+  "theaterUpdateStageAction": "Update stage",
+  "@theaterUpdateStageAction": {
+    "description": "Action label for updating theater case stage."
+  },
+  "theaterEncounterLabel": "Encounter",
+  "@theaterEncounterLabel": {
+    "description": "Label for encounter in theater detail."
+  },
+  "theaterScheduledAtLabel": "Scheduled at",
+  "@theaterScheduledAtLabel": {
+    "description": "Label for scheduled date time in theater forms and detail."
+  },
+  "theaterRoomLabel": "Room",
+  "@theaterRoomLabel": {
+    "description": "Label for theater room."
+  },
+  "theaterReadinessLabel": "Readiness",
+  "@theaterReadinessLabel": {
+    "description": "Label for theater readiness."
+  },
+  "theaterTeamTitle": "Team and flow",
+  "@theaterTeamTitle": {
+    "description": "Title for theater team and flow section."
+  },
+  "theaterSurgeonLabel": "Surgeon",
+  "@theaterSurgeonLabel": {
+    "description": "Label for theater surgeon."
+  },
+  "theaterAnesthetistLabel": "Anesthetist",
+  "@theaterAnesthetistLabel": {
+    "description": "Label for theater anesthetist."
+  },
+  "theaterStageLabel": "Stage",
+  "@theaterStageLabel": {
+    "description": "Label for theater workflow stage."
+  },
+  "theaterStatusLabel": "Status",
+  "@theaterStatusLabel": {
+    "description": "Label for theater status."
+  },
+  "theaterStageNotesLabel": "Stage notes",
+  "@theaterStageNotesLabel": {
+    "description": "Label for theater stage notes."
+  },
+  "theaterAssignResourceAction": "Assign resource",
+  "@theaterAssignResourceAction": {
+    "description": "Action label for assigning a theater resource."
+  },
+  "theaterUpdateReadinessAction": "Update readiness",
+  "@theaterUpdateReadinessAction": {
+    "description": "Action label for updating theater readiness checklist."
+  },
+  "theaterAnesthesiaAction": "Anesthesia",
+  "@theaterAnesthesiaAction": {
+    "description": "Action label for editing anesthesia record."
+  },
+  "theaterPostOpAction": "Post-op",
+  "@theaterPostOpAction": {
+    "description": "Action label for editing post-op note."
+  },
+  "theaterHandoverAction": "Handover",
+  "@theaterHandoverAction": {
+    "description": "Action label for theater handover."
+  },
+  "theaterFinalizeAction": "Finalize",
+  "@theaterFinalizeAction": {
+    "description": "Action label for finalizing theater records."
+  },
+  "theaterCancelCaseAction": "Cancel case",
+  "@theaterCancelCaseAction": {
+    "description": "Action label for cancelling a theater case."
+  },
+  "theaterStartCaseAction": "Start case",
+  "@theaterStartCaseAction": {
+    "description": "Next-action label for starting a ready scheduled case."
+  },
+  "theaterChecklistTitle": "Readiness checklist",
+  "@theaterChecklistTitle": {
+    "description": "Title for theater readiness checklist."
+  },
+  "theaterNoChecklistItemsLabel": "No checklist items recorded",
+  "@theaterNoChecklistItemsLabel": {
+    "description": "Empty text for theater checklist items."
+  },
+  "theaterRecordsTitle": "Clinical records",
+  "@theaterRecordsTitle": {
+    "description": "Title for theater clinical records section."
+  },
+  "theaterAnesthesiaStatusLabel": "Anesthesia status",
+  "@theaterAnesthesiaStatusLabel": {
+    "description": "Label for anesthesia record status."
+  },
+  "theaterPostOpStatusLabel": "Post-op status",
+  "@theaterPostOpStatusLabel": {
+    "description": "Label for post-op record status."
+  },
+  "theaterAnesthesiaNotesLabel": "Anesthesia notes",
+  "@theaterAnesthesiaNotesLabel": {
+    "description": "Label for anesthesia notes."
+  },
+  "theaterPostOpNoteLabel": "Post-op note",
+  "@theaterPostOpNoteLabel": {
+    "description": "Label for post-op note."
+  },
+  "theaterNoObservationsLabel": "No anesthesia observations recorded",
+  "@theaterNoObservationsLabel": {
+    "description": "Empty text for anesthesia observations."
+  },
+  "theaterResourcesTitle": "Resources",
+  "@theaterResourcesTitle": {
+    "description": "Title for theater resource allocations section."
+  },
+  "theaterNoResourcesLabel": "No resources assigned",
+  "@theaterNoResourcesLabel": {
+    "description": "Empty text for theater resources."
+  },
+  "theaterTimelineTitle": "Timeline",
+  "@theaterTimelineTitle": {
+    "description": "Title for theater timeline."
+  },
+  "theaterNoTimelineLabel": "No timeline entries",
+  "@theaterNoTimelineLabel": {
+    "description": "Empty text for theater timeline."
+  },
+  "theaterScheduleCaseDialogTitle": "Schedule theater case",
+  "@theaterScheduleCaseDialogTitle": {
+    "description": "Dialog title for scheduling a theater case."
+  },
+  "theaterRescheduleDialogTitle": "Reschedule theater case",
+  "@theaterRescheduleDialogTitle": {
+    "description": "Dialog title for rescheduling a theater case."
+  },
+  "theaterUpdateStageDialogTitle": "Update theater stage",
+  "@theaterUpdateStageDialogTitle": {
+    "description": "Dialog title for updating theater stage."
+  },
+  "theaterHandoverDialogTitle": "Complete handover",
+  "@theaterHandoverDialogTitle": {
+    "description": "Dialog title for theater handover."
+  },
+  "theaterHandoverNotesLabel": "Handover notes",
+  "@theaterHandoverNotesLabel": {
+    "description": "Label for theater handover notes."
+  },
+  "theaterCancelCaseDialogTitle": "Cancel theater case",
+  "@theaterCancelCaseDialogTitle": {
+    "description": "Dialog title for cancelling a theater case."
+  },
+  "theaterCancellationReasonLabel": "Cancellation reason",
+  "@theaterCancellationReasonLabel": {
+    "description": "Label for theater cancellation reason."
+  },
+  "theaterAssignResourceDialogTitle": "Assign theater resource",
+  "@theaterAssignResourceDialogTitle": {
+    "description": "Dialog title for assigning a theater resource."
+  },
+  "theaterReadinessDialogTitle": "Update readiness",
+  "@theaterReadinessDialogTitle": {
+    "description": "Dialog title for updating theater readiness."
+  },
+  "theaterAnesthesiaDialogTitle": "Anesthesia record",
+  "@theaterAnesthesiaDialogTitle": {
+    "description": "Dialog title for editing anesthesia record."
+  },
+  "theaterPostOpDialogTitle": "Post-op note",
+  "@theaterPostOpDialogTitle": {
+    "description": "Dialog title for editing post-op note."
+  },
+  "theaterFinalizeDialogTitle": "Finalize records",
+  "@theaterFinalizeDialogTitle": {
+    "description": "Dialog title for finalizing theater records."
+  },
+  "theaterResourceFiltersDialogTitle": "Resource filters",
+  "@theaterResourceFiltersDialogTitle": {
+    "description": "Dialog title for theater resource filters."
+  },
+  "theaterEncounterIdLabel": "Encounter ID",
+  "@theaterEncounterIdLabel": {
+    "description": "Label for encounter ID in theater forms."
+  },
+  "theaterEncounterIdHint": "Encounter UUID or case source identifier",
+  "@theaterEncounterIdHint": {
+    "description": "Hint for encounter ID in theater forms."
+  },
+  "theaterDateTimeHint": "YYYY-MM-DDTHH:MM:SS",
+  "@theaterDateTimeHint": {
+    "description": "Hint for ISO date time entry in theater forms."
+  },
+  "theaterRoomIdLabel": "Room ID",
+  "@theaterRoomIdLabel": {
+    "description": "Label for theater room ID."
+  },
+  "theaterSurgeonIdLabel": "Surgeon user ID",
+  "@theaterSurgeonIdLabel": {
+    "description": "Label for surgeon user ID."
+  },
+  "theaterAnesthetistIdLabel": "Anesthetist user ID",
+  "@theaterAnesthetistIdLabel": {
+    "description": "Label for anesthetist user ID."
+  },
+  "theaterResourceTypeLabel": "Resource type",
+  "@theaterResourceTypeLabel": {
+    "description": "Label for theater resource type."
+  },
+  "theaterResourceIdLabel": "Resource ID",
+  "@theaterResourceIdLabel": {
+    "description": "Label for theater resource ID."
+  },
+  "theaterStaffRoleLabel": "Staff role",
+  "@theaterStaffRoleLabel": {
+    "description": "Label for theater staff role."
+  },
+  "theaterNotesLabel": "Notes",
+  "@theaterNotesLabel": {
+    "description": "Generic notes label for theater forms."
+  },
+  "theaterChecklistPhaseLabel": "Checklist phase",
+  "@theaterChecklistPhaseLabel": {
+    "description": "Label for theater checklist phase."
+  },
+  "theaterChecklistItemCodeLabel": "Item code",
+  "@theaterChecklistItemCodeLabel": {
+    "description": "Label for theater checklist item code."
+  },
+  "theaterChecklistItemLabel": "Item label",
+  "@theaterChecklistItemLabel": {
+    "description": "Label for theater checklist item label."
+  },
+  "theaterChecklistCheckedLabel": "Completed",
+  "@theaterChecklistCheckedLabel": {
+    "description": "Label for checklist completed checkbox."
+  },
+  "theaterRecordStatusLabel": "Record status",
+  "@theaterRecordStatusLabel": {
+    "description": "Label for clinical record status."
+  },
+  "theaterSaveRecordAction": "Save record",
+  "@theaterSaveRecordAction": {
+    "description": "Action label for saving a theater clinical record."
+  },
+  "theaterRecordTypeLabel": "Record type",
+  "@theaterRecordTypeLabel": {
+    "description": "Label for theater record type."
+  },
+  "theaterApplyFiltersAction": "Apply filters",
+  "@theaterApplyFiltersAction": {
+    "description": "Action label for applying theater filters."
+  },
+  "theaterFieldRequiredLabel": "{label} is required.",
+  "@theaterFieldRequiredLabel": {
+    "description": "Validation message for required theater form fields.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "theaterStatusScheduled": "Scheduled",
+  "@theaterStatusScheduled": {
+    "description": "Display label for scheduled theater case status."
+  },
+  "theaterStatusInTheater": "In theater",
+  "@theaterStatusInTheater": {
+    "description": "Display label for in-progress theater case status."
+  },
+  "theaterStatusCompleted": "Completed",
+  "@theaterStatusCompleted": {
+    "description": "Display label for completed theater case status."
+  },
+  "theaterStatusCancelled": "Cancelled",
+  "@theaterStatusCancelled": {
+    "description": "Display label for cancelled theater case status."
+  },
+  "theaterStagePreOp": "Pre-op",
+  "@theaterStagePreOp": {
+    "description": "Display label for pre-op theater stage."
+  },
+  "theaterStageSignIn": "Sign in",
+  "@theaterStageSignIn": {
+    "description": "Display label for sign-in theater stage."
+  },
+  "theaterStageTimeOut": "Time out",
+  "@theaterStageTimeOut": {
+    "description": "Display label for time-out theater stage."
+  },
+  "theaterStageIntraOp": "Intra-op",
+  "@theaterStageIntraOp": {
+    "description": "Display label for intra-op theater stage."
+  },
+  "theaterStageSignOut": "Sign out",
+  "@theaterStageSignOut": {
+    "description": "Display label for sign-out theater stage."
+  },
+  "theaterStagePostOp": "Post-op",
+  "@theaterStagePostOp": {
+    "description": "Display label for post-op theater stage."
+  },
+  "theaterStagePacuHandoff": "PACU handover",
+  "@theaterStagePacuHandoff": {
+    "description": "Display label for PACU handover theater stage."
+  },
+  "theaterStageCompleted": "Completed",
+  "@theaterStageCompleted": {
+    "description": "Display label for completed theater stage."
+  },
+  "theaterRecordDraft": "Draft",
+  "@theaterRecordDraft": {
+    "description": "Display label for draft clinical record status."
+  },
+  "theaterRecordFinal": "Final",
+  "@theaterRecordFinal": {
+    "description": "Display label for final clinical record status."
+  },
+  "theaterReadinessNotStarted": "Not started",
+  "@theaterReadinessNotStarted": {
+    "description": "Display label when theater readiness has no checklist items."
+  },
+  "theaterReadinessProgress": "{completed}/{total} complete",
+  "@theaterReadinessProgress": {
+    "description": "Progress label for theater readiness checklist.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "opdTitle": "OPD flow",
   "opdDescription": "Manage arrivals, queues, provider readiness, and outpatient clinical handoffs.",
   "opdLoadingTitle": "Loading OPD flow",
@@ -3490,5 +3978,583 @@
   "clinicalConsultationSummaryTitle": "Consultation summary",
   "@clinicalConsultationSummaryTitle": {
     "description": "Clinical consultation summary print title."
+  },
+  "navigationIpdLabel": "IPD",
+  "@navigationIpdLabel": {
+    "description": "Navigation label for the inpatient department workspace."
+  },
+  "ipdTitle": "Inpatient workspace",
+  "@ipdTitle": {
+    "description": "Inpatient workspace page title."
+  },
+  "ipdDescription": "Manage admission queues, beds, transfers, ward rounds, nursing handoffs, medication records, and discharge readiness.",
+  "@ipdDescription": {
+    "description": "Inpatient workspace page description."
+  },
+  "ipdLoadingTitle": "Loading inpatient workspace",
+  "@ipdLoadingTitle": {
+    "description": "Inpatient workspace loading title."
+  },
+  "ipdLoadingBody": "Loading admissions, beds, and ward context.",
+  "@ipdLoadingBody": {
+    "description": "Inpatient workspace loading body."
+  },
+  "ipdLiveStatus": "Live sync",
+  "@ipdLiveStatus": {
+    "description": "Inpatient workspace live synchronization status."
+  },
+  "ipdSavingStatus": "Saving",
+  "@ipdSavingStatus": {
+    "description": "Inpatient workspace saving status."
+  },
+  "ipdSavedMessage": "Inpatient changes saved.",
+  "@ipdSavedMessage": {
+    "description": "Inpatient workspace successful save message."
+  },
+  "ipdAdmissionQueueSummaryLabel": "Waiting bed",
+  "@ipdAdmissionQueueSummaryLabel": {
+    "description": "IPD summary label for admitted patients waiting for a bed."
+  },
+  "ipdActivePatientsSummaryLabel": "In beds",
+  "@ipdActivePatientsSummaryLabel": {
+    "description": "IPD summary label for active patients assigned to beds."
+  },
+  "ipdTransferPendingSummaryLabel": "Transfers",
+  "@ipdTransferPendingSummaryLabel": {
+    "description": "IPD summary label for pending or in-progress transfers."
+  },
+  "ipdDischargePlannedSummaryLabel": "Discharge planned",
+  "@ipdDischargePlannedSummaryLabel": {
+    "description": "IPD summary label for admissions with discharge plans."
+  },
+  "ipdCriticalAlertsSummaryLabel": "Critical alerts",
+  "@ipdCriticalAlertsSummaryLabel": {
+    "description": "IPD summary label for active critical alerts."
+  },
+  "ipdFiltersLabel": "Inpatient filters",
+  "@ipdFiltersLabel": {
+    "description": "Semantic label for inpatient workspace filters."
+  },
+  "ipdSearchLabel": "Search admissions",
+  "@ipdSearchLabel": {
+    "description": "IPD admission search field label."
+  },
+  "ipdSearchHint": "Patient, admission, encounter, ward, or bed",
+  "@ipdSearchHint": {
+    "description": "IPD admission search field hint."
+  },
+  "ipdScopeFilterLabel": "Board scope",
+  "@ipdScopeFilterLabel": {
+    "description": "IPD queue scope filter label."
+  },
+  "ipdWardFilterLabel": "Ward",
+  "@ipdWardFilterLabel": {
+    "description": "IPD ward filter label."
+  },
+  "ipdAllWardsOption": "All wards",
+  "@ipdAllWardsOption": {
+    "description": "IPD ward filter option for all wards."
+  },
+  "ipdBoardTitle": "Inpatient board",
+  "@ipdBoardTitle": {
+    "description": "IPD admissions board title."
+  },
+  "ipdBoardDescription": "Track waiting admissions, bedded patients, transfers, ward activity, and discharge plans.",
+  "@ipdBoardDescription": {
+    "description": "IPD admissions board description."
+  },
+  "ipdNoAdmissionsTitle": "No admissions",
+  "@ipdNoAdmissionsTitle": {
+    "description": "IPD admissions board empty title."
+  },
+  "ipdNoAdmissionsBody": "No inpatient admissions match the current filters.",
+  "@ipdNoAdmissionsBody": {
+    "description": "IPD admissions board empty body."
+  },
+  "ipdLocationColumnLabel": "Ward and bed",
+  "@ipdLocationColumnLabel": {
+    "description": "IPD board column label for location."
+  },
+  "ipdPendingActionColumnLabel": "Next action",
+  "@ipdPendingActionColumnLabel": {
+    "description": "IPD board column label for pending action."
+  },
+  "ipdAdmittedAtColumnLabel": "Admitted",
+  "@ipdAdmittedAtColumnLabel": {
+    "description": "IPD board column label for admission date."
+  },
+  "ipdAdmissionDetailTitle": "Admission detail",
+  "@ipdAdmissionDetailTitle": {
+    "description": "IPD admission detail panel title."
+  },
+  "ipdAdmissionDetailDescription": "Review bed status, transfers, ward rounds, medication records, nursing notes, and discharge state.",
+  "@ipdAdmissionDetailDescription": {
+    "description": "IPD admission detail panel description."
+  },
+  "ipdNoSelectionTitle": "No admission selected",
+  "@ipdNoSelectionTitle": {
+    "description": "IPD no selection title."
+  },
+  "ipdNoSelectionBody": "Open an admission from the board to manage inpatient care.",
+  "@ipdNoSelectionBody": {
+    "description": "IPD no selection body."
+  },
+  "ipdPatientContextLabel": "Patient context",
+  "@ipdPatientContextLabel": {
+    "description": "IPD patient context heading label."
+  },
+  "ipdAdmissionIdLabel": "Admission",
+  "@ipdAdmissionIdLabel": {
+    "description": "IPD admission identifier label."
+  },
+  "ipdEncounterIdLabel": "Encounter",
+  "@ipdEncounterIdLabel": {
+    "description": "IPD encounter identifier label."
+  },
+  "ipdWardBedLabel": "Ward and bed",
+  "@ipdWardBedLabel": {
+    "description": "IPD ward and bed label."
+  },
+  "ipdFacilityLabel": "Facility",
+  "@ipdFacilityLabel": {
+    "description": "IPD facility label."
+  },
+  "ipdIcuStatusLabel": "ICU status",
+  "@ipdIcuStatusLabel": {
+    "description": "IPD ICU status label."
+  },
+  "ipdAssignBedAction": "Assign bed",
+  "@ipdAssignBedAction": {
+    "description": "IPD action label to assign a bed."
+  },
+  "ipdReleaseBedAction": "Release bed",
+  "@ipdReleaseBedAction": {
+    "description": "IPD action label to release a bed."
+  },
+  "ipdRejectAdmissionAction": "Reject admission",
+  "@ipdRejectAdmissionAction": {
+    "description": "IPD action label to reject an admission."
+  },
+  "ipdRequestTransferAction": "Request transfer",
+  "@ipdRequestTransferAction": {
+    "description": "IPD action label to request a transfer."
+  },
+  "ipdManageTransferAction": "Manage transfer",
+  "@ipdManageTransferAction": {
+    "description": "IPD action label to update an open transfer."
+  },
+  "ipdAddWardRoundAction": "Add ward round",
+  "@ipdAddWardRoundAction": {
+    "description": "IPD action label to add a ward round."
+  },
+  "ipdAddNursingNoteAction": "Add nursing note",
+  "@ipdAddNursingNoteAction": {
+    "description": "IPD action label to add a nursing note."
+  },
+  "ipdRecordMedicationAction": "Record medication",
+  "@ipdRecordMedicationAction": {
+    "description": "IPD action label to record medication administration."
+  },
+  "ipdPlanDischargeAction": "Plan discharge",
+  "@ipdPlanDischargeAction": {
+    "description": "IPD action label to plan discharge."
+  },
+  "ipdFinalizeDischargeAction": "Finalize discharge",
+  "@ipdFinalizeDischargeAction": {
+    "description": "IPD action label to finalize discharge."
+  },
+  "ipdTransfersSectionTitle": "Transfers",
+  "@ipdTransfersSectionTitle": {
+    "description": "IPD transfer section title."
+  },
+  "ipdRoundsSectionTitle": "Ward rounds",
+  "@ipdRoundsSectionTitle": {
+    "description": "IPD ward rounds section title."
+  },
+  "ipdNursingSectionTitle": "Nursing notes",
+  "@ipdNursingSectionTitle": {
+    "description": "IPD nursing notes section title."
+  },
+  "ipdMedicationSectionTitle": "Medication",
+  "@ipdMedicationSectionTitle": {
+    "description": "IPD medication section title."
+  },
+  "ipdBedSectionTitle": "Bed allocation",
+  "@ipdBedSectionTitle": {
+    "description": "IPD bed allocation section title."
+  },
+  "ipdDischargeSectionTitle": "Discharge",
+  "@ipdDischargeSectionTitle": {
+    "description": "IPD discharge section title."
+  },
+  "ipdTimelineSectionTitle": "Timeline",
+  "@ipdTimelineSectionTitle": {
+    "description": "IPD timeline section title."
+  },
+  "ipdNoTransfersTitle": "No transfers",
+  "@ipdNoTransfersTitle": {
+    "description": "IPD empty transfers title."
+  },
+  "ipdNoTransfersBody": "No transfer requests are recorded for this admission.",
+  "@ipdNoTransfersBody": {
+    "description": "IPD empty transfers body."
+  },
+  "ipdNoRoundsTitle": "No ward rounds",
+  "@ipdNoRoundsTitle": {
+    "description": "IPD empty ward rounds title."
+  },
+  "ipdNoRoundsBody": "No ward rounds have been documented yet.",
+  "@ipdNoRoundsBody": {
+    "description": "IPD empty ward rounds body."
+  },
+  "ipdNoNursingNotesTitle": "No nursing notes",
+  "@ipdNoNursingNotesTitle": {
+    "description": "IPD empty nursing notes title."
+  },
+  "ipdNoNursingNotesBody": "No nursing notes have been documented yet.",
+  "@ipdNoNursingNotesBody": {
+    "description": "IPD empty nursing notes body."
+  },
+  "ipdNoMedicationTitle": "No medication records",
+  "@ipdNoMedicationTitle": {
+    "description": "IPD empty medication title."
+  },
+  "ipdNoMedicationBody": "No medication administrations are recorded for this admission.",
+  "@ipdNoMedicationBody": {
+    "description": "IPD empty medication body."
+  },
+  "ipdNoTimelineTitle": "No timeline entries",
+  "@ipdNoTimelineTitle": {
+    "description": "IPD empty timeline title."
+  },
+  "ipdNoTimelineBody": "No care activity has been recorded yet.",
+  "@ipdNoTimelineBody": {
+    "description": "IPD empty timeline body."
+  },
+  "ipdBedFieldLabel": "Bed",
+  "@ipdBedFieldLabel": {
+    "description": "IPD bed selection field label."
+  },
+  "ipdSelectBedHint": "Select a bed",
+  "@ipdSelectBedHint": {
+    "description": "IPD bed selection field hint."
+  },
+  "ipdReleaseBedConfirmationBody": "Release the current bed assignment for this admission?",
+  "@ipdReleaseBedConfirmationBody": {
+    "description": "IPD release bed confirmation body."
+  },
+  "ipdTargetWardFieldLabel": "Target ward",
+  "@ipdTargetWardFieldLabel": {
+    "description": "IPD transfer target ward field label."
+  },
+  "ipdSelectWardHint": "Select a ward",
+  "@ipdSelectWardHint": {
+    "description": "IPD ward selection field hint."
+  },
+  "ipdTransferActionFieldLabel": "Transfer action",
+  "@ipdTransferActionFieldLabel": {
+    "description": "IPD transfer action field label."
+  },
+  "ipdDestinationBedFieldLabel": "Destination bed",
+  "@ipdDestinationBedFieldLabel": {
+    "description": "IPD transfer destination bed field label."
+  },
+  "ipdNotesFieldLabel": "Notes",
+  "@ipdNotesFieldLabel": {
+    "description": "IPD notes field label."
+  },
+  "ipdSummaryFieldLabel": "Summary",
+  "@ipdSummaryFieldLabel": {
+    "description": "IPD summary field label."
+  },
+  "ipdReasonFieldLabel": "Reason",
+  "@ipdReasonFieldLabel": {
+    "description": "IPD reason field label."
+  },
+  "ipdMedicationOrderFieldLabel": "Medication order",
+  "@ipdMedicationOrderFieldLabel": {
+    "description": "IPD medication order field label."
+  },
+  "ipdMedicationOrderHint": "Select a suggested order",
+  "@ipdMedicationOrderHint": {
+    "description": "IPD medication order selection hint."
+  },
+  "ipdMedicationFieldLabel": "Medication",
+  "@ipdMedicationFieldLabel": {
+    "description": "IPD medication field label."
+  },
+  "ipdDoseFieldLabel": "Dose",
+  "@ipdDoseFieldLabel": {
+    "description": "IPD dose field label."
+  },
+  "ipdUnitFieldLabel": "Unit",
+  "@ipdUnitFieldLabel": {
+    "description": "IPD dose unit field label."
+  },
+  "ipdRouteFieldLabel": "Route",
+  "@ipdRouteFieldLabel": {
+    "description": "IPD medication route field label."
+  },
+  "ipdFrequencyFieldLabel": "Frequency",
+  "@ipdFrequencyFieldLabel": {
+    "description": "IPD medication frequency field label."
+  },
+  "ipdMedicationStatusFieldLabel": "Status",
+  "@ipdMedicationStatusFieldLabel": {
+    "description": "IPD medication administration status field label."
+  },
+  "ipdDischargedAtLabel": "Discharged",
+  "@ipdDischargedAtLabel": {
+    "description": "IPD discharged date label."
+  },
+  "ipdScopeAdmissionQueue": "Waiting bed",
+  "@ipdScopeAdmissionQueue": {
+    "description": "IPD scope label for admissions waiting for a bed."
+  },
+  "ipdScopeActivePatients": "In beds",
+  "@ipdScopeActivePatients": {
+    "description": "IPD scope label for active bedded patients."
+  },
+  "ipdScopeTransferPending": "Transfers",
+  "@ipdScopeTransferPending": {
+    "description": "IPD scope label for transfer requests."
+  },
+  "ipdScopeDischargePlanned": "Discharge planned",
+  "@ipdScopeDischargePlanned": {
+    "description": "IPD scope label for planned discharges."
+  },
+  "ipdScopeAwaitingClearance": "Awaiting clearance",
+  "@ipdScopeAwaitingClearance": {
+    "description": "IPD scope label for admissions awaiting discharge clearance."
+  },
+  "ipdScopeDischarged": "Discharged",
+  "@ipdScopeDischarged": {
+    "description": "IPD scope label for discharged admissions."
+  },
+  "ipdScopeAll": "All admissions",
+  "@ipdScopeAll": {
+    "description": "IPD scope label for all admissions."
+  },
+  "ipdStatusAdmittedPendingBed": "Waiting bed",
+  "@ipdStatusAdmittedPendingBed": {
+    "description": "IPD stage label for admitted pending bed."
+  },
+  "ipdStatusAdmittedInBed": "In bed",
+  "@ipdStatusAdmittedInBed": {
+    "description": "IPD stage label for admitted in bed."
+  },
+  "ipdStatusTransferRequested": "Transfer requested",
+  "@ipdStatusTransferRequested": {
+    "description": "IPD stage label for transfer requested."
+  },
+  "ipdStatusTransferInProgress": "Transfer in progress",
+  "@ipdStatusTransferInProgress": {
+    "description": "IPD stage label for transfer in progress."
+  },
+  "ipdStatusDischargePlanned": "Discharge planned",
+  "@ipdStatusDischargePlanned": {
+    "description": "IPD stage label for discharge planned."
+  },
+  "ipdStatusDischarged": "Discharged",
+  "@ipdStatusDischarged": {
+    "description": "IPD stage label for discharged."
+  },
+  "ipdStatusCancelled": "Cancelled",
+  "@ipdStatusCancelled": {
+    "description": "IPD stage label for cancelled admission."
+  },
+  "ipdNextAssignBed": "Assign bed",
+  "@ipdNextAssignBed": {
+    "description": "IPD next action label for assigning a bed."
+  },
+  "ipdNextRecordNursingNote": "Record nursing note",
+  "@ipdNextRecordNursingNote": {
+    "description": "IPD next action label for recording a nursing note."
+  },
+  "ipdNextApproveTransfer": "Approve transfer",
+  "@ipdNextApproveTransfer": {
+    "description": "IPD next action label for approving a transfer."
+  },
+  "ipdNextStartTransfer": "Start transfer",
+  "@ipdNextStartTransfer": {
+    "description": "IPD next action label for starting a transfer."
+  },
+  "ipdNextCompleteTransfer": "Complete transfer",
+  "@ipdNextCompleteTransfer": {
+    "description": "IPD next action label for completing a transfer."
+  },
+  "ipdNextFinalizeDischarge": "Finalize discharge",
+  "@ipdNextFinalizeDischarge": {
+    "description": "IPD next action label for finalizing discharge."
+  },
+  "ipdNextContinueCare": "Continue care",
+  "@ipdNextContinueCare": {
+    "description": "IPD default next action label."
+  },
+  "ipdBedStatusAvailable": "Available",
+  "@ipdBedStatusAvailable": {
+    "description": "IPD bed status label for available."
+  },
+  "ipdBedStatusOccupied": "Occupied",
+  "@ipdBedStatusOccupied": {
+    "description": "IPD bed status label for occupied."
+  },
+  "ipdBedStatusReserved": "Reserved",
+  "@ipdBedStatusReserved": {
+    "description": "IPD bed status label for reserved."
+  },
+  "ipdBedStatusOutOfService": "Out of service",
+  "@ipdBedStatusOutOfService": {
+    "description": "IPD bed status label for out of service."
+  },
+  "ipdDischargeStatusPlanned": "Planned",
+  "@ipdDischargeStatusPlanned": {
+    "description": "IPD discharge status label for planned."
+  },
+  "ipdDischargeStatusCompleted": "Completed",
+  "@ipdDischargeStatusCompleted": {
+    "description": "IPD discharge status label for completed."
+  },
+  "ipdIcuStatusActive": "Active",
+  "@ipdIcuStatusActive": {
+    "description": "IPD ICU status label for active."
+  },
+  "ipdIcuStatusEnded": "Ended",
+  "@ipdIcuStatusEnded": {
+    "description": "IPD ICU status label for ended."
+  },
+  "ipdIcuStatusNone": "No ICU stay",
+  "@ipdIcuStatusNone": {
+    "description": "IPD ICU status label when no ICU stay is active."
+  },
+  "ipdCriticalAlertLabel": "Critical alert",
+  "@ipdCriticalAlertLabel": {
+    "description": "IPD critical alert label."
+  },
+  "ipdCriticalSeverityLabel": "Critical: {severity}",
+  "@ipdCriticalSeverityLabel": {
+    "description": "IPD critical alert label with severity.",
+    "placeholders": {
+      "severity": {
+        "type": "String",
+        "description": "The critical alert severity label."
+      }
+    }
+  },
+  "ipdTimelineWardRound": "Ward round",
+  "@ipdTimelineWardRound": {
+    "description": "IPD timeline label for ward rounds."
+  },
+  "ipdTimelineNursingNote": "Nursing note",
+  "@ipdTimelineNursingNote": {
+    "description": "IPD timeline label for nursing notes."
+  },
+  "ipdTimelineMedication": "Medication",
+  "@ipdTimelineMedication": {
+    "description": "IPD timeline label for medication administration."
+  },
+  "ipdTimelineMedicationReminder": "Medication reminder",
+  "@ipdTimelineMedicationReminder": {
+    "description": "IPD timeline label for medication reminders."
+  },
+  "ipdTimelineTransfer": "Transfer",
+  "@ipdTimelineTransfer": {
+    "description": "IPD timeline label for transfers."
+  },
+  "ipdTimelineIcuObservation": "ICU observation",
+  "@ipdTimelineIcuObservation": {
+    "description": "IPD timeline label for ICU observations."
+  },
+  "ipdTimelineCriticalAlert": "Critical alert",
+  "@ipdTimelineCriticalAlert": {
+    "description": "IPD timeline label for critical alerts."
+  },
+  "ipdTimelineCareEvent": "Care event",
+  "@ipdTimelineCareEvent": {
+    "description": "IPD timeline fallback label for care events."
+  },
+  "ipdTransferApproveAction": "Approve",
+  "@ipdTransferApproveAction": {
+    "description": "IPD transfer update action for approval."
+  },
+  "ipdTransferStartAction": "Start transfer",
+  "@ipdTransferStartAction": {
+    "description": "IPD transfer update action to start the transfer."
+  },
+  "ipdTransferCompleteAction": "Complete transfer",
+  "@ipdTransferCompleteAction": {
+    "description": "IPD transfer update action to complete the transfer."
+  },
+  "ipdTransferCancelAction": "Cancel transfer",
+  "@ipdTransferCancelAction": {
+    "description": "IPD transfer update action to cancel the transfer."
+  },
+  "ipdRouteOral": "Oral",
+  "@ipdRouteOral": {
+    "description": "Medication route option for oral."
+  },
+  "ipdRouteIv": "IV",
+  "@ipdRouteIv": {
+    "description": "Medication route option for intravenous."
+  },
+  "ipdRouteIm": "IM",
+  "@ipdRouteIm": {
+    "description": "Medication route option for intramuscular."
+  },
+  "ipdRouteTopical": "Topical",
+  "@ipdRouteTopical": {
+    "description": "Medication route option for topical."
+  },
+  "ipdRouteInhalation": "Inhalation",
+  "@ipdRouteInhalation": {
+    "description": "Medication route option for inhalation."
+  },
+  "ipdRouteOther": "Other",
+  "@ipdRouteOther": {
+    "description": "Medication route option for other."
+  },
+  "ipdFrequencyOnce": "Once",
+  "@ipdFrequencyOnce": {
+    "description": "Medication frequency option for once."
+  },
+  "ipdFrequencyBid": "BID",
+  "@ipdFrequencyBid": {
+    "description": "Medication frequency option for twice daily."
+  },
+  "ipdFrequencyTid": "TID",
+  "@ipdFrequencyTid": {
+    "description": "Medication frequency option for three times daily."
+  },
+  "ipdFrequencyQid": "QID",
+  "@ipdFrequencyQid": {
+    "description": "Medication frequency option for four times daily."
+  },
+  "ipdFrequencyPrn": "PRN",
+  "@ipdFrequencyPrn": {
+    "description": "Medication frequency option for as needed."
+  },
+  "ipdFrequencyStat": "STAT",
+  "@ipdFrequencyStat": {
+    "description": "Medication frequency option for immediate administration."
+  },
+  "ipdFrequencyCustom": "Custom",
+  "@ipdFrequencyCustom": {
+    "description": "Medication frequency option for custom."
+  },
+  "ipdMedicationGiven": "Given",
+  "@ipdMedicationGiven": {
+    "description": "Medication administration status option for given."
+  },
+  "ipdMedicationMissed": "Missed",
+  "@ipdMedicationMissed": {
+    "description": "Medication administration status option for missed."
+  },
+  "ipdMedicationDelayed": "Delayed",
+  "@ipdMedicationDelayed": {
+    "description": "Medication administration status option for delayed."
+  },
+  "ipdMedicationRefused": "Refused",
+  "@ipdMedicationRefused": {
+    "description": "Medication administration status option for refused."
   }
 }

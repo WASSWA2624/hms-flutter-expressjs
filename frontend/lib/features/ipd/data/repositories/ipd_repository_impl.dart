@@ -109,11 +109,7 @@ final class IpdRepositoryImpl implements IpdRepository {
     String admissionId,
     Map<String, Object?> payload,
   ) {
-    return _postAction(
-      admissionId,
-      <String>['assign-bed'],
-      payload,
-    );
+    return _postAction(admissionId, <String>['assign-bed'], payload);
   }
 
   @override
@@ -169,11 +165,9 @@ final class IpdRepositoryImpl implements IpdRepository {
     String admissionId,
     Map<String, Object?> payload,
   ) {
-    return _postAction(
-      admissionId,
-      <String>['add-medication-administration'],
-      payload,
-    );
+    return _postAction(admissionId, <String>[
+      'add-medication-administration',
+    ], payload);
   }
 
   @override
@@ -209,8 +203,7 @@ final class IpdRepositoryImpl implements IpdRepository {
 
 String _queueScopeFor(IpdQueueScope scope) {
   return switch (scope) {
-    IpdQueueScope.all ||
-    IpdQueueScope.discharged => 'ALL',
+    IpdQueueScope.all || IpdQueueScope.discharged => 'ALL',
     _ => 'ACTIVE',
   };
 }

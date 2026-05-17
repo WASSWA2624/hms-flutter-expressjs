@@ -205,10 +205,7 @@ final class TheaterWorkspaceController
         final TheaterWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingDetail: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
           );
         }
         return failure;
@@ -329,7 +326,9 @@ final class TheaterWorkspaceController
 
         return Result<TheaterWorkspaceState>.success(
           TheaterWorkspaceState(
-            cases: selectedCase == null ? cases : _replaceCase(cases, selectedCase),
+            cases: selectedCase == null
+                ? cases
+                : _replaceCase(cases, selectedCase),
             query: query,
             selectedCase: selectedCase,
           ),
@@ -364,9 +363,7 @@ final class TheaterWorkspaceController
     }
 
     try {
-      final AppFailure? failure = await _refreshCases(
-        showLoading: showLoading,
-      );
+      final AppFailure? failure = await _refreshCases(showLoading: showLoading);
       if (failure != null) {
         return failure;
       }
@@ -396,9 +393,7 @@ final class TheaterWorkspaceController
     } finally {
       final TheaterWorkspaceState? latest = _currentState;
       if (showLoading && latest != null) {
-        _emit(
-          latest.copyWith(isRefreshing: false, isRefreshingDetail: false),
-        );
+        _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
     }
@@ -430,9 +425,7 @@ final class TheaterWorkspaceController
       failure: (AppFailure failure) {
         final TheaterWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(
-            latest.copyWith(isRefreshing: false, lastFailure: failure),
-          );
+          _emit(latest.copyWith(isRefreshing: false, lastFailure: failure));
         }
         return failure;
       },
@@ -449,7 +442,9 @@ final class TheaterWorkspaceController
     }
 
     _emit(current.copyWith(isMutating: true, clearLastFailure: true));
-    final Result<TheaterCase> result = await submit(selected.effectiveDisplayId);
+    final Result<TheaterCase> result = await submit(
+      selected.effectiveDisplayId,
+    );
     return result.when(
       success: (TheaterCase detail) async {
         final TheaterWorkspaceState? latest = _currentState;
@@ -495,13 +490,15 @@ final class TheaterWorkspaceController
     TheaterCase replacement,
   ) {
     var replaced = false;
-    final List<TheaterCase> items = page.items.map((TheaterCase item) {
-      if (_isSameCase(item, replacement)) {
-        replaced = true;
-        return replacement;
-      }
-      return item;
-    }).toList(growable: true);
+    final List<TheaterCase> items = page.items
+        .map((TheaterCase item) {
+          if (_isSameCase(item, replacement)) {
+            replaced = true;
+            return replacement;
+          }
+          return item;
+        })
+        .toList(growable: true);
 
     if (!replaced) {
       items.insert(0, replacement);

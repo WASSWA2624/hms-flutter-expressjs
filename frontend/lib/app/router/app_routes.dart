@@ -95,6 +95,24 @@ abstract final class AppRoutes {
     ],
     requiredActiveModules: <String>['opd-flow'],
   );
+  static const AppRouteData ipd = AppRouteData(
+    name: 'ipd',
+    path: '/ipd',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[AppPermissions.clinicalRead],
+    requiredActiveModules: <String>['ipd-flow'],
+  );
+  static const AppRouteData icu = AppRouteData(
+    name: 'icu',
+    path: '/icu',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.emergencyRead,
+      AppPermissions.operationsRead,
+    ],
+    requiredActiveModules: <String>['inpatient-bed-management'],
+  );
   static const AppRouteData clinical = AppRouteData(
     name: 'clinical',
     path: '/clinical',
@@ -104,6 +122,18 @@ abstract final class AppRoutes {
       AppPermissions.clinicalWrite,
     ],
     requiredActiveModules: <String>['encounters-vitals'],
+  );
+  static const AppRouteData theater = AppRouteData(
+    name: 'theater',
+    path: '/theater',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.patientRead,
+      AppPermissions.clinicalRead,
+      AppPermissions.billingRead,
+      AppPermissions.operationsRead,
+    ],
+    requiredActiveModules: <String>['theatre-anesthesia'],
   );
   static const AppRouteData tenantFacilitySetup = AppRouteData(
     name: 'tenantFacilitySetup',
@@ -157,7 +187,10 @@ abstract final class AppRoutes {
     home,
     patients,
     opd,
+    ipd,
+    icu,
     clinical,
+    theater,
     settings,
     tenantFacilitySetup,
     profile,
@@ -173,7 +206,10 @@ abstract final class AppRoutes {
     home,
     patients,
     opd,
+    ipd,
+    icu,
     clinical,
+    theater,
     settings,
     tenantFacilitySetup,
     profile,

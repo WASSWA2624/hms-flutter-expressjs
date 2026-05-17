@@ -129,6 +129,368 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationOpdLabel => 'OPD';
 
   @override
+  String get navigationTheaterLabel => 'Theater';
+
+  @override
+  String get theaterTitle => 'Theater';
+
+  @override
+  String get theaterDescription =>
+      'Manage daily cases, readiness, room and team allocation, anesthesia, post-op notes, and handover.';
+
+  @override
+  String get theaterLoadingTitle => 'Loading theater';
+
+  @override
+  String get theaterLoadingBody =>
+      'Loading theater cases and clinical records.';
+
+  @override
+  String get theaterLiveStatus => 'Live sync';
+
+  @override
+  String get theaterSavingStatus => 'Saving';
+
+  @override
+  String get theaterSavedMessage => 'Theater changes saved.';
+
+  @override
+  String get theaterScheduleCaseAction => 'Schedule case';
+
+  @override
+  String get theaterScheduledSummaryLabel => 'Scheduled';
+
+  @override
+  String get theaterInTheaterSummaryLabel => 'In theater';
+
+  @override
+  String get theaterReadySummaryLabel => 'Ready';
+
+  @override
+  String get theaterCompletedSummaryLabel => 'Completed';
+
+  @override
+  String get theaterFiltersLabel => 'Theater filters';
+
+  @override
+  String get theaterSearchLabel => 'Search theater';
+
+  @override
+  String get theaterSearchHint =>
+      'Search patient, case, encounter, notes, or record text';
+
+  @override
+  String get theaterScheduleDateFilterLabel => 'Schedule date';
+
+  @override
+  String get theaterPickScheduleDateAction => 'Pick schedule date';
+
+  @override
+  String get theaterStatusFilterLabel => 'Status';
+
+  @override
+  String get theaterStageFilterLabel => 'Stage';
+
+  @override
+  String get theaterResourceFiltersAction => 'Resource filters';
+
+  @override
+  String get theaterClearFiltersAction => 'Clear filters';
+
+  @override
+  String get theaterCasesTitle => 'Daily cases';
+
+  @override
+  String get theaterCasesDescription =>
+      'Select a case to review readiness, records, resources, and handover.';
+
+  @override
+  String get theaterNoCasesTitle => 'No theater cases';
+
+  @override
+  String get theaterNoCasesBody =>
+      'Scheduled and active theater cases will appear here.';
+
+  @override
+  String get theaterNoCaseSelectedTitle => 'No case selected';
+
+  @override
+  String get theaterNoCaseSelectedBody =>
+      'Select a theater case to review readiness, records, and handover.';
+
+  @override
+  String get theaterPatientColumnLabel => 'Patient';
+
+  @override
+  String get theaterTimeColumnLabel => 'Time';
+
+  @override
+  String get theaterRoomColumnLabel => 'Room';
+
+  @override
+  String get theaterStatusColumnLabel => 'Status';
+
+  @override
+  String get theaterReadinessColumnLabel => 'Readiness';
+
+  @override
+  String get theaterNextActionColumnLabel => 'Next action';
+
+  @override
+  String theaterPageLabel(int from, int to, int total) {
+    return '$from-$to of $total';
+  }
+
+  @override
+  String get theaterCaseDetailTitle => 'Case detail';
+
+  @override
+  String get theaterRescheduleAction => 'Reschedule';
+
+  @override
+  String get theaterUpdateStageAction => 'Update stage';
+
+  @override
+  String get theaterEncounterLabel => 'Encounter';
+
+  @override
+  String get theaterScheduledAtLabel => 'Scheduled at';
+
+  @override
+  String get theaterRoomLabel => 'Room';
+
+  @override
+  String get theaterReadinessLabel => 'Readiness';
+
+  @override
+  String get theaterTeamTitle => 'Team and flow';
+
+  @override
+  String get theaterSurgeonLabel => 'Surgeon';
+
+  @override
+  String get theaterAnesthetistLabel => 'Anesthetist';
+
+  @override
+  String get theaterStageLabel => 'Stage';
+
+  @override
+  String get theaterStatusLabel => 'Status';
+
+  @override
+  String get theaterStageNotesLabel => 'Stage notes';
+
+  @override
+  String get theaterAssignResourceAction => 'Assign resource';
+
+  @override
+  String get theaterUpdateReadinessAction => 'Update readiness';
+
+  @override
+  String get theaterAnesthesiaAction => 'Anesthesia';
+
+  @override
+  String get theaterPostOpAction => 'Post-op';
+
+  @override
+  String get theaterHandoverAction => 'Handover';
+
+  @override
+  String get theaterFinalizeAction => 'Finalize';
+
+  @override
+  String get theaterCancelCaseAction => 'Cancel case';
+
+  @override
+  String get theaterStartCaseAction => 'Start case';
+
+  @override
+  String get theaterChecklistTitle => 'Readiness checklist';
+
+  @override
+  String get theaterNoChecklistItemsLabel => 'No checklist items recorded';
+
+  @override
+  String get theaterRecordsTitle => 'Clinical records';
+
+  @override
+  String get theaterAnesthesiaStatusLabel => 'Anesthesia status';
+
+  @override
+  String get theaterPostOpStatusLabel => 'Post-op status';
+
+  @override
+  String get theaterAnesthesiaNotesLabel => 'Anesthesia notes';
+
+  @override
+  String get theaterPostOpNoteLabel => 'Post-op note';
+
+  @override
+  String get theaterNoObservationsLabel =>
+      'No anesthesia observations recorded';
+
+  @override
+  String get theaterResourcesTitle => 'Resources';
+
+  @override
+  String get theaterNoResourcesLabel => 'No resources assigned';
+
+  @override
+  String get theaterTimelineTitle => 'Timeline';
+
+  @override
+  String get theaterNoTimelineLabel => 'No timeline entries';
+
+  @override
+  String get theaterScheduleCaseDialogTitle => 'Schedule theater case';
+
+  @override
+  String get theaterRescheduleDialogTitle => 'Reschedule theater case';
+
+  @override
+  String get theaterUpdateStageDialogTitle => 'Update theater stage';
+
+  @override
+  String get theaterHandoverDialogTitle => 'Complete handover';
+
+  @override
+  String get theaterHandoverNotesLabel => 'Handover notes';
+
+  @override
+  String get theaterCancelCaseDialogTitle => 'Cancel theater case';
+
+  @override
+  String get theaterCancellationReasonLabel => 'Cancellation reason';
+
+  @override
+  String get theaterAssignResourceDialogTitle => 'Assign theater resource';
+
+  @override
+  String get theaterReadinessDialogTitle => 'Update readiness';
+
+  @override
+  String get theaterAnesthesiaDialogTitle => 'Anesthesia record';
+
+  @override
+  String get theaterPostOpDialogTitle => 'Post-op note';
+
+  @override
+  String get theaterFinalizeDialogTitle => 'Finalize records';
+
+  @override
+  String get theaterResourceFiltersDialogTitle => 'Resource filters';
+
+  @override
+  String get theaterEncounterIdLabel => 'Encounter ID';
+
+  @override
+  String get theaterEncounterIdHint =>
+      'Encounter UUID or case source identifier';
+
+  @override
+  String get theaterDateTimeHint => 'YYYY-MM-DDTHH:MM:SS';
+
+  @override
+  String get theaterRoomIdLabel => 'Room ID';
+
+  @override
+  String get theaterSurgeonIdLabel => 'Surgeon user ID';
+
+  @override
+  String get theaterAnesthetistIdLabel => 'Anesthetist user ID';
+
+  @override
+  String get theaterResourceTypeLabel => 'Resource type';
+
+  @override
+  String get theaterResourceIdLabel => 'Resource ID';
+
+  @override
+  String get theaterStaffRoleLabel => 'Staff role';
+
+  @override
+  String get theaterNotesLabel => 'Notes';
+
+  @override
+  String get theaterChecklistPhaseLabel => 'Checklist phase';
+
+  @override
+  String get theaterChecklistItemCodeLabel => 'Item code';
+
+  @override
+  String get theaterChecklistItemLabel => 'Item label';
+
+  @override
+  String get theaterChecklistCheckedLabel => 'Completed';
+
+  @override
+  String get theaterRecordStatusLabel => 'Record status';
+
+  @override
+  String get theaterSaveRecordAction => 'Save record';
+
+  @override
+  String get theaterRecordTypeLabel => 'Record type';
+
+  @override
+  String get theaterApplyFiltersAction => 'Apply filters';
+
+  @override
+  String theaterFieldRequiredLabel(String label) {
+    return '$label is required.';
+  }
+
+  @override
+  String get theaterStatusScheduled => 'Scheduled';
+
+  @override
+  String get theaterStatusInTheater => 'In theater';
+
+  @override
+  String get theaterStatusCompleted => 'Completed';
+
+  @override
+  String get theaterStatusCancelled => 'Cancelled';
+
+  @override
+  String get theaterStagePreOp => 'Pre-op';
+
+  @override
+  String get theaterStageSignIn => 'Sign in';
+
+  @override
+  String get theaterStageTimeOut => 'Time out';
+
+  @override
+  String get theaterStageIntraOp => 'Intra-op';
+
+  @override
+  String get theaterStageSignOut => 'Sign out';
+
+  @override
+  String get theaterStagePostOp => 'Post-op';
+
+  @override
+  String get theaterStagePacuHandoff => 'PACU handover';
+
+  @override
+  String get theaterStageCompleted => 'Completed';
+
+  @override
+  String get theaterRecordDraft => 'Draft';
+
+  @override
+  String get theaterRecordFinal => 'Final';
+
+  @override
+  String get theaterReadinessNotStarted => 'Not started';
+
+  @override
+  String theaterReadinessProgress(int completed, int total) {
+    return '$completed/$total complete';
+  }
+
+  @override
   String get opdTitle => 'OPD flow';
 
   @override
@@ -2728,4 +3090,444 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalConsultationSummaryTitle => 'Consultation summary';
+
+  @override
+  String get navigationIpdLabel => 'IPD';
+
+  @override
+  String get ipdTitle => 'Inpatient workspace';
+
+  @override
+  String get ipdDescription =>
+      'Manage admission queues, beds, transfers, ward rounds, nursing handoffs, medication records, and discharge readiness.';
+
+  @override
+  String get ipdLoadingTitle => 'Loading inpatient workspace';
+
+  @override
+  String get ipdLoadingBody => 'Loading admissions, beds, and ward context.';
+
+  @override
+  String get ipdLiveStatus => 'Live sync';
+
+  @override
+  String get ipdSavingStatus => 'Saving';
+
+  @override
+  String get ipdSavedMessage => 'Inpatient changes saved.';
+
+  @override
+  String get ipdAdmissionQueueSummaryLabel => 'Waiting bed';
+
+  @override
+  String get ipdActivePatientsSummaryLabel => 'In beds';
+
+  @override
+  String get ipdTransferPendingSummaryLabel => 'Transfers';
+
+  @override
+  String get ipdDischargePlannedSummaryLabel => 'Discharge planned';
+
+  @override
+  String get ipdCriticalAlertsSummaryLabel => 'Critical alerts';
+
+  @override
+  String get ipdFiltersLabel => 'Inpatient filters';
+
+  @override
+  String get ipdSearchLabel => 'Search admissions';
+
+  @override
+  String get ipdSearchHint => 'Patient, admission, encounter, ward, or bed';
+
+  @override
+  String get ipdScopeFilterLabel => 'Board scope';
+
+  @override
+  String get ipdWardFilterLabel => 'Ward';
+
+  @override
+  String get ipdAllWardsOption => 'All wards';
+
+  @override
+  String get ipdBoardTitle => 'Inpatient board';
+
+  @override
+  String get ipdBoardDescription =>
+      'Track waiting admissions, bedded patients, transfers, ward activity, and discharge plans.';
+
+  @override
+  String get ipdNoAdmissionsTitle => 'No admissions';
+
+  @override
+  String get ipdNoAdmissionsBody =>
+      'No inpatient admissions match the current filters.';
+
+  @override
+  String get ipdLocationColumnLabel => 'Ward and bed';
+
+  @override
+  String get ipdPendingActionColumnLabel => 'Next action';
+
+  @override
+  String get ipdAdmittedAtColumnLabel => 'Admitted';
+
+  @override
+  String get ipdAdmissionDetailTitle => 'Admission detail';
+
+  @override
+  String get ipdAdmissionDetailDescription =>
+      'Review bed status, transfers, ward rounds, medication records, nursing notes, and discharge state.';
+
+  @override
+  String get ipdNoSelectionTitle => 'No admission selected';
+
+  @override
+  String get ipdNoSelectionBody =>
+      'Open an admission from the board to manage inpatient care.';
+
+  @override
+  String get ipdPatientContextLabel => 'Patient context';
+
+  @override
+  String get ipdAdmissionIdLabel => 'Admission';
+
+  @override
+  String get ipdEncounterIdLabel => 'Encounter';
+
+  @override
+  String get ipdWardBedLabel => 'Ward and bed';
+
+  @override
+  String get ipdFacilityLabel => 'Facility';
+
+  @override
+  String get ipdIcuStatusLabel => 'ICU status';
+
+  @override
+  String get ipdAssignBedAction => 'Assign bed';
+
+  @override
+  String get ipdReleaseBedAction => 'Release bed';
+
+  @override
+  String get ipdRejectAdmissionAction => 'Reject admission';
+
+  @override
+  String get ipdRequestTransferAction => 'Request transfer';
+
+  @override
+  String get ipdManageTransferAction => 'Manage transfer';
+
+  @override
+  String get ipdAddWardRoundAction => 'Add ward round';
+
+  @override
+  String get ipdAddNursingNoteAction => 'Add nursing note';
+
+  @override
+  String get ipdRecordMedicationAction => 'Record medication';
+
+  @override
+  String get ipdPlanDischargeAction => 'Plan discharge';
+
+  @override
+  String get ipdFinalizeDischargeAction => 'Finalize discharge';
+
+  @override
+  String get ipdTransfersSectionTitle => 'Transfers';
+
+  @override
+  String get ipdRoundsSectionTitle => 'Ward rounds';
+
+  @override
+  String get ipdNursingSectionTitle => 'Nursing notes';
+
+  @override
+  String get ipdMedicationSectionTitle => 'Medication';
+
+  @override
+  String get ipdBedSectionTitle => 'Bed allocation';
+
+  @override
+  String get ipdDischargeSectionTitle => 'Discharge';
+
+  @override
+  String get ipdTimelineSectionTitle => 'Timeline';
+
+  @override
+  String get ipdNoTransfersTitle => 'No transfers';
+
+  @override
+  String get ipdNoTransfersBody =>
+      'No transfer requests are recorded for this admission.';
+
+  @override
+  String get ipdNoRoundsTitle => 'No ward rounds';
+
+  @override
+  String get ipdNoRoundsBody => 'No ward rounds have been documented yet.';
+
+  @override
+  String get ipdNoNursingNotesTitle => 'No nursing notes';
+
+  @override
+  String get ipdNoNursingNotesBody =>
+      'No nursing notes have been documented yet.';
+
+  @override
+  String get ipdNoMedicationTitle => 'No medication records';
+
+  @override
+  String get ipdNoMedicationBody =>
+      'No medication administrations are recorded for this admission.';
+
+  @override
+  String get ipdNoTimelineTitle => 'No timeline entries';
+
+  @override
+  String get ipdNoTimelineBody => 'No care activity has been recorded yet.';
+
+  @override
+  String get ipdBedFieldLabel => 'Bed';
+
+  @override
+  String get ipdSelectBedHint => 'Select a bed';
+
+  @override
+  String get ipdReleaseBedConfirmationBody =>
+      'Release the current bed assignment for this admission?';
+
+  @override
+  String get ipdTargetWardFieldLabel => 'Target ward';
+
+  @override
+  String get ipdSelectWardHint => 'Select a ward';
+
+  @override
+  String get ipdTransferActionFieldLabel => 'Transfer action';
+
+  @override
+  String get ipdDestinationBedFieldLabel => 'Destination bed';
+
+  @override
+  String get ipdNotesFieldLabel => 'Notes';
+
+  @override
+  String get ipdSummaryFieldLabel => 'Summary';
+
+  @override
+  String get ipdReasonFieldLabel => 'Reason';
+
+  @override
+  String get ipdMedicationOrderFieldLabel => 'Medication order';
+
+  @override
+  String get ipdMedicationOrderHint => 'Select a suggested order';
+
+  @override
+  String get ipdMedicationFieldLabel => 'Medication';
+
+  @override
+  String get ipdDoseFieldLabel => 'Dose';
+
+  @override
+  String get ipdUnitFieldLabel => 'Unit';
+
+  @override
+  String get ipdRouteFieldLabel => 'Route';
+
+  @override
+  String get ipdFrequencyFieldLabel => 'Frequency';
+
+  @override
+  String get ipdMedicationStatusFieldLabel => 'Status';
+
+  @override
+  String get ipdDischargedAtLabel => 'Discharged';
+
+  @override
+  String get ipdScopeAdmissionQueue => 'Waiting bed';
+
+  @override
+  String get ipdScopeActivePatients => 'In beds';
+
+  @override
+  String get ipdScopeTransferPending => 'Transfers';
+
+  @override
+  String get ipdScopeDischargePlanned => 'Discharge planned';
+
+  @override
+  String get ipdScopeAwaitingClearance => 'Awaiting clearance';
+
+  @override
+  String get ipdScopeDischarged => 'Discharged';
+
+  @override
+  String get ipdScopeAll => 'All admissions';
+
+  @override
+  String get ipdStatusAdmittedPendingBed => 'Waiting bed';
+
+  @override
+  String get ipdStatusAdmittedInBed => 'In bed';
+
+  @override
+  String get ipdStatusTransferRequested => 'Transfer requested';
+
+  @override
+  String get ipdStatusTransferInProgress => 'Transfer in progress';
+
+  @override
+  String get ipdStatusDischargePlanned => 'Discharge planned';
+
+  @override
+  String get ipdStatusDischarged => 'Discharged';
+
+  @override
+  String get ipdStatusCancelled => 'Cancelled';
+
+  @override
+  String get ipdNextAssignBed => 'Assign bed';
+
+  @override
+  String get ipdNextRecordNursingNote => 'Record nursing note';
+
+  @override
+  String get ipdNextApproveTransfer => 'Approve transfer';
+
+  @override
+  String get ipdNextStartTransfer => 'Start transfer';
+
+  @override
+  String get ipdNextCompleteTransfer => 'Complete transfer';
+
+  @override
+  String get ipdNextFinalizeDischarge => 'Finalize discharge';
+
+  @override
+  String get ipdNextContinueCare => 'Continue care';
+
+  @override
+  String get ipdBedStatusAvailable => 'Available';
+
+  @override
+  String get ipdBedStatusOccupied => 'Occupied';
+
+  @override
+  String get ipdBedStatusReserved => 'Reserved';
+
+  @override
+  String get ipdBedStatusOutOfService => 'Out of service';
+
+  @override
+  String get ipdDischargeStatusPlanned => 'Planned';
+
+  @override
+  String get ipdDischargeStatusCompleted => 'Completed';
+
+  @override
+  String get ipdIcuStatusActive => 'Active';
+
+  @override
+  String get ipdIcuStatusEnded => 'Ended';
+
+  @override
+  String get ipdIcuStatusNone => 'No ICU stay';
+
+  @override
+  String get ipdCriticalAlertLabel => 'Critical alert';
+
+  @override
+  String ipdCriticalSeverityLabel(String severity) {
+    return 'Critical: $severity';
+  }
+
+  @override
+  String get ipdTimelineWardRound => 'Ward round';
+
+  @override
+  String get ipdTimelineNursingNote => 'Nursing note';
+
+  @override
+  String get ipdTimelineMedication => 'Medication';
+
+  @override
+  String get ipdTimelineMedicationReminder => 'Medication reminder';
+
+  @override
+  String get ipdTimelineTransfer => 'Transfer';
+
+  @override
+  String get ipdTimelineIcuObservation => 'ICU observation';
+
+  @override
+  String get ipdTimelineCriticalAlert => 'Critical alert';
+
+  @override
+  String get ipdTimelineCareEvent => 'Care event';
+
+  @override
+  String get ipdTransferApproveAction => 'Approve';
+
+  @override
+  String get ipdTransferStartAction => 'Start transfer';
+
+  @override
+  String get ipdTransferCompleteAction => 'Complete transfer';
+
+  @override
+  String get ipdTransferCancelAction => 'Cancel transfer';
+
+  @override
+  String get ipdRouteOral => 'Oral';
+
+  @override
+  String get ipdRouteIv => 'IV';
+
+  @override
+  String get ipdRouteIm => 'IM';
+
+  @override
+  String get ipdRouteTopical => 'Topical';
+
+  @override
+  String get ipdRouteInhalation => 'Inhalation';
+
+  @override
+  String get ipdRouteOther => 'Other';
+
+  @override
+  String get ipdFrequencyOnce => 'Once';
+
+  @override
+  String get ipdFrequencyBid => 'BID';
+
+  @override
+  String get ipdFrequencyTid => 'TID';
+
+  @override
+  String get ipdFrequencyQid => 'QID';
+
+  @override
+  String get ipdFrequencyPrn => 'PRN';
+
+  @override
+  String get ipdFrequencyStat => 'STAT';
+
+  @override
+  String get ipdFrequencyCustom => 'Custom';
+
+  @override
+  String get ipdMedicationGiven => 'Given';
+
+  @override
+  String get ipdMedicationMissed => 'Missed';
+
+  @override
+  String get ipdMedicationDelayed => 'Delayed';
+
+  @override
+  String get ipdMedicationRefused => 'Refused';
 }

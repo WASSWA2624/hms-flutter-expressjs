@@ -20,9 +20,7 @@ final class IcuRepositoryImpl implements IcuRepository {
   final ApiClient _apiClient;
 
   @override
-  Future<Result<AppPage<IcuPatientSummary>>> listIcuBoard(
-    IcuBoardQuery query,
-  ) {
+  Future<Result<AppPage<IcuPatientSummary>>> listIcuBoard(IcuBoardQuery query) {
     final AppPageRequest request = query.pageRequest;
     return _apiClient.get<AppPage<IcuPatientSummary>>(
       ApiEndpoints.collection(HmsApiResource.ipdFlows),
@@ -46,7 +44,8 @@ final class IcuRepositoryImpl implements IcuRepository {
         'sort_by': 'admitted_at',
         'order': 'desc',
       }),
-      decoder: (Object? data) => IcuBoardPageDto.fromResponse(data, request).page,
+      decoder: (Object? data) =>
+          IcuBoardPageDto.fromResponse(data, request).page,
     );
   }
 
@@ -57,8 +56,8 @@ final class IcuRepositoryImpl implements IcuRepository {
 
   @override
   Future<Result<IcuReferenceData>> loadReferenceData() async {
-    final Result<List<IcuWardOption>> wardsResult =
-        await _apiClient.get<List<IcuWardOption>>(
+    final Result<List<IcuWardOption>> wardsResult = await _apiClient
+        .get<List<IcuWardOption>>(
           ApiEndpoints.collection(HmsApiResource.wards),
           queryParameters: const <String, Object?>{
             'page': 1,
@@ -239,8 +238,8 @@ final class IcuRepositoryImpl implements IcuRepository {
   Future<Result<IcuPatientDetail>> _loadIcuDetailByAdmissionId(
     String admissionId,
   ) async {
-    final Result<IcuPatientDetail> detailResult =
-        await _apiClient.get<IcuPatientDetail>(
+    final Result<IcuPatientDetail> detailResult = await _apiClient
+        .get<IcuPatientDetail>(
           ApiEndpoints.byId(
             HmsApiResource.ipdFlows,
             admissionId,
@@ -262,8 +261,8 @@ final class IcuRepositoryImpl implements IcuRepository {
     List<String> pathSegments,
     Map<String, Object?> payload,
   ) async {
-    final Result<IcuPatientDetail> result =
-        await _apiClient.post<IcuPatientDetail>(
+    final Result<IcuPatientDetail> result = await _apiClient
+        .post<IcuPatientDetail>(
           ApiEndpoints.nested(
             HmsApiResource.ipdFlows,
             summary.apiAdmissionId,
@@ -287,8 +286,8 @@ final class IcuRepositoryImpl implements IcuRepository {
       return Result<IcuPatientDetail>.success(detail);
     }
 
-    final Result<List<IcuVitalSign>> vitalsResult =
-        await _apiClient.get<List<IcuVitalSign>>(
+    final Result<List<IcuVitalSign>> vitalsResult = await _apiClient
+        .get<List<IcuVitalSign>>(
           ApiEndpoints.collection(HmsApiResource.vitalSigns),
           queryParameters: <String, Object?>{
             'encounter_id': encounterId,

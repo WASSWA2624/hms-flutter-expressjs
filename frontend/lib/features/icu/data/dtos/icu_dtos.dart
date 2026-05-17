@@ -155,7 +155,8 @@ final class IcuPatientSummaryDto {
       wardName:
           _string(json['ward_display_name']) ?? _string(activeWard['name']),
       bedLabel:
-          _string(json['bed_display_label']) ?? _string(activeBedValue['label']),
+          _string(json['bed_display_label']) ??
+          _string(activeBedValue['label']),
       stage:
           _string(json['stage']) ??
           _string(flow['stage']) ??
@@ -174,7 +175,8 @@ final class IcuPatientSummaryDto {
           _string(flowSummary['admission_status']),
       dischargeStatus:
           _string(json['discharge_status']) ?? _string(discharge['status']),
-      icuStatus: _string(json['icu_status']) ?? _string(_map(json['icu'])['status']),
+      icuStatus:
+          _string(json['icu_status']) ?? _string(_map(json['icu'])['status']),
       activeIcuStayId: _string(json['active_icu_stay_id']),
       latestIcuStayId: _string(json['latest_icu_stay_id']),
       criticalSeverity: _string(json['critical_severity']),

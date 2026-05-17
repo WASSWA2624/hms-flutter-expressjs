@@ -136,10 +136,7 @@ final class IpdWorkspaceController
         final IpdWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingDetail: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
           );
         }
         return failure;
@@ -154,10 +151,7 @@ final class IpdWorkspaceController
     }
   }
 
-  Future<AppFailure?> assignBed(
-    IpdAdmissionSummary admission,
-    String bedId,
-  ) {
+  Future<AppFailure?> assignBed(IpdAdmissionSummary admission, String bedId) {
     return _mutateAdmission(
       admission,
       () => _repository.assignBed(admission.apiId, <String, Object?>{
@@ -358,9 +352,7 @@ final class IpdWorkspaceController
     } finally {
       final IpdWorkspaceState? latest = _currentState;
       if (showLoading && latest != null) {
-        _emit(
-          latest.copyWith(isRefreshing: false, isRefreshingDetail: false),
-        );
+        _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
     }

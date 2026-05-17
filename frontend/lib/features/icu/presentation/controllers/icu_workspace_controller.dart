@@ -116,10 +116,7 @@ final class IcuWorkspaceController
         final IcuWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingDetail: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
           );
         }
         return failure;
@@ -172,10 +169,7 @@ final class IcuWorkspaceController
     );
   }
 
-  Future<AppFailure?> addRoundNote({
-    required String notes,
-    DateTime? roundAt,
-  }) {
+  Future<AppFailure?> addRoundNote({required String notes, DateTime? roundAt}) {
     return _mutateSelected(
       (IcuPatientDetail detail) => _repository.addRoundNote(
         detail: detail,
@@ -287,10 +281,7 @@ final class IcuWorkspaceController
       final IcuWorkspaceState? latest = _currentState;
       if (showLoading && latest != null) {
         _emit(
-          latest.copyWith(
-            isRefreshingBoard: false,
-            isRefreshingDetail: false,
-          ),
+          latest.copyWith(isRefreshingBoard: false, isRefreshingDetail: false),
         );
       }
       _isSyncing = false;
@@ -317,7 +308,8 @@ final class IcuWorkspaceController
                 latest.selectedDetail,
               ),
               isRefreshingBoard: false,
-              clearSelectedDetail: latest.selectedDetail != null &&
+              clearSelectedDetail:
+                  latest.selectedDetail != null &&
                   _selectedAfterBoardRefresh(page, latest.selectedDetail) ==
                       null,
               clearLastFailure: true,
@@ -330,10 +322,7 @@ final class IcuWorkspaceController
         final IcuWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingBoard: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingBoard: false, lastFailure: failure),
           );
         }
         return failure;
@@ -342,7 +331,8 @@ final class IcuWorkspaceController
   }
 
   Future<IcuReferenceData> _referenceData() async {
-    final Result<IcuReferenceData> result = await _repository.loadReferenceData();
+    final Result<IcuReferenceData> result = await _repository
+        .loadReferenceData();
     return result.when(
       success: (IcuReferenceData data) => data,
       failure: (_) => const IcuReferenceData(),

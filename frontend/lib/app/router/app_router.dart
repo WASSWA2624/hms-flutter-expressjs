@@ -19,6 +19,12 @@ import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.d
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
+import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
+import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
+import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
+import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
+import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
@@ -26,6 +32,9 @@ import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry
 import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
+import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
+import 'package:hosspi_hms/features/theater/presentation/pages/theater_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -79,9 +88,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const OpdWorkspacePage(),
           ),
           GoRoute(
+            path: AppRoutes.ipd.path,
+            name: AppRoutes.ipd.name,
+            builder: (_, _) => const IpdWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.icu.path,
+            name: AppRoutes.icu.name,
+            builder: (_, _) => const IcuWorkspacePage(),
+          ),
+          GoRoute(
             path: AppRoutes.clinical.path,
             name: AppRoutes.clinical.name,
             builder: (_, _) => const ClinicalWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.theater.path,
+            name: AppRoutes.theater.name,
+            builder: (_, _) => const TheaterWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.settings.path,
@@ -158,7 +182,10 @@ final class _ShellDestinationRoute {
 List<_ShellDestinationRoute> _localizedShellDestinations(
   AppLocalizations l10n, {
   int? opdWorkloadCount,
+  int? ipdWorkloadCount,
+  int? icuCriticalCount,
   int? clinicalWorkloadCount,
+  int? theaterWorkloadCount,
 }) {
   return <_ShellDestinationRoute>[
     _ShellDestinationRoute(
@@ -187,12 +214,39 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.ipd,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationIpdLabel,
+        icon: Icons.bed_outlined,
+        selectedIcon: Icons.bed,
+        badgeCount: ipdWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.icu,
+      destination: ResponsiveShellDestination(
+        label: 'ICU',
+        icon: Icons.monitor_heart_outlined,
+        selectedIcon: Icons.monitor_heart,
+        badgeCount: icuCriticalCount,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.clinical,
       destination: ResponsiveShellDestination(
         label: l10n.navigationClinicalLabel,
         icon: Icons.medical_information_outlined,
         selectedIcon: Icons.medical_information,
         badgeCount: clinicalWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.theater,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationTheaterLabel,
+        icon: Icons.event_seat_outlined,
+        selectedIcon: Icons.event_seat,
+        badgeCount: theaterWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -225,8 +279,14 @@ class _AppShell extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canAccessOpd = _canAccessShellRoute(AppRoutes.opd, accessPolicy);
+    final bool canAccessIpd = _canAccessShellRoute(AppRoutes.ipd, accessPolicy);
+    final bool canAccessIcu = _canAccessShellRoute(AppRoutes.icu, accessPolicy);
     final bool canAccessClinical = _canAccessShellRoute(
       AppRoutes.clinical,
+      accessPolicy,
+    );
+    final bool canAccessTheater = _canAccessShellRoute(
+      AppRoutes.theater,
       accessPolicy,
     );
     final int? opdWorkloadCount = canAccessOpd
@@ -236,6 +296,30 @@ class _AppShell extends ConsumerWidget {
               ?.value
               .when(
                 success: (OpdWorkspaceState state) => state.workloadCount,
+                failure: (_) => null,
+              )
+        : null;
+    final int? ipdWorkloadCount = canAccessIpd
+        ? ref
+              .watch(ipdWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (IpdWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? icuCriticalCount = canAccessIcu
+        ? ref
+              .watch(icuWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (IcuWorkspaceState state) {
+                  return state.criticalCount > 0 ? state.criticalCount : null;
+                },
                 failure: (_) => null,
               )
         : null;
@@ -255,11 +339,26 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
+    final int? theaterWorkloadCount = canAccessTheater
+        ? ref
+              .watch(theaterWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (TheaterWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
     final List<_ShellDestinationRoute> shellDestinations =
         _localizedShellDestinations(
               l10n,
               opdWorkloadCount: opdWorkloadCount,
+              ipdWorkloadCount: ipdWorkloadCount,
+              icuCriticalCount: icuCriticalCount,
               clinicalWorkloadCount: clinicalWorkloadCount,
+              theaterWorkloadCount: theaterWorkloadCount,
             )
             .where((_ShellDestinationRoute destination) {
               return _canAccessShellRoute(destination.route, accessPolicy);

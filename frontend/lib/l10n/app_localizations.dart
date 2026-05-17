@@ -316,6 +316,702 @@ abstract class AppLocalizations {
   /// **'OPD'**
   String get navigationOpdLabel;
 
+  /// Navigation label for the theater workflow destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater'**
+  String get navigationTheaterLabel;
+
+  /// Title for the theater workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater'**
+  String get theaterTitle;
+
+  /// Description for the theater workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage daily cases, readiness, room and team allocation, anesthesia, post-op notes, and handover.'**
+  String get theaterDescription;
+
+  /// Loading title for the theater workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading theater'**
+  String get theaterLoadingTitle;
+
+  /// Loading body for the theater workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading theater cases and clinical records.'**
+  String get theaterLoadingBody;
+
+  /// Status label when theater data is synced.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get theaterLiveStatus;
+
+  /// Status label when theater data is being saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get theaterSavingStatus;
+
+  /// Snackbar message after theater mutations succeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater changes saved.'**
+  String get theaterSavedMessage;
+
+  /// Action label for scheduling a theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule case'**
+  String get theaterScheduleCaseAction;
+
+  /// Summary card label for scheduled theater cases.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get theaterScheduledSummaryLabel;
+
+  /// Summary card label for active theater cases.
+  ///
+  /// In en, this message translates to:
+  /// **'In theater'**
+  String get theaterInTheaterSummaryLabel;
+
+  /// Summary card label for ready theater cases.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get theaterReadySummaryLabel;
+
+  /// Summary card label for completed theater cases.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get theaterCompletedSummaryLabel;
+
+  /// Accessibility label for theater filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater filters'**
+  String get theaterFiltersLabel;
+
+  /// Label for theater search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search theater'**
+  String get theaterSearchLabel;
+
+  /// Hint for theater search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, case, encounter, notes, or record text'**
+  String get theaterSearchHint;
+
+  /// Label for theater schedule date filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule date'**
+  String get theaterScheduleDateFilterLabel;
+
+  /// Action label for picking a theater schedule date.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick schedule date'**
+  String get theaterPickScheduleDateAction;
+
+  /// Label for theater status filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get theaterStatusFilterLabel;
+
+  /// Label for theater stage filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage'**
+  String get theaterStageFilterLabel;
+
+  /// Action label for opening theater resource filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource filters'**
+  String get theaterResourceFiltersAction;
+
+  /// Action label for clearing theater filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get theaterClearFiltersAction;
+
+  /// Title for theater case board.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily cases'**
+  String get theaterCasesTitle;
+
+  /// Description for theater case board.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a case to review readiness, records, resources, and handover.'**
+  String get theaterCasesDescription;
+
+  /// Empty-state title when no theater cases match filters.
+  ///
+  /// In en, this message translates to:
+  /// **'No theater cases'**
+  String get theaterNoCasesTitle;
+
+  /// Empty-state body when no theater cases match filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled and active theater cases will appear here.'**
+  String get theaterNoCasesBody;
+
+  /// Empty detail title when no theater case is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'No case selected'**
+  String get theaterNoCaseSelectedTitle;
+
+  /// Empty detail body when no theater case is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a theater case to review readiness, records, and handover.'**
+  String get theaterNoCaseSelectedBody;
+
+  /// Theater case list patient column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get theaterPatientColumnLabel;
+
+  /// Theater case list time column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get theaterTimeColumnLabel;
+
+  /// Theater case list room column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get theaterRoomColumnLabel;
+
+  /// Theater case list status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get theaterStatusColumnLabel;
+
+  /// Theater case list readiness column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness'**
+  String get theaterReadinessColumnLabel;
+
+  /// Theater case list next action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get theaterNextActionColumnLabel;
+
+  /// Pagination label for theater data lists.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String theaterPageLabel(int from, int to, int total);
+
+  /// Title for theater case detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Case detail'**
+  String get theaterCaseDetailTitle;
+
+  /// Action label for rescheduling a theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule'**
+  String get theaterRescheduleAction;
+
+  /// Action label for updating theater case stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Update stage'**
+  String get theaterUpdateStageAction;
+
+  /// Label for encounter in theater detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get theaterEncounterLabel;
+
+  /// Label for scheduled date time in theater forms and detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled at'**
+  String get theaterScheduledAtLabel;
+
+  /// Label for theater room.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get theaterRoomLabel;
+
+  /// Label for theater readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness'**
+  String get theaterReadinessLabel;
+
+  /// Title for theater team and flow section.
+  ///
+  /// In en, this message translates to:
+  /// **'Team and flow'**
+  String get theaterTeamTitle;
+
+  /// Label for theater surgeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Surgeon'**
+  String get theaterSurgeonLabel;
+
+  /// Label for theater anesthetist.
+  ///
+  /// In en, this message translates to:
+  /// **'Anesthetist'**
+  String get theaterAnesthetistLabel;
+
+  /// Label for theater workflow stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage'**
+  String get theaterStageLabel;
+
+  /// Label for theater status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get theaterStatusLabel;
+
+  /// Label for theater stage notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage notes'**
+  String get theaterStageNotesLabel;
+
+  /// Action label for assigning a theater resource.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign resource'**
+  String get theaterAssignResourceAction;
+
+  /// Action label for updating theater readiness checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Update readiness'**
+  String get theaterUpdateReadinessAction;
+
+  /// Action label for editing anesthesia record.
+  ///
+  /// In en, this message translates to:
+  /// **'Anesthesia'**
+  String get theaterAnesthesiaAction;
+
+  /// Action label for editing post-op note.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-op'**
+  String get theaterPostOpAction;
+
+  /// Action label for theater handover.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover'**
+  String get theaterHandoverAction;
+
+  /// Action label for finalizing theater records.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize'**
+  String get theaterFinalizeAction;
+
+  /// Action label for cancelling a theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel case'**
+  String get theaterCancelCaseAction;
+
+  /// Next-action label for starting a ready scheduled case.
+  ///
+  /// In en, this message translates to:
+  /// **'Start case'**
+  String get theaterStartCaseAction;
+
+  /// Title for theater readiness checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness checklist'**
+  String get theaterChecklistTitle;
+
+  /// Empty text for theater checklist items.
+  ///
+  /// In en, this message translates to:
+  /// **'No checklist items recorded'**
+  String get theaterNoChecklistItemsLabel;
+
+  /// Title for theater clinical records section.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical records'**
+  String get theaterRecordsTitle;
+
+  /// Label for anesthesia record status.
+  ///
+  /// In en, this message translates to:
+  /// **'Anesthesia status'**
+  String get theaterAnesthesiaStatusLabel;
+
+  /// Label for post-op record status.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-op status'**
+  String get theaterPostOpStatusLabel;
+
+  /// Label for anesthesia notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Anesthesia notes'**
+  String get theaterAnesthesiaNotesLabel;
+
+  /// Label for post-op note.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-op note'**
+  String get theaterPostOpNoteLabel;
+
+  /// Empty text for anesthesia observations.
+  ///
+  /// In en, this message translates to:
+  /// **'No anesthesia observations recorded'**
+  String get theaterNoObservationsLabel;
+
+  /// Title for theater resource allocations section.
+  ///
+  /// In en, this message translates to:
+  /// **'Resources'**
+  String get theaterResourcesTitle;
+
+  /// Empty text for theater resources.
+  ///
+  /// In en, this message translates to:
+  /// **'No resources assigned'**
+  String get theaterNoResourcesLabel;
+
+  /// Title for theater timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get theaterTimelineTitle;
+
+  /// Empty text for theater timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline entries'**
+  String get theaterNoTimelineLabel;
+
+  /// Dialog title for scheduling a theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule theater case'**
+  String get theaterScheduleCaseDialogTitle;
+
+  /// Dialog title for rescheduling a theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule theater case'**
+  String get theaterRescheduleDialogTitle;
+
+  /// Dialog title for updating theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Update theater stage'**
+  String get theaterUpdateStageDialogTitle;
+
+  /// Dialog title for theater handover.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete handover'**
+  String get theaterHandoverDialogTitle;
+
+  /// Label for theater handover notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover notes'**
+  String get theaterHandoverNotesLabel;
+
+  /// Dialog title for cancelling a theater case.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel theater case'**
+  String get theaterCancelCaseDialogTitle;
+
+  /// Label for theater cancellation reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancellation reason'**
+  String get theaterCancellationReasonLabel;
+
+  /// Dialog title for assigning a theater resource.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign theater resource'**
+  String get theaterAssignResourceDialogTitle;
+
+  /// Dialog title for updating theater readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Update readiness'**
+  String get theaterReadinessDialogTitle;
+
+  /// Dialog title for editing anesthesia record.
+  ///
+  /// In en, this message translates to:
+  /// **'Anesthesia record'**
+  String get theaterAnesthesiaDialogTitle;
+
+  /// Dialog title for editing post-op note.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-op note'**
+  String get theaterPostOpDialogTitle;
+
+  /// Dialog title for finalizing theater records.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize records'**
+  String get theaterFinalizeDialogTitle;
+
+  /// Dialog title for theater resource filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource filters'**
+  String get theaterResourceFiltersDialogTitle;
+
+  /// Label for encounter ID in theater forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter ID'**
+  String get theaterEncounterIdLabel;
+
+  /// Hint for encounter ID in theater forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter UUID or case source identifier'**
+  String get theaterEncounterIdHint;
+
+  /// Hint for ISO date time entry in theater forms.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DDTHH:MM:SS'**
+  String get theaterDateTimeHint;
+
+  /// Label for theater room ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Room ID'**
+  String get theaterRoomIdLabel;
+
+  /// Label for surgeon user ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Surgeon user ID'**
+  String get theaterSurgeonIdLabel;
+
+  /// Label for anesthetist user ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Anesthetist user ID'**
+  String get theaterAnesthetistIdLabel;
+
+  /// Label for theater resource type.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource type'**
+  String get theaterResourceTypeLabel;
+
+  /// Label for theater resource ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource ID'**
+  String get theaterResourceIdLabel;
+
+  /// Label for theater staff role.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff role'**
+  String get theaterStaffRoleLabel;
+
+  /// Generic notes label for theater forms.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get theaterNotesLabel;
+
+  /// Label for theater checklist phase.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist phase'**
+  String get theaterChecklistPhaseLabel;
+
+  /// Label for theater checklist item code.
+  ///
+  /// In en, this message translates to:
+  /// **'Item code'**
+  String get theaterChecklistItemCodeLabel;
+
+  /// Label for theater checklist item label.
+  ///
+  /// In en, this message translates to:
+  /// **'Item label'**
+  String get theaterChecklistItemLabel;
+
+  /// Label for checklist completed checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get theaterChecklistCheckedLabel;
+
+  /// Label for clinical record status.
+  ///
+  /// In en, this message translates to:
+  /// **'Record status'**
+  String get theaterRecordStatusLabel;
+
+  /// Action label for saving a theater clinical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Save record'**
+  String get theaterSaveRecordAction;
+
+  /// Label for theater record type.
+  ///
+  /// In en, this message translates to:
+  /// **'Record type'**
+  String get theaterRecordTypeLabel;
+
+  /// Action label for applying theater filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get theaterApplyFiltersAction;
+
+  /// Validation message for required theater form fields.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} is required.'**
+  String theaterFieldRequiredLabel(String label);
+
+  /// Display label for scheduled theater case status.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get theaterStatusScheduled;
+
+  /// Display label for in-progress theater case status.
+  ///
+  /// In en, this message translates to:
+  /// **'In theater'**
+  String get theaterStatusInTheater;
+
+  /// Display label for completed theater case status.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get theaterStatusCompleted;
+
+  /// Display label for cancelled theater case status.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get theaterStatusCancelled;
+
+  /// Display label for pre-op theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-op'**
+  String get theaterStagePreOp;
+
+  /// Display label for sign-in theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get theaterStageSignIn;
+
+  /// Display label for time-out theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Time out'**
+  String get theaterStageTimeOut;
+
+  /// Display label for intra-op theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Intra-op'**
+  String get theaterStageIntraOp;
+
+  /// Display label for sign-out theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get theaterStageSignOut;
+
+  /// Display label for post-op theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-op'**
+  String get theaterStagePostOp;
+
+  /// Display label for PACU handover theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'PACU handover'**
+  String get theaterStagePacuHandoff;
+
+  /// Display label for completed theater stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get theaterStageCompleted;
+
+  /// Display label for draft clinical record status.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get theaterRecordDraft;
+
+  /// Display label for final clinical record status.
+  ///
+  /// In en, this message translates to:
+  /// **'Final'**
+  String get theaterRecordFinal;
+
+  /// Display label when theater readiness has no checklist items.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started'**
+  String get theaterReadinessNotStarted;
+
+  /// Progress label for theater readiness checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed}/{total} complete'**
+  String theaterReadinessProgress(int completed, int total);
+
   /// OPD workspace title.
   ///
   /// In en, this message translates to:
@@ -5085,6 +5781,864 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Consultation summary'**
   String get clinicalConsultationSummaryTitle;
+
+  /// Navigation label for the inpatient department workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'IPD'**
+  String get navigationIpdLabel;
+
+  /// Inpatient workspace page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient workspace'**
+  String get ipdTitle;
+
+  /// Inpatient workspace page description.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage admission queues, beds, transfers, ward rounds, nursing handoffs, medication records, and discharge readiness.'**
+  String get ipdDescription;
+
+  /// Inpatient workspace loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading inpatient workspace'**
+  String get ipdLoadingTitle;
+
+  /// Inpatient workspace loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading admissions, beds, and ward context.'**
+  String get ipdLoadingBody;
+
+  /// Inpatient workspace live synchronization status.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get ipdLiveStatus;
+
+  /// Inpatient workspace saving status.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get ipdSavingStatus;
+
+  /// Inpatient workspace successful save message.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient changes saved.'**
+  String get ipdSavedMessage;
+
+  /// IPD summary label for admitted patients waiting for a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting bed'**
+  String get ipdAdmissionQueueSummaryLabel;
+
+  /// IPD summary label for active patients assigned to beds.
+  ///
+  /// In en, this message translates to:
+  /// **'In beds'**
+  String get ipdActivePatientsSummaryLabel;
+
+  /// IPD summary label for pending or in-progress transfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfers'**
+  String get ipdTransferPendingSummaryLabel;
+
+  /// IPD summary label for admissions with discharge plans.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge planned'**
+  String get ipdDischargePlannedSummaryLabel;
+
+  /// IPD summary label for active critical alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical alerts'**
+  String get ipdCriticalAlertsSummaryLabel;
+
+  /// Semantic label for inpatient workspace filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient filters'**
+  String get ipdFiltersLabel;
+
+  /// IPD admission search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search admissions'**
+  String get ipdSearchLabel;
+
+  /// IPD admission search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient, admission, encounter, ward, or bed'**
+  String get ipdSearchHint;
+
+  /// IPD queue scope filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Board scope'**
+  String get ipdScopeFilterLabel;
+
+  /// IPD ward filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get ipdWardFilterLabel;
+
+  /// IPD ward filter option for all wards.
+  ///
+  /// In en, this message translates to:
+  /// **'All wards'**
+  String get ipdAllWardsOption;
+
+  /// IPD admissions board title.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient board'**
+  String get ipdBoardTitle;
+
+  /// IPD admissions board description.
+  ///
+  /// In en, this message translates to:
+  /// **'Track waiting admissions, bedded patients, transfers, ward activity, and discharge plans.'**
+  String get ipdBoardDescription;
+
+  /// IPD admissions board empty title.
+  ///
+  /// In en, this message translates to:
+  /// **'No admissions'**
+  String get ipdNoAdmissionsTitle;
+
+  /// IPD admissions board empty body.
+  ///
+  /// In en, this message translates to:
+  /// **'No inpatient admissions match the current filters.'**
+  String get ipdNoAdmissionsBody;
+
+  /// IPD board column label for location.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward and bed'**
+  String get ipdLocationColumnLabel;
+
+  /// IPD board column label for pending action.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get ipdPendingActionColumnLabel;
+
+  /// IPD board column label for admission date.
+  ///
+  /// In en, this message translates to:
+  /// **'Admitted'**
+  String get ipdAdmittedAtColumnLabel;
+
+  /// IPD admission detail panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission detail'**
+  String get ipdAdmissionDetailTitle;
+
+  /// IPD admission detail panel description.
+  ///
+  /// In en, this message translates to:
+  /// **'Review bed status, transfers, ward rounds, medication records, nursing notes, and discharge state.'**
+  String get ipdAdmissionDetailDescription;
+
+  /// IPD no selection title.
+  ///
+  /// In en, this message translates to:
+  /// **'No admission selected'**
+  String get ipdNoSelectionTitle;
+
+  /// IPD no selection body.
+  ///
+  /// In en, this message translates to:
+  /// **'Open an admission from the board to manage inpatient care.'**
+  String get ipdNoSelectionBody;
+
+  /// IPD patient context heading label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient context'**
+  String get ipdPatientContextLabel;
+
+  /// IPD admission identifier label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission'**
+  String get ipdAdmissionIdLabel;
+
+  /// IPD encounter identifier label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get ipdEncounterIdLabel;
+
+  /// IPD ward and bed label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward and bed'**
+  String get ipdWardBedLabel;
+
+  /// IPD facility label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get ipdFacilityLabel;
+
+  /// IPD ICU status label.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU status'**
+  String get ipdIcuStatusLabel;
+
+  /// IPD action label to assign a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign bed'**
+  String get ipdAssignBedAction;
+
+  /// IPD action label to release a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Release bed'**
+  String get ipdReleaseBedAction;
+
+  /// IPD action label to reject an admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject admission'**
+  String get ipdRejectAdmissionAction;
+
+  /// IPD action label to request a transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Request transfer'**
+  String get ipdRequestTransferAction;
+
+  /// IPD action label to update an open transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage transfer'**
+  String get ipdManageTransferAction;
+
+  /// IPD action label to add a ward round.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ward round'**
+  String get ipdAddWardRoundAction;
+
+  /// IPD action label to add a nursing note.
+  ///
+  /// In en, this message translates to:
+  /// **'Add nursing note'**
+  String get ipdAddNursingNoteAction;
+
+  /// IPD action label to record medication administration.
+  ///
+  /// In en, this message translates to:
+  /// **'Record medication'**
+  String get ipdRecordMedicationAction;
+
+  /// IPD action label to plan discharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan discharge'**
+  String get ipdPlanDischargeAction;
+
+  /// IPD action label to finalize discharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize discharge'**
+  String get ipdFinalizeDischargeAction;
+
+  /// IPD transfer section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfers'**
+  String get ipdTransfersSectionTitle;
+
+  /// IPD ward rounds section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward rounds'**
+  String get ipdRoundsSectionTitle;
+
+  /// IPD nursing notes section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing notes'**
+  String get ipdNursingSectionTitle;
+
+  /// IPD medication section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication'**
+  String get ipdMedicationSectionTitle;
+
+  /// IPD bed allocation section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed allocation'**
+  String get ipdBedSectionTitle;
+
+  /// IPD discharge section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge'**
+  String get ipdDischargeSectionTitle;
+
+  /// IPD timeline section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get ipdTimelineSectionTitle;
+
+  /// IPD empty transfers title.
+  ///
+  /// In en, this message translates to:
+  /// **'No transfers'**
+  String get ipdNoTransfersTitle;
+
+  /// IPD empty transfers body.
+  ///
+  /// In en, this message translates to:
+  /// **'No transfer requests are recorded for this admission.'**
+  String get ipdNoTransfersBody;
+
+  /// IPD empty ward rounds title.
+  ///
+  /// In en, this message translates to:
+  /// **'No ward rounds'**
+  String get ipdNoRoundsTitle;
+
+  /// IPD empty ward rounds body.
+  ///
+  /// In en, this message translates to:
+  /// **'No ward rounds have been documented yet.'**
+  String get ipdNoRoundsBody;
+
+  /// IPD empty nursing notes title.
+  ///
+  /// In en, this message translates to:
+  /// **'No nursing notes'**
+  String get ipdNoNursingNotesTitle;
+
+  /// IPD empty nursing notes body.
+  ///
+  /// In en, this message translates to:
+  /// **'No nursing notes have been documented yet.'**
+  String get ipdNoNursingNotesBody;
+
+  /// IPD empty medication title.
+  ///
+  /// In en, this message translates to:
+  /// **'No medication records'**
+  String get ipdNoMedicationTitle;
+
+  /// IPD empty medication body.
+  ///
+  /// In en, this message translates to:
+  /// **'No medication administrations are recorded for this admission.'**
+  String get ipdNoMedicationBody;
+
+  /// IPD empty timeline title.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline entries'**
+  String get ipdNoTimelineTitle;
+
+  /// IPD empty timeline body.
+  ///
+  /// In en, this message translates to:
+  /// **'No care activity has been recorded yet.'**
+  String get ipdNoTimelineBody;
+
+  /// IPD bed selection field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed'**
+  String get ipdBedFieldLabel;
+
+  /// IPD bed selection field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a bed'**
+  String get ipdSelectBedHint;
+
+  /// IPD release bed confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Release the current bed assignment for this admission?'**
+  String get ipdReleaseBedConfirmationBody;
+
+  /// IPD transfer target ward field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Target ward'**
+  String get ipdTargetWardFieldLabel;
+
+  /// IPD ward selection field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a ward'**
+  String get ipdSelectWardHint;
+
+  /// IPD transfer action field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer action'**
+  String get ipdTransferActionFieldLabel;
+
+  /// IPD transfer destination bed field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination bed'**
+  String get ipdDestinationBedFieldLabel;
+
+  /// IPD notes field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get ipdNotesFieldLabel;
+
+  /// IPD summary field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get ipdSummaryFieldLabel;
+
+  /// IPD reason field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get ipdReasonFieldLabel;
+
+  /// IPD medication order field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication order'**
+  String get ipdMedicationOrderFieldLabel;
+
+  /// IPD medication order selection hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a suggested order'**
+  String get ipdMedicationOrderHint;
+
+  /// IPD medication field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication'**
+  String get ipdMedicationFieldLabel;
+
+  /// IPD dose field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose'**
+  String get ipdDoseFieldLabel;
+
+  /// IPD dose unit field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get ipdUnitFieldLabel;
+
+  /// IPD medication route field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get ipdRouteFieldLabel;
+
+  /// IPD medication frequency field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get ipdFrequencyFieldLabel;
+
+  /// IPD medication administration status field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get ipdMedicationStatusFieldLabel;
+
+  /// IPD discharged date label.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharged'**
+  String get ipdDischargedAtLabel;
+
+  /// IPD scope label for admissions waiting for a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting bed'**
+  String get ipdScopeAdmissionQueue;
+
+  /// IPD scope label for active bedded patients.
+  ///
+  /// In en, this message translates to:
+  /// **'In beds'**
+  String get ipdScopeActivePatients;
+
+  /// IPD scope label for transfer requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfers'**
+  String get ipdScopeTransferPending;
+
+  /// IPD scope label for planned discharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge planned'**
+  String get ipdScopeDischargePlanned;
+
+  /// IPD scope label for admissions awaiting discharge clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting clearance'**
+  String get ipdScopeAwaitingClearance;
+
+  /// IPD scope label for discharged admissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharged'**
+  String get ipdScopeDischarged;
+
+  /// IPD scope label for all admissions.
+  ///
+  /// In en, this message translates to:
+  /// **'All admissions'**
+  String get ipdScopeAll;
+
+  /// IPD stage label for admitted pending bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting bed'**
+  String get ipdStatusAdmittedPendingBed;
+
+  /// IPD stage label for admitted in bed.
+  ///
+  /// In en, this message translates to:
+  /// **'In bed'**
+  String get ipdStatusAdmittedInBed;
+
+  /// IPD stage label for transfer requested.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer requested'**
+  String get ipdStatusTransferRequested;
+
+  /// IPD stage label for transfer in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer in progress'**
+  String get ipdStatusTransferInProgress;
+
+  /// IPD stage label for discharge planned.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge planned'**
+  String get ipdStatusDischargePlanned;
+
+  /// IPD stage label for discharged.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharged'**
+  String get ipdStatusDischarged;
+
+  /// IPD stage label for cancelled admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get ipdStatusCancelled;
+
+  /// IPD next action label for assigning a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign bed'**
+  String get ipdNextAssignBed;
+
+  /// IPD next action label for recording a nursing note.
+  ///
+  /// In en, this message translates to:
+  /// **'Record nursing note'**
+  String get ipdNextRecordNursingNote;
+
+  /// IPD next action label for approving a transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve transfer'**
+  String get ipdNextApproveTransfer;
+
+  /// IPD next action label for starting a transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Start transfer'**
+  String get ipdNextStartTransfer;
+
+  /// IPD next action label for completing a transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete transfer'**
+  String get ipdNextCompleteTransfer;
+
+  /// IPD next action label for finalizing discharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize discharge'**
+  String get ipdNextFinalizeDischarge;
+
+  /// IPD default next action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue care'**
+  String get ipdNextContinueCare;
+
+  /// IPD bed status label for available.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get ipdBedStatusAvailable;
+
+  /// IPD bed status label for occupied.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupied'**
+  String get ipdBedStatusOccupied;
+
+  /// IPD bed status label for reserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserved'**
+  String get ipdBedStatusReserved;
+
+  /// IPD bed status label for out of service.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of service'**
+  String get ipdBedStatusOutOfService;
+
+  /// IPD discharge status label for planned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get ipdDischargeStatusPlanned;
+
+  /// IPD discharge status label for completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get ipdDischargeStatusCompleted;
+
+  /// IPD ICU status label for active.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get ipdIcuStatusActive;
+
+  /// IPD ICU status label for ended.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get ipdIcuStatusEnded;
+
+  /// IPD ICU status label when no ICU stay is active.
+  ///
+  /// In en, this message translates to:
+  /// **'No ICU stay'**
+  String get ipdIcuStatusNone;
+
+  /// IPD critical alert label.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical alert'**
+  String get ipdCriticalAlertLabel;
+
+  /// IPD critical alert label with severity.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical: {severity}'**
+  String ipdCriticalSeverityLabel(String severity);
+
+  /// IPD timeline label for ward rounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward round'**
+  String get ipdTimelineWardRound;
+
+  /// IPD timeline label for nursing notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing note'**
+  String get ipdTimelineNursingNote;
+
+  /// IPD timeline label for medication administration.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication'**
+  String get ipdTimelineMedication;
+
+  /// IPD timeline label for medication reminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication reminder'**
+  String get ipdTimelineMedicationReminder;
+
+  /// IPD timeline label for transfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer'**
+  String get ipdTimelineTransfer;
+
+  /// IPD timeline label for ICU observations.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU observation'**
+  String get ipdTimelineIcuObservation;
+
+  /// IPD timeline label for critical alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical alert'**
+  String get ipdTimelineCriticalAlert;
+
+  /// IPD timeline fallback label for care events.
+  ///
+  /// In en, this message translates to:
+  /// **'Care event'**
+  String get ipdTimelineCareEvent;
+
+  /// IPD transfer update action for approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get ipdTransferApproveAction;
+
+  /// IPD transfer update action to start the transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Start transfer'**
+  String get ipdTransferStartAction;
+
+  /// IPD transfer update action to complete the transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete transfer'**
+  String get ipdTransferCompleteAction;
+
+  /// IPD transfer update action to cancel the transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel transfer'**
+  String get ipdTransferCancelAction;
+
+  /// Medication route option for oral.
+  ///
+  /// In en, this message translates to:
+  /// **'Oral'**
+  String get ipdRouteOral;
+
+  /// Medication route option for intravenous.
+  ///
+  /// In en, this message translates to:
+  /// **'IV'**
+  String get ipdRouteIv;
+
+  /// Medication route option for intramuscular.
+  ///
+  /// In en, this message translates to:
+  /// **'IM'**
+  String get ipdRouteIm;
+
+  /// Medication route option for topical.
+  ///
+  /// In en, this message translates to:
+  /// **'Topical'**
+  String get ipdRouteTopical;
+
+  /// Medication route option for inhalation.
+  ///
+  /// In en, this message translates to:
+  /// **'Inhalation'**
+  String get ipdRouteInhalation;
+
+  /// Medication route option for other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get ipdRouteOther;
+
+  /// Medication frequency option for once.
+  ///
+  /// In en, this message translates to:
+  /// **'Once'**
+  String get ipdFrequencyOnce;
+
+  /// Medication frequency option for twice daily.
+  ///
+  /// In en, this message translates to:
+  /// **'BID'**
+  String get ipdFrequencyBid;
+
+  /// Medication frequency option for three times daily.
+  ///
+  /// In en, this message translates to:
+  /// **'TID'**
+  String get ipdFrequencyTid;
+
+  /// Medication frequency option for four times daily.
+  ///
+  /// In en, this message translates to:
+  /// **'QID'**
+  String get ipdFrequencyQid;
+
+  /// Medication frequency option for as needed.
+  ///
+  /// In en, this message translates to:
+  /// **'PRN'**
+  String get ipdFrequencyPrn;
+
+  /// Medication frequency option for immediate administration.
+  ///
+  /// In en, this message translates to:
+  /// **'STAT'**
+  String get ipdFrequencyStat;
+
+  /// Medication frequency option for custom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get ipdFrequencyCustom;
+
+  /// Medication administration status option for given.
+  ///
+  /// In en, this message translates to:
+  /// **'Given'**
+  String get ipdMedicationGiven;
+
+  /// Medication administration status option for missed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get ipdMedicationMissed;
+
+  /// Medication administration status option for delayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delayed'**
+  String get ipdMedicationDelayed;
+
+  /// Medication administration status option for refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Refused'**
+  String get ipdMedicationRefused;
 }
 
 class _AppLocalizationsDelegate

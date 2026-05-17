@@ -190,11 +190,7 @@ final class IpdMedicationSuggestion {
 
 @immutable
 final class IpdTimelineItem {
-  const IpdTimelineItem({
-    required this.type,
-    this.label,
-    this.occurredAt,
-  });
+  const IpdTimelineItem({required this.type, this.label, this.occurredAt});
 
   final String type;
   final String? label;

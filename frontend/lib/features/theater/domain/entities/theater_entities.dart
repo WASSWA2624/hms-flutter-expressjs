@@ -126,9 +126,7 @@ final class TheaterWorkspaceState {
   final AppFailure? lastFailure;
 
   int get workloadCount {
-    return cases.items
-        .where((TheaterCase item) => item.isActive)
-        .length;
+    return cases.items.where((TheaterCase item) => item.isActive).length;
   }
 
   int get scheduledCount {
@@ -167,7 +165,9 @@ final class TheaterWorkspaceState {
     return TheaterWorkspaceState(
       cases: cases ?? this.cases,
       query: query ?? this.query,
-      selectedCase: clearSelectedCase ? null : selectedCase ?? this.selectedCase,
+      selectedCase: clearSelectedCase
+          ? null
+          : selectedCase ?? this.selectedCase,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
       isMutating: isMutating ?? this.isMutating,

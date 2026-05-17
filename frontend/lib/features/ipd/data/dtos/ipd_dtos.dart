@@ -97,8 +97,7 @@ final class IpdAdmissionDetailDto {
           _string(admission['id']) ??
           '',
       displayId: _string(json['display_id']) ?? _string(admission['id']),
-      patientId:
-          _string(json['patient_display_id']) ?? _string(patient['id']),
+      patientId: _string(json['patient_display_id']) ?? _string(patient['id']),
       patientDisplayName: _string(json['patient_display_name']),
       encounterId: _string(json['encounter_display_id']),
       stage: _string(json['stage']) ?? _string(flow['stage']),
@@ -107,23 +106,23 @@ final class IpdAdmissionDetailDto {
           _string(json['transfer_status']) ?? _string(flow['transfer_status']),
       hasActiveBed: _bool(flow['has_active_bed']),
       wardDisplayName: _string(json['ward_display_name']),
-      bedId: _string(
-        _map(_map(json['active_bed_assignment'])['bed'])['id'],
-      ),
+      bedId: _string(_map(_map(json['active_bed_assignment'])['bed'])['id']),
       bedDisplayLabel: _string(
         _map(_map(json['active_bed_assignment'])['bed'])['label'],
       ),
-      openTransferRequestId: _string(
-        _map(json['open_transfer_request'])['id'],
-      ),
+      openTransferRequestId: _string(_map(json['open_transfer_request'])['id']),
       admittedAt: _date(admission['admitted_at']),
       dischargedAt: _date(admission['discharged_at']),
-      dischargeStatus: _string(_map(json['latest_discharge_summary'])['status']),
+      dischargeStatus: _string(
+        _map(json['latest_discharge_summary'])['status'],
+      ),
       admissionStatus:
           _string(admission['status']) ?? _string(flow['admission_status']),
       icuStatus: _string(json['icu_status']) ?? icu.status,
-      hasCriticalAlert: _bool(json['has_critical_alert']) || icu.hasCriticalAlert,
-      criticalSeverity: _string(json['critical_severity']) ?? icu.criticalSeverity,
+      hasCriticalAlert:
+          _bool(json['has_critical_alert']) || icu.hasCriticalAlert,
+      criticalSeverity:
+          _string(json['critical_severity']) ?? icu.criticalSeverity,
       activeIcuStayId: _string(json['active_icu_stay_id']) ?? icu.activeStayId,
     );
 
@@ -158,7 +157,9 @@ final class IpdAdmissionDetailDto {
           .map((IpdClinicalRecordDto dto) => dto.toEntity())
           .toList(growable: false),
       nursingNotes: _list(json['nursing_notes'])
-          .map((IpdJsonMap entry) => IpdClinicalRecordDto(entry, 'nursing_note'))
+          .map(
+            (IpdJsonMap entry) => IpdClinicalRecordDto(entry, 'nursing_note'),
+          )
           .map((IpdClinicalRecordDto dto) => dto.toEntity())
           .toList(growable: false),
       medicationAdministrations: _list(json['medication_administrations'])
@@ -398,7 +399,9 @@ final class IpdIcuOverlayDto {
           .map((IpdClinicalRecordDto dto) => dto.toEntity())
           .toList(growable: false),
       recentAlerts: _list(json['recent_alerts'])
-          .map((IpdJsonMap entry) => IpdClinicalRecordDto(entry, 'critical_alert'))
+          .map(
+            (IpdJsonMap entry) => IpdClinicalRecordDto(entry, 'critical_alert'),
+          )
           .map((IpdClinicalRecordDto dto) => dto.toEntity())
           .toList(growable: false),
     );
