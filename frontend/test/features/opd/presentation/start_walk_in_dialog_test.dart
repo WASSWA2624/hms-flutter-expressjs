@@ -100,5 +100,8 @@ void main() {
       'last_name': 'Doe',
       'gender': null,
     });
+    expect(submittedPayload?['arrival_mode'], 'WALK_IN');
+    expect(submittedPayload?['require_consultation_payment'], isTrue);
+    expect(submittedPayload?['create_consultation_invoice'], isTrue);
   });
 }

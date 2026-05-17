@@ -511,6 +511,16 @@ final class OpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> completeDisposition(
+    OpdFlowSummary flow,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateFlow(
+      () => _repository.disposition(flow.apiId, payload),
+      refreshAfter: true,
+    );
+  }
+
   Future<AppFailure?> createReferral({
     required OpdFlowSummary flow,
     required String externalFacilityName,

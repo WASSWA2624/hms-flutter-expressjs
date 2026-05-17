@@ -2239,6 +2239,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   String _emergencySeverity = 'HIGH';
   String? _triageLevel;
   String? _gender;
+  bool _requireConsultationPayment = true;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -2332,6 +2333,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
             onChanged: (String? value) {
               setState(() {
                 _arrivalMode = value ?? 'WALK_IN';
+                _requireConsultationPayment = _arrivalMode != 'EMERGENCY';
               });
             },
             options: _statusOptions(_arrivalModeOptions),
@@ -2425,6 +2427,17 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
           enabled: !_isSaving,
           maxLines: 3,
         ),
+        AppSwitchField(
+          title: l10n.opdPaymentRequiredLabel,
+          value: _requireConsultationPayment,
+          enabled: !_isSaving,
+          secondary: const Icon(Icons.payments_outlined),
+          onChanged: (bool value) {
+            setState(() {
+              _requireConsultationPayment = value;
+            });
+          },
+        ),
       ],
     );
   }
@@ -2457,8 +2470,10 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       _patientMode = mode;
       if (mode == _WalkInPatientMode.appointment) {
         _arrivalMode = 'ONLINE_APPOINTMENT';
+        _requireConsultationPayment = true;
       } else if (_arrivalMode == 'ONLINE_APPOINTMENT') {
         _arrivalMode = 'WALK_IN';
+        _requireConsultationPayment = true;
       }
     });
   }
@@ -2667,9 +2682,11 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
 
   Map<String, Object?> _payload() {
     final String notes = _notesController.text.trim();
+    final String consultationFee = normalizeCurrencyAmount(_feeController.text);
     final String arrivalMode = _patientMode == _WalkInPatientMode.appointment
         ? 'ONLINE_APPOINTMENT'
         : _arrivalMode;
+    final bool hasConsultationFee = consultationFee.isNotEmpty;
 
     return <String, Object?>{
       if (_patientMode == _WalkInPatientMode.newPatient)
@@ -2690,8 +2707,11 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
           'triage_level': _triageLevel,
           'notes': notes,
         },
-      'consultation_fee': normalizeCurrencyAmount(_feeController.text),
+      'consultation_fee': consultationFee,
       'currency': _currency,
+      'require_consultation_payment': _requireConsultationPayment,
+      'create_consultation_invoice':
+          hasConsultationFee || _requireConsultationPayment,
       'notes': notes,
     };
   }
@@ -3453,7 +3473,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           requirement: _opdTriageRequirement,
           label: l10n.opdRouteDecisionLabel,
           icon: Icons.alt_route_outlined,
-          onPressed: () => _openNested(context, DispositionDialog(flow: flow)),
+          onPressed: () =>
+              _openNested(context, RoutingDecisionDialog(flow: flow)),
         ),
     ]);
 
@@ -3470,7 +3491,15 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           requirement: _opdDoctorRequirement,
           label: l10n.opdDispositionAction,
           icon: Icons.task_alt_outlined,
-          onPressed: () => _openNested(context, DispositionDialog(flow: flow)),
+          onPressed: () => _openNested(
+            context,
+            OpdDispositionDialog(
+              flow: flow,
+              hasPharmacyOrder:
+                  detail?.pharmacyOrders.isNotEmpty ??
+                  stage == 'PHARMACY_REQUESTED',
+            ),
+          ),
         ),
       if (!terminal && (stage == 'WAITING_DOCTOR_REVIEW' || _canDispose(stage)))
         _OpdWorkflowAction(
@@ -3485,51 +3514,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           label: l10n.opdFollowUpAction,
           icon: Icons.event_repeat_outlined,
           onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
-        ),
-    ]);
-
-    addSection(l10n.opdWorkflowServicesTitle, <Widget>[
-      if (!terminal && _canDispose(stage))
-        _OpdWorkflowAction(
-          requirement: _opdDoctorRequirement,
-          label: l10n.opdRouteLabAction,
-          icon: Icons.biotech_outlined,
-          onPressed: () => _openNested(
-            context,
-            StageRouteDialog(
-              flow: flow,
-              title: l10n.opdRouteLabAction,
-              stage: 'LAB_REQUESTED',
-            ),
-          ),
-        ),
-      if (!terminal && _canDispose(stage))
-        _OpdWorkflowAction(
-          requirement: _opdDoctorRequirement,
-          label: l10n.opdRouteRadiologyAction,
-          icon: Icons.personal_injury_outlined,
-          onPressed: () => _openNested(
-            context,
-            StageRouteDialog(
-              flow: flow,
-              title: l10n.opdRouteRadiologyAction,
-              stage: 'RADIOLOGY_REQUESTED',
-            ),
-          ),
-        ),
-      if (!terminal && _canDispose(stage))
-        _OpdWorkflowAction(
-          requirement: _opdDoctorRequirement,
-          label: l10n.opdRoutePharmacyAction,
-          icon: Icons.local_pharmacy_outlined,
-          onPressed: () => _openNested(
-            context,
-            StageRouteDialog(
-              flow: flow,
-              title: l10n.opdRoutePharmacyAction,
-              stage: 'PHARMACY_REQUESTED',
-            ),
-          ),
         ),
       _OpdWorkflowAction(
         requirement: _opdDoctorRequirement,
@@ -3988,101 +3972,6 @@ bool _canDispose(String stage) {
       stage == 'RADIOLOGY_REQUESTED' ||
       stage == 'LAB_AND_RADIOLOGY_REQUESTED' ||
       stage == 'PHARMACY_REQUESTED';
-}
-
-class StageRouteDialog extends ConsumerStatefulWidget {
-  const StageRouteDialog({
-    required this.flow,
-    required this.title,
-    required this.stage,
-    super.key,
-  });
-
-  final OpdFlowSummary flow;
-  final String title;
-  final String stage;
-
-  @override
-  ConsumerState<StageRouteDialog> createState() => _StageRouteDialogState();
-}
-
-class _StageRouteDialogState extends ConsumerState<StageRouteDialog> {
-  late final TextEditingController _reasonController;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _reasonController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppDialog(
-      title: Text(widget.title),
-      icon: const Icon(Icons.sync_alt_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          _StatusBadge(value: widget.stage),
-          AppTextField(
-            controller: _reasonController,
-            labelText: _opdRequiredFieldLabel(l10n, l10n.opdReasonLabel),
-            enabled: !_isSaving,
-            maxLines: 3,
-            validator: AppValidators.requiredText(l10n.validationRequired),
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.opdSaveAction,
-          leadingIcon: Icons.save_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!_isNonEmpty(_reasonController.text)) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .correctStage(widget.flow, widget.stage, _reasonController.text.trim());
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
 }
 
 class RecordVitalsDialog extends ConsumerStatefulWidget {
@@ -5358,16 +5247,17 @@ class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
   }
 }
 
-class DispositionDialog extends ConsumerStatefulWidget {
-  const DispositionDialog({required this.flow, super.key});
+class RoutingDecisionDialog extends ConsumerStatefulWidget {
+  const RoutingDecisionDialog({required this.flow, super.key});
 
   final OpdFlowSummary flow;
 
   @override
-  ConsumerState<DispositionDialog> createState() => _DispositionDialogState();
+  ConsumerState<RoutingDecisionDialog> createState() =>
+      _RoutingDecisionDialogState();
 }
 
-class _DispositionDialogState extends ConsumerState<DispositionDialog> {
+class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
   late final TextEditingController _notesController;
   String _decision = 'CONSULTATION';
   bool _isSaving = false;
@@ -5400,7 +5290,7 @@ class _DispositionDialogState extends ConsumerState<DispositionDialog> {
             enabled: !_isSaving,
             onChanged: (String? value) =>
                 setState(() => _decision = value ?? _decision),
-            options: _statusOptions(_dispositionOptions),
+            options: _statusOptions(_triageRouteOptions),
           ),
           AppTextField(
             controller: _notesController,
@@ -5434,6 +5324,110 @@ class _DispositionDialogState extends ConsumerState<DispositionDialog> {
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .disposeFlow(widget.flow, _decision, _notesController.text.trim());
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+}
+
+class OpdDispositionDialog extends ConsumerStatefulWidget {
+  const OpdDispositionDialog({
+    required this.flow,
+    required this.hasPharmacyOrder,
+    super.key,
+  });
+
+  final OpdFlowSummary flow;
+  final bool hasPharmacyOrder;
+
+  @override
+  ConsumerState<OpdDispositionDialog> createState() =>
+      _OpdDispositionDialogState();
+}
+
+class _OpdDispositionDialogState extends ConsumerState<OpdDispositionDialog> {
+  late final TextEditingController _notesController;
+  String _decision = 'DISCHARGE';
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController = TextEditingController();
+    if (widget.hasPharmacyOrder) {
+      _decision = 'SEND_TO_PHARMACY';
+    }
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.opdDispositionAction),
+      icon: const Icon(Icons.task_alt_outlined),
+      content: AppFormSection(
+        children: <Widget>[
+          if (_failure != null) AppFailureStateView(failure: _failure!),
+          AppSelectField<String>(
+            value: _decision,
+            labelText: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
+            enabled: !_isSaving,
+            onChanged: (String? value) =>
+                setState(() => _decision = value ?? _decision),
+            options: _statusOptions(
+              _opdDispositionOptions(hasPharmacyOrder: widget.hasPharmacyOrder),
+            ),
+          ),
+          AppTextField(
+            controller: _notesController,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
+            enabled: !_isSaving,
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.opdDispositionAction,
+          leadingIcon: Icons.task_alt_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .completeDisposition(widget.flow, <String, Object?>{
+          'decision': _decision,
+          'notes': _notesController.text.trim(),
+        });
     if (!mounted) {
       return;
     }
@@ -5695,7 +5689,7 @@ const List<String> _paymentMethods = <String>[
   'OTHER',
 ];
 
-const List<String> _dispositionOptions = <String>[
+const List<String> _triageRouteOptions = <String>[
   'CONSULTATION',
   'EMERGENCY',
   'ADMIT',
@@ -5708,6 +5702,14 @@ const List<String> _dispositionOptions = <String>[
   'OTHER_SERVICE',
   'DISCHARGE',
 ];
+
+List<String> _opdDispositionOptions({required bool hasPharmacyOrder}) {
+  return <String>[
+    'DISCHARGE',
+    if (hasPharmacyOrder) 'SEND_TO_PHARMACY',
+    'ADMIT',
+  ];
+}
 
 const List<String> _diagnosisTypes = <String>[
   'PRIMARY',

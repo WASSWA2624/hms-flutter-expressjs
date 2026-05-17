@@ -233,9 +233,11 @@ final class OpdFlowDetailDto {
       summary: summary,
       consultationInvoiceId: _string(consultation['invoice_id']),
       consultationPaymentId: _string(consultation['payment_id']),
-      consultationPaid: _bool(consultation['paid']),
+      consultationPaid: _bool(consultation['paid'] ?? consultation['is_paid']),
       consultationPaymentRequired: _bool(
-        consultation['payment_required'] ?? consultation['required'],
+        consultation['payment_required'] ??
+            consultation['required'] ??
+            consultation['require_payment'],
       ),
       timeline: _list(flow['timeline'])
           .map(OpdTimelineItemDto.new)
