@@ -66,6 +66,11 @@ abstract interface class OpdRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<OpdFlowDetail>> updateVitals(
+    OpdFlowDetail detail,
+    List<Map<String, Object?>> vitals,
+  );
+
   Future<Result<OpdFlowDetail>> assignTriageProvider(
     String flowId,
     Map<String, Object?> payload,

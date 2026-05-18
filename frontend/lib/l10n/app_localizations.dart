@@ -1810,6 +1810,12 @@ abstract class AppLocalizations {
   /// **'Record vitals'**
   String get opdRecordVitalsAction;
 
+  /// Action label to edit OPD vitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit vitals'**
+  String get opdEditVitalsAction;
+
   /// Action label to record a doctor review.
   ///
   /// In en, this message translates to:

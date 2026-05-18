@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
@@ -261,6 +262,52 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
+  Future<Result<OpdFlowDetail>> updateVitals(
+    OpdFlowDetail detail,
+    List<Map<String, Object?>> vitals,
+  ) async {
+    if (vitals.isEmpty) {
+      return Result<OpdFlowDetail>.failure(AppFailure.validation());
+    }
+
+    for (final Map<String, Object?> vital in vitals) {
+      final String vitalType = vital['vital_type']?.toString() ?? '';
+      if (vitalType.isEmpty) {
+        return Result<OpdFlowDetail>.failure(AppFailure.validation());
+      }
+      final OpdVitalSign? existing = _latestVitalByType(
+        detail.vitalMeasurements,
+        vitalType,
+      );
+      final Map<String, Object?> data = _withoutEmpty(<String, Object?>{
+        'encounter_id': detail.summary.id,
+        ...vital,
+      });
+      final Result<void> result = existing == null
+          ? await _apiClient.post<void>(
+              ApiEndpoints.collection(HmsApiResource.vitalSigns),
+              data: data,
+              decoder: (_) {},
+            )
+          : await _apiClient.put<void>(
+              ApiEndpoints.byId(HmsApiResource.vitalSigns, existing.id),
+              data: data,
+              decoder: (_) {},
+            );
+
+      final AppFailure? failure = result.when(
+        success: (_) => null,
+        failure: (AppFailure failure) => failure,
+      );
+      if (failure != null) {
+        return Result<OpdFlowDetail>.failure(failure);
+      }
+    }
+
+    return getTriageCase(detail.summary.apiId);
+  }
+
+  @override
   Future<Result<OpdFlowDetail>> assignTriageProvider(
     String flowId,
     Map<String, Object?> payload,
@@ -456,6 +503,26 @@ final class OpdRepositoryImpl implements OpdRepository {
       for (final MapEntry<String, Object?> entry in payload.entries)
         if (!_isEmpty(entry.value)) entry.key: entry.value,
     };
+  }
+
+  OpdVitalSign? _latestVitalByType(List<OpdVitalSign> vitals, String type) {
+    OpdVitalSign? latest;
+    for (final OpdVitalSign vital in vitals) {
+      if (vital.vitalType != type) {
+        continue;
+      }
+      if (latest == null) {
+        latest = vital;
+        continue;
+      }
+      final DateTime? recordedAt = vital.recordedAt;
+      final DateTime? latestRecordedAt = latest.recordedAt;
+      if (recordedAt != null &&
+          (latestRecordedAt == null || recordedAt.isAfter(latestRecordedAt))) {
+        latest = vital;
+      }
+    }
+    return latest;
   }
 
   bool _isEmpty(Object? value) {

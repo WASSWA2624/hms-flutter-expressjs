@@ -913,6 +913,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdRecordVitalsAction => 'Record vitals';
 
   @override
+  String get opdEditVitalsAction => 'Edit vitals';
+
+  @override
   String get opdDoctorReviewAction => 'Doctor review';
 
   @override

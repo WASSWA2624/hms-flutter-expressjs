@@ -799,6 +799,7 @@
   "opdSendToTriageAction": "Send to triage",
   "opdSendToDoctorAction": "Send to doctor",
   "opdRecordVitalsAction": "Record vitals",
+  "opdEditVitalsAction": "Edit vitals",
   "opdDoctorReviewAction": "Doctor review",
   "opdRouteLabAction": "Send to lab",
   "opdRouteRadiologyAction": "Send to radiology",
@@ -1301,6 +1302,9 @@
   },
   "@opdRecordVitalsAction": {
     "description": "Action label to record OPD vitals."
+  },
+  "@opdEditVitalsAction": {
+    "description": "Action label to edit OPD vitals."
   },
   "@opdDoctorReviewAction": {
     "description": "Action label to record a doctor review."

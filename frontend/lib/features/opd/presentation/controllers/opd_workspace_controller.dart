@@ -472,6 +472,16 @@ final class OpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> updateVitals(
+    OpdFlowDetail detail,
+    List<Map<String, Object?>> vitals,
+  ) {
+    return _mutateFlow(
+      () => _repository.updateVitals(detail, vitals),
+      refreshAfter: true,
+    );
+  }
+
   Future<AppFailure?> correctStage(
     OpdFlowSummary flow,
     String stage,
