@@ -540,10 +540,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdFilterDialogTitle => 'Filter OPD table';
 
   @override
+  String get opdSearchFieldFilterLabel => 'Search in';
+
+  @override
+  String get opdAllFieldsFilterLabel => 'All fields';
+
+  @override
+  String get opdArrivalDateFilterLabel => 'Arrival date';
+
+  @override
+  String get opdDateFromLabel => 'From';
+
+  @override
+  String get opdDateToLabel => 'To';
+
+  @override
+  String get opdDatePickerButtonLabel => 'Choose date';
+
+  @override
+  String get opdInvalidDateMessage => 'Enter a valid date.';
+
+  @override
   String get opdCategoryFilterLabel => 'Category';
 
   @override
   String get opdStatusFilterLabel => 'Status';
+
+  @override
+  String get opdVisitTypeFilterLabel => 'Visit type';
+
+  @override
+  String get opdQueueFilterLabel => 'Queue';
+
+  @override
+  String get opdProviderFilterLabel => 'Provider';
+
+  @override
+  String get opdBillingFilterLabel => 'Billing';
+
+  @override
+  String get opdNextActionFilterLabel => 'Next action';
 
   @override
   String get opdAllCategoriesOption => 'All categories';

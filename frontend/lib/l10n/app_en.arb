@@ -660,8 +660,20 @@
   "opdFiltersLabel": "OPD filters",
   "opdFilterAction": "Filter OPD table",
   "opdFilterDialogTitle": "Filter OPD table",
+  "opdSearchFieldFilterLabel": "Search in",
+  "opdAllFieldsFilterLabel": "All fields",
+  "opdArrivalDateFilterLabel": "Arrival date",
+  "opdDateFromLabel": "From",
+  "opdDateToLabel": "To",
+  "opdDatePickerButtonLabel": "Choose date",
+  "opdInvalidDateMessage": "Enter a valid date.",
   "opdCategoryFilterLabel": "Category",
   "opdStatusFilterLabel": "Status",
+  "opdVisitTypeFilterLabel": "Visit type",
+  "opdQueueFilterLabel": "Queue",
+  "opdProviderFilterLabel": "Provider",
+  "opdBillingFilterLabel": "Billing",
+  "opdNextActionFilterLabel": "Next action",
   "opdAllCategoriesOption": "All categories",
   "opdAllStatusesOption": "All statuses",
   "opdSearchLabel": "Search OPD",
@@ -962,11 +974,47 @@
   "@opdFilterDialogTitle": {
     "description": "OPD table filter dialog title."
   },
+  "@opdSearchFieldFilterLabel": {
+    "description": "Label for choosing which OPD table field the search text applies to."
+  },
+  "@opdAllFieldsFilterLabel": {
+    "description": "Option label for searching or filtering all available OPD table fields."
+  },
+  "@opdArrivalDateFilterLabel": {
+    "description": "Label for the OPD arrival date range filter."
+  },
+  "@opdDateFromLabel": {
+    "description": "Label for the start date in OPD date range filters."
+  },
+  "@opdDateToLabel": {
+    "description": "Label for the end date in OPD date range filters."
+  },
+  "@opdDatePickerButtonLabel": {
+    "description": "Button label for opening the OPD date picker."
+  },
+  "@opdInvalidDateMessage": {
+    "description": "Validation message for invalid OPD date filter values."
+  },
   "@opdCategoryFilterLabel": {
     "description": "OPD table category filter label."
   },
   "@opdStatusFilterLabel": {
     "description": "OPD table status filter label."
+  },
+  "@opdVisitTypeFilterLabel": {
+    "description": "OPD table visit type filter label."
+  },
+  "@opdQueueFilterLabel": {
+    "description": "OPD table queue filter label."
+  },
+  "@opdProviderFilterLabel": {
+    "description": "OPD table provider filter label."
+  },
+  "@opdBillingFilterLabel": {
+    "description": "OPD table billing filter label."
+  },
+  "@opdNextActionFilterLabel": {
+    "description": "OPD table next action filter label."
   },
   "@opdAllCategoriesOption": {
     "description": "All categories option label in OPD filters."

@@ -843,7 +843,8 @@ class _OpdWorkspaceBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<_OpdTableItem> items = _tableItems(context, state)
+    final List<_OpdTableItem> allItems = _tableItems(context, state);
+    final List<_OpdTableItem> items = allItems
         .where((_OpdTableItem item) => filter.matches(item))
         .toList(growable: false);
 
@@ -851,7 +852,8 @@ class _OpdWorkspaceBody extends StatelessWidget {
       page: _tablePage(items, pageRequest),
       searchController: searchController,
       filter: filter,
-      statuses: _tableStatuses(context, state),
+      filterItems: allItems,
+      statuses: _tableStatuses(allItems),
       columns: columns,
       onColumnsChanged: onColumnsChanged,
       onPageChanged: onPageChanged,
@@ -880,8 +882,8 @@ AppPage<_OpdTableItem> _tablePage(
   );
 }
 
-List<String> _tableStatuses(BuildContext context, OpdWorkspaceState state) {
-  return _tableItems(context, state)
+List<String> _tableStatuses(List<_OpdTableItem> items) {
+  return items
       .map((_OpdTableItem item) => item.status)
       .whereType<String>()
       .where((String value) => value.trim().isNotEmpty)
@@ -950,63 +952,146 @@ List<AppSelectOption<String>> _triageScopeFilterOptions(BuildContext context) {
 final class _OpdTableFilter {
   const _OpdTableFilter({
     this.search = '',
+    this.searchField,
+    this.dateFrom,
+    this.dateTo,
     this.category,
     this.status,
     this.triageScope,
+    this.visitType,
+    this.queue,
+    this.provider,
+    this.billingState,
+    this.nextAction,
   });
 
   final String search;
+  final String? searchField;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
   final String? category;
   final String? status;
   final String? triageScope;
+  final String? visitType;
+  final String? queue;
+  final String? provider;
+  final String? billingState;
+  final String? nextAction;
 
   bool get isActive =>
       search.trim().isNotEmpty ||
+      _isNonEmpty(searchField) ||
+      dateFrom != null ||
+      dateTo != null ||
       _isNonEmpty(category) ||
       _isNonEmpty(status) ||
-      _isNonEmpty(triageScope);
+      _isNonEmpty(triageScope) ||
+      _isNonEmpty(visitType) ||
+      _isNonEmpty(queue) ||
+      _isNonEmpty(provider) ||
+      _isNonEmpty(billingState) ||
+      _isNonEmpty(nextAction);
 
   bool get hasAdvancedFilters =>
-      _isNonEmpty(category) || _isNonEmpty(status) || _isNonEmpty(triageScope);
+      _isNonEmpty(searchField) ||
+      dateFrom != null ||
+      dateTo != null ||
+      _isNonEmpty(category) ||
+      _isNonEmpty(status) ||
+      _isNonEmpty(triageScope) ||
+      _isNonEmpty(visitType) ||
+      _isNonEmpty(queue) ||
+      _isNonEmpty(provider) ||
+      _isNonEmpty(billingState) ||
+      _isNonEmpty(nextAction);
 
   AppSearchBarFilterValue toSearchBarValue() {
     return AppSearchBarFilterValue(
+      field: searchField,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
       options: <String, String>{
         if (_isNonEmpty(category)) _opdFilterKeyCategory: category!,
         if (_isNonEmpty(status)) _opdFilterKeyStatus: status!,
         if (_isNonEmpty(triageScope)) _opdFilterKeyTriageScope: triageScope!,
+        if (_isNonEmpty(visitType)) _opdFilterKeyVisitType: visitType!,
+        if (_isNonEmpty(queue)) _opdFilterKeyQueue: queue!,
+        if (_isNonEmpty(provider)) _opdFilterKeyProvider: provider!,
+        if (_isNonEmpty(billingState)) _opdFilterKeyBilling: billingState!,
+        if (_isNonEmpty(nextAction)) _opdFilterKeyNextAction: nextAction!,
       },
     );
   }
 
-  static _OpdTableFilter fromSearchBarValue(AppSearchBarFilterValue value) {
+  static _OpdTableFilter fromSearchBarValue(
+    AppSearchBarFilterValue value, {
+    String search = '',
+  }) {
     return _OpdTableFilter(
+      search: search,
+      searchField: value.field,
+      dateFrom: value.dateFrom,
+      dateTo: value.dateTo,
       category: value.option(_opdFilterKeyCategory),
       status: value.option(_opdFilterKeyStatus),
       triageScope: value.option(_opdFilterKeyTriageScope),
+      visitType: value.option(_opdFilterKeyVisitType),
+      queue: value.option(_opdFilterKeyQueue),
+      provider: value.option(_opdFilterKeyProvider),
+      billingState: value.option(_opdFilterKeyBilling),
+      nextAction: value.option(_opdFilterKeyNextAction),
     );
   }
 
   _OpdTableFilter copyWith({
     String? search,
+    String? searchField,
+    DateTime? dateFrom,
+    DateTime? dateTo,
     String? category,
     String? status,
     String? triageScope,
+    String? visitType,
+    String? queue,
+    String? provider,
+    String? billingState,
+    String? nextAction,
     bool clearSearch = false,
+    bool clearSearchField = false,
+    bool clearDateFrom = false,
+    bool clearDateTo = false,
     bool clearCategory = false,
     bool clearStatus = false,
     bool clearTriageScope = false,
+    bool clearVisitType = false,
+    bool clearQueue = false,
+    bool clearProvider = false,
+    bool clearBillingState = false,
+    bool clearNextAction = false,
   }) {
     return _OpdTableFilter(
       search: clearSearch ? '' : search ?? this.search,
+      searchField: clearSearchField ? null : searchField ?? this.searchField,
+      dateFrom: clearDateFrom ? null : dateFrom ?? this.dateFrom,
+      dateTo: clearDateTo ? null : dateTo ?? this.dateTo,
       category: clearCategory ? null : category ?? this.category,
       status: clearStatus ? null : status ?? this.status,
       triageScope: clearTriageScope ? null : triageScope ?? this.triageScope,
+      visitType: clearVisitType ? null : visitType ?? this.visitType,
+      queue: clearQueue ? null : queue ?? this.queue,
+      provider: clearProvider ? null : provider ?? this.provider,
+      billingState: clearBillingState
+          ? null
+          : billingState ?? this.billingState,
+      nextAction: clearNextAction ? null : nextAction ?? this.nextAction,
     );
   }
 
   bool matches(_OpdTableItem item) {
-    if (!item.matches(search)) {
+    if (!item.matches(search, field: searchField)) {
+      return false;
+    }
+    if (!_matchesDateRange(item.time, dateFrom: dateFrom, dateTo: dateTo)) {
       return false;
     }
     if (_isNonEmpty(category) && item.category != category) {
@@ -1018,6 +1103,21 @@ final class _OpdTableFilter {
     if (_isNonEmpty(triageScope) && !_matchesTriageScope(item, triageScope!)) {
       return false;
     }
+    if (_isNonEmpty(visitType) && item.visitType != visitType) {
+      return false;
+    }
+    if (_isNonEmpty(queue) && item.queue != queue) {
+      return false;
+    }
+    if (_isNonEmpty(provider) && item.provider != provider) {
+      return false;
+    }
+    if (_isNonEmpty(billingState) && item.billingState != billingState) {
+      return false;
+    }
+    if (_isNonEmpty(nextAction) && _nextActionFilterValue(item) != nextAction) {
+      return false;
+    }
     return true;
   }
 
@@ -1025,17 +1125,39 @@ final class _OpdTableFilter {
   bool operator ==(Object other) {
     return other is _OpdTableFilter &&
         other.search == search &&
+        other.searchField == searchField &&
+        other.dateFrom == dateFrom &&
+        other.dateTo == dateTo &&
         other.category == category &&
         other.status == status &&
-        other.triageScope == triageScope;
+        other.triageScope == triageScope &&
+        other.visitType == visitType &&
+        other.queue == queue &&
+        other.provider == provider &&
+        other.billingState == billingState &&
+        other.nextAction == nextAction;
   }
 
   @override
-  int get hashCode => Object.hash(search, category, status, triageScope);
+  int get hashCode => Object.hash(
+    search,
+    searchField,
+    dateFrom,
+    dateTo,
+    category,
+    status,
+    triageScope,
+    visitType,
+    queue,
+    provider,
+    billingState,
+    nextAction,
+  );
 }
 
 List<AppSearchBarFilterGroup> _opdTableFilterGroups(
   BuildContext context,
+  List<_OpdTableItem> items,
   List<String> statuses,
 ) {
   return <AppSearchBarFilterGroup>[
@@ -1055,6 +1177,20 @@ List<AppSearchBarFilterGroup> _opdTableFilterGroups(
           .toList(growable: false),
     ),
     AppSearchBarFilterGroup(
+      key: _opdFilterKeyVisitType,
+      label: context.l10n.opdVisitTypeFilterLabel,
+      choices: _textFilterChoices(
+        items.map((_OpdTableItem item) => item.visitType),
+      ),
+    ),
+    AppSearchBarFilterGroup(
+      key: _opdFilterKeyQueue,
+      label: context.l10n.opdQueueFilterLabel,
+      choices: _textFilterChoices(
+        items.map((_OpdTableItem item) => item.queue),
+      ),
+    ),
+    AppSearchBarFilterGroup(
       key: _opdFilterKeyStatus,
       label: context.l10n.opdStatusFilterLabel,
       choices: statuses
@@ -1065,6 +1201,23 @@ List<AppSearchBarFilterGroup> _opdTableFilterGroups(
             ),
           )
           .toList(growable: false),
+    ),
+    AppSearchBarFilterGroup(
+      key: _opdFilterKeyProvider,
+      label: context.l10n.opdProviderFilterLabel,
+      choices: _textFilterChoices(
+        items.map((_OpdTableItem item) => item.provider),
+      ),
+    ),
+    AppSearchBarFilterGroup(
+      key: _opdFilterKeyBilling,
+      label: context.l10n.opdBillingFilterLabel,
+      choices: _billingFilterChoices(context, items),
+    ),
+    AppSearchBarFilterGroup(
+      key: _opdFilterKeyNextAction,
+      label: context.l10n.opdNextActionFilterLabel,
+      choices: _nextActionFilterChoices(items),
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyTriageScope,
@@ -1084,6 +1237,120 @@ List<AppSearchBarFilterGroup> _opdTableFilterGroups(
   ];
 }
 
+List<AppSearchBarFieldChoice> _opdTableSearchFields(BuildContext context) {
+  final l10n = context.l10n;
+  return <AppSearchBarFieldChoice>[
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldPatient,
+      label: l10n.opdPatientColumnLabel,
+      icon: Icons.person_search_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldPatientId,
+      label: l10n.opdPatientIdLabel,
+      icon: Icons.badge_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldPhone,
+      label: l10n.patientsPhoneLabel,
+      icon: Icons.call_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldProvider,
+      label: l10n.opdProviderColumnLabel,
+      icon: Icons.assignment_ind_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldQueue,
+      label: l10n.opdQueueFilterLabel,
+      icon: Icons.queue_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldStatus,
+      label: l10n.opdStatusFilterLabel,
+      icon: Icons.fact_check_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldVisitType,
+      label: l10n.opdVisitTypeFilterLabel,
+      icon: Icons.local_hospital_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldBilling,
+      label: l10n.opdBillingFilterLabel,
+      icon: Icons.payments_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _opdSearchFieldNextAction,
+      label: l10n.opdNextActionFilterLabel,
+      icon: Icons.next_plan_outlined,
+    ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _textFilterChoices(Iterable<String?> values) {
+  final List<String> unique =
+      values
+          .whereType<String>()
+          .map((String value) => value.trim())
+          .where((String value) => value.isNotEmpty)
+          .toSet()
+          .toList(growable: false)
+        ..sort();
+
+  return <AppSearchBarFilterChoice>[
+    for (final String value in unique)
+      AppSearchBarFilterChoice(value: value, label: value),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _billingFilterChoices(
+  BuildContext context,
+  List<_OpdTableItem> items,
+) {
+  final Set<String> present = items
+      .map((_OpdTableItem item) => item.billingState)
+      .where((String value) => value.trim().isNotEmpty)
+      .toSet();
+  final List<String> ordered = <String>[
+    _opdBillingStateRequired,
+    _opdBillingStatePaid,
+    _opdBillingStateNotRequired,
+    _opdBillingStateUnknown,
+  ];
+
+  return <AppSearchBarFilterChoice>[
+    for (final String value in ordered)
+      if (present.contains(value))
+        AppSearchBarFilterChoice(
+          value: value,
+          label: _billingStateLabel(context, value),
+        ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _nextActionFilterChoices(
+  List<_OpdTableItem> items,
+) {
+  final List<String> unique =
+      items
+          .map(_nextActionFilterValue)
+          .whereType<String>()
+          .map((String value) => value.trim())
+          .where((String value) => value.isNotEmpty)
+          .toSet()
+          .toList(growable: false)
+        ..sort(
+          (String left, String right) =>
+              _apiLabel(left).compareTo(_apiLabel(right)),
+        );
+
+  return <AppSearchBarFilterChoice>[
+    for (final String value in unique)
+      AppSearchBarFilterChoice(value: value, label: _apiLabel(value)),
+  ];
+}
+
 @immutable
 final class _OpdTableItem {
   const _OpdTableItem({
@@ -1097,6 +1364,7 @@ final class _OpdTableItem {
     this.provider,
     this.facility,
     this.billing,
+    this.billingState = _opdBillingStateUnknown,
     this.billingTone = AppWorkspaceStatusTone.neutral,
     this.nextStep,
     this.time,
@@ -1116,6 +1384,7 @@ final class _OpdTableItem {
   final String? provider;
   final String? facility;
   final String? billing;
+  final String billingState;
   final AppWorkspaceStatusTone billingTone;
   final String? nextStep;
   final DateTime? time;
@@ -1134,40 +1403,75 @@ final class _OpdTableItem {
         id;
   }
 
-  bool matches(String search) {
+  bool matches(String search, {String? field}) {
     final String needle = search.trim().toLowerCase();
     if (needle.isEmpty) {
       return true;
     }
 
-    return <String?>[
-      id,
-      title,
-      category,
-      status,
-      subtitle,
-      visitType,
-      queue,
-      provider,
-      facility,
-      billing,
-      nextStep,
-      appointment?.patientId,
-      appointment?.patientIdentifier,
-      appointment?.patientPhone,
-      appointment?.reason,
-      queueEntry?.patientId,
-      queueEntry?.patientIdentifier,
-      queueEntry?.patientPhone,
-      queueEntry?.appointmentReason,
-      flow?.patientId,
-      flow?.patientIdentifier,
-      flow?.patientPhone,
-      flow?.stage,
-      flow?.status,
-    ].whereType<String>().any(
-      (String value) => value.toLowerCase().contains(needle),
+    return _searchValuesForField(field).whereType<String>().any(
+      (String value) => _searchValueMatches(value, needle),
     );
+  }
+
+  Iterable<String?> _searchValuesForField(String? field) {
+    return switch (field) {
+      _opdSearchFieldPatient => <String?>[
+        title,
+        subtitle,
+        appointment?.patientDisplayName,
+        queueEntry?.patientDisplayName,
+        flow?.patientDisplayName,
+      ],
+      _opdSearchFieldPatientId => <String?>[
+        appointment?.patientId,
+        appointment?.patientIdentifier,
+        queueEntry?.patientId,
+        queueEntry?.patientIdentifier,
+        flow?.patientId,
+        flow?.patientIdentifier,
+      ],
+      _opdSearchFieldPhone => <String?>[
+        appointment?.patientPhone,
+        queueEntry?.patientPhone,
+        flow?.patientPhone,
+      ],
+      _opdSearchFieldProvider => <String?>[provider],
+      _opdSearchFieldQueue => <String?>[category, queue, flow?.lastRouteTo],
+      _opdSearchFieldStatus => <String?>[status, flow?.stage, flow?.status],
+      _opdSearchFieldVisitType => <String?>[visitType, flow?.arrivalMode],
+      _opdSearchFieldBilling => <String?>[billing, billingState],
+      _opdSearchFieldNextAction => <String?>[nextStep, status],
+      _ => <String?>[
+        id,
+        title,
+        category,
+        status,
+        subtitle,
+        visitType,
+        queue,
+        provider,
+        facility,
+        billing,
+        billingState,
+        nextStep,
+        appointment?.patientId,
+        appointment?.patientIdentifier,
+        appointment?.patientPhone,
+        appointment?.reason,
+        queueEntry?.patientId,
+        queueEntry?.patientIdentifier,
+        queueEntry?.patientPhone,
+        queueEntry?.appointmentReason,
+        flow?.patientId,
+        flow?.patientIdentifier,
+        flow?.patientPhone,
+        flow?.arrivalMode,
+        flow?.stage,
+        flow?.status,
+        flow?.lastRouteTo,
+      ],
+    };
   }
 }
 
@@ -1196,6 +1500,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       provider: flow.providerDisplayName,
       facility: flow.facilityName,
       billing: _flowBillingLabel(context, flow),
+      billingState: _flowBillingState(flow),
       billingTone: _flowBillingTone(flow),
       nextStep: _triageNextStep(flow),
       time: flow.queuedAt ?? flow.startedAt,
@@ -1227,6 +1532,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       provider: flow.providerDisplayName,
       facility: flow.facilityName,
       billing: _flowBillingLabel(context, flow),
+      billingState: _flowBillingState(flow),
       billingTone: _flowBillingTone(flow),
       nextStep: flow.nextStep,
       time: flow.queuedAt ?? flow.startedAt,
@@ -1257,6 +1563,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       ]),
       provider: entry.providerDisplayName,
       billing: _queueBillingLabel(context, entry),
+      billingState: _queueBillingState(entry),
       billingTone: _queueBillingTone(entry),
       time: entry.queuedAt,
       urgencyRank: _statusUrgencyRank(entry.status),
@@ -1443,27 +1750,32 @@ String _flowBillingLabel(BuildContext context, OpdFlowSummary flow) {
 }
 
 String _flowBillingStatusLabel(BuildContext context, OpdFlowSummary flow) {
+  return _billingStateLabel(context, _flowBillingState(flow));
+}
+
+String _flowBillingState(OpdFlowSummary flow) {
   final String stage = (flow.stage ?? '').toUpperCase();
   if (flow.consultationPaid) {
-    return context.l10n.opdPaymentPaidLabel;
+    return _opdBillingStatePaid;
   }
   if (flow.consultationPaymentRequired ||
       stage == 'WAITING_CONSULTATION_PAYMENT') {
-    return context.l10n.opdPaymentRequiredLabel;
+    return _opdBillingStateRequired;
   }
-  return context.l10n.opdPaymentNotRequiredLabel;
+  return _opdBillingStateNotRequired;
+}
+
+String _billingStateLabel(BuildContext context, String value) {
+  return switch (value) {
+    _opdBillingStatePaid => context.l10n.opdPaymentPaidLabel,
+    _opdBillingStateRequired => context.l10n.opdPaymentRequiredLabel,
+    _opdBillingStateNotRequired => context.l10n.opdPaymentNotRequiredLabel,
+    _ => context.l10n.profileUnknownValue,
+  };
 }
 
 AppWorkspaceStatusTone _flowBillingTone(OpdFlowSummary flow) {
-  final String stage = (flow.stage ?? '').toUpperCase();
-  if (flow.consultationPaid) {
-    return AppWorkspaceStatusTone.success;
-  }
-  if (flow.consultationPaymentRequired ||
-      stage == 'WAITING_CONSULTATION_PAYMENT') {
-    return AppWorkspaceStatusTone.warning;
-  }
-  return AppWorkspaceStatusTone.neutral;
+  return _billingStateTone(_flowBillingState(flow));
 }
 
 String _queueBillingLabel(BuildContext context, OpdQueueEntry entry) {
@@ -1479,19 +1791,39 @@ String _queueBillingLabel(BuildContext context, OpdQueueEntry entry) {
   return _joinDisplay(<String?>[_apiLabel(status), amount]);
 }
 
-AppWorkspaceStatusTone _queueBillingTone(OpdQueueEntry entry) {
+String _queueBillingState(OpdQueueEntry entry) {
   final String status = (entry.paymentStatus ?? '').toUpperCase();
+  if (entry.amountToPay != null && entry.amountToPay! > 0 && status.isEmpty) {
+    return _opdBillingStateRequired;
+  }
   return switch (status) {
     'PAID' ||
     'COMPLETED' ||
     'COVERED' ||
     'WAIVED' ||
-    'CLEARED' => AppWorkspaceStatusTone.success,
+    'CLEARED' => _opdBillingStatePaid,
     'PENDING' ||
     'PENDING_PAYMENT' ||
     'INVOICE_CREATED' ||
-    'PARTIAL' => AppWorkspaceStatusTone.warning,
-    'FAILED' || 'VOID' || 'CANCELLED' => AppWorkspaceStatusTone.error,
+    'PARTIAL' => _opdBillingStateRequired,
+    'NOT_REQUIRED' || 'NO_CHARGE' => _opdBillingStateNotRequired,
+    _ => _opdBillingStateUnknown,
+  };
+}
+
+AppWorkspaceStatusTone _queueBillingTone(OpdQueueEntry entry) {
+  final String status = (entry.paymentStatus ?? '').toUpperCase();
+  if (status == 'FAILED' || status == 'VOID' || status == 'CANCELLED') {
+    return AppWorkspaceStatusTone.error;
+  }
+  return _billingStateTone(_queueBillingState(entry));
+}
+
+AppWorkspaceStatusTone _billingStateTone(String value) {
+  return switch (value) {
+    _opdBillingStatePaid => AppWorkspaceStatusTone.success,
+    _opdBillingStateRequired => AppWorkspaceStatusTone.warning,
+    _opdBillingStateNotRequired => AppWorkspaceStatusTone.neutral,
     _ => AppWorkspaceStatusTone.neutral,
   };
 }
@@ -1505,6 +1837,51 @@ String? _moneyLabel(BuildContext context, num? amount, String? currency) {
     Localizations.localeOf(context),
     currencyCode: currency,
   );
+}
+
+String? _nextActionFilterValue(_OpdTableItem item) {
+  final String? nextStep = item.nextStep;
+  if (_isNonEmpty(nextStep)) {
+    return nextStep;
+  }
+  return item.status;
+}
+
+bool _matchesDateRange(
+  DateTime? value, {
+  required DateTime? dateFrom,
+  required DateTime? dateTo,
+}) {
+  if (dateFrom == null && dateTo == null) {
+    return true;
+  }
+  if (value == null) {
+    return false;
+  }
+
+  final DateTime date = DateUtils.dateOnly(value.toLocal());
+  final DateTime? from = dateFrom == null
+      ? null
+      : DateUtils.dateOnly(dateFrom.toLocal());
+  final DateTime? to = dateTo == null
+      ? null
+      : DateUtils.dateOnly(dateTo.toLocal());
+
+  if (from != null && date.isBefore(from)) {
+    return false;
+  }
+  if (to != null && date.isAfter(to)) {
+    return false;
+  }
+  return true;
+}
+
+bool _searchValueMatches(String value, String needle) {
+  final String normalizedValue = value.toLowerCase();
+  if (normalizedValue.contains(needle)) {
+    return true;
+  }
+  return _apiLabel(value).toLowerCase().contains(needle);
 }
 
 String? _flowWaitLabel(BuildContext context, OpdFlowSummary flow) {
@@ -1778,6 +2155,7 @@ class _OpdMainTable extends ConsumerWidget {
     required this.page,
     required this.searchController,
     required this.filter,
+    required this.filterItems,
     required this.statuses,
     required this.columns,
     required this.onColumnsChanged,
@@ -1789,6 +2167,7 @@ class _OpdMainTable extends ConsumerWidget {
   final AppPage<_OpdTableItem> page;
   final TextEditingController searchController;
   final _OpdTableFilter filter;
+  final List<_OpdTableItem> filterItems;
   final List<String> statuses;
   final List<_OpdTableColumnId> columns;
   final ValueChanged<List<_OpdTableColumnId>> onColumnsChanged;
@@ -1832,18 +2211,40 @@ class _OpdMainTable extends ConsumerWidget {
           semanticLabel: l10n.opdSearchLabel,
           hintText: l10n.opdSearchHint,
           clearLabel: l10n.opdClearFiltersAction,
-          matcher: (_OpdTableItem item, String query) => item.matches(query),
+          matcher: (_OpdTableItem item, String query) =>
+              item.matches(query, field: filter.searchField),
+          onChanged: (String value) {
+            onFilterChanged(filter.copyWith(search: value));
+          },
+          onClear: () {
+            onFilterChanged(filter.copyWith(clearSearch: true));
+          },
           showAdvancedFilterButton: true,
           advancedFilterButtonLabel: l10n.opdFilterAction,
           advancedFilterTitle: l10n.opdFiltersLabel,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
           advancedFilterCancelLabel: l10n.commonCancelActionLabel,
-          enableDateFilter: false,
-          filterGroups: _opdTableFilterGroups(context, statuses),
+          searchFields: _opdTableSearchFields(context),
+          searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+          dateFilterLabel: l10n.opdArrivalDateFilterLabel,
+          dateFromLabel: l10n.opdDateFromLabel,
+          dateToLabel: l10n.opdDateToLabel,
+          datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
+          invalidDateMessage: l10n.opdInvalidDateMessage,
+          firstDate: DateTime(DateTime.now().year - 10),
+          lastDate: DateTime(DateTime.now().year + 2, 12, 31),
+          currentDate: DateTime.now(),
+          filterGroups: _opdTableFilterGroups(context, filterItems, statuses),
           filterValue: filter.toSearchBarValue(),
           onFilterChanged: (AppSearchBarFilterValue value) {
-            onFilterChanged(_OpdTableFilter.fromSearchBarValue(value));
+            onFilterChanged(
+              _OpdTableFilter.fromSearchBarValue(
+                value,
+                search: searchController.text,
+              ),
+            );
           },
           hasActiveFilters: filter.hasAdvancedFilters,
         ),
@@ -6285,6 +6686,24 @@ const String _opdFilterAll = 'ALL';
 const String _opdFilterKeyCategory = 'category';
 const String _opdFilterKeyStatus = 'status';
 const String _opdFilterKeyTriageScope = 'triage_scope';
+const String _opdFilterKeyVisitType = 'visit_type';
+const String _opdFilterKeyQueue = 'queue';
+const String _opdFilterKeyProvider = 'provider';
+const String _opdFilterKeyBilling = 'billing';
+const String _opdFilterKeyNextAction = 'next_action';
+const String _opdSearchFieldPatient = 'patient';
+const String _opdSearchFieldPatientId = 'patient_id';
+const String _opdSearchFieldPhone = 'phone';
+const String _opdSearchFieldProvider = 'provider';
+const String _opdSearchFieldQueue = 'queue';
+const String _opdSearchFieldStatus = 'status';
+const String _opdSearchFieldVisitType = 'visit_type';
+const String _opdSearchFieldBilling = 'billing';
+const String _opdSearchFieldNextAction = 'next_action';
+const String _opdBillingStatePaid = 'PAID';
+const String _opdBillingStateRequired = 'REQUIRED';
+const String _opdBillingStateNotRequired = 'NOT_REQUIRED';
+const String _opdBillingStateUnknown = 'UNKNOWN';
 const String _triageScopeWaiting = 'WAITING';
 const String _triageScopeUrgent = 'URGENT';
 const String _triageScopeEmergency = 'EMERGENCY';

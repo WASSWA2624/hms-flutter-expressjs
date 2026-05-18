@@ -257,5 +257,24 @@ void main() {
     expect(find.text('Payer / billing'), findsOneWidget);
     expect(find.text('Wait time'), findsOneWidget);
     expect(find.textContaining('Payment required'), findsWidgets);
+
+    final Finder tableFilterButton = find.byTooltip('Filter OPD table').last;
+    await tester.ensureVisible(tableFilterButton);
+    await tester.tap(tableFilterButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('OPD filters'), findsOneWidget);
+    expect(find.text('Search in'), findsOneWidget);
+    expect(find.text('Arrival date'), findsOneWidget);
+    expect(find.text('From'), findsOneWidget);
+    expect(find.text('To'), findsOneWidget);
+    expect(find.text('Category'), findsOneWidget);
+    expect(find.text('Visit type'), findsWidgets);
+    expect(find.text('Queue'), findsWidgets);
+    expect(find.text('Status'), findsWidgets);
+    expect(find.text('Provider'), findsWidgets);
+    expect(find.text('Billing'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Triage scope'), findsOneWidget);
   });
 }

@@ -1108,6 +1108,48 @@ abstract class AppLocalizations {
   /// **'Filter OPD table'**
   String get opdFilterDialogTitle;
 
+  /// Label for choosing which OPD table field the search text applies to.
+  ///
+  /// In en, this message translates to:
+  /// **'Search in'**
+  String get opdSearchFieldFilterLabel;
+
+  /// Option label for searching or filtering all available OPD table fields.
+  ///
+  /// In en, this message translates to:
+  /// **'All fields'**
+  String get opdAllFieldsFilterLabel;
+
+  /// Label for the OPD arrival date range filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival date'**
+  String get opdArrivalDateFilterLabel;
+
+  /// Label for the start date in OPD date range filters.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get opdDateFromLabel;
+
+  /// Label for the end date in OPD date range filters.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get opdDateToLabel;
+
+  /// Button label for opening the OPD date picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose date'**
+  String get opdDatePickerButtonLabel;
+
+  /// Validation message for invalid OPD date filter values.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date.'**
+  String get opdInvalidDateMessage;
+
   /// OPD table category filter label.
   ///
   /// In en, this message translates to:
@@ -1119,6 +1161,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get opdStatusFilterLabel;
+
+  /// OPD table visit type filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit type'**
+  String get opdVisitTypeFilterLabel;
+
+  /// OPD table queue filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get opdQueueFilterLabel;
+
+  /// OPD table provider filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get opdProviderFilterLabel;
+
+  /// OPD table billing filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get opdBillingFilterLabel;
+
+  /// OPD table next action filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get opdNextActionFilterLabel;
 
   /// All categories option label in OPD filters.
   ///
