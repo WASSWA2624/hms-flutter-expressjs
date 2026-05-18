@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -1012,47 +1011,22 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppTextField(
-            controller: _temperatureController,
-            labelText: 'Temperature (C)',
+          AppVitalsForm(
+            temperatureController: _temperatureController,
+            systolicController: _systolicController,
+            diastolicController: _diastolicController,
+            heartRateController: _heartRateController,
+            respiratoryRateController: _respiratoryRateController,
+            oxygenSaturationController: _oxygenController,
+            temperatureLabel: context.l10n.patientsTemperatureLabel,
+            systolicLabel: context.l10n.patientsSystolicLabel,
+            diastolicLabel: context.l10n.patientsDiastolicLabel,
+            heartRateLabel: context.l10n.patientsHeartRateLabel,
+            respiratoryRateLabel: context.l10n.patientsRespiratoryRateLabel,
+            oxygenSaturationLabel: context.l10n.patientsOxygenSaturationLabel,
+            bloodPressureLabel: context.l10n.patientsBloodPressureLabel,
+            unitLabel: context.l10n.patientsVitalUnitLabel,
             enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _decimalFormatters,
-          ),
-          AppTextField(
-            controller: _systolicController,
-            labelText: 'Systolic',
-            enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _decimalFormatters,
-          ),
-          AppTextField(
-            controller: _diastolicController,
-            labelText: 'Diastolic',
-            enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _decimalFormatters,
-          ),
-          AppTextField(
-            controller: _heartRateController,
-            labelText: 'Heart rate',
-            enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _decimalFormatters,
-          ),
-          AppTextField(
-            controller: _respiratoryRateController,
-            labelText: 'Respiratory rate',
-            enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _decimalFormatters,
-          ),
-          AppTextField(
-            controller: _oxygenController,
-            labelText: 'Oxygen saturation',
-            enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _decimalFormatters,
           ),
         ],
       ),
@@ -1927,7 +1901,3 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
     context,
   ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
 }
-
-final List<TextInputFormatter> _decimalFormatters = <TextInputFormatter>[
-  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-];
