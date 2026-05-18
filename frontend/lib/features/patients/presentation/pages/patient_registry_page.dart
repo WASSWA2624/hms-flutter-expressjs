@@ -1083,10 +1083,8 @@ class _PatientList extends ConsumerWidget {
           ),
         ),
       ],
-      mobileItemBuilder: (_, Patient patient) => Padding(
-        padding: EdgeInsets.all(Theme.of(context).spacing.md),
-        child: _PatientMobileRow(patient: patient),
-      ),
+      mobileItemBuilder: (_, Patient patient) =>
+          _PatientMobileRow(patient: patient),
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
       onRowSelected: (Patient patient) async {
         await _openPatientDetail(context, ref, patient.id);
@@ -1378,10 +1376,8 @@ class _SummaryPatientList extends ConsumerWidget {
           ),
         ),
       ],
-      mobileItemBuilder: (_, Patient patient) => Padding(
-        padding: EdgeInsets.all(Theme.of(context).spacing.md),
-        child: _PatientMobileRow(patient: patient),
-      ),
+      mobileItemBuilder: (_, Patient patient) =>
+          _PatientMobileRow(patient: patient),
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
       onRowSelected: (Patient patient) async {
         await _openPatientDetail(context, ref, patient.id);
@@ -1425,12 +1421,10 @@ class _PatientNameCell extends StatelessWidget {
           titleStyle: theme.textTheme.titleSmall,
         ),
         if (patient.requiresCompletion)
-          Text(
-            context.l10n.patientsRegistrationIncompleteValue,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.statusColors.warning,
-              fontWeight: FontWeight.w700,
-            ),
+          AppStatusText(
+            label: context.l10n.patientsRegistrationIncompleteValue,
+            tone: AppWorkspaceStatusTone.warning,
+            icon: Icons.error_outline,
           ),
       ],
     );
@@ -1517,16 +1511,16 @@ class _PatientAlertCell extends StatelessWidget {
     final l10n = context.l10n;
     final List<Widget> alerts = <Widget>[
       if (patient.hasAllergyAlert)
-        _CompactAlertLabel(
+        AppStatusText(
           icon: Icons.warning_amber_outlined,
           label: patient.allergyAlertLabel ?? l10n.patientsAllergyAlertLabel,
-          color: theme.statusColors.warning,
+          tone: AppWorkspaceStatusTone.warning,
         ),
       if (patient.requiresCompletion)
-        _CompactAlertLabel(
+        AppStatusText(
           icon: Icons.error_outline,
           label: l10n.patientsRegistrationIncompleteValue,
-          color: theme.statusColors.warning,
+          tone: AppWorkspaceStatusTone.warning,
         ),
     ];
 
@@ -1543,42 +1537,6 @@ class _PatientAlertCell extends StatelessWidget {
       spacing: theme.spacing.xs,
       runSpacing: theme.spacing.xs,
       children: alerts,
-    );
-  }
-}
-
-class _CompactAlertLabel extends StatelessWidget {
-  const _CompactAlertLabel({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(icon, size: 16, color: color),
-        SizedBox(width: theme.spacing.xs),
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -1668,45 +1626,25 @@ class _PatientMobileRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(
-          Icons.account_circle_outlined,
-          color: theme.colorScheme.primary,
-          size: theme.appTokens.listIconSize,
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                patient.effectiveDisplayName,
-                style: theme.textTheme.titleSmall,
-              ),
-              SizedBox(height: theme.spacing.xs),
-              Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
-              _AgeSexText(patient: patient),
-              if (patient.primaryPhone != null || patient.primaryEmail != null)
-                Text(patient.primaryPhone ?? patient.primaryEmail!),
-              _VisitContextCell(patient: patient),
-              SizedBox(height: theme.spacing.xs),
-              _StatusText(isActive: patient.isActive),
-              _PatientAlertCell(patient: patient),
-              if (patient.requiresCompletion)
-                Text(
-                  l10n.patientsRegistrationIncompleteValue,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.statusColors.warning,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-            ],
+    return AppListItemRow(
+      leadingIcon: Icons.account_circle_outlined,
+      title: patient.effectiveDisplayName,
+      details: <Widget>[
+        Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
+        _AgeSexText(patient: patient),
+        if (patient.primaryPhone != null || patient.primaryEmail != null)
+          Text(patient.primaryPhone ?? patient.primaryEmail!),
+        _VisitContextCell(patient: patient),
+        _StatusText(isActive: patient.isActive),
+        _PatientAlertCell(patient: patient),
+        if (patient.requiresCompletion)
+          AppStatusText(
+            label: l10n.patientsRegistrationIncompleteValue,
+            tone: AppWorkspaceStatusTone.warning,
+            icon: Icons.error_outline,
           ),
-        ),
-        Icon(Icons.chevron_right, size: theme.appTokens.listIconSize),
       ],
+      trailing: Icon(Icons.chevron_right, size: theme.appTokens.listIconSize),
     );
   }
 }
@@ -1910,13 +1848,18 @@ class _PatientDetailDialog extends ConsumerWidget {
           const Divider(),
           _QuickActions(patient: patient),
           const Divider(),
-          PatientRelatedSection<PatientIdentifier>(
+          AppExpandableRecordSection<PatientIdentifier>(
             title: l10n.patientsIdentifiersSectionTitle,
             emptyLabel: l10n.patientsNoIdentifiers,
             items: detail.identifiers,
-            resource: PatientRelatedResource.identifier,
             itemTitle: (PatientIdentifier item) => item.value,
             itemSubtitle: (PatientIdentifier item) => item.type,
+            addLabel: l10n.patientsAddRelatedAction,
+            editLabel: l10n.patientsEditAction,
+            deleteLabel: l10n.patientsDeleteAction,
+            addRequirement: _writeRequirement,
+            editRequirement: _writeRequirement,
+            deleteRequirement: _deleteRequirement,
             onAdd: () =>
                 _openRelatedForm<PatientIdentifier>(context, ref, detail),
             onEdit: (PatientIdentifier item) =>
@@ -1924,27 +1867,37 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientIdentifier item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          PatientRelatedSection<PatientContact>(
+          AppExpandableRecordSection<PatientContact>(
             title: l10n.patientsContactsSectionTitle,
             emptyLabel: l10n.patientsNoContacts,
             items: detail.contacts,
-            resource: PatientRelatedResource.contact,
             itemTitle: (PatientContact item) => item.value,
             itemSubtitle: (PatientContact item) => _apiLabel(item.type),
+            addLabel: l10n.patientsAddRelatedAction,
+            editLabel: l10n.patientsEditAction,
+            deleteLabel: l10n.patientsDeleteAction,
+            addRequirement: _writeRequirement,
+            editRequirement: _writeRequirement,
+            deleteRequirement: _deleteRequirement,
             onAdd: () => _openRelatedForm<PatientContact>(context, ref, detail),
             onEdit: (PatientContact item) =>
                 _openRelatedForm(context, ref, detail, item: item),
             onDelete: (PatientContact item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          PatientRelatedSection<PatientGuardian>(
+          AppExpandableRecordSection<PatientGuardian>(
             title: l10n.patientsGuardiansSectionTitle,
             emptyLabel: l10n.patientsNoGuardians,
             items: detail.guardians,
-            resource: PatientRelatedResource.guardian,
             itemTitle: (PatientGuardian item) => item.name,
             itemSubtitle: (PatientGuardian item) =>
                 item.relationship ?? l10n.profileUnknownValue,
+            addLabel: l10n.patientsAddRelatedAction,
+            editLabel: l10n.patientsEditAction,
+            deleteLabel: l10n.patientsDeleteAction,
+            addRequirement: _writeRequirement,
+            editRequirement: _writeRequirement,
+            deleteRequirement: _deleteRequirement,
             onAdd: () =>
                 _openRelatedForm<PatientGuardian>(context, ref, detail),
             onEdit: (PatientGuardian item) =>
@@ -1952,27 +1905,37 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientGuardian item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          PatientRelatedSection<PatientAllergy>(
+          AppExpandableRecordSection<PatientAllergy>(
             title: l10n.patientsAllergiesSectionTitle,
             emptyLabel: l10n.patientsNoAllergies,
             items: detail.allergies,
-            resource: PatientRelatedResource.allergy,
             itemTitle: (PatientAllergy item) => item.allergen,
             itemSubtitle: (PatientAllergy item) => _apiLabel(item.severity),
+            addLabel: l10n.patientsAddRelatedAction,
+            editLabel: l10n.patientsEditAction,
+            deleteLabel: l10n.patientsDeleteAction,
+            addRequirement: _writeRequirement,
+            editRequirement: _writeRequirement,
+            deleteRequirement: _deleteRequirement,
             onAdd: () => _openRelatedForm<PatientAllergy>(context, ref, detail),
             onEdit: (PatientAllergy item) =>
                 _openRelatedForm(context, ref, detail, item: item),
             onDelete: (PatientAllergy item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          PatientRelatedSection<PatientMedicalHistory>(
+          AppExpandableRecordSection<PatientMedicalHistory>(
             title: l10n.patientsMedicalHistorySectionTitle,
             emptyLabel: l10n.patientsNoMedicalHistory,
             items: detail.medicalHistories,
-            resource: PatientRelatedResource.medicalHistory,
             itemTitle: (PatientMedicalHistory item) => item.condition,
             itemSubtitle: (PatientMedicalHistory item) =>
                 _formatOptionalDate(context, item.diagnosisDate),
+            addLabel: l10n.patientsAddRelatedAction,
+            editLabel: l10n.patientsEditAction,
+            deleteLabel: l10n.patientsDeleteAction,
+            addRequirement: _writeRequirement,
+            editRequirement: _writeRequirement,
+            deleteRequirement: _deleteRequirement,
             onAdd: () =>
                 _openRelatedForm<PatientMedicalHistory>(context, ref, detail),
             onEdit: (PatientMedicalHistory item) =>
@@ -1980,15 +1943,20 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientMedicalHistory item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          PatientRelatedSection<PatientDocument>(
+          AppExpandableRecordSection<PatientDocument>(
             title: l10n.patientsDocumentsSectionTitle,
             emptyLabel: l10n.patientsNoDocuments,
             items: detail.documents,
-            resource: PatientRelatedResource.document,
             itemTitle: (PatientDocument item) =>
                 item.fileName ?? item.documentType,
             itemSubtitle: (PatientDocument item) =>
                 _apiLabel(item.documentType),
+            addLabel: l10n.patientsAddRelatedAction,
+            editLabel: l10n.patientsEditAction,
+            deleteLabel: l10n.patientsDeleteAction,
+            addRequirement: _writeRequirement,
+            editRequirement: _writeRequirement,
+            deleteRequirement: _deleteRequirement,
             onAdd: () =>
                 _openRelatedForm<PatientDocument>(context, ref, detail),
             onEdit: (PatientDocument item) =>
@@ -1996,13 +1964,18 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientDocument item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          PatientRelatedSection<PatientConsent>(
+          AppExpandableRecordSection<PatientConsent>(
             title: l10n.patientsConsentsSectionTitle,
             emptyLabel: l10n.patientsNoConsents,
             items: detail.consents,
-            resource: PatientRelatedResource.consent,
             itemTitle: (PatientConsent item) => _apiLabel(item.consentType),
             itemSubtitle: (PatientConsent item) => _apiLabel(item.status),
+            addLabel: l10n.patientsAddRelatedAction,
+            editLabel: l10n.patientsEditAction,
+            deleteLabel: l10n.patientsDeleteAction,
+            addRequirement: _writeRequirement,
+            editRequirement: _writeRequirement,
+            deleteRequirement: _deleteRequirement,
             onAdd: () => _openRelatedForm<PatientConsent>(context, ref, detail),
             onEdit: (PatientConsent item) =>
                 _openRelatedForm(context, ref, detail, item: item),
@@ -2795,7 +2768,12 @@ class _PatientFlowQuickDialogState
                 failure: _failure!,
                 body: _workflowFailureMessage(context, _failure!),
               ),
-            if (_formErrorText != null) PatientInlineFormError(_formErrorText!),
+            if (_formErrorText != null)
+              AppMessagePanel(
+                message: _formErrorText!,
+                tone: AppWorkspaceStatusTone.error,
+                density: AppContentPanelDensity.compact,
+              ),
             AppFormSection(
               title: l10n.patientsWorkflowSectionTitle,
               density: AppFormSectionDensity.compact,

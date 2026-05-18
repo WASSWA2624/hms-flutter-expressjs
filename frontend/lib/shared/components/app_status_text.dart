@@ -40,13 +40,28 @@ class AppStatusText extends StatelessWidget {
       return text;
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(resolvedIcon, size: theme.appTokens.listIconSize, color: color),
-        SizedBox(width: theme.spacing.xs),
-        Flexible(child: text),
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final Widget textChild = constraints.hasBoundedWidth
+            ? Flexible(child: text)
+            : ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 220),
+                child: text,
+              );
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              resolvedIcon,
+              size: theme.appTokens.listIconSize,
+              color: color,
+            ),
+            SizedBox(width: theme.spacing.xs),
+            textChild,
+          ],
+        );
+      },
     );
   }
 

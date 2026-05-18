@@ -710,10 +710,7 @@ class _OpdSummaryPatientResults extends StatelessWidget {
             ],
             mobileItemBuilder:
                 (BuildContext context, _OpdPatientSummaryItem item) {
-                  return _OpdSummaryPatientRow(
-                    item: item,
-                    onPressed: () => onPatientPressed(item),
-                  );
+                  return _OpdSummaryPatientRow(item: item);
                 },
             onRowSelected: onPatientPressed,
             itemKeyBuilder: (_OpdPatientSummaryItem item) =>
@@ -790,65 +787,35 @@ class _OpdSummaryPatientResults extends StatelessWidget {
 }
 
 class _OpdSummaryPatientRow extends StatelessWidget {
-  const _OpdSummaryPatientRow({required this.item, required this.onPressed});
+  const _OpdSummaryPatientRow({required this.item});
 
   final _OpdPatientSummaryItem item;
-  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return InkWell(
-      onTap: onPressed,
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool stacked =
-                !constraints.hasBoundedWidth || constraints.maxWidth < 620;
-            final Widget patient = AppListItemText(
-              title: item.title,
-              subtitle: item.subtitle,
-            );
-            final Widget meta = Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                _StatusBadge(value: item.status),
-                AppInlineMetaText(
-                  icon: Icons.badge_outlined,
-                  label: item.provider ?? context.l10n.profileUnknownValue,
-                ),
-                AppInlineMetaText(
-                  icon: Icons.schedule_outlined,
-                  label: _formatDateTime(context, item.time),
-                ),
-                const Icon(Icons.chevron_right),
-              ],
-            );
-
-            if (stacked) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  patient,
-                  SizedBox(height: theme.spacing.sm),
-                  meta,
-                ],
-              );
-            }
-
-            return Row(
-              children: <Widget>[
-                Expanded(child: patient),
-                SizedBox(width: theme.spacing.md),
-                Flexible(child: meta),
-              ],
-            );
-          },
+    return AppListItemRow(
+      title: item.title,
+      subtitle: item.subtitle,
+      details: <Widget>[
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            _StatusBadge(value: item.status),
+            AppInlineMetaText(
+              icon: Icons.badge_outlined,
+              label: item.provider ?? context.l10n.profileUnknownValue,
+            ),
+            AppInlineMetaText(
+              icon: Icons.schedule_outlined,
+              label: _formatDateTime(context, item.time),
+            ),
+          ],
         ),
-      ),
+      ],
+      trailing: const Icon(Icons.chevron_right),
     );
   }
 }
@@ -1778,37 +1745,17 @@ class _OpdTableMobileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.all(theme.spacing.md),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(item.title, style: theme.textTheme.titleSmall),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  _joinDisplay(<String?>[
-                    item.subtitle,
-                    _apiLabel(item.status ?? ''),
-                    item.provider,
-                    _nextStepLabel(context, item),
-                    _formatDateTime(context, item.time),
-                  ]),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          const Icon(Icons.chevron_right),
-        ],
-      ),
+    return AppListItemRow(
+      title: item.title,
+      subtitle: _joinDisplay(<String?>[
+        item.subtitle,
+        _apiLabel(item.status ?? ''),
+        item.provider,
+        _nextStepLabel(context, item),
+        _formatDateTime(context, item.time),
+      ]),
+      subtitleMaxLines: 3,
+      trailing: const Icon(Icons.chevron_right),
     );
   }
 }
@@ -3490,6 +3437,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                     ),
                   ),
           ),
+          if (detail != null) _OpdRelatedRecordsPanel(detail: detail),
           ..._actionSections(context, flow, detail),
         ],
       ),
@@ -3898,6 +3846,83 @@ class _OpdVitalIndicatorRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OpdRelatedRecordsPanel extends StatelessWidget {
+  const _OpdRelatedRecordsPanel({required this.detail});
+
+  final OpdFlowDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final List<OpdRelatedRecord> clinicalRecords = <OpdRelatedRecord>[
+      ...detail.clinicalNotes,
+      ...detail.diagnoses,
+      ...detail.procedures,
+    ];
+    final List<OpdRelatedRecord> serviceRecords = <OpdRelatedRecord>[
+      ...detail.labOrders,
+      ...detail.radiologyOrders,
+      ...detail.pharmacyOrders,
+      ...detail.admissions,
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppExpandableRecordSection<OpdTimelineItem>(
+          title: l10n.opdTimelineTitle,
+          emptyLabel: l10n.opdNoTimelineLabel,
+          items: detail.timeline,
+          maxItems: 8,
+          itemLeadingIcon: Icons.history_outlined,
+          itemTitle: (OpdTimelineItem item) => _apiLabel(item.action),
+          itemSubtitle: (OpdTimelineItem item) => _joinDisplay(<String?>[
+            _apiLabel(item.stage ?? ''),
+            item.notes,
+            _formatOptionalDateTime(context, item.occurredAt),
+          ]),
+        ),
+        AppExpandableRecordSection<OpdRelatedRecord>(
+          title: l10n.opdReferralsTitle,
+          emptyLabel: l10n.opdNoRelatedRecordsLabel,
+          items: detail.referrals,
+          itemLeadingIcon: Icons.call_split_outlined,
+          itemTitle: _opdRelatedRecordTitle,
+          itemSubtitle: (OpdRelatedRecord item) =>
+              _opdRelatedRecordSubtitle(context, item),
+        ),
+        AppExpandableRecordSection<OpdRelatedRecord>(
+          title: l10n.opdFollowUpsTitle,
+          emptyLabel: l10n.opdNoRelatedRecordsLabel,
+          items: detail.followUps,
+          itemLeadingIcon: Icons.event_repeat_outlined,
+          itemTitle: _opdRelatedRecordTitle,
+          itemSubtitle: (OpdRelatedRecord item) =>
+              _opdRelatedRecordSubtitle(context, item),
+        ),
+        AppExpandableRecordSection<OpdRelatedRecord>(
+          title: l10n.opdClinicalNotesSummaryLabel,
+          emptyLabel: l10n.opdNoRelatedRecordsLabel,
+          items: clinicalRecords,
+          itemLeadingIcon: Icons.note_alt_outlined,
+          itemTitle: _opdRelatedRecordTitle,
+          itemSubtitle: (OpdRelatedRecord item) =>
+              _opdRelatedRecordSubtitle(context, item),
+        ),
+        AppExpandableRecordSection<OpdRelatedRecord>(
+          title: l10n.opdServicesSummaryLabel,
+          emptyLabel: l10n.opdNoRelatedRecordsLabel,
+          items: serviceRecords,
+          itemLeadingIcon: Icons.room_service_outlined,
+          itemTitle: _opdRelatedRecordTitle,
+          itemSubtitle: (OpdRelatedRecord item) =>
+              _opdRelatedRecordSubtitle(context, item),
+        ),
+      ],
     );
   }
 }
@@ -5958,8 +5983,33 @@ String _formatDateTime(BuildContext context, DateTime? value) {
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
 }
 
+String? _formatOptionalDateTime(BuildContext context, DateTime? value) {
+  return value == null
+      ? null
+      : AppFormatters.dateTime(value, Localizations.localeOf(context));
+}
+
 String _joinDisplay(Iterable<String?> values) {
   return AppDisplay.joinNonEmpty(values, separator: ' | ');
+}
+
+String _opdRelatedRecordTitle(OpdRelatedRecord record) {
+  final String? title = record.title?.trim();
+  if (title != null && title.isNotEmpty) {
+    return title;
+  }
+  return _apiLabel(record.kind);
+}
+
+String _opdRelatedRecordSubtitle(
+  BuildContext context,
+  OpdRelatedRecord record,
+) {
+  return _joinDisplay(<String?>[
+    record.status == null ? null : _apiLabel(record.status!),
+    record.subtitle,
+    _formatOptionalDateTime(context, record.occurredAt),
+  ]);
 }
 
 List<String> _splitTokens(String value) {

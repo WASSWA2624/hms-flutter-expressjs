@@ -14,6 +14,7 @@ export 'app_logo.dart';
 export 'app_permission_action.dart';
 export 'app_phone_field.dart';
 export 'app_radio_group.dart';
+export 'app_record_section.dart';
 export 'app_report_actions.dart';
 export 'app_search_bar.dart';
 export 'app_select_field.dart';
