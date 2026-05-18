@@ -1070,8 +1070,8 @@ class _PatientList extends ConsumerWidget {
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsStatusColumnLabel,
-          cellBuilder: (_, Patient patient) =>
-              _StatusText(isActive: patient.isActive),
+          cellBuilder: (BuildContext context, Patient patient) =>
+              _patientActiveStatusText(context, patient.isActive),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsNextActionColumnLabel,
@@ -1635,7 +1635,7 @@ class _PatientMobileRow extends StatelessWidget {
         if (patient.primaryPhone != null || patient.primaryEmail != null)
           Text(patient.primaryPhone ?? patient.primaryEmail!),
         _VisitContextCell(patient: patient),
-        _StatusText(isActive: patient.isActive),
+        _patientActiveStatusText(context, patient.isActive),
         _PatientAlertCell(patient: patient),
         if (patient.requiresCompletion)
           AppStatusText(
@@ -1649,23 +1649,16 @@ class _PatientMobileRow extends StatelessWidget {
   }
 }
 
-class _StatusText extends StatelessWidget {
-  const _StatusText({required this.isActive});
-
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppStatusText(
-      label: isActive ? l10n.patientsActiveFilter : l10n.patientsInactiveFilter,
-      tone: isActive
-          ? AppWorkspaceStatusTone.success
-          : AppWorkspaceStatusTone.neutral,
-      icon: isActive ? Icons.check_circle_outline : Icons.block_outlined,
-      fontWeight: FontWeight.w500,
-    );
-  }
+Widget _patientActiveStatusText(BuildContext context, bool isActive) {
+  final l10n = context.l10n;
+  return AppStatusText(
+    label: isActive ? l10n.patientsActiveFilter : l10n.patientsInactiveFilter,
+    tone: isActive
+        ? AppWorkspaceStatusTone.success
+        : AppWorkspaceStatusTone.neutral,
+    icon: isActive ? Icons.check_circle_outline : Icons.block_outlined,
+    fontWeight: FontWeight.w500,
+  );
 }
 
 bool _matchesPatientTableSearch(
@@ -7087,40 +7080,15 @@ List<AppSelectOption<String>> _providerSelectOptions(
         value: provider.id,
         label: provider.displayTitle,
         leadingIcon: const Icon(Icons.person_search_outlined),
-        labelWidget: _ProviderOptionLabel(provider: provider),
+        labelWidget: AppListItemText(
+          title: provider.displayTitle,
+          subtitle: _joinDisplay(<String?>[
+            provider.positionTitle,
+            provider.practitionerType,
+          ]),
+        ),
       ),
   ];
-}
-
-class _ProviderOptionLabel extends StatelessWidget {
-  const _ProviderOptionLabel({required this.provider});
-
-  final OpdProviderOption provider;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(provider.displayTitle),
-        if (_joinDisplay(<String?>[
-          provider.positionTitle,
-          provider.practitionerType,
-        ]).isNotEmpty)
-          Text(
-            _joinDisplay(<String?>[
-              provider.positionTitle,
-              provider.practitionerType,
-            ]),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
-  }
 }
 
 FormFieldValidator<String> _timeValidator(BuildContext context) {

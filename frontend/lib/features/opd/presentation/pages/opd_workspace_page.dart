@@ -704,7 +704,7 @@ class _OpdSummaryPatientResults extends StatelessWidget {
                 label: l10n.opdStatusColumnLabel,
                 cellBuilder:
                     (BuildContext context, _OpdPatientSummaryItem item) {
-                      return _StatusText(value: item.status);
+                      return _opdStatusText(context, item.status);
                     },
               ),
             ],
@@ -803,7 +803,7 @@ class _OpdSummaryPatientRow extends StatelessWidget {
           runSpacing: theme.spacing.xs,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            _StatusBadge(value: item.status),
+            _opdStatusBadge(context, item.status),
             AppInlineMetaText(
               icon: Icons.badge_outlined,
               label: item.provider ?? context.l10n.profileUnknownValue,
@@ -1491,7 +1491,7 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
           title: item.title,
           subtitle: item.subtitle,
         ),
-        _OpdTableColumnId.status => _StatusText(value: item.status),
+        _OpdTableColumnId.status => _opdStatusText(context, item.status),
         _OpdTableColumnId.provider => _ProviderCell(item: item),
         _OpdTableColumnId.arrivalTime => Text(
           _formatDateTime(context, item.time),
@@ -1760,49 +1760,22 @@ class _OpdTableMobileRow extends StatelessWidget {
   }
 }
 
-class _InlineSuccessPanel extends StatelessWidget {
-  const _InlineSuccessPanel({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppMessagePanel(
-      message: message,
-      tone: AppWorkspaceStatusTone.success,
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.value});
-
-  final String? value;
-
-  @override
-  Widget build(BuildContext context) {
-    final String label = _apiLabel(value ?? '');
-    final AppWorkspaceStatusTone tone = _stageTone(value);
-
-    return AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(label: label, tone: tone),
-    );
-  }
-}
-
-class _StatusText extends StatelessWidget {
-  const _StatusText({required this.value});
-
-  final String? value;
-
-  @override
-  Widget build(BuildContext context) {
-    final String label = _apiLabel(value ?? '');
-    return AppStatusText(
+Widget _opdStatusBadge(BuildContext context, String? value) {
+  final String label = _apiLabel(value ?? '');
+  return AppWorkspaceStatusBadge(
+    status: AppWorkspaceStatus(
       label: label.isEmpty ? context.l10n.profileUnknownValue : label,
       tone: _stageTone(value),
-    );
-  }
+    ),
+  );
+}
+
+Widget _opdStatusText(BuildContext context, String? value) {
+  final String label = _apiLabel(value ?? '');
+  return AppStatusText(
+    label: label.isEmpty ? context.l10n.profileUnknownValue : label,
+    tone: _stageTone(value),
+  );
 }
 
 class _ProviderCell extends StatelessWidget {
@@ -2112,42 +2085,6 @@ class _WalkInTabLabel extends StatelessWidget {
   }
 }
 
-class _WalkInLowerSections extends StatelessWidget {
-  const _WalkInLowerSections({
-    required this.routingSection,
-    required this.billingSection,
-  });
-
-  final Widget routingSection;
-  final Widget billingSection;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool stacked =
-            !constraints.hasBoundedWidth || constraints.maxWidth < 760;
-        if (stacked) {
-          return AppFormSection(
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[routingSection, billingSection],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(child: routingSection),
-            SizedBox(width: theme.spacing.md),
-            Expanded(child: billingSection),
-          ],
-        );
-      },
-    );
-  }
-}
-
 typedef OpdPayloadSubmit =
     Future<AppFailure?> Function(Map<String, Object?> payload);
 
@@ -2245,9 +2182,11 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
               _patientModeContent(l10n),
             ],
           ),
-          _WalkInLowerSections(
-            routingSection: _routingSection(l10n),
-            billingSection: _billingSection(l10n),
+          AppResponsiveFieldRow.two(
+            left: _routingSection(l10n),
+            right: _billingSection(l10n),
+            breakpoint: 760,
+            gap: AppResponsiveFieldRowGap.form,
           ),
         ],
       ),
@@ -2723,25 +2662,25 @@ class _AppointmentActionsDialogState
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
           _OpdWorkflowPanel(
-            children: <Widget>[
-              _OpdWorkflowInfoPill(
+            items: <AppInfoTileData>[
+              AppInfoTileData(
                 label: l10n.opdStatusColumnLabel,
                 value: _apiLabel(widget.appointment.status ?? ''),
               ),
-              _OpdWorkflowInfoPill(
+              AppInfoTileData(
                 label: l10n.opdProviderColumnLabel,
                 value:
                     widget.appointment.providerDisplayName ??
                     l10n.profileUnknownValue,
               ),
-              _OpdWorkflowInfoPill(
+              AppInfoTileData(
                 label: l10n.opdTimeColumnLabel,
                 value: _formatDateTime(
                   context,
                   widget.appointment.scheduledStart,
                 ),
               ),
-              _OpdWorkflowInfoPill(
+              AppInfoTileData(
                 label: l10n.opdReasonLabel,
                 value: widget.appointment.reason ?? l10n.profileUnknownValue,
               ),
@@ -3160,20 +3099,23 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
             if (_successMessage != null)
-              _InlineSuccessPanel(message: _successMessage!),
+              AppMessagePanel(
+                message: _successMessage!,
+                tone: AppWorkspaceStatusTone.success,
+              ),
             _OpdWorkflowPanel(
-              children: <Widget>[
-                _OpdWorkflowInfoPill(
+              items: <AppInfoTileData>[
+                AppInfoTileData(
                   label: l10n.opdQueueStatusLabel,
                   value: _apiLabel(_status ?? widget.entry.status ?? ''),
                 ),
-                _OpdWorkflowInfoPill(
+                AppInfoTileData(
                   label: l10n.opdProviderColumnLabel,
                   value:
                       widget.entry.providerDisplayName ??
                       l10n.profileUnknownValue,
                 ),
-                _OpdWorkflowInfoPill(
+                AppInfoTileData(
                   label: l10n.opdTimeColumnLabel,
                   value: _formatDateTime(context, widget.entry.queuedAt),
                 ),
@@ -3606,16 +3548,16 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final List<Widget> children = <Widget>[
-      _OpdWorkflowInfoPill(
+    final List<AppInfoTileData> items = <AppInfoTileData>[
+      AppInfoTileData(
         label: l10n.opdStageLabel,
         value: _apiLabel(flow.stage ?? ''),
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdNextStepColumnLabel,
         value: _apiLabel(flow.nextStep ?? ''),
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdPaymentStatusLabel,
         value: detail == null
             ? l10n.profileUnknownValue
@@ -3625,26 +3567,26 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
             ? l10n.opdPaymentRequiredLabel
             : l10n.opdPaymentNotRequiredLabel,
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdProviderColumnLabel,
         value: flow.providerDisplayName ?? l10n.profileUnknownValue,
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdTriageLevelLabel,
         value: _apiLabel(flow.triageLevel ?? ''),
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdRouteDecisionLabel,
         value: _apiLabel(flow.lastRouteTo ?? ''),
       ),
       if (_isNonEmpty(flow.chiefComplaint))
-        _OpdWorkflowInfoPill(
+        AppInfoTileData(
           label: l10n.opdChiefComplaintLabel,
           value: flow.chiefComplaint!,
         ),
     ];
 
-    return _OpdWorkflowPanel(children: children);
+    return _OpdWorkflowPanel(items: items);
   }
 }
 
@@ -3661,53 +3603,55 @@ class _OpdWorkflowRecordSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final OpdFlowDetail? value = detail;
-    final List<Widget> children = <Widget>[
-      _OpdWorkflowInfoPill(
+    final List<AppInfoTileData> items = <AppInfoTileData>[
+      AppInfoTileData(
         label: l10n.opdVitalsSummaryLabel,
         value: '${value?.vitalSigns.length ?? 0}',
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdAbnormalVitalsSummaryLabel,
         value: '${_abnormalVitalCount(value, thresholds)}',
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdClinicalAlertsSummaryLabel,
         value: '${value?.clinicalAlerts.length ?? 0}',
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdServicesSummaryLabel,
         value:
             '${(value?.labOrders.length ?? 0) + (value?.radiologyOrders.length ?? 0) + (value?.pharmacyOrders.length ?? 0)}',
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdClinicalNotesSummaryLabel,
         value: '${value?.clinicalNotes.length ?? 0}',
       ),
-      _OpdWorkflowInfoPill(
+      AppInfoTileData(
         label: l10n.opdProceduresSummaryLabel,
         value: '${value?.procedures.length ?? 0}',
       ),
     ];
 
-    return _OpdWorkflowPanel(children: children);
+    return _OpdWorkflowPanel(items: items);
   }
 }
 
 class _OpdWorkflowPanel extends StatelessWidget {
-  const _OpdWorkflowPanel({required this.children});
+  const _OpdWorkflowPanel({required this.items});
 
-  final List<Widget> children;
+  final List<AppInfoTileData> items;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return AppContentPanel(
-      child: AppResponsiveWrap(
+      child: AppInfoTileGrid(
+        items: items,
         maxColumns: 4,
         minItemWidth: 150,
         spacing: theme.spacing.md,
         runSpacing: theme.spacing.sm,
-        children: children,
+        emptyValue: context.l10n.profileUnknownValue,
+        borderedTiles: false,
       ),
     );
   }
@@ -3754,8 +3698,9 @@ class _OpdVitalIndicatorsPanel extends StatelessWidget {
                       context.l10n.opdVitalsSummaryLabel,
                       style: theme.textTheme.titleSmall,
                     ),
-                    _StatusBadge(
-                      value: _abnormalVitalCount(value, thresholds) > 0
+                    _opdStatusBadge(
+                      context,
+                      _abnormalVitalCount(value, thresholds) > 0
                           ? 'ABNORMAL'
                           : 'NORMAL',
                     ),
@@ -3923,23 +3868,6 @@ class _OpdRelatedRecordsPanel extends StatelessWidget {
               _opdRelatedRecordSubtitle(context, item),
         ),
       ],
-    );
-  }
-}
-
-class _OpdWorkflowInfoPill extends StatelessWidget {
-  const _OpdWorkflowInfoPill({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppInfoTile(
-      label: label,
-      value: value,
-      emptyValue: context.l10n.profileUnknownValue,
-      bordered: false,
     );
   }
 }
@@ -5948,6 +5876,15 @@ List<AppSelectOption<String>> _providerSelectOptions({
         provider.staffProfileId,
         value,
       ]),
+      leadingIcon: const Icon(Icons.person_search_outlined),
+      labelWidget: AppListItemText(
+        title: provider.displayTitle,
+        subtitle: _joinDisplay(<String?>[
+          provider.positionTitle,
+          provider.practitionerType,
+          provider.staffProfileId,
+        ]),
+      ),
     );
   }
 
@@ -5963,6 +5900,11 @@ List<AppSelectOption<String>> _providerSelectOptions({
         value,
         schedule.facilityName,
       ]),
+      leadingIcon: const Icon(Icons.person_search_outlined),
+      labelWidget: AppListItemText(
+        title: schedule.providerDisplayName ?? value,
+        subtitle: schedule.facilityName,
+      ),
     );
   }
 
