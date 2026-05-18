@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
@@ -786,7 +787,7 @@ class _PatientAdvancedFiltersDialogState
             title: l10n.patientsFilterIdentitySectionTitle,
             density: AppFormSectionDensity.compact,
             children: <Widget>[
-              _ResponsiveFieldPair(
+              AppResponsiveFieldRow.two(
                 left: AppTextField(
                   controller: _patientIdController,
                   labelText: l10n.patientsPatientIdFilterLabel,
@@ -799,7 +800,7 @@ class _PatientAdvancedFiltersDialogState
                 ),
               ),
               if (widget.facilities.length > 1)
-                _ResponsiveFieldPair(
+                AppResponsiveFieldRow.two(
                   left: AppSelectField<String>.searchable(
                     value: _facilityId,
                     labelText: l10n.patientsFacilityLabel,
@@ -851,7 +852,7 @@ class _PatientAdvancedFiltersDialogState
                 labelText: l10n.patientsVisitDateFilterLabel,
                 onChanged: (DateTime? value) => _visitDate = value,
               ),
-              _ResponsiveFieldPair(
+              AppResponsiveFieldRow.two(
                 left: AppDateField(
                   value: _visitFrom,
                   firstDate: _patientFilterFirstDate,
@@ -891,7 +892,7 @@ class _PatientAdvancedFiltersDialogState
             title: l10n.patientsFilterRecordSectionTitle,
             density: AppFormSectionDensity.compact,
             children: <Widget>[
-              _ResponsiveFieldPair(
+              AppResponsiveFieldRow.two(
                 left: AppSelectField<String>(
                   value: _status,
                   labelText: l10n.patientsStatusFilterLabel,
@@ -921,7 +922,7 @@ class _PatientAdvancedFiltersDialogState
                   ],
                 ),
               ),
-              _ResponsiveFieldPair(
+              AppResponsiveFieldRow.two(
                 left: AppSelectField<bool>(
                   value: _hasActiveAdmission,
                   labelText: l10n.patientsActiveAdmissionFilterLabel,
@@ -937,7 +938,7 @@ class _PatientAdvancedFiltersDialogState
                   options: _booleanFilterOptions(l10n),
                 ),
               ),
-              _ResponsiveFieldPair(
+              AppResponsiveFieldRow.two(
                 left: AppDateField(
                   value: _dateOfBirthFrom,
                   firstDate: DateTime(1900),
@@ -957,7 +958,7 @@ class _PatientAdvancedFiltersDialogState
                   onChanged: (DateTime? value) => _dateOfBirthTo = value,
                 ),
               ),
-              _ResponsiveFieldPair(
+              AppResponsiveFieldRow.two(
                 left: AppDateField(
                   value: _createdFrom,
                   firstDate: _patientFilterFirstDate,
@@ -1260,13 +1261,12 @@ class _PatientSummaryListDialogState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppTextField(
+          AppSearchBar(
             controller: _searchController,
             semanticLabel: l10n.patientsSearchLabel,
             hintText: l10n.patientsSearchHint,
-            prefixIcon: const Icon(Icons.search),
-            textInputAction: TextInputAction.search,
-            onFieldSubmitted: (_) => _runSearchImmediately(),
+            clearLabel: l10n.patientsClearFiltersAction,
+            onSubmitted: (_) => _runSearchImmediately(),
           ),
           SizedBox(height: theme.spacing.md),
           list,
@@ -1440,14 +1440,11 @@ class _PatientNameCell extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(patient.effectiveDisplayName, style: theme.textTheme.titleSmall),
-        if (patient.facilityLabel != null)
-          Text(
-            patient.facilityLabel!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+        AppListItemText(
+          title: patient.effectiveDisplayName,
+          subtitle: patient.facilityLabel,
+          titleStyle: theme.textTheme.titleSmall,
+        ),
         if (patient.requiresCompletion)
           Text(
             context.l10n.patientsRegistrationIncompleteValue,
@@ -1742,29 +1739,14 @@ class _StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
-    final Color color = isActive
-        ? theme.statusColors.success
-        : theme.colorScheme.onSurfaceVariant;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(
-          isActive ? Icons.check_circle_outline : Icons.block_outlined,
-          size: theme.appTokens.listIconSize,
-          color: color,
-        ),
-        SizedBox(width: theme.spacing.xs),
-        Flexible(
-          child: Text(
-            isActive ? l10n.patientsActiveFilter : l10n.patientsInactiveFilter,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(color: color),
-          ),
-        ),
-      ],
+    return AppStatusText(
+      label: isActive ? l10n.patientsActiveFilter : l10n.patientsInactiveFilter,
+      tone: isActive
+          ? AppWorkspaceStatusTone.success
+          : AppWorkspaceStatusTone.neutral,
+      icon: isActive ? Icons.check_circle_outline : Icons.block_outlined,
+      fontWeight: FontWeight.w500,
     );
   }
 }
@@ -2647,7 +2629,7 @@ class _PatientAppointmentQuickDialogState
             if (widget.referenceData.facilities.length > 1)
               _facilitySelect(context),
             _appointmentScheduleFields(context),
-            _ResponsiveFieldPair(
+            AppResponsiveFieldRow.two(
               left: _statusSelect(context),
               right: _providerSelect(context),
             ),
@@ -3203,7 +3185,7 @@ class _PatientFlowQuickDialogState
               onChanged: (bool value) => setState(() => _markPaid = value),
             ),
             if (_markPaid)
-              _ResponsiveFieldPair(
+              AppResponsiveFieldRow.two(
                 left: AppSelectField<String>.searchable(
                   value: _paymentMethod,
                   labelText: l10n.patientsPaymentMethodLabel,
@@ -3241,7 +3223,7 @@ class _PatientFlowQuickDialogState
           density: AppFormSectionDensity.compact,
           children: <Widget>[
             _wardSelect(context),
-            _ResponsiveFieldPair(
+            AppResponsiveFieldRow.two(
               left: _roomSelect(context),
               right: _bedSelect(context),
             ),
@@ -3254,7 +3236,7 @@ class _PatientFlowQuickDialogState
 
   Widget _emergencyFields(BuildContext context) {
     final l10n = context.l10n;
-    return _ResponsiveFieldPair(
+    return AppResponsiveFieldRow.two(
       left: AppSelectField<String>.searchable(
         value: _emergencySeverity,
         labelText: l10n.patientsEmergencySeverityLabel,
@@ -4289,7 +4271,7 @@ class _PatientReportPreviewControls extends StatelessWidget {
         labelText: l10n.patientsReportDateLabel,
         onChanged: onSingleDateChanged,
       ),
-      _PatientReportPeriodMode.dateRange => _ResponsiveFieldPair(
+      _PatientReportPeriodMode.dateRange => AppResponsiveFieldRow.two(
         left: AppDateField(
           value: selection.startDate,
           firstDate: firstDate,
@@ -6266,7 +6248,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
           children: <Widget>[
             if (_duplicateCandidates.isNotEmpty)
               PatientDuplicateWarningPanel(duplicates: _duplicateCandidates),
-            _ResponsiveFieldPair(
+            AppResponsiveFieldRow.two(
               left: AppTextField(
                 controller: _firstNameController,
                 labelText: l10n.patientsFirstNameLabel,
@@ -6284,7 +6266,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                 validator: AppValidators.requiredText(l10n.validationRequired),
               ),
             ),
-            _ResponsiveFieldPair(
+            AppResponsiveFieldRow.two(
               left: AppDateField(
                 value: _dateOfBirth,
                 firstDate: DateTime(1900),
@@ -6350,7 +6332,7 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
               invalidEmailMessage: l10n.authEmailInvalidMessage,
               enabled: !_isSaving,
             ),
-            _ResponsiveFieldPair(
+            AppResponsiveFieldRow.two(
               left: AppSelectField<String>.searchable(
                 value: _selectedIdentifierType(_identifierTypeController.text),
                 labelText: l10n.patientsIdentifierTypeLabel,
@@ -6646,7 +6628,7 @@ class _EmergencyPatientFormDialogState
             : AppFailureStateView(failure: _failure!),
         children: <Widget>[
           Text(l10n.patientsEmergencyRegisterBody),
-          _ResponsiveFieldPair(
+          AppResponsiveFieldRow.two(
             left: AppTextField(
               controller: _firstNameController,
               labelText: l10n.patientsEmergencyFirstNameLabel,
@@ -6736,42 +6718,6 @@ class _EmergencyPatientFormDialogState
       _isSaving = false;
       _failure = failure;
     });
-  }
-}
-
-class _ResponsiveFieldPair extends StatelessWidget {
-  const _ResponsiveFieldPair({required this.left, required this.right});
-
-  final Widget left;
-  final Widget right;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        if (constraints.maxWidth < 560) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              left,
-              SizedBox(height: theme.spacing.sm),
-              right,
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(child: left),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(child: right),
-          ],
-        );
-      },
-    );
   }
 }
 
@@ -7789,14 +7735,7 @@ String _workflowFailureMessage(BuildContext context, AppFailure failure) {
 }
 
 String _apiLabel(String value) {
-  return value
-      .split('_')
-      .where((String part) => part.isNotEmpty)
-      .map((String part) {
-        final String lower = part.toLowerCase();
-        return lower.substring(0, 1).toUpperCase() + lower.substring(1);
-      })
-      .join(' ');
+  return AppDisplay.apiLabel(value);
 }
 
 List<String> _identifierTypeOptions(String currentValue) {
@@ -8004,10 +7943,7 @@ IconData _bedStatusIcon(String? value) {
 }
 
 String _joinDisplay(Iterable<String?> values) {
-  return values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty && value != 'null')
-      .join(' - ');
+  return AppDisplay.joinNonEmpty(values);
 }
 
 const List<String> _identifierTypes = <String>[

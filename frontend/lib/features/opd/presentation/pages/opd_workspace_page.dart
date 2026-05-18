@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
@@ -682,14 +683,18 @@ class _OpdSummaryPatientResults extends StatelessWidget {
           child: AppListTable<_OpdPatientSummaryItem>(
             items: filteredPatients,
             displayMode: AppListTableDisplayMode.list,
-            emptyBuilder: (_) =>
-                _EmptyPanel(title: emptyTitle, body: emptyBody),
+            emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+              title: emptyTitle,
+              body: emptyBody,
+              icon: Icons.person_search_outlined,
+              minHeight: 240,
+            ),
             columns: <AppListTableColumn<_OpdPatientSummaryItem>>[
               AppListTableColumn<_OpdPatientSummaryItem>(
                 label: l10n.opdPatientColumnLabel,
                 cellBuilder:
                     (BuildContext context, _OpdPatientSummaryItem item) {
-                      return _PatientText(
+                      return AppListItemText(
                         title: item.title,
                         subtitle: item.subtitle,
                       );
@@ -801,7 +806,7 @@ class _OpdSummaryPatientRow extends StatelessWidget {
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool stacked =
                 !constraints.hasBoundedWidth || constraints.maxWidth < 620;
-            final Widget patient = _PatientText(
+            final Widget patient = AppListItemText(
               title: item.title,
               subtitle: item.subtitle,
             );
@@ -811,11 +816,11 @@ class _OpdSummaryPatientRow extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 _StatusBadge(value: item.status),
-                _OpdInlineMeta(
+                AppInlineMetaText(
                   icon: Icons.badge_outlined,
                   label: item.provider ?? context.l10n.profileUnknownValue,
                 ),
-                _OpdInlineMeta(
+                AppInlineMetaText(
                   icon: Icons.schedule_outlined,
                   label: _formatDateTime(context, item.time),
                 ),
@@ -1515,7 +1520,7 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
     ),
     cellBuilder: (BuildContext context, _OpdTableItem item) {
       return switch (column) {
-        _OpdTableColumnId.patient => _PatientText(
+        _OpdTableColumnId.patient => AppListItemText(
           title: item.title,
           subtitle: item.subtitle,
         ),
@@ -1680,8 +1685,12 @@ class _OpdMainTable extends ConsumerWidget {
         isLoading: isLoading,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        emptyBuilder: (_) =>
-            _EmptyPanel(title: l10n.opdNoFlowsTitle, body: l10n.opdNoFlowsBody),
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.opdNoFlowsTitle,
+          body: l10n.opdNoFlowsBody,
+          icon: Icons.medical_services_outlined,
+          minHeight: 260,
+        ),
         columns: <AppListTableColumn<_OpdTableItem>>[
           for (int index = 0; index < visibleColumns.length; index += 1)
             _opdDataColumn(context, visibleColumns, index, onColumnsChanged),
@@ -1804,24 +1813,6 @@ class _OpdTableMobileRow extends StatelessWidget {
   }
 }
 
-class _EmptyPanel extends StatelessWidget {
-  const _EmptyPanel({required this.title, required this.body});
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppStateView(
-      variant: AppStateViewVariant.empty,
-      title: title,
-      body: body,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      textAlign: TextAlign.center,
-    );
-  }
-}
-
 class _InlineSuccessPanel extends StatelessWidget {
   const _InlineSuccessPanel({required this.message});
 
@@ -1845,37 +1836,6 @@ class _InlineSuccessPanel extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PatientText extends StatelessWidget {
-  const _PatientText({required this.title, this.subtitle});
-
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-        ),
-        if (subtitle != null && subtitle!.isNotEmpty)
-          Text(
-            subtitle!,
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-      ],
     );
   }
 }
@@ -1904,16 +1864,9 @@ class _StatusText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String label = _apiLabel(value ?? '');
-    final ThemeData theme = Theme.of(context);
-    return Text(
-      label.isEmpty ? context.l10n.profileUnknownValue : label,
-      maxLines: 1,
-      softWrap: false,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.bodyMedium?.copyWith(
-        color: _stageTextColor(theme, value),
-        fontWeight: FontWeight.w700,
-      ),
+    return AppStatusText(
+      label: label.isEmpty ? context.l10n.profileUnknownValue : label,
+      tone: _stageTone(value),
     );
   }
 }
@@ -1932,41 +1885,6 @@ class _ProviderCell extends StatelessWidget {
         maxLines: 1,
         softWrap: false,
         overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
-class _OpdInlineMeta extends StatelessWidget {
-  const _OpdInlineMeta({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 220),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(
-            icon,
-            size: theme.appTokens.listIconSize * 0.78,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          SizedBox(width: theme.spacing.xs),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1996,17 +1914,6 @@ Color _opdTableRowColor(BuildContext context, _OpdTableItem item) {
     _ => theme.colorScheme.surfaceContainerHighest,
   };
   return color.withValues(alpha: 0.42);
-}
-
-Color _stageTextColor(ThemeData theme, String? value) {
-  final AppStatusColors statusColors = theme.statusColors;
-  return switch (_stageTone(value)) {
-    AppWorkspaceStatusTone.success => statusColors.success,
-    AppWorkspaceStatusTone.warning => statusColors.warning,
-    AppWorkspaceStatusTone.error => statusColors.error,
-    AppWorkspaceStatusTone.info => statusColors.info,
-    AppWorkspaceStatusTone.neutral => theme.colorScheme.onSurfaceVariant,
-  };
 }
 
 enum _OpdVitalIndicatorState { normal, abnormal, critical }
@@ -2297,45 +2204,6 @@ class _WalkInSection extends StatelessWidget {
   }
 }
 
-class _WalkInFieldRow extends StatelessWidget {
-  const _WalkInFieldRow({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool stacked =
-            !constraints.hasBoundedWidth || constraints.maxWidth < 560;
-        if (stacked) {
-          return Column(
-            children: <Widget>[
-              for (var index = 0; index < children.length; index += 1) ...[
-                children[index],
-                if (index < children.length - 1)
-                  SizedBox(height: theme.appTokens.formGapCompact),
-              ],
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            for (var index = 0; index < children.length; index += 1) ...[
-              Expanded(child: children[index]),
-              if (index < children.length - 1)
-                SizedBox(width: theme.spacing.md),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
 class _WalkInLowerSections extends StatelessWidget {
   const _WalkInLowerSections({
     required this.routingSection,
@@ -2513,7 +2381,8 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
           ),
         if (_arrivalMode == 'EMERGENCY' &&
             _patientMode != _WalkInPatientMode.appointment)
-          _WalkInFieldRow(
+          AppResponsiveFieldRow(
+            gap: AppResponsiveFieldRowGap.form,
             children: <Widget>[
               AppSelectField<String>.searchable(
                 value: _emergencySeverity,
@@ -2705,7 +2574,8 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       _WalkInPatientMode.newPatient => AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          _WalkInFieldRow(
+          AppResponsiveFieldRow(
+            gap: AppResponsiveFieldRowGap.form,
             children: <Widget>[
               AppTextField(
                 controller: _firstNameController,
@@ -3120,7 +2990,8 @@ class _RescheduleAppointmentDialogState
                 setState(() => _date = value);
               },
             ),
-            _WalkInFieldRow(
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
               children: <Widget>[
                 AppTimeField(
                   value: _startTime,
@@ -3624,7 +3495,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         density: AppFormSectionDensity.compact,
         children: <Widget>[
           if (detail == null) const LinearProgressIndicator(),
-          _PatientText(
+          AppListItemText(
             title: _categoryLabel(context, _opdCategoryActiveFlow),
             subtitle: _joinDisplay(<String?>[
               _apiLabel(flow.stage ?? ''),
@@ -4375,7 +4246,8 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
               enabled: !_isSaving,
               maxLines: 2,
             ),
-            _WalkInFieldRow(
+            AppResponsiveFieldRow(
+              gap: AppResponsiveFieldRowGap.form,
               children: <Widget>[
                 AppSelectField<String>.searchable(
                   value: _painSeverity,
@@ -5028,7 +4900,8 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
             onChanged: (String? value) => setState(() => _drugId = value),
             options: _drugOptions.map(_drugOption).toList(growable: false),
           ),
-          _WalkInFieldRow(
+          AppResponsiveFieldRow(
+            gap: AppResponsiveFieldRowGap.form,
             children: <Widget>[
               AppTextField(
                 controller: _quantityController,
@@ -6221,19 +6094,7 @@ bool _isNonEmpty(String? value) {
 }
 
 String _apiLabel(String value) {
-  final String normalized = value.trim();
-  if (normalized.isEmpty) {
-    return '';
-  }
-
-  return normalized
-      .split('_')
-      .where((String part) => part.isNotEmpty)
-      .map((String part) {
-        final String lower = part.toLowerCase();
-        return lower.substring(0, 1).toUpperCase() + lower.substring(1);
-      })
-      .join(' ');
+  return AppDisplay.apiLabel(value);
 }
 
 String _formatDateTime(BuildContext context, DateTime? value) {
@@ -6243,10 +6104,7 @@ String _formatDateTime(BuildContext context, DateTime? value) {
 }
 
 String _joinDisplay(Iterable<String?> values) {
-  return values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty)
-      .join(' | ');
+  return AppDisplay.joinNonEmpty(values, separator: ' | ');
 }
 
 List<String> _splitTokens(String value) {
