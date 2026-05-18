@@ -5,6 +5,7 @@ export 'app_currency_amount_field.dart';
 export 'app_date_field.dart';
 export 'app_dialog.dart';
 export 'app_email_field.dart';
+export 'app_file_upload_panel.dart';
 export 'app_gender_field.dart';
 export 'app_icon_button.dart';
 export 'app_info_tile.dart';

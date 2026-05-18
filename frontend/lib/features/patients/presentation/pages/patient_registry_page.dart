@@ -1837,7 +1837,7 @@ class _PatientDetailDialog extends ConsumerWidget {
         children: <Widget>[
           if (state?.isRefreshingDetail ?? false)
             const LinearProgressIndicator(),
-          _PatientDemographics(detail: detail),
+          _PatientContextHeader(detail: detail),
           const Divider(),
           _QuickActions(patient: patient),
           const Divider(),
@@ -2118,8 +2118,8 @@ class _PatientDetailDialog extends ConsumerWidget {
   }
 }
 
-class _PatientDemographics extends StatelessWidget {
-  const _PatientDemographics({required this.detail});
+class _PatientContextHeader extends StatelessWidget {
+  const _PatientContextHeader({required this.detail});
 
   final PatientDetail detail;
 
@@ -2127,56 +2127,78 @@ class _PatientDemographics extends StatelessWidget {
   Widget build(BuildContext context) {
     final Patient patient = detail.patient;
     final l10n = context.l10n;
-    final List<AppInfoTileData> items = <AppInfoTileData>[
-      AppInfoTileData(
-        label: l10n.patientsNameLabel,
-        value: patient.effectiveDisplayName,
-        icon: Icons.person_outline,
-      ),
-      AppInfoTileData(
-        label: l10n.patientsIdentifierLabel,
-        value: patient.effectiveIdentifier,
-        icon: Icons.badge_outlined,
-      ),
-      AppInfoTileData(
-        label: l10n.patientsDobLabel,
-        value: _formatOptionalDate(context, patient.dateOfBirth),
-        icon: Icons.cake_outlined,
-      ),
-      AppInfoTileData(
-        label: l10n.patientsGenderLabel,
-        value: patient.gender == null
-            ? null
-            : _genderLabel(l10n, patient.gender!),
-        icon: Icons.wc_outlined,
-      ),
-      AppInfoTileData(
-        label: l10n.patientsPhoneLabel,
-        value: patient.primaryPhone,
-        icon: Icons.phone_outlined,
-      ),
-      AppInfoTileData(
-        label: l10n.patientsEmailLabel,
-        value: patient.primaryEmail,
-        icon: Icons.alternate_email_outlined,
-      ),
-      AppInfoTileData(
-        label: l10n.patientsFacilityLabel,
-        value: patient.facilityLabel,
-        icon: Icons.business_outlined,
-      ),
-      if (patient.requiresCompletion)
-        AppInfoTileData(
-          label: l10n.patientsRegistrationStatusLabel,
-          value: l10n.patientsRegistrationIncompleteValue,
-          icon: Icons.error_outline,
-        ),
-    ];
+    final String gender = patient.gender == null
+        ? l10n.profileUnknownValue
+        : _genderLabel(l10n, patient.gender!);
+    final String demographics = _joinDisplay(<String?>[
+      _patientAgeLabel(context, patient.dateOfBirth),
+      gender,
+    ]);
+    final PatientVisitContext? visit = patient.currentVisit;
 
-    return AppInfoTileGrid(
-      items: items,
-      emptyValue: l10n.profileUnknownValue,
-      minItemWidth: 170,
+    return AppWorkspacePatientContextHeader(
+      patientName: patient.effectiveDisplayName,
+      patientNumber: patient.effectiveIdentifier ?? patient.id,
+      demographics: demographics,
+      semanticLabel: l10n.patientsDetailTitle,
+      status: AppWorkspaceStatus(
+        label: patient.isActive
+            ? l10n.patientsActiveFilter
+            : l10n.patientsInactiveFilter,
+        tone: patient.isActive
+            ? AppWorkspaceStatusTone.success
+            : AppWorkspaceStatusTone.neutral,
+        icon: patient.isActive
+            ? Icons.check_circle_outline
+            : Icons.block_outlined,
+      ),
+      alerts: <AppWorkspaceStatus>[
+        if (patient.hasAllergyAlert)
+          AppWorkspaceStatus(
+            label: patient.allergyAlertLabel ?? l10n.patientsAllergyAlertLabel,
+            tone: AppWorkspaceStatusTone.warning,
+            icon: Icons.warning_amber_outlined,
+          ),
+        if (patient.requiresCompletion)
+          AppWorkspaceStatus(
+            label: l10n.patientsRegistrationIncompleteValue,
+            tone: AppWorkspaceStatusTone.warning,
+            icon: Icons.error_outline,
+          ),
+      ],
+      fields: <AppWorkspacePatientContextField>[
+        AppWorkspacePatientContextField(
+          label: l10n.patientsDobLabel,
+          value: _formatOptionalDate(context, patient.dateOfBirth),
+          icon: Icons.cake_outlined,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsPhoneLabel,
+          value: patient.primaryPhone ?? '',
+          icon: Icons.phone_outlined,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsEmailLabel,
+          value: patient.primaryEmail ?? '',
+          icon: Icons.alternate_email_outlined,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsFacilityLabel,
+          value: patient.facilityLabel ?? '',
+          icon: Icons.business_outlined,
+        ),
+        if (visit != null)
+          AppWorkspacePatientContextField(
+            label: l10n.patientsVisitColumnLabel,
+            value: _joinDisplay(<String?>[
+              visit.title,
+              visit.publicId,
+              visit.status == null ? null : _apiLabel(visit.status!),
+            ]),
+            icon: Icons.assignment_turned_in_outlined,
+            tone: AppWorkspaceStatusTone.info,
+          ),
+      ],
     );
   }
 }
@@ -2415,31 +2437,31 @@ class _PatientAppointmentQuickDialogState
       scrollable: true,
       closeEnabled: !_isSaving,
       maxWidth: 720,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_failure != null)
-              AppFailureStateView(
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: _failure == null
+            ? null
+            : AppFailureStateView(
                 failure: _failure!,
                 body: _workflowFailureMessage(context, _failure!),
               ),
-            if (widget.referenceData.facilities.length > 1)
-              _facilitySelect(context),
-            _appointmentScheduleFields(context),
-            AppResponsiveFieldRow.two(
-              left: _statusSelect(context),
-              right: _providerSelect(context),
-            ),
-            AppTextField(
-              controller: _reasonController,
-              labelText: l10n.patientsAppointmentReasonLabel,
-              enabled: !_isSaving,
-              maxLines: 3,
-            ),
-          ],
-        ),
+        children: <Widget>[
+          if (widget.referenceData.facilities.length > 1)
+            _facilitySelect(context),
+          _appointmentScheduleFields(context),
+          AppResponsiveFieldRow.two(
+            left: _statusSelect(context),
+            right: _providerSelect(context),
+          ),
+          AppTextField(
+            controller: _reasonController,
+            labelText: l10n.patientsAppointmentReasonLabel,
+            enabled: !_isSaving,
+            maxLines: 3,
+          ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -2751,46 +2773,46 @@ class _PatientFlowQuickDialogState
       scrollable: true,
       closeEnabled: !_isSaving,
       maxWidth: 780,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_failure != null)
-              AppFailureStateView(
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: _failure == null
+            ? null
+            : AppFailureStateView(
                 failure: _failure!,
                 body: _workflowFailureMessage(context, _failure!),
               ),
-            if (_formErrorText != null)
-              AppMessagePanel(
-                message: _formErrorText!,
-                tone: AppWorkspaceStatusTone.error,
-                density: AppContentPanelDensity.compact,
+        children: <Widget>[
+          if (_formErrorText != null)
+            AppMessagePanel(
+              message: _formErrorText!,
+              tone: AppWorkspaceStatusTone.error,
+              density: AppContentPanelDensity.compact,
+            ),
+          AppFormSection(
+            title: l10n.patientsWorkflowSectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              if (widget.referenceData.facilities.length > 1)
+                _facilitySelect(context),
+              if (_usesProvider) _providerSelect(context),
+            ],
+          ),
+          ..._modeFields(context),
+          AppFormSection(
+            title: l10n.patientsNotesSectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppTextField(
+                controller: _notesController,
+                labelText: l10n.patientsNotesLabel,
+                enabled: !_isSaving,
+                maxLines: 3,
               ),
-            AppFormSection(
-              title: l10n.patientsWorkflowSectionTitle,
-              density: AppFormSectionDensity.compact,
-              children: <Widget>[
-                if (widget.referenceData.facilities.length > 1)
-                  _facilitySelect(context),
-                if (_usesProvider) _providerSelect(context),
-              ],
-            ),
-            ..._modeFields(context),
-            AppFormSection(
-              title: l10n.patientsNotesSectionTitle,
-              density: AppFormSectionDensity.compact,
-              children: <Widget>[
-                AppTextField(
-                  controller: _notesController,
-                  labelText: l10n.patientsNotesLabel,
-                  enabled: !_isSaving,
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -6323,14 +6345,14 @@ class _PatientRelatedRecordDialogState<T>
       icon: Icon(_resourceIcon(widget.resource)),
       scrollable: true,
       closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            ..._fieldsForResource(context),
-          ],
-        ),
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: _failure == null
+            ? null
+            : AppFailureStateView(failure: _failure!),
+        children: _fieldsForResource(context),
       ),
       actions: <Widget>[
         AppButton.tertiary(
@@ -6497,14 +6519,20 @@ class _PatientRelatedRecordDialogState<T>
                 : widget.referenceData.documentTypes,
           ),
         ),
-        _DocumentUploadField(
-          files: _documentFiles,
+        AppFileUploadPanel(
+          title: l10n.patientsDocumentUploadTitle,
+          emptyDescription: l10n.patientsDocumentUploadEmpty,
+          chooseLabel: l10n.patientsChooseDocumentAction,
+          clearLabel: l10n.patientsClearFiltersAction,
+          fileNames: _documentFiles
+              .map((XFile file) => file.name)
+              .toList(growable: false),
           enabled:
               !_isSaving &&
               !_isPickingDocuments &&
               widget.onUploadDocuments != null,
           isLoading: _isPickingDocuments,
-          onPick: _pickDocumentFiles,
+          onChoose: _pickDocumentFiles,
           onClear: () => setState(() => _documentFiles = const <XFile>[]),
         ),
         AppTextField(
@@ -6824,59 +6852,6 @@ class _PatientRelatedRecordDialogState<T>
           'revoked_at': _date?.toUtc().toIso8601String(),
       },
     };
-  }
-}
-
-class _DocumentUploadField extends StatelessWidget {
-  const _DocumentUploadField({
-    required this.files,
-    required this.enabled,
-    required this.isLoading,
-    required this.onPick,
-    required this.onClear,
-  });
-
-  final List<XFile> files;
-  final bool enabled;
-  final bool isLoading;
-  final VoidCallback onPick;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-    final String fileSummary = files.isEmpty
-        ? l10n.patientsDocumentUploadEmpty
-        : files.map((XFile file) => file.name).join(', ');
-
-    return AppSectionPanel(
-      title: l10n.patientsDocumentUploadTitle,
-      description: fileSummary,
-      leadingIcon: Icons.upload_file_outlined,
-      children: <Widget>[
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            AppButton.secondary(
-              label: l10n.patientsChooseDocumentAction,
-              leadingIcon: Icons.attach_file_outlined,
-              isLoading: isLoading,
-              enabled: enabled,
-              onPressed: enabled ? onPick : null,
-            ),
-            if (files.isNotEmpty)
-              AppButton.tertiary(
-                label: l10n.patientsClearFiltersAction,
-                leadingIcon: Icons.close,
-                enabled: enabled,
-                onPressed: enabled ? onClear : null,
-              ),
-          ],
-        ),
-      ],
-    );
   }
 }
 
