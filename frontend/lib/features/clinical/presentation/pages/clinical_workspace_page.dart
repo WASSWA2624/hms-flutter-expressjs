@@ -230,6 +230,8 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       child: AppPaginatedListTable<ClinicalWorklistEntry>(
         page: state.worklist,
         isLoading: state.isRefreshing,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<ClinicalWorklistEntry> page) {
