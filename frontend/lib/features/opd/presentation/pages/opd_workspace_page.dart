@@ -3646,7 +3646,6 @@ class _OpdWorkflowPanel extends StatelessWidget {
     return AppContentPanel(
       child: AppInfoTileGrid(
         items: items,
-        maxColumns: 4,
         minItemWidth: 150,
         spacing: theme.spacing.md,
         runSpacing: theme.spacing.sm,
