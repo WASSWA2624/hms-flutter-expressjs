@@ -9,12 +9,18 @@ const clinicalTermRepository = require('@repositories/clinical-term/clinical-ter
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { ROLES } = require('@config/roles');
+const { UGANDA_DIAGNOSIS_TERMS } = require('../data/uganda-diagnosis-terms');
 
 const SHARED_FAVORITE_ROLES = new Set([
   ROLES.SUPER_ADMIN,
   ROLES.TENANT_ADMIN,
   ROLES.FACILITY_ADMIN,
   ROLES.DOCTOR,
+  ROLES.NURSE,
+  ROLES.UNIT_MANAGER,
+  ROLES.WARD_MANAGER,
+  ROLES.ICU_MANAGER,
+  ROLES.THEATRE_MANAGER,
 ]);
 
 const normalizeText = (value) => String(value || '').trim();
@@ -47,6 +53,7 @@ const scoreSuggestion = ({ q, source, createdAt, usageCount }) => {
   if (source.origin === 'PERSONAL_FAVORITE') score += 120;
   if (source.origin === 'SHARED_FAVORITE') score += 90;
   if (source.origin === 'RECENT_HISTORY') score += 60;
+  if (source.origin === 'UGANDA_CATALOG') score += 40;
 
   if (!search) score += 5;
   if (search) {
@@ -57,6 +64,9 @@ const scoreSuggestion = ({ q, source, createdAt, usageCount }) => {
   }
 
   score += Math.min(Number(usageCount || 0), 25);
+  if (Number.isFinite(source.rank)) {
+    score += Math.max(0, 35 - Number(source.rank) / 30);
+  }
 
   if (createdAt) {
     const ageMs = Date.now() - new Date(createdAt).getTime();
@@ -139,7 +149,10 @@ const createClinicalTermFavorite = async (payload = {}, context = {}) => {
   const scope = normalizeScope(payload.scope || 'PERSONAL');
   const code = normalizeText(payload.code) || null;
   const description = normalizeText(payload.description);
-  const facilityId = payload.facility_id || context.facility_id || null;
+  const facilityId =
+    payload.facility_id !== undefined
+      ? payload.facility_id || null
+      : context.facility_id || null;
   const ownerUserId = scope === 'PERSONAL' ? userId : null;
 
   if (!description) {
@@ -184,6 +197,17 @@ const createClinicalTermFavorite = async (payload = {}, context = {}) => {
   }).catch(() => {});
 
   return favorite;
+};
+
+const loadUgandaDiagnosisCatalog = ({ q }) => {
+  const search = normalizeUpper(q);
+  if (!search) return UGANDA_DIAGNOSIS_TERMS;
+
+  return UGANDA_DIAGNOSIS_TERMS.filter((term) => {
+    const description = normalizeUpper(term.description);
+    const code = normalizeUpper(term.code);
+    return description.includes(search) || code.includes(search);
+  });
 };
 
 const deleteClinicalTermFavorite = async (id, context = {}) => {
@@ -279,7 +303,7 @@ const listClinicalTermSuggestions = async (filters = {}, context = {}) => {
   const termType = normalizeTermType(filters.term_type || 'DIAGNOSIS');
   const q = normalizeText(filters.q);
   const limit = Number(filters.limit || 12);
-  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(50, limit)) : 12;
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(1000, limit)) : 12;
   const facilityId =
     filters.facility_id !== undefined
       ? filters.facility_id || null
@@ -302,6 +326,7 @@ const listClinicalTermSuggestions = async (filters = {}, context = {}) => {
       limit: safeLimit * 3,
     }),
   ]);
+  const catalog = termType === 'DIAGNOSIS' ? loadUgandaDiagnosisCatalog({ q }) : [];
 
   const personalFavoriteIds = new Set(
     favorites
@@ -319,7 +344,7 @@ const listClinicalTermSuggestions = async (filters = {}, context = {}) => {
   }));
 
   const merged = new Map();
-  [...favoriteRows, ...recent].forEach((item) => {
+  [...favoriteRows, ...recent, ...catalog].forEach((item) => {
     const key = buildSuggestionKey(item.code, item.description);
     const previous = merged.get(key);
     const nextScore = scoreSuggestion({

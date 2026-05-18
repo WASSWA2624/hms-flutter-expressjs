@@ -226,14 +226,29 @@ final class ClinicalWorkspaceController
     required String description,
     String? code,
   }) {
-    return _mutateSelectedEncounter(
-      () => _repository.createDiagnosis(<String, Object?>{
-        'encounter_id': _selectedEntry!.encounterId,
-        'diagnosis_type': diagnosisType,
-        'code': code,
-        'description': description,
-      }),
-    );
+    final String normalizedCode = code?.trim() ?? '';
+    final String normalizedDescription = description.trim();
+    return _mutateSelectedEncounter(() async {
+      final Result<void> diagnosisResult = await _repository
+          .createDiagnosis(<String, Object?>{
+            'encounter_id': _selectedEntry!.encounterId,
+            'diagnosis_type': diagnosisType,
+            'code': normalizedCode,
+            'description': normalizedDescription,
+          });
+      final AppFailure? diagnosisFailure = _failureOrNull(diagnosisResult);
+      if (diagnosisFailure != null) {
+        return Result<void>.failure(diagnosisFailure);
+      }
+
+      await _repository.createClinicalTermFavorite(<String, Object?>{
+        'term_type': 'DIAGNOSIS',
+        'scope': 'SHARED',
+        'code': normalizedCode,
+        'description': normalizedDescription,
+      });
+      return const Result<void>.success(null);
+    });
   }
 
   Future<AppFailure?> addProcedure({

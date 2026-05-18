@@ -346,7 +346,7 @@ const buildTriageQueueWhereClause = (filters = {}) => {
     status: 'OPEN',
     encounter_type: { in: ['OPD', 'EMERGENCY'] }
   };
-  const andClauses = [];
+  const andClauses = [{ patient: { deleted_at: null } }];
 
   if (filters.tenant_id) where.tenant_id = filters.tenant_id;
   if (filters.facility_id) where.facility_id = filters.facility_id;

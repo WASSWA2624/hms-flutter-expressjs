@@ -162,10 +162,17 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       queryParameters: _withoutEmpty(<String, Object?>{
         'term_type': termType,
         'q': query,
-        'limit': 20,
+        'limit': 1000,
       }),
       decoder: decodeClinicalTermOptions,
     );
+  }
+
+  @override
+  Future<Result<void>> createClinicalTermFavorite(
+    Map<String, Object?> payload,
+  ) {
+    return _postVoid(HmsApiResource.clinicalTermFavorites, payload);
   }
 
   @override

@@ -28,6 +28,7 @@ describe('scheduling-workspace.repository', () => {
 
     expect(result.tenant_id).toBe('tenant-1');
     expect(result.facility_id).toBe('facility-1');
+    expect(result.patient).toEqual({ deleted_at: null });
     expect(result.scheduled_start).toEqual(
       expect.objectContaining({
         gte: expect.any(Date),
@@ -35,6 +36,52 @@ describe('scheduling-workspace.repository', () => {
       })
     );
     expect(result.AND).toHaveLength(1);
+  });
+
+  it('buildReminderWhere excludes appointments for deleted patients', () => {
+    const result = subject.buildReminderWhere({
+      tenantId: 'tenant-1',
+      patientId: 'patient-1',
+    });
+
+    expect(result.appointment).toEqual(
+      expect.objectContaining({
+        tenant_id: 'tenant-1',
+        patient_id: 'patient-1',
+        patient: { deleted_at: null },
+      })
+    );
+  });
+
+  it('buildFollowUpWhere excludes encounters for deleted patients', () => {
+    const result = subject.buildFollowUpWhere({
+      tenantId: 'tenant-1',
+      patientId: 'patient-1',
+    });
+
+    expect(result.encounter).toEqual(
+      expect.objectContaining({
+        tenant_id: 'tenant-1',
+        patient_id: 'patient-1',
+        patient: { deleted_at: null },
+      })
+    );
+  });
+
+  it('buildOpenEncounterWhere excludes deleted patients', () => {
+    const result = subject.buildOpenEncounterWhere({
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        deleted_at: null,
+        patient: { deleted_at: null },
+      })
+    );
   });
 
   it('findQueueEntries queries queue rows with includes', async () => {

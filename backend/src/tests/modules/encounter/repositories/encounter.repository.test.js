@@ -51,10 +51,11 @@ describe('Encounter Repository', () => {
 
       expect(result).toEqual(mockEncounter);
       expect(prisma.encounter.findFirst).toHaveBeenCalledWith({
-        where: {
+        where: expect.objectContaining({
           id: 'enc-123',
-          deleted_at: null
-        },
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        }),
         include: {}
       });
     });
@@ -87,7 +88,14 @@ describe('Encounter Repository', () => {
       const result = await findMany({}, 0, 20);
 
       expect(result).toEqual(mockEncounters);
-      expect(prisma.encounter.findMany).toHaveBeenCalled();
+      expect(prisma.encounter.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deleted_at: null,
+            AND: [{ patient: { deleted_at: null } }]
+          })
+        })
+      );
     });
   });
 
@@ -98,6 +106,12 @@ describe('Encounter Repository', () => {
       const result = await count({});
 
       expect(result).toBe(5);
+      expect(prisma.encounter.count).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        })
+      });
     });
   });
 

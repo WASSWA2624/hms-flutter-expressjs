@@ -13,7 +13,7 @@ const listClinicalTermSuggestionsQuerySchema = z.object({
   facility_id: uuidSchema.optional().nullable(),
   term_type: z.enum(TERM_TYPE_VALUES).optional().default('DIAGNOSIS'),
   q: z.string().trim().max(120).optional(),
-  limit: z.coerce.number().int().min(1).max(50).optional(),
+  limit: z.coerce.number().int().min(1).max(1000).optional(),
 });
 
 const listClinicalTermFavoritesQuerySchema = listQuerySchema.extend({
@@ -43,4 +43,3 @@ module.exports = {
   createClinicalTermFavoriteSchema,
   clinicalTermFavoriteIdParamsSchema,
 };
-

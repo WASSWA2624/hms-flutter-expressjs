@@ -40,7 +40,11 @@ describe('Admission Repository', () => {
       const result = await admissionRepository.findById('test-id');
 
       expect(prisma.admission.findFirst).toHaveBeenCalledWith({
-        where: { id: 'test-id', deleted_at: null },
+        where: {
+          id: 'test-id',
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        },
         include: {}
       });
       expect(result).toEqual(mockAdmission);
@@ -74,7 +78,11 @@ describe('Admission Repository', () => {
       const result = await admissionRepository.findMany(filters, 0, 10);
 
       expect(prisma.admission.findMany).toHaveBeenCalledWith({
-        where: { deleted_at: null, tenant_id: 'tenant-id' },
+        where: {
+          deleted_at: null,
+          tenant_id: 'tenant-id',
+          AND: [{ patient: { deleted_at: null } }]
+        },
         skip: 0,
         take: 10,
         orderBy: { created_at: 'desc' },
@@ -98,7 +106,11 @@ describe('Admission Repository', () => {
       const result = await admissionRepository.count(filters);
 
       expect(prisma.admission.count).toHaveBeenCalledWith({
-        where: { deleted_at: null, status: 'ADMITTED' }
+        where: {
+          deleted_at: null,
+          status: 'ADMITTED',
+          AND: [{ patient: { deleted_at: null } }]
+        }
       });
       expect(result).toBe(5);
     });

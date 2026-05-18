@@ -34,6 +34,7 @@ const buildAppointmentWhere = ({
     ...(patientId ? { patient_id: patientId } : {}),
     ...(providerUserId ? { provider_user_id: providerUserId } : {}),
     ...(status ? { status } : {}),
+    patient: { deleted_at: null },
   };
 
   if (dayStart || dayEnd) {
@@ -114,6 +115,7 @@ const buildReminderWhere = ({
       ...withScope({ tenantId, facilityId }),
       ...(patientId ? { patient_id: patientId } : {}),
       ...(providerUserId ? { provider_user_id: providerUserId } : {}),
+      patient: { deleted_at: null },
     },
     ...(dueAt ? { scheduled_at: { lte: dueAt } } : {}),
   };
@@ -152,6 +154,7 @@ const buildFollowUpWhere = ({
       ...withScope({ tenantId, facilityId }),
       ...(patientId ? { patient_id: patientId } : {}),
       ...(providerUserId ? { provider_user_id: providerUserId } : {}),
+      patient: { deleted_at: null },
     },
   };
 
@@ -233,6 +236,7 @@ const buildOpenEncounterWhere = ({
     status: 'OPEN',
     ...(patientId ? { patient_id: patientId } : {}),
     ...(providerUserId ? { provider_user_id: providerUserId } : {}),
+    patient: { deleted_at: null },
   };
 
   const rawSearch = resolveTextSearch(search);

@@ -5902,6 +5902,12 @@ abstract class AppLocalizations {
   /// **'Add note'**
   String get clinicalAddNoteAction;
 
+  /// Clinical add note dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add patient clinical note'**
+  String get clinicalAddNoteTitle;
+
   /// Clinical add diagnosis action label.
   ///
   /// In en, this message translates to:
@@ -5974,11 +5980,41 @@ abstract class AppLocalizations {
   /// **'No released lab or radiology results are ready for review.'**
   String get clinicalNoResultsReadyBody;
 
+  /// Clinical patient notes section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient clinical notes'**
+  String get clinicalPatientNotesTitle;
+
+  /// Clinical patient notes empty state label.
+  ///
+  /// In en, this message translates to:
+  /// **'No patient clinical notes have been recorded yet.'**
+  String get clinicalNoPatientNotesLabel;
+
   /// Clinical diagnoses section title.
   ///
   /// In en, this message translates to:
   /// **'Diagnoses'**
   String get clinicalDiagnosesTitle;
+
+  /// Clinical patient diagnoses section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient diagnoses'**
+  String get clinicalPatientDiagnosesTitle;
+
+  /// Clinical patient diagnoses empty state label.
+  ///
+  /// In en, this message translates to:
+  /// **'No diagnoses have been recorded for this patient yet.'**
+  String get clinicalNoPatientDiagnosesLabel;
+
+  /// Clinical diagnosis dialog form section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnosis details'**
+  String get clinicalDiagnosisFormTitle;
 
   /// Clinical care plans section title.
   ///

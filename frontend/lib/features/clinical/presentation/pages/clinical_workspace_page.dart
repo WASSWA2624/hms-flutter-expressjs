@@ -1112,13 +1112,15 @@ class _ClinicalRecordSections extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _ClinicalRecordSection(
-          title: l10n.opdClinicalNotesSummaryLabel,
+          title: l10n.clinicalPatientNotesTitle,
           records: bundle.clinicalNotes,
+          emptyLabel: l10n.clinicalNoPatientNotesLabel,
         ),
         SizedBox(height: theme.spacing.md),
         _ClinicalRecordSection(
-          title: l10n.clinicalDiagnosesTitle,
+          title: l10n.clinicalPatientDiagnosesTitle,
           records: bundle.diagnoses,
+          emptyLabel: l10n.clinicalNoPatientDiagnosesLabel,
         ),
         SizedBox(height: theme.spacing.md),
         _ClinicalRecordSection(
@@ -1154,10 +1156,15 @@ class _ClinicalRecordSections extends StatelessWidget {
 }
 
 class _ClinicalRecordSection extends StatelessWidget {
-  const _ClinicalRecordSection({required this.title, required this.records});
+  const _ClinicalRecordSection({
+    required this.title,
+    required this.records,
+    this.emptyLabel,
+  });
 
   final String title;
   final List<ClinicalRelatedRecord> records;
+  final String? emptyLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1165,7 +1172,7 @@ class _ClinicalRecordSection extends StatelessWidget {
       title: title,
       child: _ClinicalRecordList(
         records: records,
-        emptyLabel: context.l10n.opdNoRelatedRecordsLabel,
+        emptyLabel: emptyLabel ?? context.l10n.opdNoRelatedRecordsLabel,
       ),
     );
   }
@@ -1213,10 +1220,19 @@ class _ClinicalRecordRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(
-            _recordIcon(record.kind),
-            size: theme.appTokens.listIconSize,
-            color: theme.colorScheme.primary,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.xs),
+              child: Icon(
+                _recordIcon(record.kind),
+                size: theme.appTokens.listIconSize,
+                color: theme.colorScheme.primary,
+              ),
+            ),
           ),
           SizedBox(width: theme.spacing.sm),
           Expanded(
@@ -1328,16 +1344,22 @@ class _ClinicalNoteDialogState extends ConsumerState<_ClinicalNoteDialog> {
     return AppDialog(
       title: Text(widget.title),
       icon: const Icon(Icons.edit_note_outlined),
+      maxWidth: 720,
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          title: context.l10n.clinicalPatientNotesTitle,
+          density: AppFormSectionDensity.spacious,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppTextField(
               controller: _controller,
               labelText: widget.label,
-              maxLines: 6,
+              prefixIcon: const Icon(Icons.notes_outlined),
+              maxLines: 8,
               enabled: !_isSaving,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
           ],
@@ -1393,6 +1415,7 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
   late final TextEditingController _codeController;
   late final TextEditingController _descriptionController;
   String _diagnosisType = 'PRIMARY';
+  String? _selectedTermId;
   List<ClinicalCatalogOption> _terms = const <ClinicalCatalogOption>[];
   bool _isSaving = false;
   bool _isSearching = false;
@@ -1420,15 +1443,19 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
       title: Text(l10n.clinicalAddDiagnosisAction),
       icon: const Icon(Icons.rule_outlined),
       scrollable: true,
+      maxWidth: 760,
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          title: l10n.clinicalDiagnosisFormTitle,
+          density: AppFormSectionDensity.spacious,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppSelectField<String>(
               value: _diagnosisType,
               labelText: l10n.opdDiagnosisTypeLabel,
               enabled: !_isSaving,
+              isRequired: true,
               options: _statusOptions(_diagnosisTypes),
               onChanged: (String? value) {
                 if (value != null) {
@@ -1437,6 +1464,7 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
               },
             ),
             AppSelectField<String>.searchable(
+              value: _selectedTermId,
               options: _catalogOptions(_terms),
               labelText: l10n.clinicalTermSearchLabel,
               isLoading: _isSearching,
@@ -1446,13 +1474,18 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
             AppTextField(
               controller: _codeController,
               labelText: l10n.opdDiagnosisCodeLabel,
+              prefixIcon: const Icon(Icons.tag_outlined),
               enabled: !_isSaving,
+              textCapitalization: TextCapitalization.characters,
             ),
             AppTextField(
               controller: _descriptionController,
               labelText: l10n.opdDiagnosisLabel,
-              maxLines: 3,
+              prefixIcon: const Icon(Icons.medical_information_outlined),
+              maxLines: 4,
               enabled: !_isSaving,
+              isRequired: true,
+              textCapitalization: TextCapitalization.sentences,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
           ],
@@ -1485,14 +1518,21 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
   }
 
   void _applyTerm(String? value) {
+    if (value == null) {
+      setState(() => _selectedTermId = null);
+      return;
+    }
     final ClinicalCatalogOption? term = _terms
         .where((ClinicalCatalogOption option) => option.apiId == value)
         .firstOrNull;
     if (term == null) {
       return;
     }
-    _codeController.text = term.code ?? '';
-    _descriptionController.text = term.name ?? '';
+    setState(() {
+      _selectedTermId = value;
+      _codeController.text = term.code ?? '';
+      _descriptionController.text = term.name ?? '';
+    });
   }
 
   Future<void> _submit() async {
@@ -2364,7 +2404,7 @@ Future<void> _openNoteDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => _ClinicalNoteDialog(
-        title: context.l10n.clinicalAddNoteAction,
+        title: context.l10n.clinicalAddNoteTitle,
         label: context.l10n.opdClinicalNoteLabel,
         submitLabel: context.l10n.clinicalAddNoteAction,
         onSubmit: controller.addClinicalNote,
@@ -3111,13 +3151,13 @@ String _consultationSummaryHtml(
   final StringBuffer buffer = StringBuffer()
     ..write(
       PrintFormTemplate.section(
-        title: l10n.opdClinicalNotesSummaryLabel,
+        title: l10n.clinicalPatientNotesTitle,
         bodyHtml: _recordsHtml(bundle.clinicalNotes),
       ),
     )
     ..write(
       PrintFormTemplate.section(
-        title: l10n.clinicalDiagnosesTitle,
+        title: l10n.clinicalPatientDiagnosesTitle,
         bodyHtml: _recordsHtml(bundle.diagnoses),
       ),
     )

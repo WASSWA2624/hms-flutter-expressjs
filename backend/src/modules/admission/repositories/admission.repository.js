@@ -9,6 +9,7 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { withActivePatient } = require('@lib/patient-query-filters');
 
 /**
  * Find admission by ID
@@ -20,10 +21,7 @@ const { HttpError } = require('@lib/errors');
 const findById = async (id, include = {}) => {
   try {
     return await prisma.admission.findFirst({
-      where: {
-        id,
-        deleted_at: null
-      },
+      where: withActivePatient({ id }),
       include
     });
   } catch (error) {
@@ -43,11 +41,7 @@ const findById = async (id, include = {}) => {
  */
 const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
   try {
-    // Build where clause
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
+    const where = withActivePatient(filters);
 
     return await prisma.admission.findMany({
       where,
@@ -69,10 +63,7 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
  */
 const count = async (filters = {}) => {
   try {
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
+    const where = withActivePatient(filters);
 
     return await prisma.admission.count({ where });
   } catch (error) {

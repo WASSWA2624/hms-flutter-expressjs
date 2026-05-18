@@ -9,6 +9,7 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { withActivePatient } = require('@lib/patient-query-filters');
 
 const PROVIDER_PROFILE_SELECT = {
   first_name: true,
@@ -66,10 +67,7 @@ const BASE_INCLUDE = {
 const findById = async (id, include = {}) => {
   try {
     return await prisma.encounter.findFirst({
-      where: {
-        id,
-        deleted_at: null
-      },
+      where: withActivePatient({ id }),
       include: {
         ...BASE_INCLUDE,
         ...include
@@ -92,11 +90,10 @@ const findById = async (id, include = {}) => {
  */
 const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { started_at: 'desc' }, include = {}) => {
   try {
-    const where = {
-      deleted_at: null,
+    const where = withActivePatient({
       encounter_type: { in: ['OPD', 'EMERGENCY'] },
-      ...filters
-    };
+      ...filters,
+    });
 
     return await prisma.encounter.findMany({
       where,
@@ -121,11 +118,10 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { started_a
  */
 const count = async (filters = {}) => {
   try {
-    const where = {
-      deleted_at: null,
+    const where = withActivePatient({
       encounter_type: { in: ['OPD', 'EMERGENCY'] },
-      ...filters
-    };
+      ...filters,
+    });
 
     return await prisma.encounter.count({ where });
   } catch (error) {

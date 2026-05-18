@@ -26,10 +26,11 @@ describe('opd-flow.repository', () => {
     expect(result).toEqual({ id: 'enc-1' });
     expect(prisma.encounter.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
+        where: expect.objectContaining({
           id: 'enc-1',
-          deleted_at: null
-        }
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        })
       })
     );
   });
@@ -43,7 +44,8 @@ describe('opd-flow.repository', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           tenant_id: 'tenant-1',
-          encounter_type: { in: ['OPD', 'EMERGENCY'] }
+          encounter_type: { in: ['OPD', 'EMERGENCY'] },
+          AND: [{ patient: { deleted_at: null } }]
         }),
         skip: 0,
         take: 10
@@ -60,7 +62,8 @@ describe('opd-flow.repository', () => {
     expect(prisma.encounter.count).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          encounter_type: { in: ['OPD', 'EMERGENCY'] }
+          encounter_type: { in: ['OPD', 'EMERGENCY'] },
+          AND: [{ patient: { deleted_at: null } }]
         })
       })
     );

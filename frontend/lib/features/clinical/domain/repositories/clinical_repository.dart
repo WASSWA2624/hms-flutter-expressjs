@@ -22,6 +22,8 @@ abstract interface class ClinicalRepository {
     String? query,
   });
 
+  Future<Result<void>> createClinicalTermFavorite(Map<String, Object?> payload);
+
   Future<Result<void>> createClinicalNote(Map<String, Object?> payload);
 
   Future<Result<void>> createDiagnosis(Map<String, Object?> payload);

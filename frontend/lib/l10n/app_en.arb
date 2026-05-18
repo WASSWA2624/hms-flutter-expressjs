@@ -4059,6 +4059,10 @@
   "@clinicalAddNoteAction": {
     "description": "Clinical add note action label."
   },
+  "clinicalAddNoteTitle": "Add patient clinical note",
+  "@clinicalAddNoteTitle": {
+    "description": "Clinical add note dialog title."
+  },
   "clinicalAddDiagnosisAction": "Add diagnosis",
   "@clinicalAddDiagnosisAction": {
     "description": "Clinical add diagnosis action label."
@@ -4107,9 +4111,29 @@
   "@clinicalNoResultsReadyBody": {
     "description": "Clinical no results ready body."
   },
+  "clinicalPatientNotesTitle": "Patient clinical notes",
+  "@clinicalPatientNotesTitle": {
+    "description": "Clinical patient notes section title."
+  },
+  "clinicalNoPatientNotesLabel": "No patient clinical notes have been recorded yet.",
+  "@clinicalNoPatientNotesLabel": {
+    "description": "Clinical patient notes empty state label."
+  },
   "clinicalDiagnosesTitle": "Diagnoses",
   "@clinicalDiagnosesTitle": {
     "description": "Clinical diagnoses section title."
+  },
+  "clinicalPatientDiagnosesTitle": "Patient diagnoses",
+  "@clinicalPatientDiagnosesTitle": {
+    "description": "Clinical patient diagnoses section title."
+  },
+  "clinicalNoPatientDiagnosesLabel": "No diagnoses have been recorded for this patient yet.",
+  "@clinicalNoPatientDiagnosesLabel": {
+    "description": "Clinical patient diagnoses empty state label."
+  },
+  "clinicalDiagnosisFormTitle": "Diagnosis details",
+  "@clinicalDiagnosisFormTitle": {
+    "description": "Clinical diagnosis dialog form section title."
   },
   "clinicalCarePlansTitle": "Care plans",
   "@clinicalCarePlansTitle": {

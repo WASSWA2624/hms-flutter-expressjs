@@ -44,7 +44,11 @@ describe('Appointment Repository', () => {
 
       expect(result).toEqual(mockAppointment);
       expect(prisma.appointment.findFirst).toHaveBeenCalledWith({
-        where: { id: appointmentId, deleted_at: null },
+        where: {
+          id: appointmentId,
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        },
         include: {}
       });
     });
@@ -76,7 +80,11 @@ describe('Appointment Repository', () => {
       await appointmentRepository.findById(appointmentId, include);
 
       expect(prisma.appointment.findFirst).toHaveBeenCalledWith({
-        where: { id: appointmentId, deleted_at: null },
+        where: {
+          id: appointmentId,
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        },
         include
       });
     });
@@ -119,7 +127,10 @@ describe('Appointment Repository', () => {
 
       expect(result).toEqual(mockAppointments);
       expect(prisma.appointment.findMany).toHaveBeenCalledWith({
-        where: { deleted_at: null },
+        where: {
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        },
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
@@ -135,7 +146,11 @@ describe('Appointment Repository', () => {
 
       expect(prisma.appointment.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { deleted_at: null, ...filters }
+          where: {
+            deleted_at: null,
+            ...filters,
+            AND: [{ patient: { deleted_at: null } }]
+          }
         })
       );
     });
@@ -195,7 +210,11 @@ describe('Appointment Repository', () => {
 
       expect(result).toBe(5);
       expect(prisma.appointment.count).toHaveBeenCalledWith({
-        where: { deleted_at: null, ...filters }
+        where: {
+          deleted_at: null,
+          ...filters,
+          AND: [{ patient: { deleted_at: null } }]
+        }
       });
     });
 
@@ -206,7 +225,10 @@ describe('Appointment Repository', () => {
 
       expect(result).toBe(10);
       expect(prisma.appointment.count).toHaveBeenCalledWith({
-        where: { deleted_at: null }
+        where: {
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        }
       });
     });
 

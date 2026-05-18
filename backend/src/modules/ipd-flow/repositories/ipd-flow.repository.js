@@ -7,6 +7,7 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { withActivePatient } = require('@lib/patient-query-filters');
 
 const PATIENT_SELECT = {
   id: true,
@@ -200,10 +201,7 @@ const BASE_INCLUDE = {
 const findById = async (id, include = {}) => {
   try {
     return await prisma.admission.findFirst({
-      where: {
-        id,
-        deleted_at: null,
-      },
+      where: withActivePatient({ id }),
       include: {
         ...BASE_INCLUDE,
         ...include,
@@ -223,10 +221,7 @@ const findMany = async (
 ) => {
   try {
     return await prisma.admission.findMany({
-      where: {
-        deleted_at: null,
-        ...filters,
-      },
+      where: withActivePatient(filters),
       skip,
       take,
       orderBy,
@@ -243,10 +238,7 @@ const findMany = async (
 const count = async (filters = {}) => {
   try {
     return await prisma.admission.count({
-      where: {
-        deleted_at: null,
-        ...filters,
-      },
+      where: withActivePatient(filters),
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);

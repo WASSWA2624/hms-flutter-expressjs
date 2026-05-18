@@ -3150,6 +3150,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalAddNoteAction => 'Add note';
 
   @override
+  String get clinicalAddNoteTitle => 'Add patient clinical note';
+
+  @override
   String get clinicalAddDiagnosisAction => 'Add diagnosis';
 
   @override
@@ -3188,7 +3191,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'No released lab or radiology results are ready for review.';
 
   @override
+  String get clinicalPatientNotesTitle => 'Patient clinical notes';
+
+  @override
+  String get clinicalNoPatientNotesLabel =>
+      'No patient clinical notes have been recorded yet.';
+
+  @override
   String get clinicalDiagnosesTitle => 'Diagnoses';
+
+  @override
+  String get clinicalPatientDiagnosesTitle => 'Patient diagnoses';
+
+  @override
+  String get clinicalNoPatientDiagnosesLabel =>
+      'No diagnoses have been recorded for this patient yet.';
+
+  @override
+  String get clinicalDiagnosisFormTitle => 'Diagnosis details';
 
   @override
   String get clinicalCarePlansTitle => 'Care plans';
