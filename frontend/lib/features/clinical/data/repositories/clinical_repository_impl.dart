@@ -18,6 +18,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     : _apiClient = apiClient;
 
   static const int _largeCatalogPageSize = 5000;
+  static const int _largeRadiologyCatalogPageSize = 6500;
   static const int _defaultCatalogPageSize = 100;
 
   final ApiClient _apiClient;
@@ -141,7 +142,13 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
           'include_standard_catalog': true,
         },
       ),
-      _catalogOrEmpty(HmsApiResource.radiologyTests),
+      _catalogOrEmpty(
+        HmsApiResource.radiologyTests,
+        limit: _largeRadiologyCatalogPageSize,
+        queryParameters: const <String, Object?>{
+          'include_standard_catalog': true,
+        },
+      ),
       _catalogOrEmpty(HmsApiResource.drugs),
       _catalogOrEmpty(
         HmsApiResource.beds,

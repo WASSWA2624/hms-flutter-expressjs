@@ -3178,61 +3178,417 @@ class _RadiologyOrderDialog extends ConsumerStatefulWidget {
       _RadiologyOrderDialogState();
 }
 
+final class _PendingRadiologyRequest {
+  const _PendingRadiologyRequest({
+    required this.option,
+    this.clinicalNote,
+    this.bodyRegion,
+    this.laterality,
+    this.priority,
+  });
+
+  final ClinicalCatalogOption option;
+  final String? clinicalNote;
+  final String? bodyRegion;
+  final String? laterality;
+  final String? priority;
+
+  String get id => option.apiId;
+}
+
+final class _RadiologyCatalogSearchResults {
+  const _RadiologyCatalogSearchResults({
+    required this.options,
+    required this.totalMatches,
+  });
+
+  final List<ClinicalCatalogOption> options;
+  final int totalMatches;
+}
+
 class _RadiologyOrderDialogState extends ConsumerState<_RadiologyOrderDialog> {
+  static const int _maxVisibleCatalogOptions = 100;
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 120);
+
+  late final TextEditingController _searchController;
   late final TextEditingController _noteController;
-  String? _radiologyTestId;
+  late final TextEditingController _bodyRegionController;
+  Timer? _searchDebounce;
+  String _searchQuery = '';
+  String? _laterality;
+  String? _priority;
+  final List<_PendingRadiologyRequest> _requests = <_PendingRadiologyRequest>[];
+  int? _editingIndex;
   bool _isSaving = false;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController();
     _noteController = TextEditingController();
+    _bodyRegionController = TextEditingController();
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
     _noteController.dispose();
+    _bodyRegionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final double bodyHeight = (MediaQuery.sizeOf(context).height * 0.68)
+        .clamp(460.0, 680.0)
+        .toDouble();
+    final _RadiologyCatalogSearchResults searchResults = _searchCatalog(
+      widget.referenceData.radiologyTests,
+    );
     return AppDialog(
       title: Text(l10n.clinicalRequestRadiologyAction),
       icon: const Icon(Icons.biotech_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppSelectField<String>.searchable(
-            value: _radiologyTestId,
-            labelText: l10n.opdRadiologyTestIdsLabel,
-            enabled: !_isSaving,
-            options: _catalogOptions(widget.referenceData.radiologyTests),
-            onChanged: (String? value) {
-              setState(() => _radiologyTestId = value);
-            },
-          ),
-          AppTextField(
-            controller: _noteController,
-            labelText: l10n.opdClinicalNoteLabel,
-            enabled: !_isSaving,
-            maxLines: 3,
-          ),
-        ],
+      maxWidth: 980,
+      closeEnabled: !_isSaving,
+      content: SizedBox(
+        height: bodyHeight,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            AppTextField(
+              controller: _searchController,
+              labelText: l10n.clinicalRadiologyRequestSearchLabel,
+              hintText: l10n.clinicalRadiologyRequestSearchHint,
+              enabled: !_isSaving,
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isEmpty
+                  ? null
+                  : AppIconButton(
+                      icon: Icons.close,
+                      semanticLabel: MaterialLocalizations.of(
+                        context,
+                      ).clearButtonTooltip,
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).clearButtonTooltip,
+                      onPressed: _isSaving ? null : _clearSearch,
+                    ),
+              onChanged: _scheduleSearch,
+            ),
+            SizedBox(height: theme.spacing.md),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final bool compact = constraints.maxWidth < 720;
+                final List<Widget> fields = <Widget>[
+                  AppSelectField<String>(
+                    value: _priority,
+                    labelText: l10n.clinicalRadiologyPriorityLabel,
+                    enabled: !_isSaving,
+                    options: _statusOptions(const <String>[
+                      'ROUTINE',
+                      'URGENT',
+                      'STAT',
+                    ]),
+                    onChanged: (String? value) {
+                      setState(() => _priority = value);
+                    },
+                  ),
+                  AppSelectField<String>(
+                    value: _laterality,
+                    labelText: l10n.clinicalRadiologyLateralityLabel,
+                    enabled: !_isSaving,
+                    options: _statusOptions(const <String>[
+                      'LEFT',
+                      'RIGHT',
+                      'BILATERAL',
+                      'MIDLINE',
+                      'NOT_APPLICABLE',
+                    ]),
+                    onChanged: (String? value) {
+                      setState(() => _laterality = value);
+                    },
+                  ),
+                  AppTextField(
+                    controller: _bodyRegionController,
+                    labelText: l10n.clinicalRadiologyBodyRegionLabel,
+                    enabled: !_isSaving,
+                  ),
+                ];
+
+                if (compact) {
+                  return Column(
+                    children: <Widget>[
+                      for (final Widget field in fields) ...<Widget>[
+                        field,
+                        SizedBox(height: theme.spacing.sm),
+                      ],
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: <Widget>[
+                    for (
+                      var index = 0;
+                      index < fields.length;
+                      index += 1
+                    ) ...<Widget>[
+                      Expanded(child: fields[index]),
+                      if (index < fields.length - 1)
+                        SizedBox(width: theme.spacing.sm),
+                    ],
+                  ],
+                );
+              },
+            ),
+            SizedBox(height: theme.spacing.sm),
+            AppTextField(
+              controller: _noteController,
+              labelText: l10n.opdClinicalNoteLabel,
+              enabled: !_isSaving,
+              maxLines: 2,
+            ),
+            if (_editingIndex != null) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AppButton.tertiary(
+                  label: l10n.clinicalRadiologyCancelEditAction,
+                  leadingIcon: Icons.close,
+                  enabled: !_isSaving,
+                  onPressed: _cancelEdit,
+                ),
+              ),
+            ],
+            SizedBox(height: theme.spacing.md),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool twoColumns = constraints.maxWidth >= 760;
+                  final Widget catalogPanel = _RadiologyCatalogResultsPanel(
+                    results: searchResults,
+                    isSaving: _isSaving,
+                    isEditing: _editingIndex != null,
+                    onSelected: _addOrUpdateRequest,
+                    isDuplicate: _isDuplicateSelection,
+                  );
+                  final Widget selectedPanel = _RadiologySelectedRequestsPanel(
+                    requests: _requests,
+                    editingIndex: _editingIndex,
+                    isSaving: _isSaving,
+                    onEdit: _editRequest,
+                    onDelete: _deleteRequest,
+                  );
+
+                  if (!twoColumns) {
+                    return Column(
+                      children: <Widget>[
+                        Expanded(child: catalogPanel),
+                        SizedBox(height: theme.spacing.md),
+                        Expanded(child: selectedPanel),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Expanded(child: catalogPanel),
+                      SizedBox(width: theme.spacing.md),
+                      Expanded(child: selectedPanel),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
-      actions: _dialogActions(
-        context,
-        l10n.clinicalRequestRadiologyAction,
-        _isSaving,
-        _submit,
-      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.clinicalRequestRadiologyAction,
+          isLoading: _isSaving,
+          enabled: _requests.isNotEmpty,
+          onPressed: _submit,
+        ),
+      ],
     );
   }
 
+  _RadiologyCatalogSearchResults _searchCatalog(
+    List<ClinicalCatalogOption> catalog,
+  ) {
+    final List<String> tokens = _searchQuery
+        .trim()
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((String token) => token.isNotEmpty)
+        .toList(growable: false);
+    if (tokens.isEmpty) {
+      return _RadiologyCatalogSearchResults(
+        options: catalog
+            .take(_maxVisibleCatalogOptions)
+            .toList(growable: false),
+        totalMatches: catalog.length,
+      );
+    }
+
+    final List<ClinicalCatalogOption> visible = <ClinicalCatalogOption>[];
+    var totalMatches = 0;
+    for (final ClinicalCatalogOption option in catalog) {
+      final String searchText = _catalogSearchText(option);
+      final bool isMatch = tokens.every(searchText.contains);
+      if (!isMatch) {
+        continue;
+      }
+      totalMatches += 1;
+      if (visible.length < _maxVisibleCatalogOptions) {
+        visible.add(option);
+      }
+    }
+
+    return _RadiologyCatalogSearchResults(
+      options: visible,
+      totalMatches: totalMatches,
+    );
+  }
+
+  String _catalogSearchText(ClinicalCatalogOption option) {
+    return _joinDisplay(<String?>[
+      option.apiId,
+      option.displayTitle,
+      option.displaySubtitle,
+      option.name,
+      option.code,
+      option.category,
+      option.secondaryText,
+      option.status,
+      option.searchText,
+    ]).toLowerCase();
+  }
+
+  void _scheduleSearch(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(_searchDebounceDuration, () {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _searchQuery = value);
+    });
+  }
+
+  void _clearSearch() {
+    setState(_resetSearch);
+  }
+
+  void _resetSearch() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    _searchQuery = '';
+  }
+
+  void _addOrUpdateRequest(ClinicalCatalogOption option) {
+    final int? editingIndex = _editingIndex;
+    final _PendingRadiologyRequest request = _PendingRadiologyRequest(
+      option: option,
+      clinicalNote: _trimmedOrNull(_noteController.text),
+      bodyRegion: _trimmedOrNull(_bodyRegionController.text),
+      laterality: _laterality,
+      priority: _priority,
+    );
+
+    setState(() {
+      _failure = null;
+      if (editingIndex != null &&
+          editingIndex >= 0 &&
+          editingIndex < _requests.length) {
+        _requests[editingIndex] = request;
+        _editingIndex = null;
+        _resetSearch();
+        _resetRequestDetails();
+        return;
+      }
+      _requests.add(request);
+      _resetRequestDetails();
+    });
+  }
+
+  void _editRequest(int index) {
+    if (index < 0 || index >= _requests.length) {
+      return;
+    }
+    final _PendingRadiologyRequest request = _requests[index];
+    setState(() {
+      _editingIndex = index;
+      _failure = null;
+      _searchController.text = request.option.displayTitle;
+      _searchQuery = request.option.displayTitle;
+      _noteController.text = request.clinicalNote ?? '';
+      _bodyRegionController.text = request.bodyRegion ?? '';
+      _laterality = request.laterality;
+      _priority = request.priority;
+    });
+  }
+
+  void _deleteRequest(int index) {
+    if (index < 0 || index >= _requests.length) {
+      return;
+    }
+    setState(() {
+      _requests.removeAt(index);
+      if (_editingIndex == index) {
+        _editingIndex = null;
+        _resetSearch();
+        _resetRequestDetails();
+      } else if (_editingIndex case final int editingIndex
+          when editingIndex > index) {
+        _editingIndex = editingIndex - 1;
+      }
+      _failure = null;
+    });
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editingIndex = null;
+      _failure = null;
+      _resetSearch();
+      _resetRequestDetails();
+    });
+  }
+
+  void _resetRequestDetails() {
+    _noteController.clear();
+    _bodyRegionController.clear();
+    _laterality = null;
+    _priority = null;
+  }
+
+  bool _isDuplicateSelection(ClinicalCatalogOption option) {
+    final int? editingIndex = _editingIndex;
+    for (var index = 0; index < _requests.length; index += 1) {
+      if (index == editingIndex) {
+        continue;
+      }
+      if (_requests[index].id == option.apiId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<void> _submit() async {
-    if (_radiologyTestId == null) {
+    if (_requests.isEmpty) {
       setState(() => _failure = AppFailure.validation());
       return;
     }
@@ -3243,8 +3599,16 @@ class _RadiologyOrderDialogState extends ConsumerState<_RadiologyOrderDialog> {
     final AppFailure? failure = await ref
         .read(clinicalWorkspaceControllerProvider.notifier)
         .requestRadiology(
-          radiologyTestId: _radiologyTestId!,
-          clinicalNote: _noteController.text.trim(),
+          requests: <ClinicalRadiologyRequest>[
+            for (final _PendingRadiologyRequest request in _requests)
+              ClinicalRadiologyRequest(
+                radiologyTestId: request.id,
+                clinicalNote: request.clinicalNote,
+                bodyRegion: request.bodyRegion,
+                laterality: request.laterality,
+                priority: request.priority,
+              ),
+          ],
         );
     _finishSubmit(failure);
   }
@@ -3261,6 +3625,321 @@ class _RadiologyOrderDialogState extends ConsumerState<_RadiologyOrderDialog> {
       _failure = failure;
       _isSaving = false;
     });
+  }
+}
+
+class _RadiologyCatalogResultsPanel extends StatelessWidget {
+  const _RadiologyCatalogResultsPanel({
+    required this.results,
+    required this.isSaving,
+    required this.isEditing,
+    required this.onSelected,
+    required this.isDuplicate,
+  });
+
+  final _RadiologyCatalogSearchResults results;
+  final bool isSaving;
+  final bool isEditing;
+  final ValueChanged<ClinicalCatalogOption> onSelected;
+  final bool Function(ClinicalCatalogOption option) isDuplicate;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<ClinicalCatalogOption> options = results.options;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(theme.spacing.sm),
+            child: Text(
+              l10n.clinicalRadiologyRequestMatchesLabel(
+                options.length,
+                results.totalMatches,
+              ),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          Expanded(
+            child: options.isEmpty
+                ? Center(
+                    child: Text(l10n.clinicalRadiologyRequestNoCatalogOptions),
+                  )
+                : ListView.separated(
+                    itemCount: options.length,
+                    separatorBuilder: (_, _) =>
+                        Divider(height: 1, color: colorScheme.outlineVariant),
+                    itemBuilder: (BuildContext context, int index) {
+                      final ClinicalCatalogOption option = options[index];
+                      final bool duplicate = isDuplicate(option);
+                      return _RadiologyCatalogOptionRow(
+                        option: option,
+                        isSaving: isSaving,
+                        isEditing: isEditing,
+                        isDuplicate: duplicate,
+                        onSelected: duplicate ? null : () => onSelected(option),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RadiologyCatalogOptionRow extends StatelessWidget {
+  const _RadiologyCatalogOptionRow({
+    required this.option,
+    required this.isSaving,
+    required this.isEditing,
+    required this.isDuplicate,
+    required this.onSelected,
+  });
+
+  final ClinicalCatalogOption option;
+  final bool isSaving;
+  final bool isEditing;
+  final bool isDuplicate;
+  final VoidCallback? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String actionLabel = isEditing
+        ? l10n.clinicalRadiologyUpdateSelectionAction
+        : l10n.clinicalRadiologyAddSelectionAction;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            _radiologyCatalogIcon(option),
+            color: colorScheme.primary,
+            size: theme.appTokens.listIconSize,
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  option.displayTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (option.displaySubtitle != null)
+                  Text(
+                    option.displaySubtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          TextButton.icon(
+            onPressed: isSaving || isDuplicate ? null : onSelected,
+            icon: Icon(
+              isEditing ? Icons.done_outlined : Icons.add,
+              size: theme.appTokens.listIconSize,
+            ),
+            label: Text(actionLabel),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RadiologySelectedRequestsPanel extends StatelessWidget {
+  const _RadiologySelectedRequestsPanel({
+    required this.requests,
+    required this.editingIndex,
+    required this.isSaving,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final List<_PendingRadiologyRequest> requests;
+  final int? editingIndex;
+  final bool isSaving;
+  final ValueChanged<int> onEdit;
+  final ValueChanged<int> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(theme.spacing.sm),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.clinicalRadiologyRequestSelectedTitle,
+                    style: theme.textTheme.labelLarge,
+                  ),
+                ),
+                Text(
+                  l10n.clinicalRadiologyRequestSelectedCount(requests.length),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          Expanded(
+            child: requests.isEmpty
+                ? Center(child: Text(l10n.clinicalRadiologyRequestNoSelection))
+                : ListView.separated(
+                    itemCount: requests.length,
+                    separatorBuilder: (_, _) =>
+                        Divider(height: 1, color: colorScheme.outlineVariant),
+                    itemBuilder: (BuildContext context, int index) {
+                      return _RadiologySelectedRequestRow(
+                        request: requests[index],
+                        isEditing: editingIndex == index,
+                        isSaving: isSaving,
+                        onEdit: () => onEdit(index),
+                        onDelete: () => onDelete(index),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RadiologySelectedRequestRow extends StatelessWidget {
+  const _RadiologySelectedRequestRow({
+    required this.request,
+    required this.isEditing,
+    required this.isSaving,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final _PendingRadiologyRequest request;
+  final bool isEditing;
+  final bool isSaving;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String subtitle = _joinDisplay(<String?>[
+      request.option.displaySubtitle,
+      request.priority == null ? null : _apiLabel(request.priority!),
+      request.laterality == null ? null : _apiLabel(request.laterality!),
+      request.bodyRegion,
+    ]);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: isEditing
+            ? colorScheme.primaryContainer.withValues(alpha: 0.38)
+            : null,
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              _radiologyCatalogIcon(request.option),
+              color: colorScheme.primary,
+              size: theme.appTokens.listIconSize,
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    request.option.displayTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty)
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  if (_hasText(request.clinicalNote))
+                    Text(
+                      request.clinicalNote!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.clinicalRadiologyEditSelectionAction,
+              onPressed: isSaving ? null : onEdit,
+              icon: const Icon(Icons.edit_outlined),
+            ),
+            IconButton(
+              tooltip: l10n.clinicalRadiologyDeleteSelectionAction,
+              onPressed: isSaving ? null : onDelete,
+              icon: const Icon(Icons.delete_outline),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -4505,6 +5184,23 @@ IconData _recordIcon(String kind) {
     'follow_up' => Icons.event_repeat_outlined,
     'admission' => Icons.bed_outlined,
     _ => Icons.description_outlined,
+  };
+}
+
+IconData _radiologyCatalogIcon(ClinicalCatalogOption option) {
+  return switch ((option.category ?? '').toUpperCase()) {
+    'XRAY' => Icons.photo_camera_outlined,
+    'CT' => Icons.donut_large_outlined,
+    'MRI' => Icons.all_out_outlined,
+    'ULTRASOUND' => Icons.graphic_eq_outlined,
+    'FLUOROSCOPY' => Icons.video_camera_back_outlined,
+    'MAMMOGRAPHY' => Icons.image_search_outlined,
+    'PET' || 'NUCLEAR_MEDICINE' => Icons.blur_on_outlined,
+    'INTERVENTIONAL_RADIOLOGY' => Icons.medical_services_outlined,
+    'ECG' => Icons.monitor_heart_outlined,
+    'ECHO' => Icons.favorite_border,
+    'ENDO' || 'GASTRO' => Icons.biotech_outlined,
+    _ => Icons.biotech_outlined,
   };
 }
 

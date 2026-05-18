@@ -6124,6 +6124,96 @@ abstract class AppLocalizations {
   /// **'Request radiology'**
   String get clinicalRequestRadiologyAction;
 
+  /// Clinical radiology request catalog search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search radiology catalog'**
+  String get clinicalRadiologyRequestSearchLabel;
+
+  /// Clinical radiology request catalog search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by test, intervention, modality, equipment, region, code, or priority'**
+  String get clinicalRadiologyRequestSearchHint;
+
+  /// Clinical radiology request selected items section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected radiology requests'**
+  String get clinicalRadiologyRequestSelectedTitle;
+
+  /// Clinical radiology request selected item count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String clinicalRadiologyRequestSelectedCount(int count);
+
+  /// Clinical radiology request empty selected items message.
+  ///
+  /// In en, this message translates to:
+  /// **'No radiology requests selected'**
+  String get clinicalRadiologyRequestNoSelection;
+
+  /// Clinical radiology request add selected catalog item action.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get clinicalRadiologyAddSelectionAction;
+
+  /// Clinical radiology request update selected catalog item action.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get clinicalRadiologyUpdateSelectionAction;
+
+  /// Clinical radiology request cancel edit action.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel edit'**
+  String get clinicalRadiologyCancelEditAction;
+
+  /// Clinical radiology request edit selected item action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get clinicalRadiologyEditSelectionAction;
+
+  /// Clinical radiology request delete selected item action.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get clinicalRadiologyDeleteSelectionAction;
+
+  /// Clinical radiology request search result count label.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total} matches'**
+  String clinicalRadiologyRequestMatchesLabel(int shown, int total);
+
+  /// Clinical radiology request no matching search results message.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching radiology catalog items'**
+  String get clinicalRadiologyRequestNoCatalogOptions;
+
+  /// Clinical radiology request priority field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get clinicalRadiologyPriorityLabel;
+
+  /// Clinical radiology request laterality field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Laterality'**
+  String get clinicalRadiologyLateralityLabel;
+
+  /// Clinical radiology request body region field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Body region'**
+  String get clinicalRadiologyBodyRegionLabel;
+
   /// Clinical prescribe action label.
   ///
   /// In en, this message translates to:

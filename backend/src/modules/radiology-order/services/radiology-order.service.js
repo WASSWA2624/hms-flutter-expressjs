@@ -25,6 +25,9 @@ const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
 } = require('@lib/identifiers/service-identifier-resolution');
+const {
+  resolveOrCreateStandardRadiologyTest,
+} = require('@services/radiology-test/radiology-test.service');
 
 const buildPagination = (page, limit, total) => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -90,6 +93,18 @@ const resolveOrCreateRadiologyTest = async ({
   ipAddress,
 }) => {
   if (request?.radiology_test_id) {
+    const requestedRadiologyTestId = sanitizeString(request.radiology_test_id);
+    if (requestedRadiologyTestId.startsWith('STD_RAD_TEST_')) {
+      const standardCode = requestedRadiologyTestId.slice('STD_RAD_TEST_'.length);
+      const standardRadiologyTest = await resolveOrCreateStandardRadiologyTest({
+        code: standardCode,
+        tenantId,
+        userId,
+        ipAddress,
+      });
+      if (standardRadiologyTest?.id) return standardRadiologyTest.id;
+    }
+
     return resolveIdentifierForPayload({
       value: request.radiology_test_id,
       field: 'radiology_test_id',

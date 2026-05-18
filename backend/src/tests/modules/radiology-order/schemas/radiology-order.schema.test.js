@@ -72,6 +72,24 @@ describe('Radiology Order Schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should allow standard catalog radiology_test_id values', () => {
+      const data = {
+        ...validData,
+        requested_tests: [
+          {
+            radiology_test_id: 'STD_RAD_TEST_RAD-00001',
+            request_details: {
+              equipment: 'Multidetector CT scanner',
+              body_region: 'Chest',
+              priority: 'URGENT'
+            }
+          }
+        ]
+      };
+      const result = createRadiologyOrderSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('should allow optional ordered_at', () => {
       const data = { ...validData };
       delete data.ordered_at;

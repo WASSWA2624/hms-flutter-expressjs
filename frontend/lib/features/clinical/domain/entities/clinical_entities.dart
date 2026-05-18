@@ -525,6 +525,7 @@ final class ClinicalCatalogOption {
     this.status,
     this.parentId,
     this.secondaryId,
+    this.searchText,
     this.childIds = const <String>[],
     this.childCodes = const <String>[],
   });
@@ -538,6 +539,7 @@ final class ClinicalCatalogOption {
   final String? status;
   final String? parentId;
   final String? secondaryId;
+  final String? searchText;
   final List<String> childIds;
   final List<String> childCodes;
 
@@ -549,6 +551,23 @@ final class ClinicalCatalogOption {
   String? get displaySubtitle {
     return _joinDisplay(<String?>[category, secondaryText, status]);
   }
+}
+
+@immutable
+final class ClinicalRadiologyRequest {
+  const ClinicalRadiologyRequest({
+    required this.radiologyTestId,
+    this.clinicalNote,
+    this.bodyRegion,
+    this.laterality,
+    this.priority,
+  });
+
+  final String radiologyTestId;
+  final String? clinicalNote;
+  final String? bodyRegion;
+  final String? laterality;
+  final String? priority;
 }
 
 @immutable

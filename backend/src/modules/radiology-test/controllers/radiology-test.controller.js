@@ -25,6 +25,10 @@ const listRadiologyTests = asyncHandler(async (req, res) => {
     name,
     code,
     modality,
+    equipment,
+    body_region,
+    procedure_type,
+    include_standard_catalog,
     search,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
@@ -37,6 +41,10 @@ const listRadiologyTests = asyncHandler(async (req, res) => {
     name,
     code,
     modality,
+    equipment,
+    body_region,
+    procedure_type,
+    include_standard_catalog,
     search
   };
 

@@ -4230,6 +4230,79 @@
   "@clinicalRequestRadiologyAction": {
     "description": "Clinical request radiology action label."
   },
+  "clinicalRadiologyRequestSearchLabel": "Search radiology catalog",
+  "@clinicalRadiologyRequestSearchLabel": {
+    "description": "Clinical radiology request catalog search field label."
+  },
+  "clinicalRadiologyRequestSearchHint": "Search by test, intervention, modality, equipment, region, code, or priority",
+  "@clinicalRadiologyRequestSearchHint": {
+    "description": "Clinical radiology request catalog search field hint."
+  },
+  "clinicalRadiologyRequestSelectedTitle": "Selected radiology requests",
+  "@clinicalRadiologyRequestSelectedTitle": {
+    "description": "Clinical radiology request selected items section title."
+  },
+  "clinicalRadiologyRequestSelectedCount": "{count} selected",
+  "@clinicalRadiologyRequestSelectedCount": {
+    "description": "Clinical radiology request selected item count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalRadiologyRequestNoSelection": "No radiology requests selected",
+  "@clinicalRadiologyRequestNoSelection": {
+    "description": "Clinical radiology request empty selected items message."
+  },
+  "clinicalRadiologyAddSelectionAction": "Add",
+  "@clinicalRadiologyAddSelectionAction": {
+    "description": "Clinical radiology request add selected catalog item action."
+  },
+  "clinicalRadiologyUpdateSelectionAction": "Update",
+  "@clinicalRadiologyUpdateSelectionAction": {
+    "description": "Clinical radiology request update selected catalog item action."
+  },
+  "clinicalRadiologyCancelEditAction": "Cancel edit",
+  "@clinicalRadiologyCancelEditAction": {
+    "description": "Clinical radiology request cancel edit action."
+  },
+  "clinicalRadiologyEditSelectionAction": "Edit",
+  "@clinicalRadiologyEditSelectionAction": {
+    "description": "Clinical radiology request edit selected item action."
+  },
+  "clinicalRadiologyDeleteSelectionAction": "Delete",
+  "@clinicalRadiologyDeleteSelectionAction": {
+    "description": "Clinical radiology request delete selected item action."
+  },
+  "clinicalRadiologyRequestMatchesLabel": "Showing {shown} of {total} matches",
+  "@clinicalRadiologyRequestMatchesLabel": {
+    "description": "Clinical radiology request search result count label.",
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalRadiologyRequestNoCatalogOptions": "No matching radiology catalog items",
+  "@clinicalRadiologyRequestNoCatalogOptions": {
+    "description": "Clinical radiology request no matching search results message."
+  },
+  "clinicalRadiologyPriorityLabel": "Priority",
+  "@clinicalRadiologyPriorityLabel": {
+    "description": "Clinical radiology request priority field label."
+  },
+  "clinicalRadiologyLateralityLabel": "Laterality",
+  "@clinicalRadiologyLateralityLabel": {
+    "description": "Clinical radiology request laterality field label."
+  },
+  "clinicalRadiologyBodyRegionLabel": "Body region",
+  "@clinicalRadiologyBodyRegionLabel": {
+    "description": "Clinical radiology request body region field label."
+  },
   "clinicalPrescribeAction": "Prescribe",
   "@clinicalPrescribeAction": {
     "description": "Clinical prescribe action label."

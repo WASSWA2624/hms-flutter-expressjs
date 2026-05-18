@@ -179,6 +179,32 @@ describe('Radiology Test Service', () => {
       );
     });
 
+    it('should include a large standard catalog when requested', async () => {
+      radiologyTestRepository.findMany.mockResolvedValue([]);
+      radiologyTestRepository.count.mockResolvedValue(0);
+
+      const result = await radiologyTestService.listRadiologyTests(
+        { include_standard_catalog: true },
+        1,
+        5000,
+        'name',
+        'asc',
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(result.radiologyTests).toHaveLength(5000);
+      expect(result.radiologyTests[0]).toEqual(
+        expect.objectContaining({
+          id: expect.stringMatching(/^STD_RAD_TEST_/),
+          modality: expect.any(String),
+          equipment: expect.any(String),
+          procedure_type: expect.any(String)
+        })
+      );
+      expect(result.pagination.total).toBeGreaterThanOrEqual(5000);
+    });
+
     it('should handle repository errors', async () => {
       radiologyTestRepository.findMany.mockRejectedValue(new Error('DB Error'));
 

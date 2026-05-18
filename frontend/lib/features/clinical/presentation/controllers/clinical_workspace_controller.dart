@@ -346,11 +346,10 @@ final class ClinicalWorkspaceController
   }
 
   Future<AppFailure?> requestRadiology({
-    required String radiologyTestId,
-    String? clinicalNote,
+    required List<ClinicalRadiologyRequest> requests,
   }) {
     final ClinicalWorklistEntry? entry = _selectedEntry;
-    if (entry == null || entry.apiPatientId == null) {
+    if (entry == null || entry.apiPatientId == null || requests.isEmpty) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
@@ -360,10 +359,16 @@ final class ClinicalWorkspaceController
         'patient_id': entry.apiPatientId,
         'ordered_at': DateTime.now().toUtc().toIso8601String(),
         'requested_tests': <Map<String, Object?>>[
-          <String, Object?>{
-            'radiology_test_id': radiologyTestId,
-            'clinical_note': clinicalNote,
-          },
+          for (final ClinicalRadiologyRequest request in requests)
+            <String, Object?>{
+              'radiology_test_id': request.radiologyTestId,
+              'clinical_note': request.clinicalNote,
+              'request_details': <String, Object?>{
+                'body_region': request.bodyRegion,
+                'laterality': request.laterality,
+                'priority': request.priority,
+              },
+            },
         ],
       }),
     );

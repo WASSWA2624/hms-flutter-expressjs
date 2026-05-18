@@ -166,6 +166,9 @@ final class ClinicalRelatedRecordDto {
     if (kind == 'lab_order') {
       return _toLabOrderEntity();
     }
+    if (kind == 'radiology_order') {
+      return _toRadiologyOrderEntity();
+    }
 
     return ClinicalRelatedRecord(
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
@@ -246,6 +249,42 @@ final class ClinicalRelatedRecordDto {
       updatedAt: _date(json['updated_at']),
     );
   }
+
+  ClinicalRelatedRecord _toRadiologyOrderEntity() {
+    final List<ClinicalJsonMap> requestedTests = _list(json['requested_tests']);
+    final String? requestedTitle = _joinDisplay(
+      requestedTests
+          .take(3)
+          .map(
+            (ClinicalJsonMap item) =>
+                _string(item['radiology_test_display_name']) ??
+                _string(item['test_display_name']) ??
+                _string(item['radiology_test_id']),
+          ),
+    );
+
+    return ClinicalRelatedRecord(
+      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      kind: kind,
+      status: _string(json['status']),
+      title:
+          requestedTitle ??
+          _string(json['radiology_test_display_name']) ??
+          _string(json['test_display_name']) ??
+          _string(json['name']) ??
+          _string(json['human_friendly_id']) ??
+          _string(json['id']),
+      subtitle: _joinDisplay(<String?>[
+        _string(json['modality']),
+        _string(json['clinical_note']),
+      ]),
+      occurredAt:
+          _date(json['ordered_at']) ??
+          _date(json['created_at']) ??
+          _date(json['updated_at']),
+      itemCount: requestedTests.isEmpty ? 1 : requestedTests.length,
+    );
+  }
 }
 
 final class ClinicalCatalogOptionDto {
@@ -270,6 +309,12 @@ final class ClinicalCatalogOptionDto {
           _string(json['ward_type']),
       secondaryText:
           _string(json['specimen_type']) ??
+          _joinDisplay(<String?>[
+            _string(json['equipment']),
+            _string(json['body_region']),
+            _string(json['laterality']),
+            _string(json['procedure_type']),
+          ]) ??
           _string(json['form']) ??
           _string(json['strength']) ??
           _string(json['floor']),
@@ -279,6 +324,14 @@ final class ClinicalCatalogOptionDto {
           _string(json['room_id']) ??
           _string(json['facility_id']),
       secondaryId: _string(json['room_id']),
+      searchText: _joinDisplay(<String?>[
+        _string(json['search_text']),
+        _string(json['equipment']),
+        _string(json['body_region']),
+        _string(json['laterality']),
+        _string(json['procedure_type']),
+        _string(json['source']),
+      ]),
       childIds: panelItems
           .map((ClinicalJsonMap item) => _string(item['lab_test_id']))
           .whereType<String>()

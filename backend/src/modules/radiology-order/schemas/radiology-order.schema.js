@@ -76,6 +76,7 @@ const createRadiologyOrderSchema = z.object({
   patient_id: uuidOrFriendlyIdentifierSchema,
   radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   requested_tests: z.array(requestedRadiologyTestSchema).optional(),
+  status: radiologyOrderStatusSchema.optional().default('ORDERED'),
   ordered_at: z.string().datetime().optional()
 });
 

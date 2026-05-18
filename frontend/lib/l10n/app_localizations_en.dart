@@ -3275,6 +3275,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestRadiologyAction => 'Request radiology';
 
   @override
+  String get clinicalRadiologyRequestSearchLabel => 'Search radiology catalog';
+
+  @override
+  String get clinicalRadiologyRequestSearchHint =>
+      'Search by test, intervention, modality, equipment, region, code, or priority';
+
+  @override
+  String get clinicalRadiologyRequestSelectedTitle =>
+      'Selected radiology requests';
+
+  @override
+  String clinicalRadiologyRequestSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get clinicalRadiologyRequestNoSelection =>
+      'No radiology requests selected';
+
+  @override
+  String get clinicalRadiologyAddSelectionAction => 'Add';
+
+  @override
+  String get clinicalRadiologyUpdateSelectionAction => 'Update';
+
+  @override
+  String get clinicalRadiologyCancelEditAction => 'Cancel edit';
+
+  @override
+  String get clinicalRadiologyEditSelectionAction => 'Edit';
+
+  @override
+  String get clinicalRadiologyDeleteSelectionAction => 'Delete';
+
+  @override
+  String clinicalRadiologyRequestMatchesLabel(int shown, int total) {
+    return 'Showing $shown of $total matches';
+  }
+
+  @override
+  String get clinicalRadiologyRequestNoCatalogOptions =>
+      'No matching radiology catalog items';
+
+  @override
+  String get clinicalRadiologyPriorityLabel => 'Priority';
+
+  @override
+  String get clinicalRadiologyLateralityLabel => 'Laterality';
+
+  @override
+  String get clinicalRadiologyBodyRegionLabel => 'Body region';
+
+  @override
   String get clinicalPrescribeAction => 'Prescribe';
 
   @override

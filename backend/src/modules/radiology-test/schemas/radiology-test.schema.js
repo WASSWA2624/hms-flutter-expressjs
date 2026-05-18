@@ -13,6 +13,26 @@ const {
   listQuerySchema
 } = require('@lib/validation/zod');
 
+const RADIOLOGY_CATALOG_MAX_PAGE_LIMIT = 7500;
+const radiologyCatalogLimitSchema = z.coerce
+  .number()
+  .int('Limit must be an integer')
+  .positive('Limit must be a positive number')
+  .max(
+    RADIOLOGY_CATALOG_MAX_PAGE_LIMIT,
+    `Limit cannot exceed ${RADIOLOGY_CATALOG_MAX_PAGE_LIMIT}`
+  )
+  .optional();
+const optionalBooleanSchema = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return value;
+}, z.boolean().optional());
+
 const imagingModalitySchema = z.enum([
   'XRAY',
   'CT',
@@ -72,10 +92,15 @@ const radiologyTestIdParamsSchema = z.object({
  * Extends base listQuerySchema with radiology-test-specific filters
  */
 const listRadiologyTestsQuerySchema = listQuerySchema.extend({
+  limit: radiologyCatalogLimitSchema,
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   name: z.string().trim().optional(),
   code: z.string().trim().optional(),
   modality: imagingModalitySchema.optional(),
+  equipment: z.string().trim().optional(),
+  body_region: z.string().trim().optional(),
+  procedure_type: z.string().trim().optional(),
+  include_standard_catalog: optionalBooleanSchema,
   search: z.string().trim().optional()
 });
 
