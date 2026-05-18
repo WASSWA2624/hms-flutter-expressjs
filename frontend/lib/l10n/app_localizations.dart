@@ -1150,6 +1150,42 @@ abstract class AppLocalizations {
   /// **'Enter a valid date.'**
   String get opdInvalidDateMessage;
 
+  /// Label for the OPD quick arrival date range filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival range'**
+  String get opdArrivalRangeFilterLabel;
+
+  /// Option label for not restricting OPD rows by arrival date.
+  ///
+  /// In en, this message translates to:
+  /// **'Any arrival date'**
+  String get opdAnyArrivalDateOption;
+
+  /// Quick OPD date filter option for today's arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get opdDatePresetToday;
+
+  /// Quick OPD date filter option for yesterday's arrivals.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get opdDatePresetYesterday;
+
+  /// Quick OPD date filter option for arrivals in the last seven days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get opdDatePresetLast7Days;
+
+  /// Quick OPD date filter option for arrivals in the last thirty days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get opdDatePresetLast30Days;
+
   /// OPD table category filter label.
   ///
   /// In en, this message translates to:
@@ -1203,6 +1239,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All statuses'**
   String get opdAllStatusesOption;
+
+  /// All visit types option label in OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All visit types'**
+  String get opdAllVisitTypesOption;
+
+  /// All queues option label in OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All queues'**
+  String get opdAllQueuesOption;
+
+  /// All providers option label in OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All providers'**
+  String get opdAllProvidersOption;
+
+  /// All billing states option label in OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All billing states'**
+  String get opdAllBillingStatesOption;
+
+  /// All next actions option label in OPD filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All next actions'**
+  String get opdAllNextActionsOption;
 
   /// Search field label for OPD.
   ///

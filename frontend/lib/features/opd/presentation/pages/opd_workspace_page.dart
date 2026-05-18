@@ -955,6 +955,7 @@ final class _OpdTableFilter {
     this.searchField,
     this.dateFrom,
     this.dateTo,
+    this.datePreset,
     this.category,
     this.status,
     this.triageScope,
@@ -969,6 +970,7 @@ final class _OpdTableFilter {
   final String? searchField;
   final DateTime? dateFrom;
   final DateTime? dateTo;
+  final String? datePreset;
   final String? category;
   final String? status;
   final String? triageScope;
@@ -983,6 +985,7 @@ final class _OpdTableFilter {
       _isNonEmpty(searchField) ||
       dateFrom != null ||
       dateTo != null ||
+      _isNonEmpty(datePreset) ||
       _isNonEmpty(category) ||
       _isNonEmpty(status) ||
       _isNonEmpty(triageScope) ||
@@ -996,6 +999,7 @@ final class _OpdTableFilter {
       _isNonEmpty(searchField) ||
       dateFrom != null ||
       dateTo != null ||
+      _isNonEmpty(datePreset) ||
       _isNonEmpty(category) ||
       _isNonEmpty(status) ||
       _isNonEmpty(triageScope) ||
@@ -1012,6 +1016,8 @@ final class _OpdTableFilter {
       dateTo: dateTo,
       options: <String, String>{
         if (_isNonEmpty(category)) _opdFilterKeyCategory: category!,
+        if (_isNonEmpty(datePreset))
+          _opdFilterKeyArrivalDatePreset: datePreset!,
         if (_isNonEmpty(status)) _opdFilterKeyStatus: status!,
         if (_isNonEmpty(triageScope)) _opdFilterKeyTriageScope: triageScope!,
         if (_isNonEmpty(visitType)) _opdFilterKeyVisitType: visitType!,
@@ -1032,6 +1038,7 @@ final class _OpdTableFilter {
       searchField: value.field,
       dateFrom: value.dateFrom,
       dateTo: value.dateTo,
+      datePreset: value.option(_opdFilterKeyArrivalDatePreset),
       category: value.option(_opdFilterKeyCategory),
       status: value.option(_opdFilterKeyStatus),
       triageScope: value.option(_opdFilterKeyTriageScope),
@@ -1048,6 +1055,7 @@ final class _OpdTableFilter {
     String? searchField,
     DateTime? dateFrom,
     DateTime? dateTo,
+    String? datePreset,
     String? category,
     String? status,
     String? triageScope,
@@ -1060,6 +1068,7 @@ final class _OpdTableFilter {
     bool clearSearchField = false,
     bool clearDateFrom = false,
     bool clearDateTo = false,
+    bool clearDatePreset = false,
     bool clearCategory = false,
     bool clearStatus = false,
     bool clearTriageScope = false,
@@ -1074,6 +1083,7 @@ final class _OpdTableFilter {
       searchField: clearSearchField ? null : searchField ?? this.searchField,
       dateFrom: clearDateFrom ? null : dateFrom ?? this.dateFrom,
       dateTo: clearDateTo ? null : dateTo ?? this.dateTo,
+      datePreset: clearDatePreset ? null : datePreset ?? this.datePreset,
       category: clearCategory ? null : category ?? this.category,
       status: clearStatus ? null : status ?? this.status,
       triageScope: clearTriageScope ? null : triageScope ?? this.triageScope,
@@ -1092,6 +1102,15 @@ final class _OpdTableFilter {
       return false;
     }
     if (!_matchesDateRange(item.time, dateFrom: dateFrom, dateTo: dateTo)) {
+      return false;
+    }
+    final _OpdDateRange? presetRange = _datePresetRange(datePreset);
+    if (presetRange != null &&
+        !_matchesDateRange(
+          item.time,
+          dateFrom: presetRange.from,
+          dateTo: presetRange.to,
+        )) {
       return false;
     }
     if (_isNonEmpty(category) && item.category != category) {
@@ -1128,6 +1147,7 @@ final class _OpdTableFilter {
         other.searchField == searchField &&
         other.dateFrom == dateFrom &&
         other.dateTo == dateTo &&
+        other.datePreset == datePreset &&
         other.category == category &&
         other.status == status &&
         other.triageScope == triageScope &&
@@ -1144,6 +1164,7 @@ final class _OpdTableFilter {
     searchField,
     dateFrom,
     dateTo,
+    datePreset,
     category,
     status,
     triageScope,
@@ -1160,10 +1181,18 @@ List<AppSearchBarFilterGroup> _opdTableFilterGroups(
   List<_OpdTableItem> items,
   List<String> statuses,
 ) {
+  final l10n = context.l10n;
   return <AppSearchBarFilterGroup>[
     AppSearchBarFilterGroup(
+      key: _opdFilterKeyArrivalDatePreset,
+      label: l10n.opdArrivalRangeFilterLabel,
+      allLabel: l10n.opdAnyArrivalDateOption,
+      choices: _arrivalDatePresetFilterChoices(context),
+    ),
+    AppSearchBarFilterGroup(
       key: _opdFilterKeyCategory,
-      label: context.l10n.opdCategoryFilterLabel,
+      label: l10n.opdCategoryFilterLabel,
+      allLabel: l10n.opdAllCategoriesOption,
       choices: _categoryFilterOptions(context)
           .where(
             (AppSelectOption<String> option) => option.value != _opdFilterAll,
@@ -1178,21 +1207,24 @@ List<AppSearchBarFilterGroup> _opdTableFilterGroups(
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyVisitType,
-      label: context.l10n.opdVisitTypeFilterLabel,
+      label: l10n.opdVisitTypeFilterLabel,
+      allLabel: l10n.opdAllVisitTypesOption,
       choices: _textFilterChoices(
         items.map((_OpdTableItem item) => item.visitType),
       ),
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyQueue,
-      label: context.l10n.opdQueueFilterLabel,
+      label: l10n.opdQueueFilterLabel,
+      allLabel: l10n.opdAllQueuesOption,
       choices: _textFilterChoices(
         items.map((_OpdTableItem item) => item.queue),
       ),
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyStatus,
-      label: context.l10n.opdStatusFilterLabel,
+      label: l10n.opdStatusFilterLabel,
+      allLabel: l10n.opdAllStatusesOption,
       choices: statuses
           .map(
             (String status) => AppSearchBarFilterChoice(
@@ -1204,24 +1236,28 @@ List<AppSearchBarFilterGroup> _opdTableFilterGroups(
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyProvider,
-      label: context.l10n.opdProviderFilterLabel,
+      label: l10n.opdProviderFilterLabel,
+      allLabel: l10n.opdAllProvidersOption,
       choices: _textFilterChoices(
         items.map((_OpdTableItem item) => item.provider),
       ),
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyBilling,
-      label: context.l10n.opdBillingFilterLabel,
+      label: l10n.opdBillingFilterLabel,
+      allLabel: l10n.opdAllBillingStatesOption,
       choices: _billingFilterChoices(context, items),
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyNextAction,
-      label: context.l10n.opdNextActionFilterLabel,
+      label: l10n.opdNextActionFilterLabel,
+      allLabel: l10n.opdAllNextActionsOption,
       choices: _nextActionFilterChoices(items),
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyTriageScope,
-      label: context.l10n.opdTriageScopeFilterLabel,
+      label: l10n.opdTriageScopeFilterLabel,
+      allLabel: l10n.opdAllTriageScopesOption,
       choices: _triageScopeFilterOptions(context)
           .where(
             (AppSelectOption<String> option) => option.value != _opdFilterAll,
@@ -1284,6 +1320,34 @@ List<AppSearchBarFieldChoice> _opdTableSearchFields(BuildContext context) {
       field: _opdSearchFieldNextAction,
       label: l10n.opdNextActionFilterLabel,
       icon: Icons.next_plan_outlined,
+    ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _arrivalDatePresetFilterChoices(
+  BuildContext context,
+) {
+  final l10n = context.l10n;
+  return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
+      value: _opdDatePresetToday,
+      label: l10n.opdDatePresetToday,
+      icon: Icons.today_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: _opdDatePresetYesterday,
+      label: l10n.opdDatePresetYesterday,
+      icon: Icons.history_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: _opdDatePresetLast7Days,
+      label: l10n.opdDatePresetLast7Days,
+      icon: Icons.date_range_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: _opdDatePresetLast30Days,
+      label: l10n.opdDatePresetLast30Days,
+      icon: Icons.calendar_month_outlined,
     ),
   ];
 }
@@ -1847,6 +1911,26 @@ String? _nextActionFilterValue(_OpdTableItem item) {
   return item.status;
 }
 
+_OpdDateRange? _datePresetRange(String? preset) {
+  final DateTime today = DateUtils.dateOnly(DateTime.now());
+  return switch (preset) {
+    _opdDatePresetToday => _OpdDateRange(from: today, to: today),
+    _opdDatePresetYesterday => _OpdDateRange(
+      from: today.subtract(const Duration(days: 1)),
+      to: today.subtract(const Duration(days: 1)),
+    ),
+    _opdDatePresetLast7Days => _OpdDateRange(
+      from: today.subtract(const Duration(days: 6)),
+      to: today,
+    ),
+    _opdDatePresetLast30Days => _OpdDateRange(
+      from: today.subtract(const Duration(days: 29)),
+      to: today,
+    ),
+    _ => null,
+  };
+}
+
 bool _matchesDateRange(
   DateTime? value, {
   required DateTime? dateFrom,
@@ -1882,6 +1966,13 @@ bool _searchValueMatches(String value, String needle) {
     return true;
   }
   return _apiLabel(value).toLowerCase().contains(needle);
+}
+
+final class _OpdDateRange {
+  const _OpdDateRange({required this.from, required this.to});
+
+  final DateTime from;
+  final DateTime to;
 }
 
 String? _flowWaitLabel(BuildContext context, OpdFlowSummary flow) {
@@ -2343,11 +2434,7 @@ class _QueueStatusCell extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         if (item.category == _opdCategoryTriage)
-          AppTriagePriorityBadge(
-            value: item.status,
-            label: _apiLabel(item.status ?? ''),
-            emptyLabel: context.l10n.profileUnknownValue,
-          )
+          _opdTriageStatusText(context, item.status)
         else
           _opdStatusText(context, item.status),
       ],
@@ -2370,6 +2457,15 @@ Widget _opdStatusText(BuildContext context, String? value) {
   return AppStatusText(
     label: label.isEmpty ? context.l10n.profileUnknownValue : label,
     tone: _stageTone(value),
+  );
+}
+
+Widget _opdTriageStatusText(BuildContext context, String? value) {
+  final String label = _apiLabel(value ?? '');
+  return AppStatusText(
+    label: label.isEmpty ? context.l10n.profileUnknownValue : label,
+    tone: appTriageToneForValue(value),
+    icon: appTriageIconForValue(value),
   );
 }
 
@@ -6686,11 +6782,16 @@ const String _opdFilterAll = 'ALL';
 const String _opdFilterKeyCategory = 'category';
 const String _opdFilterKeyStatus = 'status';
 const String _opdFilterKeyTriageScope = 'triage_scope';
+const String _opdFilterKeyArrivalDatePreset = 'arrival_date_preset';
 const String _opdFilterKeyVisitType = 'visit_type';
 const String _opdFilterKeyQueue = 'queue';
 const String _opdFilterKeyProvider = 'provider';
 const String _opdFilterKeyBilling = 'billing';
 const String _opdFilterKeyNextAction = 'next_action';
+const String _opdDatePresetToday = 'TODAY';
+const String _opdDatePresetYesterday = 'YESTERDAY';
+const String _opdDatePresetLast7Days = 'LAST_7_DAYS';
+const String _opdDatePresetLast30Days = 'LAST_30_DAYS';
 const String _opdSearchFieldPatient = 'patient';
 const String _opdSearchFieldPatientId = 'patient_id';
 const String _opdSearchFieldPhone = 'phone';

@@ -577,7 +577,7 @@ class _AppSearchBarFiltersDialogState
       title: Text(widget.title),
       icon: const Icon(Icons.tune),
       scrollable: true,
-      maxWidth: 680,
+      maxWidth: 760,
       content: AppFieldRequirementScope(
         showOptionalIndicators: false,
         child: Form(
@@ -587,32 +587,34 @@ class _AppSearchBarFiltersDialogState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               if (widget.searchFields.isNotEmpty) ...<Widget>[
-                AppSelectField<String>.searchable(
-                  value: _field ?? _allValue,
-                  labelText: widget.searchFieldLabel,
-                  options: <AppSelectOption<String>>[
-                    AppSelectOption<String>(
-                      value: _allValue,
-                      label: widget.allFieldsLabel,
-                      leadingIcon: const Icon(Icons.manage_search_outlined),
-                    ),
-                    for (final AppSearchBarFieldChoice field
-                        in widget.searchFields)
+                _FilterControlShell(
+                  child: AppSelectField<String>.searchable(
+                    value: _field ?? _allValue,
+                    labelText: widget.searchFieldLabel,
+                    options: <AppSelectOption<String>>[
                       AppSelectOption<String>(
-                        value: field.field,
-                        label: field.label,
-                        leadingIcon: field.icon == null
-                            ? null
-                            : Icon(field.icon),
+                        value: _allValue,
+                        label: widget.allFieldsLabel,
+                        leadingIcon: const Icon(Icons.manage_search_outlined),
                       ),
-                  ],
-                  onChanged: (String? value) {
-                    setState(() {
-                      _field = value == null || value == _allValue
-                          ? null
-                          : value;
-                    });
-                  },
+                      for (final AppSearchBarFieldChoice field
+                          in widget.searchFields)
+                        AppSelectOption<String>(
+                          value: field.field,
+                          label: field.label,
+                          leadingIcon: field.icon == null
+                              ? null
+                              : Icon(field.icon),
+                        ),
+                    ],
+                    onChanged: (String? value) {
+                      setState(() {
+                        _field = value == null || value == _allValue
+                            ? null
+                            : value;
+                      });
+                    },
+                  ),
                 ),
                 SizedBox(height: theme.spacing.md),
               ],
@@ -620,69 +622,78 @@ class _AppSearchBarFiltersDialogState
                 _DialogSectionTitle(label: widget.dateFilterLabel),
                 SizedBox(height: theme.spacing.sm),
                 _ResponsiveFilterRow(
-                  left: AppDateField(
-                    value: _dateFrom,
-                    firstDate: widget.firstDate,
-                    lastDate: widget.lastDate,
-                    currentDate: widget.currentDate,
-                    pickerButtonLabel: widget.datePickerButtonLabel,
-                    invalidDateMessage: widget.invalidDateMessage,
-                    labelText: widget.dateFromLabel,
-                    onChanged: (DateTime? value) {
-                      _dateFrom = value;
-                    },
+                  left: _FilterControlShell(
+                    child: AppDateField(
+                      value: _dateFrom,
+                      firstDate: widget.firstDate,
+                      lastDate: widget.lastDate,
+                      currentDate: widget.currentDate,
+                      pickerButtonLabel: widget.datePickerButtonLabel,
+                      invalidDateMessage: widget.invalidDateMessage,
+                      labelText: widget.dateFromLabel,
+                      onChanged: (DateTime? value) {
+                        _dateFrom = value;
+                      },
+                    ),
                   ),
-                  right: AppDateField(
-                    value: _dateTo,
-                    firstDate: widget.firstDate,
-                    lastDate: widget.lastDate,
-                    currentDate: widget.currentDate,
-                    pickerButtonLabel: widget.datePickerButtonLabel,
-                    invalidDateMessage: widget.invalidDateMessage,
-                    labelText: widget.dateToLabel,
-                    onChanged: (DateTime? value) {
-                      _dateTo = value;
-                    },
+                  right: _FilterControlShell(
+                    child: AppDateField(
+                      value: _dateTo,
+                      firstDate: widget.firstDate,
+                      lastDate: widget.lastDate,
+                      currentDate: widget.currentDate,
+                      pickerButtonLabel: widget.datePickerButtonLabel,
+                      invalidDateMessage: widget.invalidDateMessage,
+                      labelText: widget.dateToLabel,
+                      onChanged: (DateTime? value) {
+                        _dateTo = value;
+                      },
+                    ),
                   ),
                 ),
               ],
-              for (final AppSearchBarFilterGroup group in widget.filterGroups)
-                if (group.choices.isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.md),
-                  AppSelectField<String>.searchable(
-                    value: _options[group.key] ?? _allValue,
-                    labelText: group.label,
-                    options: <AppSelectOption<String>>[
-                      AppSelectOption<String>(
-                        value: _allValue,
-                        label: group.allLabel ?? widget.allFieldsLabel,
-                        leadingIcon: const Icon(Icons.filter_list_off),
-                      ),
-                      for (final AppSearchBarFilterChoice choice
-                          in group.choices)
-                        AppSelectOption<String>(
-                          value: choice.value,
-                          label: choice.label,
-                          leadingIcon: choice.icon == null
-                              ? null
-                              : Icon(choice.icon),
+              if (widget.filterGroups.any(_hasFilterChoices)) ...<Widget>[
+                SizedBox(height: theme.spacing.md),
+                _ResponsiveFilterGrid(
+                  children: <Widget>[
+                    for (final AppSearchBarFilterGroup group
+                        in widget.filterGroups)
+                      if (group.choices.isNotEmpty)
+                        AppSelectField<String>.searchable(
+                          value: _options[group.key] ?? _allValue,
+                          labelText: group.label,
+                          options: <AppSelectOption<String>>[
+                            AppSelectOption<String>(
+                              value: _allValue,
+                              label: group.allLabel ?? widget.allFieldsLabel,
+                              leadingIcon: const Icon(Icons.filter_list_off),
+                            ),
+                            for (final AppSearchBarFilterChoice choice
+                                in group.choices)
+                              AppSelectOption<String>(
+                                value: choice.value,
+                                label: choice.label,
+                                leadingIcon: choice.icon == null
+                                    ? null
+                                    : Icon(choice.icon),
+                              ),
+                          ],
+                          onChanged: (String? value) {
+                            setState(() {
+                              final Map<String, String> next =
+                                  Map<String, String>.of(_options);
+                              if (value == null || value == _allValue) {
+                                next.remove(group.key);
+                              } else {
+                                next[group.key] = value;
+                              }
+                              _options = next;
+                            });
+                          },
                         ),
-                    ],
-                    onChanged: (String? value) {
-                      setState(() {
-                        final Map<String, String> next = Map<String, String>.of(
-                          _options,
-                        );
-                        if (value == null || value == _allValue) {
-                          next.remove(group.key);
-                        } else {
-                          next[group.key] = value;
-                        }
-                        _options = next;
-                      });
-                    },
-                  ),
-                ],
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -766,6 +777,10 @@ class _AppSearchBarFiltersDialogState
   }
 }
 
+bool _hasFilterChoices(AppSearchBarFilterGroup group) {
+  return group.choices.isNotEmpty;
+}
+
 class _DialogSectionTitle extends StatelessWidget {
   const _DialogSectionTitle({required this.label});
 
@@ -782,6 +797,53 @@ class _DialogSectionTitle extends StatelessWidget {
         color: colorScheme.onSurface,
         fontWeight: FontWeight.w800,
       ),
+    );
+  }
+}
+
+class _FilterControlShell extends StatelessWidget {
+  const _FilterControlShell({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(top: Theme.of(context).spacing.xs),
+      child: child,
+    );
+  }
+}
+
+class _ResponsiveFilterGrid extends StatelessWidget {
+  const _ResponsiveFilterGrid({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double spacing = theme.spacing.md;
+        final bool twoColumns = constraints.maxWidth >= 620;
+        final double itemWidth = twoColumns
+            ? (constraints.maxWidth - spacing) / 2
+            : constraints.maxWidth;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: theme.spacing.md,
+          children: <Widget>[
+            for (final Widget child in children)
+              SizedBox(
+                width: itemWidth,
+                child: _FilterControlShell(child: child),
+              ),
+          ],
+        );
+      },
     );
   }
 }

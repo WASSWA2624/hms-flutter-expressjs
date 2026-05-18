@@ -667,6 +667,12 @@
   "opdDateToLabel": "To",
   "opdDatePickerButtonLabel": "Choose date",
   "opdInvalidDateMessage": "Enter a valid date.",
+  "opdArrivalRangeFilterLabel": "Arrival range",
+  "opdAnyArrivalDateOption": "Any arrival date",
+  "opdDatePresetToday": "Today",
+  "opdDatePresetYesterday": "Yesterday",
+  "opdDatePresetLast7Days": "Last 7 days",
+  "opdDatePresetLast30Days": "Last 30 days",
   "opdCategoryFilterLabel": "Category",
   "opdStatusFilterLabel": "Status",
   "opdVisitTypeFilterLabel": "Visit type",
@@ -676,6 +682,11 @@
   "opdNextActionFilterLabel": "Next action",
   "opdAllCategoriesOption": "All categories",
   "opdAllStatusesOption": "All statuses",
+  "opdAllVisitTypesOption": "All visit types",
+  "opdAllQueuesOption": "All queues",
+  "opdAllProvidersOption": "All providers",
+  "opdAllBillingStatesOption": "All billing states",
+  "opdAllNextActionsOption": "All next actions",
   "opdSearchLabel": "Search OPD",
   "opdSearchHint": "Search patient, identifier, or provider",
   "opdApplyFiltersAction": "Apply filters",
@@ -995,6 +1006,24 @@
   "@opdInvalidDateMessage": {
     "description": "Validation message for invalid OPD date filter values."
   },
+  "@opdArrivalRangeFilterLabel": {
+    "description": "Label for the OPD quick arrival date range filter."
+  },
+  "@opdAnyArrivalDateOption": {
+    "description": "Option label for not restricting OPD rows by arrival date."
+  },
+  "@opdDatePresetToday": {
+    "description": "Quick OPD date filter option for today's arrivals."
+  },
+  "@opdDatePresetYesterday": {
+    "description": "Quick OPD date filter option for yesterday's arrivals."
+  },
+  "@opdDatePresetLast7Days": {
+    "description": "Quick OPD date filter option for arrivals in the last seven days."
+  },
+  "@opdDatePresetLast30Days": {
+    "description": "Quick OPD date filter option for arrivals in the last thirty days."
+  },
   "@opdCategoryFilterLabel": {
     "description": "OPD table category filter label."
   },
@@ -1021,6 +1050,21 @@
   },
   "@opdAllStatusesOption": {
     "description": "All statuses option label in OPD filters."
+  },
+  "@opdAllVisitTypesOption": {
+    "description": "All visit types option label in OPD filters."
+  },
+  "@opdAllQueuesOption": {
+    "description": "All queues option label in OPD filters."
+  },
+  "@opdAllProvidersOption": {
+    "description": "All providers option label in OPD filters."
+  },
+  "@opdAllBillingStatesOption": {
+    "description": "All billing states option label in OPD filters."
+  },
+  "@opdAllNextActionsOption": {
+    "description": "All next actions option label in OPD filters."
   },
   "@opdSearchLabel": {
     "description": "Search field label for OPD."

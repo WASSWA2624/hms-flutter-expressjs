@@ -268,13 +268,23 @@ void main() {
     expect(find.text('Arrival date'), findsOneWidget);
     expect(find.text('From'), findsOneWidget);
     expect(find.text('To'), findsOneWidget);
+    expect(find.text('Arrival range'), findsOneWidget);
+    expect(find.text('Any arrival date'), findsOneWidget);
     expect(find.text('Category'), findsOneWidget);
+    expect(find.text('All categories'), findsOneWidget);
     expect(find.text('Visit type'), findsWidgets);
+    expect(find.text('All visit types'), findsOneWidget);
     expect(find.text('Queue'), findsWidgets);
+    expect(find.text('All queues'), findsOneWidget);
     expect(find.text('Status'), findsWidgets);
+    expect(find.text('All statuses'), findsOneWidget);
     expect(find.text('Provider'), findsWidgets);
+    expect(find.text('All providers'), findsOneWidget);
     expect(find.text('Billing'), findsOneWidget);
+    expect(find.text('All billing states'), findsOneWidget);
     expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('All next actions'), findsOneWidget);
     expect(find.text('Triage scope'), findsOneWidget);
+    expect(find.text('All triage scopes'), findsOneWidget);
   });
 }

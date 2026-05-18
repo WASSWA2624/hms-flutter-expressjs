@@ -561,6 +561,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdInvalidDateMessage => 'Enter a valid date.';
 
   @override
+  String get opdArrivalRangeFilterLabel => 'Arrival range';
+
+  @override
+  String get opdAnyArrivalDateOption => 'Any arrival date';
+
+  @override
+  String get opdDatePresetToday => 'Today';
+
+  @override
+  String get opdDatePresetYesterday => 'Yesterday';
+
+  @override
+  String get opdDatePresetLast7Days => 'Last 7 days';
+
+  @override
+  String get opdDatePresetLast30Days => 'Last 30 days';
+
+  @override
   String get opdCategoryFilterLabel => 'Category';
 
   @override
@@ -586,6 +604,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdAllStatusesOption => 'All statuses';
+
+  @override
+  String get opdAllVisitTypesOption => 'All visit types';
+
+  @override
+  String get opdAllQueuesOption => 'All queues';
+
+  @override
+  String get opdAllProvidersOption => 'All providers';
+
+  @override
+  String get opdAllBillingStatesOption => 'All billing states';
+
+  @override
+  String get opdAllNextActionsOption => 'All next actions';
 
   @override
   String get opdSearchLabel => 'Search OPD';
