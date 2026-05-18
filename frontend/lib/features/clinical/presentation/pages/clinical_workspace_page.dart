@@ -1229,13 +1229,10 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                   ),
                 ),
                 SizedBox(height: theme.spacing.sm),
-                _ClinicalLabOrderDetailList(
+                _ClinicalLabOrderTestsList(
                   title: l10n.clinicalLabOrderTestsLabel,
                   emptyLabel: l10n.clinicalNoLabOrderTestsLabel,
-                  values: <String>[
-                    for (final ClinicalLabOrderItem item in order.labOrderItems)
-                      item.displayTitle,
-                  ],
+                  order: order,
                 ),
                 SizedBox(height: theme.spacing.xs),
                 _ClinicalLabOrderDetailList(
@@ -1352,6 +1349,134 @@ class _ClinicalLabOrderDetailList extends StatelessWidget {
             ],
           ),
       ],
+    );
+  }
+}
+
+class _ClinicalLabOrderTestsList extends StatelessWidget {
+  const _ClinicalLabOrderTestsList({
+    required this.title,
+    required this.emptyLabel,
+    required this.order,
+  });
+
+  final String title;
+  final String emptyLabel;
+  final ClinicalRelatedRecord order;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<ClinicalLabOrderItem> items = order.labOrderItems;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        if (items.isEmpty)
+          Text(
+            emptyLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          Column(
+            children: <Widget>[
+              for (var index = 0; index < items.length; index += 1) ...[
+                if (index > 0) SizedBox(height: theme.spacing.xs),
+                _ClinicalLabOrderTestRow(
+                  item: items[index],
+                  orderStatus: order.status,
+                ),
+              ],
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+class _ClinicalLabOrderTestRow extends StatelessWidget {
+  const _ClinicalLabOrderTestRow({
+    required this.item,
+    required this.orderStatus,
+  });
+
+  final ClinicalLabOrderItem item;
+  final String? orderStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String status = _effectiveLabOrderItemStatus(item, orderStatus);
+    final String? resultStatus = _resultStatusLabel(item, status);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Icons.science_outlined,
+              size: theme.appTokens.listIconSize * 0.82,
+              color: theme.colorScheme.primary,
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    item.displayTitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (_hasText(item.displaySubtitle))
+                    Text(
+                      item.displaySubtitle!,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                AppWorkspaceStatusBadge(
+                  status: AppWorkspaceStatus(
+                    label: _apiLabel(status),
+                    tone: _statusTone(status),
+                  ),
+                ),
+                if (resultStatus != null)
+                  AppWorkspaceStatusBadge(
+                    status: AppWorkspaceStatus(
+                      label: resultStatus,
+                      tone: _statusTone(item.resultStatus),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -5146,10 +5271,39 @@ AppWorkspaceStatusTone _statusTone(String? value) {
     'ADMITTED' => AppWorkspaceStatusTone.warning,
     'IN_PROGRESS' ||
     'ORDERED' ||
+    'COLLECTED' ||
     'IN_PROCESS' ||
     'OPEN' => AppWorkspaceStatusTone.info,
+    'PENDING' => AppWorkspaceStatusTone.warning,
     _ => AppWorkspaceStatusTone.neutral,
   };
+}
+
+String _effectiveLabOrderItemStatus(
+  ClinicalLabOrderItem item,
+  String? orderStatus,
+) {
+  final String itemStatus = (item.status ?? '').trim();
+  final String normalizedOrderStatus = (orderStatus ?? '').toUpperCase();
+  if (normalizedOrderStatus == 'CANCELLED' &&
+      itemStatus.toUpperCase() != 'COMPLETED') {
+    return 'CANCELLED';
+  }
+  if (itemStatus.isNotEmpty) {
+    return itemStatus;
+  }
+  return (orderStatus ?? '').trim().isEmpty ? 'ORDERED' : orderStatus!.trim();
+}
+
+String? _resultStatusLabel(ClinicalLabOrderItem item, String itemStatus) {
+  final String? resultStatus = item.resultStatus;
+  if (!_hasText(resultStatus)) {
+    return null;
+  }
+  if (resultStatus!.toUpperCase() == itemStatus.toUpperCase()) {
+    return null;
+  }
+  return 'Result ${_apiLabel(resultStatus)}';
 }
 
 AppWorkspaceStatusTone _clinicalVitalTone(String? value) {

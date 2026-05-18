@@ -235,13 +235,24 @@ final class ClinicalRelatedRecordDto {
   }
 
   ClinicalLabOrderItem _labOrderItemFromJson(ClinicalJsonMap json) {
+    final String? labTestId = _string(json['lab_test_id']);
+    final String? testDisplayName = _string(json['test_display_name']);
+    final String? testCode = _string(json['test_code']);
     return ClinicalLabOrderItem(
-      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      id:
+          _string(json['human_friendly_id']) ??
+          _string(json['id']) ??
+          _string(json['display_id']) ??
+          _string(json['lab_order_item_id']) ??
+          labTestId ??
+          testCode ??
+          testDisplayName ??
+          '',
       status: _string(json['status']),
       resultStatus: _string(json['result_status']),
-      labTestId: _string(json['lab_test_id']),
-      testDisplayName: _string(json['test_display_name']),
-      testCode: _string(json['test_code']),
+      labTestId: labTestId,
+      testDisplayName: testDisplayName,
+      testCode: testCode,
       category: _string(json['category']),
       specimenType: _string(json['specimen_type']),
       unit: _string(json['unit']),
