@@ -2582,18 +2582,48 @@ class _LabOrderDialogState extends ConsumerState<_LabOrderDialog> {
       return const <_PendingLabRequest>[];
     }
 
-    return order.labOrderItems
-        .where((ClinicalLabOrderItem item) => _hasText(item.labTestId))
-        .map((ClinicalLabOrderItem item) {
-          final ClinicalCatalogOption option = _catalogOptionForLabOrderItem(
-            item,
-          );
-          return _PendingLabRequest(
-            kind: _LabRequestSelectionKind.tests,
-            option: option,
-          );
-        })
-        .toList(growable: false);
+    final List<ClinicalCatalogOption> inferredPanels = _requestedPanelsForOrder(
+      order,
+      widget.referenceData,
+    );
+    final Set<String> panelChildIds = inferredPanels
+        .expand((ClinicalCatalogOption panel) => panel.childIds)
+        .map(_normalizedCatalogToken)
+        .where((String value) => value.isNotEmpty)
+        .toSet();
+    final Set<String> panelChildCodes = inferredPanels
+        .expand((ClinicalCatalogOption panel) => panel.childCodes)
+        .map(_normalizedCatalogToken)
+        .where((String value) => value.isNotEmpty)
+        .toSet();
+
+    return <_PendingLabRequest>[
+      for (final ClinicalCatalogOption panel in inferredPanels)
+        _PendingLabRequest(
+          kind: _LabRequestSelectionKind.panels,
+          option: panel,
+        ),
+      ...order.labOrderItems
+          .where(
+            (ClinicalLabOrderItem item) =>
+                _hasText(item.labTestId) &&
+                !panelChildIds.contains(
+                  _normalizedCatalogToken(item.labTestId!),
+                ) &&
+                !panelChildCodes.contains(
+                  _normalizedCatalogToken(item.testCode ?? ''),
+                ),
+          )
+          .map((ClinicalLabOrderItem item) {
+            final ClinicalCatalogOption option = _catalogOptionForLabOrderItem(
+              item,
+            );
+            return _PendingLabRequest(
+              kind: _LabRequestSelectionKind.tests,
+              option: option,
+            );
+          }),
+    ];
   }
 
   ClinicalCatalogOption _catalogOptionForLabOrderItem(
