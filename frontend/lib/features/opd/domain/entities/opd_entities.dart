@@ -319,6 +319,7 @@ final class OpdFlowSummary {
     this.startedAt,
     this.queuedAt,
     this.endedAt,
+    this.arrivalMode,
     this.stage,
     this.nextStep,
     this.patientDisplayName,
@@ -334,6 +335,12 @@ final class OpdFlowSummary {
     this.emergencyIndicator = false,
     this.lastRouteTo,
     this.facilityName,
+    this.consultationPaid = false,
+    this.consultationPaymentRequired = false,
+    this.consultationFee,
+    this.consultationCurrency,
+    this.consultationInvoiceId,
+    this.consultationPaymentId,
   });
 
   final String id;
@@ -347,6 +354,7 @@ final class OpdFlowSummary {
   final DateTime? startedAt;
   final DateTime? queuedAt;
   final DateTime? endedAt;
+  final String? arrivalMode;
   final String? stage;
   final String? nextStep;
   final String? patientDisplayName;
@@ -362,6 +370,12 @@ final class OpdFlowSummary {
   final bool emergencyIndicator;
   final String? lastRouteTo;
   final String? facilityName;
+  final bool consultationPaid;
+  final bool consultationPaymentRequired;
+  final num? consultationFee;
+  final String? consultationCurrency;
+  final String? consultationInvoiceId;
+  final String? consultationPaymentId;
 
   String get apiId => publicId ?? id;
 
@@ -390,6 +404,7 @@ final class OpdFlowSummary {
     DateTime? startedAt,
     DateTime? queuedAt,
     DateTime? endedAt,
+    String? arrivalMode,
     String? stage,
     String? nextStep,
     String? patientDisplayName,
@@ -405,6 +420,12 @@ final class OpdFlowSummary {
     bool? emergencyIndicator,
     String? lastRouteTo,
     String? facilityName,
+    bool? consultationPaid,
+    bool? consultationPaymentRequired,
+    num? consultationFee,
+    String? consultationCurrency,
+    String? consultationInvoiceId,
+    String? consultationPaymentId,
   }) {
     return OpdFlowSummary(
       id: id ?? this.id,
@@ -418,6 +439,7 @@ final class OpdFlowSummary {
       startedAt: startedAt ?? this.startedAt,
       queuedAt: queuedAt ?? this.queuedAt,
       endedAt: endedAt ?? this.endedAt,
+      arrivalMode: arrivalMode ?? this.arrivalMode,
       stage: stage ?? this.stage,
       nextStep: nextStep ?? this.nextStep,
       patientDisplayName: patientDisplayName ?? this.patientDisplayName,
@@ -433,6 +455,15 @@ final class OpdFlowSummary {
       emergencyIndicator: emergencyIndicator ?? this.emergencyIndicator,
       lastRouteTo: lastRouteTo ?? this.lastRouteTo,
       facilityName: facilityName ?? this.facilityName,
+      consultationPaid: consultationPaid ?? this.consultationPaid,
+      consultationPaymentRequired:
+          consultationPaymentRequired ?? this.consultationPaymentRequired,
+      consultationFee: consultationFee ?? this.consultationFee,
+      consultationCurrency: consultationCurrency ?? this.consultationCurrency,
+      consultationInvoiceId:
+          consultationInvoiceId ?? this.consultationInvoiceId,
+      consultationPaymentId:
+          consultationPaymentId ?? this.consultationPaymentId,
     );
   }
 }

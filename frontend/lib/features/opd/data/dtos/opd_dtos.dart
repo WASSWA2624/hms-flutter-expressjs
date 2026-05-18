@@ -178,6 +178,7 @@ final class OpdFlowSummaryDto {
     final OpdJsonMap? patient = _nullableMap(encounter['patient']);
     final OpdJsonMap? provider = _nullableMap(encounter['provider']);
     final OpdJsonMap? facility = _nullableMap(encounter['facility']);
+    final OpdJsonMap consultation = _map(flow['consultation']);
 
     return OpdFlowSummary(
       id: _string(encounter['id']) ?? '',
@@ -191,6 +192,7 @@ final class OpdFlowSummaryDto {
       startedAt: _date(encounter['started_at']),
       queuedAt: _date(flow['queued_at']),
       endedAt: _date(encounter['ended_at']),
+      arrivalMode: _string(flow['arrival_mode']),
       stage: _string(flow['stage']),
       nextStep: _string(flow['next_step']),
       patientDisplayName: _patientDisplayName(patient),
@@ -209,6 +211,16 @@ final class OpdFlowSummaryDto {
         _nullableMap(flow['last_triage_route'])?['route_to'],
       ),
       facilityName: _string(facility?['name']),
+      consultationPaid: _bool(consultation['paid'] ?? consultation['is_paid']),
+      consultationPaymentRequired: _bool(
+        consultation['payment_required'] ??
+            consultation['required'] ??
+            consultation['require_payment'],
+      ),
+      consultationFee: _number(consultation['consultation_fee']),
+      consultationCurrency: _string(consultation['currency']),
+      consultationInvoiceId: _string(consultation['invoice_id']),
+      consultationPaymentId: _string(consultation['payment_id']),
     );
   }
 }

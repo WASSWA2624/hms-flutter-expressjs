@@ -650,10 +650,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdStatusColumnLabel => 'Status';
 
   @override
+  String get opdVisitTypeColumnLabel => 'Visit type';
+
+  @override
+  String get opdQueueStatusColumnLabel => 'Queue / status';
+
+  @override
   String get opdTimeColumnLabel => 'Arrival time';
 
   @override
+  String get opdWaitingTimeColumnLabel => 'Wait time';
+
+  @override
   String get opdProviderColumnLabel => 'Provider';
+
+  @override
+  String get opdPayerBillingColumnLabel => 'Payer / billing';
 
   @override
   String get opdActionsColumnLabel => 'Actions';

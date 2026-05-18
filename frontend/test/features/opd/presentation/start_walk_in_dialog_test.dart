@@ -22,6 +22,9 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const PatientListQuery());
     registerFallbackValue(const OpdAppointmentQuery());
+    registerFallbackValue(const OpdQueueQuery());
+    registerFallbackValue(const OpdFlowQuery());
+    registerFallbackValue(const OpdTriageQueueQuery());
   });
 
   testWidgets('StartWalkInDialog loads and submits the new patient flow', (
@@ -153,4 +156,106 @@ void main() {
       expect(find.text('Do not route yet'), findsOneWidget);
     },
   );
+
+  testWidgets('OpdWorkspacePage exposes the required OPD worklist columns', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+    final DateTime queuedAt = DateTime.now().subtract(
+      const Duration(minutes: 18),
+    );
+    final OpdFlowSummary flow = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientDisplayName: 'Jane Doe',
+      patientIdentifier: 'PAT000001',
+      encounterType: 'OPD',
+      status: 'OPEN',
+      arrivalMode: 'WALK_IN',
+      stage: 'WAITING_CONSULTATION_PAYMENT',
+      nextStep: 'PAY_CONSULTATION',
+      queuedAt: queuedAt,
+      providerDisplayName: 'Dr Able',
+      consultationPaymentRequired: true,
+      consultationFee: 25000,
+      consultationCurrency: 'UGX',
+    );
+
+    when(() => opdRepository.listAppointments(any())).thenAnswer(
+      (invocation) async => Result<AppPage<OpdAppointment>>.success(
+        AppPage<OpdAppointment>(
+          items: const <OpdAppointment>[],
+          request:
+              (invocation.positionalArguments.single as OpdAppointmentQuery)
+                  .pageRequest,
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(() => opdRepository.listVisitQueues(any())).thenAnswer(
+      (invocation) async => Result<AppPage<OpdQueueEntry>>.success(
+        AppPage<OpdQueueEntry>(
+          items: const <OpdQueueEntry>[],
+          request: (invocation.positionalArguments.single as OpdQueueQuery)
+              .pageRequest,
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(() => opdRepository.listOpdFlows(any())).thenAnswer(
+      (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: <OpdFlowSummary>[flow],
+          request: (invocation.positionalArguments.single as OpdFlowQuery)
+              .pageRequest,
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    when(() => opdRepository.listTriageQueue(any())).thenAnswer(
+      (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: const <OpdFlowSummary>[],
+          request:
+              (invocation.positionalArguments.single as OpdTriageQueueQuery)
+                  .pageRequest,
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(
+      () => opdRepository.listClinicalAlertThresholds(
+        vitalType: any(named: 'vitalType'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+        <OpdClinicalAlertThreshold>[],
+      ),
+    );
+    when(() => opdRepository.listProviderSchedules()).thenAnswer(
+      (_) async => const Result<List<OpdProviderSchedule>>.success(
+        <OpdProviderSchedule>[],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [opdRepositoryProvider.overrideWithValue(opdRepository)],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const Scaffold(body: OpdWorkspacePage()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Visit type'), findsOneWidget);
+    expect(find.text('Queue / status'), findsOneWidget);
+    expect(find.text('Payer / billing'), findsOneWidget);
+    expect(find.text('Wait time'), findsOneWidget);
+    expect(find.textContaining('Payment required'), findsWidgets);
+  });
 }

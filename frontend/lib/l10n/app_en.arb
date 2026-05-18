@@ -694,8 +694,12 @@
   "opdPatientColumnLabel": "Patient",
   "opdCategoryColumnLabel": "Category",
   "opdStatusColumnLabel": "Status",
+  "opdVisitTypeColumnLabel": "Visit type",
+  "opdQueueStatusColumnLabel": "Queue / status",
   "opdTimeColumnLabel": "Arrival time",
+  "opdWaitingTimeColumnLabel": "Wait time",
   "opdProviderColumnLabel": "Provider",
+  "opdPayerBillingColumnLabel": "Payer / billing",
   "opdActionsColumnLabel": "Actions",
   "opdStageColumnLabel": "Stage",
   "opdNextStepColumnLabel": "Next step",
@@ -1060,11 +1064,23 @@
   "@opdStatusColumnLabel": {
     "description": "Status column label."
   },
+  "@opdVisitTypeColumnLabel": {
+    "description": "Visit type column label for the main OPD table."
+  },
+  "@opdQueueStatusColumnLabel": {
+    "description": "Queue and status column label for the main OPD table."
+  },
   "@opdTimeColumnLabel": {
     "description": "Arrival time column label."
   },
+  "@opdWaitingTimeColumnLabel": {
+    "description": "Wait time column label for the main OPD table."
+  },
   "@opdProviderColumnLabel": {
     "description": "Provider column label."
+  },
+  "@opdPayerBillingColumnLabel": {
+    "description": "Payer and billing column label for the main OPD table."
   },
   "@opdActionsColumnLabel": {
     "description": "Actions column label."

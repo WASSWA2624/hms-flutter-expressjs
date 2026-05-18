@@ -1092,7 +1092,12 @@ final class _OpdTableItem {
     required this.category,
     required this.status,
     this.subtitle,
+    this.visitType,
+    this.queue,
     this.provider,
+    this.facility,
+    this.billing,
+    this.billingTone = AppWorkspaceStatusTone.neutral,
     this.nextStep,
     this.time,
     this.urgencyRank = _defaultUrgencyRank,
@@ -1106,7 +1111,12 @@ final class _OpdTableItem {
   final String category;
   final String? status;
   final String? subtitle;
+  final String? visitType;
+  final String? queue;
   final String? provider;
+  final String? facility;
+  final String? billing;
+  final AppWorkspaceStatusTone billingTone;
   final String? nextStep;
   final DateTime? time;
   final int urgencyRank;
@@ -1136,7 +1146,11 @@ final class _OpdTableItem {
       category,
       status,
       subtitle,
+      visitType,
+      queue,
       provider,
+      facility,
+      billing,
       nextStep,
       appointment?.patientId,
       appointment?.patientIdentifier,
@@ -1170,14 +1184,19 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       title: flow.displayTitle,
       category: _opdCategoryTriage,
       status: flow.triageLevel ?? flow.stage,
+      visitType: _flowVisitTypeLabel(context, flow),
+      queue: _flowQueueLabel(context, flow),
       subtitle: _joinDisplay(<String?>[
         flow.patientIdentifier,
         flow.patientPhone,
-        _arrivalTypeLabel(context, flow),
+        _flowVisitTypeLabel(context, flow),
         _flowWaitLabel(context, flow),
         flow.chiefComplaint,
       ]),
       provider: flow.providerDisplayName,
+      facility: flow.facilityName,
+      billing: _flowBillingLabel(context, flow),
+      billingTone: _flowBillingTone(flow),
       nextStep: _triageNextStep(flow),
       time: flow.queuedAt ?? flow.startedAt,
       urgencyRank: _flowUrgencyRank(flow),
@@ -1196,14 +1215,19 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       title: flow.displayTitle,
       category: _opdCategoryActiveFlow,
       status: flow.stage,
+      visitType: _flowVisitTypeLabel(context, flow),
+      queue: _flowQueueLabel(context, flow),
       subtitle: _joinDisplay(<String?>[
         flow.patientIdentifier,
         flow.patientPhone,
-        _arrivalTypeLabel(context, flow),
+        _flowVisitTypeLabel(context, flow),
         _flowWaitLabel(context, flow),
         flow.lastRouteTo == null ? null : _apiLabel(flow.lastRouteTo!),
       ]),
       provider: flow.providerDisplayName,
+      facility: flow.facilityName,
+      billing: _flowBillingLabel(context, flow),
+      billingTone: _flowBillingTone(flow),
       nextStep: flow.nextStep,
       time: flow.queuedAt ?? flow.startedAt,
       urgencyRank: _flowUrgencyRank(flow),
@@ -1222,12 +1246,18 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       title: entry.displayTitle,
       category: _opdCategoryQueue,
       status: entry.status,
+      visitType: entry.appointmentId == null
+          ? _categoryLabel(context, _opdCategoryQueue)
+          : context.l10n.opdAppointmentPatientModeLabel,
+      queue: context.l10n.opdQueueSummaryLabel,
       subtitle: _joinDisplay(<String?>[
         entry.patientIdentifier,
         entry.patientPhone,
         entry.appointmentReason,
       ]),
       provider: entry.providerDisplayName,
+      billing: _queueBillingLabel(context, entry),
+      billingTone: _queueBillingTone(entry),
       time: entry.queuedAt,
       urgencyRank: _statusUrgencyRank(entry.status),
       queueEntry: entry,
@@ -1246,12 +1276,16 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       title: appointment.displayTitle,
       category: _opdCategoryArrival,
       status: appointment.status,
+      visitType: context.l10n.opdAppointmentPatientModeLabel,
+      queue: context.l10n.opdArrivalsSummaryLabel,
       subtitle: _joinDisplay(<String?>[
         appointment.patientIdentifier,
         appointment.patientPhone,
         appointment.reason,
       ]),
       provider: appointment.providerDisplayName,
+      facility: appointment.facilityName,
+      billing: context.l10n.profileUnknownValue,
       time: _appointmentArrivalTime(appointment),
       urgencyRank: _statusUrgencyRank(appointment.status),
       appointment: appointment,
@@ -1376,12 +1410,101 @@ String _triageNextStep(OpdFlowSummary flow) {
   return flow.nextStep ?? flow.stage ?? '';
 }
 
-String? _arrivalTypeLabel(BuildContext context, OpdFlowSummary flow) {
+String? _flowVisitTypeLabel(BuildContext context, OpdFlowSummary flow) {
   if (_isEmergencyFlow(flow)) {
     return context.l10n.opdTriageScopeEmergency;
   }
+  final String arrivalMode = _apiLabel(flow.arrivalMode ?? '');
+  if (arrivalMode.isNotEmpty) {
+    return arrivalMode;
+  }
   final String encounterType = _apiLabel(flow.encounterType ?? '');
   return encounterType.isEmpty ? null : encounterType;
+}
+
+String _flowQueueLabel(BuildContext context, OpdFlowSummary flow) {
+  final String route = _apiLabel(flow.lastRouteTo ?? '');
+  if (route.isNotEmpty && !_isCompletedStatus(flow.stage)) {
+    return route;
+  }
+
+  final String stage = _apiLabel(flow.stage ?? '');
+  return stage.isEmpty ? context.l10n.profileUnknownValue : stage;
+}
+
+String _flowBillingLabel(BuildContext context, OpdFlowSummary flow) {
+  final String status = _flowBillingStatusLabel(context, flow);
+  final String? amount = _moneyLabel(
+    context,
+    flow.consultationFee,
+    flow.consultationCurrency,
+  );
+  return _joinDisplay(<String?>[status, amount]);
+}
+
+String _flowBillingStatusLabel(BuildContext context, OpdFlowSummary flow) {
+  final String stage = (flow.stage ?? '').toUpperCase();
+  if (flow.consultationPaid) {
+    return context.l10n.opdPaymentPaidLabel;
+  }
+  if (flow.consultationPaymentRequired ||
+      stage == 'WAITING_CONSULTATION_PAYMENT') {
+    return context.l10n.opdPaymentRequiredLabel;
+  }
+  return context.l10n.opdPaymentNotRequiredLabel;
+}
+
+AppWorkspaceStatusTone _flowBillingTone(OpdFlowSummary flow) {
+  final String stage = (flow.stage ?? '').toUpperCase();
+  if (flow.consultationPaid) {
+    return AppWorkspaceStatusTone.success;
+  }
+  if (flow.consultationPaymentRequired ||
+      stage == 'WAITING_CONSULTATION_PAYMENT') {
+    return AppWorkspaceStatusTone.warning;
+  }
+  return AppWorkspaceStatusTone.neutral;
+}
+
+String _queueBillingLabel(BuildContext context, OpdQueueEntry entry) {
+  final String status = (entry.paymentStatus ?? '').trim();
+  final String? amount = _moneyLabel(
+    context,
+    entry.amountToPay,
+    entry.currency,
+  );
+  if (status.isEmpty) {
+    return amount ?? context.l10n.profileUnknownValue;
+  }
+  return _joinDisplay(<String?>[_apiLabel(status), amount]);
+}
+
+AppWorkspaceStatusTone _queueBillingTone(OpdQueueEntry entry) {
+  final String status = (entry.paymentStatus ?? '').toUpperCase();
+  return switch (status) {
+    'PAID' ||
+    'COMPLETED' ||
+    'COVERED' ||
+    'WAIVED' ||
+    'CLEARED' => AppWorkspaceStatusTone.success,
+    'PENDING' ||
+    'PENDING_PAYMENT' ||
+    'INVOICE_CREATED' ||
+    'PARTIAL' => AppWorkspaceStatusTone.warning,
+    'FAILED' || 'VOID' || 'CANCELLED' => AppWorkspaceStatusTone.error,
+    _ => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+String? _moneyLabel(BuildContext context, num? amount, String? currency) {
+  if (amount == null || amount == 0) {
+    return null;
+  }
+  return AppFormatters.currency(
+    amount,
+    Localizations.localeOf(context),
+    currencyCode: currency,
+  );
 }
 
 String? _flowWaitLabel(BuildContext context, OpdFlowSummary flow) {
@@ -1460,8 +1583,11 @@ String _opdTableColumnLabel(BuildContext context, _OpdTableColumnId column) {
   final l10n = context.l10n;
   return switch (column) {
     _OpdTableColumnId.patient => l10n.opdPatientColumnLabel,
-    _OpdTableColumnId.status => l10n.opdStatusColumnLabel,
+    _OpdTableColumnId.visitType => l10n.opdVisitTypeColumnLabel,
+    _OpdTableColumnId.queueStatus => l10n.opdQueueStatusColumnLabel,
     _OpdTableColumnId.provider => l10n.opdProviderColumnLabel,
+    _OpdTableColumnId.payerBilling => l10n.opdPayerBillingColumnLabel,
+    _OpdTableColumnId.waitingTime => l10n.opdWaitingTimeColumnLabel,
     _OpdTableColumnId.arrivalTime => l10n.opdTimeColumnLabel,
     _OpdTableColumnId.nextStep => l10n.opdNextStepColumnLabel,
   };
@@ -1491,15 +1617,24 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
           title: item.title,
           subtitle: item.subtitle,
         ),
-        _OpdTableColumnId.status =>
-          item.category == _opdCategoryTriage
-              ? AppTriagePriorityBadge(
-                  value: item.status,
-                  label: _apiLabel(item.status ?? ''),
-                  emptyLabel: context.l10n.profileUnknownValue,
-                )
-              : _opdStatusText(context, item.status),
+        _OpdTableColumnId.visitType => Text(
+          item.visitType ?? context.l10n.profileUnknownValue,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _OpdTableColumnId.queueStatus => _QueueStatusCell(item: item),
         _OpdTableColumnId.provider => _ProviderCell(item: item),
+        _OpdTableColumnId.payerBilling => AppStatusText(
+          label: item.billing ?? context.l10n.profileUnknownValue,
+          tone: item.billingTone,
+        ),
+        _OpdTableColumnId.waitingTime => Text(
+          _waitingTimeLabel(context, item),
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
         _OpdTableColumnId.arrivalTime => Text(
           _formatDateTime(context, item.time),
           maxLines: 1,
@@ -1518,23 +1653,39 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
   );
 }
 
-enum _OpdTableColumnId { patient, status, provider, arrivalTime, nextStep }
+enum _OpdTableColumnId {
+  patient,
+  visitType,
+  queueStatus,
+  provider,
+  payerBilling,
+  waitingTime,
+  arrivalTime,
+  nextStep,
+}
 
-const int _maxOpdTableColumns = 4;
+const int _maxOpdTableColumns = 8;
 const int _defaultUrgencyRank = 99;
 final DateTime _unknownArrivalTime = DateTime(9999);
 
 const List<_OpdTableColumnId> _defaultOpdTableColumns = <_OpdTableColumnId>[
   _OpdTableColumnId.patient,
-  _OpdTableColumnId.status,
+  _OpdTableColumnId.visitType,
+  _OpdTableColumnId.queueStatus,
   _OpdTableColumnId.provider,
+  _OpdTableColumnId.payerBilling,
+  _OpdTableColumnId.waitingTime,
   _OpdTableColumnId.arrivalTime,
+  _OpdTableColumnId.nextStep,
 ];
 
 const List<_OpdTableColumnId> _availableOpdTableColumns = <_OpdTableColumnId>[
   _OpdTableColumnId.patient,
-  _OpdTableColumnId.status,
+  _OpdTableColumnId.visitType,
+  _OpdTableColumnId.queueStatus,
   _OpdTableColumnId.provider,
+  _OpdTableColumnId.payerBilling,
+  _OpdTableColumnId.waitingTime,
   _OpdTableColumnId.arrivalTime,
   _OpdTableColumnId.nextStep,
 ];
@@ -1756,13 +1907,49 @@ class _OpdTableMobileRow extends StatelessWidget {
       title: item.title,
       subtitle: _joinDisplay(<String?>[
         item.subtitle,
+        item.visitType,
+        item.queue,
         _apiLabel(item.status ?? ''),
+        item.billing,
+        _waitingTimeLabel(context, item),
         item.provider,
         _nextStepLabel(context, item),
         _formatDateTime(context, item.time),
       ]),
       subtitleMaxLines: 3,
       trailing: const Icon(Icons.chevron_right),
+    );
+  }
+}
+
+class _QueueStatusCell extends StatelessWidget {
+  const _QueueStatusCell({required this.item});
+
+  final _OpdTableItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final String queue = item.queue ?? context.l10n.profileUnknownValue;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          queue,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (item.category == _opdCategoryTriage)
+          AppTriagePriorityBadge(
+            value: item.status,
+            label: _apiLabel(item.status ?? ''),
+            emptyLabel: context.l10n.profileUnknownValue,
+          )
+        else
+          _opdStatusText(context, item.status),
+      ],
     );
   }
 }
@@ -1792,16 +1979,24 @@ class _ProviderCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: item.provider ?? context.l10n.profileUnknownValue,
-      child: Text(
-        item.provider ?? context.l10n.profileUnknownValue,
-        maxLines: 1,
-        softWrap: false,
-        overflow: TextOverflow.ellipsis,
-      ),
+    return AppListItemText(
+      title: item.provider ?? context.l10n.profileUnknownValue,
+      subtitle: item.facility,
     );
   }
+}
+
+String _waitingTimeLabel(BuildContext context, _OpdTableItem item) {
+  final DateTime? time = item.time;
+  if (time == null || _isCompletedStatus(item.status)) {
+    return context.l10n.profileUnknownValue;
+  }
+
+  final Duration duration = DateTime.now().difference(time.toLocal());
+  if (duration.isNegative) {
+    return context.l10n.profileUnknownValue;
+  }
+  return _formatShortDuration(duration);
 }
 
 String _nextStepLabel(BuildContext context, _OpdTableItem item) {
@@ -3559,8 +3754,20 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
     final l10n = context.l10n;
     final List<AppInfoTileData> items = <AppInfoTileData>[
       AppInfoTileData(
+        label: l10n.opdArrivalModeLabel,
+        value: _flowVisitTypeLabel(context, flow),
+      ),
+      AppInfoTileData(
         label: l10n.opdStageLabel,
         value: _apiLabel(flow.stage ?? ''),
+      ),
+      AppInfoTileData(
+        label: l10n.opdQueueSummaryLabel,
+        value: _flowQueueLabel(context, flow),
+      ),
+      AppInfoTileData(
+        label: l10n.opdWaitingTimeColumnLabel,
+        value: _flowWaitLabel(context, flow),
       ),
       AppInfoTileData(
         label: l10n.opdNextStepColumnLabel,

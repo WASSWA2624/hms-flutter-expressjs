@@ -13,6 +13,7 @@ void main() {
             'status': 'OPEN',
           },
           'flow': <String, Object?>{
+            'arrival_mode': 'EMERGENCY',
             'queued_at': '2026-05-17T07:45:00.000Z',
             'stage': 'WAITING_VITALS',
             'next_step': 'RECORD_VITALS',
@@ -20,6 +21,8 @@ void main() {
             'consultation': <String, Object?>{
               'require_payment': true,
               'is_paid': true,
+              'consultation_fee': '25000',
+              'currency': 'UGX',
               'invoice_id': 'INV0001',
               'payment_id': 'PAY0001',
             },
@@ -36,6 +39,11 @@ void main() {
     expect(detail.consultationInvoiceId, 'INV0001');
     expect(detail.consultationPaymentId, 'PAY0001');
     expect(detail.summary.queuedAt, DateTime.parse('2026-05-17T07:45:00.000Z'));
+    expect(detail.summary.arrivalMode, 'EMERGENCY');
     expect(detail.summary.emergencyIndicator, isTrue);
+    expect(detail.summary.consultationPaymentRequired, isTrue);
+    expect(detail.summary.consultationPaid, isTrue);
+    expect(detail.summary.consultationFee, 25000);
+    expect(detail.summary.consultationCurrency, 'UGX');
   });
 }

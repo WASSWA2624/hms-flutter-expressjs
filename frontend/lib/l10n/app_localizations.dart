@@ -1312,17 +1312,41 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get opdStatusColumnLabel;
 
+  /// Visit type column label for the main OPD table.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit type'**
+  String get opdVisitTypeColumnLabel;
+
+  /// Queue and status column label for the main OPD table.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue / status'**
+  String get opdQueueStatusColumnLabel;
+
   /// Arrival time column label.
   ///
   /// In en, this message translates to:
   /// **'Arrival time'**
   String get opdTimeColumnLabel;
 
+  /// Wait time column label for the main OPD table.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait time'**
+  String get opdWaitingTimeColumnLabel;
+
   /// Provider column label.
   ///
   /// In en, this message translates to:
   /// **'Provider'**
   String get opdProviderColumnLabel;
+
+  /// Payer and billing column label for the main OPD table.
+  ///
+  /// In en, this message translates to:
+  /// **'Payer / billing'**
+  String get opdPayerBillingColumnLabel;
 
   /// Actions column label.
   ///
