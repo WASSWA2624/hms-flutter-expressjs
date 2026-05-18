@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.da
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -801,20 +802,12 @@ class _PatientAdvancedFiltersDialogState
               ),
               if (widget.facilities.length > 1)
                 AppResponsiveFieldRow.two(
-                  left: AppSelectField<String>.searchable(
+                  left: PatientFacilitySelectField(
+                    facilities: widget.facilities,
                     value: _facilityId,
                     labelText: l10n.patientsFacilityLabel,
                     onChanged: (String? value) =>
                         setState(() => _facilityId = value),
-                    options: <AppSelectOption<String>>[
-                      for (final PatientReferenceOption option
-                          in widget.facilities)
-                        AppSelectOption<String>(
-                          value: option.id,
-                          label: option.label,
-                          leadingIcon: const Icon(Icons.business_outlined),
-                        ),
-                    ],
                   ),
                   right: AppGenderField(
                     value: _gender,
@@ -843,31 +836,25 @@ class _PatientAdvancedFiltersDialogState
             title: l10n.patientsFilterVisitSectionTitle,
             density: AppFormSectionDensity.compact,
             children: <Widget>[
-              AppDateField(
+              PatientDateField(
                 value: _visitDate,
                 firstDate: _patientFilterFirstDate,
                 lastDate: _patientFilterLastDate,
-                pickerButtonLabel: l10n.patientsDatePickerAction,
-                invalidDateMessage: l10n.appDateInvalidMessage,
                 labelText: l10n.patientsVisitDateFilterLabel,
                 onChanged: (DateTime? value) => _visitDate = value,
               ),
               AppResponsiveFieldRow.two(
-                left: AppDateField(
+                left: PatientDateField(
                   value: _visitFrom,
                   firstDate: _patientFilterFirstDate,
                   lastDate: _patientFilterLastDate,
-                  pickerButtonLabel: l10n.patientsDatePickerAction,
-                  invalidDateMessage: l10n.appDateInvalidMessage,
                   labelText: l10n.patientsVisitFromFilterLabel,
                   onChanged: (DateTime? value) => _visitFrom = value,
                 ),
-                right: AppDateField(
+                right: PatientDateField(
                   value: _visitTo,
                   firstDate: _patientFilterFirstDate,
                   lastDate: _patientFilterLastDate,
-                  pickerButtonLabel: l10n.patientsDatePickerAction,
-                  invalidDateMessage: l10n.appDateInvalidMessage,
                   labelText: l10n.patientsVisitToFilterLabel,
                   onChanged: (DateTime? value) => _visitTo = value,
                 ),
@@ -939,41 +926,33 @@ class _PatientAdvancedFiltersDialogState
                 ),
               ),
               AppResponsiveFieldRow.two(
-                left: AppDateField(
+                left: PatientDateField(
                   value: _dateOfBirthFrom,
                   firstDate: DateTime(1900),
                   lastDate: DateTime.now(),
-                  pickerButtonLabel: l10n.patientsDatePickerAction,
-                  invalidDateMessage: l10n.appDateInvalidMessage,
                   labelText: l10n.patientsDobFromFilterLabel,
                   onChanged: (DateTime? value) => _dateOfBirthFrom = value,
                 ),
-                right: AppDateField(
+                right: PatientDateField(
                   value: _dateOfBirthTo,
                   firstDate: DateTime(1900),
                   lastDate: DateTime.now(),
-                  pickerButtonLabel: l10n.patientsDatePickerAction,
-                  invalidDateMessage: l10n.appDateInvalidMessage,
                   labelText: l10n.patientsDobToFilterLabel,
                   onChanged: (DateTime? value) => _dateOfBirthTo = value,
                 ),
               ),
               AppResponsiveFieldRow.two(
-                left: AppDateField(
+                left: PatientDateField(
                   value: _createdFrom,
                   firstDate: _patientFilterFirstDate,
                   lastDate: _patientFilterLastDate,
-                  pickerButtonLabel: l10n.patientsDatePickerAction,
-                  invalidDateMessage: l10n.appDateInvalidMessage,
                   labelText: l10n.patientsCreatedFromFilterLabel,
                   onChanged: (DateTime? value) => _createdFrom = value,
                 ),
-                right: AppDateField(
+                right: PatientDateField(
                   value: _createdTo,
                   firstDate: _patientFilterFirstDate,
                   lastDate: _patientFilterLastDate,
-                  pickerButtonLabel: l10n.patientsDatePickerAction,
-                  invalidDateMessage: l10n.appDateInvalidMessage,
                   labelText: l10n.patientsCreatedToFilterLabel,
                   onChanged: (DateTime? value) => _createdTo = value,
                 ),
@@ -1931,7 +1910,7 @@ class _PatientDetailDialog extends ConsumerWidget {
           const Divider(),
           _QuickActions(patient: patient),
           const Divider(),
-          _RelatedSection<PatientIdentifier>(
+          PatientRelatedSection<PatientIdentifier>(
             title: l10n.patientsIdentifiersSectionTitle,
             emptyLabel: l10n.patientsNoIdentifiers,
             items: detail.identifiers,
@@ -1945,7 +1924,7 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientIdentifier item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          _RelatedSection<PatientContact>(
+          PatientRelatedSection<PatientContact>(
             title: l10n.patientsContactsSectionTitle,
             emptyLabel: l10n.patientsNoContacts,
             items: detail.contacts,
@@ -1958,7 +1937,7 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientContact item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          _RelatedSection<PatientGuardian>(
+          PatientRelatedSection<PatientGuardian>(
             title: l10n.patientsGuardiansSectionTitle,
             emptyLabel: l10n.patientsNoGuardians,
             items: detail.guardians,
@@ -1973,7 +1952,7 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientGuardian item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          _RelatedSection<PatientAllergy>(
+          PatientRelatedSection<PatientAllergy>(
             title: l10n.patientsAllergiesSectionTitle,
             emptyLabel: l10n.patientsNoAllergies,
             items: detail.allergies,
@@ -1986,7 +1965,7 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientAllergy item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          _RelatedSection<PatientMedicalHistory>(
+          PatientRelatedSection<PatientMedicalHistory>(
             title: l10n.patientsMedicalHistorySectionTitle,
             emptyLabel: l10n.patientsNoMedicalHistory,
             items: detail.medicalHistories,
@@ -2001,7 +1980,7 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientMedicalHistory item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          _RelatedSection<PatientDocument>(
+          PatientRelatedSection<PatientDocument>(
             title: l10n.patientsDocumentsSectionTitle,
             emptyLabel: l10n.patientsNoDocuments,
             items: detail.documents,
@@ -2017,7 +1996,7 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientDocument item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          _RelatedSection<PatientConsent>(
+          PatientRelatedSection<PatientConsent>(
             title: l10n.patientsConsentsSectionTitle,
             emptyLabel: l10n.patientsNoConsents,
             items: detail.consents,
@@ -2030,7 +2009,7 @@ class _PatientDetailDialog extends ConsumerWidget {
             onDelete: (PatientConsent item) =>
                 _confirmDeleteRelated(context, ref, detail, item.id),
           ),
-          _TimelineList(items: detail.timeline),
+          PatientTimelineList(items: detail.timeline),
         ],
       ),
     );
@@ -2232,21 +2211,6 @@ class _PatientDemographics extends StatelessWidget {
       items: items,
       emptyValue: l10n.profileUnknownValue,
       minItemWidth: 170,
-    );
-  }
-}
-
-class _InlineFormError extends StatelessWidget {
-  const _InlineFormError(this.message);
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppMessagePanel(
-      message: message,
-      tone: AppWorkspaceStatusTone.error,
-      density: AppContentPanelDensity.compact,
     );
   }
 }
@@ -2585,12 +2549,10 @@ class _PatientAppointmentQuickDialogState
   Widget _appointmentDateField(BuildContext context) {
     final l10n = context.l10n;
 
-    return AppDateField(
+    return PatientDateField(
       value: _date,
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      pickerButtonLabel: l10n.patientsDatePickerAction,
-      invalidDateMessage: l10n.appDateInvalidMessage,
       labelText: l10n.patientsAppointmentDateLabel,
       isRequired: true,
       enabled: !_isSaving,
@@ -2625,20 +2587,12 @@ class _PatientAppointmentQuickDialogState
   }
 
   Widget _facilitySelect(BuildContext context) {
-    return AppSelectField<String>.searchable(
+    return PatientFacilitySelectField(
+      facilities: widget.referenceData.facilities,
       value: _facilityId,
       labelText: context.l10n.patientsFacilityLabel,
       enabled: !_isSaving,
       onChanged: (String? value) => setState(() => _facilityId = value),
-      options: <AppSelectOption<String>>[
-        for (final PatientReferenceOption option
-            in widget.referenceData.facilities)
-          AppSelectOption<String>(
-            value: option.id,
-            label: option.label,
-            leadingIcon: const Icon(Icons.business_outlined),
-          ),
-      ],
     );
   }
 
@@ -2841,7 +2795,7 @@ class _PatientFlowQuickDialogState
                 failure: _failure!,
                 body: _workflowFailureMessage(context, _failure!),
               ),
-            if (_formErrorText != null) _InlineFormError(_formErrorText!),
+            if (_formErrorText != null) PatientInlineFormError(_formErrorText!),
             AppFormSection(
               title: l10n.patientsWorkflowSectionTitle,
               density: AppFormSectionDensity.compact,
@@ -3145,7 +3099,8 @@ class _PatientFlowQuickDialogState
   }
 
   Widget _facilitySelect(BuildContext context) {
-    return AppSelectField<String>.searchable(
+    return PatientFacilitySelectField(
+      facilities: widget.referenceData.facilities,
       value: _facilityId,
       labelText: context.l10n.patientsFacilityLabel,
       enabled: !_isSaving,
@@ -3157,15 +3112,6 @@ class _PatientFlowQuickDialogState
           _bedId = null;
         });
       },
-      options: <AppSelectOption<String>>[
-        for (final PatientReferenceOption option
-            in widget.referenceData.facilities)
-          AppSelectOption<String>(
-            value: option.id,
-            label: option.label,
-            leadingIcon: const Icon(Icons.business_outlined),
-          ),
-      ],
     );
   }
 
@@ -3185,7 +3131,8 @@ class _PatientFlowQuickDialogState
     final List<PatientReferenceOption> wards = _facilityFiltered(
       widget.referenceData.wards,
     );
-    return AppSelectField<String>.searchable(
+    return PatientReferenceSelectField(
+      options: wards,
       value: _wardId,
       labelText: context.l10n.patientsWardLabel,
       enabled: !_isSaving && wards.isNotEmpty,
@@ -3196,14 +3143,7 @@ class _PatientFlowQuickDialogState
           _bedId = null;
         });
       },
-      options: <AppSelectOption<String>>[
-        for (final PatientReferenceOption option in wards)
-          AppSelectOption<String>(
-            value: option.id,
-            label: option.label,
-            leadingIcon: const Icon(Icons.domain_outlined),
-          ),
-      ],
+      leadingIconBuilder: (_) => const Icon(Icons.domain_outlined),
     );
   }
 
@@ -3216,7 +3156,8 @@ class _PatientFlowQuickDialogState
                   option.wardId == _wardId;
             })
             .toList(growable: false);
-    return AppSelectField<String>.searchable(
+    return PatientReferenceSelectField(
+      options: rooms,
       value: _roomId,
       labelText: context.l10n.patientsRoomLabel,
       enabled: !_isSaving && rooms.isNotEmpty,
@@ -3226,14 +3167,7 @@ class _PatientFlowQuickDialogState
           _bedId = null;
         });
       },
-      options: <AppSelectOption<String>>[
-        for (final PatientReferenceOption option in rooms)
-          AppSelectOption<String>(
-            value: option.id,
-            label: option.label,
-            leadingIcon: const Icon(Icons.meeting_room_outlined),
-          ),
-      ],
+      leadingIconBuilder: (_) => const Icon(Icons.meeting_room_outlined),
     );
   }
 
@@ -3255,19 +3189,14 @@ class _PatientFlowQuickDialogState
               return matchesWard && matchesRoom && isAvailable;
             })
             .toList(growable: false);
-    return AppSelectField<String>.searchable(
+    return PatientReferenceSelectField(
+      options: beds,
       value: _bedId,
       labelText: context.l10n.patientsBedLabel,
       enabled: !_isSaving && beds.isNotEmpty,
       onChanged: (String? value) => setState(() => _bedId = value),
-      options: <AppSelectOption<String>>[
-        for (final PatientReferenceOption option in beds)
-          AppSelectOption<String>(
-            value: option.id,
-            label: option.label,
-            leadingIcon: Icon(_bedStatusIcon(option.status)),
-          ),
-      ],
+      leadingIconBuilder: (PatientReferenceOption option) =>
+          Icon(_bedStatusIcon(option.status)),
     );
   }
 
@@ -4131,37 +4060,31 @@ class _PatientReportPreviewControls extends StatelessWidget {
 
     return switch (selection.periodMode) {
       _PatientReportPeriodMode.allDates => null,
-      _PatientReportPeriodMode.singleDate => AppDateField(
+      _PatientReportPeriodMode.singleDate => PatientDateField(
         value: selection.singleDate,
         firstDate: firstDate,
         lastDate: lastDate,
         currentDate: now,
         initialPickerDate: selection.singleDate ?? now,
-        pickerButtonLabel: l10n.patientsDatePickerAction,
-        invalidDateMessage: l10n.appDateInvalidMessage,
         labelText: l10n.patientsReportDateLabel,
         onChanged: onSingleDateChanged,
       ),
       _PatientReportPeriodMode.dateRange => AppResponsiveFieldRow.two(
-        left: AppDateField(
+        left: PatientDateField(
           value: selection.startDate,
           firstDate: firstDate,
           lastDate: lastDate,
           currentDate: now,
           initialPickerDate: selection.startDate ?? now,
-          pickerButtonLabel: l10n.patientsDatePickerAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
           labelText: l10n.patientsReportStartDateLabel,
           onChanged: onStartDateChanged,
         ),
-        right: AppDateField(
+        right: PatientDateField(
           value: selection.endDate,
           firstDate: firstDate,
           lastDate: lastDate,
           currentDate: now,
           initialPickerDate: selection.endDate ?? selection.startDate ?? now,
-          pickerButtonLabel: l10n.patientsDatePickerAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
           labelText: l10n.patientsReportEndDateLabel,
           onChanged: onEndDateChanged,
         ),
@@ -5427,139 +5350,6 @@ String _htmlEscape(String value) {
       .replaceAll("'", '&#39;');
 }
 
-class _RelatedSection<T> extends StatelessWidget {
-  const _RelatedSection({
-    required this.title,
-    required this.emptyLabel,
-    required this.items,
-    required this.resource,
-    required this.itemTitle,
-    required this.itemSubtitle,
-    required this.onAdd,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final String title;
-  final String emptyLabel;
-  final List<T> items;
-  final PatientRelatedResource resource;
-  final String Function(T item) itemTitle;
-  final String Function(T item) itemSubtitle;
-  final VoidCallback onAdd;
-  final ValueChanged<T> onEdit;
-  final ValueChanged<T> onDelete;
-
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.patientWrite],
-  );
-  static const AccessRequirement _deleteRequirement = AccessRequirement(
-    allPermissions: <AppPermission>[AppPermissions.patientDelete],
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      childrenPadding: EdgeInsets.only(bottom: theme.spacing.sm),
-      title: Text(title, style: theme.textTheme.titleSmall),
-      trailing: AppAccessActionGate(
-        requirement: _writeRequirement,
-        builder: (_, bool isAllowed) => AppIconButton(
-          icon: Icons.add,
-          semanticLabel: l10n.patientsAddRelatedAction,
-          tooltip: l10n.patientsAddRelatedAction,
-          onPressed: isAllowed ? onAdd : null,
-        ),
-      ),
-      children: <Widget>[
-        if (items.isEmpty)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              emptyLabel,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          )
-        else
-          for (final T item in items)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(itemTitle(item)),
-              subtitle: Text(itemSubtitle(item)),
-              trailing: Wrap(
-                children: <Widget>[
-                  AppAccessActionGate(
-                    requirement: _writeRequirement,
-                    builder: (_, bool isAllowed) => AppIconButton(
-                      icon: Icons.edit_outlined,
-                      semanticLabel: l10n.patientsEditAction,
-                      tooltip: l10n.patientsEditAction,
-                      onPressed: isAllowed ? () => onEdit(item) : null,
-                    ),
-                  ),
-                  AppAccessActionGate(
-                    requirement: _deleteRequirement,
-                    builder: (_, bool isAllowed) => AppIconButton(
-                      icon: Icons.delete_outline,
-                      semanticLabel: l10n.patientsDeleteAction,
-                      tooltip: l10n.patientsDeleteAction,
-                      onPressed: isAllowed ? () => onDelete(item) : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-      ],
-    );
-  }
-}
-
-class _TimelineList extends StatelessWidget {
-  const _TimelineList({required this.items});
-
-  final List<PatientTimelineItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      title: Text(
-        l10n.patientsTimelineSectionTitle,
-        style: theme.textTheme.titleSmall,
-      ),
-      children: <Widget>[
-        if (items.isEmpty)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(l10n.patientsNoTimeline),
-          )
-        else
-          for (final PatientTimelineItem item in items.take(8))
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.history_outlined),
-              title: Text(item.title ?? _apiLabel(item.resource)),
-              subtitle: Text(
-                _joinDisplay(<String?>[
-                  _apiLabel(item.resource),
-                  _formatOptionalDateTime(context, item.occurredAt),
-                ]),
-              ),
-            ),
-      ],
-    );
-  }
-}
-
 class PatientDuplicateReviewDialog extends ConsumerStatefulWidget {
   const PatientDuplicateReviewDialog({required this.duplicates, super.key});
 
@@ -6078,14 +5868,11 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
               ),
             ),
             AppResponsiveFieldRow.two(
-              left: AppDateField(
+              left: PatientDateField(
                 value: _dateOfBirth,
                 firstDate: DateTime(1900),
                 lastDate: DateTime.now(),
-                pickerButtonLabel: l10n.patientsDatePickerAction,
-                invalidDateMessage: l10n.appDateInvalidMessage,
                 labelText: l10n.patientsDobLabel,
-                hintText: l10n.appDateFormatHint,
                 enabled: !_isSaving,
                 onChanged: (DateTime? value) {
                   _dateOfBirth = value;
@@ -6107,7 +5894,8 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
               ),
             ),
             if (widget.referenceData.facilities.length > 1)
-              AppSelectField<String>(
+              PatientFacilitySelectField(
+                facilities: widget.referenceData.facilities,
                 value: _facilityId,
                 labelText: l10n.patientsFacilityLabel,
                 enabled: !_isSaving,
@@ -6116,31 +5904,15 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
                     _facilityId = value;
                   });
                 },
-                options: <AppSelectOption<String>>[
-                  for (final PatientReferenceOption option
-                      in widget.referenceData.facilities)
-                    AppSelectOption<String>(
-                      value: option.id,
-                      label: option.label,
-                      leadingIcon: const Icon(Icons.business_outlined),
-                    ),
-                ],
               ),
-            AppPhoneField(
+            PatientPhoneField(
               controller: _phoneController,
               labelText: l10n.patientsPhoneLabel,
-              countryLabelText: l10n.appPhoneCountryLabel,
-              countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-              countryNoResultsText: l10n.appPhoneCountryNoResults,
-              numberLabelText: l10n.appPhoneNumberLabel,
-              numberHintText: l10n.appPhoneNumberHint,
-              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
               enabled: !_isSaving,
             ),
-            AppEmailField(
+            PatientEmailField(
               controller: _emailController,
               labelText: l10n.patientsEmailLabel,
-              invalidEmailMessage: l10n.authEmailInvalidMessage,
               enabled: !_isSaving,
             ),
             AppResponsiveFieldRow.two(
@@ -6428,15 +6200,9 @@ class _EmergencyPatientFormDialogState
               textCapitalization: TextCapitalization.words,
             ),
           ),
-          AppPhoneField(
+          PatientPhoneField(
             controller: _phoneController,
             labelText: l10n.patientsPhoneLabel,
-            countryLabelText: l10n.appPhoneCountryLabel,
-            countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-            countryNoResultsText: l10n.appPhoneCountryNoResults,
-            numberLabelText: l10n.appPhoneNumberLabel,
-            numberHintText: l10n.appPhoneNumberHint,
-            invalidPhoneMessage: l10n.appPhoneInvalidMessage,
             enabled: !_isSaving,
           ),
           AppTextField(
@@ -6679,21 +6445,14 @@ class _PatientRelatedRecordDialogState<T>
               setState(() => _second.text = value ?? ''),
           options: _relationshipSelectOptions(_second.text),
         ),
-        AppPhoneField(
+        PatientPhoneField(
           controller: _third,
           labelText: l10n.patientsPhoneLabel,
-          countryLabelText: l10n.appPhoneCountryLabel,
-          countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-          countryNoResultsText: l10n.appPhoneCountryNoResults,
-          numberLabelText: l10n.appPhoneNumberLabel,
-          numberHintText: l10n.appPhoneNumberHint,
-          invalidPhoneMessage: l10n.appPhoneInvalidMessage,
           enabled: !_isSaving,
         ),
-        AppEmailField(
+        PatientEmailField(
           controller: _fourth,
           labelText: l10n.patientsEmailLabel,
-          invalidEmailMessage: l10n.authEmailInvalidMessage,
           enabled: !_isSaving,
         ),
       ],
@@ -6737,14 +6496,11 @@ class _PatientRelatedRecordDialogState<T>
           isRequired: true,
           validator: AppValidators.requiredText(l10n.validationRequired),
         ),
-        AppDateField(
+        PatientDateField(
           value: _date,
           firstDate: DateTime(1900),
           lastDate: DateTime.now(),
-          pickerButtonLabel: l10n.patientsDatePickerAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
           labelText: l10n.patientsDiagnosisDateLabel,
-          hintText: l10n.appDateFormatHint,
           enabled: !_isSaving,
           onChanged: (DateTime? value) => _date = value,
         ),
@@ -6840,14 +6596,11 @@ class _PatientRelatedRecordDialogState<T>
               AppSelectOption<String>(value: value, label: _apiLabel(value)),
           ],
         ),
-        AppDateField(
+        PatientDateField(
           value: _date,
           firstDate: DateTime(1900),
           lastDate: DateTime.now().add(const Duration(days: 3650)),
-          pickerButtonLabel: l10n.patientsDatePickerAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
           labelText: l10n.patientsConsentDateLabel,
-          hintText: l10n.appDateFormatHint,
           enabled: !_isSaving,
           onChanged: (DateTime? value) => _date = value,
         ),
@@ -6859,15 +6612,9 @@ class _PatientRelatedRecordDialogState<T>
     final l10n = context.l10n;
     final String type = (_choice ?? '').toUpperCase();
     if (<String>{'PHONE', 'WHATSAPP', 'FAX'}.contains(type)) {
-      return AppPhoneField(
+      return PatientPhoneField(
         controller: _first,
         labelText: l10n.patientsContactValueLabel,
-        countryLabelText: l10n.appPhoneCountryLabel,
-        countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
-        countryNoResultsText: l10n.appPhoneCountryNoResults,
-        numberLabelText: l10n.appPhoneNumberLabel,
-        numberHintText: l10n.appPhoneNumberHint,
-        invalidPhoneMessage: l10n.appPhoneInvalidMessage,
         requiredMessage: l10n.validationRequired,
         enabled: !_isSaving,
         isRequired: true,
@@ -6875,10 +6622,9 @@ class _PatientRelatedRecordDialogState<T>
     }
 
     if (type == 'EMAIL') {
-      return AppEmailField(
+      return PatientEmailField(
         controller: _first,
         labelText: l10n.patientsContactValueLabel,
-        invalidEmailMessage: l10n.authEmailInvalidMessage,
         requiredMessage: l10n.validationRequired,
         enabled: !_isSaving,
         isRequired: true,
