@@ -115,6 +115,7 @@ void main() {
       );
       addTearDown(container.dispose);
       await container.read(opdWorkspaceControllerProvider.future);
+      clearInteractions(repository);
 
       final AppFailure? failure = await container
           .read(opdWorkspaceControllerProvider.notifier)
@@ -133,6 +134,10 @@ void main() {
       expect(submittedPayload, containsPair('triage_level', 'LEVEL_2'));
       expect(submittedPayload, containsPair('emergency', true));
       expect(submittedPayload, containsPair('notes', 'Priority review'));
+      verifyNever(() => repository.listAppointments(any()));
+      verifyNever(() => repository.listVisitQueues(any()));
+      verifyNever(() => repository.listOpdFlows(any()));
+      verifyNever(() => repository.listTriageQueue(any()));
     });
   });
 }

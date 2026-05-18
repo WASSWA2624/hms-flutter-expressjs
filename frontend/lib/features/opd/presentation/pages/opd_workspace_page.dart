@@ -4308,6 +4308,8 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
             icon: appTriageIconForValue(flow.triageLevel),
           ),
       ],
+      notesLabel: l10n.opdTriageNotesLabel,
+      notes: flow.triageNotes,
       emptyValue: context.l10n.profileUnknownValue,
     );
   }
@@ -5670,6 +5672,8 @@ class PrintOpdSummaryDialog extends StatelessWidget {
       '${l10n.opdRouteDecisionLabel}: ${_apiLabel(flow.lastRouteTo ?? '')}',
       if (_isNonEmpty(flow.chiefComplaint))
         '${l10n.opdChiefComplaintLabel}: ${flow.chiefComplaint}',
+      if (_isNonEmpty(flow.triageNotes))
+        '${l10n.opdTriageNotesLabel}: ${flow.triageNotes}',
       '${l10n.opdPaymentStatusLabel}: ${value == null
           ? l10n.profileUnknownValue
           : value.consultationPaid

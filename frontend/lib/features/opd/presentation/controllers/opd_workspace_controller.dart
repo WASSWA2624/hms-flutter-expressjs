@@ -448,7 +448,7 @@ final class OpdWorkspaceController
       () => _repository.assignTriageProvider(flow.apiId, <String, Object?>{
         'provider_user_id': providerUserId,
       }),
-      refreshAfter: true,
+      refreshAfter: false,
     );
   }
 
@@ -458,7 +458,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.payConsultation(flow.apiId, payload),
-      refreshAfter: true,
+      refreshAfter: false,
     );
   }
 
@@ -468,7 +468,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.recordTriageVitals(flow.apiId, payload),
-      refreshAfter: true,
+      refreshAfter: false,
     );
   }
 
@@ -478,7 +478,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.updateVitals(detail, vitals),
-      refreshAfter: true,
+      refreshAfter: false,
     );
   }
 
@@ -492,7 +492,7 @@ final class OpdWorkspaceController
         'stage_to': stage,
         'reason': reason,
       }),
-      refreshAfter: true,
+      refreshAfter: false,
     );
   }
 
@@ -502,7 +502,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.doctorReview(flow.apiId, payload),
-      refreshAfter: true,
+      refreshAfter: false,
     );
   }
 
@@ -523,7 +523,7 @@ final class OpdWorkspaceController
         'triage_level': triageLevel,
         'emergency': emergency,
       }),
-      refreshAfter: true,
+      refreshAfter: false,
     );
   }
 
@@ -533,7 +533,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.disposition(flow.apiId, payload),
-      refreshAfter: true,
+      refreshAfter: false,
     );
   }
 

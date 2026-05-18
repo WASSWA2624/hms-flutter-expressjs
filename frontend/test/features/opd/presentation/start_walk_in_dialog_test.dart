@@ -157,6 +157,107 @@ void main() {
     },
   );
 
+  testWidgets('DoctorReviewDialog shows the triage summary notes', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+    const OpdFlowSummary flow = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientDisplayName: 'Jane Doe',
+      patientIdentifier: 'PAT000001',
+      providerUserId: 'DOC000001',
+      providerDisplayName: 'Dr Able',
+      stage: 'WAITING_DOCTOR_REVIEW',
+      triageLevel: 'LEVEL_2',
+      chiefComplaint: 'Headache',
+      triageNotes: 'Symptoms: Dizziness\nRisk flags: Fall risk',
+    );
+
+    when(() => opdRepository.listAppointments(any())).thenAnswer(
+      (invocation) async => Result<AppPage<OpdAppointment>>.success(
+        AppPage<OpdAppointment>(
+          items: const <OpdAppointment>[],
+          request:
+              (invocation.positionalArguments.single as OpdAppointmentQuery)
+                  .pageRequest,
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(() => opdRepository.listVisitQueues(any())).thenAnswer(
+      (invocation) async => Result<AppPage<OpdQueueEntry>>.success(
+        AppPage<OpdQueueEntry>(
+          items: const <OpdQueueEntry>[],
+          request: (invocation.positionalArguments.single as OpdQueueQuery)
+              .pageRequest,
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(() => opdRepository.listOpdFlows(any())).thenAnswer(
+      (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: const <OpdFlowSummary>[flow],
+          request: (invocation.positionalArguments.single as OpdFlowQuery)
+              .pageRequest,
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    when(() => opdRepository.listTriageQueue(any())).thenAnswer(
+      (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: const <OpdFlowSummary>[],
+          request:
+              (invocation.positionalArguments.single as OpdTriageQueueQuery)
+                  .pageRequest,
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(
+      () => opdRepository.listClinicalAlertThresholds(
+        vitalType: any(named: 'vitalType'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+        <OpdClinicalAlertThreshold>[],
+      ),
+    );
+    when(() => opdRepository.listProviderSchedules()).thenAnswer(
+      (_) async => const Result<List<OpdProviderSchedule>>.success(
+        <OpdProviderSchedule>[],
+      ),
+    );
+    when(
+      () => opdRepository.listAvailableDrugs(search: any(named: 'search')),
+    ).thenAnswer(
+      (_) async => const Result<List<OpdDrugOption>>.success(<OpdDrugOption>[]),
+    );
+    when(() => opdRepository.listAvailableDrugs()).thenAnswer(
+      (_) async => const Result<List<OpdDrugOption>>.success(<OpdDrugOption>[]),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [opdRepositoryProvider.overrideWithValue(opdRepository)],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const Scaffold(body: DoctorReviewDialog(flow: flow)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Triage notes'), findsOneWidget);
+    expect(find.textContaining('Dizziness'), findsOneWidget);
+    expect(find.textContaining('Fall risk'), findsOneWidget);
+  });
+
   testWidgets('OpdWorkspacePage exposes the required OPD worklist columns', (
     WidgetTester tester,
   ) async {
