@@ -177,21 +177,6 @@ class _ClinicalWorkspaceContentState
           },
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        semanticLabel: l10n.clinicalFiltersLabel,
-        filters: <Widget>[
-          AppSelectField<ClinicalQueueScope>(
-            value: state.query.scope,
-            labelText: l10n.clinicalScopeFilterLabel,
-            options: _scopeOptions(l10n),
-            onChanged: (ClinicalQueueScope? value) {
-              if (value != null) {
-                controller.applyScope(value);
-              }
-            },
-          ),
-        ],
-      ),
       body: _ClinicalWorklistPanel(
         state: state,
         searchController: _searchController,
@@ -215,9 +200,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
     final ClinicalWorkspaceController controller = ref.read(
       clinicalWorkspaceControllerProvider.notifier,
     );
-    return AppWorkspaceDetailPanel(
-      title: l10n.clinicalWorklistTitle,
-      description: l10n.clinicalWorklistDescription,
+    return _ClinicalWorklistSurface(
       child: AppPaginatedListTable<ClinicalWorklistEntry>(
         page: state.worklist,
         isLoading: state.isRefreshing,
@@ -243,13 +226,34 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
           controller,
           searchController,
           filters: state.query.filters,
+          scope: state.query.scope,
           filterEntries: state.worklist.items,
-          isLoading: state.isRefreshing,
         ),
         columns: _clinicalWorklistColumns(l10n),
         mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
         itemKeyBuilder: _clinicalWorklistItemKey,
+        rowColorBuilder: _clinicalRowColor,
       ),
+    );
+  }
+}
+
+class _ClinicalWorklistSurface extends StatelessWidget {
+  const _ClinicalWorklistSurface({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(padding: EdgeInsets.all(theme.spacing.md), child: child),
     );
   }
 }
@@ -259,8 +263,8 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
   ClinicalWorkspaceController controller,
   TextEditingController searchController, {
   required ClinicalWorklistFilters filters,
+  required ClinicalQueueScope scope,
   required List<ClinicalWorklistEntry> filterEntries,
-  required bool isLoading,
 }) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableSearch<ClinicalWorklistEntry>(
@@ -271,16 +275,6 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
     matcher: (ClinicalWorklistEntry item, String query) {
       return item.matchesSearch(query, filters: filters);
     },
-    onChanged: (String value) {
-      controller.applySearch(value);
-    },
-    onSubmitted: (String value) {
-      controller.applySearch(value);
-    },
-    onClear: () {
-      controller.applySearch('');
-    },
-    isLoading: isLoading,
     showAdvancedFilterButton: true,
     advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
     advancedFilterTitle: l10n.clinicalFiltersLabel,
@@ -295,11 +289,18 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
     dateToLabel: l10n.opdDateToLabel,
     datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
     invalidDateMessage: l10n.opdInvalidDateMessage,
-    filterGroups: _clinicalFilterGroups(l10n, filterEntries),
-    filterValue: _filterValueFromQuery(filters),
-    hasActiveFilters: filters.isActive,
+    filterGroups: _clinicalFilterGroups(
+      l10n,
+      filterEntries,
+      includeScope: true,
+    ),
+    filterValue: _filterValueFromQuery(filters, scope: scope),
+    hasActiveFilters: _hasActiveClinicalFilters(filters, scope),
     onFilterChanged: (AppSearchBarFilterValue value) {
-      controller.applyFilters(_filtersFromValue(value));
+      controller.applyWorklistFilters(
+        scope: _scopeFromValue(value),
+        filters: _filtersFromValue(value),
+      );
     },
   );
 }
@@ -317,13 +318,13 @@ List<AppListTableColumn<ClinicalWorklistEntry>> _clinicalWorklistColumns(
     AppListTableColumn<ClinicalWorklistEntry>(
       label: l10n.clinicalSourceQueueLabel,
       cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-        return Text(_apiLabel(item.sourceQueue));
+        return _ClinicalQueueCell(item: item);
       },
     ),
     AppListTableColumn<ClinicalWorklistEntry>(
       label: l10n.opdStatusColumnLabel,
       cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-        return AppWorkspaceStatusBadge(status: _entryStatus(item));
+        return _ClinicalStatusCell(item: item);
       },
     ),
     AppListTableColumn<ClinicalWorklistEntry>(
@@ -339,6 +340,58 @@ List<AppListTableColumn<ClinicalWorklistEntry>> _clinicalWorklistColumns(
       },
     ),
   ];
+}
+
+class _ClinicalQueueCell extends StatelessWidget {
+  const _ClinicalQueueCell({required this.item});
+
+  final ClinicalWorklistEntry item;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: _apiLabel(item.sourceQueue),
+        tone: _sourceQueueTone(item.sourceQueue),
+      ),
+    );
+  }
+}
+
+class _ClinicalStatusCell extends StatelessWidget {
+  const _ClinicalStatusCell({required this.item});
+
+  final ClinicalWorklistEntry item;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+
+    return Wrap(
+      spacing: Theme.of(context).spacing.xs,
+      runSpacing: Theme.of(context).spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        AppWorkspaceStatusBadge(status: _entryStatus(item)),
+        if (item.isUrgent)
+          AppWorkspaceStatusBadge(
+            status: AppWorkspaceStatus(
+              label: l10n.clinicalUrgentSummaryLabel,
+              tone: AppWorkspaceStatusTone.error,
+              icon: Icons.priority_high_outlined,
+            ),
+          ),
+        if (item.resultsReady)
+          AppWorkspaceStatusBadge(
+            status: AppWorkspaceStatus(
+              label: l10n.clinicalResultsReadySummaryLabel,
+              tone: AppWorkspaceStatusTone.success,
+              icon: Icons.science_outlined,
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 Widget _clinicalWorklistMobileItemBuilder(
@@ -361,10 +414,10 @@ Widget _clinicalWorklistMobileItemBuilder(
           runSpacing: theme.spacing.xs,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            AppWorkspaceStatusBadge(status: _entryStatus(item)),
+            _ClinicalQueueCell(item: item),
+            _ClinicalStatusCell(item: item),
             Text(
               _joinDisplay(<String?>[
-                _apiLabel(item.sourceQueue),
                 item.providerDisplayName,
                 _dateTimeLabel(context, item.updatedAt ?? item.startedAt),
               ]),
@@ -379,6 +432,29 @@ Widget _clinicalWorklistMobileItemBuilder(
 
 LocalKey _clinicalWorklistItemKey(ClinicalWorklistEntry item) {
   return ValueKey<String>('${item.sourceQueue}-${item.encounterId}');
+}
+
+Color? _clinicalRowColor(BuildContext context, ClinicalWorklistEntry item) {
+  final ColorScheme colorScheme = Theme.of(context).colorScheme;
+  if (item.isUrgent) {
+    return colorScheme.errorContainer.withValues(alpha: 0.18);
+  }
+  if (item.resultsReady) {
+    return colorScheme.tertiaryContainer.withValues(alpha: 0.16);
+  }
+  if (clinicalWorklistEntryMatchesScope(
+    item,
+    ClinicalQueueScope.waitingReview,
+  )) {
+    return colorScheme.secondaryContainer.withValues(alpha: 0.14);
+  }
+  if (clinicalWorklistEntryMatchesScope(
+    item,
+    ClinicalQueueScope.inConsultation,
+  )) {
+    return colorScheme.primaryContainer.withValues(alpha: 0.12);
+  }
+  return null;
 }
 
 enum _ClinicalSummaryCategory {
@@ -496,6 +572,7 @@ class _ClinicalSummaryWorklistDialogState
                 itemKeyBuilder: _clinicalWorklistItemKey,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
+                rowColorBuilder: _clinicalRowColor,
                 onRowSelected: (ClinicalWorklistEntry entry) {
                   _openClinicalEntryDialog(context, ref, entry);
                 },
@@ -2378,12 +2455,16 @@ Future<void> _showActionResult(
   }
 }
 
-AppSearchBarFilterValue _filterValueFromQuery(ClinicalWorklistFilters filters) {
+AppSearchBarFilterValue _filterValueFromQuery(
+  ClinicalWorklistFilters filters, {
+  ClinicalQueueScope scope = ClinicalQueueScope.today,
+}) {
   return AppSearchBarFilterValue(
     field: filters.searchField,
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     options: <String, String>{
+      if (scope != ClinicalQueueScope.today) _clinicalFilterScope: scope.name,
       if (_hasText(filters.sourceQueue))
         _clinicalFilterSource: filters.sourceQueue!,
       if (_hasText(filters.status)) _clinicalFilterStatus: filters.status!,
@@ -2402,6 +2483,24 @@ ClinicalWorklistFilters _filtersFromValue(AppSearchBarFilterValue value) {
     status: value.option(_clinicalFilterStatus),
     provider: value.option(_clinicalFilterProvider),
   );
+}
+
+ClinicalQueueScope _scopeFromValue(AppSearchBarFilterValue value) {
+  final String? scope = value.option(_clinicalFilterScope);
+  if (scope == null) {
+    return ClinicalQueueScope.today;
+  }
+  return ClinicalQueueScope.values.firstWhere(
+    (ClinicalQueueScope candidate) => candidate.name == scope,
+    orElse: () => ClinicalQueueScope.today,
+  );
+}
+
+bool _hasActiveClinicalFilters(
+  ClinicalWorklistFilters filters,
+  ClinicalQueueScope scope,
+) {
+  return filters.isActive || scope != ClinicalQueueScope.today;
 }
 
 List<AppSearchBarFieldChoice> _clinicalSearchFields(AppLocalizations l10n) {
@@ -2436,9 +2535,17 @@ List<AppSearchBarFieldChoice> _clinicalSearchFields(AppLocalizations l10n) {
 
 List<AppSearchBarFilterGroup> _clinicalFilterGroups(
   AppLocalizations l10n,
-  List<ClinicalWorklistEntry> entries,
-) {
+  List<ClinicalWorklistEntry> entries, {
+  bool includeScope = false,
+}) {
   return <AppSearchBarFilterGroup>[
+    if (includeScope)
+      AppSearchBarFilterGroup(
+        key: _clinicalFilterScope,
+        label: l10n.clinicalScopeFilterLabel,
+        allLabel: l10n.clinicalTodayScopeLabel,
+        choices: _scopeFilterChoices(l10n),
+      ),
     AppSearchBarFilterGroup(
       key: _clinicalFilterSource,
       label: l10n.clinicalSourceQueueLabel,
@@ -2469,6 +2576,36 @@ List<AppSearchBarFilterGroup> _clinicalFilterGroups(
         icon: Icons.badge_outlined,
         formatApiLabel: false,
       ),
+    ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _scopeFilterChoices(AppLocalizations l10n) {
+  return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
+      value: ClinicalQueueScope.urgent.name,
+      label: l10n.clinicalUrgentSummaryLabel,
+      icon: Icons.priority_high_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: ClinicalQueueScope.waitingReview.name,
+      label: l10n.clinicalWaitingReviewSummaryLabel,
+      icon: Icons.rate_review_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: ClinicalQueueScope.inConsultation.name,
+      label: l10n.clinicalInConsultationSummaryLabel,
+      icon: Icons.medical_information_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: ClinicalQueueScope.resultsReady.name,
+      label: l10n.clinicalResultsReadySummaryLabel,
+      icon: Icons.science_outlined,
+    ),
+    AppSearchBarFilterChoice(
+      value: ClinicalQueueScope.completed.name,
+      label: l10n.clinicalCompletedSummaryLabel,
+      icon: Icons.task_alt_outlined,
     ),
   ];
 }
@@ -2558,35 +2695,6 @@ bool _matchesSummaryCategory(
   };
 }
 
-List<AppSelectOption<ClinicalQueueScope>> _scopeOptions(AppLocalizations l10n) {
-  return <AppSelectOption<ClinicalQueueScope>>[
-    AppSelectOption<ClinicalQueueScope>(
-      value: ClinicalQueueScope.today,
-      label: l10n.clinicalTodayScopeLabel,
-    ),
-    AppSelectOption<ClinicalQueueScope>(
-      value: ClinicalQueueScope.urgent,
-      label: l10n.clinicalUrgentSummaryLabel,
-    ),
-    AppSelectOption<ClinicalQueueScope>(
-      value: ClinicalQueueScope.waitingReview,
-      label: l10n.clinicalWaitingReviewSummaryLabel,
-    ),
-    AppSelectOption<ClinicalQueueScope>(
-      value: ClinicalQueueScope.inConsultation,
-      label: l10n.clinicalInConsultationSummaryLabel,
-    ),
-    AppSelectOption<ClinicalQueueScope>(
-      value: ClinicalQueueScope.resultsReady,
-      label: l10n.clinicalResultsReadySummaryLabel,
-    ),
-    AppSelectOption<ClinicalQueueScope>(
-      value: ClinicalQueueScope.completed,
-      label: l10n.clinicalCompletedSummaryLabel,
-    ),
-  ];
-}
-
 List<AppSelectOption<String>> _catalogOptions(
   List<ClinicalCatalogOption> options,
 ) {
@@ -2621,6 +2729,16 @@ bool _isSameWorklistEntry(
 ) {
   return left.sourceQueue == right.sourceQueue &&
       left.encounterId == right.encounterId;
+}
+
+AppWorkspaceStatusTone _sourceQueueTone(String? value) {
+  return switch ((value ?? '').toUpperCase()) {
+    'OPD' => AppWorkspaceStatusTone.info,
+    'TRIAGE' || 'EMERGENCY' => AppWorkspaceStatusTone.warning,
+    'IPD' || 'ADMISSION' => AppWorkspaceStatusTone.success,
+    'ICU' => AppWorkspaceStatusTone.error,
+    _ => AppWorkspaceStatusTone.neutral,
+  };
 }
 
 AppWorkspaceStatusTone _statusTone(String? value) {
@@ -2829,6 +2947,7 @@ const String _clinicalSearchFieldEncounter = 'encounter';
 const String _clinicalSearchFieldSource = 'source';
 const String _clinicalSearchFieldStatus = 'status';
 const String _clinicalSearchFieldProvider = 'provider';
+const String _clinicalFilterScope = 'scope';
 const String _clinicalFilterSource = 'source';
 const String _clinicalFilterStatus = 'status';
 const String _clinicalFilterProvider = 'provider';

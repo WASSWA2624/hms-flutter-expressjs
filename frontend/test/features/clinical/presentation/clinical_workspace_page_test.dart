@@ -47,9 +47,21 @@ void main() {
       stage: 'WAITING_DOCTOR_REVIEW',
       updatedAt: DateTime.now(),
     );
+    final ClinicalWorklistEntry otherEntry = ClinicalWorklistEntry(
+      id: 'encounter-2',
+      sourceQueue: 'OPD',
+      encounterId: 'encounter-2',
+      encounterPublicId: 'ENC000002',
+      patientDisplayName: 'John Other',
+      patientPublicId: 'PAT000002',
+      providerDisplayName: 'Dr Mugerwa',
+      status: 'OPEN',
+      stage: 'IN_PROGRESS',
+      updatedAt: DateTime.now(),
+    );
     _stubClinicalInitialLoad(
       clinicalRepository,
-      encounters: <ClinicalWorklistEntry>[entry],
+      encounters: <ClinicalWorklistEntry>[entry, otherEntry],
     );
     _stubOpdInitialLoad(opdRepository);
 
@@ -75,10 +87,41 @@ void main() {
     await tester.pump();
 
     expect(find.text('Clinical workspace'), findsOneWidget);
-    expect(find.text('Provider worklist'), findsOneWidget);
+    expect(find.text('Provider worklist'), findsNothing);
+    expect(
+      find.text(
+        'Open consultations, admissions, triage handoffs, and '
+        'result-review queues.',
+      ),
+      findsNothing,
+    );
+    expect(find.text('Queue scope'), findsNothing);
     expect(find.text('Sarah Clinical'), findsOneWidget);
+    expect(find.text('John Other'), findsOneWidget);
     expect(find.text('No encounter selected'), findsNothing);
     expect(tester.takeException(), isNull);
+
+    clearInteractions(clinicalRepository);
+    await tester.enterText(find.byType(TextFormField).first, 'Other');
+    await tester.pump();
+
+    expect(find.text('Sarah Clinical'), findsNothing);
+    expect(find.text('John Other'), findsOneWidget);
+    verifyNever(() => clinicalRepository.listEncounters(any()));
+    expect(tester.takeException(), isNull);
+
+    await tester.enterText(find.byType(TextFormField).first, '');
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Clinical filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Queue scope'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Sarah Clinical'));
     await tester.pumpAndSettle();

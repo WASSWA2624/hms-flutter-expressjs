@@ -78,6 +78,29 @@ final class ClinicalWorkspaceController
     return _refreshWorklist(showLoading: true);
   }
 
+  Future<AppFailure?> applyWorklistFilters({
+    required ClinicalQueueScope scope,
+    required ClinicalWorklistFilters filters,
+  }) async {
+    final ClinicalWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          scope: scope,
+          filters: filters,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorklist(showLoading: true);
+  }
+
   Future<AppFailure?> applyFilters(ClinicalWorklistFilters filters) async {
     final ClinicalWorkspaceState? current = _currentState;
     if (current == null) {
