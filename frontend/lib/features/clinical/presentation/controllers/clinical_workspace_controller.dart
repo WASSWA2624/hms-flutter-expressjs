@@ -312,6 +312,39 @@ final class ClinicalWorkspaceController
     );
   }
 
+  Future<AppFailure?> updateLabOrder({
+    required String labOrderId,
+    required List<String> labTestIds,
+    required List<String> labPanelIds,
+  }) {
+    return _mutateSelectedEncounter(
+      () => _repository.updateLabOrder(labOrderId, <String, Object?>{
+        'requested_tests': <Map<String, Object?>>[
+          for (final String id in labTestIds)
+            <String, Object?>{'lab_test_id': id},
+        ],
+        'requested_panels': <Map<String, Object?>>[
+          for (final String id in labPanelIds)
+            <String, Object?>{'lab_panel_id': id},
+        ],
+      }),
+    );
+  }
+
+  Future<AppFailure?> cancelLabOrder(String labOrderId) {
+    return _mutateSelectedEncounter(
+      () => _repository.updateLabOrder(labOrderId, <String, Object?>{
+        'status': 'CANCELLED',
+      }),
+    );
+  }
+
+  Future<AppFailure?> deleteLabOrder(String labOrderId) {
+    return _mutateSelectedEncounter(
+      () => _repository.deleteLabOrder(labOrderId),
+    );
+  }
+
   Future<AppFailure?> requestRadiology({
     required String radiologyTestId,
     String? clinicalNote,

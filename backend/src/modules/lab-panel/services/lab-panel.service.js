@@ -12,8 +12,87 @@ const {
   normalizeLabPanelItems,
 } = require('@services/lab-workspace/lab.configuration');
 const { mapLabPanelRecord } = require('@services/lab-workspace/lab.serializer');
+const { STANDARD_LAB_PANELS, STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
+const standardLabPanelId = (key) => `STD_LAB_PANEL:${key}`;
+const standardLabTestId = (key) => `STD_LAB_TEST:${key}`;
+const normalizeText = (value) => String(value || '').trim();
+const includesIgnoreCase = (value, query) => normalizeText(value).toLowerCase().includes(query);
+const standardPanelName = (key) =>
+  normalizeText(key)
+    .replace(/^PANEL_/, '')
+    .replace(/^LOINC_/, 'LOINC ')
+    .replace(/_/g, ' ');
+
+const standardLabPanelMatchesFilters = (key, testCodes, filters = {}) => {
+  const name = standardPanelName(key);
+  if (filters.code && !includesIgnoreCase(key, normalizeText(filters.code).toLowerCase())) return false;
+  if (filters.name && !includesIgnoreCase(name, normalizeText(filters.name).toLowerCase())) return false;
+  if (filters.category && !includesIgnoreCase('STANDARD', normalizeText(filters.category).toLowerCase())) return false;
+
+  const search = normalizeText(filters.search).toLowerCase();
+  if (!search) return true;
+  return [
+    standardLabPanelId(key),
+    name,
+    key,
+    'STANDARD',
+    ...testCodes,
+    ...testCodes.map((testCode) => STANDARD_LAB_TESTS[testCode]?.name),
+  ].some((value) => includesIgnoreCase(value, search));
+};
+
+const standardLabPanelRecord = ([key, testCodes]) => ({
+  id: standardLabPanelId(key),
+  display_id: standardLabPanelId(key),
+  human_friendly_id: standardLabPanelId(key),
+  name: standardPanelName(key),
+  code: key,
+  category: 'STANDARD',
+  description: 'Standard lab panel',
+  status: 'STANDARD',
+  source: 'STANDARD_LAB_CATALOG',
+  panel_items: testCodes.map((testCode, index) => {
+    const definition = STANDARD_LAB_TESTS[testCode] || {};
+    return {
+      id: `${standardLabPanelId(key)}:${testCode}`,
+      lab_test_id: standardLabTestId(testCode),
+      test_display_name: definition.name || testCode,
+      test_code: definition.code || testCode,
+      unit: definition.unit || null,
+      is_required: true,
+      instructions: null,
+      sort_order: index,
+    };
+  }),
+  test_count: testCodes.length,
+});
+
+const mergeStandardLabPanels = ({ mappedRecords, filters, limit, sortBy, order }) => {
+  if (String(filters.include_standard_catalog || '').toLowerCase() !== 'true') {
+    return mappedRecords;
+  }
+
+  const existingCodes = new Set(
+    mappedRecords.map((record) => normalizeText(record?.code).toUpperCase()).filter(Boolean)
+  );
+  const standardRecords = Object.entries(STANDARD_LAB_PANELS)
+    .filter(([key, testCodes]) => (
+      !existingCodes.has(key.toUpperCase())
+      && standardLabPanelMatchesFilters(key, testCodes, filters)
+    ))
+    .map(standardLabPanelRecord);
+
+  const direction = String(order || 'asc').toLowerCase() === 'desc' ? -1 : 1;
+  const sortableField = sortBy || 'name';
+  return [...mappedRecords, ...standardRecords]
+    .sort((left, right) => (
+      normalizeText(left?.[sortableField] || left?.name)
+        .localeCompare(normalizeText(right?.[sortableField] || right?.name)) * direction
+    ))
+    .slice(0, limit);
+};
 
 const resolvePanelItems = async (items, tenantId) => {
   const normalizedItems = normalizeLabPanelItems(items);
@@ -91,10 +170,24 @@ const listLabPanels = async (filters, page, limit, sortBy, order, userId, ipAddr
       ),
       labPanelRepository.count(whereClause),
     ]);
+    const mappedLabPanels = labPanels.map((record) => mapLabPanelRecord(record)).filter(Boolean);
+    const mergedLabPanels = mergeStandardLabPanels({
+      mappedRecords: mappedLabPanels,
+      filters,
+      limit,
+      sortBy,
+      order,
+    });
 
     return {
-      labPanels: labPanels.map((record) => mapLabPanelRecord(record)).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
+      labPanels: mergedLabPanels,
+      pagination: buildPagination(
+        page,
+        limit,
+        String(filters.include_standard_catalog || '').toLowerCase() === 'true'
+          ? Math.max(total, mergedLabPanels.length)
+          : total
+      ),
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;

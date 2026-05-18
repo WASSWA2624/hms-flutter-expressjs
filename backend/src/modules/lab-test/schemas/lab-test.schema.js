@@ -39,6 +39,15 @@ const labCatalogLimitSchema = z.coerce
   .positive('Limit must be a positive number')
   .max(LAB_CATALOG_MAX_PAGE_LIMIT, `Limit cannot exceed ${LAB_CATALOG_MAX_PAGE_LIMIT}`)
   .optional();
+const optionalBooleanSchema = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return value;
+}, z.boolean().optional());
 
 const labReferenceRangeSchema = z
   .object({
@@ -235,6 +244,7 @@ const listLabTestsQuerySchema = listQuerySchema.extend({
   specimen_type: z.string().trim().optional(),
   result_kind: labTestResultKindSchema.optional(),
   include_pending_review: z.union([z.boolean(), z.string().trim()]).optional(),
+  include_standard_catalog: optionalBooleanSchema,
   search: z.string().trim().optional()
 });
 

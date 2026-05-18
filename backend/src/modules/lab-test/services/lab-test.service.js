@@ -16,8 +16,73 @@ const {
   toOptionalText,
 } = require('@services/lab-workspace/lab.configuration');
 const { mapLabTestRecord } = require('@services/lab-workspace/lab.serializer');
+const { STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
+const standardLabTestId = (key) => `STD_LAB_TEST:${key}`;
+const normalizeText = (value) => String(value || '').trim();
+const includesIgnoreCase = (value, query) => normalizeText(value).toLowerCase().includes(query);
+
+const standardLabTestMatchesFilters = (key, definition, filters = {}) => {
+  if (filters.code && !includesIgnoreCase(definition.code, normalizeText(filters.code).toLowerCase())) return false;
+  if (filters.name && !includesIgnoreCase(definition.name, normalizeText(filters.name).toLowerCase())) return false;
+  if (filters.category && !includesIgnoreCase(definition.category, normalizeText(filters.category).toLowerCase())) return false;
+  if (filters.specimen_type && !includesIgnoreCase(definition.specimen_type, normalizeText(filters.specimen_type).toLowerCase())) return false;
+  if (filters.result_kind && definition.result_kind !== filters.result_kind) return false;
+
+  const search = normalizeText(filters.search).toLowerCase();
+  if (!search) return true;
+  return [
+    standardLabTestId(key),
+    definition.name,
+    definition.code,
+    definition.category,
+    definition.specimen_type,
+    definition.result_kind,
+    definition.unit,
+    definition.description,
+  ].some((value) => includesIgnoreCase(value, search));
+};
+
+const standardLabTestRecord = ([key, definition]) => ({
+  id: standardLabTestId(key),
+  display_id: standardLabTestId(key),
+  human_friendly_id: standardLabTestId(key),
+  name: definition.name,
+  code: definition.code,
+  category: definition.category,
+  specimen_type: definition.specimen_type,
+  result_kind: definition.result_kind,
+  unit: definition.unit,
+  description: definition.description,
+  status: 'STANDARD',
+  source: 'STANDARD_LAB_CATALOG',
+});
+
+const mergeStandardLabTests = ({ mappedRecords, dbRecords, filters, limit, sortBy, order }) => {
+  if (String(filters.include_standard_catalog || '').toLowerCase() !== 'true') {
+    return mappedRecords;
+  }
+
+  const existingCodes = new Set(
+    dbRecords.map((record) => normalizeText(record?.code).toUpperCase()).filter(Boolean)
+  );
+  const standardRecords = Object.entries(STANDARD_LAB_TESTS)
+    .filter(([key, definition]) => (
+      !existingCodes.has(normalizeText(definition.code).toUpperCase())
+      && standardLabTestMatchesFilters(key, definition, filters)
+    ))
+    .map(standardLabTestRecord);
+
+  const direction = String(order || 'asc').toLowerCase() === 'desc' ? -1 : 1;
+  const sortableField = sortBy || 'name';
+  return [...mappedRecords, ...standardRecords]
+    .sort((left, right) => (
+      normalizeText(left?.[sortableField] || left?.name)
+        .localeCompare(normalizeText(right?.[sortableField] || right?.name)) * direction
+    ))
+    .slice(0, limit);
+};
 
 const buildLabTestWritePayload = (data = {}, options = {}) => {
   const payload = { ...data };
@@ -142,10 +207,25 @@ const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddre
       ),
       labTestRepository.count(whereClause),
     ]);
+    const mappedLabTests = labTests.map((record) => mapLabTestRecord(record)).filter(Boolean);
+    const mergedLabTests = mergeStandardLabTests({
+      mappedRecords: mappedLabTests,
+      dbRecords: labTests,
+      filters,
+      limit,
+      sortBy,
+      order,
+    });
 
     return {
-      labTests: labTests.map((record) => mapLabTestRecord(record)).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
+      labTests: mergedLabTests,
+      pagination: buildPagination(
+        page,
+        limit,
+        String(filters.include_standard_catalog || '').toLowerCase() === 'true'
+          ? Math.max(total, mergedLabTests.length)
+          : total
+      ),
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;

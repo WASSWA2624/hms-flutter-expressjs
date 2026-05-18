@@ -163,6 +163,10 @@ final class ClinicalRelatedRecordDto {
   final String kind;
 
   ClinicalRelatedRecord toEntity() {
+    if (kind == 'lab_order') {
+      return _toLabOrderEntity();
+    }
+
     return ClinicalRelatedRecord(
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
       kind: kind,
@@ -194,6 +198,54 @@ final class ClinicalRelatedRecordDto {
           _date(json['updated_at']),
     );
   }
+
+  ClinicalRelatedRecord _toLabOrderEntity() {
+    final List<ClinicalLabOrderItem> items = _list(json['items'])
+        .map(_labOrderItemFromJson)
+        .where((ClinicalLabOrderItem item) => item.id.isNotEmpty)
+        .toList(growable: false);
+    final String? title = _joinDisplay(
+      items.take(3).map((ClinicalLabOrderItem item) => item.displayTitle),
+    );
+    return ClinicalRelatedRecord(
+      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      kind: kind,
+      status: _string(json['status']),
+      title:
+          title ??
+          _string(json['human_friendly_id']) ??
+          _string(json['id']) ??
+          '',
+      occurredAt:
+          _date(json['ordered_at']) ??
+          _date(json['created_at']) ??
+          _date(json['updated_at']),
+      labOrderItems: items,
+      itemCount: _int(json['item_count']) == 0
+          ? items.length
+          : _int(json['item_count']),
+      pendingItemCount: _int(json['pending_item_count']),
+      inProcessItemCount: _int(json['in_process_item_count']),
+      completedItemCount: _int(json['completed_item_count']),
+      sampleCount: _int(json['sample_count']),
+    );
+  }
+
+  ClinicalLabOrderItem _labOrderItemFromJson(ClinicalJsonMap json) {
+    return ClinicalLabOrderItem(
+      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      status: _string(json['status']),
+      resultStatus: _string(json['result_status']),
+      labTestId: _string(json['lab_test_id']),
+      testDisplayName: _string(json['test_display_name']),
+      testCode: _string(json['test_code']),
+      category: _string(json['category']),
+      specimenType: _string(json['specimen_type']),
+      unit: _string(json['unit']),
+      createdAt: _date(json['created_at']),
+      updatedAt: _date(json['updated_at']),
+    );
+  }
 }
 
 final class ClinicalCatalogOptionDto {
@@ -202,6 +254,7 @@ final class ClinicalCatalogOptionDto {
   final ClinicalJsonMap json;
 
   ClinicalCatalogOption toEntity() {
+    final List<ClinicalJsonMap> panelItems = _list(json['panel_items']);
     return ClinicalCatalogOption(
       id: _string(json['id']) ?? '',
       publicId: _string(json['human_friendly_id']),
@@ -226,6 +279,14 @@ final class ClinicalCatalogOptionDto {
           _string(json['room_id']) ??
           _string(json['facility_id']),
       secondaryId: _string(json['room_id']),
+      childIds: panelItems
+          .map((ClinicalJsonMap item) => _string(item['lab_test_id']))
+          .whereType<String>()
+          .toList(growable: false),
+      childCodes: panelItems
+          .map((ClinicalJsonMap item) => _string(item['test_code']))
+          .whereType<String>()
+          .toList(growable: false),
     );
   }
 }

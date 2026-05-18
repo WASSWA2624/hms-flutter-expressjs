@@ -170,6 +170,27 @@ describe('Lab Order Schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should accept configured test and panel selections for existing order edits', () => {
+      const data = {
+        requested_tests: [{ lab_test_id: 'LBT0000001' }],
+        requested_panels: [{ lab_panel_id: 'LPN0000001' }]
+      };
+
+      const result = updateLabOrderSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept large configured test selections for existing order edits', () => {
+      const data = {
+        requested_tests: Array.from({ length: 5000 }, (_, index) => ({
+          lab_test_id: `LBT${String(index + 1).padStart(7, '0')}`
+        }))
+      };
+
+      const result = updateLabOrderSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('should validate status enum when provided', () => {
       const data = { status: 'INVALID_STATUS' };
       const result = updateLabOrderSchema.safeParse(data);

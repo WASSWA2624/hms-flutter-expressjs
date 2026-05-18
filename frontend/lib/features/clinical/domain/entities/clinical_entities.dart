@@ -376,6 +376,12 @@ final class ClinicalRelatedRecord {
     this.title,
     this.subtitle,
     this.occurredAt,
+    this.labOrderItems = const <ClinicalLabOrderItem>[],
+    this.itemCount = 0,
+    this.pendingItemCount = 0,
+    this.inProcessItemCount = 0,
+    this.completedItemCount = 0,
+    this.sampleCount = 0,
   });
 
   final String id;
@@ -384,6 +390,49 @@ final class ClinicalRelatedRecord {
   final String? title;
   final String? subtitle;
   final DateTime? occurredAt;
+  final List<ClinicalLabOrderItem> labOrderItems;
+  final int itemCount;
+  final int pendingItemCount;
+  final int inProcessItemCount;
+  final int completedItemCount;
+  final int sampleCount;
+}
+
+@immutable
+final class ClinicalLabOrderItem {
+  const ClinicalLabOrderItem({
+    required this.id,
+    this.status,
+    this.resultStatus,
+    this.labTestId,
+    this.testDisplayName,
+    this.testCode,
+    this.category,
+    this.specimenType,
+    this.unit,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String? status;
+  final String? resultStatus;
+  final String? labTestId;
+  final String? testDisplayName;
+  final String? testCode;
+  final String? category;
+  final String? specimenType;
+  final String? unit;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  String get displayTitle {
+    return _joinDisplay(<String?>[testDisplayName, testCode]) ?? id;
+  }
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[category, specimenType, unit, status]);
+  }
 }
 
 @immutable
@@ -476,6 +525,8 @@ final class ClinicalCatalogOption {
     this.status,
     this.parentId,
     this.secondaryId,
+    this.childIds = const <String>[],
+    this.childCodes = const <String>[],
   });
 
   final String id;
@@ -487,6 +538,8 @@ final class ClinicalCatalogOption {
   final String? status;
   final String? parentId;
   final String? secondaryId;
+  final List<String> childIds;
+  final List<String> childCodes;
 
   String get apiId => publicId ?? id;
   String get displayTitle {

@@ -4071,6 +4071,10 @@
   "@clinicalRequestLabAction": {
     "description": "Clinical request lab action label."
   },
+  "clinicalUpdateLabOrderAction": "Update lab order",
+  "@clinicalUpdateLabOrderAction": {
+    "description": "Clinical update lab order action label."
+  },
   "clinicalLabRequestTestsModeLabel": "Individual tests",
   "@clinicalLabRequestTestsModeLabel": {
     "description": "Clinical lab request selector mode for individual tests."
@@ -4147,6 +4151,80 @@
   "clinicalLabRequestNoCatalogOptions": "No matching lab catalog items",
   "@clinicalLabRequestNoCatalogOptions": {
     "description": "Clinical lab request no matching search results message."
+  },
+  "clinicalLabOrdersTitle": "Lab orders",
+  "@clinicalLabOrdersTitle": {
+    "description": "Clinical patient detail lab orders section title."
+  },
+  "clinicalLabOrdersBody": "Requested lab orders for this patient.",
+  "@clinicalLabOrdersBody": {
+    "description": "Clinical patient detail lab orders section body."
+  },
+  "clinicalNoLabOrdersLabel": "No lab orders have been requested for this patient.",
+  "@clinicalNoLabOrdersLabel": {
+    "description": "Clinical patient detail empty lab orders message."
+  },
+  "clinicalLabOrderTestsLabel": "Requested lab tests",
+  "@clinicalLabOrderTestsLabel": {
+    "description": "Clinical lab order requested tests label."
+  },
+  "clinicalLabOrderPanelsLabel": "Requested lab panels",
+  "@clinicalLabOrderPanelsLabel": {
+    "description": "Clinical lab order requested panels label."
+  },
+  "clinicalNoLabOrderTestsLabel": "No requested lab tests recorded.",
+  "@clinicalNoLabOrderTestsLabel": {
+    "description": "Clinical lab order no requested tests label."
+  },
+  "clinicalNoLabOrderPanelsLabel": "No requested lab panels recorded.",
+  "@clinicalNoLabOrderPanelsLabel": {
+    "description": "Clinical lab order no requested panels label."
+  },
+  "clinicalLabOrderItemCount": "{count} tests",
+  "@clinicalLabOrderItemCount": {
+    "description": "Clinical lab order requested test count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalLabOrderSampleCount": "{count} samples",
+  "@clinicalLabOrderSampleCount": {
+    "description": "Clinical lab order sample count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalEditLabOrderAction": "Edit order",
+  "@clinicalEditLabOrderAction": {
+    "description": "Clinical edit lab order action label."
+  },
+  "clinicalCancelLabOrderAction": "Cancel order",
+  "@clinicalCancelLabOrderAction": {
+    "description": "Clinical cancel lab order action label."
+  },
+  "clinicalDeleteLabOrderAction": "Delete order",
+  "@clinicalDeleteLabOrderAction": {
+    "description": "Clinical delete lab order action label."
+  },
+  "clinicalCancelLabOrderDialogTitle": "Cancel lab order",
+  "@clinicalCancelLabOrderDialogTitle": {
+    "description": "Clinical cancel lab order confirmation title."
+  },
+  "clinicalCancelLabOrderDialogBody": "Cancel this lab order and mark its requested tests as cancelled?",
+  "@clinicalCancelLabOrderDialogBody": {
+    "description": "Clinical cancel lab order confirmation body."
+  },
+  "clinicalDeleteLabOrderDialogTitle": "Delete lab order",
+  "@clinicalDeleteLabOrderDialogTitle": {
+    "description": "Clinical delete lab order confirmation title."
+  },
+  "clinicalDeleteLabOrderDialogBody": "Delete this lab order from the active patient record?",
+  "@clinicalDeleteLabOrderDialogBody": {
+    "description": "Clinical delete lab order confirmation body."
   },
   "clinicalRequestRadiologyAction": "Request radiology",
   "@clinicalRequestRadiologyAction": {

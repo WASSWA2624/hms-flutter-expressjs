@@ -3159,6 +3159,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestLabAction => 'Request lab';
 
   @override
+  String get clinicalUpdateLabOrderAction => 'Update lab order';
+
+  @override
   String get clinicalLabRequestTestsModeLabel => 'Individual tests';
 
   @override
@@ -3211,6 +3214,62 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clinicalLabRequestNoCatalogOptions =>
       'No matching lab catalog items';
+
+  @override
+  String get clinicalLabOrdersTitle => 'Lab orders';
+
+  @override
+  String get clinicalLabOrdersBody => 'Requested lab orders for this patient.';
+
+  @override
+  String get clinicalNoLabOrdersLabel =>
+      'No lab orders have been requested for this patient.';
+
+  @override
+  String get clinicalLabOrderTestsLabel => 'Requested lab tests';
+
+  @override
+  String get clinicalLabOrderPanelsLabel => 'Requested lab panels';
+
+  @override
+  String get clinicalNoLabOrderTestsLabel => 'No requested lab tests recorded.';
+
+  @override
+  String get clinicalNoLabOrderPanelsLabel =>
+      'No requested lab panels recorded.';
+
+  @override
+  String clinicalLabOrderItemCount(int count) {
+    return '$count tests';
+  }
+
+  @override
+  String clinicalLabOrderSampleCount(int count) {
+    return '$count samples';
+  }
+
+  @override
+  String get clinicalEditLabOrderAction => 'Edit order';
+
+  @override
+  String get clinicalCancelLabOrderAction => 'Cancel order';
+
+  @override
+  String get clinicalDeleteLabOrderAction => 'Delete order';
+
+  @override
+  String get clinicalCancelLabOrderDialogTitle => 'Cancel lab order';
+
+  @override
+  String get clinicalCancelLabOrderDialogBody =>
+      'Cancel this lab order and mark its requested tests as cancelled?';
+
+  @override
+  String get clinicalDeleteLabOrderDialogTitle => 'Delete lab order';
+
+  @override
+  String get clinicalDeleteLabOrderDialogBody =>
+      'Delete this lab order from the active patient record?';
 
   @override
   String get clinicalRequestRadiologyAction => 'Request radiology';

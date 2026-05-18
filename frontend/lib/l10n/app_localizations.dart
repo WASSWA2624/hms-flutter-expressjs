@@ -5920,6 +5920,12 @@ abstract class AppLocalizations {
   /// **'Request lab'**
   String get clinicalRequestLabAction;
 
+  /// Clinical update lab order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Update lab order'**
+  String get clinicalUpdateLabOrderAction;
+
   /// Clinical lab request selector mode for individual tests.
   ///
   /// In en, this message translates to:
@@ -6015,6 +6021,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matching lab catalog items'**
   String get clinicalLabRequestNoCatalogOptions;
+
+  /// Clinical patient detail lab orders section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab orders'**
+  String get clinicalLabOrdersTitle;
+
+  /// Clinical patient detail lab orders section body.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested lab orders for this patient.'**
+  String get clinicalLabOrdersBody;
+
+  /// Clinical patient detail empty lab orders message.
+  ///
+  /// In en, this message translates to:
+  /// **'No lab orders have been requested for this patient.'**
+  String get clinicalNoLabOrdersLabel;
+
+  /// Clinical lab order requested tests label.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested lab tests'**
+  String get clinicalLabOrderTestsLabel;
+
+  /// Clinical lab order requested panels label.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested lab panels'**
+  String get clinicalLabOrderPanelsLabel;
+
+  /// Clinical lab order no requested tests label.
+  ///
+  /// In en, this message translates to:
+  /// **'No requested lab tests recorded.'**
+  String get clinicalNoLabOrderTestsLabel;
+
+  /// Clinical lab order no requested panels label.
+  ///
+  /// In en, this message translates to:
+  /// **'No requested lab panels recorded.'**
+  String get clinicalNoLabOrderPanelsLabel;
+
+  /// Clinical lab order requested test count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tests'**
+  String clinicalLabOrderItemCount(int count);
+
+  /// Clinical lab order sample count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} samples'**
+  String clinicalLabOrderSampleCount(int count);
+
+  /// Clinical edit lab order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit order'**
+  String get clinicalEditLabOrderAction;
+
+  /// Clinical cancel lab order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get clinicalCancelLabOrderAction;
+
+  /// Clinical delete lab order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete order'**
+  String get clinicalDeleteLabOrderAction;
+
+  /// Clinical cancel lab order confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel lab order'**
+  String get clinicalCancelLabOrderDialogTitle;
+
+  /// Clinical cancel lab order confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this lab order and mark its requested tests as cancelled?'**
+  String get clinicalCancelLabOrderDialogBody;
+
+  /// Clinical delete lab order confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete lab order'**
+  String get clinicalDeleteLabOrderDialogTitle;
+
+  /// Clinical delete lab order confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this lab order from the active patient record?'**
+  String get clinicalDeleteLabOrderDialogBody;
 
   /// Clinical request radiology action label.
   ///

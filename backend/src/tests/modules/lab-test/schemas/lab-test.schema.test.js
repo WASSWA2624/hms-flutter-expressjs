@@ -403,5 +403,23 @@ describe('Lab Test Schema Validation', () => {
       const result = listLabTestsQuerySchema.safeParse(validQuery);
       expect(result.success).toBe(true);
     });
+
+    it('should parse include_standard_catalog as a boolean query flag', () => {
+      const result = listLabTestsQuerySchema.safeParse({
+        include_standard_catalog: 'true'
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.include_standard_catalog).toBe(true);
+    });
+
+    it('should preserve false include_standard_catalog query flag', () => {
+      const result = listLabTestsQuerySchema.safeParse({
+        include_standard_catalog: 'false'
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.include_standard_catalog).toBe(false);
+    });
   });
 });

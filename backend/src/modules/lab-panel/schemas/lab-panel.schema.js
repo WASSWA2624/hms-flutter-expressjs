@@ -19,6 +19,15 @@ const labCatalogLimitSchema = z.coerce
   .positive('Limit must be a positive number')
   .max(LAB_CATALOG_MAX_PAGE_LIMIT, `Limit cannot exceed ${LAB_CATALOG_MAX_PAGE_LIMIT}`)
   .optional();
+const optionalBooleanSchema = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return value;
+}, z.boolean().optional());
 
 const labPanelItemSchema = z.object({
   lab_test_id: uuidOrFriendlyIdentifierSchema,
@@ -102,6 +111,7 @@ const listLabPanelsQuerySchema = listQuerySchema.extend({
   name: z.string().trim().optional(),
   code: z.string().trim().optional(),
   category: z.string().trim().optional(),
+  include_standard_catalog: optionalBooleanSchema,
   search: z.string().trim().optional()
 });
 

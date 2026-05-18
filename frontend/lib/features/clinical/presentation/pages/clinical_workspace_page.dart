@@ -812,6 +812,11 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         ],
         _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
         SizedBox(height: Theme.of(context).spacing.md),
+        _ClinicalLabOrdersPanel(
+          bundle: bundle,
+          referenceData: state.referenceData,
+        ),
+        SizedBox(height: Theme.of(context).spacing.md),
         _ClinicalResultReview(bundle: bundle),
         SizedBox(height: Theme.of(context).spacing.md),
         _ClinicalRecordSections(bundle: bundle),
@@ -1099,6 +1104,258 @@ class _ClinicalResultReview extends StatelessWidget {
   }
 }
 
+class _ClinicalLabOrdersPanel extends ConsumerWidget {
+  const _ClinicalLabOrdersPanel({
+    required this.bundle,
+    required this.referenceData,
+  });
+
+  final ClinicalEncounterBundle bundle;
+  final ClinicalReferenceData referenceData;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<ClinicalRelatedRecord> orders = bundle.labOrders;
+    return AppWorkspaceDetailPanel(
+      title: l10n.clinicalLabOrdersTitle,
+      description: orders.isEmpty
+          ? l10n.clinicalNoLabOrdersLabel
+          : l10n.clinicalLabOrdersBody,
+      child: orders.isEmpty
+          ? Text(
+              l10n.clinicalNoLabOrdersLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : Column(
+              children: <Widget>[
+                for (var index = 0; index < orders.length; index += 1) ...[
+                  if (index > 0) const Divider(height: 1),
+                  _ClinicalLabOrderRow(
+                    order: orders[index],
+                    referenceData: referenceData,
+                  ),
+                ],
+              ],
+            ),
+    );
+  }
+}
+
+class _ClinicalLabOrderRow extends ConsumerWidget {
+  const _ClinicalLabOrderRow({
+    required this.order,
+    required this.referenceData,
+  });
+
+  final ClinicalRelatedRecord order;
+  final ClinicalReferenceData referenceData;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ClinicalWorkspaceController controller = ref.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    final List<ClinicalCatalogOption> panels = _requestedPanelsForOrder(
+      order,
+      referenceData,
+    );
+    final String status = order.status ?? '';
+    final bool canEdit = _canEditLabOrder(status);
+    final bool canCancel = _canCancelLabOrder(status);
+    final bool canDelete = _canDeleteLabOrder(status);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.xs),
+              child: Icon(
+                Icons.science_outlined,
+                size: theme.appTokens.listIconSize,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      order.title ?? order.id,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    AppWorkspaceStatusBadge(
+                      status: AppWorkspaceStatus(
+                        label: _apiLabel(status),
+                        tone: _statusTone(status),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  _joinDisplay(<String?>[
+                    l10n.clinicalLabOrderItemCount(
+                      order.itemCount == 0
+                          ? order.labOrderItems.length
+                          : order.itemCount,
+                    ),
+                    l10n.clinicalLabOrderSampleCount(order.sampleCount),
+                    _dateTimeLabel(context, order.occurredAt),
+                  ]),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(height: theme.spacing.sm),
+                _ClinicalLabOrderDetailList(
+                  title: l10n.clinicalLabOrderTestsLabel,
+                  emptyLabel: l10n.clinicalNoLabOrderTestsLabel,
+                  values: <String>[
+                    for (final ClinicalLabOrderItem item in order.labOrderItems)
+                      item.displayTitle,
+                  ],
+                ),
+                SizedBox(height: theme.spacing.xs),
+                _ClinicalLabOrderDetailList(
+                  title: l10n.clinicalLabOrderPanelsLabel,
+                  emptyLabel: l10n.clinicalNoLabOrderPanelsLabel,
+                  values: <String>[
+                    for (final ClinicalCatalogOption panel in panels)
+                      panel.displayTitle,
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          AppAccessActionGate(
+            requirement: _ClinicalWorkspaceContentState._writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  AppIconButton(
+                    icon: Icons.edit_outlined,
+                    semanticLabel: l10n.clinicalEditLabOrderAction,
+                    tooltip: l10n.clinicalEditLabOrderAction,
+                    enabled: isAllowed && canEdit,
+                    onPressed: () => _openLabDialog(
+                      context,
+                      referenceData,
+                      existingOrder: order,
+                    ),
+                  ),
+                  AppIconButton(
+                    icon: Icons.block_outlined,
+                    semanticLabel: l10n.clinicalCancelLabOrderAction,
+                    tooltip: l10n.clinicalCancelLabOrderAction,
+                    enabled: isAllowed && canCancel,
+                    onPressed: () => _confirmLabOrderMutation(
+                      context: context,
+                      title: l10n.clinicalCancelLabOrderDialogTitle,
+                      body: l10n.clinicalCancelLabOrderDialogBody,
+                      confirmLabel: l10n.clinicalCancelLabOrderAction,
+                      action: () => controller.cancelLabOrder(order.id),
+                    ),
+                  ),
+                  AppIconButton(
+                    icon: Icons.delete_outline,
+                    semanticLabel: l10n.clinicalDeleteLabOrderAction,
+                    tooltip: l10n.clinicalDeleteLabOrderAction,
+                    enabled: isAllowed && canDelete,
+                    onPressed: () => _confirmLabOrderMutation(
+                      context: context,
+                      title: l10n.clinicalDeleteLabOrderDialogTitle,
+                      body: l10n.clinicalDeleteLabOrderDialogBody,
+                      confirmLabel: l10n.clinicalDeleteLabOrderAction,
+                      action: () => controller.deleteLabOrder(order.id),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClinicalLabOrderDetailList extends StatelessWidget {
+  const _ClinicalLabOrderDetailList({
+    required this.title,
+    required this.emptyLabel,
+    required this.values,
+  });
+
+  final String title;
+  final String emptyLabel;
+  final List<String> values;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        if (values.isEmpty)
+          Text(
+            emptyLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          Wrap(
+            spacing: theme.spacing.xs,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              for (final String value in values)
+                Chip(
+                  label: Text(value),
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
 class _ClinicalRecordSections extends StatelessWidget {
   const _ClinicalRecordSections({required this.bundle});
 
@@ -1136,7 +1393,6 @@ class _ClinicalRecordSections extends StatelessWidget {
         _ClinicalRecordSection(
           title: l10n.clinicalOrdersTitle,
           records: <ClinicalRelatedRecord>[
-            ...bundle.labOrders,
             ...bundle.radiologyOrders,
             ...bundle.pharmacyOrders,
           ],
@@ -2119,9 +2375,10 @@ class _CarePlanDialogState extends ConsumerState<_CarePlanDialog> {
 }
 
 class _LabOrderDialog extends ConsumerStatefulWidget {
-  const _LabOrderDialog({required this.referenceData});
+  const _LabOrderDialog({required this.referenceData, this.existingOrder});
 
   final ClinicalReferenceData referenceData;
+  final ClinicalRelatedRecord? existingOrder;
 
   @override
   ConsumerState<_LabOrderDialog> createState() => _LabOrderDialogState();
@@ -2165,6 +2422,7 @@ class _LabOrderDialogState extends ConsumerState<_LabOrderDialog> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _requests.addAll(_initialRequests());
   }
 
   @override
@@ -2183,8 +2441,13 @@ class _LabOrderDialogState extends ConsumerState<_LabOrderDialog> {
         .toDouble();
     final List<ClinicalCatalogOption> catalog = _catalogForSelection();
     final _LabCatalogSearchResults searchResults = _searchCatalog(catalog);
+    final bool isEditingOrder = widget.existingOrder != null;
     return AppDialog(
-      title: Text(l10n.clinicalRequestLabAction),
+      title: Text(
+        isEditingOrder
+            ? l10n.clinicalUpdateLabOrderAction
+            : l10n.clinicalRequestLabAction,
+      ),
       icon: const Icon(Icons.science_outlined),
       maxWidth: 920,
       closeEnabled: !_isSaving,
@@ -2302,12 +2565,56 @@ class _LabOrderDialogState extends ConsumerState<_LabOrderDialog> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
-          label: l10n.clinicalRequestLabAction,
+          label: isEditingOrder
+              ? l10n.clinicalUpdateLabOrderAction
+              : l10n.clinicalRequestLabAction,
           isLoading: _isSaving,
           enabled: _requests.isNotEmpty,
           onPressed: _submit,
         ),
       ],
+    );
+  }
+
+  List<_PendingLabRequest> _initialRequests() {
+    final ClinicalRelatedRecord? order = widget.existingOrder;
+    if (order == null) {
+      return const <_PendingLabRequest>[];
+    }
+
+    return order.labOrderItems
+        .where((ClinicalLabOrderItem item) => _hasText(item.labTestId))
+        .map((ClinicalLabOrderItem item) {
+          final ClinicalCatalogOption option = _catalogOptionForLabOrderItem(
+            item,
+          );
+          return _PendingLabRequest(
+            kind: _LabRequestSelectionKind.tests,
+            option: option,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  ClinicalCatalogOption _catalogOptionForLabOrderItem(
+    ClinicalLabOrderItem item,
+  ) {
+    for (final ClinicalCatalogOption option in widget.referenceData.labTests) {
+      if (option.apiId == item.labTestId ||
+          option.id == item.labTestId ||
+          option.code == item.testCode) {
+        return option;
+      }
+    }
+
+    return ClinicalCatalogOption(
+      id: item.labTestId ?? item.id,
+      publicId: item.labTestId,
+      name: item.testDisplayName,
+      code: item.testCode,
+      category: item.category,
+      secondaryText: item.specimenType,
+      status: item.status,
     );
   }
 
@@ -2469,18 +2776,28 @@ class _LabOrderDialogState extends ConsumerState<_LabOrderDialog> {
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await ref
-        .read(clinicalWorkspaceControllerProvider.notifier)
-        .requestLab(
-          labTestIds: <String>[
-            for (final _PendingLabRequest request in _requests)
-              if (request.kind == _LabRequestSelectionKind.tests) request.id,
-          ],
-          labPanelIds: <String>[
-            for (final _PendingLabRequest request in _requests)
-              if (request.kind == _LabRequestSelectionKind.panels) request.id,
-          ],
-        );
+    final ClinicalWorkspaceController controller = ref.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    final List<String> labTestIds = <String>[
+      for (final _PendingLabRequest request in _requests)
+        if (request.kind == _LabRequestSelectionKind.tests) request.id,
+    ];
+    final List<String> labPanelIds = <String>[
+      for (final _PendingLabRequest request in _requests)
+        if (request.kind == _LabRequestSelectionKind.panels) request.id,
+    ];
+    final ClinicalRelatedRecord? existingOrder = widget.existingOrder;
+    final AppFailure? failure = existingOrder == null
+        ? await controller.requestLab(
+            labTestIds: labTestIds,
+            labPanelIds: labPanelIds,
+          )
+        : await controller.updateLabOrder(
+            labOrderId: existingOrder.id,
+            labTestIds: labTestIds,
+            labPanelIds: labPanelIds,
+          );
     _finishSubmit(failure);
   }
 
@@ -3455,16 +3772,63 @@ Future<void> _openCarePlanDialog(BuildContext context) async {
 
 Future<void> _openLabDialog(
   BuildContext context,
-  ClinicalReferenceData referenceData,
-) async {
+  ClinicalReferenceData referenceData, {
+  ClinicalRelatedRecord? existingOrder,
+}) async {
   await _showActionResult(
     context,
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _LabOrderDialog(referenceData: referenceData),
+      builder: (_) => _LabOrderDialog(
+        referenceData: referenceData,
+        existingOrder: existingOrder,
+      ),
     ),
   );
+}
+
+Future<void> _confirmLabOrderMutation({
+  required BuildContext context,
+  required String title,
+  required String body,
+  required String confirmLabel,
+  required Future<AppFailure?> Function() action,
+}) async {
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AppDialog(
+      title: Text(title),
+      icon: const Icon(Icons.science_outlined),
+      content: Text(body),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: context.l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: confirmLabel,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) {
+    return;
+  }
+
+  final AppFailure? failure = await action();
+  if (!context.mounted) {
+    return;
+  }
+  if (failure == null) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.clinicalSavedMessage)));
+    return;
+  }
+  _showFailureIfNeeded(context, failure);
 }
 
 Future<void> _openRadiologyDialog(
@@ -4111,6 +4475,67 @@ IconData _recordIcon(String kind) {
     'follow_up' => Icons.event_repeat_outlined,
     'admission' => Icons.bed_outlined,
     _ => Icons.description_outlined,
+  };
+}
+
+List<ClinicalCatalogOption> _requestedPanelsForOrder(
+  ClinicalRelatedRecord order,
+  ClinicalReferenceData referenceData,
+) {
+  final Set<String> itemIds = order.labOrderItems
+      .map((ClinicalLabOrderItem item) => item.labTestId)
+      .whereType<String>()
+      .map(_normalizedCatalogToken)
+      .where((String value) => value.isNotEmpty)
+      .toSet();
+  final Set<String> itemCodes = order.labOrderItems
+      .map((ClinicalLabOrderItem item) => item.testCode)
+      .whereType<String>()
+      .map(_normalizedCatalogToken)
+      .where((String value) => value.isNotEmpty)
+      .toSet();
+
+  return referenceData.labPanels
+      .where((ClinicalCatalogOption panel) {
+        final Set<String> panelIds = panel.childIds
+            .map(_normalizedCatalogToken)
+            .where((String value) => value.isNotEmpty)
+            .toSet();
+        final Set<String> panelCodes = panel.childCodes
+            .map(_normalizedCatalogToken)
+            .where((String value) => value.isNotEmpty)
+            .toSet();
+        if (panelIds.length <= 1 && panelCodes.length <= 1) {
+          return false;
+        }
+        final bool idsMatch =
+            panelIds.isNotEmpty && panelIds.every(itemIds.contains);
+        final bool codesMatch =
+            panelCodes.isNotEmpty && panelCodes.every(itemCodes.contains);
+        return idsMatch || codesMatch;
+      })
+      .toList(growable: false);
+}
+
+String _normalizedCatalogToken(String value) {
+  return value.trim().toUpperCase();
+}
+
+bool _canEditLabOrder(String? status) {
+  return (status ?? '').toUpperCase() == 'ORDERED';
+}
+
+bool _canCancelLabOrder(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'COMPLETED' || 'CANCELLED' => false,
+    _ => true,
+  };
+}
+
+bool _canDeleteLabOrder(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'ORDERED' || 'CANCELLED' => true,
+    _ => false,
   };
 }
 

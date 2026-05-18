@@ -35,6 +35,13 @@ abstract interface class ClinicalRepository {
 
   Future<Result<void>> createLabOrder(Map<String, Object?> payload);
 
+  Future<Result<void>> updateLabOrder(
+    String labOrderId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deleteLabOrder(String labOrderId);
+
   Future<Result<void>> createRadiologyOrder(Map<String, Object?> payload);
 
   Future<Result<void>> createPharmacyOrder(Map<String, Object?> payload);

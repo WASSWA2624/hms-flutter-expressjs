@@ -127,8 +127,20 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   @override
   Future<Result<ClinicalReferenceData>> loadReferenceData() async {
     final results = await Future.wait(<Future<List<ClinicalCatalogOption>>>[
-      _catalogOrEmpty(HmsApiResource.labTests, limit: _largeCatalogPageSize),
-      _catalogOrEmpty(HmsApiResource.labPanels, limit: _largeCatalogPageSize),
+      _catalogOrEmpty(
+        HmsApiResource.labTests,
+        limit: _largeCatalogPageSize,
+        queryParameters: const <String, Object?>{
+          'include_standard_catalog': true,
+        },
+      ),
+      _catalogOrEmpty(
+        HmsApiResource.labPanels,
+        limit: _largeCatalogPageSize,
+        queryParameters: const <String, Object?>{
+          'include_standard_catalog': true,
+        },
+      ),
       _catalogOrEmpty(HmsApiResource.radiologyTests),
       _catalogOrEmpty(HmsApiResource.drugs),
       _catalogOrEmpty(
@@ -202,6 +214,26 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   @override
   Future<Result<void>> createLabOrder(Map<String, Object?> payload) {
     return _postVoid(HmsApiResource.labOrders, payload);
+  }
+
+  @override
+  Future<Result<void>> updateLabOrder(
+    String labOrderId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.labOrders, labOrderId),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteLabOrder(String labOrderId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.labOrders, labOrderId),
+      decoder: (_) {},
+    );
   }
 
   @override

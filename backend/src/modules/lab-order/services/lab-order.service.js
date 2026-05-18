@@ -46266,13 +46266,25 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
     });
 
     const payload = { ...data };
+    const hasRequestedTests = Object.prototype.hasOwnProperty.call(payload, 'requested_tests');
+    const hasRequestedPanels = Object.prototype.hasOwnProperty.call(payload, 'requested_panels');
+    const shouldReplaceItems = hasRequestedTests || hasRequestedPanels;
+    const requestedTests = hasRequestedTests && Array.isArray(payload.requested_tests) ? payload.requested_tests : [];
+    const requestedPanels = hasRequestedPanels && Array.isArray(payload.requested_panels) ? payload.requested_panels : [];
+    delete payload.requested_tests;
+    delete payload.requested_panels;
+
+    let tenantId = before.patient?.tenant_id;
     if (Object.prototype.hasOwnProperty.call(payload, 'patient_id') && payload.patient_id) {
-      payload.patient_id = await resolveModelIdOrThrow({
+      const patientRecord = await resolveModelRecordOrThrow({
         identifier: payload.patient_id,
         model: 'patient',
         where: { deleted_at: null },
+        select: { id: true, tenant_id: true },
         errorKey: 'errors.patient.not_found'
       });
+      payload.patient_id = patientRecord.id;
+      tenantId = patientRecord.tenant_id;
     }
 
     if (Object.prototype.hasOwnProperty.call(payload, 'encounter_id')) {
@@ -46288,6 +46300,36 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
 
     if (Object.prototype.hasOwnProperty.call(payload, 'ordered_at')) {
       payload.ordered_at = toDateOrNull(payload.ordered_at, before.ordered_at);
+    }
+
+    if (shouldReplaceItems) {
+      if (before.status !== 'ORDERED') {
+        throw new HttpError('errors.lab_order.cannot_edit_processed_order', 409, [{ field: 'requested_tests' }]);
+      }
+      const requestedItems = await resolveRequestedLabOrderItems({
+        requestedTests,
+        requestedPanels,
+        tenantId,
+        userId,
+        ipAddress
+      });
+      if (!requestedItems.length) {
+        throw new HttpError('errors.validation.required', 400, [{ field: 'requested_tests' }]);
+      }
+      payload.items = {
+        updateMany: {
+          where: { deleted_at: null },
+          data: { deleted_at: new Date(), status: 'CANCELLED' }
+        },
+        create: requestedItems
+      };
+    } else if (payload.status === 'CANCELLED') {
+      payload.items = {
+        updateMany: {
+          where: { deleted_at: null },
+          data: { status: 'CANCELLED' }
+        }
+      };
     }
 
     const updated = await labOrderRepository.update(before.id, payload);
@@ -46348,6 +46390,8 @@ const deleteLabOrder = async (id, userId, ipAddress) => {
 };
 
 module.exports = {
+  STANDARD_LAB_PANELS,
+  STANDARD_LAB_TESTS,
   listLabOrders,
   getLabOrderById,
   createLabOrder,

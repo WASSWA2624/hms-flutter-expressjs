@@ -265,6 +265,8 @@ const mapLabOrderItemRecord = (record) => {
     patient_display_name: toDisplayName(patient?.first_name, patient?.last_name),
     test_display_name: toText(test?.name) || toText(test?.code) || null,
     test_code: toText(test?.code) || null,
+    category: toText(test?.category) || null,
+    specimen_type: toText(test?.specimen_type) || null,
     unit: toText(test?.unit) || null,
     unit_options: Array.isArray(test?.unit_options)
       ? test.unit_options.map((entry) => mapLabUnitOptionRecord(entry)).filter(Boolean)
