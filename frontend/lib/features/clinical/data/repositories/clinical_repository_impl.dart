@@ -153,6 +153,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
     required String termType,
     String? query,
+    int limit = 25,
   }) {
     return _apiClient.get<List<ClinicalCatalogOption>>(
       ApiEndpoints.apiV1(<String>[
@@ -162,7 +163,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       queryParameters: _withoutEmpty(<String, Object?>{
         'term_type': termType,
         'q': query,
-        'limit': 1000,
+        'limit': limit.clamp(1, 1000),
       }),
       decoder: decodeClinicalTermOptions,
     );

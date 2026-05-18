@@ -20,6 +20,7 @@ abstract interface class ClinicalRepository {
   Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
     required String termType,
     String? query,
+    int limit = 25,
   });
 
   Future<Result<void>> createClinicalTermFavorite(Map<String, Object?> payload);

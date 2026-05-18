@@ -1414,26 +1414,41 @@ class _DiagnosisDialog extends ConsumerStatefulWidget {
 }
 
 class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
+  static const int _lookupMinLength = 2;
+  static const Duration _lookupDebounceDuration = Duration(milliseconds: 350);
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _termController;
   late final TextEditingController _codeController;
   late final TextEditingController _descriptionController;
+  Timer? _termLookupDebounce;
+  Timer? _codeLookupDebounce;
   String _diagnosisType = 'PRIMARY';
-  String? _selectedTermId;
-  List<ClinicalCatalogOption> _terms = const <ClinicalCatalogOption>[];
+  List<ClinicalCatalogOption> _termOptions = const <ClinicalCatalogOption>[];
+  List<ClinicalCatalogOption> _codeOptions = const <ClinicalCatalogOption>[];
+  _DiagnosisLookupTarget? _activeLookup;
   bool _isSaving = false;
-  bool _isSearching = false;
+  bool _isTermSearching = false;
+  bool _isCodeSearching = false;
+  bool _termHasText = false;
+  bool _codeHasText = false;
+  int _termLookupRequest = 0;
+  int _codeLookupRequest = 0;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
+    _termController = TextEditingController();
     _codeController = TextEditingController();
     _descriptionController = TextEditingController();
-    _loadTerms();
   }
 
   @override
   void dispose() {
+    _termLookupDebounce?.cancel();
+    _codeLookupDebounce?.cancel();
+    _termController.dispose();
     _codeController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -1466,20 +1481,46 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
                 }
               },
             ),
-            AppSelectField<String>.searchable(
-              value: _selectedTermId,
-              options: _catalogOptions(_terms),
+            _DiagnosisLookupField(
+              controller: _termController,
               labelText: l10n.clinicalTermSearchLabel,
-              isLoading: _isSearching,
+              clearLabel: MaterialLocalizations.of(context).clearButtonTooltip,
+              options: _activeLookup == _DiagnosisLookupTarget.term
+                  ? _termOptions
+                  : const <ClinicalCatalogOption>[],
+              isLoading:
+                  _activeLookup == _DiagnosisLookupTarget.term &&
+                  _isTermSearching,
+              hasText: _termHasText,
               enabled: !_isSaving,
-              onChanged: _applyTerm,
+              onChanged: _handleTermLookupChanged,
+              onClear: _clearTermLookup,
+              onFocusChanged: (bool hasFocus) =>
+                  _setActiveLookup(_DiagnosisLookupTarget.term, hasFocus),
+              onSelected: _applyTerm,
+              titleBuilder: _diagnosisTermLabel,
+              subtitleBuilder: _diagnosisTermSubtitle,
             ),
-            AppTextField(
+            _DiagnosisLookupField(
               controller: _codeController,
               labelText: l10n.opdDiagnosisCodeLabel,
-              prefixIcon: const Icon(Icons.tag_outlined),
+              clearLabel: MaterialLocalizations.of(context).clearButtonTooltip,
+              options: _activeLookup == _DiagnosisLookupTarget.code
+                  ? _codeOptions
+                  : const <ClinicalCatalogOption>[],
+              isLoading:
+                  _activeLookup == _DiagnosisLookupTarget.code &&
+                  _isCodeSearching,
+              hasText: _codeHasText,
               enabled: !_isSaving,
               textCapitalization: TextCapitalization.characters,
+              onChanged: _handleCodeLookupChanged,
+              onClear: _clearCodeLookup,
+              onFocusChanged: (bool hasFocus) =>
+                  _setActiveLookup(_DiagnosisLookupTarget.code, hasFocus),
+              onSelected: _applyCodeTerm,
+              titleBuilder: _diagnosisCodeLabel,
+              subtitleBuilder: _diagnosisCodeSubtitle,
             ),
             AppTextField(
               controller: _descriptionController,
@@ -1503,38 +1544,181 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
     );
   }
 
-  Future<void> _loadTerms() async {
-    setState(() => _isSearching = true);
-    final Result<List<ClinicalCatalogOption>> result = await ref
-        .read(clinicalWorkspaceControllerProvider.notifier)
-        .searchClinicalTerms(termType: 'DIAGNOSIS');
-    if (!mounted) {
+  void _handleTermLookupChanged(String value) {
+    final String query = value.trim();
+    final bool hasText = query.isNotEmpty;
+    if (_activeLookup != _DiagnosisLookupTarget.term ||
+        _termHasText != hasText) {
+      setState(() {
+        _activeLookup = _DiagnosisLookupTarget.term;
+        _termHasText = hasText;
+      });
+    }
+    _scheduleTermLookup(query);
+  }
+
+  void _handleCodeLookupChanged(String value) {
+    final String query = value.trim();
+    final bool hasText = query.isNotEmpty;
+    if (_activeLookup != _DiagnosisLookupTarget.code ||
+        _codeHasText != hasText) {
+      setState(() {
+        _activeLookup = _DiagnosisLookupTarget.code;
+        _codeHasText = hasText;
+      });
+    }
+    _scheduleCodeLookup(query);
+  }
+
+  void _setActiveLookup(_DiagnosisLookupTarget target, bool hasFocus) {
+    if (!hasFocus || _activeLookup == target) {
+      return;
+    }
+    setState(() => _activeLookup = target);
+  }
+
+  void _scheduleTermLookup(String query) {
+    _termLookupDebounce?.cancel();
+    _termLookupRequest += 1;
+    final int requestId = _termLookupRequest;
+    if (query.length < _lookupMinLength) {
+      if (_termOptions.isNotEmpty || _isTermSearching) {
+        setState(() {
+          _termOptions = const <ClinicalCatalogOption>[];
+          _isTermSearching = false;
+        });
+      }
+      return;
+    }
+    _termLookupDebounce = Timer(
+      _lookupDebounceDuration,
+      () => _loadTermLookup(query, requestId),
+    );
+  }
+
+  void _scheduleCodeLookup(String query) {
+    _codeLookupDebounce?.cancel();
+    _codeLookupRequest += 1;
+    final int requestId = _codeLookupRequest;
+    if (query.length < _lookupMinLength) {
+      if (_codeOptions.isNotEmpty || _isCodeSearching) {
+        setState(() {
+          _codeOptions = const <ClinicalCatalogOption>[];
+          _isCodeSearching = false;
+        });
+      }
+      return;
+    }
+    _codeLookupDebounce = Timer(
+      _lookupDebounceDuration,
+      () => _loadCodeLookup(query, requestId),
+    );
+  }
+
+  Future<void> _loadTermLookup(String query, int requestId) async {
+    if (!mounted || requestId != _termLookupRequest) {
       return;
     }
     setState(() {
-      _terms = result.when(
+      _termOptions = const <ClinicalCatalogOption>[];
+      _isTermSearching = true;
+    });
+    final Result<List<ClinicalCatalogOption>> result = await ref
+        .read(clinicalWorkspaceControllerProvider.notifier)
+        .searchClinicalTerms(termType: 'DIAGNOSIS', query: query);
+    if (!mounted || requestId != _termLookupRequest) {
+      return;
+    }
+    setState(() {
+      _termOptions = result.when(
         success: (List<ClinicalCatalogOption> value) => value,
         failure: (_) => const <ClinicalCatalogOption>[],
       );
-      _isSearching = false;
+      _isTermSearching = false;
     });
   }
 
-  void _applyTerm(String? value) {
-    if (value == null) {
-      setState(() => _selectedTermId = null);
-      return;
-    }
-    final ClinicalCatalogOption? term = _terms
-        .where((ClinicalCatalogOption option) => option.apiId == value)
-        .firstOrNull;
-    if (term == null) {
+  Future<void> _loadCodeLookup(String query, int requestId) async {
+    if (!mounted || requestId != _codeLookupRequest) {
       return;
     }
     setState(() {
-      _selectedTermId = value;
+      _codeOptions = const <ClinicalCatalogOption>[];
+      _isCodeSearching = true;
+    });
+    final Result<List<ClinicalCatalogOption>> result = await ref
+        .read(clinicalWorkspaceControllerProvider.notifier)
+        .searchClinicalTerms(termType: 'DIAGNOSIS', query: query);
+    if (!mounted || requestId != _codeLookupRequest) {
+      return;
+    }
+    setState(() {
+      _codeOptions = result.when(
+        success: (List<ClinicalCatalogOption> value) => value
+            .where(
+              (ClinicalCatalogOption option) =>
+                  _trimmedOrNull(option.code) != null,
+            )
+            .toList(growable: false),
+        failure: (_) => const <ClinicalCatalogOption>[],
+      );
+      _isCodeSearching = false;
+    });
+  }
+
+  void _applyTerm(ClinicalCatalogOption term) {
+    setState(() {
+      _termController.text = _diagnosisTermLabel(term);
+      _termHasText = true;
+      _codeOptions = _mergeCatalogOption(_codeOptions, term);
       _codeController.text = term.code ?? '';
+      _codeHasText = _trimmedOrNull(term.code) != null;
       _descriptionController.text = term.name ?? '';
+      _termOptions = const <ClinicalCatalogOption>[];
+      _isTermSearching = false;
+      _activeLookup = null;
+    });
+  }
+
+  void _applyCodeTerm(ClinicalCatalogOption term) {
+    setState(() {
+      _termOptions = _mergeCatalogOption(_termOptions, term);
+      _termController.text = _diagnosisTermLabel(term);
+      _termHasText = true;
+      _codeController.text = term.code ?? '';
+      _codeHasText = _trimmedOrNull(term.code) != null;
+      _descriptionController.text = term.name ?? '';
+      _codeOptions = const <ClinicalCatalogOption>[];
+      _isCodeSearching = false;
+      _activeLookup = null;
+    });
+  }
+
+  void _clearTermLookup() {
+    _termLookupDebounce?.cancel();
+    _termLookupRequest += 1;
+    setState(() {
+      _termController.clear();
+      _termHasText = false;
+      _termOptions = const <ClinicalCatalogOption>[];
+      _isTermSearching = false;
+      if (_activeLookup == _DiagnosisLookupTarget.term) {
+        _activeLookup = null;
+      }
+    });
+  }
+
+  void _clearCodeLookup() {
+    _codeLookupDebounce?.cancel();
+    _codeLookupRequest += 1;
+    setState(() {
+      _codeController.clear();
+      _codeHasText = false;
+      _codeOptions = const <ClinicalCatalogOption>[];
+      _isCodeSearching = false;
+      if (_activeLookup == _DiagnosisLookupTarget.code) {
+        _activeLookup = null;
+      }
     });
   }
 
@@ -1568,6 +1752,186 @@ class _DiagnosisDialogState extends ConsumerState<_DiagnosisDialog> {
       _failure = failure;
       _isSaving = false;
     });
+  }
+}
+
+enum _DiagnosisLookupTarget { term, code }
+
+class _DiagnosisLookupField extends StatelessWidget {
+  const _DiagnosisLookupField({
+    required this.controller,
+    required this.labelText,
+    required this.clearLabel,
+    required this.options,
+    required this.hasText,
+    required this.isLoading,
+    required this.enabled,
+    required this.onChanged,
+    required this.onClear,
+    required this.onFocusChanged,
+    required this.onSelected,
+    required this.titleBuilder,
+    required this.subtitleBuilder,
+    this.textCapitalization = TextCapitalization.sentences,
+  });
+
+  final TextEditingController controller;
+  final String labelText;
+  final String clearLabel;
+  final List<ClinicalCatalogOption> options;
+  final bool hasText;
+  final bool isLoading;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  final ValueChanged<bool> onFocusChanged;
+  final ValueChanged<ClinicalCatalogOption> onSelected;
+  final String Function(ClinicalCatalogOption option) titleBuilder;
+  final String Function(ClinicalCatalogOption option) subtitleBuilder;
+  final TextCapitalization textCapitalization;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppSpacingTokens spacing = theme.spacing;
+    final bool showResults = isLoading || options.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppTextField(
+          controller: controller,
+          labelText: labelText,
+          enabled: enabled,
+          textCapitalization: textCapitalization,
+          suffixIcon: _buildClearButton(context),
+          onChanged: onChanged,
+          onFocusChanged: onFocusChanged,
+        ),
+        if (showResults) ...<Widget>[
+          SizedBox(height: spacing.xs),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 220),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: options.isEmpty
+                  ? SizedBox(
+                      height: 48,
+                      child: Center(
+                        child: SizedBox.square(
+                          dimension: theme.appTokens.listIconSize,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      separatorBuilder: (_, _) => Divider(
+                        height: 1,
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                      itemBuilder: (BuildContext context, int index) {
+                        final ClinicalCatalogOption option = options[index];
+                        return _DiagnosisLookupResult(
+                          title: titleBuilder(option),
+                          subtitle: subtitleBuilder(option),
+                          enabled: enabled,
+                          onSelected: () => onSelected(option),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget? _buildClearButton(BuildContext context) {
+    if (!enabled || !hasText) {
+      return null;
+    }
+    final ThemeData theme = Theme.of(context);
+    return SizedBox(
+      width: 104,
+      child: Center(
+        child: TextButton(
+          onPressed: onClear,
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+            minimumSize: const Size(72, 32),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(clearLabel, overflow: TextOverflow.ellipsis),
+        ),
+      ),
+    );
+  }
+}
+
+class _DiagnosisLookupResult extends StatelessWidget {
+  const _DiagnosisLookupResult({
+    required this.title,
+    required this.subtitle,
+    required this.enabled,
+    required this.onSelected,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool enabled;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppSpacingTokens spacing = theme.spacing;
+    return Material(
+      color: theme.colorScheme.surface,
+      child: InkWell(
+        onTap: enabled ? onSelected : null,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing.md,
+            vertical: spacing.sm,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (subtitle.isNotEmpty) ...<Widget>[
+                SizedBox(height: spacing.xs),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -2884,6 +3248,37 @@ List<AppSelectOption<String>> _catalogOptions(
         ]),
       ),
   ];
+}
+
+List<ClinicalCatalogOption> _mergeCatalogOption(
+  List<ClinicalCatalogOption> options,
+  ClinicalCatalogOption option,
+) {
+  if (options.any((ClinicalCatalogOption item) => item.apiId == option.apiId)) {
+    return options;
+  }
+  return <ClinicalCatalogOption>[option, ...options];
+}
+
+String _diagnosisTermLabel(ClinicalCatalogOption option) {
+  return _trimmedOrNull(option.name) ?? option.displayTitle;
+}
+
+String _diagnosisTermSubtitle(ClinicalCatalogOption option) {
+  return _joinDisplay(<String?>[option.code, option.displaySubtitle]);
+}
+
+String _diagnosisCodeLabel(ClinicalCatalogOption option) {
+  return _trimmedOrNull(option.code) ?? option.displayTitle;
+}
+
+String _diagnosisCodeSubtitle(ClinicalCatalogOption option) {
+  return _joinDisplay(<String?>[option.name, option.displaySubtitle]);
+}
+
+String? _trimmedOrNull(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }
 
 List<AppSelectOption<String>> _statusOptions(List<String> values) {

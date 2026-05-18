@@ -198,8 +198,13 @@ final class ClinicalWorkspaceController
   Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
     required String termType,
     String? query,
+    int limit = 25,
   }) {
-    return _repository.searchClinicalTerms(termType: termType, query: query);
+    return _repository.searchClinicalTerms(
+      termType: termType,
+      query: query,
+      limit: limit,
+    );
   }
 
   Future<AppFailure?> addClinicalNote(String note) {
