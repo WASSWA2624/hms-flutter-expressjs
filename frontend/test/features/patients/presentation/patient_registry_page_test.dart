@@ -155,6 +155,57 @@ void main() {
     },
   );
 
+  testWidgets('patient worklist shows registry contract columns', (
+    WidgetTester tester,
+  ) async {
+    final patientRepository = _MockPatientRepository();
+    final opdRepository = _MockOpdRepository();
+    final patient = Patient(
+      id: 'patient-1',
+      publicId: 'PAT-1001',
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      firstName: 'Amina',
+      lastName: 'Kato',
+      dateOfBirth: DateTime(1990),
+      gender: 'FEMALE',
+      primaryPhone: '+256700000000',
+      primaryIdentifierType: 'MRN',
+      primaryIdentifierValue: 'MRN-10024',
+      hasAllergyAlert: true,
+      allergyAlertLabel: 'Penicillin - Severe',
+      currentVisit: PatientVisitContext(
+        kind: 'encounter',
+        publicId: 'ENC-2001',
+        status: 'IN_PROGRESS',
+        title: 'OPD',
+        occurredAt: DateTime(2026, 5, 18),
+      ),
+    );
+
+    _stubPatientRegistry(patientRepository, patient);
+    _stubProviderLookup(opdRepository);
+
+    await _pumpPatientRegistry(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      size: const Size(1280, 900),
+    );
+
+    expect(find.text('Patient no.'), findsOneWidget);
+    expect(find.text('Age / sex'), findsOneWidget);
+    expect(find.text('Phone / ID'), findsOneWidget);
+    expect(find.text('Alerts'), findsOneWidget);
+    expect(find.text('Visit'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('PAT-1001'), findsOneWidget);
+    expect(find.textContaining('Female'), findsOneWidget);
+    expect(find.text('Penicillin - Severe'), findsOneWidget);
+    expect(find.text('OPD - In Progress'), findsOneWidget);
+    expect(find.text('Open record'), findsOneWidget);
+  });
+
   testWidgets('EmergencyPatientFormDialog surfaces submit failures', (
     WidgetTester tester,
   ) async {

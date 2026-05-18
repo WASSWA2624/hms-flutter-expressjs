@@ -126,6 +126,82 @@ const PATIENT_RELATION_CONTEXT_INCLUDE = {
       email: true,
       updated_at: true
     }
+  },
+  allergies: {
+    where: {
+      deleted_at: null
+    },
+    orderBy: [
+      { updated_at: 'desc' }
+    ],
+    take: 1,
+    select: {
+      human_friendly_id: true,
+      allergen: true,
+      severity: true,
+      updated_at: true
+    }
+  },
+  appointments: {
+    where: {
+      deleted_at: null
+    },
+    orderBy: [
+      { scheduled_start: 'desc' }
+    ],
+    take: 1,
+    select: {
+      human_friendly_id: true,
+      status: true,
+      scheduled_start: true,
+      updated_at: true
+    }
+  },
+  visit_queue_entries: {
+    where: {
+      deleted_at: null
+    },
+    orderBy: [
+      { queued_at: 'desc' }
+    ],
+    take: 1,
+    select: {
+      human_friendly_id: true,
+      status: true,
+      queued_at: true,
+      updated_at: true
+    }
+  },
+  encounters: {
+    where: {
+      deleted_at: null
+    },
+    orderBy: [
+      { started_at: 'desc' }
+    ],
+    take: 1,
+    select: {
+      human_friendly_id: true,
+      encounter_type: true,
+      status: true,
+      started_at: true,
+      updated_at: true
+    }
+  },
+  admissions: {
+    where: {
+      deleted_at: null
+    },
+    orderBy: [
+      { admitted_at: 'desc' }
+    ],
+    take: 1,
+    select: {
+      human_friendly_id: true,
+      status: true,
+      admitted_at: true,
+      updated_at: true
+    }
   }
 };
 
@@ -632,6 +708,21 @@ const decoratePatientContext = (patient) => {
   const primaryPhoneContact = resolvePrimaryContactByType(contacts, 'PHONE');
   const primaryEmailContact = resolvePrimaryContactByType(contacts, 'EMAIL');
   const primaryIdentifier = resolvePrimaryIdentifierRecord(identifiers);
+  const allergy = Array.isArray(patient.allergies) ? patient.allergies[0] : null;
+  const visitCandidates = [
+    firstVisitContext(patient.visit_queue_entries, 'visit_queue', 'queued_at'),
+    firstVisitContext(patient.encounters, 'encounter', 'started_at'),
+    firstVisitContext(patient.admissions, 'admission', 'admitted_at'),
+    firstVisitContext(patient.appointments, 'appointment', 'scheduled_start')
+  ].filter(Boolean);
+  const activeVisit = visitCandidates.find((entry) =>
+    ['ADMITTED', 'ARRIVED', 'CHECKED_IN', 'IN_PROGRESS', 'SCHEDULED', 'OPEN'].includes(
+      normalizeText(entry.status).toUpperCase()
+    )
+  );
+  const latestVisit = visitCandidates.sort(
+    (left, right) => new Date(right.occurred_at || 0) - new Date(left.occurred_at || 0)
+  )[0] || null;
 
   return {
     id: patient?.id || null,
@@ -657,6 +748,15 @@ const decoratePatientContext = (patient) => {
     contacts,
     identifiers,
     guardians,
+    alerts: {
+      has_allergy: Boolean(allergy),
+      allergy_label: allergy
+        ? [normalizeText(allergy.allergen), normalizeText(allergy.severity)]
+            .filter(Boolean)
+            .join(' - ')
+        : null
+    },
+    current_visit: activeVisit || latestVisit,
     tenant_context: tenantContext
       ? {
           id: resolvePublicIdentifier(tenantContext.human_friendly_id),
@@ -676,6 +776,32 @@ const decoratePatientContext = (patient) => {
     created_at: patient?.created_at || null,
     updated_at: patient?.updated_at || null
   };
+};
+
+const firstVisitContext = (records, kind, dateField) => {
+  const record = Array.isArray(records) ? records[0] : null;
+  if (!record) return null;
+
+  return {
+    kind,
+    human_friendly_id: resolvePublicIdentifier(record.human_friendly_id),
+    status: record.status || null,
+    title: visitContextTitle(kind, record),
+    occurred_at: record[dateField] || record.updated_at || null
+  };
+};
+
+const visitContextTitle = (kind, record) => {
+  if (kind === 'encounter') {
+    return normalizeText(record.encounter_type) || 'Encounter';
+  }
+  if (kind === 'visit_queue') {
+    return 'Visit queue';
+  }
+  if (kind === 'admission') {
+    return 'Admission';
+  }
+  return 'Appointment';
 };
 
 const normalizeScopeValue = (value) =>

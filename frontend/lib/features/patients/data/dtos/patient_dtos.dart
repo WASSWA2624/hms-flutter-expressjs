@@ -87,6 +87,8 @@ final class PatientDto {
         primaryContactType?.toUpperCase() == 'PHONE';
     final PatientJsonMap extension = _map(json['extension_json']);
     final PatientJsonMap registration = _map(extension['registration']);
+    final PatientJsonMap alerts = _map(json['alerts']);
+    final PatientJsonMap? currentVisit = _nullableMap(json['current_visit']);
 
     return Patient(
       id: _string(json['id']) ?? _string(json['human_friendly_id']) ?? '',
@@ -114,10 +116,31 @@ final class PatientDto {
       requiresCompletion: _bool(registration['requires_completion']),
       registrationSource: _string(registration['source']),
       registrationStatus: _string(registration['status']),
+      hasAllergyAlert: _bool(alerts['has_allergy']),
+      allergyAlertLabel: _string(alerts['allergy_label']),
+      currentVisit: currentVisit == null
+          ? null
+          : PatientVisitContextDto(currentVisit).toEntity(),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     ).copyWith(
       primaryPhone: primaryContactIsPhone ? primaryContactValue : null,
+    );
+  }
+}
+
+final class PatientVisitContextDto {
+  const PatientVisitContextDto(this.json);
+
+  final PatientJsonMap json;
+
+  PatientVisitContext toEntity() {
+    return PatientVisitContext(
+      kind: _string(json['kind']) ?? '',
+      publicId: _string(json['human_friendly_id']),
+      status: _string(json['status']),
+      title: _string(json['title']),
+      occurredAt: _date(json['occurred_at']),
     );
   }
 }

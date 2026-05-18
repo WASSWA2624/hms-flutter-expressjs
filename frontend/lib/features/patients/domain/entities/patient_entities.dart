@@ -176,6 +176,9 @@ final class Patient {
     this.requiresCompletion = false,
     this.registrationSource,
     this.registrationStatus,
+    this.hasAllergyAlert = false,
+    this.allergyAlertLabel,
+    this.currentVisit,
     this.createdAt,
     this.updatedAt,
   });
@@ -199,6 +202,9 @@ final class Patient {
   final bool requiresCompletion;
   final String? registrationSource;
   final String? registrationStatus;
+  final bool hasAllergyAlert;
+  final String? allergyAlertLabel;
+  final PatientVisitContext? currentVisit;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -240,6 +246,9 @@ final class Patient {
     bool? requiresCompletion,
     String? registrationSource,
     String? registrationStatus,
+    bool? hasAllergyAlert,
+    String? allergyAlertLabel,
+    PatientVisitContext? currentVisit,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool clearDateOfBirth = false,
@@ -249,6 +258,8 @@ final class Patient {
     bool clearPrimaryEmail = false,
     bool clearPrimaryIdentifierType = false,
     bool clearPrimaryIdentifierValue = false,
+    bool clearAllergyAlertLabel = false,
+    bool clearCurrentVisit = false,
   }) {
     return Patient(
       id: id ?? this.id,
@@ -278,10 +289,34 @@ final class Patient {
       requiresCompletion: requiresCompletion ?? this.requiresCompletion,
       registrationSource: registrationSource ?? this.registrationSource,
       registrationStatus: registrationStatus ?? this.registrationStatus,
+      hasAllergyAlert: hasAllergyAlert ?? this.hasAllergyAlert,
+      allergyAlertLabel: clearAllergyAlertLabel
+          ? null
+          : allergyAlertLabel ?? this.allergyAlertLabel,
+      currentVisit: clearCurrentVisit
+          ? null
+          : currentVisit ?? this.currentVisit,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+}
+
+@immutable
+final class PatientVisitContext {
+  const PatientVisitContext({
+    required this.kind,
+    this.publicId,
+    this.status,
+    this.title,
+    this.occurredAt,
+  });
+
+  final String kind;
+  final String? publicId;
+  final String? status;
+  final String? title;
+  final DateTime? occurredAt;
 }
 
 @immutable

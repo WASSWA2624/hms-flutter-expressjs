@@ -1626,6 +1626,30 @@
   "@patientsPatientColumnLabel": {
     "description": "Patient list patient column label."
   },
+  "patientsPatientNumberColumnLabel": "Patient no.",
+  "@patientsPatientNumberColumnLabel": {
+    "description": "Patient list patient number column label."
+  },
+  "patientsAgeSexColumnLabel": "Age / sex",
+  "@patientsAgeSexColumnLabel": {
+    "description": "Patient list age and sex column label."
+  },
+  "patientsPhoneIdentifierColumnLabel": "Phone / ID",
+  "@patientsPhoneIdentifierColumnLabel": {
+    "description": "Patient list phone and identifier column label."
+  },
+  "patientsAlertColumnLabel": "Alerts",
+  "@patientsAlertColumnLabel": {
+    "description": "Patient list alert and allergy column label."
+  },
+  "patientsVisitColumnLabel": "Visit",
+  "@patientsVisitColumnLabel": {
+    "description": "Patient list current or latest visit column label."
+  },
+  "patientsNextActionColumnLabel": "Next action",
+  "@patientsNextActionColumnLabel": {
+    "description": "Patient list next permitted action column label."
+  },
   "patientsIdentifierColumnLabel": "Identifier",
   "@patientsIdentifierColumnLabel": {
     "description": "Patient list identifier column label."
@@ -1641,6 +1665,26 @@
   "patientsStatusColumnLabel": "Status",
   "@patientsStatusColumnLabel": {
     "description": "Patient list status column label."
+  },
+  "patientsNoAlertsLabel": "No alerts",
+  "@patientsNoAlertsLabel": {
+    "description": "Label shown when a patient has no visible alerts."
+  },
+  "patientsAllergyAlertLabel": "Allergy",
+  "@patientsAllergyAlertLabel": {
+    "description": "Short allergy alert label."
+  },
+  "patientsNoVisitLabel": "No visit",
+  "@patientsNoVisitLabel": {
+    "description": "Label shown when no visit context is available."
+  },
+  "patientsCompleteRecordAction": "Complete record",
+  "@patientsCompleteRecordAction": {
+    "description": "Next action label for incomplete patient registration records."
+  },
+  "patientsOpenRecordAction": "Open record",
+  "@patientsOpenRecordAction": {
+    "description": "Next action label for opening a patient record."
   },
   "patientsPageLabel": "{from}-{to} of {total}",
   "@patientsPageLabel": {

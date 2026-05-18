@@ -1049,7 +1049,6 @@ class _PatientList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
 
     return AppSearchablePaginatedListTable<Patient>(
       page: state.page,
@@ -1062,35 +1061,47 @@ class _PatientList extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       columns: <AppListTableColumn<Patient>>[
         AppListTableColumn<Patient>(
+          label: l10n.patientsPatientNumberColumnLabel,
+          cellBuilder: (_, Patient patient) =>
+              _PatientNumberCell(patient: patient),
+        ),
+        AppListTableColumn<Patient>(
           label: l10n.patientsPatientColumnLabel,
           cellBuilder: (_, Patient patient) =>
               _PatientNameCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
-          label: l10n.patientsIdentifierColumnLabel,
+          label: l10n.patientsAgeSexColumnLabel,
+          cellBuilder: (_, Patient patient) => _AgeSexText(patient: patient),
+        ),
+        AppListTableColumn<Patient>(
+          label: l10n.patientsPhoneIdentifierColumnLabel,
           cellBuilder: (_, Patient patient) =>
-              Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
+              _PatientContactIdentifierCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
-          label: l10n.patientsContactColumnLabel,
-          cellBuilder: (_, Patient patient) => Text(
-            patient.primaryPhone ??
-                patient.primaryEmail ??
-                l10n.profileUnknownValue,
-          ),
+          label: l10n.patientsAlertColumnLabel,
+          cellBuilder: (_, Patient patient) =>
+              _PatientAlertCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
-          label: l10n.patientsDobColumnLabel,
-          cellBuilder: (_, Patient patient) => Text(
-            patient.dateOfBirth == null
-                ? l10n.profileUnknownValue
-                : AppFormatters.mediumDate(patient.dateOfBirth!, locale),
-          ),
+          label: l10n.patientsVisitColumnLabel,
+          cellBuilder: (_, Patient patient) =>
+              _VisitContextCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsStatusColumnLabel,
           cellBuilder: (_, Patient patient) =>
               _StatusText(isActive: patient.isActive),
+        ),
+        AppListTableColumn<Patient>(
+          label: l10n.patientsNextActionColumnLabel,
+          cellBuilder: (_, Patient patient) => _NextActionCell(
+            patient: patient,
+            onPressed: () {
+              unawaited(_openPatientDetail(context, ref, patient.id));
+            },
+          ),
         ),
       ],
       mobileItemBuilder: (_, Patient patient) => Padding(
@@ -1451,6 +1462,227 @@ class _PatientNameCell extends StatelessWidget {
   }
 }
 
+class _PatientNumberCell extends StatelessWidget {
+  const _PatientNumberCell({required this.patient});
+
+  final Patient patient;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      patient.publicId ?? patient.id,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+class _AgeSexText extends StatelessWidget {
+  const _AgeSexText({required this.patient});
+
+  final Patient patient;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final String age = _patientAgeLabel(context, patient.dateOfBirth);
+    final String sex = patient.gender == null
+        ? l10n.profileUnknownValue
+        : _genderLabel(l10n, patient.gender!);
+
+    return Text('$age / $sex', maxLines: 1, overflow: TextOverflow.ellipsis);
+  }
+}
+
+class _PatientContactIdentifierCell extends StatelessWidget {
+  const _PatientContactIdentifierCell({required this.patient});
+
+  final Patient patient;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final String primary =
+        patient.primaryPhone ??
+        patient.primaryEmail ??
+        patient.effectiveIdentifier ??
+        l10n.profileUnknownValue;
+    final String? secondary = primary == patient.effectiveIdentifier
+        ? null
+        : patient.effectiveIdentifier;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(primary, maxLines: 1, overflow: TextOverflow.ellipsis),
+        if (secondary != null)
+          Text(
+            secondary,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PatientAlertCell extends StatelessWidget {
+  const _PatientAlertCell({required this.patient});
+
+  final Patient patient;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    final List<Widget> alerts = <Widget>[
+      if (patient.hasAllergyAlert)
+        _CompactAlertLabel(
+          icon: Icons.warning_amber_outlined,
+          label: patient.allergyAlertLabel ?? l10n.patientsAllergyAlertLabel,
+          color: theme.statusColors.warning,
+        ),
+      if (patient.requiresCompletion)
+        _CompactAlertLabel(
+          icon: Icons.error_outline,
+          label: l10n.patientsRegistrationIncompleteValue,
+          color: theme.statusColors.warning,
+        ),
+    ];
+
+    if (alerts.isEmpty) {
+      return Text(
+        l10n.patientsNoAlertsLabel,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      children: alerts,
+    );
+  }
+}
+
+class _CompactAlertLabel extends StatelessWidget {
+  const _CompactAlertLabel({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: 16, color: color),
+        SizedBox(width: theme.spacing.xs),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _VisitContextCell extends StatelessWidget {
+  const _VisitContextCell({required this.patient});
+
+  final Patient patient;
+
+  @override
+  Widget build(BuildContext context) {
+    final PatientVisitContext? visit = patient.currentVisit;
+    final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
+    if (visit == null) {
+      return Text(
+        l10n.patientsNoVisitLabel,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          _joinDisplay(<String?>[
+            visit.title,
+            visit.status == null ? null : _apiLabel(visit.status!),
+          ]),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          _formatOptionalDate(context, visit.occurredAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NextActionCell extends StatelessWidget {
+  const _NextActionCell({required this.patient, required this.onPressed});
+
+  final Patient patient;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    if (!patient.requiresCompletion) {
+      return AppButton.tertiary(
+        label: l10n.patientsOpenRecordAction,
+        leadingIcon: Icons.open_in_new,
+        onPressed: onPressed,
+      );
+    }
+
+    return AppAccessActionGate(
+      requirement: const AccessRequirement(
+        allPermissions: <AppPermission>[AppPermissions.patientWrite],
+      ),
+      builder: (_, bool isAllowed) => AppButton.secondary(
+        label: l10n.patientsCompleteRecordAction,
+        leadingIcon: Icons.edit_note_outlined,
+        enabled: isAllowed,
+        onPressed: isAllowed ? onPressed : null,
+      ),
+    );
+  }
+}
+
 class _PatientMobileRow extends StatelessWidget {
   const _PatientMobileRow({required this.patient});
 
@@ -1480,10 +1712,13 @@ class _PatientMobileRow extends StatelessWidget {
               ),
               SizedBox(height: theme.spacing.xs),
               Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
+              _AgeSexText(patient: patient),
               if (patient.primaryPhone != null || patient.primaryEmail != null)
                 Text(patient.primaryPhone ?? patient.primaryEmail!),
+              _VisitContextCell(patient: patient),
               SizedBox(height: theme.spacing.xs),
               _StatusText(isActive: patient.isActive),
+              _PatientAlertCell(patient: patient),
               if (patient.requiresCompletion)
                 Text(
                   l10n.patientsRegistrationIncompleteValue,
@@ -1570,6 +1805,12 @@ bool _matchesPatientTableSearch(
     patient.requiresCompletion ? 'incomplete registration emergency' : null,
     patient.registrationSource,
     patient.registrationStatus,
+    patient.hasAllergyAlert ? context.l10n.patientsAllergyAlertLabel : null,
+    patient.allergyAlertLabel,
+    patient.currentVisit?.title,
+    patient.currentVisit?.status,
+    patient.currentVisit?.publicId,
+    patient.currentVisit?.occurredAt?.toIso8601String(),
     patient.facilityLabel,
     patient.tenantLabel,
   ].whereType<String>().join(' ').toLowerCase();
@@ -1583,6 +1824,33 @@ List<String> _searchTokens(String query) {
       .split(RegExp(r'\s+'))
       .where((String token) => token.isNotEmpty)
       .toList(growable: false);
+}
+
+String _patientAgeLabel(BuildContext context, DateTime? dateOfBirth) {
+  if (dateOfBirth == null) {
+    return context.l10n.profileUnknownValue;
+  }
+
+  final DateTime today = DateTime.now();
+  var years = today.year - dateOfBirth.year;
+  if (today.month < dateOfBirth.month ||
+      (today.month == dateOfBirth.month && today.day < dateOfBirth.day)) {
+    years -= 1;
+  }
+  if (years > 0) {
+    return years.toString();
+  }
+
+  var months = (today.year - dateOfBirth.year) * 12;
+  months += today.month - dateOfBirth.month;
+  if (today.day < dateOfBirth.day) {
+    months -= 1;
+  }
+  if (months > 0) {
+    return months.toString();
+  }
+
+  return today.difference(dateOfBirth).inDays.clamp(0, 30).toString();
 }
 
 class _PatientDetailDialog extends ConsumerWidget {

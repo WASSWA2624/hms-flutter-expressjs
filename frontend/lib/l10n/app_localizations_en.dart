@@ -1245,6 +1245,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsPatientColumnLabel => 'Patient';
 
   @override
+  String get patientsPatientNumberColumnLabel => 'Patient no.';
+
+  @override
+  String get patientsAgeSexColumnLabel => 'Age / sex';
+
+  @override
+  String get patientsPhoneIdentifierColumnLabel => 'Phone / ID';
+
+  @override
+  String get patientsAlertColumnLabel => 'Alerts';
+
+  @override
+  String get patientsVisitColumnLabel => 'Visit';
+
+  @override
+  String get patientsNextActionColumnLabel => 'Next action';
+
+  @override
   String get patientsIdentifierColumnLabel => 'Identifier';
 
   @override
@@ -1255,6 +1273,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsStatusColumnLabel => 'Status';
+
+  @override
+  String get patientsNoAlertsLabel => 'No alerts';
+
+  @override
+  String get patientsAllergyAlertLabel => 'Allergy';
+
+  @override
+  String get patientsNoVisitLabel => 'No visit';
+
+  @override
+  String get patientsCompleteRecordAction => 'Complete record';
+
+  @override
+  String get patientsOpenRecordAction => 'Open record';
 
   @override
   String patientsPageLabel(int from, int to, int total) {

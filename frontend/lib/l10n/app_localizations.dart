@@ -2458,6 +2458,42 @@ abstract class AppLocalizations {
   /// **'Patient'**
   String get patientsPatientColumnLabel;
 
+  /// Patient list patient number column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient no.'**
+  String get patientsPatientNumberColumnLabel;
+
+  /// Patient list age and sex column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Age / sex'**
+  String get patientsAgeSexColumnLabel;
+
+  /// Patient list phone and identifier column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone / ID'**
+  String get patientsPhoneIdentifierColumnLabel;
+
+  /// Patient list alert and allergy column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get patientsAlertColumnLabel;
+
+  /// Patient list current or latest visit column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit'**
+  String get patientsVisitColumnLabel;
+
+  /// Patient list next permitted action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get patientsNextActionColumnLabel;
+
   /// Patient list identifier column label.
   ///
   /// In en, this message translates to:
@@ -2481,6 +2517,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get patientsStatusColumnLabel;
+
+  /// Label shown when a patient has no visible alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'No alerts'**
+  String get patientsNoAlertsLabel;
+
+  /// Short allergy alert label.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergy'**
+  String get patientsAllergyAlertLabel;
+
+  /// Label shown when no visit context is available.
+  ///
+  /// In en, this message translates to:
+  /// **'No visit'**
+  String get patientsNoVisitLabel;
+
+  /// Next action label for incomplete patient registration records.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete record'**
+  String get patientsCompleteRecordAction;
+
+  /// Next action label for opening a patient record.
+  ///
+  /// In en, this message translates to:
+  /// **'Open record'**
+  String get patientsOpenRecordAction;
 
   /// Patient list pagination range label.
   ///
