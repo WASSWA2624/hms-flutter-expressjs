@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -11,7 +12,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -27,6 +27,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class OpdWorkspacePage extends ConsumerWidget {
   const OpdWorkspacePage({super.key});
@@ -5608,7 +5609,7 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
   }
 }
 
-class PrintOpdSummaryDialog extends StatelessWidget {
+class PrintOpdSummaryDialog extends ConsumerWidget {
   const PrintOpdSummaryDialog({
     required this.flow,
     required this.detail,
@@ -5619,7 +5620,7 @@ class PrintOpdSummaryDialog extends StatelessWidget {
   final OpdFlowDetail? detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final String summary = _printSummary(context);
     return AppDialog(
@@ -5647,8 +5648,42 @@ class PrintOpdSummaryDialog extends StatelessWidget {
         ),
         AppReportActionButton.print(
           label: l10n.opdPrintAction,
-          onPressed: () {
-            printCurrentWindow();
+          onPressed: () async {
+            await printFormTemplateDocument(
+              ref: ref,
+              context: context,
+              title: l10n.opdPrintSummaryAction,
+              subtitle: flow.displayTitle,
+              metadata: <PrintFormMetadataItem>[
+                PrintFormMetadataItem(
+                  label: l10n.patientsIdentifierLabel,
+                  value: flow.patientIdentifier ?? '',
+                ),
+                PrintFormMetadataItem(
+                  label: l10n.opdStageLabel,
+                  value: _apiLabel(flow.stage ?? ''),
+                ),
+                PrintFormMetadataItem(
+                  label: l10n.opdNextStepColumnLabel,
+                  value: _apiLabel(flow.nextStep ?? ''),
+                ),
+                PrintFormMetadataItem(
+                  label: l10n.opdPaymentStatusLabel,
+                  value: detail == null
+                      ? l10n.profileUnknownValue
+                      : detail!.consultationPaid
+                      ? l10n.opdPaymentPaidLabel
+                      : detail!.consultationPaymentRequired
+                      ? l10n.opdPaymentRequiredLabel
+                      : l10n.opdPaymentNotRequiredLabel,
+                ),
+              ],
+              bodyHtml:
+                  '<div class="print-template-note">${printHtmlEscape(summary)}</div>',
+            );
+            if (!context.mounted) {
+              return;
+            }
             Navigator.of(context).pop(false);
           },
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -8,7 +9,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
@@ -19,6 +19,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class PharmacyWorkspacePage extends ConsumerWidget {
   const PharmacyWorkspacePage({super.key});
@@ -491,9 +492,26 @@ class _PharmacyActionPanel extends ConsumerWidget {
               AppReportActionButton.print(
                 label: l10n.pharmacyPrintInstructionsAction,
                 variant: AppButtonVariant.secondary,
-                onPressed: () => printHtmlDocument(
-                  _pharmacyInstructionsHtml(context, workflow),
-                ),
+                onPressed: () async {
+                  await printFormTemplateDocument(
+                    ref: ref,
+                    context: context,
+                    title: l10n.pharmacyReportTitle,
+                    subtitle: workflow.order.displayTitle,
+                    metadata: <PrintFormMetadataItem>[
+                      PrintFormMetadataItem(
+                        label: l10n.pharmacyReportOrderLabel,
+                        value: workflow.order.displayId ?? workflow.order.id,
+                      ),
+                      PrintFormMetadataItem(
+                        label: l10n.claimsStatusColumnLabel,
+                        value: _apiLabel(workflow.order.status ?? ''),
+                      ),
+                    ],
+                    bodyHtml: _pharmacyInstructionsHtml(context, workflow),
+                    footerNote: l10n.pharmacyReportFooter,
+                  );
+                },
               ),
             ],
           );
@@ -1804,41 +1822,32 @@ String _pharmacyInstructionsHtml(
   final AppLocalizations l10n = context.l10n;
   final PharmacyOrder order = workflow.order;
   final StringBuffer buffer = StringBuffer()
-    ..write('<h1>${_escapeHtml(l10n.pharmacyReportTitle)}</h1>')
     ..write(
-      '<p><strong>${_escapeHtml(l10n.pharmacyReportPatientLabel)}:</strong> ${_escapeHtml(order.displayTitle)}</p>',
+      PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
+        PrintFormMetadataItem(
+          label: l10n.pharmacyReportPatientLabel,
+          value: order.displayTitle,
+        ),
+        PrintFormMetadataItem(
+          label: l10n.pharmacyReportOrderLabel,
+          value: order.displayId ?? order.id,
+        ),
+      ]),
     )
     ..write(
-      '<p><strong>${_escapeHtml(l10n.pharmacyReportOrderLabel)}:</strong> ${_escapeHtml(order.displayId ?? order.id)}</p>',
-    )
-    ..write(
-      '<p><strong>${_escapeHtml(l10n.pharmacyReportGeneratedLabel)}:</strong> ${_escapeHtml(_dateTimeLabel(context, DateTime.now()))}</p>',
-    )
-    ..write('<h2>${_escapeHtml(l10n.pharmacyMedicationPanelTitle)}</h2>')
-    ..write('<ul>');
-  for (final PharmacyOrderItem item in workflow.items) {
-    buffer
-      ..write('<li>')
-      ..write(_escapeHtml(item.medicationLabel))
-      ..write('<br>')
-      ..write(
-        _escapeHtml(_joinDisplay(<String?>[item.doseLine, item.instructions])),
-      )
-      ..write('</li>');
-  }
-  buffer
-    ..write('</ul>')
-    ..write('<p>${_escapeHtml(l10n.pharmacyReportFooter)}</p>');
+      PrintFormTemplate.section(
+        title: l10n.pharmacyMedicationPanelTitle,
+        bodyHtml: PrintFormTemplate.unorderedList(<String>[
+          for (final PharmacyOrderItem item in workflow.items)
+            _joinDisplay(<String?>[
+              item.medicationLabel,
+              item.doseLine,
+              item.instructions,
+            ]),
+        ], emptyText: l10n.pharmacyNoMedicationBody),
+      ),
+    );
   return buffer.toString();
-}
-
-String _escapeHtml(String value) {
-  return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {

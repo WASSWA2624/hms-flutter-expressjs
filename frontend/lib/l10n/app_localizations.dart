@@ -3469,7 +3469,7 @@ abstract class AppLocalizations {
   /// Patient report page number label.
   ///
   /// In en, this message translates to:
-  /// **'{page} of {total}'**
+  /// **'Page {page} of {total}'**
   String patientsReportPageNumberLabel(int page, int total);
 
   /// Patient report empty section label.

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
@@ -70,10 +69,7 @@ final printFormTemplateContextProvider = Provider<PrintFormTemplateContext>((
 
   return PrintFormTemplateContext(
     appBranding: _appBranding(config),
-    facilityBranding: _facilityBranding(
-      setup: setup,
-      session: session,
-    ),
+    facilityBranding: _facilityBranding(setup: setup, session: session),
   );
 });
 
@@ -99,10 +95,7 @@ final printFormTemplateContextReadyProvider =
 
       return PrintFormTemplateContext(
         appBranding: _appBranding(config),
-        facilityBranding: _facilityBranding(
-          setup: setup,
-          session: session,
-        ),
+        facilityBranding: _facilityBranding(setup: setup, session: session),
       );
     });
 

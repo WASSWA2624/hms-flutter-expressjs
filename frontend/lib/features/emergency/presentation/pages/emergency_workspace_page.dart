@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -8,7 +9,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
@@ -17,6 +17,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class EmergencyWorkspacePage extends ConsumerWidget {
   const EmergencyWorkspacePage({super.key});
@@ -534,8 +535,36 @@ class _EmergencyActionPanel extends ConsumerWidget {
               ),
               AppReportActionButton.print(
                 label: 'Print summary',
-                onPressed: () =>
-                    printHtmlDocument(_emergencySummaryHtml(context, detail)),
+                onPressed: () async {
+                  await printFormTemplateDocument(
+                    ref: ref,
+                    context: context,
+                    title: 'Emergency summary',
+                    subtitle: detail.summary.displayTitle,
+                    metadata: <PrintFormMetadataItem>[
+                      PrintFormMetadataItem(
+                        label: 'Case',
+                        value: detail.summary.caseLabel,
+                      ),
+                      PrintFormMetadataItem(
+                        label: 'Severity',
+                        value: _apiLabel(detail.summary.severity ?? ''),
+                      ),
+                      PrintFormMetadataItem(
+                        label: 'Status',
+                        value: _apiLabel(detail.summary.status ?? ''),
+                      ),
+                      PrintFormMetadataItem(
+                        label: 'Arrival',
+                        value: _dateTimeLabel(
+                          context,
+                          detail.summary.createdAt,
+                        ),
+                      ),
+                    ],
+                    bodyHtml: _emergencySummaryHtml(context, detail),
+                  );
+                },
               ),
             ],
           );
@@ -1900,88 +1929,99 @@ String? _requiredSelect(Object? value) {
 String _emergencySummaryHtml(BuildContext context, EmergencyCaseDetail detail) {
   final EmergencyCaseSummary summary = detail.summary;
   final StringBuffer buffer = StringBuffer()
-    ..writeln('<!doctype html><html><head><meta charset="utf-8">')
-    ..writeln('<title>Emergency ${_escapeHtml(summary.caseLabel)}</title>')
-    ..writeln('''
-<style>
-body{font-family:Arial,sans-serif;margin:32px;color:#111827;}
-h1{font-size:22px;margin:0 0 8px;}
-h2{font-size:16px;margin:24px 0 8px;border-bottom:1px solid #d1d5db;padding-bottom:6px;}
-dl{display:grid;grid-template-columns:160px 1fr;gap:6px 12px;}
-dt{font-weight:700;color:#374151;} dd{margin:0;}
-.badge{display:inline-block;border:1px solid #9ca3af;padding:3px 6px;margin-right:6px;}
-.note{white-space:pre-wrap;}
-</style></head><body>
-''')
-    ..writeln('<h1>Emergency summary</h1>')
-    ..writeln('<p>')
     ..writeln(
-      '<span class="badge">${_escapeHtml(_apiLabel(summary.severity ?? ''))}</span>',
-    )
-    ..writeln(
-      '<span class="badge">${_escapeHtml(_apiLabel(summary.status ?? ''))}</span>',
-    )
-    ..writeln('</p>')
-    ..writeln('<dl>')
-    ..writeln('<dt>Case</dt><dd>${_escapeHtml(summary.caseLabel)}</dd>')
-    ..writeln('<dt>Patient</dt><dd>${_escapeHtml(summary.displayTitle)}</dd>')
-    ..writeln(
-      '<dt>Patient no.</dt><dd>${_escapeHtml(summary.patientDisplayId ?? summary.patientId ?? '')}</dd>',
-    )
-    ..writeln(
-      '<dt>Facility</dt><dd>${_escapeHtml(summary.facilityLabel ?? '')}</dd>',
-    )
-    ..writeln(
-      '<dt>Arrival</dt><dd>${_escapeHtml(_dateTimeLabel(context, summary.createdAt))}</dd>',
-    )
-    ..writeln(
-      '<dt>Location</dt><dd>${_escapeHtml(summary.currentLocation)}</dd>',
-    )
-    ..writeln('</dl>')
-    ..writeln('<h2>Triage</h2>');
+      PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
+        PrintFormMetadataItem(label: 'Case', value: summary.caseLabel),
+        PrintFormMetadataItem(label: 'Patient', value: summary.displayTitle),
+        PrintFormMetadataItem(
+          label: 'Patient no.',
+          value: summary.patientDisplayId ?? summary.patientId ?? '',
+        ),
+        PrintFormMetadataItem(
+          label: 'Facility',
+          value: summary.facilityLabel ?? '',
+        ),
+        PrintFormMetadataItem(
+          label: 'Arrival',
+          value: _dateTimeLabel(context, summary.createdAt),
+        ),
+        PrintFormMetadataItem(
+          label: 'Location',
+          value: summary.currentLocation,
+        ),
+      ]),
+    );
+
+  final StringBuffer triageBody = StringBuffer();
 
   if (detail.triageAssessments.isEmpty) {
-    buffer.writeln('<p>No triage recorded.</p>');
+    triageBody.writeln(
+      '<p class="print-template-empty">No triage recorded.</p>',
+    );
   } else {
     for (final EmergencyTriageAssessment triage in detail.triageAssessments) {
-      buffer
+      triageBody
         ..writeln(
           '<p><strong>${_escapeHtml(_apiLabel(triage.triageLevel ?? ''))}</strong> ${_escapeHtml(_dateTimeLabel(context, triage.createdAt))}</p>',
         )
-        ..writeln('<p class="note">${_escapeHtml(triage.notes ?? '')}</p>');
+        ..writeln(
+          '<p class="print-template-note">${_escapeHtml(triage.notes ?? '')}</p>',
+        );
     }
   }
 
-  buffer.writeln('<h2>Response</h2>');
+  buffer.writeln(
+    PrintFormTemplate.section(title: 'Triage', bodyHtml: triageBody.toString()),
+  );
+
+  final StringBuffer responseBody = StringBuffer();
   if (detail.responses.isEmpty) {
-    buffer.writeln('<p>No response recorded.</p>');
+    responseBody.writeln(
+      '<p class="print-template-empty">No response recorded.</p>',
+    );
   } else {
     for (final EmergencyResponseRecord response in detail.responses) {
-      buffer
+      responseBody
         ..writeln(
           '<p><strong>Response</strong> ${_escapeHtml(_dateTimeLabel(context, response.responseAt ?? response.createdAt))}</p>',
         )
-        ..writeln('<p class="note">${_escapeHtml(response.notes ?? '')}</p>');
+        ..writeln(
+          '<p class="print-template-note">${_escapeHtml(response.notes ?? '')}</p>',
+        );
     }
   }
 
-  buffer.writeln('<h2>Ambulance</h2>');
+  buffer.writeln(
+    PrintFormTemplate.section(
+      title: 'Response',
+      bodyHtml: responseBody.toString(),
+    ),
+  );
+
+  final StringBuffer ambulance = StringBuffer();
   if (detail.dispatches.isEmpty && detail.trips.isEmpty) {
-    buffer.writeln('<p>No ambulance activity recorded.</p>');
+    ambulance.writeln(
+      '<p class="print-template-empty">No ambulance activity recorded.</p>',
+    );
   } else {
     for (final EmergencyAmbulanceDispatch dispatch in detail.dispatches) {
-      buffer.writeln(
+      ambulance.writeln(
         '<p>${_escapeHtml(_joinDisplay(<String?>['Dispatch', dispatch.ambulanceLabel, _apiLabel(dispatch.status ?? ''), _dateTimeLabel(context, dispatch.dispatchedAt ?? dispatch.createdAt)]))}</p>',
       );
     }
     for (final EmergencyAmbulanceTrip trip in detail.trips) {
-      buffer.writeln(
+      ambulance.writeln(
         '<p>${_escapeHtml(_joinDisplay(<String?>[trip.isActive ? 'Active trip' : 'Trip complete', trip.ambulanceLabel, _dateTimeLabel(context, trip.startedAt), trip.endedAt == null ? null : 'Ended ${_dateTimeLabel(context, trip.endedAt)}']))}</p>',
       );
     }
   }
 
-  buffer.writeln('</body></html>');
+  buffer.writeln(
+    PrintFormTemplate.section(
+      title: 'Ambulance',
+      bodyHtml: ambulance.toString(),
+    ),
+  );
   return buffer.toString();
 }
 

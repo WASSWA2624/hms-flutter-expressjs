@@ -1765,7 +1765,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String patientsReportPageNumberLabel(int page, int total) {
-    return '$page of $total';
+    return 'Page $page of $total';
   }
 
   @override

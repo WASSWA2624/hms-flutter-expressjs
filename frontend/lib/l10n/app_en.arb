@@ -2337,7 +2337,7 @@
   "@patientsReportPaymentsSectionTitle": {
     "description": "Patient report payments section title."
   },
-  "patientsReportPageNumberLabel": "{page} of {total}",
+  "patientsReportPageNumberLabel": "Page {page} of {total}",
   "@patientsReportPageNumberLabel": {
     "description": "Patient report page number label.",
     "placeholders": {

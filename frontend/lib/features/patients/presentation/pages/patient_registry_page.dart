@@ -5,6 +5,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -12,7 +13,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -29,6 +29,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class PatientRegistryPage extends ConsumerWidget {
   const PatientRegistryPage({super.key});
@@ -3781,19 +3782,19 @@ class _PatientReportCompactFact extends StatelessWidget {
   }
 }
 
-class _PatientReportPrintPreviewDialog extends StatefulWidget {
+class _PatientReportPrintPreviewDialog extends ConsumerStatefulWidget {
   const _PatientReportPrintPreviewDialog({required this.patient, this.detail});
 
   final Patient patient;
   final PatientDetail? detail;
 
   @override
-  State<_PatientReportPrintPreviewDialog> createState() =>
+  ConsumerState<_PatientReportPrintPreviewDialog> createState() =>
       _PatientReportPrintPreviewDialogState();
 }
 
 class _PatientReportPrintPreviewDialogState
-    extends State<_PatientReportPrintPreviewDialog> {
+    extends ConsumerState<_PatientReportPrintPreviewDialog> {
   late final DateTime _generatedAt;
   _PatientReportPeriodMode _periodMode = _PatientReportPeriodMode.allDates;
   DateTime? _singleDate;
@@ -3878,8 +3879,28 @@ class _PatientReportPrintPreviewDialogState
           label: l10n.patientsReportPrintNowAction,
           enabled: periodIsValid,
           onPressed: periodIsValid
-              ? () {
-                  printHtmlDocument(_patientReportHtml(context, document));
+              ? () async {
+                  await printFormTemplateDocument(
+                    ref: ref,
+                    context: context,
+                    title: document.title,
+                    subtitle: document.patientName,
+                    metadata: <PrintFormMetadataItem>[
+                      PrintFormMetadataItem(
+                        label: l10n.patientsIdentifierLabel,
+                        value: document.patientIdentifier,
+                      ),
+                      PrintFormMetadataItem(
+                        label: l10n.patientsReportPeriodLabel,
+                        value: document.periodLabel,
+                      ),
+                      PrintFormMetadataItem(
+                        label: l10n.patientsReportPreparedOnLabel,
+                        value: document.generatedAtLabel,
+                      ),
+                    ],
+                    pages: _patientReportPrintPages(document),
+                  );
                 }
               : null,
         ),
@@ -5251,18 +5272,18 @@ DateTime _dateOnly(DateTime value) {
   return DateTime(value.year, value.month, value.day);
 }
 
-String _patientReportHtml(BuildContext context, _PatientReportDocument report) {
+List<PrintFormPage> _patientReportPrintPages(_PatientReportDocument report) {
   String row(_PatientReportRow value) {
     final String detail = value.detail == null
         ? ''
-        : '<div class="detail">${_htmlEscape(value.detail!)}</div>';
+        : '<div class="detail">${printHtmlEscape(value.detail!)}</div>';
     final String meta = value.meta == null
         ? ''
-        : '<div class="meta">${_htmlEscape(value.meta!)}</div>';
+        : '<div class="meta">${printHtmlEscape(value.meta!)}</div>';
     return '''
       <tr>
-        <th>${_htmlEscape(value.label)}</th>
-        <td>${_htmlEscape(value.value)}$detail</td>
+        <th>${printHtmlEscape(value.label)}</th>
+        <td>${printHtmlEscape(value.value)}$detail</td>
         <td>$meta</td>
       </tr>
 ''';
@@ -5270,77 +5291,36 @@ String _patientReportHtml(BuildContext context, _PatientReportDocument report) {
 
   String block(_PatientReportBlock value) {
     final String rows = value.rows.isEmpty
-        ? '<tr><td colspan="3" class="empty">${_htmlEscape(value.emptyText)}</td></tr>'
+        ? '<tr><td colspan="3" class="empty">${printHtmlEscape(value.emptyText)}</td></tr>'
         : value.rows.map(row).join();
     return '''
-      <section class="block">
-        <h2>${_htmlEscape(value.title)}</h2>
+      <section class="print-template-section print-template-section--avoid-break">
+        <h2>${printHtmlEscape(value.title)}</h2>
         <table>$rows</table>
       </section>
 ''';
   }
 
-  String page(_PatientReportPage value, int index) {
-    final int pageNumber = index + 1;
-    final int totalPages = report.pages.length;
-    return '''
-    <article class="page">
-      <header class="page-header">
-        <div>
-          <strong>${_htmlEscape(report.hospitalName)}</strong>
-          <span>${_htmlEscape(report.title)}</span>
-        </div>
-        <div class="patient-header">
-          <strong>${_htmlEscape(report.patientName)}</strong>
-          <span>${_htmlEscape(report.patientIdentifier)}</span>
-          <span>${_htmlEscape(context.l10n.patientsReportPeriodLabel)}: ${_htmlEscape(report.periodLabel)}</span>
-        </div>
-      </header>
-      ${value.blocks.map(block).join()}
-      <footer>${_htmlEscape(context.l10n.patientsReportPageNumberLabel(pageNumber, totalPages))}</footer>
-    </article>
-''';
-  }
-
-  return '''
+  const String patientReportStyle = '''
 <style>
-  * { box-sizing: border-box; }
-  body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #111827; }
-  .page { width: 210mm; min-height: 297mm; margin: 0 auto 12mm; padding: 16mm 15mm 18mm; background: #fff; position: relative; page-break-after: always; }
-  .page:last-child { page-break-after: auto; }
-  .page-header { border-bottom: 2px solid #111827; display: flex; justify-content: space-between; gap: 16px; padding-bottom: 10px; margin-bottom: 14px; }
-  .page-header strong, .page-header span { display: block; }
-  .page-header span { color: #374151; font-size: 11px; margin-top: 2px; }
-  .patient-header { text-align: right; }
-  .block { margin: 0 0 14px; }
-  h2 { font-size: 12px; margin: 0 0 6px; text-transform: uppercase; color: #111827; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; vertical-align: top; font-size: 11px; }
-  th { width: 28%; background: #f3f4f6; font-weight: 700; }
-  td:last-child { width: 20%; text-align: right; color: #374151; }
+  .print-template-section table { width: 100%; border-collapse: collapse; }
+  .print-template-section th,
+  .print-template-section td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; vertical-align: top; font-size: 11px; }
+  .print-template-section th { width: 28%; background: #f3f4f6; font-weight: 700; }
+  .print-template-section td:last-child { width: 20%; text-align: right; color: #374151; }
   .detail { color: #374151; margin-top: 2px; }
   .meta { color: #374151; }
   .empty { color: #6b7280; text-align: left !important; }
-  footer { position: absolute; bottom: 9mm; left: 15mm; right: 15mm; border-top: 1px solid #d1d5db; padding-top: 5px; text-align: right; font-size: 10px; color: #374151; }
-  @page { size: A4; margin: 0; }
-  @media print {
-    body { background: #fff; }
-    .page { margin: 0; box-shadow: none; }
-  }
 </style>
-<main>
-  ${report.pages.asMap().entries.map((MapEntry<int, _PatientReportPage> entry) => page(entry.value, entry.key)).join()}
-</main>
 ''';
-}
 
-String _htmlEscape(String value) {
-  return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+  return <PrintFormPage>[
+    for (final _PatientReportPage page in report.pages)
+      PrintFormPage(
+        title: report.title,
+        bodyHtml: '$patientReportStyle${page.blocks.map(block).join()}',
+      ),
+  ];
 }
 
 class PatientDuplicateReviewDialog extends ConsumerStatefulWidget {

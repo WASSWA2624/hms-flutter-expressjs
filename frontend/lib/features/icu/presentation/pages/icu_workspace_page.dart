@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -7,7 +8,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
@@ -18,6 +18,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class IcuWorkspacePage extends ConsumerWidget {
   const IcuWorkspacePage({super.key});
@@ -523,8 +524,27 @@ class _IcuActionPanel extends ConsumerWidget {
               ),
               AppReportActionButton.print(
                 label: 'Print summary',
-                onPressed: () =>
-                    printHtmlDocument(_icuSummaryHtml(context, detail)),
+                onPressed: () async {
+                  await printFormTemplateDocument(
+                    ref: ref,
+                    context: context,
+                    title: 'ICU stay summary',
+                    subtitle: detail.summary.displayTitle,
+                    metadata: <PrintFormMetadataItem>[
+                      PrintFormMetadataItem(
+                        label: 'Admission',
+                        value:
+                            detail.summary.displayId ??
+                            detail.summary.admissionId,
+                      ),
+                      PrintFormMetadataItem(
+                        label: 'Location',
+                        value: detail.summary.locationLabel,
+                      ),
+                    ],
+                    bodyHtml: _icuSummaryHtml(context, detail),
+                  );
+                },
               ),
             ],
           );
@@ -1783,123 +1803,70 @@ String _joinDisplay(Iterable<String?> values) {
 }
 
 String _icuSummaryHtml(BuildContext context, IcuPatientDetail detail) {
-  final IcuPatientSummary summary = detail.summary;
   final StringBuffer buffer = StringBuffer()
-    ..write('<h1>ICU stay summary</h1>')
-    ..write('<p>${_escapeHtml(summary.displayTitle)}</p>')
-    ..write('<p>${_escapeHtml(summary.displayId ?? summary.admissionId)}</p>')
-    ..write('<p>${_escapeHtml(summary.locationLabel)}</p>')
-    ..write('<h2>Alerts</h2>')
-    ..write(_alertHtml(detail.alerts))
-    ..write('<h2>Observations</h2>')
-    ..write(_observationHtml(detail.observations))
-    ..write('<h2>Vitals</h2>')
-    ..write(_vitalsHtml(detail.vitalSigns))
-    ..write('<h2>Transfer and readiness</h2>')
-    ..write(_readinessHtml(detail));
+    ..write(
+      PrintFormTemplate.section(
+        title: 'Alerts',
+        bodyHtml: _alertHtml(detail.alerts),
+      ),
+    )
+    ..write(
+      PrintFormTemplate.section(
+        title: 'Observations',
+        bodyHtml: _observationHtml(detail.observations),
+      ),
+    )
+    ..write(
+      PrintFormTemplate.section(
+        title: 'Vitals',
+        bodyHtml: _vitalsHtml(detail.vitalSigns),
+      ),
+    )
+    ..write(
+      PrintFormTemplate.section(
+        title: 'Transfer and readiness',
+        bodyHtml: _readinessHtml(detail),
+      ),
+    );
   return buffer.toString();
 }
 
 String _alertHtml(List<IcuCriticalAlert> alerts) {
-  if (alerts.isEmpty) {
-    return '<p>No active alerts.</p>';
-  }
-  final StringBuffer buffer = StringBuffer('<ul>');
-  for (final IcuCriticalAlert alert in alerts) {
-    buffer
-      ..write('<li>')
-      ..write(
-        _escapeHtml(
-          _joinDisplay(<String?>[
-            _apiLabel(alert.severity ?? ''),
-            alert.message,
-          ]),
-        ),
-      )
-      ..write('</li>');
-  }
-  buffer.write('</ul>');
-  return buffer.toString();
+  return PrintFormTemplate.unorderedList(<String>[
+    for (final IcuCriticalAlert alert in alerts)
+      _joinDisplay(<String?>[_apiLabel(alert.severity ?? ''), alert.message]),
+  ], emptyText: 'No active alerts.');
 }
 
 String _observationHtml(List<IcuObservation> observations) {
-  if (observations.isEmpty) {
-    return '<p>No observations recorded.</p>';
-  }
-  final StringBuffer buffer = StringBuffer('<ul>');
-  for (final IcuObservation observation in observations) {
-    buffer
-      ..write('<li>')
-      ..write(_escapeHtml(observation.observation ?? ''))
-      ..write('</li>');
-  }
-  buffer.write('</ul>');
-  return buffer.toString();
+  return PrintFormTemplate.unorderedList(<String>[
+    for (final IcuObservation observation in observations)
+      observation.observation ?? '',
+  ], emptyText: 'No observations recorded.');
 }
 
 String _vitalsHtml(List<IcuVitalSign> vitals) {
-  if (vitals.isEmpty) {
-    return '<p>No vitals recorded.</p>';
-  }
-  final StringBuffer buffer = StringBuffer('<ul>');
-  for (final IcuVitalSign vital in vitals) {
-    buffer
-      ..write('<li>')
-      ..write(
-        _escapeHtml(
-          _joinDisplay(<String?>[
-            _apiLabel(vital.vitalType),
-            vital.displayValue,
-          ]),
-        ),
-      )
-      ..write('</li>');
-  }
-  buffer.write('</ul>');
-  return buffer.toString();
+  return PrintFormTemplate.unorderedList(<String>[
+    for (final IcuVitalSign vital in vitals)
+      _joinDisplay(<String?>[_apiLabel(vital.vitalType), vital.displayValue]),
+  ], emptyText: 'No vitals recorded.');
 }
 
 String _readinessHtml(IcuPatientDetail detail) {
-  final StringBuffer buffer = StringBuffer('<ul>');
-  for (final IcuTransferRequest transfer in detail.transferRequests) {
-    buffer
-      ..write('<li>')
-      ..write(
-        _escapeHtml(
-          _joinDisplay(<String?>[
-            'Transfer',
-            _apiLabel(transfer.status ?? ''),
-            transfer.toWardName,
-          ]),
-        ),
-      )
-      ..write('</li>');
-  }
-  for (final IcuDischargeSummary discharge in detail.dischargeSummaries) {
-    buffer
-      ..write('<li>')
-      ..write(
-        _escapeHtml(
-          _joinDisplay(<String?>[
-            'Discharge',
-            _apiLabel(discharge.status ?? ''),
-            discharge.summary,
-          ]),
-        ),
-      )
-      ..write('</li>');
-  }
-  buffer.write('</ul>');
-  return buffer.toString();
-}
-
-String _escapeHtml(String value) {
-  return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+  return PrintFormTemplate.unorderedList(<String>[
+    for (final IcuTransferRequest transfer in detail.transferRequests)
+      _joinDisplay(<String?>[
+        'Transfer',
+        _apiLabel(transfer.status ?? ''),
+        transfer.toWardName,
+      ]),
+    for (final IcuDischargeSummary discharge in detail.dischargeSummaries)
+      _joinDisplay(<String?>[
+        'Discharge',
+        _apiLabel(discharge.status ?? ''),
+        discharge.summary,
+      ]),
+  ], emptyText: 'No transfer or discharge readiness records.');
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {

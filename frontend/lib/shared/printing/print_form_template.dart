@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 
@@ -80,16 +79,17 @@ abstract final class PrintFormTemplate {
           ...metadata,
         ].where((PrintFormMetadataItem item) => item.hasValue).toList();
 
-    final List<PrintFormPage> effectivePages = pages.isEmpty
+    final List<PrintFormPage> sourcePages = pages.isEmpty
         ? <PrintFormPage>[PrintFormPage(bodyHtml: bodyHtml ?? '')]
         : pages;
+    final List<PrintFormPage> effectivePages = sourcePages.length <= 1
+        ? sourcePages
+        : sourcePages.where(_hasRenderableContent).toList(growable: false);
     final int totalPages = effectivePages.length;
     final bool explicitPages = effectivePages.length > 1;
-
-    return '''
-${_style(explicitPages: explicitPages)}
-<main class="print-template-document${explicitPages ? ' print-template-document--paged' : ''}">
-  ${effectivePages.asMap().entries.map((MapEntry<int, PrintFormPage> entry) {
+    final String renderedPages = effectivePages.asMap().entries.map((
+      MapEntry<int, PrintFormPage> entry,
+    ) {
       final int pageNumber = entry.key + 1;
       final PrintFormPage page = entry.value;
       return _page(
@@ -103,7 +103,12 @@ ${_style(explicitPages: explicitPages)}
         footerNote: footerNote,
         explicitPages: explicitPages,
       );
-    }).join()}
+    }).join();
+
+    return '''
+${_style(explicitPages: explicitPages)}
+<main class="print-template-document${explicitPages ? ' print-template-document--paged' : ''}">
+$renderedPages
 </main>
 ''';
   }
@@ -111,7 +116,7 @@ ${_style(explicitPages: explicitPages)}
   static String section({
     required String title,
     required String bodyHtml,
-    bool avoidPageBreak = true,
+    bool avoidPageBreak = false,
   }) {
     return '''
 <section class="print-template-section${avoidPageBreak ? ' print-template-section--avoid-break' : ''}">
@@ -333,12 +338,11 @@ ${_style(explicitPages: explicitPages)}
     margin: 0 auto;
   }
   .print-template-page {
-    min-height: 297mm;
     background: #fff;
     padding: 14mm 14mm 18mm;
-    position: relative;
   }
   .print-template-document--paged .print-template-page {
+    break-after: page;
     page-break-after: always;
   }
   .print-template-document--paged .print-template-page:last-child {
@@ -490,19 +494,15 @@ ${_style(explicitPages: explicitPages)}
     min-height: 10mm;
   }
   .print-template-footer {
-    position: absolute;
-    bottom: 7mm;
-    left: 14mm;
-    right: 14mm;
     border-top: 1px solid #d1d5db;
     color: #374151;
     display: flex;
     justify-content: space-between;
     gap: 5mm;
     padding-top: 2mm;
+    margin-top: 8mm;
     font-size: 10px;
   }
-  ${explicitPages ? '' : '.print-template-footer span:last-child::after { content: "Page " counter(page) " of " counter(pages); }'}
   @media screen {
     body { padding: 8mm 0; }
     .print-template-page {
@@ -517,15 +517,26 @@ ${_style(explicitPages: explicitPages)}
       margin: 0;
     }
     .print-template-page {
-      min-height: auto;
       margin: 0;
       padding: 0;
       box-shadow: none;
     }
-    ${explicitPages ? '' : '.print-template-footer { position: fixed; bottom: -11mm; left: 0; right: 0; }'}
   }
 </style>
 ''';
+  }
+
+  static bool _hasRenderableContent(PrintFormPage page) {
+    final String withoutStyle = page.bodyHtml.replaceAll(
+      RegExp(r'<style[\s\S]*?</style>', caseSensitive: false),
+      '',
+    );
+    final String withoutMarkup = withoutStyle
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .trim();
+
+    return withoutMarkup.isNotEmpty;
   }
 }
 

@@ -1702,35 +1702,38 @@ void _showSaved(BuildContext context) {
 
 String _claimsStatementHtml(BuildContext context, ClaimsQueueDetail detail) {
   final AppLocalizations l10n = context.l10n;
-  return '''
-${PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
-    PrintFormMetadataItem(
-      label: l10n.claimsReferenceColumnLabel,
-      value: detail.item.displayId,
-    ),
-    PrintFormMetadataItem(
-      label: l10n.claimsStatusColumnLabel,
-      value: _statusLabel(context, detail.item),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.claimsCoverageFieldLabel,
-      value: _coverageLabel(context, detail),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.claimsInvoiceFieldLabel,
-      value: _fallback(context, detail.claim?.invoiceDisplayId),
-    ),
-    PrintFormMetadataItem(
-      label: l10n.claimsAmountFieldLabel,
-      value: _amountLabel(context, detail.invoice),
-    ),
-  ])}
-${PrintFormTemplate.section(
+  final String factsHtml =
+      PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
+        PrintFormMetadataItem(
+          label: l10n.claimsReferenceColumnLabel,
+          value: detail.item.displayId,
+        ),
+        PrintFormMetadataItem(
+          label: l10n.claimsStatusColumnLabel,
+          value: _statusLabel(context, detail.item),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.claimsCoverageFieldLabel,
+          value: _coverageLabel(context, detail),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.claimsInvoiceFieldLabel,
+          value: _fallback(context, detail.claim?.invoiceDisplayId),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.claimsAmountFieldLabel,
+          value: _amountLabel(context, detail.invoice),
+        ),
+      ]);
+  final String impact = detail.isClaim
+      ? _claimBillingImpact(context, detail)
+      : l10n.claimsAuthorizationBillingImpactBody;
+  final String impactHtml = PrintFormTemplate.section(
     title: l10n.claimsBillingImpactTitle,
-    bodyHtml:
-        '<p>${_htmlEscape(detail.isClaim ? _claimBillingImpact(context, detail) : l10n.claimsAuthorizationBillingImpactBody)}</p>',
-  )}
-''';
+    bodyHtml: '<p>${_htmlEscape(impact)}</p>',
+  );
+
+  return '$factsHtml$impactHtml';
 }
 
 String _htmlEscape(String value) {

@@ -3024,17 +3024,14 @@ String _consultationSummaryHtml(
 }
 
 String _recordsHtml(List<ClinicalRelatedRecord> records) {
-  return PrintFormTemplate.unorderedList(
-    <String>[
-      for (final ClinicalRelatedRecord record in records)
-        _joinDisplay(<String?>[
-          record.title,
-          record.subtitle,
-          record.status == null ? null : _apiLabel(record.status!),
-        ]),
-    ],
-    emptyText: 'No records.',
-  );
+  return PrintFormTemplate.unorderedList(<String>[
+    for (final ClinicalRelatedRecord record in records)
+      _joinDisplay(<String?>[
+        record.title,
+        record.subtitle,
+        record.status == null ? null : _apiLabel(record.status!),
+      ]),
+  ], emptyText: 'No records.');
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
