@@ -168,11 +168,30 @@ class _ClinicalWorkspaceContentState
           controller: _searchController,
           semanticLabel: l10n.clinicalSearchLabel,
           hintText: l10n.clinicalSearchHint,
+          searchFields: _clinicalSearchFields(l10n),
+          searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+          advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
+          advancedFilterTitle: l10n.clinicalFiltersLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          dateFilterLabel: l10n.clinicalLastUpdatedLabel,
+          dateFromLabel: l10n.opdDateFromLabel,
+          dateToLabel: l10n.opdDateToLabel,
+          datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
+          invalidDateMessage: l10n.opdInvalidDateMessage,
+          filterGroups: _clinicalFilterGroups(l10n, state.worklist.items),
+          filterValue: _filterValueFromQuery(state.query.filters),
+          hasActiveFilters: state.query.filters.isActive,
           onSubmitted: (String value) {
             controller.applySearch(value);
           },
           onClear: () {
             controller.applySearch('');
+          },
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            controller.applyFilters(_filtersFromValue(value));
           },
         ),
         filters: <Widget>[
@@ -2054,6 +2073,124 @@ Future<void> _showActionResult(
   }
 }
 
+AppSearchBarFilterValue _filterValueFromQuery(ClinicalWorklistFilters filters) {
+  return AppSearchBarFilterValue(
+    field: filters.searchField,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    options: <String, String>{
+      if (_hasText(filters.sourceQueue))
+        _clinicalFilterSource: filters.sourceQueue!,
+      if (_hasText(filters.status)) _clinicalFilterStatus: filters.status!,
+      if (_hasText(filters.provider))
+        _clinicalFilterProvider: filters.provider!,
+    },
+  );
+}
+
+ClinicalWorklistFilters _filtersFromValue(AppSearchBarFilterValue value) {
+  return ClinicalWorklistFilters(
+    searchField: value.field,
+    dateFrom: value.dateFrom,
+    dateTo: value.dateTo,
+    sourceQueue: value.option(_clinicalFilterSource),
+    status: value.option(_clinicalFilterStatus),
+    provider: value.option(_clinicalFilterProvider),
+  );
+}
+
+List<AppSearchBarFieldChoice> _clinicalSearchFields(AppLocalizations l10n) {
+  return <AppSearchBarFieldChoice>[
+    AppSearchBarFieldChoice(
+      field: _clinicalSearchFieldPatient,
+      label: l10n.opdPatientColumnLabel,
+      icon: Icons.person_search_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _clinicalSearchFieldEncounter,
+      label: l10n.clinicalEncounterNumberLabel,
+      icon: Icons.tag_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _clinicalSearchFieldSource,
+      label: l10n.clinicalSourceQueueLabel,
+      icon: Icons.queue_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _clinicalSearchFieldStatus,
+      label: l10n.opdStatusColumnLabel,
+      icon: Icons.task_alt_outlined,
+    ),
+    AppSearchBarFieldChoice(
+      field: _clinicalSearchFieldProvider,
+      label: l10n.opdProviderColumnLabel,
+      icon: Icons.badge_outlined,
+    ),
+  ];
+}
+
+List<AppSearchBarFilterGroup> _clinicalFilterGroups(
+  AppLocalizations l10n,
+  List<ClinicalWorklistEntry> entries,
+) {
+  return <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: _clinicalFilterSource,
+      label: l10n.clinicalSourceQueueLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: _filterChoices(
+        entries.map((ClinicalWorklistEntry entry) => entry.sourceQueue),
+        icon: Icons.queue_outlined,
+      ),
+    ),
+    AppSearchBarFilterGroup(
+      key: _clinicalFilterStatus,
+      label: l10n.opdStatusColumnLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: _filterChoices(
+        entries.map(
+          (ClinicalWorklistEntry entry) =>
+              entry.stage ?? entry.status ?? entry.nextStep,
+        ),
+        icon: Icons.task_alt_outlined,
+      ),
+    ),
+    AppSearchBarFilterGroup(
+      key: _clinicalFilterProvider,
+      label: l10n.opdProviderColumnLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: _filterChoices(
+        entries.map((ClinicalWorklistEntry entry) => entry.providerDisplayName),
+        icon: Icons.badge_outlined,
+        formatApiLabel: false,
+      ),
+    ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _filterChoices(
+  Iterable<String?> values, {
+  required IconData icon,
+  bool formatApiLabel = true,
+}) {
+  final List<String> normalized =
+      values
+          .map((String? value) => value?.trim() ?? '')
+          .where((String value) => value.isNotEmpty)
+          .toSet()
+          .toList(growable: false)
+        ..sort((String left, String right) => left.compareTo(right));
+
+  return <AppSearchBarFilterChoice>[
+    for (final String value in normalized)
+      AppSearchBarFilterChoice(
+        value: value,
+        label: formatApiLabel ? _apiLabel(value) : value,
+        icon: icon,
+      ),
+  ];
+}
+
 List<AppSelectOption<ClinicalQueueScope>> _scopeOptions(AppLocalizations l10n) {
   return <AppSelectOption<ClinicalQueueScope>>[
     AppSelectOption<ClinicalQueueScope>(
@@ -2209,6 +2346,10 @@ String _joinDisplay(Iterable<String?> values) {
   return joined;
 }
 
+bool _hasText(String? value) {
+  return value != null && value.trim().isNotEmpty;
+}
+
 String _consultationSummaryHtml(
   BuildContext context,
   ClinicalEncounterBundle bundle,
@@ -2307,6 +2448,15 @@ const List<String> _medicationRoutes = <String>[
   'INHALATION',
   'OTHER',
 ];
+
+const String _clinicalSearchFieldPatient = 'patient';
+const String _clinicalSearchFieldEncounter = 'encounter';
+const String _clinicalSearchFieldSource = 'source';
+const String _clinicalSearchFieldStatus = 'status';
+const String _clinicalSearchFieldProvider = 'provider';
+const String _clinicalFilterSource = 'source';
+const String _clinicalFilterStatus = 'status';
+const String _clinicalFilterProvider = 'provider';
 
 final List<TextInputFormatter> _integerFormatters = <TextInputFormatter>[
   FilteringTextInputFormatter.digitsOnly,

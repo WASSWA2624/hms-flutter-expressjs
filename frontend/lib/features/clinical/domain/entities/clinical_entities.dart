@@ -14,24 +14,56 @@ enum ClinicalQueueScope {
 final class ClinicalWorklistQuery {
   const ClinicalWorklistQuery({
     this.search = '',
+    this.filters = const ClinicalWorklistFilters(),
     this.scope = ClinicalQueueScope.today,
     this.pageRequest = const AppPageRequest(pageSize: 25),
   });
 
   final String search;
+  final ClinicalWorklistFilters filters;
   final ClinicalQueueScope scope;
   final AppPageRequest pageRequest;
 
   ClinicalWorklistQuery copyWith({
     String? search,
+    ClinicalWorklistFilters? filters,
     ClinicalQueueScope? scope,
     AppPageRequest? pageRequest,
   }) {
     return ClinicalWorklistQuery(
       search: search ?? this.search,
+      filters: filters ?? this.filters,
       scope: scope ?? this.scope,
       pageRequest: pageRequest ?? this.pageRequest,
     );
+  }
+}
+
+@immutable
+final class ClinicalWorklistFilters {
+  const ClinicalWorklistFilters({
+    this.searchField,
+    this.dateFrom,
+    this.dateTo,
+    this.sourceQueue,
+    this.status,
+    this.provider,
+  });
+
+  final String? searchField;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
+  final String? sourceQueue;
+  final String? status;
+  final String? provider;
+
+  bool get isActive {
+    return _hasText(searchField) ||
+        dateFrom != null ||
+        dateTo != null ||
+        _hasText(sourceQueue) ||
+        _hasText(status) ||
+        _hasText(provider);
   }
 }
 
@@ -128,35 +160,70 @@ final class ClinicalWorklistEntry {
     };
   }
 
-  bool matchesSearch(String search) {
+  bool matchesSearch(String search, {ClinicalWorklistFilters? filters}) {
     final String needle = search.trim().toLowerCase();
     if (needle.isEmpty) {
       return true;
     }
 
-    return <String?>[
-      id,
-      sourceQueue,
-      encounterId,
-      encounterPublicId,
-      tenantId,
-      facilityId,
-      patientId,
-      patientPublicId,
-      patientDisplayName,
-      patientPhone,
-      patientAgeSex,
-      encounterType,
-      status,
-      stage,
-      nextStep,
-      currentLocation,
-      providerDisplayName,
-      admissionId,
-      admissionPublicId,
-    ].whereType<String>().any(
+    final String? field = filters?.searchField;
+    return _searchValuesForField(field).whereType<String>().any(
       (String value) => value.toLowerCase().contains(needle),
     );
+  }
+
+  bool matchesFilters(ClinicalWorklistFilters filters) {
+    if (!_matchesExact(sourceQueue, filters.sourceQueue)) {
+      return false;
+    }
+    if (!_matchesAnyExact(filters.status, <String?>[status, stage, nextStep])) {
+      return false;
+    }
+    if (!_matchesExact(providerDisplayName, filters.provider)) {
+      return false;
+    }
+    return _matchesDateRange(
+      updatedAt ?? startedAt,
+      filters.dateFrom,
+      filters.dateTo,
+    );
+  }
+
+  List<String?> _searchValuesForField(String? field) {
+    return switch (field) {
+      'patient' => <String?>[
+        patientId,
+        patientPublicId,
+        patientDisplayName,
+        patientPhone,
+        patientAgeSex,
+      ],
+      'encounter' => <String?>[encounterId, encounterPublicId],
+      'source' => <String?>[sourceQueue],
+      'status' => <String?>[status, stage, nextStep],
+      'provider' => <String?>[providerUserId, providerDisplayName],
+      _ => <String?>[
+        id,
+        sourceQueue,
+        encounterId,
+        encounterPublicId,
+        tenantId,
+        facilityId,
+        patientId,
+        patientPublicId,
+        patientDisplayName,
+        patientPhone,
+        patientAgeSex,
+        encounterType,
+        status,
+        stage,
+        nextStep,
+        currentLocation,
+        providerDisplayName,
+        admissionId,
+        admissionPublicId,
+      ],
+    };
   }
 
   ClinicalWorklistEntry copyWith({
@@ -543,13 +610,64 @@ bool clinicalWorklistEntryMatchesScope(
   ClinicalQueueScope scope,
 ) {
   return switch (scope) {
-    ClinicalQueueScope.today => true,
+    ClinicalQueueScope.today => _isToday(item.updatedAt ?? item.startedAt),
     ClinicalQueueScope.urgent => item.isUrgent,
     ClinicalQueueScope.waitingReview => _matchesReviewState(item),
     ClinicalQueueScope.inConsultation => _matchesConsultationState(item),
     ClinicalQueueScope.resultsReady => item.resultsReady,
     ClinicalQueueScope.completed => item.isTerminal,
   };
+}
+
+bool _isToday(DateTime? value) {
+  if (value == null) {
+    return false;
+  }
+  final DateTime localValue = value.toLocal();
+  final DateTime now = DateTime.now();
+  return localValue.year == now.year &&
+      localValue.month == now.month &&
+      localValue.day == now.day;
+}
+
+bool _matchesDateRange(DateTime? value, DateTime? from, DateTime? to) {
+  if (from == null && to == null) {
+    return true;
+  }
+  if (value == null) {
+    return false;
+  }
+
+  final DateTime localValue = _dateOnly(value.toLocal());
+  if (from != null && localValue.isBefore(_dateOnly(from))) {
+    return false;
+  }
+  if (to != null && localValue.isAfter(_dateOnly(to))) {
+    return false;
+  }
+  return true;
+}
+
+DateTime _dateOnly(DateTime value) {
+  return DateTime(value.year, value.month, value.day);
+}
+
+bool _matchesExact(String? value, String? expected) {
+  final String? normalizedExpected = _nonEmpty(expected);
+  if (normalizedExpected == null) {
+    return true;
+  }
+  return (value ?? '').trim().toLowerCase() == normalizedExpected.toLowerCase();
+}
+
+bool _matchesAnyExact(String? expected, Iterable<String?> values) {
+  final String? normalizedExpected = _nonEmpty(expected);
+  if (normalizedExpected == null) {
+    return true;
+  }
+  return values.any(
+    (String? value) => _matchesExact(value, normalizedExpected),
+  );
 }
 
 bool _matchesReviewState(ClinicalWorklistEntry item) {
@@ -585,6 +703,15 @@ String? _firstNonEmpty(Iterable<String?> values) {
   }
 
   return null;
+}
+
+String? _nonEmpty(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
+}
+
+bool _hasText(String? value) {
+  return _nonEmpty(value) != null;
 }
 
 String? _joinDisplay(Iterable<String?> values) {

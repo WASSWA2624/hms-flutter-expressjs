@@ -78,6 +78,25 @@ final class ClinicalWorkspaceController
     return _refreshWorklist(showLoading: true);
   }
 
+  Future<AppFailure?> applyFilters(ClinicalWorklistFilters filters) async {
+    final ClinicalWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          filters: filters,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorklist(showLoading: true);
+  }
+
   Future<AppFailure?> changePage(AppPageRequest pageRequest) async {
     final ClinicalWorkspaceState? current = _currentState;
     if (current == null) {
@@ -356,14 +375,23 @@ final class ClinicalWorkspaceController
 
     final String? opdFlowApiId = entry.opdFlowApiId;
     if (opdFlowApiId != null) {
-      return _mutateSelectedEncounter(
-        () => _opdRepository
+      return _mutateSelectedEncounter(() async {
+        if (_requiresOpdDoctorReview(entry)) {
+          final Result<OpdFlowDetail> reviewResult = await _opdRepository
+              .doctorReview(opdFlowApiId, <String, Object?>{'note': notes});
+          final AppFailure? reviewFailure = _failureOrNull(reviewResult);
+          if (reviewFailure != null) {
+            return Result<void>.failure(reviewFailure);
+          }
+        }
+
+        return _opdRepository
             .disposition(opdFlowApiId, <String, Object?>{
               'decision': 'DISCHARGE',
               'notes': notes,
             })
-            .then((Result<OpdFlowDetail> result) => result.map<void>((_) {})),
-      );
+            .then((Result<OpdFlowDetail> result) => result.map<void>((_) {}));
+      });
     }
 
     final Result<ClinicalWorklistEntry> result = await _repository
@@ -522,7 +550,8 @@ final class ClinicalWorkspaceController
                 ..._successOrEmpty(result).items,
             ]
             .where((ClinicalWorklistEntry item) {
-              return item.matchesSearch(query.search) &&
+              return item.matchesSearch(query.search, filters: query.filters) &&
+                  item.matchesFilters(query.filters) &&
                   clinicalWorklistEntryMatchesScope(item, query.scope);
             })
             .toList(growable: false);
@@ -847,6 +876,11 @@ final class ClinicalWorkspaceController
       success: (_) => null,
       failure: (AppFailure failure) => failure,
     );
+  }
+
+  bool _requiresOpdDoctorReview(ClinicalWorklistEntry entry) {
+    return entry.opdFlowApiId != null &&
+        (entry.stage ?? '').toUpperCase() == 'WAITING_DOCTOR_REVIEW';
   }
 
   ClinicalWorklistEntry? get _selectedEntry =>
