@@ -20,6 +20,13 @@ class _MockOpdRepository extends Mock implements OpdRepository {}
 void main() {
   setUpAll(() {
     registerFallbackValue(const ClinicalWorklistQuery());
+    registerFallbackValue(
+      const ClinicalWorklistEntry(
+        id: 'encounter-fallback',
+        sourceQueue: 'OPD',
+        encounterId: 'encounter-fallback',
+      ),
+    );
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
   });
@@ -28,22 +35,21 @@ void main() {
     final _MockClinicalRepository clinicalRepository =
         _MockClinicalRepository();
     final _MockOpdRepository opdRepository = _MockOpdRepository();
+    final ClinicalWorklistEntry entry = ClinicalWorklistEntry(
+      id: 'encounter-1',
+      sourceQueue: 'OPD',
+      encounterId: 'encounter-1',
+      encounterPublicId: 'ENC000001',
+      patientDisplayName: 'Sarah Clinical',
+      patientPublicId: 'PAT000001',
+      providerDisplayName: 'Dr Kizza',
+      status: 'OPEN',
+      stage: 'WAITING_DOCTOR_REVIEW',
+      updatedAt: DateTime.now(),
+    );
     _stubClinicalInitialLoad(
       clinicalRepository,
-      encounters: <ClinicalWorklistEntry>[
-        ClinicalWorklistEntry(
-          id: 'encounter-1',
-          sourceQueue: 'OPD',
-          encounterId: 'encounter-1',
-          encounterPublicId: 'ENC000001',
-          patientDisplayName: 'Sarah Clinical',
-          patientPublicId: 'PAT000001',
-          providerDisplayName: 'Dr Kizza',
-          status: 'OPEN',
-          stage: 'WAITING_DOCTOR_REVIEW',
-          updatedAt: DateTime.now(),
-        ),
-      ],
+      encounters: <ClinicalWorklistEntry>[entry],
     );
     _stubOpdInitialLoad(opdRepository);
 
@@ -71,7 +77,24 @@ void main() {
     expect(find.text('Clinical workspace'), findsOneWidget);
     expect(find.text('Provider worklist'), findsOneWidget);
     expect(find.text('Sarah Clinical'), findsOneWidget);
-    expect(find.text('No encounter selected'), findsOneWidget);
+    expect(find.text('No encounter selected'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Sarah Clinical'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Clinical actions'), findsOneWidget);
+    expect(find.text('Encounter'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byIcon(Icons.close).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Waiting review'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Waiting review'), findsNWidgets(2));
+    expect(find.text('Sarah Clinical'), findsAtLeastNWidgets(1));
     expect(tester.takeException(), isNull);
   });
 }
@@ -106,6 +129,15 @@ void _stubClinicalInitialLoad(
     (_) async =>
         const Result<ClinicalReferenceData>.success(ClinicalReferenceData()),
   );
+  when(() => repository.loadEncounterBundle(any())).thenAnswer((invocation) {
+    final ClinicalWorklistEntry entry =
+        invocation.positionalArguments.single as ClinicalWorklistEntry;
+    return Future<Result<ClinicalEncounterBundle>>.value(
+      Result<ClinicalEncounterBundle>.success(
+        ClinicalEncounterBundle(entry: entry),
+      ),
+    );
+  });
 }
 
 void _stubOpdInitialLoad(_MockOpdRepository repository) {

@@ -153,6 +153,20 @@ final class ClinicalWorkspaceController
     };
   }
 
+  void clearSelection() {
+    final ClinicalWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    _emit(
+      current.copyWith(
+        clearSelectedBundle: true,
+        isRefreshingDetail: false,
+        clearLastFailure: true,
+      ),
+    );
+  }
+
   Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
     required String termType,
     String? query,

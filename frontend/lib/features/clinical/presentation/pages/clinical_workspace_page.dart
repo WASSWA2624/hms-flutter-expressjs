@@ -127,7 +127,11 @@ class _ClinicalWorkspaceContentState
           tone: AppWorkspaceStatusTone.info,
           compact: true,
           onPressed: () {
-            controller.applyScope(ClinicalQueueScope.waitingReview);
+            _openSummaryWorklistDialog(
+              context,
+              ref,
+              category: _ClinicalSummaryCategory.waitingReview,
+            );
           },
         ),
         AppWorkspaceSummaryCard(
@@ -137,7 +141,11 @@ class _ClinicalWorkspaceContentState
           tone: AppWorkspaceStatusTone.error,
           compact: true,
           onPressed: () {
-            controller.applyScope(ClinicalQueueScope.urgent);
+            _openSummaryWorklistDialog(
+              context,
+              ref,
+              category: _ClinicalSummaryCategory.urgent,
+            );
           },
         ),
         AppWorkspaceSummaryCard(
@@ -147,7 +155,11 @@ class _ClinicalWorkspaceContentState
           tone: AppWorkspaceStatusTone.success,
           compact: true,
           onPressed: () {
-            controller.applyScope(ClinicalQueueScope.resultsReady);
+            _openSummaryWorklistDialog(
+              context,
+              ref,
+              category: _ClinicalSummaryCategory.resultsReady,
+            );
           },
         ),
         AppWorkspaceSummaryCard(
@@ -157,43 +169,16 @@ class _ClinicalWorkspaceContentState
           tone: AppWorkspaceStatusTone.warning,
           compact: true,
           onPressed: () {
-            controller.applyScope(ClinicalQueueScope.inConsultation);
+            _openSummaryWorklistDialog(
+              context,
+              ref,
+              category: _ClinicalSummaryCategory.inConsultation,
+            );
           },
         ),
       ],
       filters: AppWorkspaceFilterBar(
         semanticLabel: l10n.clinicalFiltersLabel,
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.clinicalSearchLabel,
-          hintText: l10n.clinicalSearchHint,
-          searchFields: _clinicalSearchFields(l10n),
-          searchFieldLabel: l10n.opdSearchFieldFilterLabel,
-          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-          advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
-          advancedFilterTitle: l10n.clinicalFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
-          dateFilterLabel: l10n.clinicalLastUpdatedLabel,
-          dateFromLabel: l10n.opdDateFromLabel,
-          dateToLabel: l10n.opdDateToLabel,
-          datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
-          invalidDateMessage: l10n.opdInvalidDateMessage,
-          filterGroups: _clinicalFilterGroups(l10n, state.worklist.items),
-          filterValue: _filterValueFromQuery(state.query.filters),
-          hasActiveFilters: state.query.filters.isActive,
-          onSubmitted: (String value) {
-            controller.applySearch(value);
-          },
-          onClear: () {
-            controller.applySearch('');
-          },
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            controller.applyFilters(_filtersFromValue(value));
-          },
-        ),
         filters: <Widget>[
           AppSelectField<ClinicalQueueScope>(
             value: state.query.scope,
@@ -207,16 +192,22 @@ class _ClinicalWorkspaceContentState
           ),
         ],
       ),
-      body: _ClinicalWorklistPanel(state: state),
-      detail: _ClinicalDetailPanel(state: state),
+      body: _ClinicalWorklistPanel(
+        state: state,
+        searchController: _searchController,
+      ),
     );
   }
 }
 
 class _ClinicalWorklistPanel extends ConsumerWidget {
-  const _ClinicalWorklistPanel({required this.state});
+  const _ClinicalWorklistPanel({
+    required this.state,
+    required this.searchController,
+  });
 
   final ClinicalWorkspaceState state;
+  final TextEditingController searchController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -239,7 +230,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
         },
         onPageChanged: controller.changePage,
         onRowSelected: (ClinicalWorklistEntry entry) {
-          controller.selectEntry(entry);
+          _openClinicalEntryDialog(context, ref, entry);
         },
         emptyBuilder: (_) => AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
@@ -247,75 +238,387 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
           body: l10n.clinicalNoWorklistBody,
           icon: Icons.assignment_outlined,
         ),
-        columns: <AppListTableColumn<ClinicalWorklistEntry>>[
-          AppListTableColumn<ClinicalWorklistEntry>(
-            label: l10n.opdPatientColumnLabel,
-            cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-              return _ClinicalPatientCell(item: item);
-            },
-          ),
-          AppListTableColumn<ClinicalWorklistEntry>(
-            label: l10n.clinicalSourceQueueLabel,
-            cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-              return Text(_apiLabel(item.sourceQueue));
-            },
-          ),
-          AppListTableColumn<ClinicalWorklistEntry>(
-            label: l10n.opdStatusColumnLabel,
-            cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-              return AppWorkspaceStatusBadge(status: _entryStatus(item));
-            },
-          ),
-          AppListTableColumn<ClinicalWorklistEntry>(
-            label: l10n.opdProviderColumnLabel,
-            cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-              return Text(item.providerDisplayName ?? l10n.profileUnknownValue);
-            },
-          ),
-          AppListTableColumn<ClinicalWorklistEntry>(
-            label: l10n.clinicalLastUpdatedLabel,
-            cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-              return Text(
+        search: _worklistSearch(
+          context,
+          controller,
+          searchController,
+          filters: state.query.filters,
+          filterEntries: state.worklist.items,
+          isLoading: state.isRefreshing,
+        ),
+        columns: _clinicalWorklistColumns(l10n),
+        mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
+        itemKeyBuilder: _clinicalWorklistItemKey,
+      ),
+    );
+  }
+}
+
+AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
+  BuildContext context,
+  ClinicalWorkspaceController controller,
+  TextEditingController searchController, {
+  required ClinicalWorklistFilters filters,
+  required List<ClinicalWorklistEntry> filterEntries,
+  required bool isLoading,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableSearch<ClinicalWorklistEntry>(
+    controller: searchController,
+    semanticLabel: l10n.clinicalSearchLabel,
+    hintText: l10n.clinicalSearchHint,
+    clearLabel: l10n.opdClearFiltersAction,
+    matcher: (ClinicalWorklistEntry item, String query) {
+      return item.matchesSearch(query, filters: filters);
+    },
+    onChanged: (String value) {
+      controller.applySearch(value);
+    },
+    onSubmitted: (String value) {
+      controller.applySearch(value);
+    },
+    onClear: () {
+      controller.applySearch('');
+    },
+    isLoading: isLoading,
+    showAdvancedFilterButton: true,
+    advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
+    advancedFilterTitle: l10n.clinicalFiltersLabel,
+    advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+    advancedFilterResetLabel: l10n.opdClearFiltersAction,
+    advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+    searchFields: _clinicalSearchFields(l10n),
+    searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+    allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+    dateFilterLabel: l10n.clinicalLastUpdatedLabel,
+    dateFromLabel: l10n.opdDateFromLabel,
+    dateToLabel: l10n.opdDateToLabel,
+    datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
+    invalidDateMessage: l10n.opdInvalidDateMessage,
+    filterGroups: _clinicalFilterGroups(l10n, filterEntries),
+    filterValue: _filterValueFromQuery(filters),
+    hasActiveFilters: filters.isActive,
+    onFilterChanged: (AppSearchBarFilterValue value) {
+      controller.applyFilters(_filtersFromValue(value));
+    },
+  );
+}
+
+List<AppListTableColumn<ClinicalWorklistEntry>> _clinicalWorklistColumns(
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<ClinicalWorklistEntry>>[
+    AppListTableColumn<ClinicalWorklistEntry>(
+      label: l10n.opdPatientColumnLabel,
+      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
+        return _ClinicalPatientCell(item: item);
+      },
+    ),
+    AppListTableColumn<ClinicalWorklistEntry>(
+      label: l10n.clinicalSourceQueueLabel,
+      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
+        return Text(_apiLabel(item.sourceQueue));
+      },
+    ),
+    AppListTableColumn<ClinicalWorklistEntry>(
+      label: l10n.opdStatusColumnLabel,
+      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
+        return AppWorkspaceStatusBadge(status: _entryStatus(item));
+      },
+    ),
+    AppListTableColumn<ClinicalWorklistEntry>(
+      label: l10n.opdProviderColumnLabel,
+      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
+        return Text(item.providerDisplayName ?? l10n.profileUnknownValue);
+      },
+    ),
+    AppListTableColumn<ClinicalWorklistEntry>(
+      label: l10n.clinicalLastUpdatedLabel,
+      cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
+        return Text(_dateTimeLabel(context, item.updatedAt ?? item.startedAt));
+      },
+    ),
+  ];
+}
+
+Widget _clinicalWorklistMobileItemBuilder(
+  BuildContext context,
+  ClinicalWorklistEntry item,
+) {
+  final ThemeData theme = Theme.of(context);
+  return Padding(
+    padding: EdgeInsets.symmetric(
+      horizontal: theme.spacing.sm,
+      vertical: theme.spacing.sm,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _ClinicalPatientCell(item: item),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            AppWorkspaceStatusBadge(status: _entryStatus(item)),
+            Text(
+              _joinDisplay(<String?>[
+                _apiLabel(item.sourceQueue),
+                item.providerDisplayName,
                 _dateTimeLabel(context, item.updatedAt ?? item.startedAt),
+              ]),
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+LocalKey _clinicalWorklistItemKey(ClinicalWorklistEntry item) {
+  return ValueKey<String>('${item.sourceQueue}-${item.encounterId}');
+}
+
+enum _ClinicalSummaryCategory {
+  waitingReview,
+  urgent,
+  resultsReady,
+  inConsultation,
+}
+
+Future<void> _openSummaryWorklistDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  required _ClinicalSummaryCategory category,
+}) {
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => _ClinicalSummaryWorklistDialog(category: category),
+  );
+}
+
+Future<void> _openClinicalEntryDialog(
+  BuildContext context,
+  WidgetRef ref,
+  ClinicalWorklistEntry entry,
+) async {
+  final ClinicalWorkspaceController controller = ref.read(
+    clinicalWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectEntry(entry);
+  if (!context.mounted) {
+    return;
+  }
+  if (failure != null) {
+    _showFailureIfNeeded(context, failure);
+    return;
+  }
+
+  await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _ClinicalEncounterDialog(initialEntry: entry),
+  );
+  controller.clearSelection();
+}
+
+class _ClinicalSummaryWorklistDialog extends ConsumerStatefulWidget {
+  const _ClinicalSummaryWorklistDialog({required this.category});
+
+  final _ClinicalSummaryCategory category;
+
+  @override
+  ConsumerState<_ClinicalSummaryWorklistDialog> createState() =>
+      _ClinicalSummaryWorklistDialogState();
+}
+
+class _ClinicalSummaryWorklistDialogState
+    extends ConsumerState<_ClinicalSummaryWorklistDialog> {
+  late final TextEditingController _searchController;
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final _ClinicalSummaryDialogConfig config = _summaryDialogConfig(
+      l10n,
+      widget.category,
+    );
+    final AsyncValue<Result<ClinicalWorkspaceState>> asyncState = ref.watch(
+      clinicalWorkspaceControllerProvider,
+    );
+
+    return AppDialog(
+      title: Text(config.title),
+      icon: Icon(config.icon),
+      scrollable: true,
+      maxWidth: 1040,
+      content: asyncState.when(
+        data: (Result<ClinicalWorkspaceState> result) {
+          return result.when(
+            success: (ClinicalWorkspaceState state) {
+              final List<ClinicalWorklistEntry> categoryItems = state
+                  .worklist
+                  .items
+                  .where(
+                    (ClinicalWorklistEntry item) =>
+                        _matchesSummaryCategory(item, widget.category),
+                  )
+                  .toList(growable: false);
+              final ClinicalWorklistFilters filters = _filtersFromValue(
+                _filterValue,
+              );
+              final List<ClinicalWorklistEntry> visibleItems = categoryItems
+                  .where(
+                    (ClinicalWorklistEntry item) =>
+                        item.matchesFilters(filters),
+                  )
+                  .toList(growable: false);
+
+              return AppListTable<ClinicalWorklistEntry>(
+                items: visibleItems,
+                columns: _clinicalWorklistColumns(l10n),
+                mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
+                itemKeyBuilder: _clinicalWorklistItemKey,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                onRowSelected: (ClinicalWorklistEntry entry) {
+                  _openClinicalEntryDialog(context, ref, entry);
+                },
+                emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+                  variant: AppStateViewVariant.empty,
+                  title: config.emptyTitle,
+                  body: l10n.clinicalNoWorklistBody,
+                  icon: config.icon,
+                ),
+                search: AppListTableSearch<ClinicalWorklistEntry>(
+                  controller: _searchController,
+                  semanticLabel: l10n.clinicalSearchLabel,
+                  hintText: l10n.clinicalSearchHint,
+                  clearLabel: l10n.opdClearFiltersAction,
+                  matcher: (ClinicalWorklistEntry item, String query) {
+                    return item.matchesSearch(query, filters: filters);
+                  },
+                  onClear: () {
+                    setState(() {
+                      _filterValue = _filterValue.copyWith(clearField: true);
+                    });
+                  },
+                  showAdvancedFilterButton: true,
+                  advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
+                  advancedFilterTitle: l10n.clinicalFiltersLabel,
+                  advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                  advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                  advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+                  searchFields: _clinicalSearchFields(l10n),
+                  searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+                  allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+                  dateFilterLabel: l10n.clinicalLastUpdatedLabel,
+                  dateFromLabel: l10n.opdDateFromLabel,
+                  dateToLabel: l10n.opdDateToLabel,
+                  datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
+                  invalidDateMessage: l10n.opdInvalidDateMessage,
+                  filterGroups: _clinicalFilterGroups(l10n, categoryItems),
+                  filterValue: _filterValue,
+                  hasActiveFilters: _filterValue.isActive,
+                  onFilterChanged: (AppSearchBarFilterValue value) {
+                    setState(() => _filterValue = value);
+                  },
+                ),
               );
             },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, ClinicalWorklistEntry item) {
-          final ThemeData theme = Theme.of(context);
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
-              vertical: theme.spacing.sm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _ClinicalPatientCell(item: item),
-                SizedBox(height: theme.spacing.xs),
-                Wrap(
-                  spacing: theme.spacing.xs,
-                  runSpacing: theme.spacing.xs,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    AppWorkspaceStatusBadge(status: _entryStatus(item)),
-                    Text(
-                      _joinDisplay(<String?>[
-                        _apiLabel(item.sourceQueue),
-                        item.providerDisplayName,
-                        _dateTimeLabel(
-                          context,
-                          item.updatedAt ?? item.startedAt,
-                        ),
-                      ]),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            failure: (AppFailure failure) {
+              return AppFailureStateView(
+                failure: failure,
+                onRetry: () {
+                  ref
+                      .read(clinicalWorkspaceControllerProvider.notifier)
+                      .refresh();
+                },
+              );
+            },
           );
         },
+        error: (_, _) =>
+            const AppFailureStateView(failure: AppFailure.unexpected()),
+        loading: () => AppWorkspaceStatePanel.state(
+          variant: AppStateViewVariant.loading,
+          title: l10n.clinicalLoadingTitle,
+          body: l10n.clinicalLoadingBody,
+          icon: Icons.assignment_outlined,
+        ),
+      ),
+    );
+  }
+}
+
+class _ClinicalEncounterDialog extends ConsumerWidget {
+  const _ClinicalEncounterDialog({required this.initialEntry});
+
+  final ClinicalWorklistEntry initialEntry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<Result<ClinicalWorkspaceState>> asyncState = ref.watch(
+      clinicalWorkspaceControllerProvider,
+    );
+
+    return AppDialog(
+      title: Text(initialEntry.displayTitle),
+      icon: const Icon(Icons.medical_services_outlined),
+      scrollable: true,
+      maxWidth: 1120,
+      content: asyncState.when(
+        data: (Result<ClinicalWorkspaceState> result) {
+          return result.when(
+            success: (ClinicalWorkspaceState state) {
+              final ClinicalEncounterBundle? bundle = state.selectedBundle;
+              if (bundle == null ||
+                  !_isSameWorklistEntry(bundle.entry, initialEntry)) {
+                return AppWorkspaceStatePanel.state(
+                  variant: AppStateViewVariant.loading,
+                  title: l10n.clinicalLoadingTitle,
+                  body: l10n.clinicalLoadingBody,
+                  icon: Icons.medical_services_outlined,
+                );
+              }
+              return _ClinicalDetailPanel(state: state);
+            },
+            failure: (AppFailure failure) {
+              return AppFailureStateView(
+                failure: failure,
+                onRetry: () {
+                  ref
+                      .read(clinicalWorkspaceControllerProvider.notifier)
+                      .selectEntry(initialEntry);
+                },
+              );
+            },
+          );
+        },
+        error: (_, _) =>
+            const AppFailureStateView(failure: AppFailure.unexpected()),
+        loading: () => AppWorkspaceStatePanel.state(
+          variant: AppStateViewVariant.loading,
+          title: l10n.clinicalLoadingTitle,
+          body: l10n.clinicalLoadingBody,
+          icon: Icons.medical_services_outlined,
+        ),
       ),
     );
   }
@@ -2193,6 +2496,68 @@ List<AppSearchBarFilterChoice> _filterChoices(
   ];
 }
 
+final class _ClinicalSummaryDialogConfig {
+  const _ClinicalSummaryDialogConfig({
+    required this.title,
+    required this.emptyTitle,
+    required this.icon,
+  });
+
+  final String title;
+  final String emptyTitle;
+  final IconData icon;
+}
+
+_ClinicalSummaryDialogConfig _summaryDialogConfig(
+  AppLocalizations l10n,
+  _ClinicalSummaryCategory category,
+) {
+  return switch (category) {
+    _ClinicalSummaryCategory.waitingReview => _ClinicalSummaryDialogConfig(
+      title: l10n.clinicalWaitingReviewSummaryLabel,
+      emptyTitle: l10n.clinicalNoWorklistTitle,
+      icon: Icons.rate_review_outlined,
+    ),
+    _ClinicalSummaryCategory.urgent => _ClinicalSummaryDialogConfig(
+      title: l10n.clinicalUrgentSummaryLabel,
+      emptyTitle: l10n.clinicalNoWorklistTitle,
+      icon: Icons.priority_high_outlined,
+    ),
+    _ClinicalSummaryCategory.resultsReady => _ClinicalSummaryDialogConfig(
+      title: l10n.clinicalResultsReadySummaryLabel,
+      emptyTitle: l10n.clinicalNoWorklistTitle,
+      icon: Icons.science_outlined,
+    ),
+    _ClinicalSummaryCategory.inConsultation => _ClinicalSummaryDialogConfig(
+      title: l10n.clinicalInConsultationSummaryLabel,
+      emptyTitle: l10n.clinicalNoWorklistTitle,
+      icon: Icons.medical_information_outlined,
+    ),
+  };
+}
+
+bool _matchesSummaryCategory(
+  ClinicalWorklistEntry item,
+  _ClinicalSummaryCategory category,
+) {
+  if (item.isTerminal) {
+    return false;
+  }
+  return switch (category) {
+    _ClinicalSummaryCategory.waitingReview => clinicalWorklistEntryMatchesScope(
+      item,
+      ClinicalQueueScope.waitingReview,
+    ),
+    _ClinicalSummaryCategory.urgent => item.isUrgent,
+    _ClinicalSummaryCategory.resultsReady => item.resultsReady,
+    _ClinicalSummaryCategory.inConsultation =>
+      clinicalWorklistEntryMatchesScope(
+        item,
+        ClinicalQueueScope.inConsultation,
+      ),
+  };
+}
+
 List<AppSelectOption<ClinicalQueueScope>> _scopeOptions(AppLocalizations l10n) {
   return <AppSelectOption<ClinicalQueueScope>>[
     AppSelectOption<ClinicalQueueScope>(
@@ -2248,6 +2613,14 @@ AppWorkspaceStatus _entryStatus(ClinicalWorklistEntry item) {
   final String value =
       item.stage ?? item.status ?? item.nextStep ?? item.sourceQueue;
   return AppWorkspaceStatus(label: _apiLabel(value), tone: _statusTone(value));
+}
+
+bool _isSameWorklistEntry(
+  ClinicalWorklistEntry left,
+  ClinicalWorklistEntry right,
+) {
+  return left.sourceQueue == right.sourceQueue &&
+      left.encounterId == right.encounterId;
 }
 
 AppWorkspaceStatusTone _statusTone(String? value) {
