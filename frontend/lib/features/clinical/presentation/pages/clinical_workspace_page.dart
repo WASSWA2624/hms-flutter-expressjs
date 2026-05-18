@@ -1360,6 +1360,7 @@ class _ClinicalNoteDialogState extends ConsumerState<_ClinicalNoteDialog> {
               minLines: 5,
               maxLines: 6,
               enabled: !_isSaving,
+              isRequired: true,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
               validator: AppValidators.requiredText(l10n.validationRequired),
