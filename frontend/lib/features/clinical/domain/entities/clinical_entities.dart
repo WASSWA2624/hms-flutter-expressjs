@@ -216,6 +216,84 @@ final class ClinicalRelatedRecord {
 }
 
 @immutable
+final class ClinicalVitalSummary {
+  const ClinicalVitalSummary({
+    required this.id,
+    required this.vitalType,
+    required this.displayValue,
+    this.status = 'RECORDED',
+    this.recordedAt,
+  });
+
+  final String id;
+  final String vitalType;
+  final String displayValue;
+  final String status;
+  final DateTime? recordedAt;
+}
+
+@immutable
+final class ClinicalAlertSummary {
+  const ClinicalAlertSummary({
+    required this.id,
+    this.severity,
+    this.status,
+    this.message,
+    this.vitalSignId,
+    this.createdAt,
+  });
+
+  final String id;
+  final String? severity;
+  final String? status;
+  final String? message;
+  final String? vitalSignId;
+  final DateTime? createdAt;
+}
+
+@immutable
+final class ClinicalTriageHandoff {
+  const ClinicalTriageHandoff({
+    this.triageLevel,
+    this.routeTo,
+    this.chiefComplaint,
+    this.triageNotes,
+    this.stage,
+    this.nextStep,
+    this.emergencyIndicator = false,
+    this.queuedAt,
+    this.vitalSigns = const <ClinicalVitalSummary>[],
+    this.alerts = const <ClinicalAlertSummary>[],
+  });
+
+  final String? triageLevel;
+  final String? routeTo;
+  final String? chiefComplaint;
+  final String? triageNotes;
+  final String? stage;
+  final String? nextStep;
+  final bool emergencyIndicator;
+  final DateTime? queuedAt;
+  final List<ClinicalVitalSummary> vitalSigns;
+  final List<ClinicalAlertSummary> alerts;
+
+  bool get hasContent {
+    return _firstNonEmpty(<String?>[
+              triageLevel,
+              routeTo,
+              chiefComplaint,
+              triageNotes,
+              stage,
+              nextStep,
+            ]) !=
+            null ||
+        emergencyIndicator ||
+        vitalSigns.isNotEmpty ||
+        alerts.isNotEmpty;
+  }
+}
+
+@immutable
 final class ClinicalCatalogOption {
   const ClinicalCatalogOption({
     required this.id,
@@ -253,6 +331,7 @@ final class ClinicalCatalogOption {
 final class ClinicalEncounterBundle {
   const ClinicalEncounterBundle({
     required this.entry,
+    this.triageHandoff,
     this.clinicalNotes = const <ClinicalRelatedRecord>[],
     this.diagnoses = const <ClinicalRelatedRecord>[],
     this.procedures = const <ClinicalRelatedRecord>[],
@@ -266,6 +345,7 @@ final class ClinicalEncounterBundle {
   });
 
   final ClinicalWorklistEntry entry;
+  final ClinicalTriageHandoff? triageHandoff;
   final List<ClinicalRelatedRecord> clinicalNotes;
   final List<ClinicalRelatedRecord> diagnoses;
   final List<ClinicalRelatedRecord> procedures;
@@ -299,6 +379,7 @@ final class ClinicalEncounterBundle {
 
   ClinicalEncounterBundle copyWith({
     ClinicalWorklistEntry? entry,
+    ClinicalTriageHandoff? triageHandoff,
     List<ClinicalRelatedRecord>? clinicalNotes,
     List<ClinicalRelatedRecord>? diagnoses,
     List<ClinicalRelatedRecord>? procedures,
@@ -312,6 +393,7 @@ final class ClinicalEncounterBundle {
   }) {
     return ClinicalEncounterBundle(
       entry: entry ?? this.entry,
+      triageHandoff: triageHandoff ?? this.triageHandoff,
       clinicalNotes: clinicalNotes ?? this.clinicalNotes,
       diagnoses: diagnoses ?? this.diagnoses,
       procedures: procedures ?? this.procedures,

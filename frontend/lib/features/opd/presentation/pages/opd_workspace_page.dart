@@ -1491,7 +1491,14 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
           title: item.title,
           subtitle: item.subtitle,
         ),
-        _OpdTableColumnId.status => _opdStatusText(context, item.status),
+        _OpdTableColumnId.status =>
+          item.category == _opdCategoryTriage
+              ? AppTriagePriorityBadge(
+                  value: item.status,
+                  label: _apiLabel(item.status ?? ''),
+                  emptyLabel: context.l10n.profileUnknownValue,
+                )
+              : _opdStatusText(context, item.status),
         _OpdTableColumnId.provider => _ProviderCell(item: item),
         _OpdTableColumnId.arrivalTime => Text(
           _formatDateTime(context, item.time),
@@ -2251,7 +2258,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
                 },
                 options: _statusOptions(_emergencySeverityOptions),
               ),
-              AppSelectField<String>.searchable(
+              AppTriageUrgencyField(
                 value: _triageLevel,
                 labelText: _opdOptionalFieldLabel(
                   l10n,
@@ -2267,7 +2274,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
                     _triageLevel = value;
                   });
                 },
-                options: _statusOptions(_triageLevelOptions),
+                options: _triageLevelFieldOptions(),
               ),
             ],
           ),
@@ -2661,7 +2668,7 @@ class _AppointmentActionsDialogState
         density: AppFormSectionDensity.compact,
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
-          _OpdWorkflowPanel(
+          AppTriageSummaryPanel(
             items: <AppInfoTileData>[
               AppInfoTileData(
                 label: l10n.opdStatusColumnLabel,
@@ -2685,6 +2692,7 @@ class _AppointmentActionsDialogState
                 value: widget.appointment.reason ?? l10n.profileUnknownValue,
               ),
             ],
+            emptyValue: l10n.profileUnknownValue,
           ),
         ],
       ),
@@ -3103,7 +3111,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
                 message: _successMessage!,
                 tone: AppWorkspaceStatusTone.success,
               ),
-            _OpdWorkflowPanel(
+            AppTriageSummaryPanel(
               items: <AppInfoTileData>[
                 AppInfoTileData(
                   label: l10n.opdQueueStatusLabel,
@@ -3120,6 +3128,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
                   value: _formatDateTime(context, widget.entry.queuedAt),
                 ),
               ],
+              emptyValue: l10n.profileUnknownValue,
             ),
             AppSelectField<String>(
               value: _status,
@@ -3586,7 +3595,18 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
         ),
     ];
 
-    return _OpdWorkflowPanel(items: items);
+    return AppTriageSummaryPanel(
+      items: items,
+      statuses: <AppWorkspaceStatus>[
+        if (_isNonEmpty(flow.triageLevel))
+          AppWorkspaceStatus(
+            label: _apiLabel(flow.triageLevel!),
+            tone: appTriageToneForValue(flow.triageLevel),
+            icon: appTriageIconForValue(flow.triageLevel),
+          ),
+      ],
+      emptyValue: context.l10n.profileUnknownValue,
+    );
   }
 }
 
@@ -3603,6 +3623,7 @@ class _OpdWorkflowRecordSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final OpdFlowDetail? value = detail;
+    final int abnormalVitalCount = _abnormalVitalCount(value, thresholds);
     final List<AppInfoTileData> items = <AppInfoTileData>[
       AppInfoTileData(
         label: l10n.opdVitalsSummaryLabel,
@@ -3610,7 +3631,7 @@ class _OpdWorkflowRecordSummary extends StatelessWidget {
       ),
       AppInfoTileData(
         label: l10n.opdAbnormalVitalsSummaryLabel,
-        value: '${_abnormalVitalCount(value, thresholds)}',
+        value: '$abnormalVitalCount',
       ),
       AppInfoTileData(
         label: l10n.opdClinicalAlertsSummaryLabel,
@@ -3631,27 +3652,17 @@ class _OpdWorkflowRecordSummary extends StatelessWidget {
       ),
     ];
 
-    return _OpdWorkflowPanel(items: items);
-  }
-}
-
-class _OpdWorkflowPanel extends StatelessWidget {
-  const _OpdWorkflowPanel({required this.items});
-
-  final List<AppInfoTileData> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return AppContentPanel(
-      child: AppInfoTileGrid(
-        items: items,
-        minItemWidth: 150,
-        spacing: theme.spacing.md,
-        runSpacing: theme.spacing.sm,
-        emptyValue: context.l10n.profileUnknownValue,
-        borderedTiles: false,
-      ),
+    return AppTriageSummaryPanel(
+      items: items,
+      statuses: <AppWorkspaceStatus>[
+        AppWorkspaceStatus(
+          label: _apiLabel(abnormalVitalCount > 0 ? 'ABNORMAL' : 'NORMAL'),
+          tone: abnormalVitalCount > 0
+              ? AppWorkspaceStatusTone.warning
+              : AppWorkspaceStatusTone.success,
+        ),
+      ],
+      emptyValue: context.l10n.profileUnknownValue,
     );
   }
 }
@@ -3676,122 +3687,63 @@ class _OpdVitalIndicatorsPanel extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final ThemeData theme = Theme.of(context);
     final List<OpdVitalSign> vitals = value.vitalMeasurements;
     final List<OpdClinicalAlert> alerts = value.clinicalAlertDetails;
+    final int abnormalCount = _abnormalVitalCount(value, thresholds);
 
-    return AppContentPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Wrap(
-                  spacing: theme.spacing.sm,
-                  runSpacing: theme.spacing.xs,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      context.l10n.opdVitalsSummaryLabel,
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    _opdStatusBadge(
-                      context,
-                      _abnormalVitalCount(value, thresholds) > 0
-                          ? 'ABNORMAL'
-                          : 'NORMAL',
-                    ),
-                  ],
-                ),
-              ),
-              if (onEditVitals != null)
-                AppButton.tertiary(
-                  label: context.l10n.opdEditVitalsAction,
-                  leadingIcon: Icons.edit_outlined,
-                  onPressed: () => onEditVitals!(value),
-                ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.sm),
-          for (final OpdVitalSign vital in vitals)
-            _OpdVitalIndicatorRow(
-              vital: vital,
-              state: _vitalIndicatorState(vital, thresholds, alerts),
-            ),
-          if (alerts.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            Text(
-              context.l10n.opdClinicalAlertsSummaryLabel,
-              style: theme.textTheme.labelMedium,
-            ),
-            SizedBox(height: theme.spacing.xs),
-            Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                for (final OpdClinicalAlert alert in alerts)
-                  AppWorkspaceStatusBadge(
-                    status: AppWorkspaceStatus(
-                      label: _joinDisplay(<String?>[
-                        _apiLabel(alert.severity ?? ''),
-                        alert.message,
-                      ]),
-                      tone: _alertTone(alert.severity),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ],
+    return AppVitalsSummaryPanel(
+      title: context.l10n.opdVitalsSummaryLabel,
+      status: AppWorkspaceStatus(
+        label: _apiLabel(abnormalCount > 0 ? 'ABNORMAL' : 'NORMAL'),
+        tone: abnormalCount > 0
+            ? AppWorkspaceStatusTone.warning
+            : AppWorkspaceStatusTone.success,
       ),
+      editLabel: onEditVitals == null ? null : context.l10n.opdEditVitalsAction,
+      onEdit: onEditVitals == null ? null : () => onEditVitals!(value),
+      items: <AppVitalSummaryItem>[
+        for (final OpdVitalSign vital in vitals)
+          _opdVitalSummaryItem(
+            context,
+            vital,
+            _vitalIndicatorState(vital, thresholds, alerts),
+          ),
+      ],
+      alerts: <AppClinicalAlertSummary>[
+        for (final OpdClinicalAlert alert in alerts)
+          AppClinicalAlertSummary(
+            status: AppWorkspaceStatus(
+              label: _joinDisplay(<String?>[
+                _apiLabel(alert.severity ?? ''),
+                alert.message,
+              ]),
+              tone: _alertTone(alert.severity),
+            ),
+            description: alert.message,
+          ),
+      ],
     );
   }
 }
 
-class _OpdVitalIndicatorRow extends StatelessWidget {
-  const _OpdVitalIndicatorRow({required this.vital, required this.state});
-
-  final OpdVitalSign vital;
-  final _OpdVitalIndicatorState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(
-              _joinDisplay(<String?>[
-                _apiLabel(vital.vitalType),
-                vital.displayValue,
-              ]),
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          AppWorkspaceStatusBadge(
-            status: AppWorkspaceStatus(
-              label: _apiLabel(state.name.toUpperCase()),
-              tone: switch (state) {
-                _OpdVitalIndicatorState.critical =>
-                  AppWorkspaceStatusTone.error,
-                _OpdVitalIndicatorState.abnormal =>
-                  AppWorkspaceStatusTone.warning,
-                _OpdVitalIndicatorState.normal =>
-                  AppWorkspaceStatusTone.success,
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+AppVitalSummaryItem _opdVitalSummaryItem(
+  BuildContext context,
+  OpdVitalSign vital,
+  _OpdVitalIndicatorState state,
+) {
+  return AppVitalSummaryItem(
+    label: _apiLabel(vital.vitalType),
+    value: vital.displayValue,
+    recordedAtLabel: _formatOptionalDateTime(context, vital.recordedAt),
+    status: AppWorkspaceStatus(
+      label: _apiLabel(state.name.toUpperCase()),
+      tone: switch (state) {
+        _OpdVitalIndicatorState.critical => AppWorkspaceStatusTone.error,
+        _OpdVitalIndicatorState.abnormal => AppWorkspaceStatusTone.warning,
+        _OpdVitalIndicatorState.normal => AppWorkspaceStatusTone.success,
+      },
+    ),
+  );
 }
 
 class _OpdRelatedRecordsPanel extends StatelessWidget {
@@ -4158,20 +4110,22 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
             });
           },
         ),
-        _TriageRiskFlags(
+        AppTriageRiskFlagSelector(
+          title: l10n.opdRiskFlagsLabel,
+          options: _triageRiskFlagFieldOptions(l10n),
           selected: _riskFlags,
           enabled: !_isSaving,
           onChanged: _setRiskFlag,
         ),
-        AppSelectField<String>.searchable(
+        AppTriageUrgencyField(
           value: _triageLevel,
           labelText: _opdOptionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
           semanticLabel: _opdOptionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
           enabled: !_isSaving,
           onChanged: (String? value) => setState(() => _triageLevel = value),
-          options: _statusOptions(_triageLevelOptions),
+          options: _triageLevelFieldOptions(),
         ),
-        AppSelectField<String>.searchable(
+        AppTriageDecisionField(
           value: _routeDecision ?? _opdNoRouteDecisionValue,
           labelText: _opdOptionalFieldLabel(l10n, l10n.opdRouteDecisionLabel),
           semanticLabel: _opdOptionalFieldLabel(
@@ -4571,45 +4525,6 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   }
 }
 
-class _TriageRiskFlags extends StatelessWidget {
-  const _TriageRiskFlags({
-    required this.selected,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final Set<String> selected;
-  final bool enabled;
-  final void Function(String flag, bool selected) onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-    return AppSectionPanel(
-      title: l10n.opdRiskFlagsLabel,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        AppResponsiveWrap(
-          maxColumns: 2,
-          minItemWidth: 220,
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            for (final String flag in _triageRiskFlagOptions)
-              AppCheckboxField(
-                title: _riskFlagLabel(l10n, flag),
-                value: selected.contains(flag),
-                enabled: enabled,
-                onChanged: (bool value) => onChanged(flag, value),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 String _riskFlagLabel(AppLocalizations l10n, String flag) {
   return switch (flag) {
     _riskFlagFall => l10n.opdRiskFlagFall,
@@ -4621,13 +4536,26 @@ String _riskFlagLabel(AppLocalizations l10n, String flag) {
   };
 }
 
-List<AppSelectOption<String>> _routeDecisionOptions(BuildContext context) {
-  return <AppSelectOption<String>>[
-    AppSelectOption<String>(
+IconData _riskFlagIcon(String flag) {
+  return switch (flag) {
+    _riskFlagFall => Icons.personal_injury_outlined,
+    _riskFlagPregnancy => Icons.pregnant_woman_outlined,
+    _riskFlagInfection => Icons.coronavirus_outlined,
+    _riskFlagAlteredMentalState => Icons.psychology_alt_outlined,
+    _riskFlagBleeding => Icons.bloodtype_outlined,
+    _ => Icons.warning_amber_outlined,
+  };
+}
+
+List<AppTriageOption> _routeDecisionOptions(BuildContext context) {
+  return <AppTriageOption>[
+    AppTriageOption(
       value: _opdNoRouteDecisionValue,
       label: context.l10n.opdNoRouteDecisionLabel,
+      tone: AppWorkspaceStatusTone.neutral,
+      icon: Icons.remove_circle_outline,
     ),
-    ..._statusOptions(_triageRouteOptions),
+    ..._triageRouteFieldOptions(),
   ];
 }
 
@@ -5705,13 +5633,15 @@ class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppSelectField<String>(
+          AppTriageDecisionField(
             value: _decision,
             labelText: _opdRequiredFieldLabel(l10n, l10n.opdRouteDecisionLabel),
             enabled: !_isSaving,
+            searchable: false,
+            isRequired: true,
             onChanged: (String? value) =>
                 setState(() => _decision = value ?? _decision),
-            options: _statusOptions(_triageRouteOptions),
+            options: _triageRouteFieldOptions(),
           ),
           AppTextField(
             controller: _notesController,
@@ -5867,6 +5797,43 @@ List<AppSelectOption<String>> _statusOptions(List<String> values) {
   return <AppSelectOption<String>>[
     for (final String value in values)
       AppSelectOption<String>(value: value, label: _apiLabel(value)),
+  ];
+}
+
+List<AppTriageOption> _triageLevelFieldOptions() {
+  return <AppTriageOption>[
+    for (final String value in _triageLevelOptions)
+      AppTriageOption(
+        value: value,
+        label: _apiLabel(value),
+        tone: appTriageToneForValue(value),
+        icon: appTriageIconForValue(value),
+      ),
+  ];
+}
+
+List<AppTriageOption> _triageRouteFieldOptions() {
+  return <AppTriageOption>[
+    for (final String value in _triageRouteOptions)
+      AppTriageOption(
+        value: value,
+        label: _apiLabel(value),
+        tone: appTriageToneForValue(value),
+        icon: appTriageIconForValue(value),
+      ),
+  ];
+}
+
+List<AppTriageRiskFlagOption> _triageRiskFlagFieldOptions(
+  AppLocalizations l10n,
+) {
+  return <AppTriageRiskFlagOption>[
+    for (final String value in _triageRiskFlagOptions)
+      AppTriageRiskFlagOption(
+        value: value,
+        label: _riskFlagLabel(l10n, value),
+        icon: _riskFlagIcon(value),
+      ),
   ];
 }
 

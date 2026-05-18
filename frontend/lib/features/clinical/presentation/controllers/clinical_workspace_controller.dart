@@ -103,31 +103,35 @@ final class ClinicalWorkspaceController
     _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
     final Result<ClinicalEncounterBundle> result = await _repository
         .loadEncounterBundle(entry);
-    return result.when(
-      success: (ClinicalEncounterBundle bundle) {
+    return switch (result) {
+      ResultSuccess<ClinicalEncounterBundle>(value: final bundle) => () async {
+        final ClinicalEncounterBundle hydrated = await _withTriageHandoff(
+          bundle,
+        );
         final ClinicalWorkspaceState? latest = _currentState;
         if (latest == null) {
           return null;
         }
         _emit(
           latest.copyWith(
-            selectedBundle: bundle,
-            worklist: _replaceEntry(latest.worklist, bundle.entry),
+            selectedBundle: hydrated,
+            worklist: _replaceEntry(latest.worklist, hydrated.entry),
             isRefreshingDetail: false,
           ),
         );
         return null;
-      },
-      failure: (AppFailure failure) {
-        final ClinicalWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(
-            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
-          );
-        }
-        return failure;
-      },
-    );
+      }(),
+      ResultFailure<ClinicalEncounterBundle>(failure: final failure) =>
+        () async {
+          final ClinicalWorkspaceState? latest = _currentState;
+          if (latest != null) {
+            _emit(
+              latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
+            );
+          }
+          return failure;
+        }(),
+    };
   }
 
   Future<Result<List<ClinicalCatalogOption>>> searchClinicalTerms({
@@ -367,7 +371,7 @@ final class ClinicalWorkspaceController
           'status': 'CLOSED',
           'ended_at': DateTime.now().toUtc().toIso8601String(),
         });
-    return result.when(
+    return result.when<Future<AppFailure?>>(
       success: (ClinicalWorklistEntry updated) async {
         final ClinicalWorkspaceState? latest = _currentState;
         if (latest != null) {
@@ -377,7 +381,7 @@ final class ClinicalWorkspaceController
         }
         return selectEntry(updated);
       },
-      failure: (AppFailure failure) => failure,
+      failure: (AppFailure failure) async => failure,
     );
   }
 
@@ -621,6 +625,85 @@ final class ClinicalWorkspaceController
     );
   }
 
+  Future<ClinicalEncounterBundle> _withTriageHandoff(
+    ClinicalEncounterBundle bundle,
+  ) async {
+    final String? opdFlowApiId = bundle.entry.opdFlowApiId;
+    if (opdFlowApiId == null || opdFlowApiId.trim().isEmpty) {
+      return bundle;
+    }
+
+    final Result<OpdFlowDetail> result = await _opdRepository.getOpdFlow(
+      opdFlowApiId,
+    );
+    final OpdFlowDetail? detail = _successOrNull(result);
+    if (detail == null) {
+      return bundle;
+    }
+
+    return bundle.copyWith(triageHandoff: _handoffFromOpdDetail(detail));
+  }
+
+  ClinicalTriageHandoff _handoffFromOpdDetail(OpdFlowDetail detail) {
+    final List<ClinicalAlertSummary> alerts = detail.clinicalAlertDetails
+        .map(_alertFromOpd)
+        .toList(growable: false);
+    return ClinicalTriageHandoff(
+      triageLevel: detail.summary.triageLevel,
+      routeTo: detail.summary.lastRouteTo,
+      chiefComplaint: detail.summary.chiefComplaint,
+      triageNotes: detail.summary.triageNotes,
+      stage: detail.summary.stage,
+      nextStep: detail.summary.nextStep,
+      emergencyIndicator: detail.summary.emergencyIndicator,
+      queuedAt: detail.summary.queuedAt ?? detail.summary.startedAt,
+      vitalSigns: detail.vitalMeasurements
+          .map(
+            (OpdVitalSign vital) => ClinicalVitalSummary(
+              id: vital.id,
+              vitalType: vital.vitalType,
+              displayValue: vital.displayValue,
+              recordedAt: vital.recordedAt,
+              status: _vitalStatusFromAlerts(vital, alerts),
+            ),
+          )
+          .toList(growable: false),
+      alerts: alerts,
+    );
+  }
+
+  ClinicalAlertSummary _alertFromOpd(OpdClinicalAlert alert) {
+    return ClinicalAlertSummary(
+      id: alert.id,
+      severity: alert.severity,
+      status: alert.status,
+      message: alert.message,
+      vitalSignId: alert.vitalSignId,
+      createdAt: alert.createdAt,
+    );
+  }
+
+  String _vitalStatusFromAlerts(
+    OpdVitalSign vital,
+    List<ClinicalAlertSummary> alerts,
+  ) {
+    final Iterable<ClinicalAlertSummary> activeAlerts = alerts.where(
+      (ClinicalAlertSummary alert) =>
+          alert.vitalSignId == vital.id &&
+          (alert.status ?? '').toUpperCase() != 'RESOLVED',
+    );
+    if (activeAlerts.any(
+      (ClinicalAlertSummary alert) =>
+          (alert.severity ?? '').toUpperCase() == 'CRITICAL',
+    )) {
+      return 'CRITICAL';
+    }
+    if (activeAlerts.isNotEmpty) {
+      return 'ABNORMAL';
+    }
+    return 'RECORDED';
+  }
+
   Future<ClinicalReferenceData> _referenceData() async {
     final Result<ClinicalReferenceData> result = await _repository
         .loadReferenceData();
@@ -649,14 +732,17 @@ final class ClinicalWorkspaceController
       success: (_) async {
         final Result<ClinicalEncounterBundle> detailResult = await _repository
             .loadEncounterBundle(entry);
-        return detailResult.when(
-          success: (ClinicalEncounterBundle bundle) {
+        return detailResult.when<Future<AppFailure?>>(
+          success: (ClinicalEncounterBundle bundle) async {
+            final ClinicalEncounterBundle hydrated = await _withTriageHandoff(
+              bundle,
+            );
             final ClinicalWorkspaceState? latest = _currentState;
             if (latest != null) {
               _emit(
                 latest.copyWith(
-                  selectedBundle: bundle,
-                  worklist: _replaceEntry(latest.worklist, bundle.entry),
+                  selectedBundle: hydrated,
+                  worklist: _replaceEntry(latest.worklist, hydrated.entry),
                   isSaving: false,
                 ),
               );
@@ -664,7 +750,7 @@ final class ClinicalWorkspaceController
             unawaited(_refreshWorklist(showLoading: false));
             return null;
           },
-          failure: (AppFailure failure) {
+          failure: (AppFailure failure) async {
             final ClinicalWorkspaceState? latest = _currentState;
             if (latest != null) {
               _emit(latest.copyWith(isSaving: false, lastFailure: failure));
@@ -673,7 +759,7 @@ final class ClinicalWorkspaceController
           },
         );
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         final ClinicalWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(latest.copyWith(isSaving: false, lastFailure: failure));

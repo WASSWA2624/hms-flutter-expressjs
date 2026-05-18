@@ -363,12 +363,133 @@ class _ClinicalDetailPanel extends ConsumerWidget {
           ],
         ),
         SizedBox(height: Theme.of(context).spacing.md),
+        if (bundle.triageHandoff?.hasContent ?? false) ...<Widget>[
+          _ClinicalTriageHandoffPanel(handoff: bundle.triageHandoff!),
+          SizedBox(height: Theme.of(context).spacing.md),
+        ],
         _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
         SizedBox(height: Theme.of(context).spacing.md),
         _ClinicalResultReview(bundle: bundle),
         SizedBox(height: Theme.of(context).spacing.md),
         _ClinicalRecordSections(bundle: bundle),
       ],
+    );
+  }
+}
+
+class _ClinicalTriageHandoffPanel extends StatelessWidget {
+  const _ClinicalTriageHandoffPanel({required this.handoff});
+
+  final ClinicalTriageHandoff handoff;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final int abnormalVitalCount = handoff.vitalSigns.where((
+      ClinicalVitalSummary vital,
+    ) {
+      final String status = vital.status.toUpperCase();
+      return status == 'ABNORMAL' || status == 'CRITICAL';
+    }).length;
+
+    return AppWorkspaceDetailPanel(
+      title: l10n.opdWorkflowTriageTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppTriageSummaryPanel(
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.opdTriageLevelLabel,
+                value: _apiLabel(handoff.triageLevel ?? ''),
+                icon: Icons.priority_high_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.opdRouteDecisionLabel,
+                value: _apiLabel(handoff.routeTo ?? ''),
+                icon: Icons.alt_route_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.opdChiefComplaintLabel,
+                value: handoff.chiefComplaint,
+                icon: Icons.sick_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.opdStageLabel,
+                value: _apiLabel(handoff.stage ?? ''),
+                icon: Icons.timeline_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.opdNextStepColumnLabel,
+                value: _apiLabel(handoff.nextStep ?? ''),
+                icon: Icons.trending_flat_outlined,
+              ),
+              AppInfoTileData(
+                label: l10n.opdTimeColumnLabel,
+                value: _dateTimeLabel(context, handoff.queuedAt),
+                icon: Icons.schedule_outlined,
+              ),
+            ],
+            statuses: <AppWorkspaceStatus>[
+              if ((handoff.triageLevel ?? '').trim().isNotEmpty)
+                AppWorkspaceStatus(
+                  label: _apiLabel(handoff.triageLevel!),
+                  tone: appTriageToneForValue(handoff.triageLevel),
+                  icon: appTriageIconForValue(handoff.triageLevel),
+                ),
+              if (handoff.emergencyIndicator)
+                AppWorkspaceStatus(
+                  label: l10n.opdTriageScopeEmergency,
+                  tone: AppWorkspaceStatusTone.error,
+                  icon: Icons.emergency_outlined,
+                ),
+            ],
+            notesLabel: l10n.opdTriageNotesLabel,
+            notes: handoff.triageNotes,
+            emptyValue: l10n.profileUnknownValue,
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppVitalsSummaryPanel(
+            title: l10n.opdVitalsSummaryLabel,
+            status: AppWorkspaceStatus(
+              label: _apiLabel(abnormalVitalCount > 0 ? 'ABNORMAL' : 'NORMAL'),
+              tone: abnormalVitalCount > 0
+                  ? AppWorkspaceStatusTone.warning
+                  : AppWorkspaceStatusTone.success,
+            ),
+            emptyLabel: l10n.opdNoRelatedRecordsLabel,
+            items: <AppVitalSummaryItem>[
+              for (final ClinicalVitalSummary vital in handoff.vitalSigns)
+                AppVitalSummaryItem(
+                  label: _apiLabel(vital.vitalType),
+                  value: vital.displayValue,
+                  recordedAtLabel: _dateTimeLabel(context, vital.recordedAt),
+                  status: AppWorkspaceStatus(
+                    label: _apiLabel(vital.status),
+                    tone: _clinicalVitalTone(vital.status),
+                  ),
+                ),
+            ],
+            alerts: <AppClinicalAlertSummary>[
+              for (final ClinicalAlertSummary alert in handoff.alerts)
+                AppClinicalAlertSummary(
+                  status: AppWorkspaceStatus(
+                    label: _joinDisplay(<String?>[
+                      _apiLabel(alert.severity ?? ''),
+                      alert.message,
+                    ]),
+                    tone: _clinicalAlertTone(alert.severity),
+                  ),
+                  description: _joinDisplay(<String?>[
+                    alert.message,
+                    _dateTimeLabel(context, alert.createdAt),
+                  ]),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -2006,6 +2127,25 @@ AppWorkspaceStatusTone _statusTone(String? value) {
     'IN_PROCESS' ||
     'OPEN' => AppWorkspaceStatusTone.info,
     _ => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+AppWorkspaceStatusTone _clinicalVitalTone(String? value) {
+  return switch ((value ?? '').toUpperCase()) {
+    'CRITICAL' => AppWorkspaceStatusTone.error,
+    'ABNORMAL' => AppWorkspaceStatusTone.warning,
+    'NORMAL' => AppWorkspaceStatusTone.success,
+    'RECORDED' => AppWorkspaceStatusTone.info,
+    _ => _statusTone(value),
+  };
+}
+
+AppWorkspaceStatusTone _clinicalAlertTone(String? value) {
+  return switch ((value ?? '').toUpperCase()) {
+    'CRITICAL' || 'HIGH' => AppWorkspaceStatusTone.error,
+    'MEDIUM' => AppWorkspaceStatusTone.warning,
+    'LOW' => AppWorkspaceStatusTone.info,
+    _ => _statusTone(value),
   };
 }
 
