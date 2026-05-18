@@ -145,6 +145,7 @@ void main() {
 
     expect(find.text('Clinical actions'), findsOneWidget);
     expect(find.text('Encounter'), findsOneWidget);
+    expect(find.byIcon(Icons.copy_outlined), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.byIcon(Icons.close).last);
