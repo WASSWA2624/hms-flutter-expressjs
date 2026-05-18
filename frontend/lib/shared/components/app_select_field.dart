@@ -95,11 +95,14 @@ class AppSelectField<T> extends StatefulWidget {
 
 class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   late final TextEditingController _controller;
+  bool _hasControllerText = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: _labelForValue(widget.value));
+    _hasControllerText = _controller.text.isNotEmpty;
+    _controller.addListener(_handleControllerChanged);
   }
 
   @override
@@ -116,6 +119,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
 
   @override
   void dispose() {
+    _controller.removeListener(_handleControllerChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -134,7 +138,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             widget.menuHeight ??
             (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 360.0);
         final bool canClear =
-            canSelect && widget.value != null && widget.onChanged != null;
+            canSelect &&
+            widget.onChanged != null &&
+            (widget.value != null || _hasControllerText);
         final Widget trailingIcon = widget.isLoading
             ? const _SelectLoadingIcon()
             : _SelectTrailingIcon(
@@ -228,6 +234,17 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   void _clearSelection() {
     _controller.clear();
     widget.onChanged?.call(null);
+  }
+
+  void _handleControllerChanged() {
+    final bool hasText = _controller.text.isNotEmpty;
+    if (hasText == _hasControllerText) {
+      return;
+    }
+
+    setState(() {
+      _hasControllerText = hasText;
+    });
   }
 
   String _labelForValue(T? value) {
