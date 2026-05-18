@@ -367,6 +367,7 @@ class AppPaginatedListTable<T> extends StatelessWidget {
     this.shrinkWrap = false,
     this.physics,
     this.displayMode = AppListTableDisplayMode.adaptive,
+    this.search,
     super.key,
   });
 
@@ -388,6 +389,7 @@ class AppPaginatedListTable<T> extends StatelessWidget {
   final bool shrinkWrap;
   final ScrollPhysics? physics;
   final AppListTableDisplayMode displayMode;
+  final AppListTableSearch<T>? search;
 
   @override
   Widget build(BuildContext context) {
@@ -406,6 +408,7 @@ class AppPaginatedListTable<T> extends StatelessWidget {
       shrinkWrap: shrinkWrap,
       physics: physics,
       displayMode: displayMode,
+      search: search,
       footer: AppPaginationControls(
         pageRequest: page.request,
         hasPreviousPage: page.hasPreviousPage,

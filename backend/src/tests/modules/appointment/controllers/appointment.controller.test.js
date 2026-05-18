@@ -198,7 +198,7 @@ describe('Appointment Controller', () => {
       await appointmentController.createAppointment(req, res);
 
       expect(appointmentService.createAppointment).toHaveBeenCalledWith(
-        createData,
+        { ...createData, facility_id: null },
         'requester-id',
         '127.0.0.1'
       );

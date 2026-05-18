@@ -172,6 +172,12 @@ abstract class AppLocalizations {
   /// **'DD/MM/YYYY'**
   String get appDateFormatHint;
 
+  /// Button tooltip or action label for opening a time picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Select time'**
+  String get appTimePickerAction;
+
   /// Label for the country-code selector inside phone input fields.
   ///
   /// In en, this message translates to:

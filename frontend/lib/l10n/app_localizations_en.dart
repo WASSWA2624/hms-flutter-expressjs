@@ -48,6 +48,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appDateFormatHint => 'DD/MM/YYYY';
 
   @override
+  String get appTimePickerAction => 'Select time';
+
+  @override
   String get appPhoneCountryLabel => 'Country code';
 
   @override

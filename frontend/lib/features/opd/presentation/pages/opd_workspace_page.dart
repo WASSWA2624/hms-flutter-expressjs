@@ -77,15 +77,29 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
 
   final ValueNotifier<_OpdTableFilter> _filterNotifier =
       ValueNotifier<_OpdTableFilter>(const _OpdTableFilter());
+  late final TextEditingController _searchController;
   final ValueNotifier<List<_OpdTableColumnId>> _columnNotifier =
       ValueNotifier<List<_OpdTableColumnId>>(
         List<_OpdTableColumnId>.unmodifiable(_defaultOpdTableColumns),
       );
+  final ValueNotifier<AppPageRequest> _tablePageNotifier =
+      ValueNotifier<AppPageRequest>(const AppPageRequest(pageSize: 12));
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _searchController.addListener(_resetTablePage);
+  }
 
   @override
   void dispose() {
+    _searchController
+      ..removeListener(_resetTablePage)
+      ..dispose();
     _filterNotifier.dispose();
     _columnNotifier.dispose();
+    _tablePageNotifier.dispose();
     super.dispose();
   }
 
@@ -195,7 +209,13 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
           tone: AppWorkspaceStatusTone.warning,
           compact: true,
           onPressed: () {
-            _setFilter(const _OpdTableFilter(category: _opdCategoryTriage));
+            _openSummaryPatientList(
+              context,
+              type: _OpdSummaryPatientListType.triage,
+              title: l10n.opdWorkflowTriageTitle,
+              emptyTitle: l10n.opdNoFlowsTitle,
+              emptyBody: l10n.opdNoFlowsBody,
+            );
           },
         ),
         AppWorkspaceSummaryCard(
@@ -240,16 +260,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
           },
         ),
       ],
-      filters: ValueListenableBuilder<_OpdTableFilter>(
-        valueListenable: _filterNotifier,
-        builder: (BuildContext context, _OpdTableFilter filter, _) {
-          return _OpdFilters(
-            state: state,
-            filter: filter,
-            onFilterChanged: _setFilter,
-          );
-        },
-      ),
       body: ValueListenableBuilder<_OpdTableFilter>(
         valueListenable: _filterNotifier,
         builder: (BuildContext context, _OpdTableFilter filter, _) {
@@ -257,11 +267,25 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
             valueListenable: _columnNotifier,
             builder:
                 (BuildContext context, List<_OpdTableColumnId> columns, _) {
-                  return _OpdWorkspaceBody(
-                    state: state,
-                    filter: filter,
-                    columns: columns,
-                    onColumnsChanged: _setColumns,
+                  return ValueListenableBuilder<AppPageRequest>(
+                    valueListenable: _tablePageNotifier,
+                    builder:
+                        (
+                          BuildContext context,
+                          AppPageRequest tablePageRequest,
+                          _,
+                        ) {
+                          return _OpdWorkspaceBody(
+                            state: state,
+                            filter: filter,
+                            searchController: _searchController,
+                            columns: columns,
+                            pageRequest: tablePageRequest,
+                            onColumnsChanged: _setColumns,
+                            onPageChanged: _setTablePage,
+                            onFilterChanged: _setFilter,
+                          );
+                        },
                   );
                 },
           );
@@ -275,6 +299,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       return;
     }
     _filterNotifier.value = filter;
+    _tablePageNotifier.value = _tablePageNotifier.value.first();
   }
 
   void _setColumns(List<_OpdTableColumnId> columns) {
@@ -283,6 +308,20 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       return;
     }
     _columnNotifier.value = List<_OpdTableColumnId>.unmodifiable(normalized);
+  }
+
+  void _setTablePage(AppPageRequest request) {
+    if (_tablePageNotifier.value == request) {
+      return;
+    }
+    _tablePageNotifier.value = request;
+  }
+
+  void _resetTablePage() {
+    final AppPageRequest firstPage = _tablePageNotifier.value.first();
+    if (_tablePageNotifier.value != firstPage) {
+      _tablePageNotifier.value = firstPage;
+    }
   }
 
   Future<void> _openStartWalkInDialog(
@@ -328,22 +367,13 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   }
 }
 
-class _OpdFilters extends StatefulWidget {
-  const _OpdFilters({
-    required this.state,
-    required this.filter,
-    required this.onFilterChanged,
-  });
-
-  final OpdWorkspaceState state;
-  final _OpdTableFilter filter;
-  final ValueChanged<_OpdTableFilter> onFilterChanged;
-
-  @override
-  State<_OpdFilters> createState() => _OpdFiltersState();
+enum _OpdSummaryPatientListType {
+  arrivals,
+  queue,
+  triage,
+  activeFlows,
+  completedFlows,
 }
-
-enum _OpdSummaryPatientListType { arrivals, queue, activeFlows, completedFlows }
 
 @immutable
 final class _OpdPatientSummaryItem {
@@ -425,6 +455,13 @@ List<_OpdPatientSummaryItem> _summaryItemsForType(
         (OpdQueueEntry item) => !_isCompletedStatus(item.status),
       ),
     ),
+    _OpdSummaryPatientListType.triage => _summaryItemsFromFlows(
+      state.triageQueue.items.where(
+        (OpdFlowSummary item) =>
+            !item.isTerminal && !_isCompletedStatus(item.status ?? item.stage),
+      ),
+      category: _opdCategoryTriage,
+    ),
     _OpdSummaryPatientListType.activeFlows => _summaryItemsFromFlows(
       state.flows.items.where(
         (OpdFlowSummary item) =>
@@ -486,13 +523,14 @@ List<_OpdPatientSummaryItem> _summaryItemsFromQueue(
 }
 
 List<_OpdPatientSummaryItem> _summaryItemsFromFlows(
-  Iterable<OpdFlowSummary> flows,
-) {
+  Iterable<OpdFlowSummary> flows, {
+  String category = _opdCategoryActiveFlow,
+}) {
   return flows
       .map(
         (OpdFlowSummary item) => _OpdPatientSummaryItem(
           id: item.id,
-          category: _opdCategoryActiveFlow,
+          category: category,
           title: item.displayTitle,
           subtitle: _joinDisplay(<String?>[
             item.patientIdentifier,
@@ -529,29 +567,26 @@ class _OpdSummaryPatientListDialog extends ConsumerStatefulWidget {
 class _OpdSummaryPatientListDialogState
     extends ConsumerState<_OpdSummaryPatientListDialog> {
   late final TextEditingController _searchController;
-  late final ValueNotifier<String> _searchNotifier;
+  late final ValueNotifier<AppSearchBarFilterValue> _filterController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _searchNotifier = ValueNotifier<String>('');
-    _searchController.addListener(_handleSearchChanged);
+    _filterController = ValueNotifier<AppSearchBarFilterValue>(
+      AppSearchBarFilterValue.empty,
+    );
   }
 
   @override
   void dispose() {
-    _searchController
-      ..removeListener(_handleSearchChanged)
-      ..dispose();
-    _searchNotifier.dispose();
+    _searchController.dispose();
+    _filterController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final Result<OpdWorkspaceState>? result = ref
         .watch(opdWorkspaceControllerProvider)
         .asData
@@ -572,17 +607,10 @@ class _OpdSummaryPatientListDialogState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppTextField(
-            controller: _searchController,
-            semanticLabel: l10n.opdSearchLabel,
-            hintText: l10n.opdSearchHint,
-            prefixIcon: const Icon(Icons.search),
-            textInputAction: TextInputAction.search,
-          ),
-          SizedBox(height: theme.spacing.md),
           _OpdSummaryPatientResults(
             patients: patients,
-            searchListenable: _searchNotifier,
+            searchController: _searchController,
+            filterController: _filterController,
             emptyTitle: widget.emptyTitle,
             emptyBody: widget.emptyBody,
             onPatientPressed: _openPatientActions,
@@ -590,14 +618,6 @@ class _OpdSummaryPatientListDialogState
         ],
       ),
     );
-  }
-
-  void _handleSearchChanged() {
-    final String value = _searchController.text.trim();
-    if (value == _searchNotifier.value) {
-      return;
-    }
-    _searchNotifier.value = value;
   }
 
   Future<void> _openPatientActions(_OpdPatientSummaryItem item) async {
@@ -629,60 +649,144 @@ class _OpdSummaryPatientListDialogState
 class _OpdSummaryPatientResults extends StatelessWidget {
   const _OpdSummaryPatientResults({
     required this.patients,
-    required this.searchListenable,
+    required this.searchController,
+    required this.filterController,
     required this.emptyTitle,
     required this.emptyBody,
     required this.onPatientPressed,
   });
 
   final List<_OpdPatientSummaryItem> patients;
-  final ValueListenable<String> searchListenable;
+  final TextEditingController searchController;
+  final ValueNotifier<AppSearchBarFilterValue> filterController;
   final String emptyTitle;
   final String emptyBody;
   final ValueChanged<_OpdPatientSummaryItem> onPatientPressed;
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<String>(
-      valueListenable: searchListenable,
-      builder: (BuildContext context, String search, _) {
-        final List<_OpdPatientSummaryItem> filtered = patients
-            .where((_OpdPatientSummaryItem item) => item.matches(search))
-            .toList(growable: false);
-
-        if (filtered.isEmpty) {
-          return _EmptyPanel(title: emptyTitle, body: emptyBody);
-        }
-
-        final double maxHeight = (MediaQuery.sizeOf(context).height * 0.56)
-            .clamp(280.0, 520.0);
+    final l10n = context.l10n;
+    final double maxHeight = (MediaQuery.sizeOf(context).height * 0.56).clamp(
+      280.0,
+      520.0,
+    );
+    final List<AppSearchBarFilterGroup> filterGroups =
+        _summaryPatientFilterGroups(context, patients);
+    return ValueListenableBuilder<AppSearchBarFilterValue>(
+      valueListenable: filterController,
+      builder: (BuildContext context, AppSearchBarFilterValue filterValue, _) {
+        final List<_OpdPatientSummaryItem> filteredPatients =
+            _filterSummaryPatients(patients, filterValue);
         return ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
-          child: ListView.separated(
+          child: AppListTable<_OpdPatientSummaryItem>(
+            items: filteredPatients,
             shrinkWrap: true,
-            itemCount: filtered.length,
-            itemBuilder: (BuildContext context, int index) {
-              final _OpdPatientSummaryItem item = filtered[index];
-              return _OpdSummaryPatientRow(
-                key: ValueKey<String>('${item.category}-${item.id}'),
-                item: item,
-                onPressed: () => onPatientPressed(item),
-              );
-            },
-            separatorBuilder: (_, _) => const Divider(height: 1),
+            displayMode: AppListTableDisplayMode.list,
+            emptyBuilder: (_) =>
+                _EmptyPanel(title: emptyTitle, body: emptyBody),
+            columns: <AppListTableColumn<_OpdPatientSummaryItem>>[
+              AppListTableColumn<_OpdPatientSummaryItem>(
+                label: l10n.opdPatientColumnLabel,
+                cellBuilder:
+                    (BuildContext context, _OpdPatientSummaryItem item) {
+                      return _PatientText(
+                        title: item.title,
+                        subtitle: item.subtitle,
+                      );
+                    },
+              ),
+              AppListTableColumn<_OpdPatientSummaryItem>(
+                label: l10n.opdStatusColumnLabel,
+                cellBuilder:
+                    (BuildContext context, _OpdPatientSummaryItem item) {
+                      return _StatusText(value: item.status);
+                    },
+              ),
+            ],
+            mobileItemBuilder:
+                (BuildContext context, _OpdPatientSummaryItem item) {
+                  return _OpdSummaryPatientRow(
+                    item: item,
+                    onPressed: () => onPatientPressed(item),
+                  );
+                },
+            onRowSelected: onPatientPressed,
+            itemKeyBuilder: (_OpdPatientSummaryItem item) =>
+                ValueKey<String>('${item.category}-${item.id}'),
+            search: AppListTableSearch<_OpdPatientSummaryItem>(
+              controller: searchController,
+              semanticLabel: l10n.opdSearchLabel,
+              hintText: l10n.opdSearchHint,
+              clearLabel: l10n.opdClearFiltersAction,
+              matcher: (_OpdPatientSummaryItem item, String query) =>
+                  item.matches(query),
+              showAdvancedFilterButton: filterGroups.isNotEmpty,
+              advancedFilterButtonLabel: l10n.opdFilterAction,
+              advancedFilterTitle: l10n.opdFiltersLabel,
+              advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+              advancedFilterResetLabel: l10n.opdClearFiltersAction,
+              advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+              enableDateFilter: false,
+              filterGroups: filterGroups,
+              filterValue: filterValue,
+              onFilterChanged: (AppSearchBarFilterValue value) {
+                filterController.value = value;
+              },
+              hasActiveFilters: filterValue.isActive,
+            ),
           ),
         );
       },
     );
   }
+
+  List<_OpdPatientSummaryItem> _filterSummaryPatients(
+    List<_OpdPatientSummaryItem> items,
+    AppSearchBarFilterValue filter,
+  ) {
+    final String? status = filter.option(_opdFilterKeyStatus);
+    if (status == null) {
+      return items;
+    }
+    return items
+        .where((_OpdPatientSummaryItem item) => item.status == status)
+        .toList(growable: false);
+  }
+
+  List<AppSearchBarFilterGroup> _summaryPatientFilterGroups(
+    BuildContext context,
+    List<_OpdPatientSummaryItem> patients,
+  ) {
+    final l10n = context.l10n;
+    final Set<String> statusSet = <String>{};
+    for (final _OpdPatientSummaryItem patient in patients) {
+      final String? status = patient.status;
+      if (status == null || status.trim().isEmpty) {
+        continue;
+      }
+      statusSet.add(status);
+    }
+    final List<String> statuses = statusSet.toList()..sort();
+    if (statuses.isEmpty) {
+      return const <AppSearchBarFilterGroup>[];
+    }
+    return <AppSearchBarFilterGroup>[
+      AppSearchBarFilterGroup(
+        key: _opdFilterKeyStatus,
+        label: l10n.opdStatusFilterLabel,
+        allLabel: l10n.opdAllStatusesOption,
+        choices: <AppSearchBarFilterChoice>[
+          for (final String status in statuses)
+            AppSearchBarFilterChoice(value: status, label: _apiLabel(status)),
+        ],
+      ),
+    ];
+  }
 }
 
 class _OpdSummaryPatientRow extends StatelessWidget {
-  const _OpdSummaryPatientRow({
-    required this.item,
-    required this.onPressed,
-    super.key,
-  });
+  const _OpdSummaryPatientRow({required this.item, required this.onPressed});
 
   final _OpdPatientSummaryItem item;
   final VoidCallback onPressed;
@@ -745,182 +849,26 @@ class _OpdSummaryPatientRow extends StatelessWidget {
   }
 }
 
-class _OpdFiltersState extends State<_OpdFilters> {
-  late final TextEditingController _searchController;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController(text: widget.filter.search);
-    _searchController.addListener(_handleSearchChanged);
-  }
-
-  @override
-  void didUpdateWidget(covariant _OpdFilters oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final String nextSearch = widget.filter.search;
-    if (nextSearch != _searchController.text) {
-      _searchController.text = nextSearch;
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController
-      ..removeListener(_handleSearchChanged)
-      ..dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool useAdvancedModal = breakpoint.isMobile;
-    final List<String> statuses = _tableStatuses(context, widget.state);
-    final Widget searchField = AppSearchBar(
-      controller: _searchController,
-      semanticLabel: l10n.opdSearchLabel,
-      hintText: l10n.opdSearchHint,
-      clearLabel: l10n.opdClearFiltersAction,
-      onSubmitted: (_) => _applySearch(),
-      onClear: _applySearch,
-    );
-
-    return AppWorkspaceFilterBar(
-      semanticLabel: l10n.opdFiltersLabel,
-      expandSearch: true,
-      search: useAdvancedModal
-          ? Row(
-              children: <Widget>[
-                Expanded(child: searchField),
-                if (widget.filter.isActive) ...<Widget>[
-                  const SizedBox(width: 4),
-                  AppIconButton(
-                    icon: Icons.clear,
-                    semanticLabel: l10n.opdClearFiltersAction,
-                    tooltip: l10n.opdClearFiltersAction,
-                    onPressed: () {
-                      widget.onFilterChanged(const _OpdTableFilter());
-                    },
-                  ),
-                ],
-                const SizedBox(width: 4),
-                AppIconButton(
-                  icon: widget.filter.hasAdvancedFilters
-                      ? Icons.filter_alt
-                      : Icons.filter_alt_outlined,
-                  semanticLabel: l10n.opdFilterAction,
-                  tooltip: l10n.opdFilterAction,
-                  onPressed: _openFilters,
-                ),
-              ],
-            )
-          : searchField,
-      filters: useAdvancedModal
-          ? const <Widget>[]
-          : <Widget>[
-              AppSelectField<String>.searchable(
-                value: widget.filter.category ?? _opdFilterAll,
-                labelText: l10n.opdCategoryFilterLabel,
-                semanticLabel: l10n.opdCategoryFilterLabel,
-                options: _categoryFilterOptions(context),
-                onChanged: (String? value) {
-                  final bool clearValue =
-                      value == null || value == _opdFilterAll;
-                  widget.onFilterChanged(
-                    widget.filter.copyWith(
-                      category: clearValue ? null : value,
-                      clearCategory: clearValue,
-                    ),
-                  );
-                },
-              ),
-              AppSelectField<String>.searchable(
-                value: widget.filter.status ?? _opdFilterAll,
-                labelText: l10n.opdStatusFilterLabel,
-                semanticLabel: l10n.opdStatusFilterLabel,
-                options: _statusFilterOptions(context, statuses),
-                onChanged: (String? value) {
-                  final bool clearValue =
-                      value == null || value == _opdFilterAll;
-                  widget.onFilterChanged(
-                    widget.filter.copyWith(
-                      status: clearValue ? null : value,
-                      clearStatus: clearValue,
-                    ),
-                  );
-                },
-              ),
-              AppSelectField<String>.searchable(
-                value: widget.filter.triageScope ?? _opdFilterAll,
-                labelText: l10n.opdTriageScopeFilterLabel,
-                semanticLabel: l10n.opdTriageScopeFilterLabel,
-                options: _triageScopeFilterOptions(context),
-                onChanged: (String? value) {
-                  final bool clearValue =
-                      value == null || value == _opdFilterAll;
-                  widget.onFilterChanged(
-                    widget.filter.copyWith(
-                      triageScope: clearValue ? null : value,
-                      clearTriageScope: clearValue,
-                    ),
-                  );
-                },
-              ),
-            ],
-      actions: <Widget>[
-        if (!useAdvancedModal && widget.filter.isActive)
-          AppButton.tertiary(
-            label: l10n.opdClearFiltersAction,
-            leadingIcon: Icons.clear,
-            onPressed: () {
-              widget.onFilterChanged(const _OpdTableFilter());
-            },
-          ),
-      ],
-    );
-  }
-
-  Future<void> _openFilters() async {
-    final _OpdTableFilter? value = await showAppDialog<_OpdTableFilter>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _OpdFilterDialog(
-        initialFilter: widget.filter,
-        statuses: _tableStatuses(context, widget.state),
-      ),
-    );
-    if (value != null) {
-      widget.onFilterChanged(value);
-    }
-  }
-
-  void _handleSearchChanged() {
-    _applySearch();
-  }
-
-  void _applySearch() {
-    final String value = _searchController.text.trim();
-    if (value == widget.filter.search) {
-      return;
-    }
-    widget.onFilterChanged(widget.filter.copyWith(search: value));
-  }
-}
-
 class _OpdWorkspaceBody extends StatelessWidget {
   const _OpdWorkspaceBody({
     required this.state,
     required this.filter,
+    required this.searchController,
     required this.columns,
+    required this.pageRequest,
     required this.onColumnsChanged,
+    required this.onPageChanged,
+    required this.onFilterChanged,
   });
 
   final OpdWorkspaceState state;
   final _OpdTableFilter filter;
+  final TextEditingController searchController;
   final List<_OpdTableColumnId> columns;
+  final AppPageRequest pageRequest;
   final ValueChanged<List<_OpdTableColumnId>> onColumnsChanged;
+  final ValueChanged<AppPageRequest> onPageChanged;
+  final ValueChanged<_OpdTableFilter> onFilterChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -929,9 +877,14 @@ class _OpdWorkspaceBody extends StatelessWidget {
         .toList(growable: false);
 
     return _OpdMainTable(
-      items: items,
+      page: _tablePage(items, pageRequest),
+      searchController: searchController,
+      filter: filter,
+      statuses: _tableStatuses(context, state),
       columns: columns,
       onColumnsChanged: onColumnsChanged,
+      onPageChanged: onPageChanged,
+      onFilterChanged: onFilterChanged,
       isLoading:
           state.isRefreshingAppointments ||
           state.isRefreshingQueue ||
@@ -939,6 +892,21 @@ class _OpdWorkspaceBody extends StatelessWidget {
           state.isRefreshingTriageQueue,
     );
   }
+}
+
+AppPage<_OpdTableItem> _tablePage(
+  List<_OpdTableItem> items,
+  AppPageRequest request,
+) {
+  final int total = items.length;
+  final int start = request.offset.clamp(0, total).toInt();
+  final int end = (start + request.pageSize).clamp(start, total).toInt();
+
+  return AppPage<_OpdTableItem>(
+    items: items.sublist(start, end),
+    request: request,
+    totalItemCount: total,
+  );
 }
 
 List<String> _tableStatuses(BuildContext context, OpdWorkspaceState state) {
@@ -974,21 +942,6 @@ List<AppSelectOption<String>> _categoryFilterOptions(BuildContext context) {
       value: _opdCategoryActiveFlow,
       label: l10n.opdActiveFlowSummaryLabel,
     ),
-  ];
-}
-
-List<AppSelectOption<String>> _statusFilterOptions(
-  BuildContext context,
-  List<String> statuses,
-) {
-  final l10n = context.l10n;
-  return <AppSelectOption<String>>[
-    AppSelectOption<String>(
-      value: _opdFilterAll,
-      label: l10n.opdAllStatusesOption,
-    ),
-    for (final String status in statuses)
-      AppSelectOption<String>(value: status, label: _apiLabel(status)),
   ];
 }
 
@@ -1045,6 +998,24 @@ final class _OpdTableFilter {
   bool get hasAdvancedFilters =>
       _isNonEmpty(category) || _isNonEmpty(status) || _isNonEmpty(triageScope);
 
+  AppSearchBarFilterValue toSearchBarValue() {
+    return AppSearchBarFilterValue(
+      options: <String, String>{
+        if (_isNonEmpty(category)) _opdFilterKeyCategory: category!,
+        if (_isNonEmpty(status)) _opdFilterKeyStatus: status!,
+        if (_isNonEmpty(triageScope)) _opdFilterKeyTriageScope: triageScope!,
+      },
+    );
+  }
+
+  static _OpdTableFilter fromSearchBarValue(AppSearchBarFilterValue value) {
+    return _OpdTableFilter(
+      category: value.option(_opdFilterKeyCategory),
+      status: value.option(_opdFilterKeyStatus),
+      triageScope: value.option(_opdFilterKeyTriageScope),
+    );
+  }
+
   _OpdTableFilter copyWith({
     String? search,
     String? category,
@@ -1090,6 +1061,56 @@ final class _OpdTableFilter {
 
   @override
   int get hashCode => Object.hash(search, category, status, triageScope);
+}
+
+List<AppSearchBarFilterGroup> _opdTableFilterGroups(
+  BuildContext context,
+  List<String> statuses,
+) {
+  return <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: _opdFilterKeyCategory,
+      label: context.l10n.opdCategoryFilterLabel,
+      choices: _categoryFilterOptions(context)
+          .where(
+            (AppSelectOption<String> option) => option.value != _opdFilterAll,
+          )
+          .map(
+            (AppSelectOption<String> option) => AppSearchBarFilterChoice(
+              value: option.value,
+              label: option.label,
+            ),
+          )
+          .toList(growable: false),
+    ),
+    AppSearchBarFilterGroup(
+      key: _opdFilterKeyStatus,
+      label: context.l10n.opdStatusFilterLabel,
+      choices: statuses
+          .map(
+            (String status) => AppSearchBarFilterChoice(
+              value: status,
+              label: _apiLabel(status),
+            ),
+          )
+          .toList(growable: false),
+    ),
+    AppSearchBarFilterGroup(
+      key: _opdFilterKeyTriageScope,
+      label: context.l10n.opdTriageScopeFilterLabel,
+      choices: _triageScopeFilterOptions(context)
+          .where(
+            (AppSelectOption<String> option) => option.value != _opdFilterAll,
+          )
+          .map(
+            (AppSelectOption<String> option) => AppSearchBarFilterChoice(
+              value: option.value,
+              label: option.label,
+            ),
+          )
+          .toList(growable: false),
+    ),
+  ];
 }
 
 @immutable
@@ -1625,15 +1646,25 @@ bool _isSameLocalDate(DateTime left, DateTime right) {
 
 class _OpdMainTable extends ConsumerWidget {
   const _OpdMainTable({
-    required this.items,
+    required this.page,
+    required this.searchController,
+    required this.filter,
+    required this.statuses,
     required this.columns,
     required this.onColumnsChanged,
+    required this.onPageChanged,
+    required this.onFilterChanged,
     required this.isLoading,
   });
 
-  final List<_OpdTableItem> items;
+  final AppPage<_OpdTableItem> page;
+  final TextEditingController searchController;
+  final _OpdTableFilter filter;
+  final List<String> statuses;
   final List<_OpdTableColumnId> columns;
   final ValueChanged<List<_OpdTableColumnId>> onColumnsChanged;
+  final ValueChanged<AppPageRequest> onPageChanged;
+  final ValueChanged<_OpdTableFilter> onFilterChanged;
   final bool isLoading;
 
   @override
@@ -1645,8 +1676,8 @@ class _OpdMainTable extends ConsumerWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: AppListTable<_OpdTableItem>(
-        items: items,
+      child: AppPaginatedListTable<_OpdTableItem>(
+        page: page,
         isLoading: isLoading,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -1658,6 +1689,31 @@ class _OpdMainTable extends ConsumerWidget {
         ],
         onRowSelected: (_OpdTableItem item) =>
             _openTableItemActions(context, item),
+        onPageChanged: onPageChanged,
+        pageLabelBuilder: (AppPage<_OpdTableItem> page) =>
+            _opdPageLabel(context, page),
+        previousPageLabel: l10n.opdPreviousPageLabel,
+        nextPageLabel: l10n.opdNextPageLabel,
+        search: AppListTableSearch<_OpdTableItem>(
+          controller: searchController,
+          semanticLabel: l10n.opdSearchLabel,
+          hintText: l10n.opdSearchHint,
+          clearLabel: l10n.opdClearFiltersAction,
+          matcher: (_OpdTableItem item, String query) => item.matches(query),
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.opdFilterAction,
+          advancedFilterTitle: l10n.opdFiltersLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          filterGroups: _opdTableFilterGroups(context, statuses),
+          filterValue: filter.toSearchBarValue(),
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            onFilterChanged(_OpdTableFilter.fromSearchBarValue(value));
+          },
+          hasActiveFilters: filter.hasAdvancedFilters,
+        ),
         mobileItemBuilder: (_, _OpdTableItem item) =>
             _OpdTableMobileRow(item: item),
         itemKeyBuilder: (_OpdTableItem item) =>
@@ -1694,6 +1750,17 @@ class _OpdMainTable extends ConsumerWidget {
       ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     }
   }
+}
+
+String _opdPageLabel(BuildContext context, AppPage<_OpdTableItem> page) {
+  final int total = page.totalItemCount ?? page.items.length;
+  if (total == 0) {
+    return context.l10n.opdPageLabel(0, 0, 0);
+  }
+
+  final int from = page.request.offset + 1;
+  final int to = (page.request.offset + page.items.length).clamp(from, total);
+  return context.l10n.opdPageLabel(from, to, total);
 }
 
 class _OpdTableMobileRow extends StatelessWidget {
@@ -1738,114 +1805,6 @@ class _OpdTableMobileRow extends StatelessWidget {
   }
 }
 
-class _OpdFilterDialog extends StatefulWidget {
-  const _OpdFilterDialog({required this.initialFilter, required this.statuses});
-
-  final _OpdTableFilter initialFilter;
-  final List<String> statuses;
-
-  @override
-  State<_OpdFilterDialog> createState() => _OpdFilterDialogState();
-}
-
-class _OpdFilterDialogState extends State<_OpdFilterDialog> {
-  String? _category;
-  String? _status;
-  String? _triageScope;
-
-  @override
-  void initState() {
-    super.initState();
-    _category = widget.initialFilter.category;
-    _status = widget.initialFilter.status;
-    _triageScope = widget.initialFilter.triageScope;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-
-    return AppDialog(
-      title: Text(l10n.opdFilterDialogTitle),
-      icon: const Icon(Icons.filter_alt_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          AppSelectField<String>.searchable(
-            value: _category ?? _opdFilterAll,
-            labelText: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdCategoryFilterLabel,
-            ),
-            semanticLabel: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdCategoryFilterLabel,
-            ),
-            options: _categoryFilterOptions(context),
-            onChanged: (String? value) {
-              setState(() {
-                _category = value == _opdFilterAll ? null : value;
-              });
-            },
-          ),
-          AppSelectField<String>.searchable(
-            value: _status ?? _opdFilterAll,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdStatusFilterLabel),
-            semanticLabel: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdStatusFilterLabel,
-            ),
-            options: _statusFilterOptions(context, widget.statuses),
-            onChanged: (String? value) {
-              setState(() {
-                _status = value == _opdFilterAll ? null : value;
-              });
-            },
-          ),
-          AppSelectField<String>.searchable(
-            value: _triageScope ?? _opdFilterAll,
-            labelText: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdTriageScopeFilterLabel,
-            ),
-            semanticLabel: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdTriageScopeFilterLabel,
-            ),
-            options: _triageScopeFilterOptions(context),
-            onChanged: (String? value) {
-              setState(() {
-                _triageScope = value == _opdFilterAll ? null : value;
-              });
-            },
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.opdClearFiltersAction,
-          onPressed: () => Navigator.of(context).pop(const _OpdTableFilter()),
-        ),
-        AppButton.primary(
-          label: l10n.opdApplyFiltersAction,
-          leadingIcon: Icons.filter_alt_outlined,
-          onPressed: () {
-            Navigator.of(context).pop(
-              widget.initialFilter.copyWith(
-                category: _category,
-                status: _status,
-                triageScope: _triageScope,
-                clearCategory: _category == null,
-                clearStatus: _status == null,
-                clearTriageScope: _triageScope == null,
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
 class _EmptyPanel extends StatelessWidget {
   const _EmptyPanel({required this.title, required this.body});
 
@@ -1860,6 +1819,33 @@ class _EmptyPanel extends StatelessWidget {
       body: body,
       crossAxisAlignment: CrossAxisAlignment.center,
       textAlign: TextAlign.center,
+    );
+  }
+}
+
+class _InlineSuccessPanel extends StatelessWidget {
+  const _InlineSuccessPanel({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.42),
+        border: Border.all(color: theme.colorScheme.primary),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.check_circle_outline, color: theme.colorScheme.primary),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(child: Text(message)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -3085,28 +3071,24 @@ class RescheduleAppointmentDialog extends ConsumerStatefulWidget {
 class _RescheduleAppointmentDialogState
     extends ConsumerState<RescheduleAppointmentDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _startController;
-  late final TextEditingController _endController;
+  late DateTime? _date;
+  late TimeOfDay? _startTime;
+  late TimeOfDay? _endTime;
   bool _isSaving = false;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
-    _startController = TextEditingController(
-      text:
-          widget.appointment.scheduledStart?.toLocal().toIso8601String() ?? '',
-    );
-    _endController = TextEditingController(
-      text: widget.appointment.scheduledEnd?.toLocal().toIso8601String() ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _startController.dispose();
-    _endController.dispose();
-    super.dispose();
+    final DateTime start =
+        widget.appointment.scheduledStart?.toLocal() ??
+        DateTime.now().add(const Duration(hours: 1));
+    final DateTime end =
+        widget.appointment.scheduledEnd?.toLocal() ??
+        start.add(const Duration(minutes: 30));
+    _date = DateTime(start.year, start.month, start.day);
+    _startTime = TimeOfDay(hour: start.hour, minute: start.minute);
+    _endTime = TimeOfDay(hour: end.hour, minute: end.minute);
   }
 
   @override
@@ -3121,38 +3103,75 @@ class _RescheduleAppointmentDialogState
         child: AppFormSection(
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _startController,
+            AppDateField(
+              value: _date,
+              firstDate: DateTime.now().subtract(const Duration(days: 1)),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
               labelText: _opdRequiredFieldLabel(
                 l10n,
-                l10n.opdAppointmentStartLabel,
+                l10n.patientsAppointmentDateLabel,
               ),
-              hintText: l10n.opdDateTimeHint,
+              pickerButtonLabel: l10n.patientsDatePickerAction,
+              invalidDateMessage: l10n.appDateInvalidMessage,
               enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+              isRequired: true,
+              validator: (DateTime? value) =>
+                  value == null ? l10n.validationRequired : null,
+              onChanged: (DateTime? value) {
+                setState(() => _date = value);
+              },
             ),
-            AppTextField(
-              controller: _endController,
-              labelText: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdAppointmentEndLabel,
-              ),
-              hintText: l10n.opdDateTimeHint,
+            _WalkInFieldRow(
+              children: <Widget>[
+                AppTimeField(
+                  value: _startTime,
+                  labelText: _opdRequiredFieldLabel(
+                    l10n,
+                    l10n.opdAppointmentStartLabel,
+                  ),
+                  pickerButtonLabel: l10n.appTimePickerAction,
+                  invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+                  hintText: l10n.patientsTimeHint,
+                  enabled: !_isSaving,
+                  isRequired: true,
+                  validator: (TimeOfDay? value) =>
+                      value == null ? l10n.validationRequired : null,
+                  onChanged: (TimeOfDay? value) {
+                    setState(() => _startTime = value);
+                  },
+                ),
+                AppTimeField(
+                  value: _endTime,
+                  labelText: _opdRequiredFieldLabel(
+                    l10n,
+                    l10n.opdAppointmentEndLabel,
+                  ),
+                  pickerButtonLabel: l10n.appTimePickerAction,
+                  invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+                  hintText: l10n.patientsTimeHint,
+                  enabled: !_isSaving,
+                  isRequired: true,
+                  validator: (TimeOfDay? value) =>
+                      value == null ? l10n.validationRequired : null,
+                  onChanged: (TimeOfDay? value) {
+                    setState(() => _endTime = value);
+                  },
+                ),
+              ],
+            ),
+            AppButton.secondary(
+              label: l10n.opdCancelAction,
+              leadingIcon: Icons.cancel_outlined,
               enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+              onPressed: _cancelPatient,
             ),
           ],
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
-          label: l10n.opdSaveAction,
-          leadingIcon: Icons.save_outlined,
+          label: l10n.opdRescheduleAction,
+          leadingIcon: Icons.edit_calendar_outlined,
           isLoading: _isSaving,
           onPressed: _submit,
         ),
@@ -3160,12 +3179,33 @@ class _RescheduleAppointmentDialogState
     );
   }
 
+  Future<void> _cancelPatient() async {
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .cancelAppointment(widget.appointment, null);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    final DateTime? start = DateTime.tryParse(_startController.text.trim());
-    final DateTime? end = DateTime.tryParse(_endController.text.trim());
+    final DateTime? start = _combineDateAndTime(_date, _startTime);
+    final DateTime? end = _combineDateAndTime(_date, _endTime);
     if (start == null || end == null || !end.isAfter(start)) {
       setState(() {
         _failure = AppFailure.validation();
@@ -3190,6 +3230,13 @@ class _RescheduleAppointmentDialogState
       _failure = failure;
       _isSaving = false;
     });
+  }
+
+  DateTime? _combineDateAndTime(DateTime? date, TimeOfDay? time) {
+    if (date == null || time == null) {
+      return null;
+    }
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 }
 
@@ -3298,6 +3345,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
   bool _isLoadingProviders = false;
   bool _isSaving = false;
   AppFailure? _failure;
+  String? _successMessage;
 
   @override
   void initState() {
@@ -3330,11 +3378,13 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
           density: AppFormSectionDensity.compact,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
+            if (_successMessage != null)
+              _InlineSuccessPanel(message: _successMessage!),
             _OpdWorkflowPanel(
               children: <Widget>[
                 _OpdWorkflowInfoPill(
                   label: l10n.opdQueueStatusLabel,
-                  value: _apiLabel(widget.entry.status ?? ''),
+                  value: _apiLabel(_status ?? widget.entry.status ?? ''),
                 ),
                 _OpdWorkflowInfoPill(
                   label: l10n.opdProviderColumnLabel,
@@ -3383,23 +3433,20 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         if (!terminal)
           AppButton.secondary(
             label: l10n.opdPrioritizeAction,
             leadingIcon: Icons.priority_high_outlined,
             isLoading: _isSaving,
-            onPressed: () => _run(
-              () => ref
+            onPressed: () => _runInModal(
+              action: () => ref
                   .read(opdWorkspaceControllerProvider.notifier)
                   .prioritizeQueueEntry(
                     widget.entry,
                     _reasonController.text.trim(),
                   ),
+              successMessage: l10n.opdSavedMessage,
+              successStatus: 'CONFIRMED',
             ),
           ),
         if (!terminal)
@@ -3414,10 +3461,12 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
             label: l10n.opdStartConsultationAction,
             leadingIcon: Icons.play_arrow_outlined,
             isLoading: _isSaving,
-            onPressed: () => _run(
-              () => ref
+            onPressed: () => _runInModal(
+              action: () => ref
                   .read(opdWorkspaceControllerProvider.notifier)
                   .startOpdFromQueue(widget.entry),
+              successMessage: l10n.opdStartConsultationAction,
+              successStatus: 'IN_PROGRESS',
             ),
           ),
       ],
@@ -3455,25 +3504,38 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    await _run(
-      () => ref.read(opdWorkspaceControllerProvider.notifier).moveQueueEntry(
-        widget.entry,
-        <String, Object?>{'status': _status, 'provider_user_id': _providerId},
-      ),
+    await _runInModal(
+      action: () => ref
+          .read(opdWorkspaceControllerProvider.notifier)
+          .moveQueueEntry(widget.entry, <String, Object?>{
+            'status': _status,
+            'provider_user_id': _providerId,
+          }),
+      successMessage: context.l10n.opdSavedMessage,
+      successStatus: _status,
     );
   }
 
-  Future<void> _run(Future<AppFailure?> Function() action) async {
+  Future<void> _runInModal({
+    required Future<AppFailure?> Function() action,
+    required String successMessage,
+    String? successStatus,
+  }) async {
     setState(() {
       _isSaving = true;
       _failure = null;
+      _successMessage = null;
     });
     final AppFailure? failure = await action();
     if (!mounted) {
       return;
     }
     if (failure == null) {
-      Navigator.of(context).pop(true);
+      setState(() {
+        _successMessage = successMessage;
+        _status = successStatus ?? _status;
+        _isSaving = false;
+      });
       return;
     }
     setState(() {
@@ -4353,68 +4415,37 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
                 setState(() => _providerId = value);
               },
             ),
-          AppTextField(
-            controller: _temperatureController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdTemperatureLabel),
-            enabled: !_isSaving,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: _decimalInputFormatters,
-          ),
-          _WalkInFieldRow(
-            children: <Widget>[
-              AppTextField(
-                controller: _systolicController,
-                labelText: _opdOptionalFieldLabel(l10n, l10n.opdSystolicLabel),
-                enabled: !_isSaving,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: _decimalInputFormatters,
-              ),
-              AppTextField(
-                controller: _diastolicController,
-                labelText: _opdOptionalFieldLabel(l10n, l10n.opdDiastolicLabel),
-                enabled: !_isSaving,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: _decimalInputFormatters,
-              ),
-            ],
-          ),
-          AppTextField(
-            controller: _heartRateController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdHeartRateLabel),
-            enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _integerInputFormatters,
-          ),
-          AppTextField(
-            controller: _respiratoryRateController,
-            labelText: _opdOptionalFieldLabel(
+          AppVitalsForm(
+            temperatureController: _temperatureController,
+            systolicController: _systolicController,
+            diastolicController: _diastolicController,
+            heartRateController: _heartRateController,
+            respiratoryRateController: _respiratoryRateController,
+            oxygenSaturationController: _oxygenSaturationController,
+            weightController: _weightController,
+            temperatureLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdTemperatureLabel,
+            ),
+            systolicLabel: _opdOptionalFieldLabel(l10n, l10n.opdSystolicLabel),
+            diastolicLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdDiastolicLabel,
+            ),
+            heartRateLabel: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdHeartRateLabel,
+            ),
+            respiratoryRateLabel: _opdOptionalFieldLabel(
               l10n,
               l10n.opdRespiratoryRateLabel,
             ),
-            enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _integerInputFormatters,
-          ),
-          AppTextField(
-            controller: _oxygenSaturationController,
-            labelText: _opdOptionalFieldLabel(
+            oxygenSaturationLabel: _opdOptionalFieldLabel(
               l10n,
               l10n.opdOxygenSaturationLabel,
             ),
+            weightLabel: _opdOptionalFieldLabel(l10n, l10n.opdWeightLabel),
             enabled: !_isSaving,
-            keyboardType: TextInputType.number,
-            inputFormatters: _integerInputFormatters,
-          ),
-          AppTextField(
-            controller: _weightController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdWeightLabel),
-            enabled: !_isSaving,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: _decimalInputFormatters,
           ),
           AppTextField(
             controller: _notesController,
@@ -5458,7 +5489,7 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
               enabled: !_isSaving,
               onChanged: (String? value) =>
                   setState(() => _stage = value ?? _stage),
-              options: _statusOptions(_flowStages),
+              options: _flowStageOptions(),
             ),
             AppTextField(
               controller: _reasonController,
@@ -5932,6 +5963,17 @@ List<AppSelectOption<String>> _statusOptions(List<String> values) {
   ];
 }
 
+List<AppSelectOption<String>> _flowStageOptions() {
+  return <AppSelectOption<String>>[
+    for (final String value in _flowStages)
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: Icon(_flowStageIcon(value)),
+      ),
+  ];
+}
+
 AppSelectOption<String> _drugOption(OpdDrugOption drug) {
   return AppSelectOption<String>(
     value: drug.apiId,
@@ -6103,6 +6145,23 @@ AppWorkspaceStatusTone _stageTone(String? value) {
   };
 }
 
+IconData _flowStageIcon(String value) {
+  return switch (value.toUpperCase()) {
+    'WAITING_CONSULTATION_PAYMENT' => Icons.payments_outlined,
+    'WAITING_VITALS' => Icons.monitor_heart_outlined,
+    'WAITING_DOCTOR_ASSIGNMENT' => Icons.assignment_ind_outlined,
+    'WAITING_DOCTOR_REVIEW' => Icons.medical_services_outlined,
+    'LAB_REQUESTED' => Icons.science_outlined,
+    'RADIOLOGY_REQUESTED' => Icons.biotech_outlined,
+    'LAB_AND_RADIOLOGY_REQUESTED' => Icons.hub_outlined,
+    'PHARMACY_REQUESTED' => Icons.local_pharmacy_outlined,
+    'WAITING_DISPOSITION' => Icons.task_alt_outlined,
+    'ADMITTED' => Icons.bed_outlined,
+    'DISCHARGED' => Icons.logout_outlined,
+    _ => Icons.sync_alt_outlined,
+  };
+}
+
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   if (failure == null) {
     return;
@@ -6118,6 +6177,9 @@ const String _opdCategoryQueue = 'QUEUE';
 const String _opdCategoryTriage = 'TRIAGE';
 const String _opdCategoryActiveFlow = 'ACTIVE_FLOW';
 const String _opdFilterAll = 'ALL';
+const String _opdFilterKeyCategory = 'category';
+const String _opdFilterKeyStatus = 'status';
+const String _opdFilterKeyTriageScope = 'triage_scope';
 const String _triageScopeWaiting = 'WAITING';
 const String _triageScopeUrgent = 'URGENT';
 const String _triageScopeEmergency = 'EMERGENCY';
@@ -6252,10 +6314,6 @@ const List<String> _medicationRoutes = <String>[
   'TOPICAL',
   'INHALATION',
   'OTHER',
-];
-
-final List<TextInputFormatter> _decimalInputFormatters = <TextInputFormatter>[
-  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
 ];
 
 final List<TextInputFormatter> _integerInputFormatters = <TextInputFormatter>[

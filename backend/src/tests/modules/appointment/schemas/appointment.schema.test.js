@@ -32,11 +32,11 @@ describe('Appointment Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should require tenant_id', () => {
+    it('should allow tenant_id to be injected from authenticated context', () => {
       const data = { ...validData };
       delete data.tenant_id;
       const result = createAppointmentSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it('should require patient_id', () => {

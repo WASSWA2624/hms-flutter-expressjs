@@ -17,6 +17,7 @@ describe('Referral Schemas', () => {
   describe('createReferralSchema', () => {
     const validData = {
       encounter_id: '550e8400-e29b-41d4-a716-446655440000',
+      external_facility_name: 'Regional Referral Hospital',
       from_department_id: '550e8400-e29b-41d4-a716-446655440001',
       to_department_id: '550e8400-e29b-41d4-a716-446655440002',
       reason: 'Specialist consultation required',
@@ -35,12 +36,12 @@ describe('Referral Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should apply default status when omitted', () => {
+    it('should allow status to be omitted', () => {
       const data = { ...validData };
       delete data.status;
       const result = createReferralSchema.safeParse(data);
       expect(result.success).toBe(true);
-      expect(result.data.status).toBe('REQUESTED');
+      expect(result.data.status).toBeUndefined();
     });
 
     it('should allow optional from_department_id', () => {
@@ -57,11 +58,11 @@ describe('Referral Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should allow optional reason', () => {
+    it('should require reason', () => {
       const data = { ...validData };
       delete data.reason;
       const result = createReferralSchema.safeParse(data);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('should validate status enum values', () => {
@@ -75,6 +76,8 @@ describe('Referral Schemas', () => {
       statuses.forEach(status => {
         const data = { 
           encounter_id: '550e8400-e29b-41d4-a716-446655440000',
+          external_facility_name: 'Regional Referral Hospital',
+          reason: 'Specialist consultation required',
           status 
         };
         const result = createReferralSchema.safeParse(data);

@@ -177,7 +177,7 @@ describe('Visit Queue Controller', () => {
       await createVisitQueue(req, res);
 
       expect(visitQueueService.createVisitQueue).toHaveBeenCalledWith(
-        entryData,
+        { ...entryData, facility_id: 'facility-123' },
         expect.objectContaining({
           user_id: 'user-123',
           tenant_id: 'tenant-123',
@@ -215,7 +215,11 @@ describe('Visit Queue Controller', () => {
       await createVisitQueue(req, res);
 
       expect(visitQueueService.createVisitQueue).toHaveBeenCalledWith(
-        entryData,
+        {
+          ...entryData,
+          tenant_id: 'tenant-456',
+          facility_id: 'facility-456'
+        },
         {
           user_id: 'user-456',
           tenant_id: 'tenant-456',
@@ -280,7 +284,7 @@ describe('Visit Queue Controller', () => {
 
       expect(visitQueueService.updateVisitQueue).toHaveBeenCalledWith(
         'queue-123',
-        updateData,
+        { ...updateData, facility_id: 'facility-123' },
         expect.any(Object)
       );
     });

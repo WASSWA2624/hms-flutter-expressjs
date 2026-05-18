@@ -52,6 +52,10 @@
   "@appDateFormatHint": {
     "description": "Hint text showing the supported manual date entry format."
   },
+  "appTimePickerAction": "Select time",
+  "@appTimePickerAction": {
+    "description": "Button tooltip or action label for opening a time picker."
+  },
   "appPhoneCountryLabel": "Country code",
   "@appPhoneCountryLabel": {
     "description": "Label for the country-code selector inside phone input fields."
