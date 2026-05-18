@@ -677,11 +677,10 @@ class _OpdSummaryPatientResults extends StatelessWidget {
       builder: (BuildContext context, AppSearchBarFilterValue filterValue, _) {
         final List<_OpdPatientSummaryItem> filteredPatients =
             _filterSummaryPatients(patients, filterValue);
-        return ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
+        return SizedBox(
+          height: maxHeight,
           child: AppListTable<_OpdPatientSummaryItem>(
             items: filteredPatients,
-            shrinkWrap: true,
             displayMode: AppListTableDisplayMode.list,
             emptyBuilder: (_) =>
                 _EmptyPanel(title: emptyTitle, body: emptyBody),
