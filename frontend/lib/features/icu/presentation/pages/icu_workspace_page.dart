@@ -1008,25 +1008,35 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
       title: const Text('Update vitals'),
       icon: const Icon(Icons.monitor_heart_outlined),
       scrollable: true,
+      closeEnabled: !_isSaving,
+      maxWidth: 780,
       content: AppFormSection(
+        density: AppFormSectionDensity.compact,
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppVitalsForm(
-            temperatureController: _temperatureController,
-            systolicController: _systolicController,
-            diastolicController: _diastolicController,
-            heartRateController: _heartRateController,
-            respiratoryRateController: _respiratoryRateController,
-            oxygenSaturationController: _oxygenController,
-            temperatureLabel: context.l10n.patientsTemperatureLabel,
-            systolicLabel: context.l10n.patientsSystolicLabel,
-            diastolicLabel: context.l10n.patientsDiastolicLabel,
-            heartRateLabel: context.l10n.patientsHeartRateLabel,
-            respiratoryRateLabel: context.l10n.patientsRespiratoryRateLabel,
-            oxygenSaturationLabel: context.l10n.patientsOxygenSaturationLabel,
-            bloodPressureLabel: context.l10n.patientsBloodPressureLabel,
-            unitLabel: context.l10n.patientsVitalUnitLabel,
-            enabled: !_isSaving,
+          AppFormSection(
+            title: context.l10n.patientsVitalsSectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppVitalsForm(
+                temperatureController: _temperatureController,
+                systolicController: _systolicController,
+                diastolicController: _diastolicController,
+                heartRateController: _heartRateController,
+                respiratoryRateController: _respiratoryRateController,
+                oxygenSaturationController: _oxygenController,
+                temperatureLabel: context.l10n.patientsTemperatureLabel,
+                systolicLabel: context.l10n.patientsSystolicLabel,
+                diastolicLabel: context.l10n.patientsDiastolicLabel,
+                heartRateLabel: context.l10n.patientsHeartRateLabel,
+                respiratoryRateLabel: context.l10n.patientsRespiratoryRateLabel,
+                oxygenSaturationLabel:
+                    context.l10n.patientsOxygenSaturationLabel,
+                bloodPressureLabel: context.l10n.patientsBloodPressureLabel,
+                unitLabel: context.l10n.patientsVitalUnitLabel,
+                enabled: !_isSaving,
+              ),
+            ],
           ),
         ],
       ),
@@ -1036,12 +1046,12 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
 
   Future<void> _submit() async {
     final IcuVitalsInput input = IcuVitalsInput(
-      temperature: _temperatureController.text.trim(),
-      systolic: _systolicController.text.trim(),
-      diastolic: _diastolicController.text.trim(),
-      heartRate: _heartRateController.text.trim(),
-      respiratoryRate: _respiratoryRateController.text.trim(),
-      oxygenSaturation: _oxygenController.text.trim(),
+      temperature: normalizeCurrencyAmount(_temperatureController.text),
+      systolic: normalizeCurrencyAmount(_systolicController.text),
+      diastolic: normalizeCurrencyAmount(_diastolicController.text),
+      heartRate: normalizeCurrencyAmount(_heartRateController.text),
+      respiratoryRate: normalizeCurrencyAmount(_respiratoryRateController.text),
+      oxygenSaturation: normalizeCurrencyAmount(_oxygenController.text),
       recordedAt: DateTime.now(),
     );
     if (!input.hasAnyValue) {

@@ -3979,6 +3979,10 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   String? _painSeverity;
   String? _routeDecision;
   String? _providerId;
+  String _bloodPressureUnit = AppVitalsUnits.bloodPressureMmHg;
+  String _selectedTemperatureUnit = AppVitalsUnits.temperatureCelsius;
+  String _selectedWeightUnit = AppVitalsUnits.weightKilograms;
+  String _selectedHeightUnit = AppVitalsUnits.heightCentimeters;
   final Set<String> _riskFlags = <String>{};
   List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
   bool _emergencyIndicator = false;
@@ -4019,6 +4023,22 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     _notesController = TextEditingController();
     _triageLevel = widget.flow.triageLevel;
     _providerId = widget.flow.providerUserId;
+    _bloodPressureUnit = _initialVitalUnit(
+      'BLOOD_PRESSURE',
+      AppVitalsUnits.bloodPressureMmHg,
+    );
+    _selectedTemperatureUnit = _initialVitalUnit(
+      'TEMPERATURE',
+      AppVitalsUnits.temperatureCelsius,
+    );
+    _selectedWeightUnit = _initialVitalUnit(
+      'WEIGHT',
+      AppVitalsUnits.weightKilograms,
+    );
+    _selectedHeightUnit = _initialVitalUnit(
+      'HEIGHT',
+      AppVitalsUnits.heightCentimeters,
+    );
     unawaited(_loadProviderOptions());
   }
 
@@ -4050,156 +4070,15 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       title: Text(actionLabel),
       icon: const Icon(Icons.monitor_heart_outlined),
       scrollable: true,
+      closeEnabled: !_isSaving,
+      maxWidth: 780,
       content: AppFormSection(
+        density: AppFormSectionDensity.compact,
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
-          Text(
-            l10n.opdVitalsAtLeastOneRequiredHelper,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          if (!editingVitals) ...<Widget>[
-            AppTextField(
-              controller: _chiefComplaintController,
-              labelText: _opdOptionalFieldLabel(
-                l10n,
-                l10n.opdChiefComplaintLabel,
-              ),
-              enabled: !_isSaving,
-              maxLines: 2,
-            ),
-            AppTextField(
-              controller: _symptomsController,
-              labelText: _opdOptionalFieldLabel(l10n, l10n.opdSymptomsLabel),
-              enabled: !_isSaving,
-              maxLines: 2,
-            ),
-            AppResponsiveFieldRow(
-              gap: AppResponsiveFieldRowGap.form,
-              children: <Widget>[
-                AppSelectField<String>.searchable(
-                  value: _painSeverity,
-                  labelText: _opdOptionalFieldLabel(
-                    l10n,
-                    l10n.opdPainSeverityLabel,
-                  ),
-                  semanticLabel: _opdOptionalFieldLabel(
-                    l10n,
-                    l10n.opdPainSeverityLabel,
-                  ),
-                  enabled: !_isSaving,
-                  onChanged: (String? value) {
-                    setState(() => _painSeverity = value);
-                  },
-                  options: _painSeverityOptions,
-                ),
-                AppTextField(
-                  controller: _allergiesController,
-                  labelText: _opdOptionalFieldLabel(
-                    l10n,
-                    l10n.opdAllergiesLabel,
-                  ),
-                  enabled: !_isSaving,
-                ),
-              ],
-            ),
-            AppSwitchField(
-              title: l10n.opdEmergencyIndicatorsLabel,
-              value: _emergencyIndicator,
-              enabled: !_isSaving,
-              secondary: const Icon(Icons.emergency_outlined),
-              onChanged: (bool value) {
-                setState(() {
-                  _emergencyIndicator = value;
-                  if (value && _triageLevel == null) {
-                    _triageLevel = 'LEVEL_1';
-                  }
-                  if (value && _routeDecision == null) {
-                    _routeDecision = 'EMERGENCY';
-                  }
-                });
-              },
-            ),
-            _TriageRiskFlags(
-              selected: _riskFlags,
-              enabled: !_isSaving,
-              onChanged: _setRiskFlag,
-            ),
-            AppSelectField<String>.searchable(
-              value: _triageLevel,
-              labelText: _opdOptionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
-              semanticLabel: _opdOptionalFieldLabel(
-                l10n,
-                l10n.opdTriageLevelLabel,
-              ),
-              enabled: !_isSaving,
-              onChanged: (String? value) =>
-                  setState(() => _triageLevel = value),
-              options: _statusOptions(_triageLevelOptions),
-            ),
-            AppSelectField<String>.searchable(
-              value: _routeDecision ?? _opdNoRouteDecisionValue,
-              labelText: _opdOptionalFieldLabel(
-                l10n,
-                l10n.opdRouteDecisionLabel,
-              ),
-              semanticLabel: _opdOptionalFieldLabel(
-                l10n,
-                l10n.opdRouteDecisionLabel,
-              ),
-              enabled: !_isSaving,
-              onChanged: (String? value) {
-                setState(() {
-                  _routeDecision =
-                      value == null || value == _opdNoRouteDecisionValue
-                      ? null
-                      : value;
-                });
-              },
-              options: _routeDecisionOptions(context),
-            ),
-            if (_routeDecision == 'CONSULTATION')
-              _ProviderSelectField(
-                value: _providerId,
-                providers: _providerOptions,
-                schedules: const <OpdProviderSchedule>[],
-                labelText: _opdOptionalFieldLabel(
-                  l10n,
-                  l10n.opdSearchProviderLabel,
-                ),
-                helperText: l10n.opdSearchProviderHelper,
-                emptyHelperText: l10n.opdNoProvidersHelper,
-                enabled: !_isSaving,
-                isLoading: _isLoadingProviders,
-                onChanged: (String? value) {
-                  setState(() => _providerId = value);
-                },
-              ),
-          ],
-          AppVitalsForm(
-            temperatureController: _temperatureController,
-            systolicController: _systolicController,
-            diastolicController: _diastolicController,
-            heartRateController: _heartRateController,
-            respiratoryRateController: _respiratoryRateController,
-            oxygenSaturationController: _oxygenSaturationController,
-            weightController: _weightController,
-            heightController: _heightController,
-            temperatureLabel: l10n.patientsTemperatureLabel,
-            systolicLabel: l10n.patientsSystolicLabel,
-            diastolicLabel: l10n.patientsDiastolicLabel,
-            heartRateLabel: l10n.patientsHeartRateLabel,
-            respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
-            oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
-            weightLabel: l10n.patientsWeightLabel,
-            heightLabel: l10n.patientsHeightLabel,
-            enabled: !_isSaving,
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdTriageNotesLabel),
-            enabled: !_isSaving,
-            maxLines: 3,
-          ),
+          if (!editingVitals) _triagePrioritySection(context),
+          _vitalsSection(context),
+          _notesSection(context),
         ],
       ),
       actions: <Widget>[
@@ -4213,6 +4092,195 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           leadingIcon: Icons.save_outlined,
           isLoading: _isSaving,
           onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Widget _triagePrioritySection(BuildContext context) {
+    final l10n = context.l10n;
+    return AppFormSection(
+      title: l10n.patientsTriagePrioritySectionTitle,
+      density: AppFormSectionDensity.compact,
+      children: <Widget>[
+        AppTextField(
+          controller: _chiefComplaintController,
+          labelText: _opdOptionalFieldLabel(l10n, l10n.opdChiefComplaintLabel),
+          enabled: !_isSaving,
+          maxLines: 2,
+        ),
+        AppTextField(
+          controller: _symptomsController,
+          labelText: _opdOptionalFieldLabel(l10n, l10n.opdSymptomsLabel),
+          enabled: !_isSaving,
+          maxLines: 2,
+        ),
+        AppResponsiveFieldRow(
+          gap: AppResponsiveFieldRowGap.form,
+          children: <Widget>[
+            AppSelectField<String>.searchable(
+              value: _painSeverity,
+              labelText: _opdOptionalFieldLabel(
+                l10n,
+                l10n.opdPainSeverityLabel,
+              ),
+              semanticLabel: _opdOptionalFieldLabel(
+                l10n,
+                l10n.opdPainSeverityLabel,
+              ),
+              enabled: !_isSaving,
+              onChanged: (String? value) {
+                setState(() => _painSeverity = value);
+              },
+              options: _painSeverityOptions,
+            ),
+            AppTextField(
+              controller: _allergiesController,
+              labelText: _opdOptionalFieldLabel(l10n, l10n.opdAllergiesLabel),
+              enabled: !_isSaving,
+            ),
+          ],
+        ),
+        AppSwitchField(
+          title: l10n.opdEmergencyIndicatorsLabel,
+          value: _emergencyIndicator,
+          enabled: !_isSaving,
+          secondary: const Icon(Icons.emergency_outlined),
+          onChanged: (bool value) {
+            setState(() {
+              _emergencyIndicator = value;
+              if (value && _triageLevel == null) {
+                _triageLevel = 'LEVEL_1';
+              }
+              if (value && _routeDecision == null) {
+                _routeDecision = 'EMERGENCY';
+              }
+            });
+          },
+        ),
+        _TriageRiskFlags(
+          selected: _riskFlags,
+          enabled: !_isSaving,
+          onChanged: _setRiskFlag,
+        ),
+        AppSelectField<String>.searchable(
+          value: _triageLevel,
+          labelText: _opdOptionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
+          semanticLabel: _opdOptionalFieldLabel(l10n, l10n.opdTriageLevelLabel),
+          enabled: !_isSaving,
+          onChanged: (String? value) => setState(() => _triageLevel = value),
+          options: _statusOptions(_triageLevelOptions),
+        ),
+        AppSelectField<String>.searchable(
+          value: _routeDecision ?? _opdNoRouteDecisionValue,
+          labelText: _opdOptionalFieldLabel(l10n, l10n.opdRouteDecisionLabel),
+          semanticLabel: _opdOptionalFieldLabel(
+            l10n,
+            l10n.opdRouteDecisionLabel,
+          ),
+          enabled: !_isSaving,
+          onChanged: (String? value) {
+            setState(() {
+              _routeDecision =
+                  value == null || value == _opdNoRouteDecisionValue
+                  ? null
+                  : value;
+            });
+          },
+          options: _routeDecisionOptions(context),
+        ),
+        if (_routeDecision == 'CONSULTATION')
+          _ProviderSelectField(
+            value: _providerId,
+            providers: _providerOptions,
+            schedules: const <OpdProviderSchedule>[],
+            labelText: _opdOptionalFieldLabel(
+              l10n,
+              l10n.opdSearchProviderLabel,
+            ),
+            helperText: l10n.opdSearchProviderHelper,
+            emptyHelperText: l10n.opdNoProvidersHelper,
+            enabled: !_isSaving,
+            isLoading: _isLoadingProviders,
+            onChanged: (String? value) {
+              setState(() => _providerId = value);
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _vitalsSection(BuildContext context) {
+    final l10n = context.l10n;
+    return AppFormSection(
+      title: l10n.patientsVitalsSectionTitle,
+      density: AppFormSectionDensity.compact,
+      children: <Widget>[
+        Text(
+          l10n.opdVitalsAtLeastOneRequiredHelper,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        AppVitalsForm(
+          temperatureController: _temperatureController,
+          systolicController: _systolicController,
+          diastolicController: _diastolicController,
+          heartRateController: _heartRateController,
+          respiratoryRateController: _respiratoryRateController,
+          oxygenSaturationController: _oxygenSaturationController,
+          weightController: _weightController,
+          heightController: _heightController,
+          bloodPressureLabel: l10n.patientsBloodPressureLabel,
+          temperatureLabel: l10n.patientsTemperatureLabel,
+          systolicLabel: l10n.patientsSystolicLabel,
+          diastolicLabel: l10n.patientsDiastolicLabel,
+          heartRateLabel: l10n.patientsHeartRateLabel,
+          respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
+          oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
+          weightLabel: l10n.patientsWeightLabel,
+          heightLabel: l10n.patientsHeightLabel,
+          unitLabel: l10n.patientsVitalUnitLabel,
+          bloodPressureUnit: _bloodPressureUnit,
+          temperatureUnit: _selectedTemperatureUnit,
+          weightUnit: _selectedWeightUnit,
+          heightUnit: _selectedHeightUnit,
+          enabled: !_isSaving,
+          onBloodPressureUnitChanged: (String? value) {
+            setState(() {
+              _bloodPressureUnit = value ?? AppVitalsUnits.bloodPressureMmHg;
+            });
+          },
+          onTemperatureUnitChanged: (String? value) {
+            setState(() {
+              _selectedTemperatureUnit =
+                  value ?? AppVitalsUnits.temperatureCelsius;
+            });
+          },
+          onWeightUnitChanged: (String? value) {
+            setState(() {
+              _selectedWeightUnit = value ?? AppVitalsUnits.weightKilograms;
+            });
+          },
+          onHeightUnitChanged: (String? value) {
+            setState(() {
+              _selectedHeightUnit = value ?? AppVitalsUnits.heightCentimeters;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _notesSection(BuildContext context) {
+    final l10n = context.l10n;
+    return AppFormSection(
+      title: l10n.patientsNotesSectionTitle,
+      density: AppFormSectionDensity.compact,
+      children: <Widget>[
+        AppTextField(
+          controller: _notesController,
+          labelText: _opdOptionalFieldLabel(l10n, l10n.opdTriageNotesLabel),
+          enabled: !_isSaving,
+          maxLines: 3,
         ),
       ],
     );
@@ -4300,7 +4368,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       String type,
       String unit,
     ) {
-      final String value = controller.text.trim();
+      final String value = normalizeCurrencyAmount(controller.text);
       if (value.isEmpty) {
         return;
       }
@@ -4314,17 +4382,23 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     addSimpleVital(
       _temperatureController,
       'TEMPERATURE',
-      AppVitalsUnits.temperatureCelsius,
+      _selectedTemperatureUnit,
     );
     final String systolic = _systolicController.text.trim();
     final String diastolic = _diastolicController.text.trim();
     if (systolic.isNotEmpty && diastolic.isNotEmpty) {
+      final String systolicValue = _bloodPressurePayloadValue(
+        _systolicController,
+      );
+      final String diastolicValue = _bloodPressurePayloadValue(
+        _diastolicController,
+      );
       vitals.add(<String, Object?>{
         'vital_type': 'BLOOD_PRESSURE',
-        'value': '$systolic/$diastolic',
+        'value': '$systolicValue/$diastolicValue',
         'unit': AppVitalsUnits.bloodPressureMmHg,
-        'systolic_value': systolic,
-        'diastolic_value': diastolic,
+        'systolic_value': systolicValue,
+        'diastolic_value': diastolicValue,
       });
     }
     addSimpleVital(
@@ -4342,12 +4416,8 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       'OXYGEN_SATURATION',
       AppVitalsUnits.oxygenSaturation,
     );
-    addSimpleVital(_weightController, 'WEIGHT', AppVitalsUnits.weightKilograms);
-    addSimpleVital(
-      _heightController,
-      'HEIGHT',
-      AppVitalsUnits.heightCentimeters,
-    );
+    addSimpleVital(_weightController, 'WEIGHT', _selectedWeightUnit);
+    addSimpleVital(_heightController, 'HEIGHT', _selectedHeightUnit);
     return vitals;
   }
 
@@ -4366,6 +4436,34 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     final OpdVitalSign? vital = _initialVital('BLOOD_PRESSURE');
     final String value = _formatOpdVitalNumber(vital?.diastolicValue);
     return value.isEmpty ? _legacyBloodPressurePart(vital?.value, 1) : value;
+  }
+
+  String _initialVitalUnit(String type, String fallback) {
+    final String normalized = _initialVital(type)?.unit?.trim() ?? '';
+    return switch (normalized) {
+      AppVitalsUnits.bloodPressureKpa => AppVitalsUnits.bloodPressureKpa,
+      AppVitalsUnits.bloodPressureMmHg => AppVitalsUnits.bloodPressureMmHg,
+      AppVitalsUnits.temperatureFahrenheit ||
+      'F' => AppVitalsUnits.temperatureFahrenheit,
+      AppVitalsUnits.temperatureCelsius ||
+      'C' => AppVitalsUnits.temperatureCelsius,
+      AppVitalsUnits.weightPounds => AppVitalsUnits.weightPounds,
+      AppVitalsUnits.weightKilograms => AppVitalsUnits.weightKilograms,
+      AppVitalsUnits.heightMeters => AppVitalsUnits.heightMeters,
+      AppVitalsUnits.heightCentimeters => AppVitalsUnits.heightCentimeters,
+      _ => fallback,
+    };
+  }
+
+  String _bloodPressurePayloadValue(TextEditingController controller) {
+    final double? value = parseAppVitalInput(controller.text);
+    if (value == null) {
+      return '';
+    }
+    final double mmHg = _bloodPressureUnit == AppVitalsUnits.bloodPressureKpa
+        ? value / AppVitalsUnits.bloodPressureKpaFactor
+        : value;
+    return formatAppVitalNumber(mmHg, decimals: 2);
   }
 
   OpdVitalSign? _initialVital(String type) {
