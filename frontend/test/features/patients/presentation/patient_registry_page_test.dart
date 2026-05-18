@@ -356,13 +356,7 @@ void main() {
 
     expect(find.text('Triage intake'), findsOneWidget);
     expect(find.text('Blood pressure'), findsOneWidget);
-    expect(
-      find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppSelectField<String> && widget.labelText == 'Unit',
-      ),
-      findsNWidgets(4),
-    );
+    expect(find.byType(DropdownButtonFormField<String>), findsNWidgets(4));
     expect(find.text('mmHg'), findsOneWidget);
     expect(find.text('\u00B0C'), findsOneWidget);
     expect(find.text('\u00B0F'), findsNothing);

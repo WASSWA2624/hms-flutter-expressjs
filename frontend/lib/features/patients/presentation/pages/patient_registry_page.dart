@@ -3130,7 +3130,7 @@ class _PatientFlowQuickDialogState
                   _selectedTemperatureUnit = value ?? _temperatureUnitCelsius;
                 });
               },
-              unitWidth: 132,
+              unitWidth: 112,
             ),
             _vitalSignInput(
               context,
@@ -3174,7 +3174,7 @@ class _PatientFlowQuickDialogState
                     _selectedWeightUnit = value ?? _weightUnitKilograms;
                   });
                 },
-                unitWidth: 132,
+                unitWidth: 112,
               ),
               _vitalSignInput(
                 context,
@@ -3191,7 +3191,7 @@ class _PatientFlowQuickDialogState
                     _selectedHeightUnit = value ?? _heightUnitCentimeters;
                   });
                 },
-                unitWidth: 132,
+                unitWidth: 112,
               ),
             ]),
           ],
@@ -3991,13 +3991,12 @@ class _BloodPressureInput extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     );
-                    final Widget unitField = AppSelectField<String>(
+                    final Widget unitField = _VitalUnitSelector(
                       value: unit,
                       labelText: unitLabelText,
                       enabled: enabled,
                       options: unitOptions,
                       onChanged: onUnitChanged,
-                      menuHeight: 144,
                     );
 
                     if (constraints.maxWidth < 620) {
@@ -4056,7 +4055,7 @@ class _BloodPressureInput extends StatelessWidget {
                               ),
                             ),
                             SizedBox(width: theme.spacing.md),
-                            SizedBox(width: 150, child: unitField),
+                            SizedBox(width: 132, child: unitField),
                           ],
                         ),
                       ],
@@ -4221,13 +4220,12 @@ class _VitalSignInput extends StatelessWidget {
         );
         final Widget? unitControl = unitOptions == null
             ? null
-            : AppSelectField<String>(
+            : _VitalUnitSelector(
                 value: unit,
                 labelText: unitLabelText,
                 enabled: enabled,
                 options: unitOptions!,
                 onChanged: onUnitChanged,
-                menuHeight: 144,
               );
 
         return Column(
@@ -4239,7 +4237,7 @@ class _VitalSignInput extends StatelessWidget {
               LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   final bool stacked =
-                      constraints.hasBoundedWidth && constraints.maxWidth < 420;
+                      constraints.hasBoundedWidth && constraints.maxWidth < 340;
                   if (stacked) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -4293,6 +4291,55 @@ class _VitalSignInput extends StatelessWidget {
       _VitalSignStatus.normal => Icons.check_circle_outline,
       _VitalSignStatus.abnormal => Icons.warning_amber_outlined,
     };
+  }
+}
+
+class _VitalUnitSelector extends StatelessWidget {
+  const _VitalUnitSelector({
+    required this.value,
+    required this.labelText,
+    required this.enabled,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final String value;
+  final String labelText;
+  final bool enabled;
+  final List<AppSelectOption<String>> options;
+  final ValueChanged<String?>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? valueStyle = theme.textTheme.bodyLarge?.copyWith(
+      color: enabled
+          ? theme.colorScheme.onSurface
+          : theme.colorScheme.onSurface.withValues(alpha: 0.62),
+      fontWeight: FontWeight.w500,
+    );
+
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      isExpanded: true,
+      menuMaxHeight: 144,
+      icon: const Icon(Icons.arrow_drop_down),
+      style: valueStyle,
+      decoration: InputDecoration(labelText: labelText),
+      onChanged: enabled ? onChanged : null,
+      items: <DropdownMenuItem<String>>[
+        for (final AppSelectOption<String> option in options)
+          DropdownMenuItem<String>(
+            value: option.value,
+            enabled: option.enabled,
+            child: Text(
+              option.label,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
+            ),
+          ),
+      ],
+    );
   }
 }
 
