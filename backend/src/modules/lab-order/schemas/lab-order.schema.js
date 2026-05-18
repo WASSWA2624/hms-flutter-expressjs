@@ -21,6 +21,18 @@ const labOrderStatusSchema = z.enum(['ORDERED', 'COLLECTED', 'IN_PROCESS', 'COMP
 const MAX_REQUESTED_LAB_TESTS = 5000;
 const MAX_REQUESTED_LAB_PANELS = 5000;
 const labTestResultKindSchema = z.enum(['NUMERIC', 'QUALITATIVE', 'TEXT']);
+const standardLabTestIdentifierSchema = z
+  .string()
+  .trim()
+  .regex(/^STD_LAB_TEST:[A-Za-z0-9_]+$/, 'Invalid standard lab test identifier')
+  .transform((value) => value.toUpperCase());
+const standardLabPanelIdentifierSchema = z
+  .string()
+  .trim()
+  .regex(/^STD_LAB_PANEL:[A-Za-z0-9_]+$/, 'Invalid standard lab panel identifier')
+  .transform((value) => value.toUpperCase());
+const requestedLabTestIdentifierSchema = z.union([uuidOrFriendlyIdentifierSchema, standardLabTestIdentifierSchema]);
+const requestedLabPanelIdentifierSchema = z.union([uuidOrFriendlyIdentifierSchema, standardLabPanelIdentifierSchema]);
 
 const labOrderNewTestSchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -34,7 +46,7 @@ const labOrderNewTestSchema = z.object({
 
 const labOrderRequestedTestSchema = z
   .object({
-    lab_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    lab_test_id: requestedLabTestIdentifierSchema.optional().nullable(),
     new_test: labOrderNewTestSchema.optional().nullable()
   })
   .superRefine((value, ctx) => {
@@ -47,7 +59,7 @@ const labOrderRequestedTestSchema = z
   });
 
 const labOrderRequestedPanelSchema = z.object({
-  lab_panel_id: uuidOrFriendlyIdentifierSchema
+  lab_panel_id: requestedLabPanelIdentifierSchema
 });
 
 const createLabOrderSchema = z

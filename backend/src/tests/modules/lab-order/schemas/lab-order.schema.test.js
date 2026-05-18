@@ -68,6 +68,16 @@ describe('Lab Order Schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('accepts standard catalog test and panel request selections', () => {
+      const result = createLabOrderSchema.safeParse({
+        ...validData,
+        requested_tests: [{ lab_test_id: 'STD_LAB_TEST:LOINC_42176_8' }],
+        requested_panels: [{ lab_panel_id: 'STD_LAB_PANEL:PANEL_LOINC_44907_4' }]
+      });
+
+      expect(result.success).toBe(true);
+    });
+
     it('accepts large configured test request selections', () => {
       const result = createLabOrderSchema.safeParse({
         ...validData,
@@ -174,6 +184,16 @@ describe('Lab Order Schemas', () => {
       const data = {
         requested_tests: [{ lab_test_id: 'LBT0000001' }],
         requested_panels: [{ lab_panel_id: 'LPN0000001' }]
+      };
+
+      const result = updateLabOrderSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept standard catalog selections for existing order edits', () => {
+      const data = {
+        requested_tests: [{ lab_test_id: 'STD_LAB_TEST:LOINC_42176_8' }],
+        requested_panels: [{ lab_panel_id: 'STD_LAB_PANEL:PANEL_LOINC_44907_4' }]
       };
 
       const result = updateLabOrderSchema.safeParse(data);
