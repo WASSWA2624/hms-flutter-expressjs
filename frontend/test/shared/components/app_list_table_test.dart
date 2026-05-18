@@ -352,7 +352,7 @@ Widget _titleCell(BuildContext context, _RowItem item) {
 }
 
 Widget _statusCell(BuildContext context, _RowItem item) {
-  return Text(item.status);
+  return AppStatusText(label: item.status, icon: Icons.check_circle_outline);
 }
 
 final class _RowItem {
