@@ -45841,7 +45841,7 @@ const STANDARD_LAB_PANELS = Object.freeze({
   ]
 });
 
-const resolveLabOrderRealtimeRecipients = async (orderRecord, actorUserId = null) => {
+const resolveLabOrderRealtimeRecipients = async (orderRecord) => {
   const tenantId = orderRecord?.patient?.tenant_id || null;
   if (!tenantId || !prisma?.user_role?.findMany) return [];
 
@@ -45859,13 +45859,13 @@ const resolveLabOrderRealtimeRecipients = async (orderRecord, actorUserId = null
     select: { user_id: true }
   });
 
-  return [...new Set(rows.map((row) => row.user_id).filter(Boolean))].filter((userId) => userId !== actorUserId);
+  return [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
 };
 
-const publishLabOrderRealtimeUpdate = async ({ orderRecord, actorUserId = null, action }) => {
+const publishLabOrderRealtimeUpdate = async ({ orderRecord, action }) => {
   try {
     if (!orderRecord) return;
-    const recipientUserIds = await resolveLabOrderRealtimeRecipients(orderRecord, actorUserId);
+    const recipientUserIds = await resolveLabOrderRealtimeRecipients(orderRecord);
     if (!recipientUserIds.length) return;
 
     const order = mapLabOrderRecord(orderRecord);
@@ -46244,7 +46244,6 @@ const createLabOrder = async (data, userId, ipAddress) => {
     }).catch(() => {});
     publishLabOrderRealtimeUpdate({
       orderRecord: createdOrder || labOrder,
-      actorUserId: userId,
       action: 'CREATED'
     });
 
@@ -46345,7 +46344,6 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
     }).catch(() => {});
     publishLabOrderRealtimeUpdate({
       orderRecord: labOrder || updated,
-      actorUserId: userId,
       action: 'UPDATED'
     });
 
@@ -46378,7 +46376,6 @@ const deleteLabOrder = async (id, userId, ipAddress) => {
     }).catch(() => {});
     publishLabOrderRealtimeUpdate({
       orderRecord: before,
-      actorUserId: userId,
       action: 'DELETED'
     });
 

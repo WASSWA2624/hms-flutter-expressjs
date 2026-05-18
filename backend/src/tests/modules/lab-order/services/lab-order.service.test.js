@@ -145,10 +145,12 @@ describe('lab-order.service', () => {
   });
 
   it('creates a lab order with resolved identifiers and audit logging', async () => {
-    resolveModelRecordOrThrow.mockResolvedValueOnce({
-      id: 'patient-internal-1',
-      tenant_id: 'tenant-1',
-    });
+    resolveModelRecordOrThrow
+      .mockResolvedValueOnce({
+        id: 'patient-internal-1',
+        tenant_id: 'tenant-1',
+      })
+      .mockResolvedValueOnce({ id: 'lab-test-1' });
     resolveModelIdOrThrow.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
     labOrderRepository.findById.mockResolvedValue(buildOrderRecord());
@@ -159,6 +161,7 @@ describe('lab-order.service', () => {
         encounter_id: 'ENC0000001',
         ordered_at: now.toISOString(),
         status: 'ORDERED',
+        requested_tests: [{ lab_test_id: 'LBT0000001' }],
       },
       mockUserId,
       mockIpAddress
@@ -170,6 +173,9 @@ describe('lab-order.service', () => {
         encounter_id: 'encounter-internal-1',
         ordered_at: expect.any(Date),
         status: 'ORDERED',
+        items: {
+          create: [{ lab_test_id: 'lab-test-1', status: 'ORDERED' }],
+        },
       })
     );
     expect(createAuditLog).toHaveBeenCalledWith(
@@ -239,12 +245,16 @@ describe('lab-order.service', () => {
   });
 
   it('swallows audit failures after a successful create', async () => {
-    resolveModelRecordOrThrow.mockResolvedValueOnce({
-      id: 'patient-internal-1',
-      tenant_id: 'tenant-1',
-    });
+    resolveModelRecordOrThrow
+      .mockResolvedValueOnce({
+        id: 'patient-internal-1',
+        tenant_id: 'tenant-1',
+      })
+      .mockResolvedValueOnce({ id: 'lab-test-1' });
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
-    labOrderRepository.findById.mockResolvedValue(buildOrderRecord({ encounter: null, encounter_id: null }));
+    labOrderRepository.findById.mockResolvedValue(
+      buildOrderRecord({ encounter: null, encounter_id: null })
+    );
     createAuditLog.mockImplementation(() => Promise.reject(new Error('audit failed')));
 
     await expect(
@@ -252,6 +262,7 @@ describe('lab-order.service', () => {
         {
           patient_id: 'PAT0000001',
           status: 'ORDERED',
+          requested_tests: [{ lab_test_id: 'LBT0000001' }],
         },
         mockUserId,
         mockIpAddress

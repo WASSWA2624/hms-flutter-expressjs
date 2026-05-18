@@ -24,6 +24,7 @@ dependencies:
   phone_numbers_parser: ^9.0.22
   shared_preferences: ^2.5.5
   web: ^1.1.1
+  web_socket_channel: ^3.0.3
   file_selector: ^1.1.0
 
 dev_dependencies:

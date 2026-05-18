@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -21,16 +24,29 @@ final clinicalWorkspaceControllerProvider =
 final class ClinicalWorkspaceController
     extends AsyncNotifier<Result<ClinicalWorkspaceState>> {
   static const Duration _syncInterval = Duration(seconds: 8);
+  static const Duration _realtimeRefreshDebounce = Duration(milliseconds: 250);
 
   ClinicalRepository get _repository => ref.read(clinicalRepositoryProvider);
   OpdRepository get _opdRepository => ref.read(opdRepositoryProvider);
 
   Timer? _syncTimer;
+  Timer? _realtimeRefreshTimer;
   bool _isSyncing = false;
 
   @override
   Future<Result<ClinicalWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
+    ref.onDispose(() {
+      _syncTimer?.cancel();
+      _realtimeRefreshTimer?.cancel();
+    });
+    ref.listen<AsyncValue<RealtimeMessage>>(realtimeMessagesProvider, (
+      AsyncValue<RealtimeMessage>? previous,
+      AsyncValue<RealtimeMessage> next,
+    ) {
+      if (next case AsyncData<RealtimeMessage>(value: final message)) {
+        _handleRealtimeMessage(message);
+      }
+    });
     final Result<ClinicalWorkspaceState> result = await _loadInitialState();
     _startSync();
     return result;
@@ -147,7 +163,22 @@ final class ClinicalWorkspaceController
       return refresh();
     }
 
-    _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
+    return _refreshSelectedEntry(entry, showLoading: true);
+  }
+
+  Future<AppFailure?> _refreshSelectedEntry(
+    ClinicalWorklistEntry entry, {
+    required bool showLoading,
+  }) async {
+    final ClinicalWorkspaceState? current = _currentState;
+    if (current == null) {
+      return null;
+    }
+
+    if (showLoading) {
+      _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
+    }
+
     final Result<ClinicalEncounterBundle> result = await _repository
         .loadEncounterBundle(entry);
     return switch (result) {
@@ -163,7 +194,7 @@ final class ClinicalWorkspaceController
           latest.copyWith(
             selectedBundle: hydrated,
             worklist: _replaceEntry(latest.worklist, hydrated.entry),
-            isRefreshingDetail: false,
+            isRefreshingDetail: showLoading ? false : latest.isRefreshingDetail,
           ),
         );
         return null;
@@ -173,7 +204,12 @@ final class ClinicalWorkspaceController
           final ClinicalWorkspaceState? latest = _currentState;
           if (latest != null) {
             _emit(
-              latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
+              latest.copyWith(
+                isRefreshingDetail: showLoading
+                    ? false
+                    : latest.isRefreshingDetail,
+                lastFailure: failure,
+              ),
             );
           }
           return failure;
@@ -543,6 +579,73 @@ final class ClinicalWorkspaceController
     });
   }
 
+  void _handleRealtimeMessage(RealtimeMessage message) {
+    if (message.event != RealtimeEvents.labWorkflowUpdated) {
+      return;
+    }
+
+    if (!_labWorkflowEventTouchesVisibleData(message.payload)) {
+      return;
+    }
+
+    _realtimeRefreshTimer?.cancel();
+    _realtimeRefreshTimer = Timer(_realtimeRefreshDebounce, () {
+      unawaited(_syncVisibleData());
+    });
+  }
+
+  bool _labWorkflowEventTouchesVisibleData(Map<String, Object?> payload) {
+    final ClinicalWorkspaceState? current = _currentState;
+    if (current == null) {
+      return false;
+    }
+
+    final ClinicalEncounterBundle? selectedBundle = current.selectedBundle;
+    if (selectedBundle == null) {
+      return true;
+    }
+
+    final ClinicalWorklistEntry selected = selectedBundle.entry;
+    final Map<String, Object?> workflow = _objectMap(payload['workflow']);
+    final Map<String, Object?> order = _objectMap(workflow['order']);
+
+    final Set<String> selectedPatientIds = _normalizedIds(<String?>[
+      selected.apiPatientId,
+      selected.patientId,
+      selected.patientPublicId,
+    ]);
+    final Set<String> selectedEncounterIds = _normalizedIds(<String?>[
+      selected.apiEncounterId,
+      selected.encounterId,
+      selected.encounterPublicId,
+    ]);
+    final Set<String> selectedLabOrderIds = selectedBundle.labOrders
+        .map((ClinicalRelatedRecord record) => _normalizeId(record.id))
+        .whereType<String>()
+        .toSet();
+
+    final Set<String> eventPatientIds = _normalizedIds(<String?>[
+      _stringValue(payload['patient_id']),
+      _stringValue(payload['patient_public_id']),
+      _stringValue(order['patient_id']),
+    ]);
+    final Set<String> eventEncounterIds = _normalizedIds(<String?>[
+      _stringValue(payload['encounter_id']),
+      _stringValue(order['encounter_id']),
+    ]);
+    final Set<String> eventLabOrderIds = _normalizedIds(<String?>[
+      _stringValue(payload['order_id']),
+      _stringValue(payload['order_public_id']),
+      _stringValue(payload['resource_id']),
+      _stringValue(order['id']),
+      _stringValue(order['display_id']),
+    ]);
+
+    return _setsIntersect(selectedPatientIds, eventPatientIds) ||
+        _setsIntersect(selectedEncounterIds, eventEncounterIds) ||
+        _setsIntersect(selectedLabOrderIds, eventLabOrderIds);
+  }
+
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
     bool refreshReferenceData = false,
@@ -581,7 +684,7 @@ final class ClinicalWorkspaceController
 
       final ClinicalWorklistEntry? selected = _selectedEntry;
       if (selected != null) {
-        await selectEntry(selected);
+        await _refreshSelectedEntry(selected, showLoading: showLoading);
       }
 
       return null;
@@ -981,6 +1084,47 @@ final class ClinicalWorkspaceController
   bool _requiresOpdDoctorReview(ClinicalWorklistEntry entry) {
     return entry.opdFlowApiId != null &&
         (entry.stage ?? '').toUpperCase() == 'WAITING_DOCTOR_REVIEW';
+  }
+
+  Map<String, Object?> _objectMap(Object? value) {
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map<Object?, Object?>) {
+      return Map<String, Object?>.fromEntries(
+        value.entries
+            .where((MapEntry<Object?, Object?> entry) => entry.key != null)
+            .map(
+              (MapEntry<Object?, Object?> entry) =>
+                  MapEntry<String, Object?>(entry.key.toString(), entry.value),
+            ),
+      );
+    }
+    return const <String, Object?>{};
+  }
+
+  Set<String> _normalizedIds(Iterable<String?> values) {
+    return values.map(_normalizeId).whereType<String>().toSet();
+  }
+
+  String? _normalizeId(String? value) {
+    final String? normalized = _stringValue(value)?.toUpperCase();
+    return normalized == null || normalized.isEmpty ? null : normalized;
+  }
+
+  String? _stringValue(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final String text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  bool _setsIntersect(Set<String> left, Set<String> right) {
+    if (left.isEmpty || right.isEmpty) {
+      return false;
+    }
+    return left.any(right.contains);
   }
 
   ClinicalWorklistEntry? get _selectedEntry =>
