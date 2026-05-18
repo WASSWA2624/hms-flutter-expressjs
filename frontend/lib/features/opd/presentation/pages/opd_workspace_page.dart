@@ -1820,22 +1820,9 @@ class _InlineSuccessPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.42),
-        border: Border.all(color: theme.colorScheme.primary),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Row(
-          children: <Widget>[
-            Icon(Icons.check_circle_outline, color: theme.colorScheme.primary),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(child: Text(message)),
-          ],
-        ),
-      ),
+    return AppMessagePanel(
+      message: message,
+      tone: AppWorkspaceStatusTone.success,
     );
   }
 }
@@ -2178,32 +2165,6 @@ class _WalkInTabLabel extends StatelessWidget {
   }
 }
 
-class _WalkInSection extends StatelessWidget {
-  const _WalkInSection({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: AppFormSection(
-          title: title,
-          density: AppFormSectionDensity.compact,
-          children: children,
-        ),
-      ),
-    );
-  }
-}
-
 class _WalkInLowerSections extends StatelessWidget {
   const _WalkInLowerSections({
     required this.routingSection,
@@ -2322,8 +2283,9 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
             ? null
             : AppFailureStateView(failure: _failure!),
         children: <Widget>[
-          _WalkInSection(
+          AppSectionPanel(
             title: l10n.opdPatientSectionTitle,
+            density: AppContentPanelDensity.compact,
             children: <Widget>[
               _WalkInModeSelector(
                 value: _patientMode,
@@ -2359,8 +2321,9 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   }
 
   Widget _routingSection(AppLocalizations l10n) {
-    return _WalkInSection(
+    return AppSectionPanel(
       title: l10n.opdRoutingSectionTitle,
+      density: AppContentPanelDensity.compact,
       children: <Widget>[
         if (_patientMode != _WalkInPatientMode.appointment)
           AppSelectField<String>.searchable(
@@ -2442,8 +2405,9 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   }
 
   Widget _billingSection(AppLocalizations l10n) {
-    return _WalkInSection(
+    return AppSectionPanel(
       title: l10n.opdBillingSectionTitle,
+      density: AppContentPanelDensity.compact,
       children: <Widget>[
         AppCurrencyAmountField(
           amountController: _feeController,
@@ -3789,31 +3753,13 @@ class _OpdWorkflowPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final double tileWidth = _responsiveTileWidth(
-              availableWidth: constraints.maxWidth,
-              itemCount: children.length,
-              maxColumns: 4,
-              spacing: theme.spacing.md,
-              minWidth: 150,
-            );
-            return Wrap(
-              spacing: theme.spacing.md,
-              runSpacing: theme.spacing.sm,
-              children: <Widget>[
-                for (final Widget child in children)
-                  SizedBox(width: tileWidth, child: child),
-              ],
-            );
-          },
-        ),
+    return AppContentPanel(
+      child: AppResponsiveWrap(
+        maxColumns: 4,
+        minItemWidth: 150,
+        spacing: theme.spacing.md,
+        runSpacing: theme.spacing.sm,
+        children: children,
       ),
     );
   }
@@ -3843,76 +3789,70 @@ class _OpdVitalIndicatorsPanel extends StatelessWidget {
     final List<OpdVitalSign> vitals = value.vitalMeasurements;
     final List<OpdClinicalAlert> alerts = value.clinicalAlertDetails;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Wrap(
-                    spacing: theme.spacing.sm,
-                    runSpacing: theme.spacing.xs,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        context.l10n.opdVitalsSummaryLabel,
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      _StatusBadge(
-                        value: _abnormalVitalCount(value, thresholds) > 0
-                            ? 'ABNORMAL'
-                            : 'NORMAL',
-                      ),
-                    ],
-                  ),
+    return AppContentPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      context.l10n.opdVitalsSummaryLabel,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    _StatusBadge(
+                      value: _abnormalVitalCount(value, thresholds) > 0
+                          ? 'ABNORMAL'
+                          : 'NORMAL',
+                    ),
+                  ],
                 ),
-                if (onEditVitals != null)
-                  AppButton.tertiary(
-                    label: context.l10n.opdEditVitalsAction,
-                    leadingIcon: Icons.edit_outlined,
-                    onPressed: () => onEditVitals!(value),
+              ),
+              if (onEditVitals != null)
+                AppButton.tertiary(
+                  label: context.l10n.opdEditVitalsAction,
+                  leadingIcon: Icons.edit_outlined,
+                  onPressed: () => onEditVitals!(value),
+                ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.sm),
+          for (final OpdVitalSign vital in vitals)
+            _OpdVitalIndicatorRow(
+              vital: vital,
+              state: _vitalIndicatorState(vital, thresholds, alerts),
+            ),
+          if (alerts.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Text(
+              context.l10n.opdClinicalAlertsSummaryLabel,
+              style: theme.textTheme.labelMedium,
+            ),
+            SizedBox(height: theme.spacing.xs),
+            Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                for (final OpdClinicalAlert alert in alerts)
+                  AppWorkspaceStatusBadge(
+                    status: AppWorkspaceStatus(
+                      label: _joinDisplay(<String?>[
+                        _apiLabel(alert.severity ?? ''),
+                        alert.message,
+                      ]),
+                      tone: _alertTone(alert.severity),
+                    ),
                   ),
               ],
             ),
-            SizedBox(height: theme.spacing.sm),
-            for (final OpdVitalSign vital in vitals)
-              _OpdVitalIndicatorRow(
-                vital: vital,
-                state: _vitalIndicatorState(vital, thresholds, alerts),
-              ),
-            if (alerts.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Text(
-                context.l10n.opdClinicalAlertsSummaryLabel,
-                style: theme.textTheme.labelMedium,
-              ),
-              SizedBox(height: theme.spacing.xs),
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: <Widget>[
-                  for (final OpdClinicalAlert alert in alerts)
-                    AppWorkspaceStatusBadge(
-                      status: AppWorkspaceStatus(
-                        label: _joinDisplay(<String?>[
-                          _apiLabel(alert.severity ?? ''),
-                          alert.message,
-                        ]),
-                        tone: _alertTone(alert.severity),
-                      ),
-                    ),
-                ],
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }
@@ -3970,22 +3910,11 @@ class _OpdWorkflowInfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(label, style: theme.textTheme.labelMedium),
-        SizedBox(height: theme.spacing.xs),
-        Text(
-          value.isEmpty ? context.l10n.profileUnknownValue : value,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+    return AppInfoTile(
+      label: label,
+      value: value,
+      emptyValue: context.l10n.profileUnknownValue,
+      bordered: false,
     );
   }
 }
@@ -3999,40 +3928,16 @@ class _OpdWorkflowSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(title, style: theme.textTheme.titleSmall),
-            SizedBox(height: theme.spacing.sm),
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final double tileWidth = _responsiveTileWidth(
-                  availableWidth: constraints.maxWidth,
-                  itemCount: children.length,
-                  maxColumns: 3,
-                  spacing: theme.spacing.sm,
-                  minWidth: 190,
-                );
-                return Wrap(
-                  spacing: theme.spacing.sm,
-                  runSpacing: theme.spacing.sm,
-                  children: <Widget>[
-                    for (final Widget child in children)
-                      SizedBox(width: tileWidth, child: child),
-                  ],
-                );
-              },
-            ),
-          ],
+    return AppSectionPanel(
+      title: title,
+      children: <Widget>[
+        AppResponsiveWrap(
+          minItemWidth: 190,
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          children: children,
         ),
-      ),
+      ],
     );
   }
 }
@@ -4052,45 +3957,15 @@ class _OpdWorkflowAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppAccessActionGate(
+    return AppPermissionActionButton(
       requirement: requirement,
-      builder: (BuildContext context, bool isAllowed) {
-        if (!isAllowed) {
-          return const SizedBox.shrink();
-        }
-        return AppButton.secondary(
-          label: label,
-          leadingIcon: icon,
-          fullWidth: true,
-          onPressed: onPressed,
-        );
-      },
+      label: label,
+      icon: icon,
+      fullWidth: true,
+      hideWhenDenied: true,
+      onPressed: onPressed,
     );
   }
-}
-
-double _responsiveTileWidth({
-  required double availableWidth,
-  required int itemCount,
-  required int maxColumns,
-  required double spacing,
-  required double minWidth,
-}) {
-  if (!availableWidth.isFinite || availableWidth <= 0) {
-    return minWidth;
-  }
-
-  final int maxUsableColumns = itemCount.clamp(1, maxColumns).toInt();
-  int columns = maxUsableColumns;
-  while (columns > 1) {
-    final double candidate =
-        (availableWidth - spacing * (columns - 1)) / columns;
-    if (candidate >= minWidth) {
-      return candidate;
-    }
-    columns -= 1;
-  }
-  return availableWidth;
 }
 
 bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
@@ -4661,46 +4536,26 @@ class _TriageRiskFlags extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: AppFormSection(
-          title: l10n.opdRiskFlagsLabel,
-          density: AppFormSectionDensity.compact,
+    return AppSectionPanel(
+      title: l10n.opdRiskFlagsLabel,
+      density: AppContentPanelDensity.compact,
+      children: <Widget>[
+        AppResponsiveWrap(
+          maxColumns: 2,
+          minItemWidth: 220,
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.xs,
           children: <Widget>[
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final double tileWidth = _responsiveTileWidth(
-                  availableWidth: constraints.maxWidth,
-                  itemCount: _triageRiskFlagOptions.length,
-                  maxColumns: 2,
-                  spacing: theme.spacing.sm,
-                  minWidth: 220,
-                );
-                return Wrap(
-                  spacing: theme.spacing.sm,
-                  runSpacing: theme.spacing.xs,
-                  children: <Widget>[
-                    for (final String flag in _triageRiskFlagOptions)
-                      SizedBox(
-                        width: tileWidth,
-                        child: AppCheckboxField(
-                          title: _riskFlagLabel(l10n, flag),
-                          value: selected.contains(flag),
-                          enabled: enabled,
-                          onChanged: (bool value) => onChanged(flag, value),
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
+            for (final String flag in _triageRiskFlagOptions)
+              AppCheckboxField(
+                title: _riskFlagLabel(l10n, flag),
+                value: selected.contains(flag),
+                enabled: enabled,
+                onChanged: (bool value) => onChanged(flag, value),
+              ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

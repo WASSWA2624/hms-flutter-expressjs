@@ -2182,142 +2182,56 @@ class _PatientDemographics extends StatelessWidget {
   Widget build(BuildContext context) {
     final Patient patient = detail.patient;
     final l10n = context.l10n;
-    final List<_PatientDetailItem> items = <_PatientDetailItem>[
-      _PatientDetailItem(
+    final List<AppInfoTileData> items = <AppInfoTileData>[
+      AppInfoTileData(
         label: l10n.patientsNameLabel,
         value: patient.effectiveDisplayName,
         icon: Icons.person_outline,
       ),
-      _PatientDetailItem(
+      AppInfoTileData(
         label: l10n.patientsIdentifierLabel,
         value: patient.effectiveIdentifier,
         icon: Icons.badge_outlined,
       ),
-      _PatientDetailItem(
+      AppInfoTileData(
         label: l10n.patientsDobLabel,
         value: _formatOptionalDate(context, patient.dateOfBirth),
         icon: Icons.cake_outlined,
       ),
-      _PatientDetailItem(
+      AppInfoTileData(
         label: l10n.patientsGenderLabel,
         value: patient.gender == null
             ? null
             : _genderLabel(l10n, patient.gender!),
         icon: Icons.wc_outlined,
       ),
-      _PatientDetailItem(
+      AppInfoTileData(
         label: l10n.patientsPhoneLabel,
         value: patient.primaryPhone,
         icon: Icons.phone_outlined,
       ),
-      _PatientDetailItem(
+      AppInfoTileData(
         label: l10n.patientsEmailLabel,
         value: patient.primaryEmail,
         icon: Icons.alternate_email_outlined,
       ),
-      _PatientDetailItem(
+      AppInfoTileData(
         label: l10n.patientsFacilityLabel,
         value: patient.facilityLabel,
         icon: Icons.business_outlined,
       ),
       if (patient.requiresCompletion)
-        _PatientDetailItem(
+        AppInfoTileData(
           label: l10n.patientsRegistrationStatusLabel,
           value: l10n.patientsRegistrationIncompleteValue,
           icon: Icons.error_outline,
         ),
     ];
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final ThemeData theme = Theme.of(context);
-        final int columns = constraints.maxWidth >= 820
-            ? 4
-            : constraints.maxWidth >= 560
-            ? 3
-            : constraints.maxWidth >= 360
-            ? 2
-            : 1;
-        final double gap = theme.spacing.sm;
-        final double width =
-            (constraints.maxWidth - (gap * (columns - 1))) / columns;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: <Widget>[
-            for (final _PatientDetailItem item in items)
-              SizedBox(
-                width: math.max(width, 0),
-                child: _PatientDetailTile(item: item),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _PatientDetailItem {
-  const _PatientDetailItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String? value;
-  final IconData icon;
-}
-
-class _PatientDetailTile extends StatelessWidget {
-  const _PatientDetailTile({required this.item});
-
-  final _PatientDetailItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(
-              item.icon,
-              size: theme.appTokens.listIconSize,
-              color: theme.colorScheme.primary,
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    item.value ?? context.l10n.profileUnknownValue,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppInfoTileGrid(
+      items: items,
+      emptyValue: l10n.profileUnknownValue,
+      minItemWidth: 170,
     );
   }
 }
@@ -2329,28 +2243,10 @@ class _InlineFormError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.error),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Row(
-          children: <Widget>[
-            Icon(Icons.error_outline, color: theme.colorScheme.error),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Text(
-                message,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppMessagePanel(
+      message: message,
+      tone: AppWorkspaceStatusTone.error,
+      density: AppContentPanelDensity.compact,
     );
   }
 }
@@ -2374,7 +2270,7 @@ class _QuickActions extends ConsumerWidget {
           spacing: theme.spacing.xs,
           runSpacing: theme.spacing.xs,
           children: <Widget>[
-            _QuickActionButton(
+            AppPermissionActionButton(
               label: l10n.patientsQuickAppointmentAction,
               icon: Icons.event_available_outlined,
               onPressed: () => _openQuickAction(
@@ -2387,7 +2283,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.patientWrite],
               ),
             ),
-            _QuickActionButton(
+            AppPermissionActionButton(
               label: l10n.patientsQuickOpdCheckInAction,
               icon: Icons.login_outlined,
               onPressed: () => _openQuickAction(
@@ -2403,7 +2299,7 @@ class _QuickActions extends ConsumerWidget {
                 ],
               ),
             ),
-            _QuickActionButton(
+            AppPermissionActionButton(
               label: l10n.patientsQuickTriageAction,
               icon: Icons.monitor_heart_outlined,
               onPressed: () => _openQuickAction(
@@ -2416,7 +2312,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.emergencyWrite],
               ),
             ),
-            _QuickActionButton(
+            AppPermissionActionButton(
               label: l10n.patientsQuickClinicalAction,
               icon: Icons.medical_services_outlined,
               onPressed: () => _openQuickAction(
@@ -2429,7 +2325,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
               ),
             ),
-            _QuickActionButton(
+            AppPermissionActionButton(
               label: l10n.patientsQuickBillingAction,
               icon: Icons.receipt_long_outlined,
               onPressed: () => _openQuickAction(
@@ -2442,7 +2338,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.billingWrite],
               ),
             ),
-            _QuickActionButton(
+            AppPermissionActionButton(
               label: l10n.patientsQuickAdmissionAction,
               icon: Icons.local_hospital_outlined,
               onPressed: () => _openQuickAction(
@@ -2455,7 +2351,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
               ),
             ),
-            _QuickActionButton(
+            AppPermissionActionButton(
               label: l10n.patientsQuickReportAction,
               icon: Icons.summarize_outlined,
               onPressed: () => _openQuickAction(
@@ -2471,33 +2367,6 @@ class _QuickActions extends ConsumerWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _QuickActionButton extends StatelessWidget {
-  const _QuickActionButton({
-    required this.label,
-    required this.icon,
-    required this.requirement,
-    required this.onPressed,
-  });
-
-  final String label;
-  final IconData icon;
-  final AccessRequirement requirement;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppAccessActionGate(
-      requirement: requirement,
-      builder: (_, bool isAllowed) => AppButton.secondary(
-        leadingIcon: icon,
-        label: label,
-        enabled: isAllowed,
-        onPressed: isAllowed ? onPressed : null,
-      ),
     );
   }
 }
@@ -3810,12 +3679,14 @@ class _PatientReportDialog extends StatelessWidget {
           else
             for (final PatientTimelineItem item
                 in effectiveDetail.timeline.take(6))
-              _InfoRow(
+              AppInfoTile(
                 label: _apiLabel(item.resource),
                 value: _joinDisplay(<String?>[
                   item.title,
                   _formatOptionalDateTime(context, item.occurredAt),
                 ]),
+                emptyValue: l10n.profileUnknownValue,
+                bordered: false,
               ),
         ],
       ),
@@ -5881,80 +5752,73 @@ class _DuplicateReviewCard extends StatelessWidget {
     final Patient? secondary =
         duplicate.secondaryPatient ?? duplicate.candidatePatient;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        color: theme.colorScheme.surfaceContainerLowest,
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: l10n.patientsDuplicateScoreLabel(
-                      duplicate.confidenceScore,
-                    ),
-                    tone: AppWorkspaceStatusTone.warning,
+    return AppContentPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: l10n.patientsDuplicateScoreLabel(
+                    duplicate.confidenceScore,
                   ),
+                  tone: AppWorkspaceStatusTone.warning,
                 ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Text(
-                    _apiLabel(duplicate.classification),
-                    style: theme.textTheme.titleSmall,
-                  ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Text(
+                  _apiLabel(duplicate.classification),
+                  style: theme.textTheme.titleSmall,
                 ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            _DuplicatePatientPair(primary: primary, secondary: secondary),
-            if (duplicate.matchReasons.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Text(
-                duplicate.matchReasons.map(_apiLabel).join(', '),
-                style: theme.textTheme.bodySmall,
               ),
             ],
+          ),
+          SizedBox(height: theme.spacing.sm),
+          _DuplicatePatientPair(primary: primary, secondary: secondary),
+          if (duplicate.matchReasons.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
-            Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                AppAccessActionGate(
-                  requirement: _writeRequirement,
-                  builder: (_, bool isAllowed) => AppButton.secondary(
-                    label: l10n.patientsReviewMergeAction,
-                    leadingIcon: Icons.merge_type_outlined,
-                    enabled:
-                        isAllowed &&
-                        !isBusy &&
-                        primary != null &&
-                        secondary != null,
-                    onPressed: onPreview,
-                  ),
-                ),
-                AppAccessActionGate(
-                  requirement: _writeRequirement,
-                  builder: (_, bool isAllowed) => AppButton.tertiary(
-                    label: l10n.patientsDismissDuplicateAction,
-                    leadingIcon: Icons.block_outlined,
-                    enabled:
-                        isAllowed &&
-                        !isBusy &&
-                        primary != null &&
-                        secondary != null,
-                    onPressed: onDismiss,
-                  ),
-                ),
-              ],
+            Text(
+              duplicate.matchReasons.map(_apiLabel).join(', '),
+              style: theme.textTheme.bodySmall,
             ),
           ],
-        ),
+          SizedBox(height: theme.spacing.sm),
+          Wrap(
+            spacing: theme.spacing.xs,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              AppAccessActionGate(
+                requirement: _writeRequirement,
+                builder: (_, bool isAllowed) => AppButton.secondary(
+                  label: l10n.patientsReviewMergeAction,
+                  leadingIcon: Icons.merge_type_outlined,
+                  enabled:
+                      isAllowed &&
+                      !isBusy &&
+                      primary != null &&
+                      secondary != null,
+                  onPressed: onPreview,
+                ),
+              ),
+              AppAccessActionGate(
+                requirement: _writeRequirement,
+                builder: (_, bool isAllowed) => AppButton.tertiary(
+                  label: l10n.patientsDismissDuplicateAction,
+                  leadingIcon: Icons.block_outlined,
+                  enabled:
+                      isAllowed &&
+                      !isBusy &&
+                      primary != null &&
+                      secondary != null,
+                  onPressed: onDismiss,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -6006,29 +5870,24 @@ class _DuplicatePatientSummary extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final Patient? value = patient;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              value?.effectiveDisplayName ?? context.l10n.profileUnknownValue,
-              style: theme.textTheme.titleSmall,
-            ),
-            Text(
-              _joinDisplay(<String?>[
-                value?.effectiveIdentifier,
-                value?.primaryPhone,
-                value?.primaryEmail,
-              ]),
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-        ),
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            value?.effectiveDisplayName ?? context.l10n.profileUnknownValue,
+            style: theme.textTheme.titleSmall,
+          ),
+          Text(
+            _joinDisplay(<String?>[
+              value?.effectiveIdentifier,
+              value?.primaryPhone,
+              value?.primaryEmail,
+            ]),
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
       ),
     );
   }
@@ -6053,90 +5912,42 @@ class _PatientMergePreviewPanel extends StatelessWidget {
         .where((MapEntry<String, int> entry) => entry.value > 0)
         .toList(growable: false);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.statusColors.warningContainer,
-        border: Border.all(color: theme.statusColors.warning),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              l10n.patientsMergePreviewTitle,
-              style: theme.textTheme.titleSmall,
-            ),
-            SizedBox(height: theme.spacing.sm),
-            _DuplicatePatientPair(
-              primary: preview.primaryPatient,
-              secondary: preview.secondaryPatient,
-            ),
-            if (counts.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: <Widget>[
-                  for (final MapEntry<String, int> count in counts)
-                    AppWorkspaceStatusBadge(
-                      status: AppWorkspaceStatus(
-                        label: l10n.patientsMergeTransferCountLabel(
-                          _apiLabel(count.key),
-                          count.value,
-                        ),
-                        tone: AppWorkspaceStatusTone.info,
-                      ),
-                    ),
-                ],
-              ),
-            ],
-            SizedBox(height: theme.spacing.md),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: AppButton.primary(
-                label: l10n.patientsMergePatientsAction,
-                leadingIcon: Icons.merge_type_outlined,
-                isLoading: isSaving,
-                onPressed: onMerge,
-              ),
-            ),
-          ],
+    return AppSectionPanel(
+      title: l10n.patientsMergePreviewTitle,
+      leadingIcon: Icons.merge_type_outlined,
+      tone: AppWorkspaceStatusTone.warning,
+      children: <Widget>[
+        _DuplicatePatientPair(
+          primary: preview.primaryPatient,
+          secondary: preview.secondaryPatient,
         ),
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String? value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+        if (counts.isNotEmpty)
+          Wrap(
+            spacing: theme.spacing.xs,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              for (final MapEntry<String, int> count in counts)
+                AppWorkspaceStatusBadge(
+                  status: AppWorkspaceStatus(
+                    label: l10n.patientsMergeTransferCountLabel(
+                      _apiLabel(count.key),
+                      count.value,
+                    ),
+                    tone: AppWorkspaceStatusTone.info,
+                  ),
+                ),
+            ],
           ),
-          Expanded(child: Text(value ?? l10n.profileUnknownValue)),
-        ],
-      ),
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: AppButton.primary(
+            label: l10n.patientsMergePatientsAction,
+            leadingIcon: Icons.merge_type_outlined,
+            isLoading: isSaving,
+            onPressed: onMerge,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -6503,43 +6314,18 @@ class PatientDuplicateWarningPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
     final Iterable<PatientDuplicateCandidate> visible = duplicates.take(3);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.statusColors.warningContainer,
-        border: Border.all(color: theme.statusColors.warning),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(
-                  Icons.content_copy_outlined,
-                  color: theme.statusColors.warning,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Text(
-                    l10n.patientsDuplicateWarningTitle,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.xs),
-            Text(l10n.patientsDuplicateWarningBody),
-            SizedBox(height: theme.spacing.sm),
-            for (final PatientDuplicateCandidate duplicate in visible)
-              _DuplicateCandidateLine(duplicate: duplicate),
-          ],
-        ),
-      ),
+    return AppMessagePanel(
+      title: l10n.patientsDuplicateWarningTitle,
+      message: l10n.patientsDuplicateWarningBody,
+      icon: Icons.content_copy_outlined,
+      tone: AppWorkspaceStatusTone.warning,
+      children: <Widget>[
+        for (final PatientDuplicateCandidate duplicate in visible)
+          _DuplicateCandidateLine(duplicate: duplicate),
+      ],
     );
   }
 }
@@ -7347,68 +7133,32 @@ class _DocumentUploadField extends StatelessWidget {
         ? l10n.patientsDocumentUploadEmpty
         : files.map((XFile file) => file.name).join(', ');
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        color: theme.colorScheme.surfaceContainerLowest,
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return AppSectionPanel(
+      title: l10n.patientsDocumentUploadTitle,
+      description: fileSummary,
+      leadingIcon: Icons.upload_file_outlined,
+      children: <Widget>[
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
           children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Icon(
-                  Icons.upload_file_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        l10n.patientsDocumentUploadTitle,
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      SizedBox(height: theme.spacing.xs),
-                      Text(
-                        fileSummary,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            AppButton.secondary(
+              label: l10n.patientsChooseDocumentAction,
+              leadingIcon: Icons.attach_file_outlined,
+              isLoading: isLoading,
+              enabled: enabled,
+              onPressed: enabled ? onPick : null,
             ),
-            SizedBox(height: theme.spacing.sm),
-            Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                AppButton.secondary(
-                  label: l10n.patientsChooseDocumentAction,
-                  leadingIcon: Icons.attach_file_outlined,
-                  isLoading: isLoading,
-                  enabled: enabled,
-                  onPressed: enabled ? onPick : null,
-                ),
-                if (files.isNotEmpty)
-                  AppButton.tertiary(
-                    label: l10n.patientsClearFiltersAction,
-                    leadingIcon: Icons.close,
-                    enabled: enabled,
-                    onPressed: enabled ? onClear : null,
-                  ),
-              ],
-            ),
+            if (files.isNotEmpty)
+              AppButton.tertiary(
+                label: l10n.patientsClearFiltersAction,
+                leadingIcon: Icons.close,
+                enabled: enabled,
+                onPressed: enabled ? onClear : null,
+              ),
           ],
         ),
-      ),
+      ],
     );
   }
 }
