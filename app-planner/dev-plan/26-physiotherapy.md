@@ -59,6 +59,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Therapy assessment, treatment plan, session summary, progress report, exercise instruction sheet, and referral response must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<TherapyWorkItem>` with patient, referral/source, session date, plan/status, attendance, billing/authorization, therapist, and next action. Use `AppSearchBar` for patient, referral, therapist, status, date, and source filters. |
+| Detail/display | Use shared patient context with referral, assessment, goals, therapy plan, session history, progress notes, instructions, billing state, and follow-up. |
+| CRUD/UI actions | Use `AppDialog` for accept referral, schedule session, record assessment, record session, attendance, plan update, progress note, close episode, and instruction/report print. |
+| RBAC/ABAC | Until dedicated permissions exist, gate through relevant clinical/procedure/care-plan permissions and facility/department scope; document any backend permission gap. |
+| Partial refresh | After therapy action update only therapy row, source care plan/procedure, appointment slot, billing badge, patient timeline, report preview, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Therapy referrals and sessions are simple to manage.
 - Therapy work synchronizes with OPD/IPD clinical care and billing.
@@ -66,6 +78,7 @@ Therapy assessment, treatment plan, session summary, progress report, exercise i
 - UI remains clean, responsive, and permission-aware.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

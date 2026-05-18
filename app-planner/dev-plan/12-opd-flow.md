@@ -70,6 +70,18 @@ Use these route families only after confirming they exist in the current backend
 - Admission requests must hand over to IPD while preserving the OPD source encounter.
 - Do not create duplicate OPD encounters for the same active visit.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<OpdEncounter>` for active OPD queues with columns for encounter/arrival time, patient, visit type, provider/department, queue/status, payer/billing state, waiting time, and next role action. Use `AppSearchBar` for patient, encounter, provider, status, payer, date, and queue filters. |
+| Detail/display | Use a patient/encounter detail panel showing arrival path, triage status, consultation state, orders, billing gates, result-review needs, pharmacy status, referral/admission/completion state, and audit activity. |
+| CRUD/UI actions | Use `AppDialog` for check-in, quick registration handoff, assign provider, move queue, skip/require triage, payment gate check, reschedule, cancel, refer, admission request, and OPD summary print. |
+| RBAC/ABAC | Gate route/actions by patient, clinical, billing, emergency, and operations permissions plus active scheduling/queue entitlements and facility scope. |
+| Partial refresh | After OPD mutations update only affected encounter row, queue counts, billing badge, order badges, selected detail panel, destination module queues, and notification count. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Reception can manage OPD without jumping to unrelated modules.
 - Emergency, new, appointment, follow-up, and review patients have clear entry paths.
@@ -79,6 +91,7 @@ Use these route families only after confirming they exist in the current backend
 - Actions are permission-gated and update only affected UI state.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

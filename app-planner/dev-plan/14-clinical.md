@@ -66,6 +66,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Clinical print actions must use the shared report template from `35-reports-audit.md`. Supported outputs may include consultation summary, prescription, referral letter, admission request, procedure note, and patient report. Do not print the visible UI.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<ClinicalWorklistEntry>` with patient, source queue, reason, triage/urgency, results status, consultation status, provider, and next action. Use `AppSearchBar` for patient, encounter, source, status, date, and provider filters. |
+| Detail/display | Use shared patient context plus clinical timeline, notes, diagnoses, orders, prescriptions, results, referral/admission decision, and billing/coverage warnings. Use a full page only for long consultation authoring that cannot safely fit in a modal. |
+| CRUD/UI actions | Use `AppDialog` for add diagnosis, quick note, order lab/radiology/procedure, prescribe, review result, refer, request admission, close visit, and print consultation/prescription/referral. |
+| RBAC/ABAC | Gate with `clinical:read`/`clinical:write`, break-glass where applicable, module entitlements, and patient/encounter scope. |
+| Partial refresh | After action update only clinical row, selected patient detail, source OPD/IPD queue, service order queues, billing gate, pharmacy queue, reports, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Doctor can complete OPD consultation, IPD review, result review, prescription, referral, and admission request from one clean workspace.
 - Lab/radiology/pharmacy/billing/IPD handoffs are traceable and synchronized with OPD/IPD flow.
@@ -74,6 +86,7 @@ Clinical print actions must use the shared report template from `35-reports-audi
 - UI updates are targeted and do not reload the whole app.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

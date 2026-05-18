@@ -56,6 +56,16 @@ Implement app identity in this order:
 - Backend/frontend sync required: brand labels, shell navigation, user/facility context, notification count, and entitlement visibility must come from authenticated backend-backed state and stay consistent across routes.
 - Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Shell and navigation | Extend the existing router, guards, responsive shell, theme, localization, and destination model; do not create a second app shell. |
+| Authorized destinations | Hide or disable menu destinations using `AppRouteData.accessRequirement`, `AppAccessPolicy`, module entitlements, tenant/facility context, and backend forbidden responses. |
+| Header/actions | Use existing shared buttons, icon buttons, status badges, and shell components. Avoid crowded app bars; show only the current role's useful actions. |
+| Badges/indicators | Workload counts must come from module controllers or backend summary endpoints and update only the affected badge/count. |
+| Branding | HOSSPI HMS name, logo, facility identity, and generated report branding must stay consistent across shell, auth pages, settings, and print templates. |
+
+
 ## Done Criteria
 - App title and short title display as HOSSPI HMS.
 - Home screen no longer reads like a generic starter template.
@@ -64,6 +74,7 @@ Implement app identity in this order:
 - No unrelated source files are changed.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

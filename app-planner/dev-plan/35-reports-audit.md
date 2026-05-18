@@ -85,6 +85,18 @@ Printed output must be generated from data, not from the visible UI.
 - After running/scheduling/exporting a report, update only the report run row, preview panel, schedule list, and notification badge.
 - Audit log filters must be server-side where possible.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<ReportOrAuditItem>` for report catalog, report runs, schedules, audit logs, PHI logs, and dashboards. Use `AppSearchBar` for report name, module, user, action, record, status, date range, facility, and patient context where permitted. |
+| Detail/display | Use preview/detail panels for generated report output, run history, audit event details, PHI access records, compliance evidence, and KPI context. |
+| CRUD/UI actions | Use `AppDialog` for run report filters, schedule report, export/print options, audit detail review, evidence export confirmation, and dashboard widget configuration. |
+| RBAC/ABAC | Gate reports, dashboards, audit, PHI logs, exports, print/download, and schedules with reports/compliance/evidence permissions plus tenant/facility/patient scope and backend authorization. |
+| Partial refresh | After report/audit action update only report run row, schedule list, export status, preview panel, dashboard widget, audit indicator, and notification badge. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - All printable module outputs use one professional multi-page template.
 - Reports are generated from data, not UI screenshots.
@@ -93,6 +105,7 @@ Printed output must be generated from data, not from the visible UI.
 - OPD/IPD turnaround time and bottleneck reports can be produced where data exists.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

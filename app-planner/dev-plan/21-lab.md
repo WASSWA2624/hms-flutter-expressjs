@@ -63,6 +63,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Lab result reports must use the shared multi-page template from `35-reports-audit.md` with facility header, patient/encounter context, specimen/sample details where available, result table, reference ranges where supported, verification/signature block, and page numbers. Do not print the UI.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<LabOrder>` with order number, patient, source encounter/admission, tests/panel, billing/sample/result status, priority, requested time, and next action. Use `AppSearchBar` for patient, order, test, source, status, priority, and date filters. |
+| Detail/display | Use patient/order detail with sample list, test items, results, verification, QC context, billing gate, source doctor review status, and result history. |
+| CRUD/UI actions | Use `AppDialog` for sample collection, sample rejection, result entry, verification/release, QC note, billing gate check, cancellation, and lab report print. |
+| RBAC/ABAC | Gate with lab permissions; allow clinical read-only result visibility where permitted; enforce facility/lab scope and backend authorization. |
+| Partial refresh | After lab action update only lab order row, sample/result item, doctor review queue, OPD/IPD/clinical detail, billing badge, report preview, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Lab requests are simple, catalog-driven, and fast.
 - Lab queue supports sample, processing, result, verification, and release states.
@@ -70,6 +82,7 @@ Lab result reports must use the shared multi-page template from `35-reports-audi
 - Lab reports are professional, generated, permission-aware, and printable/exportable.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

@@ -67,6 +67,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Admission slip, bed assignment note, transfer note, inpatient summary, ward-round summary, and discharge preparation documents must use the generated report template from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<IpdAdmission>` for active IPD board with admission number, patient, ward/bed, consultant, payer/deposit, nursing status, order status, discharge readiness, and next action. Use `AppSearchBar` for patient, admission, ward, bed, status, payer, provider, and date filters. |
+| Detail/display | Use shared inpatient patient context with admission request, bed allocation, ward handover, rounds, orders, transfers, billing/deposit/insurance, discharge planning, and bed-release state. |
+| CRUD/UI actions | Use `AppDialog` for admission approval, bed request/allocation, ward handover, deposit/coverage check, transfer request/approval, round note, discharge request, and IPD document print. |
+| RBAC/ABAC | Gate with clinical, billing, operations/bed-management permissions, ward/unit scope, active inpatient-bed-management entitlement, and backend authorization. |
+| Partial refresh | After mutation update only admission row, bed status, ward board, billing/deposit badge, nursing handover, transfer/discharge badges, reports, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - IPD board reflects admission, bed, ward, transfer, billing, and discharge status clearly.
 - OPD/emergency admissions move into IPD without duplicate patient records.
@@ -74,6 +86,7 @@ Admission slip, bed assignment note, transfer note, inpatient summary, ward-roun
 - Inpatient actions synchronize with nursing, billing, pharmacy, lab, radiology, theater, ICU, housekeeping, and discharge.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

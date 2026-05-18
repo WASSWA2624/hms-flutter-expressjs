@@ -49,6 +49,16 @@ Complete general settings and app bar indicators for HOSSPI HMS without mixing p
 - Backend/frontend sync required: saved settings must update shell, theme, localization, facility identity, and user preferences from repository responses without full app reloads.
 - Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Settings layout | Use `AppWorkspace`/`ResponsivePage` and shared form fields. Keep settings grouped by real-world task, not implementation detail. |
+| Preferences | Theme, locale, app bar indicators, account preferences, and facility context changes must update only affected providers and visible indicators. |
+| Settings lists | Any setting category list, auditable preference list, or admin settings table must use `AppListTable` with `AppSearchBar` where searchable. |
+| Short actions | Use `AppDialog` for confirmation, reset, preference edit, and short advanced setting actions. |
+| Access | Admin-only settings must be route/action gated and backend-authorized; normal users should not see unavailable settings. |
+
+
 ## Done Criteria
 - Existing theme and language behavior remains intact.
 - Settings screen is clean and not overloaded with admin setup forms.
@@ -56,6 +66,7 @@ Complete general settings and app bar indicators for HOSSPI HMS without mixing p
 - Settings, facility setup, and module setup remain clearly separated.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

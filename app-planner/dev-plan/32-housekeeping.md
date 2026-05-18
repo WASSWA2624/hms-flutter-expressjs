@@ -57,6 +57,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Cleaning schedules, completed task summaries, bed turnover reports, inspection notes, and readiness summaries must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<HousekeepingTask>` with task/reference, location, room/bed, trigger/source, priority, assignee, due time, status, and next action. Use `AppSearchBar` for location, room/bed, assignee, status, priority, and date filters. |
+| Detail/display | Use task detail with cleaning checklist, bed/room readiness, source admission/discharge/maintenance link, notes, and activity history. |
+| CRUD/UI actions | Use `AppDialog` for create task, assign, start, complete, fail/return, mark room/bed ready, add note, and print housekeeping summary. |
+| RBAC/ABAC | Gate with operations/housekeeping roles, ward/location scope, bed-management links, and backend authorization. |
+| Partial refresh | After housekeeping mutation update only task row, room/bed readiness badge, IPD/discharge bed-release state, ward count, and notification badge. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Bed turnover after discharge is quick and traceable.
 - Housekeeping tasks are simple to assign and complete.
@@ -64,6 +76,7 @@ Cleaning schedules, completed task summaries, bed turnover reports, inspection n
 - UI is responsive, clean, and permission-aware.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

@@ -60,6 +60,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Maintenance request summaries, service logs, asset service history, readiness reports, and vendor/parts notes must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<OperationsWorkItem>` with request/reference, area/system, priority, location, assignee/team, status, due time, and next action. Use `AppSearchBar` for request, location, system, priority, status, assignee, and date filters. |
+| Detail/display | Use operational detail with maintenance request, assets/rooms affected, safety notes, handover/closeout links, evidence, audit activity, and report history. |
+| CRUD/UI actions | Use `AppDialog` for create request, assign, status update, safety note, closeout, handover, evidence attach note, and print/export operational report. |
+| RBAC/ABAC | Gate with operations read/write, last-office/compliance/evidence permissions where relevant, facility/location scope, and backend authorization. |
+| Partial refresh | After operations mutation update only work item row, affected room/asset status, closeout pack, dashboard count, report preview, and notification badge. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Operations requests are easy to create and track.
 - Room/bed readiness updates stay synchronized with IPD and facility modules.
@@ -67,6 +79,7 @@ Maintenance request summaries, service logs, asset service history, readiness re
 - Actions are permission-aware and modal-based.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

@@ -67,6 +67,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Discharge summary, prescription, follow-up note, billing clearance, patient report, and discharge instruction sheet must use the multi-page report template from `35-reports-audit.md` with facility header, logo, contacts, page numbers, and signature blocks.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<DischargeCase>` with patient, admission, ward/bed, discharge stage, pharmacy/nursing/billing/claims clearance, summary status, and next action. Use `AppSearchBar` for patient, admission, ward, status, clearance, provider, and date filters. |
+| Detail/display | Use shared inpatient patient context with discharge plan, clinical summary, medicines, instructions, nursing clearance, billing/insurance clearance, documents, exit, and bed cleaning state. |
+| CRUD/UI actions | Use `AppDialog` for clearance updates, discharge instruction edits, medicine handoff, billing clearance check, final exit confirmation, print package options, and bed release request. Use full page for complex discharge summary authoring. |
+| RBAC/ABAC | Gate with clinical, pharmacy, billing, operations, and ward permissions plus active inpatient entitlement and backend authorization. |
+| Partial refresh | After action update only discharge row, clearance badges, source IPD admission, bed cleaning queue, pharmacy/billing queues, report preview, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Discharge is treated as a workflow, not a single button.
 - Staff can see exactly what is pending and who owns it.
@@ -74,6 +86,7 @@ Discharge summary, prescription, follow-up note, billing clearance, patient repo
 - Admission, billing, pharmacy, nursing, housekeeping, and bed statuses remain synchronized.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

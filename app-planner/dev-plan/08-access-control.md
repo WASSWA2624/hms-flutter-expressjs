@@ -63,6 +63,16 @@ Admins should manage:
 - Backend/frontend sync required: route guards, visible menus, action buttons, modal availability, report/export permissions, notification destinations, and backend permission responses must match.
 - Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Admin lists | Users, roles, permissions, role permissions, user roles, API keys, ABAC policies, and break-glass reviews must use `AppListTable`/`AppSearchBar`. |
+| Permission actions | Assign/revoke role, assign permission, activate/deactivate user, review break-glass, and API key actions must use `AppDialog` with clear consequences. |
+| Route/action gates | Every route, shell destination, row action, modal submit, report/export, and notification action must use `AccessRequirement` and `AppAccessGate`/`AppAccessActionGate`. |
+| ABAC/entitlements | Tenant, facility, department/unit/ward/bed scope and module entitlement must be checked before showing data or actions, and backend responses remain final. |
+| Sync | Permission or role changes must update only affected users/roles, active session policy when applicable, route visibility, and destination badges. |
+
+
 ## Done Criteria
 - Frontend and backend permission names align.
 - Users only see allowed destinations and actions.
@@ -71,6 +81,7 @@ Admins should manage:
 - Access checks are applied to reports, print actions, queue actions, and modal actions.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

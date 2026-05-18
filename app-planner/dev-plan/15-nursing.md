@@ -61,6 +61,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Nursing notes, handover summaries, observation charts, medication administration summaries, and discharge nursing checklists must use generated report templates from `35-reports-audit.md`. Do not print UI screens.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<NursingWorkItem>` with patient, ward/bed, admission, task type, priority, due time, responsible nurse, and status. Use `AppSearchBar` for patient, ward, bed, task, status, priority, and date filters. |
+| Detail/display | Use shared inpatient patient context with observations, medication administration, nursing notes, care tasks, handover notes, and ward activity. |
+| CRUD/UI actions | Use `AppDialog` for observation, medication administration, task update, nursing note, handover, escalation, and print handover/task summary. |
+| RBAC/ABAC | Gate with clinical permissions, nursing/ward manager roles where represented, ward/unit scope, and active inpatient module entitlement. |
+| Partial refresh | After nursing mutation update only affected task row, medication/observation section, ward board badge, handover/activity entry, and notification count. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Nurses can complete routine ward work quickly from the nursing workspace.
 - Nursing actions are synchronized with IPD, ICU, theater, and discharge status.
@@ -68,6 +80,7 @@ Nursing notes, handover summaries, observation charts, medication administration
 - UI is uncluttered, responsive, and permission-aware.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

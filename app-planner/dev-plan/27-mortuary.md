@@ -12,16 +12,10 @@ Manage deceased profiles, mortuary cases, storage units/slots, custody events, v
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
-- `/api/v1/mortuary-cases`
-- `/api/v1/mortuary-deceased-profiles`
-- `/api/v1/mortuary-storage-units`
-- `/api/v1/mortuary-storage-slots`
-- `/api/v1/mortuary-storage-assignments`
-- `/api/v1/mortuary-custody-events`
-- `/api/v1/mortuary-viewings`
-- `/api/v1/mortuary-post-mortem-requests`
-- `/api/v1/mortuary-release-authorisations`
-- `/api/v1/mortuary-billable-events`
+- `/api/v1/mortuary`
+  - Use query parameters supported by the current backend workspace contract: `panel`, `resource`, `queue`, `search`, `status`, `identification_status`, `facility_id`, `storage_unit_id`, `storage_slot_id`, `date_preset`, `id`, and `action`.
+  - Supported workspace resources include `mortuary-cases`, `mortuary-storage-units`, `mortuary-storage-slots`, `mortuary-storage-assignments`, `mortuary-custody-events`, `mortuary-viewings`, `mortuary-post-mortem-requests`, `mortuary-release-authorisations`, and `mortuary-billable-events`.
+  - Do not call separate mortuary entity routes unless they are mounted in the backend router in a future authorized backend change.
 
 ## Implementation Scope
 1. Mortuary case list with active, pending storage, in storage, viewing scheduled, post-mortem pending, release pending, billing pending, and released statuses where supported.
@@ -61,6 +55,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Mortuary intake form, custody log, viewing note, post-mortem request/summary where applicable, release authorization, and billing clearance must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<MortuaryWorkspaceItem>` sourced from `/api/v1/mortuary` with resource/queue filters. Columns should show case/reference, deceased/person context, source encounter/admission, storage/release/billing status, date, and next action. Use `AppSearchBar` for case, name, resource, queue, status, facility, and date filters. |
+| Detail/display | Use respectful detail sections for identity, source context, storage, custody, viewing, post-mortem, release, billing, documents, and audit activity; use `AppDialog` for short detailed display on compact screens. |
+| CRUD/UI actions | Use `AppDialog` for receive case, assign storage, record custody, schedule viewing, request/record post-mortem step, request billing, approve/confirm release, and print documents where backend action support exists. |
+| RBAC/ABAC | Gate with mortuary read/write/release/manage-storage/post-mortem/approve/billing/export/audit permissions and facility scope. Backend authorization remains final. |
+| Partial refresh | After mortuary action update only affected workspace row/resource list, storage slot, custody log, release/billing badge, source record where supported, report preview, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Mortuary workflow is respectful, simple, and auditable.
 - Storage, custody, billing, and release statuses remain synchronized.
@@ -68,6 +74,7 @@ Mortuary intake form, custody log, viewing note, post-mortem request/summary whe
 - Documents are generated from data, not UI printouts.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

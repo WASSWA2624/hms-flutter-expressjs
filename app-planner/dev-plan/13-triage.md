@@ -60,6 +60,18 @@ Use these route families only after confirming they exist in the current backend
 - Skipping triage must be an explicit allowed action with reason/policy where needed.
 - Abnormal values and alerts must be visible in clinical consultation, nursing, emergency, and IPD handoff where applicable.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<TriageQueueItem>` with patient, encounter, arrival time, waiting time, urgency, vitals summary, risk flags, and next destination. Use `AppSearchBar` for patient, encounter, urgency, status, provider, and date filters. |
+| Detail/display | Use the shared patient context plus vitals/risk detail sections; show only the clinical context needed by triage staff. |
+| CRUD/UI actions | Use `AppDialog` + shared fields for vitals capture, urgency assignment, risk flag, triage note, route to doctor/emergency, and correction where permitted. |
+| RBAC/ABAC | Gate triage read/write through clinical/emergency permissions, facility scope, and allowed OPD encounter state. |
+| Partial refresh | After triage save update only vitals summary, urgency badge, OPD queue row, doctor/emergency queue, patient risk flag, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Triage can be completed quickly.
 - Abnormal values are visible.
@@ -69,6 +81,7 @@ Use these route families only after confirming they exist in the current backend
 - UI updates are targeted to the queue row, status badge, and patient context.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

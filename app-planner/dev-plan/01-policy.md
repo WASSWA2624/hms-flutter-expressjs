@@ -42,6 +42,23 @@ Create a new shared component only when the pattern is used in multiple places o
 
 Patient-related screens must use a shared patient context display for patient name, MRN/number, age/sex where available, alerts/allergies, current encounter/admission, status, ward/bed/location, payer/coverage where relevant, and responsible department/provider.
 
+## Mandatory Shared Component Usage Standard
+All feature implementation must use the current shared Flutter components before creating local UI. Local widgets are allowed only for feature-specific cells, summaries, or composition that cannot reasonably live in `frontend/lib/shared/`.
+
+| UI need | Required shared anchor |
+| --- | --- |
+| Module page shell | `AppWorkspace`, `AppWorkspaceHeader`, summary cards, detail panels, and responsive layout helpers from `frontend/lib/shared/layout/` |
+| List, table, queue, catalog, registry, report list, audit log | `AppListTable`, `AppPaginatedListTable`, or `AppSearchablePaginatedListTable` from `frontend/lib/shared/components/app_list_table.dart` |
+| Search/filter attached to list data | `AppSearchBar` or `AppListTableSearch`; do not use an ad hoc `AppTextField` as a list search field when the reusable search component fits |
+| CRUD, status update, approval, payment, confirmation, print/export options, and short detailed display | `AppDialog` from `frontend/lib/shared/components/app_dialog.dart` |
+| Forms | `AppFormShell`, `AppFormSection`, shared field components, and `AppValidators` from `frontend/lib/shared/forms/` and `frontend/lib/shared/components/` |
+| Loading, empty, error, forbidden, offline, success | `AppStateView`, `AppStateScaffold`, and existing async-state patterns |
+| Route/action visibility | `AppAccessGate`, `AppAccessActionGate`, `AccessRequirement`, and `AppAccessPolicy` |
+| Report/print actions | Shared report/action components and generated report templates, never visible-screen printing |
+
+Existing pages that use local search fields, local dialog shells, duplicated list/table widgets, or raw permission checks must be normalized during that module's completion step.
+
+
 ## Backend/Frontend Synchronization Standard
 Every screen, repository, DTO, status badge, queue action, modal action, notification, report action, and permission gate must map to current backend contracts and the OPD/IPD rules in `opd-flow.md` and `ipd-flow.md`. A workflow is not complete until the frontend route/action, backend endpoint/action, permission key, module entitlement, DTO fields, validation errors, audit event, notification update, and targeted UI refresh agree.
 
@@ -117,6 +134,27 @@ The template must support multiple pages, repeatable headers/footers, long table
 - Use the backend response as the authoritative current state for status, amounts, queue position, permissions, and timestamps.
 - Show optimistic updates only when safe and easy to roll back.
 
+## Real-Time and Targeted UI Synchronization Standard
+For this app, “real-time” means staff see backend-backed changes without reloading the whole app, shell, or page.
+
+| Mutation type | Required UI update |
+| --- | --- |
+| Create record | Insert or refresh only the affected list page/queue segment, summary count, and selected detail if relevant. |
+| Edit record | Replace only the affected row/card and detail section using the backend response. |
+| Status transition | Update the status badge, allowed next actions, queue position/count, related notification badge, and dependent detail panel only. |
+| Payment/billing/claim update | Update the invoice/payment/claim row, billing gate badge, related encounter/admission clearance, and receipt/report preview only. |
+| Order/result/dispense update | Update the order/result/dispense row, source encounter/admission panel, doctor-review queue where required, and notification badge only. |
+| Report/export/print action | Update report run row, export status, print history, audit log indicator, and preview panel only. |
+
+Implementation rules:
+- Use mutation responses as the authoritative updated state whenever the backend returns the changed record or summary.
+- If the backend returns only an acknowledgement, fetch the narrowest affected resource instead of refreshing the whole module.
+- Preserve search query, filters, sort, pagination, selected row, expanded section, and scroll position after modal actions.
+- Use WebSocket events where backend support exists; otherwise use targeted provider invalidation or lightweight polling for active queues.
+- Optimistic updates are allowed only when the change is reversible and rollback is implemented.
+- If backend does not expose a route, event, permission, status, or field needed for synchronization, document it as a backend gap and do not invent a frontend-only workflow.
+
+
 ## Small-Module Delivery Rule
 Each module should be delivered in this order:
 1. route and menu entry;
@@ -154,6 +192,7 @@ A step is done when:
 - tests/static checks pass or blockers are documented.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

@@ -57,6 +57,24 @@ Create or extend these once, then reuse them across module screens instead of re
 
 Shared components must be theme-aware, localized, accessible, responsive, and free of feature-specific backend calls. Feature folders may compose them with module-specific validation, permissions, and submit handlers.
 
+## Concrete Shared Component Usage
+Use the existing shared components exactly as the default implementation path:
+
+| Need | Required component/API |
+| --- | --- |
+| Workspace shell | `AppWorkspace`, `AppWorkspaceHeader`, `AppWorkspaceSummaryCard`, `AppWorkspaceDetailPanel`, `AppWorkspaceSplitContent` |
+| Responsive page | `ResponsivePage`, `PageMaxWidth`, `ResponsiveSpacing`, `AppBreakpoints` |
+| List/table | `AppListTable`, `AppPaginatedListTable`, `AppSearchablePaginatedListTable`, `AppListTableColumn`, stable row keys |
+| List search | `AppSearchBar` directly or `AppListTableSearch` attached to `AppListTable`; use advanced filters for field/date/status filters where needed |
+| Modal | `AppDialog` with shared actions, close handling, max width, scroll behavior, semantic label, and duplicate-submit protection |
+| Forms | `AppFormShell`, `AppFormSection`, `AppTextField`, `AppSelectField`, `AppDateField`, `AppCurrencyAmountField`, `AppPhoneField`, `AppEmailField`, `AppGenderField`, switches/radio/checkbox fields, and `AppValidators` |
+| Buttons/actions | `AppButton`, `AppIconButton`, `AppReportActions`, shared confirmation pattern |
+| State | `AppStateView`, `AppStateScaffold`, existing async-state wrappers |
+| Access | `AppAccessGate`, `AppAccessActionGate`, `AccessRequirement`, `AppAccessPolicy` |
+
+A module may create feature-specific row cells, cards, DTO mappers, controllers, repositories, and small composition widgets, but it must not create another app-wide table, search bar, dialog, form field family, permission wrapper, or workspace shell.
+
+
 ## Standard Screen Pattern
 
 
@@ -126,6 +144,15 @@ Searchable selects should be fast, debounced, and not push unrelated content dow
 - After save, refresh only the affected row, badge, tab, section, provider, queue, notification count, or report preview.
 - Use backend response data for final status and timestamps.
 - Preserve filters, pagination, selected row, and scroll position after modal actions.
+
+## List/Search/Dialog Completion Rules
+- Any screen displaying list data must use `AppListTable`, `AppPaginatedListTable`, or `AppSearchablePaginatedListTable`.
+- Any search field attached to list data must use `AppSearchBar` or `AppListTableSearch`.
+- Any CRUD, status, approval, confirmation, payment, print/export, or short detailed-display action must use `AppDialog`.
+- Details should appear as a side/detail panel on tablet/desktop and as a focused `AppDialog` or route only when the screen size or workflow requires it.
+- Avoid congested dashboards: keep summary cards few, filters compact, and row actions grouped.
+- Mutations from dialogs must close or reset only the action UI and then update affected state slices; they must not reset the whole workspace.
+
 
 ## UX Rules
 

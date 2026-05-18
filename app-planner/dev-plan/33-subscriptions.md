@@ -58,6 +58,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Subscription invoice, license summary, module entitlement summary, renewal notice, and plan comparison reports must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<SubscriptionItem>` with tenant/facility, plan, module, license, invoice, status, renewal/expiry, and next action. Use `AppSearchBar` for tenant, plan, module, status, invoice, and date filters. |
+| Detail/display | Use subscription detail with plan limits, module subscriptions, licenses, invoices, entitlement impact, audit changes, and affected features. |
+| CRUD/UI actions | Use `AppDialog` for plan create/edit, subscribe, renew, cancel, assign module, update license, invoice action, and entitlement confirmation. |
+| RBAC/ABAC | Gate with subscription/admin/system permissions, tenant scope, billing visibility where needed, and backend authorization. |
+| Partial refresh | After subscription mutation update only subscription row, active module entitlement map, route/menu visibility, invoice badge, license count, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Subscription state controls module visibility and access consistently.
 - Subscription actions are modal-based, permission-aware, and auditable.
@@ -65,6 +77,7 @@ Subscription invoice, license summary, module entitlement summary, renewal notic
 - Invoices/reports are generated from data.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

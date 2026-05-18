@@ -79,6 +79,16 @@ A dedicated physiotherapy role/account and backend physiotherapy module are not 
 - Backend/frontend sync required: demo data must preserve tenant/facility/user/role/module/subscription, OPD encounter, IPD admission, billing, notification, report, and audit relationships.
 - Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Seed coverage | Demo data must support every completed module route, OPD/IPD journey, billing gate, role, permission, entitlement, catalog, report, notification, and audit scenario. |
+| UI validation | Seeded records must appear through the same shared `AppListTable`, `AppSearchBar`, `AppDialog`, workspace, and report components used in production UI. |
+| Safety | Demo credentials, fake PHI, and sample payments must remain clearly non-production and must not leak into production builds. |
+| Sync checks | Demo mutations must prove targeted UI updates: affected row/detail/badge/count only, no whole-app reload. |
+| Backend boundary | Use existing seed scripts and seed packs first; backend seed changes require exact missing scenario documentation. |
+
+
 ## Done Criteria
 - Demo setup can create tenant, facility, admins, department users, subscriptions, catalogs, and module data.
 - Demo users can log in and reach their module workspaces based on roles/permissions.
@@ -87,6 +97,7 @@ A dedicated physiotherapy role/account and backend physiotherapy module are not 
 - Missing role/API gaps are documented instead of hidden.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

@@ -56,6 +56,18 @@ Use these route families only after confirming they exist in the current backend
 - Reports should use structured patient data and the shared print template, not the visible UI.
 - After patient edits, refresh only patient header, patient row, patient detail section, and dependent encounter/admission context.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<Patient>` with columns for patient number, name, age/sex, phone/identifier, alert/allergy flag, last/current visit, status, and next permitted action. Attach `AppSearchBar`/`AppListTableSearch` for name, patient number, phone, identifier, and date filters. |
+| Detail/display | Use one shared patient context/detail pattern for demographics, identifiers, contacts, guardians, allergies, documents, consents, OPD/IPD links, billing links, and audit-safe patient summary. Use side panel on desktop and `AppDialog` for short detail on compact layouts. |
+| CRUD/UI actions | Use `AppDialog` + shared forms for quick registration, emergency registration, edit demographics, add contact/guardian/allergy/document/consent, OPD check-in, admission request, and patient report options. |
+| RBAC/ABAC | Gate read with `patient:read`, write with `patient:write`, delete/merge with `patient:delete` where supported, plus tenant/facility scope and PHI/document restrictions. |
+| Partial refresh | After mutation update only patient row, patient header/detail section, duplicate warning, related encounter/admission context, queue badge, and report preview. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Patients can be found quickly.
 - New patients can be registered without creating duplicates.
@@ -65,6 +77,7 @@ Use these route families only after confirming they exist in the current backend
 - PHI-related failures and forbidden states are handled safely.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

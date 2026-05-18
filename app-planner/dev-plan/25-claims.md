@@ -60,6 +60,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Claim forms, pre-authorization letters, claim statements, rejection/resubmission notes, and payer summaries must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<Claim>` with claim/preauth number, patient, payer, coverage plan, invoice/admission, claim amount, status, age, and next action. Use `AppSearchBar` for patient, claim, payer, status, date, and invoice filters. |
+| Detail/display | Use claim detail with coverage, pre-authorization, invoice links, documents, approvals/rejections, resubmission notes, and financial/audit history. |
+| CRUD/UI actions | Use `AppDialog` for coverage check, preauth request/update, claim submit, attach document note, approval/rejection response, resubmission, and claim document print/export. |
+| RBAC/ABAC | Gate with billing permissions, financial approve, evidence export, payer/tenant/facility scope, and backend authorization. |
+| Partial refresh | After claim action update only claim row, invoice/coverage badge, patient billing detail, dashboard counts, report/export status, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Coverage, authorization, claim, invoice, and patient flow states remain aligned.
 - Claim actions are simple, modal-based, and permission-aware.
@@ -67,6 +79,7 @@ Claim forms, pre-authorization letters, claim statements, rejection/resubmission
 - Claim documents are generated from data and printable/exportable.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

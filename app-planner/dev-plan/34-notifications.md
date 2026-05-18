@@ -56,6 +56,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Notification delivery summaries, message audit extracts, and communication logs must use generated report templates from `35-reports-audit.md` where exports are permitted.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<NotificationItem>` with type, patient/source context where allowed, sender, recipient/group, priority, read/delivery status, time, and action. Use `AppSearchBar` for type, patient/source, sender, status, priority, and date filters. |
+| Detail/display | Use notification/conversation detail with safe preview, linked record, delivery history, message thread, and permitted quick action. |
+| CRUD/UI actions | Use `AppDialog` for mark read/unread, archive, send message, route to linked record, template selection, and delivery retry/confirmation. |
+| RBAC/ABAC | Gate with communications permissions, PHI/source-record permissions, tenant/facility/user scope, and backend authorization. |
+| Partial refresh | Use WebSocket events where available; after action update only notification row, unread badge, conversation thread, linked module badge, and delivery status. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Users can quickly find and act on relevant alerts.
 - Notification badge and counts update predictably.
@@ -63,6 +75,7 @@ Notification delivery summaries, message audit extracts, and communication logs 
 - No noisy, duplicate, or unauthorized notifications are shown.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

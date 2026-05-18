@@ -57,6 +57,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Integration status reports, API key permission summaries, webhook delivery summaries, and integration audit extracts must use generated report templates from `35-reports-audit.md`. Sensitive values must never appear in printed/exported output unless explicitly permitted and safe.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<IntegrationItem>` with integration/API key/webhook name, status, owner, scope, last run/event, error state, and next action. Use `AppSearchBar` for integration name, type, status, owner, event, and date filters. |
+| Detail/display | Use integration detail with configuration summary, API keys, webhook subscriptions, logs, interop mapping, error history, and audit events; hide secrets. |
+| CRUD/UI actions | Use `AppDialog` for create/edit integration, rotate/revoke API key, configure webhook, retry/suspend, view sanitized log detail, and export permitted logs. |
+| RBAC/ABAC | Gate with system/admin/integration permissions, API-key permissions, tenant/facility scope, and backend authorization; never expose secrets after creation. |
+| Partial refresh | After integration action update only integration row, API key status, webhook/log row, error badge, audit event indicator, and notification count. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Integration access is restricted and secure.
 - Sensitive values are masked and not exposed after creation.
@@ -64,6 +76,7 @@ Integration status reports, API key permission summaries, webhook delivery summa
 - Integration status updates are targeted and auditable.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

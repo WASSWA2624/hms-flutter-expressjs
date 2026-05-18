@@ -11,10 +11,11 @@ Prepare the Flutter frontend to consume the existing backend safely, consistentl
 - Frontend app-rules define repository, DTO, state, error, reusable component, and network implementation mechanics.
 
 ## Current State
-- Backend APIs are mounted under `/api/v1`.
-- Public health endpoints exist outside versioned routes.
-- The frontend has a network client foundation, failure mapping, connectivity status, result wrappers, and repository pattern examples.
-- `frontend/lib/core/network/api_endpoints.dart` may still contain only starter/sample helpers and should be extended, not scattered.
+- Backend APIs are mounted under `/api/v1`, with public health/readiness endpoints outside versioned routes.
+- The backend router currently exposes broad route families for auth, tenant/facility setup, access control, patient flow, OPD/IPD, clinical care, diagnostics, pharmacy, billing, claims, HR/operations, subscriptions, communications, reports, audit, and integrations.
+- The frontend already has `frontend/lib/core/network/api_endpoints.dart` with `HmsApiEndpointGroup`, `HmsApiResource`, `AuthEndpoint`, and `ApiEndpoints` helpers. Extend this central file when needed; do not scatter raw paths.
+- The frontend has an API client foundation, response/result wrappers, failure mapping, connectivity status, secure session storage, sync queue support, and repository/controller patterns.
+- Several feature folders already have DTOs, repositories, controllers, and workspace pages. Complete and normalize those slices before creating new patterns.
 
 ## Scope
 1. Expand `ApiEndpoints` with HMS endpoint helpers grouped by module.
@@ -26,6 +27,19 @@ Prepare the Flutter frontend to consume the existing backend safely, consistentl
 7. Respect backend tenant scope, facility scope, module entitlement, role permissions, and action permissions.
 8. Support cancelable/stale requests for search, filters, queues, and large worklists.
 9. After mutations, update only the affected state slice.
+
+## Route Verification Rules
+Before implementing any screen action or repository call, verify all five items together:
+
+| Item | Required check |
+| --- | --- |
+| Backend route | Confirm it is mounted in `backend/src/app/router.js`. |
+| Backend contract | Confirm schema, service response, status values, permission requirement, tenant/facility scoping, and error format. |
+| Frontend endpoint | Confirm or add a central `HmsApiResource`/`ApiEndpoints` helper in `frontend/lib/core/network/api_endpoints.dart`. |
+| Frontend model | Add DTO/domain mapper/controller state for only the feature slice being implemented. |
+| UI refresh | Define the exact row, detail panel, badge, summary count, notification, or report preview updated after mutation. |
+
+If any item is missing, record the gap in the relevant module plan and avoid a frontend-only workaround.
 
 
 ## Backend/Frontend Synchronization Contract
@@ -45,6 +59,15 @@ Prepare the Flutter frontend to consume the existing backend safely, consistentl
 - Lab, radiology, pharmacy, billing, claims
 - HR, rooms/beds, biomedical, operations, housekeeping, mortuary
 - Subscriptions, notifications, reports, audit, integrations
+
+## Real-Time Data Contract
+- Use backend mutation responses as the primary source for updated entity state.
+- Use WebSocket events where backend support exists for notifications, queues, alerts, and cross-user updates.
+- When WebSocket support is not wired for a slice, use targeted provider invalidation or lightweight polling for active queues only.
+- Do not refresh the whole app shell or full page after create/edit/status/payment/order/result mutations.
+- Repositories must expose narrow methods such as list page, get detail, create action, update status, and fetch summary instead of one oversized module refresh where possible.
+- Controllers must preserve current query, filters, pagination, selected row, detail tab, and scroll position across modal actions.
+
 
 ## Catalog and Selection Rules
 - Lab tests, radiology tests, drugs/formulary items, billing services, departments, units, wards, rooms, beds, providers, payment methods, and insurance plans must come from backend/configured catalogs.
@@ -66,6 +89,7 @@ Prepare the Flutter frontend to consume the existing backend safely, consistentl
 - OPD/IPD status updates, order routing, billing gates, notifications, and reports are synchronized through backend responses.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

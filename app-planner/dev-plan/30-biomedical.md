@@ -66,6 +66,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Equipment register, maintenance schedule, calibration certificate/log, safety test log, downtime report, incident report, recall notice, and disposal/transfer document must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<BiomedicalAsset>` with asset tag, equipment, category, location, risk/criticality, maintenance/calibration/downtime status, owner, and next action. Use `AppSearchBar` for asset tag, equipment, category, location, status, date, and provider filters. |
+| Detail/display | Use asset detail with registry, location history, maintenance plans/work orders, calibration/safety logs, downtime, spare parts, warranty/provider, incidents, recalls, utilization, and disposal/transfer. |
+| CRUD/UI actions | Use `AppDialog` for register/edit asset, schedule maintenance, create/update work order, record calibration/safety test, report downtime/incident, acknowledge recall, transfer/dispose, and print asset/service report. |
+| RBAC/ABAC | Gate with biomed read/write, evidence export, operations, facility/location scope, and backend authorization. |
+| Partial refresh | After biomedical mutation update only asset row, location/status badge, maintenance due count, downtime list, recall badge, reports, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Equipment lifecycle is searchable, traceable, and easy to update.
 - Biomedical status can support care-area readiness without duplicating room/bed data.
@@ -73,6 +85,7 @@ Equipment register, maintenance schedule, calibration certificate/log, safety te
 - Reports are generated and professional.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

@@ -59,6 +59,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Theater schedule, procedure note, anesthesia record, post-op note, and handover document must use the generated report template from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<TheaterCase>` with case number, patient, procedure, urgency, surgeon/team, theater room, scheduled time, anesthesia/post-op status, billing/clearance, and next action. Use `AppSearchBar` for patient, case, procedure, room, status, date, and team filters. |
+| Detail/display | Use shared patient context with surgical request, checklist, anesthesia record, intra/post-op notes, handover, billing, and reports. Use full page only for long anesthesia/theater record authoring. |
+| CRUD/UI actions | Use `AppDialog` for schedule/reschedule, checklist update, status transition, team assignment, post-op handover, cancellation, and print operation/anesthesia/handover documents. |
+| RBAC/ABAC | Gate with clinical permissions, theater manager roles/modules, billing read where needed, facility/theater scope, and backend authorization. |
+| Partial refresh | After mutation update only theater row, schedule slot, checklist/status badge, patient detail, IPD/OPD source state, billing badge, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Theater workflow is consistent with OPD/IPD movement.
 - Scheduling, readiness, procedure status, and handover are clear and permission-aware.
@@ -66,6 +78,7 @@ Theater schedule, procedure note, anesthesia record, post-op note, and handover 
 - UI is responsive and not congested.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

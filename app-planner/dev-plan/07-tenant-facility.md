@@ -60,6 +60,16 @@ After account creation or first admin login:
 - Backend/frontend sync required: facility identity, departments, units, rooms, wards, beds, report headers, OPD/IPD routing options, and permission scopes must update together from backend-backed setup data.
 - Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Setup lists | Tenants, facilities, branches, departments, units, rooms, wards, and beds must render through `AppListTable`/`AppPaginatedListTable` and `AppSearchBar`. |
+| Setup forms | Create/edit actions must use `AppDialog`, shared form fields, and catalog-backed selects; avoid separate form styling per entity. |
+| Catalog sync | Facility structure changes must invalidate only affected setup catalogs, dropdowns, room/ward/bed rows, and dependent module filters. |
+| Access | Gate setup routes/actions with tenant/facility/system admin permissions and backend authorization. |
+| Backend boundary | Edit backend only if a required setup relation, status, or validation response blocks the UI contract. |
+
+
 ## Done Criteria
 - Facility setup can be completed without leaving the admin setup area unnecessarily.
 - Facility name/logo/contact details appear in the shell and report templates where appropriate.
@@ -67,6 +77,7 @@ After account creation or first admin login:
 - Forms validate required fields and show friendly errors.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

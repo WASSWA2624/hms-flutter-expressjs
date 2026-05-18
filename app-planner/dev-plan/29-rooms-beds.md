@@ -60,6 +60,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Bed occupancy, ward census, bed assignment history, cleaning readiness, and maintenance block reports must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<BedOrRoomItem>` with facility, ward/unit, room, bed, occupancy/readiness/cleaning status, patient/admission where allowed, and next action. Use `AppSearchBar` for ward, room, bed, patient/admission, status, and date filters. |
+| Detail/display | Use room/bed detail with occupancy history, current admission link, cleaning/maintenance status, assignment history, and readiness notes. |
+| CRUD/UI actions | Use `AppDialog` for create/edit ward/room/bed, bed assignment, transfer, hold/release, mark cleaning, mark ready, maintenance request, and occupancy print/report. |
+| RBAC/ABAC | Gate with operations, clinical, unit/ward manager, bed-management, and facility admin permissions plus ward/unit scope and backend authorization. |
+| Partial refresh | After bed mutation update only bed row, ward/occupancy count, IPD/admission row, housekeeping task, maintenance request, and notification badge. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Bed board is clear, live, and synchronized with IPD/ICU/discharge/housekeeping.
 - Bed actions are modal-based and permission-aware.
@@ -67,6 +79,7 @@ Bed occupancy, ward census, bed assignment history, cleaning readiness, and main
 - UI is responsive and not congested.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

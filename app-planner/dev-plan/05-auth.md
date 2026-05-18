@@ -53,6 +53,16 @@ Use existing backend auth/session contracts. Confirm payload names, token handli
 - Backend/frontend sync required: auth DTOs, session storage, route guards, role/module visibility, and logout cleanup must reflect backend auth/session responses.
 - Do not create duplicate patient, encounter, admission, order, invoice, payment, report, notification, status, or action components when an existing shared pattern can represent the same job.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Auth forms | Use shared form shell/fields, localized validation, disabled/loading submit states, and safe server-error mapping. |
+| Session state | Session restoration, refresh, logout, and profile updates must update only auth/session providers and route guards, not reload the whole app. |
+| User actions | Change password, logout confirmation, user profile shortcuts, and security notices should use `AppDialog` where they are short actions. |
+| Access sync | `AuthSession` must feed `AppAccessPolicy`, roles, permissions, tenant/facility context, and module entitlements used by routes and actions. |
+| Backend boundary | Do not create frontend-only permissions or roles; align with backend `ROLES`, `PERMISSIONS`, auth routes, and session response payloads. |
+
+
 ## Done Criteria
 - Login, logout, change password, and session restoration work.
 - User dropdown appears only for authenticated users.
@@ -61,6 +71,7 @@ Use existing backend auth/session contracts. Confirm payload names, token handli
 - Menus, module visibility, and modal actions respect the current user access context.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

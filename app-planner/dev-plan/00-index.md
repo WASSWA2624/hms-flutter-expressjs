@@ -102,6 +102,22 @@ The previous root `dev-plan` used long names and letter suffixes. Replace the pr
 - Patient-facing context must use one shared patient display pattern across OPD, triage, clinical, nursing, IPD, ICU, theater, discharge, emergency, lab, radiology, pharmacy, billing, claims, physiotherapy, and mortuary workflows.
 - Backend and frontend changes must remain synchronized for routes, DTOs, statuses, permissions, module entitlements, notifications, reports, audit events, and OPD/IPD encounter/admission state.
 
+## 2026-05-18 Implementation Tightening
+The current `frontend`, `backend`, and root `app-planner` zip contents were reviewed together. These constraints now apply to every step in this root plan:
+
+| Area | Updated rule |
+| --- | --- |
+| Existing Flutter foundation | Extend the current app shell, route guards, theme, localization, API client, permission gates, shared forms, shared workspace layout, shared dialogs, shared search, shared list/table, and shared state views. Do not replace them. |
+| Existing feature work | Continue the existing feature folders for auth, profile, settings, tenant/facility setup, patients, OPD, emergency, clinical, nursing, IPD, ICU, theater, discharge, lab, radiology, pharmacy, billing, and claims. Treat them as partial implementations to complete, not prototypes to discard. |
+| Missing feature work | Add remaining feature folders only where absent: access-control admin screens, HR, rooms/beds, biomedical, operations, housekeeping, subscriptions, notifications/communications, reports/audit, integrations, physiotherapy, and mortuary. Use the same feature-first structure and shared components. |
+| Lists and search | Every list, queue, table, catalog, log, report list, and registry must use `frontend/lib/shared/components/app_list_table.dart` and `frontend/lib/shared/components/app_search_bar.dart` through `AppListTable`, `AppPaginatedListTable`, `AppSearchablePaginatedListTable`, `AppListTableSearch`, or `AppSearchBar`. |
+| Modals and details | Routine CRUD, status changes, approvals, confirmations, payments, print/export options, and short detailed display must use `AppDialog`. Full pages are allowed only for long clinical/discharge/theater/ICU/payroll/report authoring workflows. |
+| App uniformity | All module workspaces must compose `AppWorkspace`, shared form fields, `AppStateView`/`AsyncStateScaffold`, `AppAccessGate`/`AppAccessActionGate`, and existing responsive utilities before adding local widgets. |
+| Real-time UI | A backend mutation must update only the affected row, card, badge, queue count, detail panel, notification count, report preview, or form section. Preserve current filters, pagination, selected row, and scroll position. |
+| Backend changes | Backend files remain read-only unless a current backend gap blocks required functionality. If a gap blocks the UI, document the exact route/schema/permission/status mismatch before making a minimal backend change in a future authorized task. |
+| Access control | Users must see only routes, menu entries, rows, actions, modals, exports, reports, and notifications allowed by RBAC, ABAC, tenant/facility context, and module entitlement. Backend authorization remains final. |
+
+
 ## Obsolete Root Dev-Plan Files To Remove When Replacing The Folder
 - `app-planner/dev-plan/index.md`
 - `app-planner/dev-plan/00-execution-policy.md`
@@ -139,6 +155,7 @@ The previous root `dev-plan` used long names and letter suffixes. Replace the pr
 - `app-planner/dev-plan/12-final-validation-and-release-readiness.md`
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

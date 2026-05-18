@@ -61,6 +61,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Radiology reports must use the generated template from `35-reports-audit.md` with facility header, patient/encounter context, study details, findings, impression, image links/references where supported, signer, and page numbers. Do not print UI screens.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<RadiologyOrder>` with order number, patient, source encounter/admission, study/test, modality, billing/study/report status, priority, scheduled time, and next action. Use `AppSearchBar` for patient, order, modality, status, priority, provider, and date filters. |
+| Detail/display | Use patient/order detail with imaging study, assets/references, report draft/final, billing gate, source doctor review state, and audit history. |
+| CRUD/UI actions | Use `AppDialog` for schedule, mark arrived, start/complete study, attach asset/reference, enter/release report, billing check, cancellation, and radiology report print. |
+| RBAC/ABAC | Gate with radiology permissions; allow clinical read where permitted; enforce modality/facility scope and backend authorization. |
+| Partial refresh | After radiology mutation update only order row, study/report status, asset list, doctor review queue, source encounter/admission detail, billing badge, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Imaging requests are simple, catalog-driven, and consistent with OPD/IPD flow.
 - Radiology queue clearly shows payment/authorization, schedule, performance, and report status.
@@ -68,6 +80,7 @@ Radiology reports must use the generated template from `35-reports-audit.md` wit
 - Reports are professional, permission-aware, and generated from data.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

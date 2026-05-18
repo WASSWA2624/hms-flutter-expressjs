@@ -60,6 +60,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 ICU observation summaries, ICU stay summaries, transfer notes, and discharge readiness notes must use the generated report template from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<IcuStay>` with patient, ICU bed, acuity, alerts, observation status, consultant, ventilation/support status where available, and next action. Use `AppSearchBar` for patient, bed, acuity, alert status, provider, and date filters. |
+| Detail/display | Use shared patient context with ICU observations, critical alerts, rounds, interventions, transfer/discharge readiness, and related orders. |
+| CRUD/UI actions | Use `AppDialog` for ICU admission/transfer acceptance, observation entry, alert acknowledgement, round note, transfer readiness, ICU discharge handover, and print ICU summary. |
+| RBAC/ABAC | Gate with clinical/emergency/operations permissions, ICU module entitlement, ICU/ward scope, and backend authorization. |
+| Partial refresh | After ICU actions update only ICU row, alert badge, observation chart/section, bed status, transfer queue, source IPD row, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - ICU board is clear, responsive, and action-oriented.
 - ICU observations, alerts, and transfers are traceable.
@@ -67,6 +79,7 @@ ICU observation summaries, ICU stay summaries, transfer notes, and discharge rea
 - Access is restricted to permitted users.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

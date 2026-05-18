@@ -60,6 +60,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Emergency case summary, ambulance trip note, referral/transfer note, and emergency discharge summary must use generated report templates from `35-reports-audit.md`.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<EmergencyCase>` with patient/temporary ID, arrival time, triage category, stabilization status, provider/team, deferred billing flag, disposition, and next action. Use `AppSearchBar` for patient, case, urgency, team, status, and date filters. |
+| Detail/display | Use emergency patient context with registration completeness, triage/stabilization, orders, treatments, billing deferral, admission/referral/discharge decision, and handover activity. |
+| CRUD/UI actions | Use `AppDialog` for quick registration, triage update, stabilization note, assign team, request order, defer billing, admit, refer, discharge, handover, and emergency summary print. |
+| RBAC/ABAC | Gate with `emergency:read`/`emergency:write`, patient/clinical/billing actions as needed, facility scope, and backend authorization. |
+| Partial refresh | After emergency mutation update only emergency row, urgency badge, OPD/IPD source/destination queue, billing flag, order queues, reports, and notifications. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Emergency staff can receive, triage, act, and hand off patients quickly.
 - Emergency billing deferral and OPD/IPD routing are supported without unsafe delays.
@@ -67,6 +79,7 @@ Emergency case summary, ambulance trip note, referral/transfer note, and emergen
 - UI is simple, responsive, and permission-aware.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

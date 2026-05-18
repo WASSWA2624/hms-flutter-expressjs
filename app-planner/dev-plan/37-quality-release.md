@@ -40,6 +40,21 @@ Confirm HOSSPI HMS is safe, usable, consistent, responsive, permission-aware, wo
 | Inpatient care | Admission board, ward rounds, nursing tasks, lab/radiology/pharmacy orders, transfer if required. |
 | Discharge | Discharge plan, summary, pharmacy, nursing, billing/insurance, documents, patient exit, bed cleaning, closure. |
 
+## Mandatory Completion Audit
+Before declaring the app complete, audit every route and module against this table:
+
+| Audit area | Must pass |
+| --- | --- |
+| Shared UI reuse | List data uses `AppListTable`/`AppPaginatedListTable`; list search uses `AppSearchBar`/`AppListTableSearch`; dialogs use `AppDialog`; forms use shared fields and form shell; pages use `AppWorkspace`/responsive layout. |
+| App coverage | Existing feature folders are completed and missing modules are added with the same `data/domain/presentation` architecture. |
+| No congestion | Dashboards use a small number of summary cards and route to focused worklists; details are in panels/modals/sections, not one crowded screen. |
+| Real-time behavior | Mutations update affected rows, detail panels, badges, queues, notifications, and report previews only; no whole-app reload or unnecessary full page reset. |
+| Backend sync | Every visible action maps to backend route, DTO fields, permission, validation, status transition, audit/notification/report impact, and database-backed state. |
+| RBAC/ABAC | Unauthorized users cannot see restricted routes, shell destinations, rows, fields, row actions, modals, reports, exports, notifications, or PHI details. |
+| AppDialog uniformity | CRUD, status, approval, confirmation, payment, print/export, and short detailed-display actions use the same dialog shell, close behavior, button hierarchy, validation display, and submit-state protection. |
+| Backend edit discipline | Backend changes are absent unless a documented blocking contract gap exists; any backend change must be minimal and directly tied to required functionality. |
+
+
 ## UI Consistency Checklist
 - Use existing shell, routes, theme, shared components, responsive layouts, forms, tables, modals, and state views.
 - Do not redesign screens that already exist and work correctly.
@@ -90,6 +105,7 @@ Backend validation is required only when a future task explicitly permits backen
 - Production release blockers are listed clearly.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`

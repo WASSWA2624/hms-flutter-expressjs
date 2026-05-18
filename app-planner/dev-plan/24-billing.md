@@ -64,6 +64,18 @@ Use these route families only after confirming they exist in the current backend
 ## Reports and Printing
 Invoices, receipts, refund notes, deposit slips, statement of account, shift close, day close, and discharge billing clearance must use the generated report template from `35-reports-audit.md` with facility header, receipt/reference number, cashier, payer, payment method, amount, and page-safe layout.
 
+## Concrete Implementation Contract
+| Slice | Required implementation |
+| --- | --- |
+| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<BillingItem>` with invoice number, patient/payer, source encounter/admission/order, amount due, status, cashier/shift, date, and next action. Attach `AppSearchBar`; replace ad hoc search fields during completion. |
+| Detail/display | Use invoice/payment detail with line items, charges, deposits, refunds, receipts, payer/coverage, shift/day-close links, and audit-safe activity. |
+| CRUD/UI actions | Use `AppDialog` for payment, deposit, refund request/approval where short, invoice adjustment, receipt print, coverage check, void/cancel confirmation, and shift close confirmation. |
+| RBAC/ABAC | Gate with billing read/write, financial approve, evidence export, tenant/facility/cashier scope, and backend authorization. |
+| Partial refresh | After billing mutation update only invoice/payment/refund row, OPD/IPD/order billing gate, cashier totals, receipt/report preview, claim state, and notification count. |
+
+Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+
+
 ## Done Criteria
 - Payment collection is simple and fast.
 - OPD/IPD/lab/radiology/pharmacy/discharge billing gates update correctly.
@@ -71,6 +83,7 @@ Invoices, receipts, refund notes, deposit slips, statement of account, shift clo
 - Receipts and invoices are generated from data and can span multiple pages.
 
 ## Rule References
+
 ### Product and flow references
 - `app-planner/app-write-up.md`
 - `app-planner/opd-flow.md`
