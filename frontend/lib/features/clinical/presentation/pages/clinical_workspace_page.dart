@@ -1345,6 +1345,7 @@ class _ClinicalNoteDialogState extends ConsumerState<_ClinicalNoteDialog> {
       title: Text(widget.title),
       icon: const Icon(Icons.edit_note_outlined),
       maxWidth: 720,
+      scrollable: true,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1356,7 +1357,8 @@ class _ClinicalNoteDialogState extends ConsumerState<_ClinicalNoteDialog> {
               controller: _controller,
               labelText: widget.label,
               prefixIcon: const Icon(Icons.notes_outlined),
-              maxLines: 8,
+              minLines: 5,
+              maxLines: 6,
               enabled: !_isSaving,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
