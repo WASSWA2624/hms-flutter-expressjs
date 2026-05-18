@@ -334,11 +334,20 @@ const updateVitalSign = async (id, data, userId, ipAddress) => {
 
     const resolvedPayload = await resolveVitalSignPayload(data);
     const normalizedPayload = normalizeVitalSignPayload(resolvedPayload, before);
-    await assertNoDuplicateVitalSignForEncounter({
-      encounterId: normalizedPayload.encounter_id || before.encounter_id,
-      vitalType: normalizedPayload.vital_type || before.vital_type,
-      excludeId: resolvedId,
-    });
+    const normalizedEncounterId = normalizedPayload.encounter_id || before.encounter_id;
+    const normalizedVitalType = normalizedPayload.vital_type || before.vital_type;
+    const encounterChanged =
+      normalizedPayload.encounter_id !== undefined && normalizedPayload.encounter_id !== before.encounter_id;
+    const vitalTypeChanged =
+      normalizedPayload.vital_type !== undefined && normalizedPayload.vital_type !== before.vital_type;
+
+    if (encounterChanged || vitalTypeChanged) {
+      await assertNoDuplicateVitalSignForEncounter({
+        encounterId: normalizedEncounterId,
+        vitalType: normalizedVitalType,
+        excludeId: resolvedId,
+      });
+    }
     const vitalSign = await vitalSignRepository.update(
       resolvedId,
       normalizedPayload

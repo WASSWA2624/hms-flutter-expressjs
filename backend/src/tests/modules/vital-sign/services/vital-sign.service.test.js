@@ -62,12 +62,13 @@ describe('Vital Sign Service', () => {
       const result = await vitalSignService.createVitalSign(newVitalSign, mockUserId, mockIpAddress);
 
       expect(result).toEqual(createdVitalSign);
-      expect(vitalSignRepository.create).toHaveBeenCalledWith({
+      expect(vitalSignRepository.create).toHaveBeenCalledWith(expect.objectContaining({
         ...newVitalSign,
+        recorded_at: expect.any(Date),
         systolic_value: null,
         diastolic_value: null,
         map_value: null,
-      });
+      }));
     });
 
     it('normalizes blood pressure payload and computes MAP when missing', async () => {
@@ -84,13 +85,14 @@ describe('Vital Sign Service', () => {
 
       await vitalSignService.createVitalSign(newVitalSign, mockUserId, mockIpAddress);
 
-      expect(vitalSignRepository.create).toHaveBeenCalledWith({
+      expect(vitalSignRepository.create).toHaveBeenCalledWith(expect.objectContaining({
         vital_type: 'BLOOD_PRESSURE',
         value: '120/80',
+        recorded_at: expect.any(Date),
         systolic_value: 120,
         diastolic_value: 80,
         map_value: 93.33,
-      });
+      }));
     });
   });
 
@@ -108,6 +110,55 @@ describe('Vital Sign Service', () => {
 
       expect(result).toEqual(updatedVitalSign);
     });
+
+    it('should allow editing a value when legacy duplicate rows exist for the same encounter and type', async () => {
+      const existingVitalSign = {
+        id: '1',
+        encounter_id: 'enc-1',
+        vital_type: 'TEMPERATURE',
+        value: '98.6'
+      };
+      const updateData = { vital_type: 'TEMPERATURE', value: '99.0' };
+      const updatedVitalSign = { ...existingVitalSign, value: '99.0' };
+
+      vitalSignRepository.findById.mockResolvedValue(existingVitalSign);
+      vitalSignRepository.update.mockResolvedValue(updatedVitalSign);
+      createAuditLog.mockResolvedValue({});
+
+      const result = await vitalSignService.updateVitalSign('1', updateData, mockUserId, mockIpAddress);
+
+      expect(result).toEqual(updatedVitalSign);
+      expect(vitalSignRepository.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should reject changing a vital sign type when the encounter already has that type', async () => {
+      const existingVitalSign = {
+        id: '1',
+        encounter_id: 'enc-1',
+        vital_type: 'TEMPERATURE',
+        value: '98.6'
+      };
+
+      vitalSignRepository.findById.mockResolvedValue(existingVitalSign);
+      vitalSignRepository.findMany.mockResolvedValue([
+        {
+          id: '2',
+          encounter_id: 'enc-1',
+          vital_type: 'HEART_RATE',
+          value: '76'
+        }
+      ]);
+
+      await expect(
+        vitalSignService.updateVitalSign(
+          '1',
+          { vital_type: 'HEART_RATE', value: '80' },
+          mockUserId,
+          mockIpAddress
+        )
+      ).rejects.toThrow('errors.vital_sign.duplicate_for_encounter');
+      expect(vitalSignRepository.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('deleteVitalSign', () => {
@@ -117,7 +168,12 @@ describe('Vital Sign Service', () => {
       vitalSignRepository.softDelete.mockResolvedValue({ ...existingVitalSign, deleted_at: new Date() });
       createAuditLog.mockResolvedValue({});
 
-      await vitalSignService.deleteVitalSign('1', mockUserId, mockIpAddress);
+      await vitalSignService.deleteVitalSign(
+        '1',
+        { reason: 'Incorrect entry' },
+        mockUserId,
+        mockIpAddress
+      );
 
       expect(vitalSignRepository.softDelete).toHaveBeenCalledWith('1');
     });

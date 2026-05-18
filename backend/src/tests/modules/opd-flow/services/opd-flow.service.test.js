@@ -5,6 +5,9 @@ jest.mock('@lib/audit');
 jest.mock('@services/ipd-flow/ipd-flow.service', () => ({
   emitAdmissionRefreshEvent: jest.fn().mockResolvedValue(null)
 }));
+jest.mock('@services/clinical-alert-threshold/clinical-alert-threshold.service', () => ({
+  evaluateVitalAndCreateAlerts: jest.fn().mockResolvedValue(null)
+}));
 jest.mock('@lib/websocket', () => ({
   emitToUser: jest.fn(),
   emitToUsers: jest.fn(),
@@ -457,6 +460,130 @@ describe('opd-flow.service', () => {
         { user_id: 'usr-1' }
       )
     ).rejects.toBeInstanceOf(HttpError);
+  });
+
+  it('updates existing OPD vitals instead of creating duplicate encounter measurements', async () => {
+    const snapshotEncounter = {
+      id: 'enc-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      patient_id: 'pat-1',
+      provider_user_id: null,
+      encounter_type: 'OPD',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_DOCTOR_ASSIGNMENT',
+          consultation: {
+            require_payment: false,
+            is_paid: false,
+            invoice_id: null,
+            payment_id: null
+          }
+        }
+      },
+      vital_signs: [],
+      clinical_notes: [],
+      diagnoses: [],
+      procedures: [],
+      care_plans: [],
+      alerts: [],
+      referrals: [],
+      follow_ups: [],
+      admissions: [],
+      lab_orders: [],
+      radiology_orders: [],
+      pharmacy_orders: []
+    };
+    const tx = {
+      encounter: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'enc-1',
+            tenant_id: 'tenant-1',
+            facility_id: 'facility-1',
+            patient_id: 'pat-1',
+            provider_user_id: null,
+            encounter_type: 'OPD',
+            extension_json: {
+              opd_flow: {
+                stage: 'WAITING_VITALS',
+                consultation: {
+                  require_payment: false,
+                  is_paid: false,
+                  invoice_id: null,
+                  payment_id: null
+                }
+              }
+            }
+          })
+          .mockResolvedValue(snapshotEncounter),
+        update: jest.fn().mockResolvedValue(snapshotEncounter)
+      },
+      vital_sign: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'vital-1',
+          encounter_id: 'enc-1',
+          vital_type: 'TEMPERATURE',
+          value: '37.1'
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'vital-1',
+          encounter_id: 'enc-1',
+          vital_type: 'TEMPERATURE',
+          value: '37.5'
+        }),
+        create: jest.fn()
+      },
+      triage_assessment: {
+        update: jest.fn(),
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      visit_queue: {
+        update: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      invoice: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      payment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      emergency_case: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await opdFlowService.recordVitals(
+      'enc-1',
+      { vitals: [{ vital_type: 'TEMPERATURE', value: '37.5', unit: 'C' }] },
+      { user_id: 'actor-1', tenant_id: 'tenant-1', facility_id: 'facility-1' }
+    );
+
+    expect(tx.vital_sign.findFirst).toHaveBeenCalledWith({
+      where: {
+        encounter_id: 'enc-1',
+        vital_type: 'TEMPERATURE',
+        deleted_at: null
+      },
+      orderBy: { recorded_at: 'desc' }
+    });
+    expect(tx.vital_sign.update).toHaveBeenCalledWith({
+      where: { id: 'vital-1' },
+      data: expect.objectContaining({
+        encounter_id: 'enc-1',
+        vital_type: 'TEMPERATURE',
+        value: '37.5',
+        unit: 'C'
+      })
+    });
+    expect(tx.vital_sign.create).not.toHaveBeenCalled();
   });
 
   it('creates lab, radiology, and pharmacy requests on doctor review', async () => {

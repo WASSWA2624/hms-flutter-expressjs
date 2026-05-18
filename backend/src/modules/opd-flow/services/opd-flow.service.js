@@ -2204,11 +2204,33 @@ const recordVitals = async (id, data, context = {}) => {
       };
     });
 
-    const createdVitals = [];
-    if (typeof tx?.vital_sign?.create === 'function') {
+    const savedVitals = [];
+    if (
+      typeof tx?.vital_sign?.findFirst === 'function' &&
+      typeof tx?.vital_sign?.update === 'function' &&
+      typeof tx?.vital_sign?.create === 'function'
+    ) {
+      for (const vitalData of normalizedVitals) {
+        const existingVital = await tx.vital_sign.findFirst({
+          where: {
+            encounter_id: encounter.id,
+            vital_type: vitalData.vital_type,
+            deleted_at: null
+          },
+          orderBy: { recorded_at: 'desc' }
+        });
+        const savedVital = existingVital
+          ? await tx.vital_sign.update({
+              where: { id: existingVital.id },
+              data: vitalData
+            })
+          : await tx.vital_sign.create({ data: vitalData });
+        savedVitals.push(savedVital);
+      }
+    } else if (typeof tx?.vital_sign?.create === 'function') {
       for (const vitalData of normalizedVitals) {
         const created = await tx.vital_sign.create({ data: vitalData });
-        createdVitals.push(created);
+        savedVitals.push(created);
       }
     } else {
       await tx.vital_sign.createMany({ data: normalizedVitals });
@@ -2282,7 +2304,7 @@ const recordVitals = async (id, data, context = {}) => {
 
     return {
       encounter: updatedEncounter,
-      created_vitals: createdVitals,
+      saved_vitals: savedVitals,
       transition: {
         action: 'RECORD_VITALS',
         stage_from: stageBefore,
@@ -2304,10 +2326,10 @@ const recordVitals = async (id, data, context = {}) => {
   }).catch(() => {});
 
   let snapshot = await getOpdFlowById(updatedResult.encounter.id);
-  const createdVitals = Array.isArray(updatedResult.created_vitals) ? updatedResult.created_vitals : [];
-  if (createdVitals.length > 0) {
+  const savedVitals = Array.isArray(updatedResult.saved_vitals) ? updatedResult.saved_vitals : [];
+  if (savedVitals.length > 0) {
     await Promise.all(
-      createdVitals.map((vital) =>
+      savedVitals.map((vital) =>
         clinicalAlertThresholdService
           .evaluateVitalAndCreateAlerts(
             {
