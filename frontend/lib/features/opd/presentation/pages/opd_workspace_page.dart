@@ -2465,7 +2465,6 @@ Widget _opdTriageStatusText(BuildContext context, String? value) {
   return AppStatusText(
     label: label.isEmpty ? context.l10n.profileUnknownValue : label,
     tone: appTriageToneForValue(value),
-    icon: appTriageIconForValue(value),
   );
 }
 
