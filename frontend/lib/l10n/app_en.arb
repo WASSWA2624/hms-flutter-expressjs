@@ -4071,6 +4071,83 @@
   "@clinicalRequestLabAction": {
     "description": "Clinical request lab action label."
   },
+  "clinicalLabRequestTestsModeLabel": "Individual tests",
+  "@clinicalLabRequestTestsModeLabel": {
+    "description": "Clinical lab request selector mode for individual tests."
+  },
+  "clinicalLabRequestPanelsModeLabel": "Lab panels",
+  "@clinicalLabRequestPanelsModeLabel": {
+    "description": "Clinical lab request selector mode for lab panels."
+  },
+  "clinicalLabRequestSearchLabel": "Search lab catalog",
+  "@clinicalLabRequestSearchLabel": {
+    "description": "Clinical lab request catalog search field label."
+  },
+  "clinicalLabRequestSearchHint": "Search by name, code, category, specimen, or status",
+  "@clinicalLabRequestSearchHint": {
+    "description": "Clinical lab request catalog search field hint."
+  },
+  "clinicalLabRequestSelectedTitle": "Selected lab requests",
+  "@clinicalLabRequestSelectedTitle": {
+    "description": "Clinical lab request selected items section title."
+  },
+  "clinicalLabRequestSelectedCount": "{count} selected",
+  "@clinicalLabRequestSelectedCount": {
+    "description": "Clinical lab request selected item count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalLabRequestNoSelection": "No lab requests selected",
+  "@clinicalLabRequestNoSelection": {
+    "description": "Clinical lab request empty selected items message."
+  },
+  "clinicalLabRequestAddSelectionAction": "Add",
+  "@clinicalLabRequestAddSelectionAction": {
+    "description": "Clinical lab request add selected catalog item action."
+  },
+  "clinicalLabRequestUpdateSelectionAction": "Update",
+  "@clinicalLabRequestUpdateSelectionAction": {
+    "description": "Clinical lab request update selected catalog item action."
+  },
+  "clinicalLabRequestCancelEditAction": "Cancel edit",
+  "@clinicalLabRequestCancelEditAction": {
+    "description": "Clinical lab request cancel edit action."
+  },
+  "clinicalLabRequestEditSelectionAction": "Edit",
+  "@clinicalLabRequestEditSelectionAction": {
+    "description": "Clinical lab request edit selected item action."
+  },
+  "clinicalLabRequestDeleteSelectionAction": "Delete",
+  "@clinicalLabRequestDeleteSelectionAction": {
+    "description": "Clinical lab request delete selected item action."
+  },
+  "clinicalLabRequestTestTypeLabel": "Test",
+  "@clinicalLabRequestTestTypeLabel": {
+    "description": "Clinical lab request selected item type label for tests."
+  },
+  "clinicalLabRequestPanelTypeLabel": "Panel",
+  "@clinicalLabRequestPanelTypeLabel": {
+    "description": "Clinical lab request selected item type label for panels."
+  },
+  "clinicalLabRequestMatchesLabel": "Showing {shown} of {total} matches",
+  "@clinicalLabRequestMatchesLabel": {
+    "description": "Clinical lab request search result count label.",
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalLabRequestNoCatalogOptions": "No matching lab catalog items",
+  "@clinicalLabRequestNoCatalogOptions": {
+    "description": "Clinical lab request no matching search results message."
+  },
   "clinicalRequestRadiologyAction": "Request radiology",
   "@clinicalRequestRadiologyAction": {
     "description": "Clinical request radiology action label."

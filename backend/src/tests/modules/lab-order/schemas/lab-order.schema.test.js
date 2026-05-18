@@ -6,18 +6,14 @@
  * Per testing.mdc: Comprehensive validation schema tests required
  */
 
-const {
-  createLabOrderSchema,
-  updateLabOrderSchema,
-  labOrderIdParamsSchema,
-  listLabOrdersQuerySchema
-} = require('@validations/lab-order/lab-order.schema');
+const { createLabOrderSchema, updateLabOrderSchema, labOrderIdParamsSchema, listLabOrdersQuerySchema } = require('@validations/lab-order/lab-order.schema');
 
 describe('Lab Order Schemas', () => {
   describe('createLabOrderSchema', () => {
     const validData = {
       encounter_id: '550e8400-e29b-41d4-a716-446655440000',
       patient_id: '550e8400-e29b-41d4-a716-446655440001',
+      requested_tests: [{ lab_test_id: 'LBT0000001' }],
       status: 'ORDERED',
       ordered_at: '2026-01-19T12:00:00.000Z'
     };
@@ -66,7 +62,18 @@ describe('Lab Order Schemas', () => {
       const result = createLabOrderSchema.safeParse({
         ...validData,
         requested_tests: [{ lab_test_id: 'LBT0000001' }],
-        requested_panels: [{ lab_panel_id: 'LPN0000001' }],
+        requested_panels: [{ lab_panel_id: 'LPN0000001' }]
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts large configured test request selections', () => {
+      const result = createLabOrderSchema.safeParse({
+        ...validData,
+        requested_tests: Array.from({ length: 5000 }, (_, index) => ({
+          lab_test_id: `LBT${String(index + 1).padStart(7, '0')}`
+        }))
       });
 
       expect(result.success).toBe(true);

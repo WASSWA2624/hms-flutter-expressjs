@@ -8,10 +8,7 @@
  */
 
 const { z } = require('zod');
-const { 
-  uuidOrFriendlyIdentifierSchema, 
-  listQuerySchema
-} = require('@lib/validation/zod');
+const { uuidOrFriendlyIdentifierSchema, listQuerySchema } = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
 
@@ -19,14 +16,10 @@ const {
  * Create lab order body validation
  * Used for POST /lab-orders endpoint
  */
-const labOrderStatusSchema = z.enum([
-  'ORDERED',
-  'COLLECTED',
-  'IN_PROCESS',
-  'COMPLETED',
-  'CANCELLED',
-]);
+const labOrderStatusSchema = z.enum(['ORDERED', 'COLLECTED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED']);
 
+const MAX_REQUESTED_LAB_TESTS = 5000;
+const MAX_REQUESTED_LAB_PANELS = 5000;
 const labTestResultKindSchema = z.enum(['NUMERIC', 'QUALITATIVE', 'TEXT']);
 
 const labOrderNewTestSchema = z.object({
@@ -36,40 +29,46 @@ const labOrderNewTestSchema = z.object({
   specimen_type: z.string().trim().min(1).max(80),
   result_kind: labTestResultKindSchema.optional().default('NUMERIC'),
   unit: z.string().trim().max(40).optional().nullable(),
-  description: z.string().trim().max(255).optional().nullable(),
+  description: z.string().trim().max(255).optional().nullable()
 });
 
 const labOrderRequestedTestSchema = z
   .object({
     lab_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-    new_test: labOrderNewTestSchema.optional().nullable(),
+    new_test: labOrderNewTestSchema.optional().nullable()
   })
   .superRefine((value, ctx) => {
     if (value.lab_test_id || value.new_test?.name) return;
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['lab_test_id'],
-      message: 'errors.validation.required',
+      message: 'errors.validation.required'
     });
   });
 
 const labOrderRequestedPanelSchema = z.object({
-  lab_panel_id: uuidOrFriendlyIdentifierSchema,
+  lab_panel_id: uuidOrFriendlyIdentifierSchema
 });
 
-const createLabOrderSchema = z.object({
-  encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  patient_id: uuidOrFriendlyIdentifierSchema,
-  status: labOrderStatusSchema.optional().default('ORDERED'),
-  ordered_at: z.string().datetime().optional(),
-  requested_tests: z.array(labOrderRequestedTestSchema).max(25).optional(),
-  requested_panels: z.array(labOrderRequestedPanelSchema).max(20).optional(),
-}).superRefine((value, ctx) => {
-  const requestedTests = Array.isArray(value.requested_tests) ? value.requested_tests : [];
-  const requestedPanels = Array.isArray(value.requested_panels) ? value.requested_panels : [];
-  if (requestedTests.length || requestedPanels.length) return;
-  ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['requested_tests'], message: 'errors.validation.required' });
-});
+const createLabOrderSchema = z
+  .object({
+    encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+    patient_id: uuidOrFriendlyIdentifierSchema,
+    status: labOrderStatusSchema.optional().default('ORDERED'),
+    ordered_at: z.string().datetime().optional(),
+    requested_tests: z.array(labOrderRequestedTestSchema).max(MAX_REQUESTED_LAB_TESTS).optional(),
+    requested_panels: z.array(labOrderRequestedPanelSchema).max(MAX_REQUESTED_LAB_PANELS).optional()
+  })
+  .superRefine((value, ctx) => {
+    const requestedTests = Array.isArray(value.requested_tests) ? value.requested_tests : [];
+    const requestedPanels = Array.isArray(value.requested_panels) ? value.requested_panels : [];
+    if (requestedTests.length || requestedPanels.length) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['requested_tests'],
+      message: 'errors.validation.required'
+    });
+  });
 
 /**
  * Update lab order body validation

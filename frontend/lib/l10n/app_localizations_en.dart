@@ -3159,6 +3159,60 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestLabAction => 'Request lab';
 
   @override
+  String get clinicalLabRequestTestsModeLabel => 'Individual tests';
+
+  @override
+  String get clinicalLabRequestPanelsModeLabel => 'Lab panels';
+
+  @override
+  String get clinicalLabRequestSearchLabel => 'Search lab catalog';
+
+  @override
+  String get clinicalLabRequestSearchHint =>
+      'Search by name, code, category, specimen, or status';
+
+  @override
+  String get clinicalLabRequestSelectedTitle => 'Selected lab requests';
+
+  @override
+  String clinicalLabRequestSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get clinicalLabRequestNoSelection => 'No lab requests selected';
+
+  @override
+  String get clinicalLabRequestAddSelectionAction => 'Add';
+
+  @override
+  String get clinicalLabRequestUpdateSelectionAction => 'Update';
+
+  @override
+  String get clinicalLabRequestCancelEditAction => 'Cancel edit';
+
+  @override
+  String get clinicalLabRequestEditSelectionAction => 'Edit';
+
+  @override
+  String get clinicalLabRequestDeleteSelectionAction => 'Delete';
+
+  @override
+  String get clinicalLabRequestTestTypeLabel => 'Test';
+
+  @override
+  String get clinicalLabRequestPanelTypeLabel => 'Panel';
+
+  @override
+  String clinicalLabRequestMatchesLabel(int shown, int total) {
+    return 'Showing $shown of $total matches';
+  }
+
+  @override
+  String get clinicalLabRequestNoCatalogOptions =>
+      'No matching lab catalog items';
+
+  @override
   String get clinicalRequestRadiologyAction => 'Request radiology';
 
   @override

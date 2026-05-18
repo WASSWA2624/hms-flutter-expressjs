@@ -5920,6 +5920,102 @@ abstract class AppLocalizations {
   /// **'Request lab'**
   String get clinicalRequestLabAction;
 
+  /// Clinical lab request selector mode for individual tests.
+  ///
+  /// In en, this message translates to:
+  /// **'Individual tests'**
+  String get clinicalLabRequestTestsModeLabel;
+
+  /// Clinical lab request selector mode for lab panels.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab panels'**
+  String get clinicalLabRequestPanelsModeLabel;
+
+  /// Clinical lab request catalog search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search lab catalog'**
+  String get clinicalLabRequestSearchLabel;
+
+  /// Clinical lab request catalog search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, code, category, specimen, or status'**
+  String get clinicalLabRequestSearchHint;
+
+  /// Clinical lab request selected items section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected lab requests'**
+  String get clinicalLabRequestSelectedTitle;
+
+  /// Clinical lab request selected item count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String clinicalLabRequestSelectedCount(int count);
+
+  /// Clinical lab request empty selected items message.
+  ///
+  /// In en, this message translates to:
+  /// **'No lab requests selected'**
+  String get clinicalLabRequestNoSelection;
+
+  /// Clinical lab request add selected catalog item action.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get clinicalLabRequestAddSelectionAction;
+
+  /// Clinical lab request update selected catalog item action.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get clinicalLabRequestUpdateSelectionAction;
+
+  /// Clinical lab request cancel edit action.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel edit'**
+  String get clinicalLabRequestCancelEditAction;
+
+  /// Clinical lab request edit selected item action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get clinicalLabRequestEditSelectionAction;
+
+  /// Clinical lab request delete selected item action.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get clinicalLabRequestDeleteSelectionAction;
+
+  /// Clinical lab request selected item type label for tests.
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get clinicalLabRequestTestTypeLabel;
+
+  /// Clinical lab request selected item type label for panels.
+  ///
+  /// In en, this message translates to:
+  /// **'Panel'**
+  String get clinicalLabRequestPanelTypeLabel;
+
+  /// Clinical lab request search result count label.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total} matches'**
+  String clinicalLabRequestMatchesLabel(int shown, int total);
+
+  /// Clinical lab request no matching search results message.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching lab catalog items'**
+  String get clinicalLabRequestNoCatalogOptions;
+
   /// Clinical request radiology action label.
   ///
   /// In en, this message translates to:

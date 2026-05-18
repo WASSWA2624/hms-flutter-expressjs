@@ -8,18 +8,22 @@
  */
 
 const { z } = require('zod');
-const { 
-  uuidOrFriendlyIdentifierSchema, 
-  listQuerySchema
-} = require('@lib/validation/zod');
+const { uuidOrFriendlyIdentifierSchema, listQuerySchema } = require('@lib/validation/zod');
 
-const optionalTrimmedString = (maxLength) =>
-  z.string().trim().min(1).max(maxLength).optional().nullable();
+const optionalTrimmedString = (maxLength) => z.string().trim().min(1).max(maxLength).optional().nullable();
+
+const LAB_CATALOG_MAX_PAGE_LIMIT = 5000;
+const labCatalogLimitSchema = z.coerce
+  .number()
+  .int('Limit must be an integer')
+  .positive('Limit must be a positive number')
+  .max(LAB_CATALOG_MAX_PAGE_LIMIT, `Limit cannot exceed ${LAB_CATALOG_MAX_PAGE_LIMIT}`)
+  .optional();
 
 const labPanelItemSchema = z.object({
   lab_test_id: uuidOrFriendlyIdentifierSchema,
   is_required: z.boolean().optional(),
-  instructions: optionalTrimmedString(255),
+  instructions: optionalTrimmedString(255)
 });
 
 const withUniquePanelItems = (schema) =>
@@ -27,13 +31,15 @@ const withUniquePanelItems = (schema) =>
     if (!Array.isArray(value.panel_items)) return;
     const seen = new Set();
     value.panel_items.forEach((entry, index) => {
-      const identifier = String(entry?.lab_test_id || '').trim().toUpperCase();
+      const identifier = String(entry?.lab_test_id || '')
+        .trim()
+        .toUpperCase();
       if (!identifier) return;
       if (seen.has(identifier)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Each lab test can only appear once in a panel.',
-          path: ['panel_items', index, 'lab_test_id'],
+          path: ['panel_items', index, 'lab_test_id']
         });
         return;
       }
@@ -47,27 +53,31 @@ const withUniquePanelItems = (schema) =>
  * Create lab panel body validation
  * Used for POST /lab-panels endpoint
  */
-const createLabPanelSchema = withUniquePanelItems(z.object({
-  tenant_id: uuidOrFriendlyIdentifierSchema,
-  name: z.string().trim().min(1).max(255),
-  code: optionalTrimmedString(80),
-  category: optionalTrimmedString(80),
-  description: optionalTrimmedString(255),
-  panel_items: z.array(labPanelItemSchema).min(1).max(25).optional()
-}));
+const createLabPanelSchema = withUniquePanelItems(
+  z.object({
+    tenant_id: uuidOrFriendlyIdentifierSchema,
+    name: z.string().trim().min(1).max(255),
+    code: optionalTrimmedString(80),
+    category: optionalTrimmedString(80),
+    description: optionalTrimmedString(255),
+    panel_items: z.array(labPanelItemSchema).min(1).max(25).optional()
+  })
+);
 
 /**
  * Update lab panel body validation
  * Used for PUT /lab-panels/:id endpoint
  * All fields optional for partial updates
  */
-const updateLabPanelSchema = withUniquePanelItems(z.object({
-  name: z.string().trim().min(1).max(255).optional(),
-  code: optionalTrimmedString(80),
-  category: optionalTrimmedString(80),
-  description: optionalTrimmedString(255),
-  panel_items: z.array(labPanelItemSchema).min(1).max(25).optional()
-}));
+const updateLabPanelSchema = withUniquePanelItems(
+  z.object({
+    name: z.string().trim().min(1).max(255).optional(),
+    code: optionalTrimmedString(80),
+    category: optionalTrimmedString(80),
+    description: optionalTrimmedString(255),
+    panel_items: z.array(labPanelItemSchema).min(1).max(25).optional()
+  })
+);
 
 // ==================== URL Params ====================
 
@@ -87,6 +97,7 @@ const labPanelIdParamsSchema = z.object({
  * Extends base listQuerySchema with lab panel-specific filters
  */
 const listLabPanelsQuerySchema = listQuerySchema.extend({
+  limit: labCatalogLimitSchema,
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   name: z.string().trim().optional(),
   code: z.string().trim().optional(),

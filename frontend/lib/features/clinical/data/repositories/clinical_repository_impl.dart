@@ -17,6 +17,9 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   const ClinicalRepositoryImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
 
+  static const int _largeCatalogPageSize = 5000;
+  static const int _defaultCatalogPageSize = 100;
+
   final ApiClient _apiClient;
 
   @override
@@ -124,8 +127,8 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   @override
   Future<Result<ClinicalReferenceData>> loadReferenceData() async {
     final results = await Future.wait(<Future<List<ClinicalCatalogOption>>>[
-      _catalogOrEmpty(HmsApiResource.labTests),
-      _catalogOrEmpty(HmsApiResource.labPanels),
+      _catalogOrEmpty(HmsApiResource.labTests, limit: _largeCatalogPageSize),
+      _catalogOrEmpty(HmsApiResource.labPanels, limit: _largeCatalogPageSize),
       _catalogOrEmpty(HmsApiResource.radiologyTests),
       _catalogOrEmpty(HmsApiResource.drugs),
       _catalogOrEmpty(
@@ -259,13 +262,14 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   Future<List<ClinicalCatalogOption>> _catalogOrEmpty(
     HmsApiResource resource, {
     Map<String, Object?> queryParameters = const <String, Object?>{},
+    int limit = _defaultCatalogPageSize,
   }) async {
     final Result<List<ClinicalCatalogOption>> result = await _apiClient
         .get<List<ClinicalCatalogOption>>(
           ApiEndpoints.collection(resource),
           queryParameters: _withoutEmpty(<String, Object?>{
             'page': 1,
-            'limit': 100,
+            'limit': limit,
             'sort_by': resource == HmsApiResource.beds ? 'label' : 'name',
             'order': 'asc',
             ...queryParameters,
