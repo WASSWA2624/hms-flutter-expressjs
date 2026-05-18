@@ -778,13 +778,15 @@ class _ClinicalDetailPanel extends ConsumerWidget {
     }
 
     final ClinicalWorklistEntry entry = bundle.entry;
+    final String patientId = entry.patientPublicId ?? entry.patientId ?? '';
+    final String patientNumber = patientId.isEmpty ? entry.id : patientId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppWorkspacePatientContextHeader(
-          patientName: entry.displayTitle,
-          patientNumber: entry.patientPublicId ?? entry.patientId ?? entry.id,
-          demographics: entry.patientAgeSex,
+          patientName: entry.patientDisplayName ?? entry.displayTitle,
+          patientNumber: patientNumber,
+          patientNumberLabel: patientId.isEmpty ? null : l10n.opdPatientIdLabel,
           status: _entryStatus(entry),
           alerts: <AppWorkspaceStatus>[
             if (entry.isUrgent)
@@ -798,28 +800,10 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                 tone: AppWorkspaceStatusTone.success,
               ),
           ],
-          fields: <AppWorkspacePatientContextField>[
-            AppWorkspacePatientContextField(
-              label: l10n.clinicalEncounterNumberLabel,
-              value: entry.encounterPublicId ?? entry.encounterId,
-              icon: Icons.tag_outlined,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.clinicalSourceQueueLabel,
-              value: _apiLabel(entry.sourceQueue),
-              icon: Icons.queue_outlined,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.clinicalLocationLabel,
-              value: entry.currentLocation ?? '',
-              icon: Icons.location_on_outlined,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.opdProviderColumnLabel,
-              value: entry.providerDisplayName ?? '',
-              icon: Icons.badge_outlined,
-            ),
-          ],
+          fields: _clinicalPatientContextFields(context, l10n, entry),
+          onCopyPatientNumber: patientId.isEmpty
+              ? null
+              : () => _copyClinicalPatientId(context, patientId),
         ),
         SizedBox(height: Theme.of(context).spacing.md),
         if (bundle.triageHandoff?.hasContent ?? false) ...<Widget>[
@@ -2864,6 +2848,133 @@ List<AppSelectOption<String>> _statusOptions(List<String> values) {
     for (final String value in values)
       AppSelectOption<String>(value: value, label: _apiLabel(value)),
   ];
+}
+
+List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
+  BuildContext context,
+  AppLocalizations l10n,
+  ClinicalWorklistEntry entry,
+) {
+  final String age = _clinicalAgeLabel(entry.patientDateOfBirth);
+  final String gender = _clinicalGenderLabel(l10n, entry.patientGender);
+  final bool hasStructuredDemographics = age.isNotEmpty || gender.isNotEmpty;
+  final DateTime? lastUpdated = entry.updatedAt ?? entry.startedAt;
+
+  return <AppWorkspacePatientContextField>[
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalEncounterNumberLabel,
+      value: entry.encounterPublicId ?? entry.encounterId,
+      icon: Icons.tag_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalEncounterQueueLabel,
+      value: _apiLabel(entry.sourceQueue),
+      icon: Icons.queue_outlined,
+      tone: _sourceQueueTone(entry.sourceQueue),
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalAgeLabel,
+      value: age,
+      icon: Icons.cake_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.patientsGenderLabel,
+      value: gender,
+      icon: Icons.wc_outlined,
+    ),
+    if (!hasStructuredDemographics)
+      AppWorkspacePatientContextField(
+        label: l10n.patientsAgeSexColumnLabel,
+        value: entry.patientAgeSex ?? '',
+        icon: Icons.badge_outlined,
+      ),
+    AppWorkspacePatientContextField(
+      label: l10n.patientsPhoneLabel,
+      value: entry.patientPhone ?? '',
+      icon: Icons.phone_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.patientsDobLabel,
+      value: entry.patientDateOfBirth == null
+          ? ''
+          : AppFormatters.mediumDate(
+              entry.patientDateOfBirth!,
+              Localizations.localeOf(context),
+            ),
+      icon: Icons.event_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalEncounterTypeLabel,
+      value: _apiLabel(entry.encounterType ?? ''),
+      icon: Icons.local_hospital_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalLocationLabel,
+      value: entry.currentLocation ?? '',
+      icon: Icons.location_on_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.opdProviderColumnLabel,
+      value: entry.providerDisplayName ?? '',
+      icon: Icons.badge_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.opdStageLabel,
+      value: _apiLabel(entry.stage ?? entry.nextStep ?? ''),
+      icon: Icons.timeline_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalLastUpdatedLabel,
+      value: lastUpdated == null ? '' : _dateTimeLabel(context, lastUpdated),
+      icon: Icons.schedule_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalAdmissionNumberLabel,
+      value: entry.admissionPublicId ?? entry.admissionId ?? '',
+      icon: Icons.bed_outlined,
+    ),
+  ];
+}
+
+String _clinicalAgeLabel(DateTime? birthDate) {
+  if (birthDate == null) {
+    return '';
+  }
+
+  final DateTime today = DateTime.now();
+  int age = today.year - birthDate.year;
+  if (today.month < birthDate.month ||
+      (today.month == birthDate.month && today.day < birthDate.day)) {
+    age -= 1;
+  }
+
+  return age < 0 ? '' : age.toString();
+}
+
+String _clinicalGenderLabel(AppLocalizations l10n, String? value) {
+  return switch ((value ?? '').toUpperCase()) {
+    'MALE' => l10n.patientsGenderMale,
+    'FEMALE' => l10n.patientsGenderFemale,
+    'OTHER' => l10n.patientsGenderOther,
+    'UNKNOWN' => l10n.patientsGenderUnknown,
+    final String normalized when normalized.isNotEmpty => _apiLabel(value!),
+    _ => '',
+  };
+}
+
+Future<void> _copyClinicalPatientId(
+  BuildContext context,
+  String patientId,
+) async {
+  await Clipboard.setData(ClipboardData(text: patientId));
+  if (!context.mounted) {
+    return;
+  }
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(content: Text(context.l10n.clinicalPatientIdCopiedMessage)),
+    );
 }
 
 AppWorkspaceStatus _entryStatus(ClinicalWorklistEntry item) {

@@ -80,6 +80,7 @@ void main() {
     );
 
     expect(html, contains('Subscribed Facility'));
+    expect(_occurrences(html, '<strong>Subscribed Facility</strong>'), 1);
     expect(html, contains('Page 1 of 2'));
     expect(html, contains('Page 2 of 2'));
   });
@@ -115,4 +116,8 @@ void main() {
     expect(html, isNot(contains('Page 1 of 2')));
     expect(html, isNot(contains('Page 2 of 2')));
   });
+}
+
+int _occurrences(String source, String pattern) {
+  return pattern.allMatches(source).length;
 }

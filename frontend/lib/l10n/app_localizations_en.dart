@@ -3065,6 +3065,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalSavedMessage => 'Clinical changes saved.';
 
   @override
+  String get clinicalPatientIdCopiedMessage => 'Patient ID copied.';
+
+  @override
   String get clinicalFiltersLabel => 'Clinical filters';
 
   @override
@@ -3120,10 +3123,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalSourceQueueLabel => 'Queue';
 
   @override
+  String get clinicalEncounterQueueLabel => 'Encounter queue';
+
+  @override
   String get clinicalLastUpdatedLabel => 'Last updated';
 
   @override
   String get clinicalEncounterNumberLabel => 'Encounter';
+
+  @override
+  String get clinicalAdmissionNumberLabel => 'Admission';
+
+  @override
+  String get clinicalEncounterTypeLabel => 'Encounter type';
+
+  @override
+  String get clinicalAgeLabel => 'Age';
 
   @override
   String get clinicalLocationLabel => 'Location';

@@ -119,6 +119,8 @@ final class ClinicalWorklistEntry {
     this.patientDisplayName,
     this.patientPhone,
     this.patientAgeSex,
+    this.patientDateOfBirth,
+    this.patientGender,
     this.encounterType,
     this.status,
     this.stage,
@@ -146,6 +148,8 @@ final class ClinicalWorklistEntry {
   final String? patientDisplayName;
   final String? patientPhone;
   final String? patientAgeSex;
+  final DateTime? patientDateOfBirth;
+  final String? patientGender;
   final String? encounterType;
   final String? status;
   final String? stage;
@@ -179,6 +183,7 @@ final class ClinicalWorklistEntry {
     return _joinDisplay(<String?>[
       patientPublicId,
       patientPhone,
+      patientGender,
       encounterPublicId,
       encounterType,
     ]);
@@ -217,6 +222,7 @@ final class ClinicalWorklistEntry {
       patientDisplayName,
       patientPhone,
       patientAgeSex,
+      patientGender,
     ])) {
       return false;
     }
@@ -289,6 +295,7 @@ final class ClinicalWorklistEntry {
         patientDisplayName,
         patientPhone,
         patientAgeSex,
+        patientGender,
       ],
       'encounter' => <String?>[encounterId, encounterPublicId],
       'source' => <String?>[sourceQueue],
@@ -307,6 +314,7 @@ final class ClinicalWorklistEntry {
         patientDisplayName,
         patientPhone,
         patientAgeSex,
+        patientGender,
         encounterType,
         status,
         stage,
@@ -339,6 +347,8 @@ final class ClinicalWorklistEntry {
       patientDisplayName: patientDisplayName,
       patientPhone: patientPhone,
       patientAgeSex: patientAgeSex,
+      patientDateOfBirth: patientDateOfBirth,
+      patientGender: patientGender,
       encounterType: encounterType,
       status: status ?? this.status,
       stage: stage ?? this.stage,

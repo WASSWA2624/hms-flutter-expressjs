@@ -110,23 +110,20 @@ class _AppDialogState extends State<AppDialog> {
     }
 
     if (desktopInteractive) {
-      dialogBody = Transform.translate(
-        offset: _dragOffset,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: <Widget>[
-            dialogBody,
-            PositionedDirectional(
-              end: theme.spacing.xs,
-              bottom: theme.spacing.xs,
-              child: _DialogResizeHandle(
-                onDragUpdate: (DragUpdateDetails details) {
-                  _handleResize(details, viewport, insetPadding, defaultWidth);
-                },
-              ),
+      dialogBody = Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          dialogBody,
+          PositionedDirectional(
+            end: theme.spacing.xs,
+            bottom: theme.spacing.xs,
+            child: _DialogResizeHandle(
+              onDragUpdate: (DragUpdateDetails details) {
+                _handleResize(details, viewport, insetPadding, defaultWidth);
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -138,6 +135,10 @@ class _AppDialogState extends State<AppDialog> {
       shadowColor: colorScheme.shadow.withValues(alpha: 0.28),
       child: dialogBody,
     );
+
+    if (desktopInteractive) {
+      dialog = Transform.translate(offset: _dragOffset, child: dialog);
+    }
 
     if (widget.semanticLabel != null) {
       dialog = Semantics(

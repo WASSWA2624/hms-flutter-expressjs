@@ -828,22 +828,28 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
   const AppWorkspacePatientContextHeader({
     required this.patientName,
     required this.patientNumber,
+    this.patientNumberLabel,
     this.demographics,
     this.status,
     this.alerts = const <AppWorkspaceStatus>[],
     this.fields = const <AppWorkspacePatientContextField>[],
     this.actions = const <Widget>[],
+    this.onCopyPatientNumber,
+    this.copyPatientNumberTooltip,
     this.semanticLabel,
     super.key,
   });
 
   final String patientName;
   final String patientNumber;
+  final String? patientNumberLabel;
   final String? demographics;
   final AppWorkspaceStatus? status;
   final List<AppWorkspaceStatus> alerts;
   final List<AppWorkspacePatientContextField> fields;
   final List<Widget> actions;
+  final VoidCallback? onCopyPatientNumber;
+  final String? copyPatientNumberTooltip;
   final String? semanticLabel;
 
   @override
@@ -866,9 +872,12 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
             final Widget identity = _PatientContextIdentity(
               patientName: patientName,
               patientNumber: patientNumber,
+              patientNumberLabel: patientNumberLabel,
               demographics: demographics,
               status: status,
               alerts: alerts,
+              onCopyPatientNumber: onCopyPatientNumber,
+              copyPatientNumberTooltip: copyPatientNumberTooltip,
             );
             final Widget? actionBar = actions.isEmpty
                 ? null
@@ -1300,16 +1309,22 @@ class _PatientContextIdentity extends StatelessWidget {
   const _PatientContextIdentity({
     required this.patientName,
     required this.patientNumber,
+    required this.patientNumberLabel,
     required this.demographics,
     required this.status,
     required this.alerts,
+    required this.onCopyPatientNumber,
+    required this.copyPatientNumberTooltip,
   });
 
   final String patientName;
   final String patientNumber;
+  final String? patientNumberLabel;
   final String? demographics;
   final AppWorkspaceStatus? status;
   final List<AppWorkspaceStatus> alerts;
+  final VoidCallback? onCopyPatientNumber;
+  final String? copyPatientNumberTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -1350,8 +1365,11 @@ class _PatientContextIdentity extends StatelessWidget {
               SizedBox(height: theme.spacing.xs),
               _PatientContextMetaLine(
                 patientNumber: patientNumber,
+                patientNumberLabel: patientNumberLabel,
                 demographics: demographics,
                 status: status,
+                onCopyPatientNumber: onCopyPatientNumber,
+                copyPatientNumberTooltip: copyPatientNumberTooltip,
               ),
               if (alerts.isNotEmpty) ...<Widget>[
                 SizedBox(height: theme.spacing.sm),
@@ -1368,13 +1386,19 @@ class _PatientContextIdentity extends StatelessWidget {
 class _PatientContextMetaLine extends StatelessWidget {
   const _PatientContextMetaLine({
     required this.patientNumber,
+    required this.patientNumberLabel,
     required this.demographics,
     required this.status,
+    required this.onCopyPatientNumber,
+    required this.copyPatientNumberTooltip,
   });
 
   final String patientNumber;
+  final String? patientNumberLabel;
   final String? demographics;
   final AppWorkspaceStatus? status;
+  final VoidCallback? onCopyPatientNumber;
+  final String? copyPatientNumberTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -1382,14 +1406,11 @@ class _PatientContextMetaLine extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final List<Widget> items = <Widget>[
       if (patientNumber.trim().isNotEmpty)
-        Text(
-          patientNumber,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
-          ),
+        _PatientContextNumberToken(
+          label: patientNumberLabel,
+          value: patientNumber,
+          onCopy: onCopyPatientNumber,
+          copyTooltip: copyPatientNumberTooltip,
         ),
       if (demographics != null && demographics!.trim().isNotEmpty)
         Text(
@@ -1408,6 +1429,98 @@ class _PatientContextMetaLine extends StatelessWidget {
       runSpacing: theme.spacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: items,
+    );
+  }
+}
+
+class _PatientContextNumberToken extends StatelessWidget {
+  const _PatientContextNumberToken({
+    required this.value,
+    this.label,
+    this.onCopy,
+    this.copyTooltip,
+  });
+
+  final String? label;
+  final String value;
+  final VoidCallback? onCopy;
+  final String? copyTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle? labelStyle = theme.textTheme.labelMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+    );
+    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurface,
+      fontWeight: FontWeight.w800,
+    );
+    final String? resolvedLabel = label?.trim();
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 360),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLowest,
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: theme.spacing.sm,
+            top: theme.spacing.xs,
+            bottom: theme.spacing.xs,
+            end: onCopy == null ? theme.spacing.sm : theme.spacing.xs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (resolvedLabel != null && resolvedLabel.isNotEmpty) ...[
+                Flexible(
+                  child: Text(
+                    resolvedLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle,
+                  ),
+                ),
+                SizedBox(width: theme.spacing.xs),
+              ],
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: valueStyle,
+                ),
+              ),
+              if (onCopy != null) ...<Widget>[
+                SizedBox(width: theme.spacing.xs),
+                Tooltip(
+                  message:
+                      copyTooltip ??
+                      MaterialLocalizations.of(context).copyButtonLabel,
+                  child: IconButton(
+                    visualDensity: VisualDensity.compact,
+                    constraints: BoxConstraints.tightFor(
+                      width: theme.appTokens.minInteractiveDimension,
+                      height: theme.appTokens.minInteractiveDimension,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onPressed: onCopy,
+                    icon: Icon(
+                      Icons.copy_outlined,
+                      size: theme.appTokens.listIconSize,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

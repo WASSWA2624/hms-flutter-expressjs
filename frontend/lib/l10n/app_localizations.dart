@@ -5740,6 +5740,12 @@ abstract class AppLocalizations {
   /// **'Clinical changes saved.'**
   String get clinicalSavedMessage;
 
+  /// Snackbar message after copying a clinical patient ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID copied.'**
+  String get clinicalPatientIdCopiedMessage;
+
   /// Semantic label for clinical workspace filters.
   ///
   /// In en, this message translates to:
@@ -5842,6 +5848,12 @@ abstract class AppLocalizations {
   /// **'Queue'**
   String get clinicalSourceQueueLabel;
 
+  /// Clinical encounter queue label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter queue'**
+  String get clinicalEncounterQueueLabel;
+
   /// Clinical worklist last updated column label.
   ///
   /// In en, this message translates to:
@@ -5853,6 +5865,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Encounter'**
   String get clinicalEncounterNumberLabel;
+
+  /// Clinical admission number label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission'**
+  String get clinicalAdmissionNumberLabel;
+
+  /// Clinical encounter type label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter type'**
+  String get clinicalEncounterTypeLabel;
+
+  /// Clinical patient age label.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get clinicalAgeLabel;
 
   /// Clinical location label.
   ///

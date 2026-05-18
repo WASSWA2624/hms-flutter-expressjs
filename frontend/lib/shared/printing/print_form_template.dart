@@ -102,6 +102,7 @@ abstract final class PrintFormTemplate {
         totalPages: totalPages,
         footerNote: footerNote,
         explicitPages: explicitPages,
+        showHeader: pageNumber == 1,
       );
     }).join();
 
@@ -210,10 +211,11 @@ $renderedPages
     required int totalPages,
     required String? footerNote,
     required bool explicitPages,
+    required bool showHeader,
   }) {
     return '''
 <article class="print-template-page">
-  ${_header(branding)}
+  ${showHeader ? _header(branding) : ''}
   <section class="print-template-title">
     <div>
       <h1>${escape(title)}</h1>

@@ -3951,6 +3951,10 @@
   "@clinicalSavedMessage": {
     "description": "Clinical workspace successful save message."
   },
+  "clinicalPatientIdCopiedMessage": "Patient ID copied.",
+  "@clinicalPatientIdCopiedMessage": {
+    "description": "Snackbar message after copying a clinical patient ID."
+  },
   "clinicalFiltersLabel": "Clinical filters",
   "@clinicalFiltersLabel": {
     "description": "Semantic label for clinical workspace filters."
@@ -4019,6 +4023,10 @@
   "@clinicalSourceQueueLabel": {
     "description": "Clinical source queue label."
   },
+  "clinicalEncounterQueueLabel": "Encounter queue",
+  "@clinicalEncounterQueueLabel": {
+    "description": "Clinical encounter queue label."
+  },
   "clinicalLastUpdatedLabel": "Last updated",
   "@clinicalLastUpdatedLabel": {
     "description": "Clinical worklist last updated column label."
@@ -4026,6 +4034,18 @@
   "clinicalEncounterNumberLabel": "Encounter",
   "@clinicalEncounterNumberLabel": {
     "description": "Clinical encounter number label."
+  },
+  "clinicalAdmissionNumberLabel": "Admission",
+  "@clinicalAdmissionNumberLabel": {
+    "description": "Clinical admission number label."
+  },
+  "clinicalEncounterTypeLabel": "Encounter type",
+  "@clinicalEncounterTypeLabel": {
+    "description": "Clinical encounter type label."
+  },
+  "clinicalAgeLabel": "Age",
+  "@clinicalAgeLabel": {
+    "description": "Clinical patient age label."
   },
   "clinicalLocationLabel": "Location",
   "@clinicalLocationLabel": {

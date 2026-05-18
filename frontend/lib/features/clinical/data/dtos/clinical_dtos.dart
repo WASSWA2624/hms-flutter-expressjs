@@ -57,6 +57,11 @@ final class ClinicalEncounterDto {
   ClinicalWorklistEntry toWorklistEntry({String sourceQueue = 'ENCOUNTER'}) {
     final ClinicalJsonMap? patient = _nullableMap(json['patient']);
     final ClinicalJsonMap? provider = _nullableMap(json['provider']);
+    final DateTime? patientDateOfBirth =
+        _date(json['patient_date_of_birth']) ??
+        _date(patient?['date_of_birth']);
+    final String? patientGender =
+        _string(json['patient_gender']) ?? _string(patient?['gender']);
     final DateTime? updatedAt =
         _date(json['updated_at']) ?? _date(json['ended_at']);
 
@@ -75,6 +80,9 @@ final class ClinicalEncounterDto {
           _string(patient?['primary_phone']) ??
           _string(patient?['phone']) ??
           _string(json['patient_primary_phone']),
+      patientAgeSex: _string(json['patient_age_sex']),
+      patientDateOfBirth: patientDateOfBirth,
+      patientGender: patientGender,
       encounterType: _string(json['encounter_type']),
       status: _string(json['status']),
       currentLocation: _string(json['current_location']),
@@ -95,6 +103,8 @@ final class ClinicalAdmissionDto {
   final ClinicalJsonMap json;
 
   ClinicalWorklistEntry toWorklistEntry() {
+    final ClinicalJsonMap? patient = _nullableMap(json['patient']);
+    final ClinicalJsonMap? encounter = _nullableMap(json['encounter']);
     final ClinicalJsonMap? activeAssignment = _list(
       json['bed_assignments'],
     ).cast<ClinicalJsonMap?>().firstOrNull;
@@ -111,9 +121,30 @@ final class ClinicalAdmissionDto {
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
       sourceQueue: 'IPD',
       encounterId: _string(json['encounter_id']) ?? '',
+      encounterPublicId:
+          _string(json['encounter_human_friendly_id']) ??
+          _string(encounter?['human_friendly_id']),
       tenantId: _string(json['tenant_id']),
       facilityId: _string(json['facility_id']),
       patientId: _string(json['patient_id']),
+      patientPublicId:
+          _string(json['patient_human_friendly_id']) ??
+          _string(patient?['human_friendly_id']),
+      patientDisplayName:
+          _string(json['patient_display_name']) ?? _patientDisplayName(patient),
+      patientPhone:
+          _string(json['patient_primary_phone']) ??
+          _string(patient?['primary_phone']) ??
+          _string(patient?['phone']),
+      patientAgeSex: _string(json['patient_age_sex']),
+      patientDateOfBirth:
+          _date(json['patient_date_of_birth']) ??
+          _date(patient?['date_of_birth']),
+      patientGender:
+          _string(json['patient_gender']) ?? _string(patient?['gender']),
+      encounterType:
+          _string(json['encounter_type']) ??
+          _string(encounter?['encounter_type']),
       status: _string(json['status']),
       stage: _string(json['status']),
       currentLocation: location,

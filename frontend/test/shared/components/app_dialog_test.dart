@@ -86,4 +86,35 @@ void main() {
     expect(find.text('Name *'), findsOneWidget);
     expect(find.text('Middle name (optional)'), findsOneWidget);
   });
+
+  testWidgets('desktop header drag moves the dialog surface', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        title: Text('Move encounter'),
+        content: SizedBox(width: 320, height: 160, child: Text('Dialog body')),
+      ),
+      size: const Size(1000, 700),
+    );
+
+    final Finder dialog = find.byType(Dialog);
+    final Offset dialogBefore = tester.getTopLeft(dialog);
+    final Offset titleBefore = tester.getTopLeft(find.text('Move encounter'));
+
+    await tester.drag(find.text('Move encounter'), const Offset(80, 40));
+    await tester.pump();
+
+    expect(tester.getTopLeft(dialog).dx, closeTo(dialogBefore.dx + 80, 1));
+    expect(tester.getTopLeft(dialog).dy, closeTo(dialogBefore.dy + 40, 1));
+    expect(
+      tester.getTopLeft(find.text('Move encounter')).dx,
+      closeTo(titleBefore.dx + 80, 1),
+    );
+    expect(
+      tester.getTopLeft(find.text('Move encounter')).dy,
+      closeTo(titleBefore.dy + 40, 1),
+    );
+  });
 }

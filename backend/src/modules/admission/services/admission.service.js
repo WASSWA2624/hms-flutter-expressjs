@@ -206,6 +206,24 @@ const assertBedSelectionIsValid = async (
 };
 
 const includeAdmissionBedAssignments = {
+  patient: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      first_name: true,
+      last_name: true,
+      date_of_birth: true,
+      gender: true,
+    },
+  },
+  encounter: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      encounter_type: true,
+      status: true,
+    },
+  },
   bed_assignments: {
     where: { deleted_at: null },
     orderBy: { assigned_at: 'desc' },

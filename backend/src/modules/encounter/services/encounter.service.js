@@ -20,6 +20,8 @@ const ENCOUNTER_LOOKUP_INCLUDE = {
       human_friendly_id: true,
       first_name: true,
       last_name: true,
+      date_of_birth: true,
+      gender: true,
       contacts: {
         where: {
           deleted_at: null,
