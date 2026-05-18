@@ -2924,6 +2924,8 @@ class _PatientFlowQuickDialogState
   final TextEditingController _heightController = TextEditingController();
   String _bloodPressureUnit = _bloodPressureUnitMmHg;
   String _selectedTemperatureUnit = _temperatureUnitCelsius;
+  String _selectedWeightUnit = _weightUnitKilograms;
+  String _selectedHeightUnit = _heightUnitCentimeters;
   String? _facilityId;
   String? _providerId;
   String? _wardId;
@@ -3113,31 +3115,32 @@ class _PatientFlowQuickDialogState
           density: AppFormSectionDensity.compact,
           children: <Widget>[
             _bloodPressureInput(context, vitalsReference),
+            _vitalSignInput(
+              context,
+              controller: _temperatureController,
+              labelText: l10n.patientsTemperatureLabel,
+              range: vitalsReference.temperature.forTemperatureUnit(
+                _selectedTemperatureUnit,
+              ),
+              unit: _selectedTemperatureUnit,
+              profileLabel: vitalsReference.profileLabel,
+              unitOptions: _temperatureUnitSelectOptions,
+              onUnitChanged: (String? value) {
+                setState(() {
+                  _selectedTemperatureUnit = value ?? _temperatureUnitCelsius;
+                });
+              },
+              unitWidth: 132,
+            ),
+            _vitalSignInput(
+              context,
+              controller: _heartRateController,
+              labelText: l10n.patientsHeartRateLabel,
+              range: vitalsReference.heartRate,
+              unit: _heartRateUnit,
+              profileLabel: vitalsReference.profileLabel,
+            ),
             _vitalSignsGrid(context, <Widget>[
-              _vitalSignInput(
-                context,
-                controller: _temperatureController,
-                labelText: l10n.patientsTemperatureLabel,
-                range: vitalsReference.temperature.forTemperatureUnit(
-                  _selectedTemperatureUnit,
-                ),
-                unit: _selectedTemperatureUnit,
-                profileLabel: vitalsReference.profileLabel,
-                unitOptions: _temperatureUnitSelectOptions,
-                onUnitChanged: (String? value) {
-                  setState(() {
-                    _selectedTemperatureUnit = value ?? _temperatureUnitCelsius;
-                  });
-                },
-              ),
-              _vitalSignInput(
-                context,
-                controller: _heartRateController,
-                labelText: l10n.patientsHeartRateLabel,
-                range: vitalsReference.heartRate,
-                unit: _heartRateUnit,
-                profileLabel: vitalsReference.profileLabel,
-              ),
               _vitalSignInput(
                 context,
                 controller: _respiratoryRateController,
@@ -3154,21 +3157,41 @@ class _PatientFlowQuickDialogState
                 unit: _oxygenSaturationUnit,
                 profileLabel: vitalsReference.profileLabel,
               ),
+            ]),
+            _vitalSignsGrid(context, <Widget>[
               _vitalSignInput(
                 context,
                 controller: _weightController,
                 labelText: l10n.patientsWeightLabel,
-                range: vitalsReference.weight,
-                unit: _weightUnit,
+                range: vitalsReference.weight.forWeightUnit(
+                  _selectedWeightUnit,
+                ),
+                unit: _selectedWeightUnit,
                 profileLabel: vitalsReference.profileLabel,
+                unitOptions: _weightUnitSelectOptions,
+                onUnitChanged: (String? value) {
+                  setState(() {
+                    _selectedWeightUnit = value ?? _weightUnitKilograms;
+                  });
+                },
+                unitWidth: 132,
               ),
               _vitalSignInput(
                 context,
                 controller: _heightController,
                 labelText: l10n.patientsHeightLabel,
-                range: vitalsReference.height,
-                unit: _heightUnit,
+                range: vitalsReference.height.forHeightUnit(
+                  _selectedHeightUnit,
+                ),
+                unit: _selectedHeightUnit,
                 profileLabel: vitalsReference.profileLabel,
+                unitOptions: _heightUnitSelectOptions,
+                onUnitChanged: (String? value) {
+                  setState(() {
+                    _selectedHeightUnit = value ?? _heightUnitCentimeters;
+                  });
+                },
+                unitWidth: 132,
               ),
             ]),
           ],
@@ -3376,6 +3399,7 @@ class _PatientFlowQuickDialogState
     TextEditingController? pairedController,
     List<AppSelectOption<String>>? unitOptions,
     ValueChanged<String?>? onUnitChanged,
+    double unitWidth = 128,
   }) {
     return _VitalSignInput(
       controller: controller,
@@ -3387,6 +3411,7 @@ class _PatientFlowQuickDialogState
       enabled: !_isSaving,
       unitOptions: unitOptions,
       onUnitChanged: onUnitChanged,
+      unitWidth: unitWidth,
       validator: (String? value) => _validateVitalValue(
         context,
         value,
@@ -3873,8 +3898,8 @@ class _PatientFlowQuickDialogState
       'OXYGEN_SATURATION',
       _oxygenSaturationUnit,
     );
-    addScalar(_weightController, 'WEIGHT', _weightUnit);
-    addScalar(_heightController, 'HEIGHT', _heightUnit);
+    addScalar(_weightController, 'WEIGHT', _selectedWeightUnit);
+    addScalar(_heightController, 'HEIGHT', _selectedHeightUnit);
     return vitals;
   }
 
@@ -3966,55 +3991,77 @@ class _BloodPressureInput extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     );
-                    final Widget unitField = SizedBox(
-                      width: 136,
-                      child: AppSelectField<String>(
-                        value: unit,
-                        labelText: unitLabelText,
-                        enabled: enabled,
-                        options: unitOptions,
-                        onChanged: onUnitChanged,
-                        menuHeight: 144,
-                      ),
+                    final Widget unitField = AppSelectField<String>(
+                      value: unit,
+                      labelText: unitLabelText,
+                      enabled: enabled,
+                      options: unitOptions,
+                      onChanged: onUnitChanged,
+                      menuHeight: 144,
                     );
 
-                    if (constraints.maxWidth < 520) {
+                    if (constraints.maxWidth < 620) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
                           heading,
                           SizedBox(height: theme.spacing.sm),
-                          unitField,
+                          _BloodPressureFieldPair(
+                            left: _bloodPressureValueField(
+                              context,
+                              controller: systolicController,
+                              labelText: systolicLabelText,
+                              status: systolicStatus,
+                              validator: systolicValidator,
+                            ),
+                            right: _bloodPressureValueField(
+                              context,
+                              controller: diastolicController,
+                              labelText: diastolicLabelText,
+                              status: diastolicStatus,
+                              validator: diastolicValidator,
+                            ),
+                          ),
+                          SizedBox(height: theme.spacing.sm),
+                          SizedBox(width: double.infinity, child: unitField),
                         ],
                       );
                     }
 
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
-                        Expanded(child: heading),
-                        SizedBox(width: theme.spacing.md),
-                        unitField,
+                        heading,
+                        SizedBox(height: theme.spacing.sm),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              child: _bloodPressureValueField(
+                                context,
+                                controller: systolicController,
+                                labelText: systolicLabelText,
+                                status: systolicStatus,
+                                validator: systolicValidator,
+                              ),
+                            ),
+                            SizedBox(width: theme.spacing.md),
+                            Expanded(
+                              child: _bloodPressureValueField(
+                                context,
+                                controller: diastolicController,
+                                labelText: diastolicLabelText,
+                                status: diastolicStatus,
+                                validator: diastolicValidator,
+                              ),
+                            ),
+                            SizedBox(width: theme.spacing.md),
+                            SizedBox(width: 150, child: unitField),
+                          ],
+                        ),
                       ],
                     );
                   },
-                ),
-                SizedBox(height: theme.spacing.sm),
-                _BloodPressureFieldPair(
-                  left: _bloodPressureValueField(
-                    context,
-                    controller: systolicController,
-                    labelText: systolicLabelText,
-                    status: systolicStatus,
-                    validator: systolicValidator,
-                  ),
-                  right: _bloodPressureValueField(
-                    context,
-                    controller: diastolicController,
-                    labelText: diastolicLabelText,
-                    status: diastolicStatus,
-                    validator: diastolicValidator,
-                  ),
                 ),
                 SizedBox(height: theme.spacing.xs),
                 _BloodPressureFieldPair(
@@ -4123,6 +4170,7 @@ class _VitalSignInput extends StatelessWidget {
     required this.range,
     required this.profileLabel,
     required this.enabled,
+    this.unitWidth = 128,
     this.unitOptions,
     this.onUnitChanged,
     this.validator,
@@ -4135,6 +4183,7 @@ class _VitalSignInput extends StatelessWidget {
   final _VitalReferenceRange range;
   final String profileLabel;
   final bool enabled;
+  final double unitWidth;
   final List<AppSelectOption<String>>? unitOptions;
   final ValueChanged<String?>? onUnitChanged;
   final FormFieldValidator<String>? validator;
@@ -4190,7 +4239,7 @@ class _VitalSignInput extends StatelessWidget {
               LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   final bool stacked =
-                      constraints.hasBoundedWidth && constraints.maxWidth < 360;
+                      constraints.hasBoundedWidth && constraints.maxWidth < 420;
                   if (stacked) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -4199,7 +4248,10 @@ class _VitalSignInput extends StatelessWidget {
                         SizedBox(height: Theme.of(context).spacing.sm),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: SizedBox(width: 104, child: unitControl),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: unitControl,
+                          ),
                         ),
                       ],
                     );
@@ -4210,7 +4262,7 @@ class _VitalSignInput extends StatelessWidget {
                     children: <Widget>[
                       Expanded(child: input),
                       SizedBox(width: Theme.of(context).spacing.sm),
-                      SizedBox(width: 104, child: unitControl),
+                      SizedBox(width: unitWidth, child: unitControl),
                     ],
                   );
                 },
@@ -4456,6 +4508,40 @@ final class _VitalReferenceRange {
       decimals: 1,
     );
   }
+
+  _VitalReferenceRange forWeightUnit(String selectedUnit) {
+    if (selectedUnit != _weightUnitPounds) {
+      return this;
+    }
+
+    double convert(double value) => value * 2.2046226218;
+
+    return _VitalReferenceRange(
+      normalMin: convert(normalMin),
+      normalMax: convert(normalMax),
+      validMin: convert(validMin),
+      validMax: convert(validMax),
+      unit: _weightUnitPounds,
+      decimals: decimals,
+    );
+  }
+
+  _VitalReferenceRange forHeightUnit(String selectedUnit) {
+    if (selectedUnit != _heightUnitMeters) {
+      return this;
+    }
+
+    double convert(double value) => value / 100;
+
+    return _VitalReferenceRange(
+      normalMin: convert(normalMin),
+      normalMax: convert(normalMax),
+      validMin: convert(validMin),
+      validMax: convert(validMax),
+      unit: _heightUnitMeters,
+      decimals: 2,
+    );
+  }
 }
 
 const String _bloodPressureUnitMmHg = 'mmHg';
@@ -4465,8 +4551,10 @@ const String _temperatureUnitFahrenheit = '\u00B0F';
 const String _heartRateUnit = 'beats per minute';
 const String _respiratoryRateUnit = 'breaths per minute';
 const String _oxygenSaturationUnit = '%';
-const String _weightUnit = 'kg';
-const String _heightUnit = 'cm';
+const String _weightUnitKilograms = 'kg';
+const String _weightUnitPounds = 'lb';
+const String _heightUnitCentimeters = 'cm';
+const String _heightUnitMeters = 'm';
 const double _bloodPressureKpaFactor = 0.133322;
 
 const List<AppSelectOption<String>> _bloodPressureUnitSelectOptions =
@@ -4490,6 +4578,28 @@ const List<AppSelectOption<String>> _temperatureUnitSelectOptions =
       AppSelectOption<String>(
         value: _temperatureUnitFahrenheit,
         label: _temperatureUnitFahrenheit,
+      ),
+    ];
+const List<AppSelectOption<String>> _weightUnitSelectOptions =
+    <AppSelectOption<String>>[
+      AppSelectOption<String>(
+        value: _weightUnitKilograms,
+        label: _weightUnitKilograms,
+      ),
+      AppSelectOption<String>(
+        value: _weightUnitPounds,
+        label: _weightUnitPounds,
+      ),
+    ];
+const List<AppSelectOption<String>> _heightUnitSelectOptions =
+    <AppSelectOption<String>>[
+      AppSelectOption<String>(
+        value: _heightUnitCentimeters,
+        label: _heightUnitCentimeters,
+      ),
+      AppSelectOption<String>(
+        value: _heightUnitMeters,
+        label: _heightUnitMeters,
       ),
     ];
 
@@ -4587,29 +4697,77 @@ _VitalReferenceRange _respiratoryRateRange(String ageBand) {
 
 _VitalReferenceRange _weightRange(String ageBand, String sex) {
   return switch (ageBand) {
-    'NEONATE' => _range(2.5, 4.5, 0.2, 400, _weightUnit, decimals: 1),
-    'INFANT' => _range(3.5, 11, 0.2, 400, _weightUnit, decimals: 1),
-    'CHILD' => _range(10, 45, 0.2, 400, _weightUnit),
-    'ADOLESCENT' when sex == 'MALE' => _range(35, 80, 0.2, 400, _weightUnit),
-    'ADOLESCENT' when sex == 'FEMALE' => _range(35, 75, 0.2, 400, _weightUnit),
-    'ADOLESCENT' => _range(35, 80, 0.2, 400, _weightUnit),
-    'ADULT' when sex == 'MALE' => _range(50, 120, 0.2, 400, _weightUnit),
-    'ADULT' when sex == 'FEMALE' => _range(45, 110, 0.2, 400, _weightUnit),
-    _ => _range(45, 120, 0.2, 400, _weightUnit),
+    'NEONATE' => _range(2.5, 4.5, 0.2, 400, _weightUnitKilograms, decimals: 1),
+    'INFANT' => _range(3.5, 11, 0.2, 400, _weightUnitKilograms, decimals: 1),
+    'CHILD' => _range(10, 45, 0.2, 400, _weightUnitKilograms),
+    'ADOLESCENT' when sex == 'MALE' => _range(
+      35,
+      80,
+      0.2,
+      400,
+      _weightUnitKilograms,
+    ),
+    'ADOLESCENT' when sex == 'FEMALE' => _range(
+      35,
+      75,
+      0.2,
+      400,
+      _weightUnitKilograms,
+    ),
+    'ADOLESCENT' => _range(35, 80, 0.2, 400, _weightUnitKilograms),
+    'ADULT' when sex == 'MALE' => _range(
+      50,
+      120,
+      0.2,
+      400,
+      _weightUnitKilograms,
+    ),
+    'ADULT' when sex == 'FEMALE' => _range(
+      45,
+      110,
+      0.2,
+      400,
+      _weightUnitKilograms,
+    ),
+    _ => _range(45, 120, 0.2, 400, _weightUnitKilograms),
   };
 }
 
 _VitalReferenceRange _heightRange(String ageBand, String sex) {
   return switch (ageBand) {
-    'NEONATE' => _range(45, 55, 20, 250, _heightUnit),
-    'INFANT' => _range(50, 80, 20, 250, _heightUnit),
-    'CHILD' => _range(80, 155, 20, 250, _heightUnit),
-    'ADOLESCENT' when sex == 'MALE' => _range(145, 190, 20, 250, _heightUnit),
-    'ADOLESCENT' when sex == 'FEMALE' => _range(140, 180, 20, 250, _heightUnit),
-    'ADOLESCENT' => _range(140, 190, 20, 250, _heightUnit),
-    'ADULT' when sex == 'MALE' => _range(155, 205, 20, 250, _heightUnit),
-    'ADULT' when sex == 'FEMALE' => _range(145, 190, 20, 250, _heightUnit),
-    _ => _range(145, 205, 20, 250, _heightUnit),
+    'NEONATE' => _range(45, 55, 20, 250, _heightUnitCentimeters),
+    'INFANT' => _range(50, 80, 20, 250, _heightUnitCentimeters),
+    'CHILD' => _range(80, 155, 20, 250, _heightUnitCentimeters),
+    'ADOLESCENT' when sex == 'MALE' => _range(
+      145,
+      190,
+      20,
+      250,
+      _heightUnitCentimeters,
+    ),
+    'ADOLESCENT' when sex == 'FEMALE' => _range(
+      140,
+      180,
+      20,
+      250,
+      _heightUnitCentimeters,
+    ),
+    'ADOLESCENT' => _range(140, 190, 20, 250, _heightUnitCentimeters),
+    'ADULT' when sex == 'MALE' => _range(
+      155,
+      205,
+      20,
+      250,
+      _heightUnitCentimeters,
+    ),
+    'ADULT' when sex == 'FEMALE' => _range(
+      145,
+      190,
+      20,
+      250,
+      _heightUnitCentimeters,
+    ),
+    _ => _range(145, 205, 20, 250, _heightUnitCentimeters),
   };
 }
 

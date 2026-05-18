@@ -361,7 +361,7 @@ void main() {
         (Widget widget) =>
             widget is AppSelectField<String> && widget.labelText == 'Unit',
       ),
-      findsNWidgets(2),
+      findsNWidgets(4),
     );
     expect(find.text('mmHg'), findsOneWidget);
     expect(find.text('\u00B0C'), findsOneWidget);
@@ -371,6 +371,8 @@ void main() {
     expect(find.text('%'), findsOneWidget);
     expect(find.text('kg'), findsOneWidget);
     expect(find.text('cm'), findsOneWidget);
+    expect(find.text('lb'), findsNothing);
+    expect(find.text('m'), findsNothing);
     expect(find.textContaining('Expected for Adult Female'), findsWidgets);
 
     final Finder systolicInput = find.descendant(
@@ -398,6 +400,123 @@ void main() {
       find.textContaining('Normal - Expected for Adult Female: 90-120 mmHg'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('triage quick action saves vital payload with units and time', (
+    WidgetTester tester,
+  ) async {
+    final patientRepository = _MockPatientRepository();
+    final opdRepository = _MockOpdRepository();
+    late Map<String, Object?> savedPayload;
+    final patient = Patient(
+      id: 'patient-1',
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      firstName: 'Amina',
+      lastName: 'Kato',
+      dateOfBirth: DateTime(1990),
+      gender: 'FEMALE',
+      primaryPhone: '+256700000000',
+      primaryIdentifierType: 'MRN',
+      primaryIdentifierValue: 'MRN-10024',
+    );
+    const started = OpdFlowDetail(
+      summary: OpdFlowSummary(
+        id: 'flow-1',
+        publicId: 'OPD-1',
+        patientId: 'patient-1',
+        stage: 'WAITING_VITALS',
+      ),
+    );
+    const triaged = OpdFlowDetail(
+      summary: OpdFlowSummary(
+        id: 'flow-1',
+        publicId: 'OPD-1',
+        patientId: 'patient-1',
+        stage: 'WAITING_DOCTOR_ASSIGNMENT',
+      ),
+    );
+
+    _stubPatientRegistry(patientRepository, patient);
+    _stubProviderLookup(opdRepository);
+    when(
+      () => opdRepository.startOpdFlow(any()),
+    ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(started));
+    when(() => opdRepository.recordVitals(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      savedPayload = invocation.positionalArguments[1] as Map<String, Object?>;
+      return const Result<OpdFlowDetail>.success(triaged);
+    });
+
+    await _pumpPatientRegistry(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      size: const Size(1100, 960),
+    );
+
+    await tester.tap(find.text('Amina Kato').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Triage'));
+    await tester.pumpAndSettle();
+
+    Future<void> enterField(String label, String value) async {
+      final Finder input = find.descendant(
+        of: find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppTextField && widget.labelText == label,
+        ),
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(input, value);
+    }
+
+    await enterField('Chief complaint', 'Severe headache');
+    await enterField('Systolic', '110');
+    await enterField('Diastolic', '70');
+    await enterField('Temperature', '37');
+    await enterField('Heart rate', '82');
+    await enterField('Respiratory rate', '18');
+    await enterField('Oxygen saturation', '98');
+    await enterField('Weight', '65');
+    await enterField('Height', '170');
+    await tester.tap(find.text('Triage').last);
+    await tester.pumpAndSettle();
+
+    final vitals = savedPayload['vitals'] as List<Map<String, Object?>>;
+    expect(vitals, hasLength(7));
+    expect(
+      vitals.firstWhere(
+        (Map<String, Object?> item) => item['vital_type'] == 'BLOOD_PRESSURE',
+      ),
+      containsPair('unit', 'mmHg'),
+    );
+    expect(
+      vitals.firstWhere(
+        (Map<String, Object?> item) => item['vital_type'] == 'TEMPERATURE',
+      ),
+      containsPair('unit', '\u00B0C'),
+    );
+    expect(
+      vitals.firstWhere(
+        (Map<String, Object?> item) => item['vital_type'] == 'WEIGHT',
+      ),
+      containsPair('unit', 'kg'),
+    );
+    expect(
+      vitals.firstWhere(
+        (Map<String, Object?> item) => item['vital_type'] == 'HEIGHT',
+      ),
+      containsPair('unit', 'cm'),
+    );
+    for (final Map<String, Object?> vital in vitals) {
+      expect(DateTime.tryParse(vital['recorded_at']! as String), isNotNull);
+    }
+    verify(() => opdRepository.recordVitals('OPD-1', any())).called(1);
+    verify(
+      () => patientRepository.loadPatientDetail(patient.id),
+    ).called(greaterThanOrEqualTo(2));
   });
 
   testWidgets('patient report opens configurable paginated print preview', (
