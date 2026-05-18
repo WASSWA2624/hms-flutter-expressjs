@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -8,7 +11,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
@@ -19,6 +21,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class ClinicalWorkspacePage extends ConsumerWidget {
   const ClinicalWorkspacePage({super.key});
@@ -64,6 +67,7 @@ class _ClinicalWorkspaceContentState
   );
 
   late final TextEditingController _searchController;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -82,6 +86,7 @@ class _ClinicalWorkspaceContentState
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -180,8 +185,29 @@ class _ClinicalWorkspaceContentState
       body: _ClinicalWorklistPanel(
         state: state,
         searchController: _searchController,
+        onSearchChanged: _applySearch,
+        onSearchSubmitted: _applySearchImmediately,
       ),
     );
+  }
+
+  void _applySearch(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) {
+        return;
+      }
+      ref
+          .read(clinicalWorkspaceControllerProvider.notifier)
+          .applySearch(value, showLoading: false);
+    });
+  }
+
+  void _applySearchImmediately(String value) {
+    _searchDebounce?.cancel();
+    ref
+        .read(clinicalWorkspaceControllerProvider.notifier)
+        .applySearch(value, showLoading: false);
   }
 }
 
@@ -189,10 +215,14 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
   const _ClinicalWorklistPanel({
     required this.state,
     required this.searchController,
+    required this.onSearchChanged,
+    required this.onSearchSubmitted,
   });
 
   final ClinicalWorkspaceState state;
   final TextEditingController searchController;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onSearchSubmitted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -228,6 +258,8 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
           filters: state.query.filters,
           scope: state.query.scope,
           filterEntries: state.worklist.items,
+          onSearchChanged: onSearchChanged,
+          onSearchSubmitted: onSearchSubmitted,
         ),
         columns: _clinicalWorklistColumns(l10n),
         mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
@@ -265,6 +297,8 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
   required ClinicalWorklistFilters filters,
   required ClinicalQueueScope scope,
   required List<ClinicalWorklistEntry> filterEntries,
+  required ValueChanged<String> onSearchChanged,
+  required ValueChanged<String> onSearchSubmitted,
 }) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableSearch<ClinicalWorklistEntry>(
@@ -275,14 +309,16 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
     matcher: (ClinicalWorklistEntry item, String query) {
       return item.matchesSearch(query, filters: filters);
     },
+    onChanged: onSearchChanged,
+    onSubmitted: onSearchSubmitted,
     showAdvancedFilterButton: true,
     advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
     advancedFilterTitle: l10n.clinicalFiltersLabel,
     advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
     advancedFilterResetLabel: l10n.opdClearFiltersAction,
     advancedFilterCancelLabel: l10n.commonCancelActionLabel,
-    searchFields: _clinicalSearchFields(l10n),
-    searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+    textFilters: _clinicalTextFilters(l10n),
+    searchFieldLabel: l10n.clinicalSearchLabel,
     allFieldsLabel: l10n.opdAllFieldsFilterLabel,
     dateFilterLabel: l10n.clinicalLastUpdatedLabel,
     dateFromLabel: l10n.opdDateFromLabel,
@@ -294,12 +330,25 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
       filterEntries,
       includeScope: true,
     ),
-    filterValue: _filterValueFromQuery(filters, scope: scope),
-    hasActiveFilters: _hasActiveClinicalFilters(filters, scope),
+    filterValue: _filterValueFromQuery(
+      filters,
+      scope: scope,
+      search: searchController.text,
+    ),
+    hasActiveFilters: _hasActiveClinicalFilters(
+      filters,
+      scope,
+      search: searchController.text,
+    ),
     onFilterChanged: (AppSearchBarFilterValue value) {
+      final String search = _searchFromValue(value);
+      if (searchController.text != search) {
+        searchController.text = search;
+      }
       controller.applyWorklistFilters(
         scope: _scopeFromValue(value),
         filters: _filtersFromValue(value),
+        search: search,
       );
     },
   );
@@ -558,9 +607,11 @@ class _ClinicalSummaryWorklistDialogState
               final ClinicalWorklistFilters filters = _filtersFromValue(
                 _filterValue,
               );
+              final String advancedSearch = _searchFromValue(_filterValue);
               final List<ClinicalWorklistEntry> visibleItems = categoryItems
                   .where(
                     (ClinicalWorklistEntry item) =>
+                        item.matchesSearch(advancedSearch, filters: filters) &&
                         item.matchesFilters(filters),
                   )
                   .toList(growable: false);
@@ -592,7 +643,10 @@ class _ClinicalSummaryWorklistDialogState
                   },
                   onClear: () {
                     setState(() {
-                      _filterValue = _filterValue.copyWith(clearField: true);
+                      _filterValue = _filterValueWithoutText(
+                        _filterValue.copyWith(clearField: true),
+                        _clinicalTextGeneral,
+                      );
                     });
                   },
                   showAdvancedFilterButton: true,
@@ -601,8 +655,8 @@ class _ClinicalSummaryWorklistDialogState
                   advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                   advancedFilterResetLabel: l10n.opdClearFiltersAction,
                   advancedFilterCancelLabel: l10n.commonCancelActionLabel,
-                  searchFields: _clinicalSearchFields(l10n),
-                  searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+                  textFilters: _clinicalTextFilters(l10n),
+                  searchFieldLabel: l10n.clinicalSearchLabel,
                   allFieldsLabel: l10n.opdAllFieldsFilterLabel,
                   dateFilterLabel: l10n.clinicalLastUpdatedLabel,
                   dateFromLabel: l10n.opdDateFromLabel,
@@ -613,6 +667,10 @@ class _ClinicalSummaryWorklistDialogState
                   filterValue: _filterValue,
                   hasActiveFilters: _filterValue.isActive,
                   onFilterChanged: (AppSearchBarFilterValue value) {
+                    final String search = _searchFromValue(value);
+                    if (_searchController.text != search) {
+                      _searchController.text = search;
+                    }
                     setState(() => _filterValue = value);
                   },
                 ),
@@ -985,9 +1043,27 @@ class _ClinicalActionBar extends ConsumerWidget {
               ),
               AppReportActionButton.print(
                 label: l10n.clinicalPrintSummaryAction,
-                onPressed: () => printHtmlDocument(
-                  _consultationSummaryHtml(context, bundle),
-                ),
+                onPressed: () async {
+                  await printFormTemplateDocument(
+                    ref: ref,
+                    context: context,
+                    title: l10n.clinicalConsultationSummaryTitle,
+                    subtitle: bundle.entry.displayTitle,
+                    metadata: <PrintFormMetadataItem>[
+                      PrintFormMetadataItem(
+                        label: l10n.patientsIdentifierLabel,
+                        value:
+                            bundle.entry.encounterPublicId ??
+                            bundle.entry.encounterId,
+                      ),
+                      PrintFormMetadataItem(
+                        label: l10n.opdStageLabel,
+                        value: _apiLabel(bundle.entry.stage ?? ''),
+                      ),
+                    ],
+                    bodyHtml: _consultationSummaryHtml(context, bundle),
+                  );
+                },
               ),
             ],
           );
@@ -2458,11 +2534,28 @@ Future<void> _showActionResult(
 AppSearchBarFilterValue _filterValueFromQuery(
   ClinicalWorklistFilters filters, {
   ClinicalQueueScope scope = ClinicalQueueScope.today,
+  String search = '',
 }) {
   return AppSearchBarFilterValue(
     field: filters.searchField,
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
+    texts: <String, String>{
+      if (_hasText(search)) _clinicalTextGeneral: search.trim(),
+      if (_hasText(filters.patient)) _clinicalTextPatient: filters.patient!,
+      if (_hasText(filters.patientIdentifier))
+        _clinicalTextPatientIdentifier: filters.patientIdentifier!,
+      if (_hasText(filters.patientPhone))
+        _clinicalTextPatientPhone: filters.patientPhone!,
+      if (_hasText(filters.encounter))
+        _clinicalTextEncounter: filters.encounter!,
+      if (_hasText(filters.queue)) _clinicalTextQueue: filters.queue!,
+      if (_hasText(filters.providerText))
+        _clinicalTextProvider: filters.providerText!,
+      if (_hasText(filters.statusText))
+        _clinicalTextStatus: filters.statusText!,
+      if (_hasText(filters.location)) _clinicalTextLocation: filters.location!,
+    },
     options: <String, String>{
       if (scope != ClinicalQueueScope.today) _clinicalFilterScope: scope.name,
       if (_hasText(filters.sourceQueue))
@@ -2479,10 +2572,31 @@ ClinicalWorklistFilters _filtersFromValue(AppSearchBarFilterValue value) {
     searchField: value.field,
     dateFrom: value.dateFrom,
     dateTo: value.dateTo,
+    patient: value.text(_clinicalTextPatient),
+    patientIdentifier: value.text(_clinicalTextPatientIdentifier),
+    patientPhone: value.text(_clinicalTextPatientPhone),
+    encounter: value.text(_clinicalTextEncounter),
+    queue: value.text(_clinicalTextQueue),
+    providerText: value.text(_clinicalTextProvider),
+    statusText: value.text(_clinicalTextStatus),
+    location: value.text(_clinicalTextLocation),
     sourceQueue: value.option(_clinicalFilterSource),
     status: value.option(_clinicalFilterStatus),
     provider: value.option(_clinicalFilterProvider),
   );
+}
+
+String _searchFromValue(AppSearchBarFilterValue value) {
+  return value.text(_clinicalTextGeneral)?.trim() ?? '';
+}
+
+AppSearchBarFilterValue _filterValueWithoutText(
+  AppSearchBarFilterValue value,
+  String key,
+) {
+  final Map<String, String> texts = Map<String, String>.of(value.texts)
+    ..remove(key);
+  return value.copyWith(texts: texts);
 }
 
 ClinicalQueueScope _scopeFromValue(AppSearchBarFilterValue value) {
@@ -2498,37 +2612,72 @@ ClinicalQueueScope _scopeFromValue(AppSearchBarFilterValue value) {
 
 bool _hasActiveClinicalFilters(
   ClinicalWorklistFilters filters,
-  ClinicalQueueScope scope,
-) {
-  return filters.isActive || scope != ClinicalQueueScope.today;
+  ClinicalQueueScope scope, {
+  String search = '',
+}) {
+  return filters.isActive ||
+      scope != ClinicalQueueScope.today ||
+      _hasText(search);
 }
 
-List<AppSearchBarFieldChoice> _clinicalSearchFields(AppLocalizations l10n) {
-  return <AppSearchBarFieldChoice>[
-    AppSearchBarFieldChoice(
-      field: _clinicalSearchFieldPatient,
-      label: l10n.opdPatientColumnLabel,
-      icon: Icons.person_search_outlined,
+List<AppSearchBarTextFilter> _clinicalTextFilters(AppLocalizations l10n) {
+  return <AppSearchBarTextFilter>[
+    AppSearchBarTextFilter(
+      key: _clinicalTextGeneral,
+      label: l10n.clinicalSearchLabel,
+      hintText: l10n.clinicalSearchHint,
+      icon: Icons.manage_search_outlined,
+      textInputAction: TextInputAction.search,
     ),
-    AppSearchBarFieldChoice(
-      field: _clinicalSearchFieldEncounter,
+    AppSearchBarTextFilter(
+      key: _clinicalTextPatient,
+      label: l10n.opdPatientColumnLabel,
+      hintText: l10n.patientsSearchHint,
+      icon: Icons.person_search_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _clinicalTextPatientIdentifier,
+      label: l10n.patientsPatientIdFilterLabel,
+      icon: Icons.badge_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _clinicalTextPatientPhone,
+      label: l10n.profilePhoneLabel,
+      icon: Icons.phone_outlined,
+      keyboardType: TextInputType.phone,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _clinicalTextEncounter,
       label: l10n.clinicalEncounterNumberLabel,
       icon: Icons.tag_outlined,
+      textInputAction: TextInputAction.next,
     ),
-    AppSearchBarFieldChoice(
-      field: _clinicalSearchFieldSource,
+    AppSearchBarTextFilter(
+      key: _clinicalTextQueue,
       label: l10n.clinicalSourceQueueLabel,
       icon: Icons.queue_outlined,
+      textInputAction: TextInputAction.next,
     ),
-    AppSearchBarFieldChoice(
-      field: _clinicalSearchFieldStatus,
+    AppSearchBarTextFilter(
+      key: _clinicalTextProvider,
+      label: l10n.opdProviderColumnLabel,
+      icon: Icons.medical_information_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: _clinicalTextStatus,
       label: l10n.opdStatusColumnLabel,
       icon: Icons.task_alt_outlined,
+      textInputAction: TextInputAction.next,
     ),
-    AppSearchBarFieldChoice(
-      field: _clinicalSearchFieldProvider,
-      label: l10n.opdProviderColumnLabel,
-      icon: Icons.badge_outlined,
+    AppSearchBarTextFilter(
+      key: _clinicalTextLocation,
+      label: l10n.clinicalLocationLabel,
+      icon: Icons.location_on_outlined,
+      textInputAction: TextInputAction.done,
     ),
   ];
 }
@@ -2848,58 +2997,44 @@ String _consultationSummaryHtml(
   ClinicalEncounterBundle bundle,
 ) {
   final AppLocalizations l10n = context.l10n;
-  final ClinicalWorklistEntry entry = bundle.entry;
   final StringBuffer buffer = StringBuffer()
-    ..write('<h1>${_escapeHtml(l10n.clinicalConsultationSummaryTitle)}</h1>')
-    ..write('<p>${_escapeHtml(entry.displayTitle)}</p>')
     ..write(
-      '<p>${_escapeHtml(entry.encounterPublicId ?? entry.encounterId)}</p>',
+      PrintFormTemplate.section(
+        title: l10n.opdClinicalNotesSummaryLabel,
+        bodyHtml: _recordsHtml(bundle.clinicalNotes),
+      ),
     )
-    ..write('<h2>${_escapeHtml(l10n.opdClinicalNotesSummaryLabel)}</h2>')
-    ..write(_recordsHtml(bundle.clinicalNotes))
-    ..write('<h2>${_escapeHtml(l10n.clinicalDiagnosesTitle)}</h2>')
-    ..write(_recordsHtml(bundle.diagnoses))
-    ..write('<h2>${_escapeHtml(l10n.clinicalOrdersTitle)}</h2>')
     ..write(
-      _recordsHtml(<ClinicalRelatedRecord>[
-        ...bundle.labOrders,
-        ...bundle.radiologyOrders,
-        ...bundle.pharmacyOrders,
-      ]),
+      PrintFormTemplate.section(
+        title: l10n.clinicalDiagnosesTitle,
+        bodyHtml: _recordsHtml(bundle.diagnoses),
+      ),
+    )
+    ..write(
+      PrintFormTemplate.section(
+        title: l10n.clinicalOrdersTitle,
+        bodyHtml: _recordsHtml(<ClinicalRelatedRecord>[
+          ...bundle.labOrders,
+          ...bundle.radiologyOrders,
+          ...bundle.pharmacyOrders,
+        ]),
+      ),
     );
   return buffer.toString();
 }
 
 String _recordsHtml(List<ClinicalRelatedRecord> records) {
-  if (records.isEmpty) {
-    return '<p></p>';
-  }
-  final StringBuffer buffer = StringBuffer('<ul>');
-  for (final ClinicalRelatedRecord record in records) {
-    buffer
-      ..write('<li>')
-      ..write(
-        _escapeHtml(
-          _joinDisplay(<String?>[
-            record.title,
-            record.subtitle,
-            record.status == null ? null : _apiLabel(record.status!),
-          ]),
-        ),
-      )
-      ..write('</li>');
-  }
-  buffer.write('</ul>');
-  return buffer.toString();
-}
-
-String _escapeHtml(String value) {
-  return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+  return PrintFormTemplate.unorderedList(
+    <String>[
+      for (final ClinicalRelatedRecord record in records)
+        _joinDisplay(<String?>[
+          record.title,
+          record.subtitle,
+          record.status == null ? null : _apiLabel(record.status!),
+        ]),
+    ],
+    emptyText: 'No records.',
+  );
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
@@ -2942,11 +3077,15 @@ const List<String> _medicationRoutes = <String>[
   'OTHER',
 ];
 
-const String _clinicalSearchFieldPatient = 'patient';
-const String _clinicalSearchFieldEncounter = 'encounter';
-const String _clinicalSearchFieldSource = 'source';
-const String _clinicalSearchFieldStatus = 'status';
-const String _clinicalSearchFieldProvider = 'provider';
+const String _clinicalTextGeneral = 'general';
+const String _clinicalTextPatient = 'patient';
+const String _clinicalTextPatientIdentifier = 'patient_identifier';
+const String _clinicalTextPatientPhone = 'patient_phone';
+const String _clinicalTextEncounter = 'encounter';
+const String _clinicalTextQueue = 'queue';
+const String _clinicalTextProvider = 'provider_text';
+const String _clinicalTextStatus = 'status_text';
+const String _clinicalTextLocation = 'location';
 const String _clinicalFilterScope = 'scope';
 const String _clinicalFilterSource = 'source';
 const String _clinicalFilterStatus = 'status';

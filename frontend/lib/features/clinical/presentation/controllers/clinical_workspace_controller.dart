@@ -40,7 +40,10 @@ final class ClinicalWorkspaceController
     return _syncVisibleData(showLoading: true, refreshReferenceData: true);
   }
 
-  Future<AppFailure?> applySearch(String search) async {
+  Future<AppFailure?> applySearch(
+    String search, {
+    bool showLoading = true,
+  }) async {
     final ClinicalWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
@@ -52,11 +55,11 @@ final class ClinicalWorkspaceController
           search: search.trim(),
           pageRequest: current.query.pageRequest.first(),
         ),
-        isRefreshing: true,
+        isRefreshing: showLoading ? true : current.isRefreshing,
         clearLastFailure: true,
       ),
     );
-    return _refreshWorklist(showLoading: true);
+    return _refreshWorklist(showLoading: showLoading);
   }
 
   Future<AppFailure?> applyScope(ClinicalQueueScope scope) async {
@@ -81,6 +84,7 @@ final class ClinicalWorkspaceController
   Future<AppFailure?> applyWorklistFilters({
     required ClinicalQueueScope scope,
     required ClinicalWorklistFilters filters,
+    String? search,
   }) async {
     final ClinicalWorkspaceState? current = _currentState;
     if (current == null) {
@@ -90,6 +94,7 @@ final class ClinicalWorkspaceController
     _emit(
       current.copyWith(
         query: current.query.copyWith(
+          search: search?.trim(),
           scope: scope,
           filters: filters,
           pageRequest: current.query.pageRequest.first(),
@@ -618,7 +623,7 @@ final class ClinicalWorkspaceController
     final Result<AppPage<OpdFlowSummary>> result = await _opdRepository
         .listOpdFlows(
           OpdFlowQuery(
-            search: query.search,
+            search: query.databaseSearch,
             pageRequest: const AppPageRequest(),
           ),
         );
@@ -640,7 +645,7 @@ final class ClinicalWorkspaceController
     final Result<AppPage<OpdFlowSummary>> result = await _opdRepository
         .listTriageQueue(
           OpdTriageQueueQuery(
-            search: query.search,
+            search: query.databaseSearch,
             pageRequest: const AppPageRequest(),
           ),
         );

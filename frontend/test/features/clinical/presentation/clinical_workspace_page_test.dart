@@ -107,7 +107,16 @@ void main() {
 
     expect(find.text('Sarah Clinical'), findsNothing);
     expect(find.text('John Other'), findsOneWidget);
-    verifyNever(() => clinicalRepository.listEncounters(any()));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+
+    final List<Object?> capturedQueries = verify(
+      () => clinicalRepository.listEncounters(captureAny()),
+    ).captured;
+    expect(
+      (capturedQueries.single as ClinicalWorklistQuery).databaseSearch,
+      'Other',
+    );
     expect(tester.takeException(), isNull);
 
     await tester.enterText(find.byType(TextFormField).first, '');
@@ -116,7 +125,15 @@ void main() {
     await tester.tap(find.byTooltip('Clinical filters'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Search in'), findsNothing);
+    expect(find.text('Search clinical worklist'), findsAtLeastNWidgets(1));
+    expect(find.text('Patient ID'), findsOneWidget);
+    expect(find.text('Phone'), findsOneWidget);
+    expect(find.text('Encounter'), findsAtLeastNWidgets(1));
     expect(find.text('Queue scope'), findsOneWidget);
+    expect(find.text('Provider'), findsAtLeastNWidgets(1));
+    expect(find.text('Status'), findsAtLeastNWidgets(1));
+    expect(find.text('Location'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     expect(tester.takeException(), isNull);
 

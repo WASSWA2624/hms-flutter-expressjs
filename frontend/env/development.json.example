@@ -1,5 +1,11 @@
 {
   "APP_ENV": "development",
+  "APP_NAME": "HOSSPI HMS",
+  "APP_LOGO_URL": "assets/logos/logo.png",
+  "APP_ADMIN_NAME": "HOSSPI Admin",
+  "APP_ADMIN_EMAIL": "wasswawilson0001@gmail.com",
+  "APP_ADMIN_PHONE": "+256783230321",
+  "APP_SUPPORT_URL": "https://hosspi.com/support",
   "API_BASE_URL": "http://localhost:3000",
   "API_TIMEOUT_SECONDS": "30",
   "LOG_LEVEL": "debug",

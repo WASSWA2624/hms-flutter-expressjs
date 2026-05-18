@@ -6,14 +6,17 @@ void printCurrentWindow() {
   web.window.print();
 }
 
-void printHtmlDocument(String html) {
+void printHtmlDocument(String html, {String title = 'Print document'}) {
+  final String escapedTitle = _escapeHtml(title);
+  final String baseHref = _escapeHtml(web.window.location.href);
   final String document =
       '''
 <!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Patient report</title>
+  <base href="$baseHref">
+  <title>$escapedTitle</title>
 </head>
 <body>
 $html
@@ -34,4 +37,13 @@ $html
   printWindow.document.write(document.toJS);
   printWindow.document.close();
   printWindow.focus();
+}
+
+String _escapeHtml(String value) {
+  return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 }

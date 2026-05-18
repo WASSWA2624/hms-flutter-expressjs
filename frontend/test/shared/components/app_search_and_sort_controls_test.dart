@@ -105,6 +105,57 @@ void main() {
     expect(applied?.option('status'), 'active');
   });
 
+  testWidgets('AppSearchBar advanced filters support text criteria', (
+    WidgetTester tester,
+  ) async {
+    final controller = TextEditingController();
+    AppSearchBarFilterValue? applied;
+    addTearDown(controller.dispose);
+
+    await pumpComponent(
+      tester,
+      AppSearchBar(
+        controller: controller,
+        semanticLabel: 'Search clinical records',
+        hintText: 'Search',
+        advancedFilterButtonLabel: 'Advanced filters',
+        searchFieldLabel: 'Search criteria',
+        textFilters: const <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(
+            key: 'patient',
+            label: 'Patient',
+            hintText: 'Name or ID',
+          ),
+          AppSearchBarTextFilter(key: 'encounter', label: 'Encounter'),
+        ],
+        filterValue: const AppSearchBarFilterValue(
+          texts: <String, String>{'patient': 'Amina'},
+        ),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          applied = value;
+        },
+      ),
+    );
+
+    await tester.tap(find.byTooltip('Advanced filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search criteria'), findsOneWidget);
+    expect(find.text('Search in'), findsNothing);
+    expect(find.text('Patient'), findsOneWidget);
+    expect(find.text('Encounter'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Encounter'),
+      'E-1',
+    );
+    await tester.tap(find.text('Apply filters'));
+    await tester.pumpAndSettle();
+
+    expect(applied?.text('patient'), 'Amina');
+    expect(applied?.text('encounter'), 'E-1');
+  });
+
   testWidgets('AppSortMenuButton emits selected descriptors', (
     WidgetTester tester,
   ) async {

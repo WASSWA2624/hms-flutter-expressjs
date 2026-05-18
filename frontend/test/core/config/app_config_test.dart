@@ -15,7 +15,29 @@ void main() {
       expect(config.apiBaseUrl, Uri.parse('http://localhost:8080'));
       expect(config.apiTimeout, const Duration(seconds: 30));
       expect(config.logLevel, AppLogLevel.debug);
+      expect(config.appName, AppConfig.defaultAppName);
+      expect(config.appLogoUrl, AppConfig.defaultAppLogoUrl);
       expect(config.featureFlags.enableDeveloperTools, isTrue);
+    });
+
+    test('normalizes optional app identity values', () {
+      final config = AppConfig.fromValues(
+        environmentName: 'staging',
+        apiBaseUrl: 'https://staging-api.example.com',
+        appName: ' HOSSPI ',
+        appLogoUrl: ' https://cdn.example.com/logo.png ',
+        appAdministratorName: ' Administrator ',
+        appAdministratorEmail: ' admin@example.com ',
+        appAdministratorPhone: ' +256 000 000000 ',
+        appSupportUrl: ' https://example.com/support ',
+      );
+
+      expect(config.appName, 'HOSSPI');
+      expect(config.appLogoUrl, 'https://cdn.example.com/logo.png');
+      expect(config.appAdministratorName, 'Administrator');
+      expect(config.appAdministratorEmail, 'admin@example.com');
+      expect(config.appAdministratorPhone, '+256 000 000000');
+      expect(config.appSupportUrl, 'https://example.com/support');
     });
 
     test('throws a clear error when required values are missing', () {
@@ -33,6 +55,23 @@ void main() {
                 'messages',
                 contains(startsWith('API_BASE_URL is required.')),
               ),
+        ),
+      );
+    });
+
+    test('rejects blank app names', () {
+      expect(
+        () => AppConfig.fromValues(
+          environmentName: 'development',
+          apiBaseUrl: 'http://localhost:8080',
+          appName: ' ',
+        ),
+        throwsA(
+          isA<AppConfigException>().having(
+            (error) => error.messages,
+            'messages',
+            contains('APP_NAME must not be empty.'),
+          ),
         ),
       );
     });

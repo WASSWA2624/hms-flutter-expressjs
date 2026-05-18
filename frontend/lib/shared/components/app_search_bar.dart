@@ -22,6 +22,25 @@ final class AppSearchBarFieldChoice {
 }
 
 @immutable
+final class AppSearchBarTextFilter {
+  const AppSearchBarTextFilter({
+    required this.key,
+    required this.label,
+    this.hintText,
+    this.icon,
+    this.keyboardType,
+    this.textInputAction,
+  });
+
+  final String key;
+  final String label;
+  final String? hintText;
+  final IconData? icon;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+}
+
+@immutable
 final class AppSearchBarFilterChoice {
   const AppSearchBarFilterChoice({
     required this.value,
@@ -55,6 +74,7 @@ final class AppSearchBarFilterValue {
     this.field,
     this.dateFrom,
     this.dateTo,
+    this.texts = const <String, String>{},
     this.options = const <String, String>{},
   });
 
@@ -63,13 +83,20 @@ final class AppSearchBarFilterValue {
   final String? field;
   final DateTime? dateFrom;
   final DateTime? dateTo;
+  final Map<String, String> texts;
   final Map<String, String> options;
 
   bool get isActive {
     return _hasText(field) ||
         dateFrom != null ||
         dateTo != null ||
+        texts.values.any(_hasText) ||
         options.values.any(_hasText);
+  }
+
+  String? text(String key) {
+    final String? value = texts[key];
+    return _hasText(value) ? value : null;
   }
 
   String? option(String key) {
@@ -81,16 +108,19 @@ final class AppSearchBarFilterValue {
     String? field,
     DateTime? dateFrom,
     DateTime? dateTo,
+    Map<String, String>? texts,
     Map<String, String>? options,
     bool clearField = false,
     bool clearDateFrom = false,
     bool clearDateTo = false,
+    bool clearTexts = false,
     bool clearOptions = false,
   }) {
     return AppSearchBarFilterValue(
       field: clearField ? null : field ?? this.field,
       dateFrom: clearDateFrom ? null : dateFrom ?? this.dateFrom,
       dateTo: clearDateTo ? null : dateTo ?? this.dateTo,
+      texts: clearTexts ? const <String, String>{} : texts ?? this.texts,
       options: clearOptions
           ? const <String, String>{}
           : options ?? this.options,
@@ -103,17 +133,22 @@ final class AppSearchBarFilterValue {
         other.field == field &&
         other.dateFrom == dateFrom &&
         other.dateTo == dateTo &&
+        mapEquals(other.texts, texts) &&
         mapEquals(other.options, options);
   }
 
   @override
   int get hashCode {
+    final List<String> textKeys = texts.keys.toList(growable: false)..sort();
     final List<String> optionKeys = options.keys.toList(growable: false)
       ..sort();
     return Object.hash(
       field,
       dateFrom,
       dateTo,
+      Object.hashAll(
+        textKeys.map((String key) => Object.hash(key, texts[key])),
+      ),
       Object.hashAll(
         optionKeys.map((String key) => Object.hash(key, options[key])),
       ),
@@ -143,6 +178,7 @@ class AppSearchBar extends StatefulWidget {
     this.advancedFilterResetLabel,
     this.advancedFilterCancelLabel,
     this.searchFields = const <AppSearchBarFieldChoice>[],
+    this.textFilters = const <AppSearchBarTextFilter>[],
     this.searchFieldLabel,
     this.allFieldsLabel,
     this.enableDateFilter = true,
@@ -181,6 +217,7 @@ class AppSearchBar extends StatefulWidget {
   final String? advancedFilterResetLabel;
   final String? advancedFilterCancelLabel;
   final List<AppSearchBarFieldChoice> searchFields;
+  final List<AppSearchBarTextFilter> textFilters;
   final String? searchFieldLabel;
   final String? allFieldsLabel;
   final bool enableDateFilter;
@@ -393,6 +430,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
         widget.onAdvancedFilterPressed != null ||
         widget.onFilterChanged != null ||
         widget.searchFields.isNotEmpty ||
+        widget.textFilters.isNotEmpty ||
         widget.filterGroups.isNotEmpty;
   }
 
@@ -424,6 +462,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
             widget.advancedFilterCancelLabel ??
             MaterialLocalizations.of(context).cancelButtonLabel,
         searchFields: widget.searchFields,
+        textFilters: widget.textFilters,
         searchFieldLabel: widget.searchFieldLabel ?? 'Search in',
         allFieldsLabel: widget.allFieldsLabel ?? 'All fields',
         enableDateFilter: widget.enableDateFilter,
@@ -514,6 +553,7 @@ class _AppSearchBarFiltersDialog extends StatefulWidget {
     required this.resetLabel,
     required this.cancelLabel,
     required this.searchFields,
+    required this.textFilters,
     required this.searchFieldLabel,
     required this.allFieldsLabel,
     required this.enableDateFilter,
@@ -534,6 +574,7 @@ class _AppSearchBarFiltersDialog extends StatefulWidget {
   final String resetLabel;
   final String cancelLabel;
   final List<AppSearchBarFieldChoice> searchFields;
+  final List<AppSearchBarTextFilter> textFilters;
   final String searchFieldLabel;
   final String allFieldsLabel;
   final bool enableDateFilter;
@@ -561,12 +602,25 @@ class _AppSearchBarFiltersDialogState
   late String? _field;
   late DateTime? _dateFrom;
   late DateTime? _dateTo;
+  late Map<String, TextEditingController> _textControllers;
   late Map<String, String> _options;
 
   @override
   void initState() {
     super.initState();
+    _textControllers = <String, TextEditingController>{
+      for (final AppSearchBarTextFilter filter in widget.textFilters)
+        filter.key: TextEditingController(),
+    };
     _hydrate(widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    for (final TextEditingController controller in _textControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -615,6 +669,30 @@ class _AppSearchBarFiltersDialogState
                       });
                     },
                   ),
+                ),
+                SizedBox(height: theme.spacing.md),
+              ],
+              if (widget.textFilters.isNotEmpty) ...<Widget>[
+                _DialogSectionTitle(label: widget.searchFieldLabel),
+                SizedBox(height: theme.spacing.sm),
+                _ResponsiveFilterGrid(
+                  children: <Widget>[
+                    for (final AppSearchBarTextFilter filter
+                        in widget.textFilters)
+                      TextFormField(
+                        controller: _textControllers[filter.key],
+                        keyboardType: filter.keyboardType,
+                        textInputAction:
+                            filter.textInputAction ?? TextInputAction.next,
+                        decoration: InputDecoration(
+                          labelText: filter.label,
+                          hintText: filter.hintText,
+                          prefixIcon: filter.icon == null
+                              ? null
+                              : Icon(filter.icon),
+                        ),
+                      ),
+                  ],
                 ),
                 SizedBox(height: theme.spacing.md),
               ],
@@ -723,6 +801,10 @@ class _AppSearchBarFiltersDialogState
     _field = _knownField(value.field);
     _dateFrom = value.dateFrom;
     _dateTo = value.dateTo;
+    final Map<String, String> texts = _knownTexts(value.texts);
+    for (final AppSearchBarTextFilter filter in widget.textFilters) {
+      _textControllers[filter.key]?.text = texts[filter.key] ?? '';
+    }
     _options = _knownOptions(value.options);
   }
 
@@ -745,6 +827,11 @@ class _AppSearchBarFiltersDialogState
       field: _field,
       dateFrom: _dateFrom,
       dateTo: _dateTo,
+      texts: Map<String, String>.unmodifiable(<String, String>{
+        for (final MapEntry<String, TextEditingController> entry
+            in _textControllers.entries)
+          if (_hasText(entry.value.text)) entry.key: entry.value.text.trim(),
+      }),
       options: Map<String, String>.unmodifiable(_options),
     );
   }
@@ -757,6 +844,17 @@ class _AppSearchBarFiltersDialogState
       (AppSearchBarFieldChoice choice) => choice.field == field,
     );
     return exists ? field : null;
+  }
+
+  Map<String, String> _knownTexts(Map<String, String> texts) {
+    final Set<String> knownKeys = widget.textFilters
+        .map((AppSearchBarTextFilter filter) => filter.key)
+        .toSet();
+    return <String, String>{
+      for (final MapEntry<String, String> entry in texts.entries)
+        if (knownKeys.contains(entry.key) && _hasText(entry.value))
+          entry.key: entry.value.trim(),
+    };
   }
 
   Map<String, String> _knownOptions(Map<String, String> options) {

@@ -29,7 +29,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
-        'search': query.search,
+        ..._worklistSearchParameters(query),
         'status': query.scope == ClinicalQueueScope.completed
             ? 'CLOSED'
             : 'OPEN',
@@ -54,6 +54,7 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
         'status': query.scope == ClinicalQueueScope.completed
             ? 'DISCHARGED'
             : 'ADMITTED',
+        ..._worklistSearchParameters(query),
         'sort_by': 'updated_at',
         'order': 'desc',
       }),
@@ -322,5 +323,25 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       return value.isEmpty;
     }
     return false;
+  }
+
+  Map<String, Object?> _worklistSearchParameters(ClinicalWorklistQuery query) {
+    final ClinicalWorklistFilters filters = query.filters;
+    return <String, Object?>{
+      'search': query.search,
+      'patient': filters.patient,
+      'patient_id': filters.patientIdentifier,
+      'patient_phone': filters.patientPhone,
+      'encounter': filters.encounter,
+      'queue': filters.queue,
+      'provider': filters.providerText,
+      'worklist_status': filters.statusText,
+      'location': filters.location,
+      'source_queue': filters.sourceQueue,
+      'stage': filters.status,
+      'assigned_provider': filters.provider,
+      'updated_from': filters.dateFrom?.toUtc().toIso8601String(),
+      'updated_to': filters.dateTo?.toUtc().toIso8601String(),
+    };
   }
 }

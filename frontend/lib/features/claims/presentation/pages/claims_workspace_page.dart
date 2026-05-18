@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/controllers/claims_workspace_controller.dart';
@@ -15,6 +15,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class ClaimsWorkspacePage extends ConsumerWidget {
   const ClaimsWorkspacePage({super.key});
@@ -435,8 +436,18 @@ class _ClaimsDetailPanel extends ConsumerWidget {
       actions: <Widget>[
         AppReportActionButton.print(
           label: l10n.claimsPrintStatementAction,
-          onPressed: () {
-            printHtmlDocument(_claimsStatementHtml(context, detail));
+          onPressed: () async {
+            final String title = detail.isAuthorization
+                ? l10n.claimsAuthorizationStatementTitle
+                : l10n.claimsClaimStatementTitle;
+            await printFormTemplateDocument(
+              ref: ref,
+              context: context,
+              title: title,
+              subtitle: detail.item.displayId,
+              bodyHtml: _claimsStatementHtml(context, detail),
+              footerNote: l10n.claimsReportFooter,
+            );
           },
         ),
       ],
@@ -1691,42 +1702,34 @@ void _showSaved(BuildContext context) {
 
 String _claimsStatementHtml(BuildContext context, ClaimsQueueDetail detail) {
   final AppLocalizations l10n = context.l10n;
-  final String generatedAt = _dateTimeLabel(context, DateTime.now());
-  final String title = detail.isAuthorization
-      ? l10n.claimsAuthorizationStatementTitle
-      : l10n.claimsClaimStatementTitle;
-
   return '''
-<style>
-  body { font-family: Arial, sans-serif; color: #111827; margin: 32px; }
-  .header { border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 18px; }
-  .facility { font-size: 18px; font-weight: 700; }
-  .title { font-size: 24px; font-weight: 800; margin-top: 10px; }
-  .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; margin: 16px 0; }
-  .section { margin-top: 18px; page-break-inside: avoid; }
-  .section h2 { font-size: 15px; border-bottom: 1px solid #d1d5db; padding-bottom: 4px; }
-  .footer { position: fixed; bottom: 18px; left: 32px; right: 32px; font-size: 11px; color: #4b5563; border-top: 1px solid #d1d5db; padding-top: 6px; }
-  @media print { body { margin: 18mm; } .footer { position: fixed; } }
-</style>
-<main>
-  <div class="header">
-    <div class="facility">${_htmlEscape(l10n.appTitle)}</div>
-    <div class="title">${_htmlEscape(title)}</div>
-  </div>
-  <div class="meta">
-    <div><strong>${_htmlEscape(l10n.claimsReferenceColumnLabel)}:</strong> ${_htmlEscape(detail.item.displayId)}</div>
-    <div><strong>${_htmlEscape(l10n.claimsStatusColumnLabel)}:</strong> ${_htmlEscape(_statusLabel(context, detail.item))}</div>
-    <div><strong>${_htmlEscape(l10n.claimsCoverageFieldLabel)}:</strong> ${_htmlEscape(_coverageLabel(context, detail))}</div>
-    <div><strong>${_htmlEscape(l10n.claimsInvoiceFieldLabel)}:</strong> ${_htmlEscape(_fallback(context, detail.claim?.invoiceDisplayId))}</div>
-    <div><strong>${_htmlEscape(l10n.claimsAmountFieldLabel)}:</strong> ${_htmlEscape(_amountLabel(context, detail.invoice))}</div>
-    <div><strong>${_htmlEscape(l10n.claimsReportGeneratedLabel)}:</strong> ${_htmlEscape(generatedAt)}</div>
-  </div>
-  <section class="section">
-    <h2>${_htmlEscape(l10n.claimsBillingImpactTitle)}</h2>
-    <p>${_htmlEscape(detail.isClaim ? _claimBillingImpact(context, detail) : l10n.claimsAuthorizationBillingImpactBody)}</p>
-  </section>
-  <div class="footer">${_htmlEscape(l10n.claimsReportFooter)}</div>
-</main>
+${PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
+    PrintFormMetadataItem(
+      label: l10n.claimsReferenceColumnLabel,
+      value: detail.item.displayId,
+    ),
+    PrintFormMetadataItem(
+      label: l10n.claimsStatusColumnLabel,
+      value: _statusLabel(context, detail.item),
+    ),
+    PrintFormMetadataItem(
+      label: l10n.claimsCoverageFieldLabel,
+      value: _coverageLabel(context, detail),
+    ),
+    PrintFormMetadataItem(
+      label: l10n.claimsInvoiceFieldLabel,
+      value: _fallback(context, detail.claim?.invoiceDisplayId),
+    ),
+    PrintFormMetadataItem(
+      label: l10n.claimsAmountFieldLabel,
+      value: _amountLabel(context, detail.invoice),
+    ),
+  ])}
+${PrintFormTemplate.section(
+    title: l10n.claimsBillingImpactTitle,
+    bodyHtml:
+        '<p>${_htmlEscape(detail.isClaim ? _claimBillingImpact(context, detail) : l10n.claimsAuthorizationBillingImpactBody)}</p>',
+  )}
 ''';
 }
 

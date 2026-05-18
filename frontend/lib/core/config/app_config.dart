@@ -4,15 +4,29 @@ final class AppConfig {
     required this.apiBaseUrl,
     required this.apiTimeout,
     required this.logLevel,
+    this.appName = defaultAppName,
+    this.appLogoUrl = defaultAppLogoUrl,
+    this.appAdministratorName,
+    this.appAdministratorEmail,
+    this.appAdministratorPhone,
+    this.appSupportUrl,
     this.featureFlags = const FeatureFlags(),
   });
 
   static const int defaultApiTimeoutSeconds = 30;
+  static const String defaultAppName = 'HOSSPI Hospital Management System';
+  static const String defaultAppLogoUrl = 'assets/logos/logo.png';
 
   final AppEnvironment environment;
   final Uri apiBaseUrl;
   final Duration apiTimeout;
   final AppLogLevel logLevel;
+  final String appName;
+  final String appLogoUrl;
+  final String? appAdministratorName;
+  final String? appAdministratorEmail;
+  final String? appAdministratorPhone;
+  final String? appSupportUrl;
   final FeatureFlags featureFlags;
 
   bool get isDevelopment => environment == AppEnvironment.development;
@@ -32,12 +46,30 @@ final class AppConfig {
       'LOG_LEVEL',
       defaultValue: 'info',
     );
+    const appName = String.fromEnvironment(
+      'APP_NAME',
+      defaultValue: AppConfig.defaultAppName,
+    );
+    const appLogoUrl = String.fromEnvironment(
+      'APP_LOGO_URL',
+      defaultValue: AppConfig.defaultAppLogoUrl,
+    );
+    const appAdministratorName = String.fromEnvironment('APP_ADMIN_NAME');
+    const appAdministratorEmail = String.fromEnvironment('APP_ADMIN_EMAIL');
+    const appAdministratorPhone = String.fromEnvironment('APP_ADMIN_PHONE');
+    const appSupportUrl = String.fromEnvironment('APP_SUPPORT_URL');
 
     return AppConfig._fromRawValues(
       environmentName: environmentName,
       apiBaseUrl: apiBaseUrl,
       apiTimeoutSeconds: apiTimeoutSeconds,
       logLevelName: logLevelName,
+      appName: appName,
+      appLogoUrl: appLogoUrl,
+      appAdministratorName: appAdministratorName,
+      appAdministratorEmail: appAdministratorEmail,
+      appAdministratorPhone: appAdministratorPhone,
+      appSupportUrl: appSupportUrl,
       featureFlags: const FeatureFlags.fromEnvironment(),
     );
   }
@@ -47,6 +79,12 @@ final class AppConfig {
     required String apiBaseUrl,
     int apiTimeoutSeconds = AppConfig.defaultApiTimeoutSeconds,
     String logLevelName = 'info',
+    String appName = AppConfig.defaultAppName,
+    String appLogoUrl = AppConfig.defaultAppLogoUrl,
+    String? appAdministratorName,
+    String? appAdministratorEmail,
+    String? appAdministratorPhone,
+    String? appSupportUrl,
     FeatureFlags featureFlags = const FeatureFlags(),
     Uri? appBaseUrl,
   }) {
@@ -55,6 +93,12 @@ final class AppConfig {
       apiBaseUrl: apiBaseUrl,
       apiTimeoutSeconds: apiTimeoutSeconds,
       logLevelName: logLevelName,
+      appName: appName,
+      appLogoUrl: appLogoUrl,
+      appAdministratorName: appAdministratorName,
+      appAdministratorEmail: appAdministratorEmail,
+      appAdministratorPhone: appAdministratorPhone,
+      appSupportUrl: appSupportUrl,
       featureFlags: featureFlags,
       appBaseUrl: appBaseUrl,
     );
@@ -65,6 +109,12 @@ final class AppConfig {
     required String apiBaseUrl,
     required int apiTimeoutSeconds,
     required String logLevelName,
+    required String appName,
+    required String appLogoUrl,
+    String? appAdministratorName,
+    String? appAdministratorEmail,
+    String? appAdministratorPhone,
+    String? appSupportUrl,
     required FeatureFlags featureFlags,
     Uri? appBaseUrl,
   }) {
@@ -73,6 +123,22 @@ final class AppConfig {
     final environment = _parseEnvironment(environmentName, errors);
     final uri = _parseApiBaseUrl(apiBaseUrl, errors);
     final logLevel = _parseLogLevel(logLevelName, errors);
+    final normalizedAppName = _normalizeRequiredText(
+      value: appName,
+      fieldName: 'APP_NAME',
+      errors: errors,
+    );
+    final normalizedAppLogoUrl = _normalizeOptionalText(appLogoUrl);
+    final normalizedAppAdministratorName = _normalizeOptionalText(
+      appAdministratorName,
+    );
+    final normalizedAppAdministratorEmail = _normalizeOptionalText(
+      appAdministratorEmail,
+    );
+    final normalizedAppAdministratorPhone = _normalizeOptionalText(
+      appAdministratorPhone,
+    );
+    final normalizedAppSupportUrl = _normalizeOptionalText(appSupportUrl);
 
     if (apiTimeoutSeconds <= 0) {
       errors.add('API_TIMEOUT_SECONDS must be greater than zero.');
@@ -93,6 +159,12 @@ final class AppConfig {
       apiBaseUrl: normalizedApiBaseUrl!,
       apiTimeout: Duration(seconds: apiTimeoutSeconds),
       logLevel: logLevel!,
+      appName: normalizedAppName!,
+      appLogoUrl: normalizedAppLogoUrl ?? AppConfig.defaultAppLogoUrl,
+      appAdministratorName: normalizedAppAdministratorName,
+      appAdministratorEmail: normalizedAppAdministratorEmail,
+      appAdministratorPhone: normalizedAppAdministratorPhone,
+      appSupportUrl: normalizedAppSupportUrl,
       featureFlags: featureFlags,
     );
 
@@ -150,6 +222,12 @@ final class AppConfig {
     Uri? apiBaseUrl,
     Duration? apiTimeout,
     AppLogLevel? logLevel,
+    String? appName,
+    String? appLogoUrl,
+    String? appAdministratorName,
+    String? appAdministratorEmail,
+    String? appAdministratorPhone,
+    String? appSupportUrl,
     FeatureFlags? featureFlags,
   }) {
     return AppConfig(
@@ -157,6 +235,15 @@ final class AppConfig {
       apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
       apiTimeout: apiTimeout ?? this.apiTimeout,
       logLevel: logLevel ?? this.logLevel,
+      appName: appName ?? this.appName,
+      appLogoUrl: appLogoUrl ?? this.appLogoUrl,
+      appAdministratorName:
+          appAdministratorName ?? this.appAdministratorName,
+      appAdministratorEmail:
+          appAdministratorEmail ?? this.appAdministratorEmail,
+      appAdministratorPhone:
+          appAdministratorPhone ?? this.appAdministratorPhone,
+      appSupportUrl: appSupportUrl ?? this.appSupportUrl,
       featureFlags: featureFlags ?? this.featureFlags,
     );
   }
@@ -242,6 +329,25 @@ final class AppConfig {
     }
 
     return logLevel;
+  }
+
+  static String? _normalizeRequiredText({
+    required String value,
+    required String fieldName,
+    required List<String> errors,
+  }) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) {
+      errors.add('$fieldName must not be empty.');
+      return null;
+    }
+
+    return normalized;
+  }
+
+  static String? _normalizeOptionalText(String? value) {
+    final normalized = value?.trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
   }
 
   static bool _isLocalDevelopmentHost(String host) {

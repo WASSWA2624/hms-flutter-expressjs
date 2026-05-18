@@ -24,6 +24,20 @@ final class ClinicalWorklistQuery {
   final ClinicalQueueScope scope;
   final AppPageRequest pageRequest;
 
+  String get databaseSearch {
+    return _joinedSearchTerms(<String?>[
+      search,
+      filters.patient,
+      filters.patientIdentifier,
+      filters.patientPhone,
+      filters.encounter,
+      filters.queue,
+      filters.providerText,
+      filters.statusText,
+      filters.location,
+    ]);
+  }
+
   ClinicalWorklistQuery copyWith({
     String? search,
     ClinicalWorklistFilters? filters,
@@ -45,6 +59,14 @@ final class ClinicalWorklistFilters {
     this.searchField,
     this.dateFrom,
     this.dateTo,
+    this.patient,
+    this.patientIdentifier,
+    this.patientPhone,
+    this.encounter,
+    this.queue,
+    this.providerText,
+    this.statusText,
+    this.location,
     this.sourceQueue,
     this.status,
     this.provider,
@@ -53,6 +75,14 @@ final class ClinicalWorklistFilters {
   final String? searchField;
   final DateTime? dateFrom;
   final DateTime? dateTo;
+  final String? patient;
+  final String? patientIdentifier;
+  final String? patientPhone;
+  final String? encounter;
+  final String? queue;
+  final String? providerText;
+  final String? statusText;
+  final String? location;
   final String? sourceQueue;
   final String? status;
   final String? provider;
@@ -61,6 +91,14 @@ final class ClinicalWorklistFilters {
     return _hasText(searchField) ||
         dateFrom != null ||
         dateTo != null ||
+        _hasText(patient) ||
+        _hasText(patientIdentifier) ||
+        _hasText(patientPhone) ||
+        _hasText(encounter) ||
+        _hasText(queue) ||
+        _hasText(providerText) ||
+        _hasText(statusText) ||
+        _hasText(location) ||
         _hasText(sourceQueue) ||
         _hasText(status) ||
         _hasText(provider);
@@ -173,6 +211,60 @@ final class ClinicalWorklistEntry {
   }
 
   bool matchesFilters(ClinicalWorklistFilters filters) {
+    if (!_matchesAnyContains(filters.patient, <String?>[
+      patientId,
+      patientPublicId,
+      patientDisplayName,
+      patientPhone,
+      patientAgeSex,
+    ])) {
+      return false;
+    }
+    if (!_matchesAnyContains(filters.patientIdentifier, <String?>[
+      patientId,
+      patientPublicId,
+    ])) {
+      return false;
+    }
+    if (!_matchesAnyContains(filters.patientPhone, <String?>[patientPhone])) {
+      return false;
+    }
+    if (!_matchesAnyContains(filters.encounter, <String?>[
+      encounterId,
+      encounterPublicId,
+      encounterType,
+      admissionId,
+      admissionPublicId,
+      opdFlowApiId,
+    ])) {
+      return false;
+    }
+    if (!_matchesAnyContains(filters.queue, <String?>[
+      sourceQueue,
+      stage,
+      nextStep,
+    ])) {
+      return false;
+    }
+    if (!_matchesAnyContains(filters.providerText, <String?>[
+      providerUserId,
+      providerDisplayName,
+    ])) {
+      return false;
+    }
+    if (!_matchesAnyContains(filters.statusText, <String?>[
+      status,
+      stage,
+      nextStep,
+    ])) {
+      return false;
+    }
+    if (!_matchesAnyContains(filters.location, <String?>[
+      facilityId,
+      currentLocation,
+    ])) {
+      return false;
+    }
     if (!_matchesExact(sourceQueue, filters.sourceQueue)) {
       return false;
     }
@@ -202,6 +294,7 @@ final class ClinicalWorklistEntry {
       'source' => <String?>[sourceQueue],
       'status' => <String?>[status, stage, nextStep],
       'provider' => <String?>[providerUserId, providerDisplayName],
+      'location' => <String?>[facilityId, currentLocation],
       _ => <String?>[
         id,
         sourceQueue,
@@ -219,6 +312,7 @@ final class ClinicalWorklistEntry {
         stage,
         nextStep,
         currentLocation,
+        providerUserId,
         providerDisplayName,
         admissionId,
         admissionPublicId,
@@ -670,6 +764,16 @@ bool _matchesAnyExact(String? expected, Iterable<String?> values) {
   );
 }
 
+bool _matchesAnyContains(String? expected, Iterable<String?> values) {
+  final String? normalizedExpected = _nonEmpty(expected)?.toLowerCase();
+  if (normalizedExpected == null) {
+    return true;
+  }
+  return values.whereType<String>().any(
+    (String value) => value.toLowerCase().contains(normalizedExpected),
+  );
+}
+
 bool _matchesReviewState(ClinicalWorklistEntry item) {
   final String value = '${item.stage ?? ''} ${item.nextStep ?? ''}'
       .toUpperCase();
@@ -712,6 +816,14 @@ String? _nonEmpty(String? value) {
 
 bool _hasText(String? value) {
   return _nonEmpty(value) != null;
+}
+
+String _joinedSearchTerms(Iterable<String?> values) {
+  return values
+      .map((String? value) => value?.trim() ?? '')
+      .where((String value) => value.isNotEmpty)
+      .toSet()
+      .join(' ');
 }
 
 String? _joinDisplay(Iterable<String?> values) {

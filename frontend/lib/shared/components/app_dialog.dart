@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/src/app_field_label.dart';
 
-class AppDialog extends StatelessWidget {
+class AppDialog extends StatefulWidget {
   const AppDialog({
     this.title,
     this.content,
@@ -31,11 +31,23 @@ class AppDialog extends StatelessWidget {
   final double maxWidth;
 
   @override
+  State<AppDialog> createState() => _AppDialogState();
+}
+
+class _AppDialogState extends State<AppDialog> {
+  static const double _desktopMinWidth = 360;
+  static const double _desktopMinHeight = 280;
+
+  Offset _dragOffset = Offset.zero;
+  Size? _desktopSize;
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Size viewport = MediaQuery.sizeOf(context);
     final bool compact = viewport.width < 600;
+    final bool desktopInteractive = !compact;
     final EdgeInsets insetPadding = EdgeInsets.symmetric(
       horizontal: compact ? theme.spacing.md : theme.spacing.xl,
       vertical: compact ? theme.spacing.md : theme.spacing.xl,
@@ -44,6 +56,79 @@ class AppDialog extends StatelessWidget {
       theme.spacing.none,
       viewport.height - insetPadding.vertical,
     );
+    final double availableWidth = math.max(
+      theme.spacing.none,
+      viewport.width - insetPadding.horizontal,
+    );
+    final double defaultWidth = math.min(widget.maxWidth, availableWidth);
+    final Size? desktopSize = _desktopSize;
+    final BoxConstraints dialogConstraints = BoxConstraints(
+      maxWidth: desktopInteractive
+          ? (desktopSize?.width ?? defaultWidth)
+          : widget.maxWidth,
+      maxHeight: desktopInteractive
+          ? (desktopSize?.height ?? maxHeight)
+          : maxHeight,
+    );
+
+    final Widget dialogContent = DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: _DialogBody(
+        title: widget.title,
+        content: widget.content,
+        actions: widget.actions,
+        icon: widget.icon,
+        scrollable: widget.scrollable,
+        compact: compact,
+        showCloseButton: widget.showCloseButton,
+        closeEnabled: widget.closeEnabled,
+        onHeaderDragUpdate: desktopInteractive
+            ? (DragUpdateDetails details) {
+                _handleDrag(details, viewport, insetPadding);
+              }
+            : null,
+      ),
+    );
+
+    Widget dialogBody = ConstrainedBox(
+      constraints: desktopInteractive
+          ? BoxConstraints(maxHeight: dialogConstraints.maxHeight)
+          : dialogConstraints,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(),
+        child: dialogContent,
+      ),
+    );
+
+    if (desktopInteractive) {
+      dialogBody = SizedBox(
+        width: dialogConstraints.maxWidth,
+        child: dialogBody,
+      );
+    }
+
+    if (desktopInteractive) {
+      dialogBody = Transform.translate(
+        offset: _dragOffset,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            dialogBody,
+            PositionedDirectional(
+              end: theme.spacing.xs,
+              bottom: theme.spacing.xs,
+              child: _DialogResizeHandle(
+                onDragUpdate: (DragUpdateDetails details) {
+                  _handleResize(details, viewport, insetPadding, defaultWidth);
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     Widget dialog = Dialog(
       insetPadding: insetPadding,
@@ -51,37 +136,63 @@ class AppDialog extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       backgroundColor: colorScheme.surface,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.28),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: _DialogBody(
-            title: title,
-            content: content,
-            actions: actions,
-            icon: icon,
-            scrollable: scrollable,
-            compact: compact,
-            showCloseButton: showCloseButton,
-            closeEnabled: closeEnabled,
-          ),
-        ),
-      ),
+      child: dialogBody,
     );
 
-    if (semanticLabel != null) {
+    if (widget.semanticLabel != null) {
       dialog = Semantics(
         namesRoute: true,
         scopesRoute: true,
         explicitChildNodes: true,
-        label: semanticLabel,
+        label: widget.semanticLabel,
         child: dialog,
       );
     }
 
     return FocusTraversalGroup(child: dialog);
+  }
+
+  void _handleDrag(
+    DragUpdateDetails details,
+    Size viewport,
+    EdgeInsets insetPadding,
+  ) {
+    final double maxX = math.max(0, viewport.width / 2 - insetPadding.left);
+    final double maxY = math.max(0, viewport.height / 2 - insetPadding.top);
+    final Offset next = _dragOffset + details.delta;
+    setState(() {
+      _dragOffset = Offset(
+        next.dx.clamp(-maxX, maxX).toDouble(),
+        next.dy.clamp(-maxY, maxY).toDouble(),
+      );
+    });
+  }
+
+  void _handleResize(
+    DragUpdateDetails details,
+    Size viewport,
+    EdgeInsets insetPadding,
+    double defaultWidth,
+  ) {
+    final double availableWidth = math.max(
+      _desktopMinWidth,
+      viewport.width - insetPadding.horizontal,
+    );
+    final double availableHeight = math.max(
+      _desktopMinHeight,
+      viewport.height - insetPadding.vertical,
+    );
+    final Size current = _desktopSize ?? Size(defaultWidth, availableHeight);
+    setState(() {
+      _desktopSize = Size(
+        (current.width + details.delta.dx)
+            .clamp(_desktopMinWidth, availableWidth)
+            .toDouble(),
+        (current.height + details.delta.dy)
+            .clamp(_desktopMinHeight, availableHeight)
+            .toDouble(),
+      );
+    });
   }
 }
 
@@ -92,6 +203,7 @@ class _DialogBody extends StatelessWidget {
     required this.compact,
     required this.showCloseButton,
     required this.closeEnabled,
+    this.onHeaderDragUpdate,
     this.title,
     this.content,
     this.icon,
@@ -105,6 +217,7 @@ class _DialogBody extends StatelessWidget {
   final bool compact;
   final bool showCloseButton;
   final bool closeEnabled;
+  final ValueChanged<DragUpdateDetails>? onHeaderDragUpdate;
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +249,7 @@ class _DialogBody extends StatelessWidget {
           showCloseButton: showCloseButton,
           closeEnabled: closeEnabled,
           compact: compact,
+          onDragUpdate: onHeaderDragUpdate,
         ),
         if (dialogContent != null)
           Flexible(
@@ -165,6 +279,7 @@ class _DialogHeader extends StatelessWidget {
     required this.showCloseButton,
     required this.closeEnabled,
     required this.compact,
+    this.onDragUpdate,
   });
 
   final Widget? title;
@@ -173,6 +288,7 @@ class _DialogHeader extends StatelessWidget {
   final bool showCloseButton;
   final bool closeEnabled;
   final bool compact;
+  final ValueChanged<DragUpdateDetails>? onDragUpdate;
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +301,7 @@ class _DialogHeader extends StatelessWidget {
       end: theme.spacing.xs,
     );
 
-    return DecoratedBox(
+    final Widget header = DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
@@ -228,6 +344,54 @@ class _DialogHeader extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+
+    final ValueChanged<DragUpdateDetails>? dragHandler = onDragUpdate;
+    if (dragHandler == null) {
+      return header;
+    }
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.move,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanUpdate: dragHandler,
+        child: header,
+      ),
+    );
+  }
+}
+
+class _DialogResizeHandle extends StatelessWidget {
+  const _DialogResizeHandle({required this.onDragUpdate});
+
+  final ValueChanged<DragUpdateDetails> onDragUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeDownRight,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanUpdate: onDragUpdate,
+        child: Tooltip(
+          message: 'Resize dialog',
+          child: SizedBox.square(
+            dimension: theme.appTokens.minInteractiveDimension,
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: Icon(
+                Icons.open_in_full,
+                size: theme.appTokens.listIconSize - 2,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
         ),
       ),
     );

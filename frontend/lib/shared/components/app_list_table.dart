@@ -46,6 +46,7 @@ final class AppListTableSearch<T> {
     this.advancedFilterResetLabel,
     this.advancedFilterCancelLabel,
     this.searchFields = const <AppSearchBarFieldChoice>[],
+    this.textFilters = const <AppSearchBarTextFilter>[],
     this.searchFieldLabel,
     this.allFieldsLabel,
     this.enableDateFilter = true,
@@ -84,6 +85,7 @@ final class AppListTableSearch<T> {
   final String? advancedFilterResetLabel;
   final String? advancedFilterCancelLabel;
   final List<AppSearchBarFieldChoice> searchFields;
+  final List<AppSearchBarTextFilter> textFilters;
   final String? searchFieldLabel;
   final String? allFieldsLabel;
   final bool enableDateFilter;
@@ -122,6 +124,7 @@ final class AppListTableSearch<T> {
       advancedFilterResetLabel: advancedFilterResetLabel,
       advancedFilterCancelLabel: advancedFilterCancelLabel,
       searchFields: searchFields,
+      textFilters: textFilters,
       searchFieldLabel: searchFieldLabel,
       allFieldsLabel: allFieldsLabel,
       enableDateFilter: enableDateFilter,
