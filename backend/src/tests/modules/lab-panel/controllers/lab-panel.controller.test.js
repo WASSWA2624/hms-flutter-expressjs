@@ -87,6 +87,7 @@ describe('Lab Panel Controller', () => {
         name: 'Metabolic',
         code: 'CMP',
         search: 'test',
+        include_standard_catalog: 'true',
         page: '1',
         limit: '20'
       };
@@ -110,7 +111,8 @@ describe('Lab Panel Controller', () => {
           tenant_id: '123e4567-e89b-12d3-a456-426614174001',
           name: 'Metabolic',
           code: 'CMP',
-          search: 'test'
+          search: 'test',
+          include_standard_catalog: 'true'
         }),
         1,
         20,

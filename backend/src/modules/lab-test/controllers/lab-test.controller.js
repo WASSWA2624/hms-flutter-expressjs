@@ -28,6 +28,8 @@ const listLabTests = asyncHandler(async (req, res) => {
     specimen_type,
     result_kind,
     search,
+    include_pending_review,
+    include_standard_catalog,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
@@ -41,7 +43,9 @@ const listLabTests = asyncHandler(async (req, res) => {
     category,
     specimen_type,
     result_kind,
-    search
+    search,
+    include_pending_review,
+    include_standard_catalog
   };
 
   const userId = req.user?.id;

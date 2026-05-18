@@ -87,6 +87,8 @@ describe('Lab Test Controller', () => {
         name: 'Blood',
         code: 'CBC',
         search: 'test',
+        include_pending_review: 'true',
+        include_standard_catalog: 'true',
         page: '1',
         limit: '20'
       };
@@ -110,7 +112,9 @@ describe('Lab Test Controller', () => {
           tenant_id: '123e4567-e89b-12d3-a456-426614174001',
           name: 'Blood',
           code: 'CBC',
-          search: 'test'
+          search: 'test',
+          include_pending_review: 'true',
+          include_standard_catalog: 'true'
         }),
         1,
         20,

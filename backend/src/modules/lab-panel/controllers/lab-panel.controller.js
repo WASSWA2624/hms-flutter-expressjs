@@ -26,6 +26,7 @@ const listLabPanels = asyncHandler(async (req, res) => {
     code,
     category,
     search,
+    include_standard_catalog,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
@@ -37,7 +38,8 @@ const listLabPanels = asyncHandler(async (req, res) => {
     name,
     code,
     category,
-    search
+    search,
+    include_standard_catalog
   };
 
   const userId = req.user?.id;
