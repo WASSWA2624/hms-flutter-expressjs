@@ -9,9 +9,15 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/nursing/data/repositories/nursing_repository_impl.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final nursingWorkspaceControllerProvider =
@@ -27,6 +33,8 @@ final class NursingWorkspaceController
   static const AppPageRequest _fetchRequest = AppPageRequest(pageSize: 100);
 
   NursingRepository get _repository => ref.read(nursingRepositoryProvider);
+  PatientRepository get _patientRepository => ref.read(patientRepositoryProvider);
+  ClinicalRepository get _clinicalRepository => ref.read(clinicalRepositoryProvider);
 
   Timer? _syncTimer;
   bool _isSyncing = false;
@@ -139,7 +147,7 @@ final class NursingWorkspaceController
       current.copyWith(
         query: current.query.copyWith(
           searchField: searchField?.trim() ?? '',
-          scope: scope ?? NursingQueueScope.assignedWard,
+          scope: scope ?? NursingQueueScope.all,
           patient: patient?.trim() ?? '',
           admission: admission?.trim() ?? '',
           encounter: encounter?.trim() ?? '',
@@ -185,6 +193,34 @@ final class NursingWorkspaceController
       ),
     );
     return _refreshWorklist(showLoading: true);
+  }
+
+
+  Future<List<NursingUserOption>> searchUsers(String query) async {
+    final Result<List<NursingUserOption>> result = await _repository.searchUsers(
+      query,
+    );
+    return result.when(
+      success: (List<NursingUserOption> value) => value,
+      failure: (_) => const <NursingUserOption>[],
+    );
+  }
+
+  Future<Result<AppPage<NursingPatientSummary>>> previewPatientsForScope(
+    NursingQueueScope scope,
+  ) {
+    final NursingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<AppPage<NursingPatientSummary>>>.value(
+        Result<AppPage<NursingPatientSummary>>.failure(AppFailure.validation()),
+      );
+    }
+    final NursingWorklistQuery query = current.query.copyWith(
+      scope: scope,
+      search: '',
+      pageRequest: const AppPageRequest(pageSize: 100),
+    );
+    return _loadWorklist(query, current.pendingHandovers);
   }
 
   Future<AppFailure?> selectPatient(NursingPatientSummary summary) async {
@@ -321,19 +357,64 @@ final class NursingWorkspaceController
     );
   }
 
+  Future<ClinicalReferenceData> prescriptionReferenceData() async {
+    final Result<ClinicalReferenceData> result = await _clinicalRepository
+        .loadReferenceData();
+    return result.when(
+      success: (ClinicalReferenceData value) => value,
+      failure: (_) => const ClinicalReferenceData(),
+    );
+  }
+
+  Future<AppFailure?> prescribeMedication({
+    required List<Map<String, Object?>> items,
+  }) {
+    final NursingPatientDetail? detail = _selectedDetail;
+    final String? encounterId = detail?.summary.encounterDisplayId?.trim();
+    final String? patientId = detail?.summary.patientId?.trim();
+    if (detail == null ||
+        encounterId == null ||
+        encounterId.isEmpty ||
+        patientId == null ||
+        patientId.isEmpty ||
+        items.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return _mutateSelected((NursingPatientSummary summary) async {
+      final Result<void> result = await _clinicalRepository
+          .createPharmacyOrder(<String, Object?>{
+            'encounter_id': encounterId,
+            'patient_id': patientId,
+            'ordered_at': DateTime.now().toUtc().toIso8601String(),
+            'items': items,
+          });
+      return result.when<Future<Result<NursingPatientDetail>>>(
+        success: (_) => _repository.loadPatientDetail(summary),
+        failure: (AppFailure failure) async =>
+            Result<NursingPatientDetail>.failure(failure),
+      );
+    });
+  }
+
   Future<AppFailure?> createHandover({
     required String toUserId,
     required String notes,
     String? reason,
+    List<PatientDocumentUploadFile> documentFiles =
+        const <PatientDocumentUploadFile>[],
   }) {
     final NursingPatientDetail? detail = _selectedDetail;
     if (detail == null) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
-    return _mutateSelected(
-      (NursingPatientSummary summary) =>
-          _repository.createHandover(summary, <String, Object?>{
+    return _mutateSelected((NursingPatientSummary summary) async {
+      final Result<List<Map<String, Object?>>> documentsResult =
+          await _uploadHandoverDocuments(detail, documentFiles);
+      return documentsResult.when<Future<Result<NursingPatientDetail>>>(
+        success: (List<Map<String, Object?>> documents) {
+          return _repository.createHandover(summary, <String, Object?>{
             'to_user_id': toUserId,
             'signoff_notes': notes,
             'items_json': <String, Object?>{
@@ -343,9 +424,15 @@ final class NursingWorkspaceController
               'patient_name': summary.patientDisplayName,
               'location': summary.locationLabel,
               'stage': summary.stage,
+              if (documents.isNotEmpty) 'documents': documents,
             },
-          }),
-    );
+          });
+        },
+        failure: (AppFailure failure) async {
+          return Result<NursingPatientDetail>.failure(failure);
+        },
+      );
+    });
   }
 
   Future<AppFailure?> escalate({
@@ -357,6 +444,85 @@ final class NursingWorkspaceController
       notes: message,
       reason: 'CLINICAL_ESCALATION',
     );
+  }
+
+  Future<Result<List<Map<String, Object?>>>> _uploadHandoverDocuments(
+    NursingPatientDetail detail,
+    List<PatientDocumentUploadFile> files,
+  ) async {
+    if (files.isEmpty) {
+      return const Result<List<Map<String, Object?>>>.success(
+        <Map<String, Object?>>[],
+      );
+    }
+    final String? patientId = detail.summary.patientId?.trim();
+    if (patientId == null || patientId.isEmpty) {
+      return Result<List<Map<String, Object?>>>.failure(
+        AppFailure.validation(validationFields: const <String>{'patient_id'}),
+      );
+    }
+
+    final Map<bool, List<PatientDocumentUploadFile>> groupedFiles =
+        <bool, List<PatientDocumentUploadFile>>{
+          true: <PatientDocumentUploadFile>[],
+          false: <PatientDocumentUploadFile>[],
+        };
+    for (final PatientDocumentUploadFile file in files) {
+      groupedFiles[_isScannedUploadFile(file)]!.add(file);
+    }
+
+    final List<Map<String, Object?>> uploadedDocuments =
+        <Map<String, Object?>>[];
+    for (final MapEntry<bool, List<PatientDocumentUploadFile>> entry
+        in groupedFiles.entries) {
+      if (entry.value.isEmpty) {
+        continue;
+      }
+      final String documentType = entry.key
+          ? 'SCANNED_HANDOVER_DOCUMENT'
+          : 'HANDOVER_DOCUMENT';
+      final Result<List<PatientDocument>> uploadResult = await _patientRepository
+          .uploadPatientDocuments(
+            patientId: patientId,
+            documentType: documentType,
+            files: entry.value,
+          );
+      final AppFailure? failure = uploadResult.when(
+        success: (_) => null,
+        failure: (AppFailure failure) => failure,
+      );
+      if (failure != null) {
+        return Result<List<Map<String, Object?>>>.failure(failure);
+      }
+
+      final List<PatientDocument> documents = uploadResult.when(
+        success: (List<PatientDocument> value) => value,
+        failure: (_) => const <PatientDocument>[],
+      );
+      uploadedDocuments.addAll(
+        documents.map(
+          (PatientDocument document) => <String, Object?>{
+            'document_id': document.id,
+            'document_type': document.documentType,
+            'storage_key': document.storageKey,
+            'file_name': document.fileName,
+            'content_type': document.contentType,
+            'is_scanned': entry.key,
+          },
+        ),
+      );
+    }
+
+    return Result<List<Map<String, Object?>>>.success(uploadedDocuments);
+  }
+
+  bool _isScannedUploadFile(PatientDocumentUploadFile file) {
+    final String name = file.name.toLowerCase();
+    final String contentType = file.contentType?.toLowerCase() ?? '';
+    return name.endsWith('.jpg') ||
+        name.endsWith('.jpeg') ||
+        name.endsWith('.png') ||
+        contentType.startsWith('image/');
   }
 
   Future<AppFailure?> acceptHandover(

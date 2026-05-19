@@ -112,6 +112,23 @@ final class NursingRepositoryImpl implements NursingRepository {
   }
 
   @override
+  Future<Result<List<NursingUserOption>>> searchUsers(String query) {
+    final String trimmed = query.trim();
+    return _apiClient.get<List<NursingUserOption>>(
+      ApiEndpoints.collection(HmsApiResource.users),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': 20,
+        'search': trimmed,
+        'status': 'ACTIVE',
+        'sort_by': 'display_name',
+        'order': 'asc',
+      }),
+      decoder: _decodeUserOptions,
+    );
+  }
+
+  @override
   Future<Result<NursingPatientDetail>> recordVitals(
     NursingPatientSummary summary,
     Map<String, Object?> payload,
@@ -131,7 +148,7 @@ final class NursingRepositoryImpl implements NursingRepository {
     List<Map<String, Object?>> payloads,
   ) async {
     final Map<String, NursingVitalSign> existingVitals =
-        await _latestVitalsByType(payloads.firstOrNull?['encounter_id']);
+        await _latestVitalsByType(payloads.isEmpty ? null : payloads.first['encounter_id']);
 
     for (final Map<String, Object?> payload in payloads) {
       final Result<void> result = await _upsertVitalPayload(
@@ -160,7 +177,12 @@ final class NursingRepositoryImpl implements NursingRepository {
       );
     }
 
-    final NursingVitalSign? existing = existingVitals[vitalType];
+    final String? explicitVitalId = _string(
+      payload['vital_id'] ?? payload['id'],
+    );
+    final NursingVitalSign? existing = _isNonEmpty(explicitVitalId)
+        ? NursingVitalSign(id: explicitVitalId!, vitalType: vitalType)
+        : existingVitals[vitalType];
     final Result<void> result = await _writeVitalPayload(payload, existing);
     final AppFailure? failure = result.when(
       success: (_) => null,
@@ -185,7 +207,9 @@ final class NursingRepositoryImpl implements NursingRepository {
     Map<String, Object?> payload,
     NursingVitalSign? existing,
   ) {
-    final Map<String, Object?> data = _withoutEmpty(payload);
+    final Map<String, Object?> data = _withoutEmpty(payload)
+      ..remove('id')
+      ..remove('vital_id');
     if (existing == null) {
       return _apiClient.post<void>(
         ApiEndpoints.collection(HmsApiResource.vitalSigns),
@@ -524,4 +548,131 @@ final class NursingRepositoryImpl implements NursingRepository {
   String _vitalType(Map<String, Object?> payload) {
     return payload['vital_type']?.toString().trim().toUpperCase() ?? '';
   }
+
+  List<NursingUserOption> _decodeUserOptions(Object? data) {
+    final List<NursingUserOption> users = <NursingUserOption>[];
+    for (final Object? item in _responseDataList(data)) {
+      final Map<String, Object?> map = _mapObject(item);
+      final Map<String, Object?> profile = _mapObject(
+        map['profile'] ?? map['user_profile'] ?? map['userProfile'],
+      );
+      final String? id = _firstNonEmpty(<Object?>[
+        map['id'],
+        map['user_id'],
+        map['userId'],
+        profile['user_id'],
+        profile['id'],
+      ]);
+      if (!_isNonEmpty(id)) {
+        continue;
+      }
+      final String displayLabel = _firstNonEmpty(<Object?>[
+            map['display_name'],
+            map['displayName'],
+            profile['display_name'],
+            profile['displayName'],
+            _joinNonEmpty(<Object?>[
+              profile['first_name'],
+              profile['middle_name'],
+              profile['last_name'],
+            ]),
+            _joinNonEmpty(<Object?>[
+              map['first_name'],
+              map['middle_name'],
+              map['last_name'],
+            ]),
+            map['name'],
+            map['username'],
+            map['email'],
+            id,
+          ]) ??
+          id!;
+      users.add(
+        NursingUserOption(
+          id: id!,
+          displayLabel: displayLabel,
+          email: _firstNonEmpty(<Object?>[
+            map['email'],
+            profile['email'],
+            map['email_address'],
+          ]),
+          phone: _firstNonEmpty(<Object?>[
+            map['phone'],
+            map['phone_number'],
+            profile['phone'],
+            profile['phone_number'],
+          ]),
+          positionTitle: _firstNonEmpty(<Object?>[
+            map['position_title'],
+            map['positionTitle'],
+            map['job_title'],
+            profile['position_title'],
+            profile['job_title'],
+            map['role'],
+            map['role_name'],
+          ]),
+        ),
+      );
+    }
+    return users;
+  }
+
+  List<Object?> _responseDataList(Object? data) {
+    if (data is Iterable<Object?>) {
+      return data.toList(growable: false);
+    }
+    final Map<String, Object?> map = _mapObject(data);
+    for (final String key in <String>['items', 'data', 'results', 'rows']) {
+      final Object? value = map[key];
+      if (value is Iterable<Object?>) {
+        return value.toList(growable: false);
+      }
+    }
+    final Object? nestedData = map['data'];
+    if (nestedData is Map<Object?, Object?>) {
+      return _responseDataList(nestedData);
+    }
+    return const <Object?>[];
+  }
+
+  Map<String, Object?> _mapObject(Object? value) {
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map<Object?, Object?>) {
+      return <String, Object?>{
+        for (final MapEntry<Object?, Object?> entry in value.entries)
+          entry.key.toString(): entry.value,
+      };
+    }
+    return const <String, Object?>{};
+  }
+
+  String? _firstNonEmpty(Iterable<Object?> values) {
+    for (final Object? value in values) {
+      final String? normalized = _string(value);
+      if (normalized != null && normalized.isNotEmpty) {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  String? _joinNonEmpty(Iterable<Object?> values) {
+    final String value = values
+        .map(_string)
+        .whereType<String>()
+        .where((String item) => item.isNotEmpty)
+        .join(' ');
+    return value.isEmpty ? null : value;
+  }
+
+  String? _string(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final String normalized = value.toString().trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
 }

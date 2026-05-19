@@ -4199,7 +4199,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Verify the patient, medication, dose, route, and time before saving.';
 
   @override
-  String get nursingHandoverToUserLabel => 'To user ID';
+  String get nursingHandoverToUserLabel => 'Recipient';
 
   @override
   String get nursingHandoverNotesLabel => 'Handover notes';

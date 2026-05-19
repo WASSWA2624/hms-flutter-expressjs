@@ -165,6 +165,7 @@ class AppListTable<T> extends StatelessWidget {
     required this.items,
     required this.columns,
     required this.mobileItemBuilder,
+    this.columnChoices,
     this.itemKeyBuilder,
     this.onRowSelected,
     this.emptyBuilder,
@@ -183,6 +184,7 @@ class AppListTable<T> extends StatelessWidget {
 
   final List<T> items;
   final List<AppListTableColumn<T>> columns;
+  final List<AppListTableColumn<T>>? columnChoices;
   final AppListTableMobileItemBuilder<T> mobileItemBuilder;
   final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
@@ -257,6 +259,7 @@ class AppListTable<T> extends StatelessWidget {
         return _DesktopListTable<T>(
           items: visibleItems,
           columns: columns,
+          columnChoices: columnChoices,
           itemKeyBuilder: itemKeyBuilder,
           onRowSelected: onRowSelected,
           minWidth: _tableMinWidth(constraints),
@@ -370,6 +373,7 @@ class AppPaginatedListTable<T> extends StatelessWidget {
     required this.pageLabelBuilder,
     required this.previousPageLabel,
     required this.nextPageLabel,
+    this.columnChoices,
     this.itemKeyBuilder,
     this.onRowSelected,
     this.onPageChanged,
@@ -388,6 +392,7 @@ class AppPaginatedListTable<T> extends StatelessWidget {
 
   final AppPage<T> page;
   final List<AppListTableColumn<T>> columns;
+  final List<AppListTableColumn<T>>? columnChoices;
   final AppListTableMobileItemBuilder<T> mobileItemBuilder;
   final AppListTablePageLabelBuilder<T> pageLabelBuilder;
   final String previousPageLabel;
@@ -411,6 +416,7 @@ class AppPaginatedListTable<T> extends StatelessWidget {
     return AppListTable<T>(
       items: page.items,
       columns: columns,
+      columnChoices: columnChoices,
       mobileItemBuilder: mobileItemBuilder,
       itemKeyBuilder: itemKeyBuilder,
       onRowSelected: onRowSelected,
@@ -447,6 +453,7 @@ class AppSearchablePaginatedListTable<T> extends StatelessWidget {
     required this.nextPageLabel,
     required this.searchListenable,
     required this.searchMatcher,
+    this.columnChoices,
     this.itemKeyBuilder,
     this.onRowSelected,
     this.onPageChanged,
@@ -464,6 +471,7 @@ class AppSearchablePaginatedListTable<T> extends StatelessWidget {
 
   final AppPage<T> page;
   final List<AppListTableColumn<T>> columns;
+  final List<AppListTableColumn<T>>? columnChoices;
   final AppListTableMobileItemBuilder<T> mobileItemBuilder;
   final AppListTablePageLabelBuilder<T> pageLabelBuilder;
   final String previousPageLabel;
@@ -497,6 +505,7 @@ class AppSearchablePaginatedListTable<T> extends StatelessWidget {
         return AppPaginatedListTable<T>(
           page: visiblePage,
           columns: columns,
+          columnChoices: columnChoices,
           mobileItemBuilder: mobileItemBuilder,
           pageLabelBuilder: pageLabelBuilder,
           previousPageLabel: previousPageLabel,
@@ -699,6 +708,7 @@ class _DesktopListTable<T> extends StatefulWidget {
   const _DesktopListTable({
     required this.items,
     required this.columns,
+    required this.columnChoices,
     required this.itemKeyBuilder,
     required this.onRowSelected,
     required this.minWidth,
@@ -708,6 +718,7 @@ class _DesktopListTable<T> extends StatefulWidget {
 
   final List<T> items;
   final List<AppListTableColumn<T>> columns;
+  final List<AppListTableColumn<T>>? columnChoices;
   final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
   final double minWidth;
@@ -720,11 +731,22 @@ class _DesktopListTable<T> extends StatefulWidget {
 
 class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   late final ScrollController _horizontalController;
+  late List<AppListTableColumn<T>> _visibleColumns;
 
   @override
   void initState() {
     super.initState();
     _horizontalController = ScrollController();
+    _visibleColumns = List<AppListTableColumn<T>>.from(widget.columns);
+  }
+
+  @override
+  void didUpdateWidget(covariant _DesktopListTable<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.columns != widget.columns ||
+        oldWidget.columnChoices != widget.columnChoices) {
+      _syncVisibleColumns();
+    }
   }
 
   @override
@@ -745,6 +767,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         : theme.spacing.xl;
     final double rowMinHeight = widget.compact ? 38 : 40;
     final double rowMaxHeight = widget.compact ? 56 : 64;
+    final List<AppListTableColumn<T>> visibleColumns = _effectiveColumns;
+    final List<AppListTableColumn<T>> columnChoices = _columnChoices;
 
     final Widget table = DataTable(
       showCheckboxColumn: false,
@@ -762,11 +786,23 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         fontWeight: FontWeight.w500,
       ),
       columns: <DataColumn>[
-        for (final AppListTableColumn<T> column in widget.columns)
+        for (var index = 0; index < visibleColumns.length; index += 1)
           DataColumn(
-            numeric: column.numeric,
-            tooltip: column.tooltip,
-            label: column.headerBuilder?.call(context) ?? Text(column.label),
+            numeric: visibleColumns[index].numeric,
+            tooltip: visibleColumns[index].tooltip,
+            label: _ColumnSwapHeader<T>(
+              column: visibleColumns[index],
+              visibleColumns: visibleColumns,
+              choices: columnChoices,
+              onSelected: (AppListTableColumn<T> replacement) {
+                setState(() {
+                  _visibleColumns = List<AppListTableColumn<T>>.from(
+                    visibleColumns,
+                  );
+                  _visibleColumns[index] = replacement;
+                });
+              },
+            ),
           ),
       ],
       rows: <DataRow>[
@@ -780,7 +816,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
                     widget.onRowSelected!(item);
                   },
             cells: <DataCell>[
-              for (final AppListTableColumn<T> column in widget.columns)
+              for (final AppListTableColumn<T> column in visibleColumns)
                 DataCell(column.cellBuilder(context, item)),
             ],
           ),
@@ -804,6 +840,62 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
   }
 
+  List<AppListTableColumn<T>> get _effectiveColumns {
+    if (_visibleColumns.length == widget.columns.length &&
+        _visibleColumns.isNotEmpty) {
+      return _visibleColumns;
+    }
+    if (widget.columns.isEmpty) {
+      return <AppListTableColumn<T>>[];
+    }
+    _syncVisibleColumns();
+    return _visibleColumns;
+  }
+
+  List<AppListTableColumn<T>> get _columnChoices {
+    final List<AppListTableColumn<T>> source =
+        widget.columnChoices ?? widget.columns;
+    final Set<String> labels = <String>{};
+    final List<AppListTableColumn<T>> choices = <AppListTableColumn<T>>[];
+    for (final AppListTableColumn<T> column in source) {
+      if (labels.add(column.label)) {
+        choices.add(column);
+      }
+    }
+    return choices.isEmpty ? widget.columns : choices;
+  }
+
+  void _syncVisibleColumns() {
+    final List<AppListTableColumn<T>> choices = _columnChoices;
+    final List<AppListTableColumn<T>> next = <AppListTableColumn<T>>[];
+    for (var index = 0; index < widget.columns.length; index += 1) {
+      final String? previousLabel = index < _visibleColumns.length
+          ? _visibleColumns[index].label
+          : null;
+      next.add(
+        _columnByLabel(choices, previousLabel) ??
+            _columnByLabel(choices, widget.columns[index].label) ??
+            widget.columns[index],
+      );
+    }
+    _visibleColumns = next;
+  }
+
+  AppListTableColumn<T>? _columnByLabel(
+    List<AppListTableColumn<T>> columns,
+    String? label,
+  ) {
+    if (label == null) {
+      return null;
+    }
+    for (final AppListTableColumn<T> column in columns) {
+      if (column.label == label) {
+        return column;
+      }
+    }
+    return null;
+  }
+
   WidgetStateProperty<Color?>? _rowColor(BuildContext context, T item) {
     final AppListTableRowColorBuilder<T>? builder = widget.rowColorBuilder;
     if (builder == null) {
@@ -823,6 +915,75 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       }
       return color;
     });
+  }
+}
+
+class _ColumnSwapHeader<T> extends StatelessWidget {
+  const _ColumnSwapHeader({
+    required this.column,
+    required this.visibleColumns,
+    required this.choices,
+    required this.onSelected,
+  });
+
+  final AppListTableColumn<T> column;
+  final List<AppListTableColumn<T>> visibleColumns;
+  final List<AppListTableColumn<T>> choices;
+  final ValueChanged<AppListTableColumn<T>> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Widget label =
+        column.headerBuilder?.call(context) ?? Text(column.label);
+    if (choices.length <= 1) {
+      return label;
+    }
+
+    final Set<String> visibleLabels = visibleColumns
+        .where((AppListTableColumn<T> item) => item.label != column.label)
+        .map((AppListTableColumn<T> item) => item.label)
+        .toSet();
+
+    return PopupMenuButton<AppListTableColumn<T>>(
+      tooltip: column.tooltip ?? column.label,
+      onSelected: onSelected,
+      itemBuilder: (BuildContext context) =>
+          <PopupMenuEntry<AppListTableColumn<T>>>[
+        for (final AppListTableColumn<T> choice in choices)
+          PopupMenuItem<AppListTableColumn<T>>(
+            value: choice,
+            enabled:
+                choice.label == column.label ||
+                !visibleLabels.contains(choice.label),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  choice.label == column.label
+                      ? Icons.check_circle_outline
+                      : Icons.view_column_outlined,
+                  size: theme.appTokens.listIconSize,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Flexible(child: Text(choice.label)),
+              ],
+            ),
+          ),
+      ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          label,
+          SizedBox(width: theme.spacing.xs),
+          Icon(
+            Icons.arrow_drop_down,
+            size: theme.appTokens.listIconSize,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
   }
 }
 

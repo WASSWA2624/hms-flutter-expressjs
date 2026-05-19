@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
+import 'package:hosspi_hms/shared/components/app_date_field.dart';
+import 'package:hosspi_hms/shared/components/app_file_upload_panel.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
+import 'package:hosspi_hms/shared/components/app_time_field.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
@@ -12,23 +16,32 @@ class AppMedicationAdministrationForm extends StatelessWidget {
     required this.doseLabel,
     required this.unitLabel,
     required this.routeLabel,
-    required this.administeredAtLabel,
+    required this.administeredDateLabel,
+    required this.administeredTimeLabel,
+    required this.datePickerLabel,
+    required this.invalidDateMessage,
+    required this.timePickerLabel,
+    required this.invalidTimeMessage,
     required this.confirmLabel,
     required this.confirmSubtitle,
     required this.requiredMessage,
     required this.doseController,
     required this.unitController,
-    required this.administeredAtController,
+    required this.administeredDate,
+    required this.administeredTime,
     required this.routeValue,
     required this.routeOptions,
     required this.confirmed,
+    required this.onAdministeredDateChanged,
+    required this.onAdministeredTimeChanged,
     required this.onRouteChanged,
     required this.onConfirmedChanged,
     this.medicationValue,
     this.medicationOptions = const <AppSelectOption<String>>[],
     this.onMedicationChanged,
+    this.selectedMedicationDescription,
+    this.noMedicationMessage,
     this.enabled = true,
-    this.dateTimeHint,
     super.key,
   });
 
@@ -36,69 +49,108 @@ class AppMedicationAdministrationForm extends StatelessWidget {
   final String doseLabel;
   final String unitLabel;
   final String routeLabel;
-  final String administeredAtLabel;
+  final String administeredDateLabel;
+  final String administeredTimeLabel;
+  final String datePickerLabel;
+  final String invalidDateMessage;
+  final String timePickerLabel;
+  final String invalidTimeMessage;
   final String confirmLabel;
   final String confirmSubtitle;
   final String requiredMessage;
   final TextEditingController doseController;
   final TextEditingController unitController;
-  final TextEditingController administeredAtController;
+  final DateTime administeredDate;
+  final TimeOfDay administeredTime;
   final String routeValue;
   final List<AppSelectOption<String>> routeOptions;
   final bool confirmed;
+  final ValueChanged<DateTime?> onAdministeredDateChanged;
+  final ValueChanged<TimeOfDay?> onAdministeredTimeChanged;
   final ValueChanged<String?> onRouteChanged;
   final ValueChanged<bool> onConfirmedChanged;
   final String? medicationValue;
   final List<AppSelectOption<String>> medicationOptions;
   final ValueChanged<String?>? onMedicationChanged;
+  final String? selectedMedicationDescription;
+  final String? noMedicationMessage;
   final bool enabled;
-  final String? dateTimeHint;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool hasMedicationOptions = medicationOptions.isNotEmpty;
     return AppFormSection(
       children: <Widget>[
-        if (medicationOptions.isNotEmpty)
+        if (hasMedicationOptions)
           AppSelectField<String>.searchable(
             value: medicationValue,
             labelText: medicationLabel,
             enabled: enabled,
+            isRequired: true,
             options: medicationOptions,
+            validator: (String? value) => value == null || value.trim().isEmpty
+                ? requiredMessage
+                : null,
             onChanged: onMedicationChanged,
+          )
+        else if (noMedicationMessage != null)
+          Text(
+            noMedicationMessage!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        AppTextField(
-          controller: doseController,
-          labelText: doseLabel,
-          enabled: enabled,
-          validator: (String? value) => _requiredText(value, requiredMessage),
-        ),
-        AppTextField(
-          controller: unitController,
-          labelText: unitLabel,
-          enabled: enabled,
-        ),
-        AppSelectField<String>(
-          value: routeValue,
-          labelText: routeLabel,
-          enabled: enabled,
-          options: routeOptions,
-          onChanged: onRouteChanged,
-        ),
-        AppTextField(
-          controller: administeredAtController,
-          labelText: administeredAtLabel,
-          hintText: dateTimeHint,
-          enabled: enabled,
-          validator: (String? value) => _requiredText(value, requiredMessage),
-        ),
-        AppCheckboxField(
-          title: confirmLabel,
-          subtitle: confirmSubtitle,
-          value: confirmed,
-          enabled: enabled,
-          validator: (bool? value) => value == true ? null : requiredMessage,
-          onChanged: onConfirmedChanged,
-        ),
+        if (hasMedicationOptions &&
+            (selectedMedicationDescription ?? '').trim().isNotEmpty)
+          Text(
+            selectedMedicationDescription!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        if (hasMedicationOptions) ...<Widget>[
+          AppTextField(
+            controller: doseController,
+            labelText: doseLabel,
+            enabled: enabled,
+            validator: (String? value) => _requiredText(value, requiredMessage),
+          ),
+          AppTextField(
+            controller: unitController,
+            labelText: unitLabel,
+            enabled: enabled,
+          ),
+          AppSelectField<String>(
+            value: routeValue,
+            labelText: routeLabel,
+            enabled: enabled,
+            options: routeOptions,
+            onChanged: onRouteChanged,
+          ),
+          _DateTimeFields(
+            date: administeredDate,
+            time: administeredTime,
+            dateLabel: administeredDateLabel,
+            timeLabel: administeredTimeLabel,
+            datePickerLabel: datePickerLabel,
+            invalidDateMessage: invalidDateMessage,
+            timePickerLabel: timePickerLabel,
+            invalidTimeMessage: invalidTimeMessage,
+            requiredMessage: requiredMessage,
+            enabled: enabled,
+            onDateChanged: onAdministeredDateChanged,
+            onTimeChanged: onAdministeredTimeChanged,
+          ),
+          AppCheckboxField(
+            title: confirmLabel,
+            subtitle: confirmSubtitle,
+            value: confirmed,
+            enabled: enabled,
+            validator: (bool? value) => value == true ? null : requiredMessage,
+            onChanged: onConfirmedChanged,
+          ),
+        ],
       ],
     );
   }
@@ -109,11 +161,21 @@ class AppHandoverActionForm extends StatelessWidget {
     required this.toUserLabel,
     required this.notesLabel,
     required this.requiredMessage,
-    required this.toUserController,
+    required this.toUserValue,
+    required this.userOptions,
     required this.notesController,
+    required this.onToUserChanged,
+    this.onUserSearchTextChanged,
     this.confirmLabel,
     this.confirmed = false,
     this.onConfirmedChanged,
+    this.attachmentTitle,
+    this.attachmentEmptyDescription,
+    this.attachmentChooseLabel,
+    this.attachmentClearLabel,
+    this.attachmentFileNames = const <String>[],
+    this.onChooseAttachments,
+    this.onClearAttachments,
     this.enabled = true,
     super.key,
   });
@@ -121,22 +183,38 @@ class AppHandoverActionForm extends StatelessWidget {
   final String toUserLabel;
   final String notesLabel;
   final String requiredMessage;
-  final TextEditingController toUserController;
+  final String? toUserValue;
+  final List<AppSelectOption<String>> userOptions;
   final TextEditingController notesController;
+  final ValueChanged<String?> onToUserChanged;
+  final ValueChanged<String>? onUserSearchTextChanged;
   final String? confirmLabel;
   final bool confirmed;
   final ValueChanged<bool>? onConfirmedChanged;
+  final String? attachmentTitle;
+  final String? attachmentEmptyDescription;
+  final String? attachmentChooseLabel;
+  final String? attachmentClearLabel;
+  final List<String> attachmentFileNames;
+  final VoidCallback? onChooseAttachments;
+  final VoidCallback? onClearAttachments;
   final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     return AppFormSection(
       children: <Widget>[
-        AppTextField(
-          controller: toUserController,
+        AppSelectField<String>.searchable(
+          value: toUserValue,
           labelText: toUserLabel,
           enabled: enabled,
-          validator: (String? value) => _requiredText(value, requiredMessage),
+          isRequired: true,
+          options: userOptions,
+          validator: (String? value) => value == null || value.trim().isEmpty
+              ? requiredMessage
+              : null,
+          onChanged: onToUserChanged,
+          onSearchTextChanged: onUserSearchTextChanged,
         ),
         AppTextField(
           controller: notesController,
@@ -145,6 +223,17 @@ class AppHandoverActionForm extends StatelessWidget {
           maxLines: 5,
           validator: (String? value) => _requiredText(value, requiredMessage),
         ),
+        if (_hasAttachmentPanel)
+          AppFileUploadPanel(
+            title: attachmentTitle!,
+            emptyDescription: attachmentEmptyDescription!,
+            chooseLabel: attachmentChooseLabel!,
+            clearLabel: attachmentClearLabel!,
+            fileNames: attachmentFileNames,
+            enabled: enabled,
+            onChoose: onChooseAttachments!,
+            onClear: onClearAttachments!,
+          ),
         if (confirmLabel != null && onConfirmedChanged != null)
           AppCheckboxField(
             title: confirmLabel!,
@@ -154,6 +243,101 @@ class AppHandoverActionForm extends StatelessWidget {
             onChanged: onConfirmedChanged,
           ),
       ],
+    );
+  }
+
+  bool get _hasAttachmentPanel {
+    return attachmentTitle != null &&
+        attachmentEmptyDescription != null &&
+        attachmentChooseLabel != null &&
+        attachmentClearLabel != null &&
+        onChooseAttachments != null &&
+        onClearAttachments != null;
+  }
+}
+
+class _DateTimeFields extends StatelessWidget {
+  const _DateTimeFields({
+    required this.date,
+    required this.time,
+    required this.dateLabel,
+    required this.timeLabel,
+    required this.datePickerLabel,
+    required this.invalidDateMessage,
+    required this.timePickerLabel,
+    required this.invalidTimeMessage,
+    required this.requiredMessage,
+    required this.enabled,
+    required this.onDateChanged,
+    required this.onTimeChanged,
+  });
+
+  final DateTime date;
+  final TimeOfDay time;
+  final String dateLabel;
+  final String timeLabel;
+  final String datePickerLabel;
+  final String invalidDateMessage;
+  final String timePickerLabel;
+  final String invalidTimeMessage;
+  final String requiredMessage;
+  final bool enabled;
+  final ValueChanged<DateTime?> onDateChanged;
+  final ValueChanged<TimeOfDay?> onTimeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool compact = constraints.maxWidth < 560;
+        final List<Widget> fields = <Widget>[
+          AppDateField(
+            value: date,
+            labelText: dateLabel,
+            pickerButtonLabel: datePickerLabel,
+            invalidDateMessage: invalidDateMessage,
+            firstDate: DateTime(1900),
+            lastDate: DateTime.now().add(const Duration(days: 1)),
+            currentDate: DateTime.now(),
+            enabled: enabled,
+            isRequired: true,
+            validator: (DateTime? value) =>
+                value == null ? requiredMessage : null,
+            onChanged: onDateChanged,
+          ),
+          AppTimeField(
+            value: time,
+            labelText: timeLabel,
+            hintText: 'HH:MM',
+            pickerButtonLabel: timePickerLabel,
+            invalidTimeMessage: invalidTimeMessage,
+            enabled: enabled,
+            isRequired: true,
+            validator: (TimeOfDay? value) =>
+                value == null ? requiredMessage : null,
+            onChanged: onTimeChanged,
+          ),
+        ];
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              fields[0],
+              SizedBox(height: theme.spacing.md),
+              fields[1],
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(child: fields[0]),
+            SizedBox(width: theme.spacing.md),
+            Expanded(child: fields[1]),
+          ],
+        );
+      },
     );
   }
 }
@@ -254,6 +438,9 @@ final class AppWardActivityEntry {
     this.subtitle,
     this.body,
     this.status,
+    this.trailingLabel,
+    this.trailingIcon,
+    this.onTrailingPressed,
   });
 
   final String title;
@@ -261,6 +448,9 @@ final class AppWardActivityEntry {
   final String? subtitle;
   final String? body;
   final AppWorkspaceStatus? status;
+  final String? trailingLabel;
+  final IconData? trailingIcon;
+  final VoidCallback? onTrailingPressed;
 }
 
 class AppWardActivityList extends StatelessWidget {
@@ -284,6 +474,9 @@ class AppWardActivityList extends StatelessWidget {
             body: item.body,
             icon: item.icon,
             status: item.status,
+            trailingLabel: item.trailingLabel,
+            trailingIcon: item.trailingIcon,
+            onTrailingPressed: item.onTrailingPressed,
           ),
       ],
       emptyLabel: emptyLabel,
@@ -299,6 +492,9 @@ final class AppNursingRecordEntry {
     this.subtitle,
     this.body,
     this.status,
+    this.trailingLabel,
+    this.trailingIcon,
+    this.onTrailingPressed,
   });
 
   final String title;
@@ -306,6 +502,9 @@ final class AppNursingRecordEntry {
   final String? subtitle;
   final String? body;
   final AppWorkspaceStatus? status;
+  final String? trailingLabel;
+  final IconData? trailingIcon;
+  final VoidCallback? onTrailingPressed;
 }
 
 class AppNursingRecordList extends StatelessWidget {
@@ -329,6 +528,9 @@ class AppNursingRecordList extends StatelessWidget {
             body: item.body,
             icon: item.icon,
             status: item.status,
+            trailingLabel: item.trailingLabel,
+            trailingIcon: item.trailingIcon,
+            onTrailingPressed: item.onTrailingPressed,
           ),
       ],
       emptyLabel: emptyLabel,
@@ -461,6 +663,15 @@ class _StatusRecordRow extends StatelessWidget {
             SizedBox(width: theme.spacing.xs),
             AppWorkspaceStatusBadge(status: record.status!),
           ],
+          if (record.trailingLabel != null &&
+              record.onTrailingPressed != null) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            AppButton.tertiary(
+              label: record.trailingLabel!,
+              leadingIcon: record.trailingIcon,
+              onPressed: record.onTrailingPressed,
+            ),
+          ],
         ],
       ),
     );
@@ -474,6 +685,9 @@ final class _StatusRecordView {
     this.subtitle,
     this.body,
     this.status,
+    this.trailingLabel,
+    this.trailingIcon,
+    this.onTrailingPressed,
   });
 
   final String title;
@@ -481,6 +695,9 @@ final class _StatusRecordView {
   final String? body;
   final IconData icon;
   final AppWorkspaceStatus? status;
+  final String? trailingLabel;
+  final IconData? trailingIcon;
+  final VoidCallback? onTrailingPressed;
 }
 
 String? _requiredText(String? value, String requiredMessage) {

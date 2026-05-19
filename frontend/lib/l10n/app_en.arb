@@ -5434,9 +5434,9 @@
   "@nursingConfirmMedicationSubtitle": {
     "description": "Nursing medication administration confirmation checkbox helper text."
   },
-  "nursingHandoverToUserLabel": "To user ID",
+  "nursingHandoverToUserLabel": "Recipient",
   "@nursingHandoverToUserLabel": {
-    "description": "Nursing handover recipient user ID field label."
+    "description": "Nursing handover recipient searchable user field label."
   },
   "nursingHandoverNotesLabel": "Handover notes",
   "@nursingHandoverNotesLabel": {

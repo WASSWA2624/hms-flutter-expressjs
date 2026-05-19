@@ -16,7 +16,7 @@ final class NursingWorklistQuery {
   const NursingWorklistQuery({
     this.search = '',
     this.searchField = '',
-    this.scope = NursingQueueScope.assignedWard,
+    this.scope = NursingQueueScope.all,
     this.patient = '',
     this.admission = '',
     this.encounter = '',
@@ -69,7 +69,7 @@ final class NursingWorklistQuery {
 
   bool get hasAdvancedFilters {
     return searchField.trim().isNotEmpty ||
-        scope != NursingQueueScope.assignedWard ||
+        scope != NursingQueueScope.all ||
         patient.trim().isNotEmpty ||
         admission.trim().isNotEmpty ||
         encounter.trim().isNotEmpty ||
@@ -821,7 +821,11 @@ final class NursingVitalSign {
     if (vitalType == 'BLOOD_PRESSURE' &&
         systolicValue != null &&
         diastolicValue != null) {
-      return '${_numLabel(systolicValue!)} / ${_numLabel(diastolicValue!)}';
+      return _joinDisplay(<String?>[
+            '${_numLabel(systolicValue!)} / ${_numLabel(diastolicValue!)}',
+            unit,
+          ]) ??
+          '${_numLabel(systolicValue!)} / ${_numLabel(diastolicValue!)}';
     }
     return _joinDisplay(<String?>[value, unit]) ?? '';
   }
@@ -950,6 +954,35 @@ final class NursingRosterAssignment {
   final DateTime? periodEnd;
   final String? facilityId;
   final String? departmentId;
+}
+
+
+@immutable
+final class NursingUserOption {
+  const NursingUserOption({
+    required this.id,
+    required this.displayLabel,
+    this.email,
+    this.phone,
+    this.positionTitle,
+  });
+
+  final String id;
+  final String displayLabel;
+  final String? email;
+  final String? phone;
+  final String? positionTitle;
+
+  String get searchableLabel {
+    return _joinDisplay(<String?>[
+          displayLabel,
+          email,
+          phone,
+          positionTitle,
+          id,
+        ]) ??
+        id;
+  }
 }
 
 @immutable

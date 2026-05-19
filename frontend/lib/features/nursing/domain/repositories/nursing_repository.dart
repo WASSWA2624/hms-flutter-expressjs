@@ -15,6 +15,8 @@ abstract interface class NursingRepository {
 
   Future<Result<List<NursingRosterAssignment>>> listCurrentRosters();
 
+  Future<Result<List<NursingUserOption>>> searchUsers(String query);
+
   Future<Result<NursingPatientDetail>> recordVitals(
     NursingPatientSummary summary,
     Map<String, Object?> payload,

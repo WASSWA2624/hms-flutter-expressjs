@@ -525,12 +525,12 @@ class _SummaryCardBody extends StatelessWidget {
     final bool overlayValue = _shouldOverlaySummaryValue(value);
     final double minHeight = compact
         ? trimmedDescription == null && status == null && overlayValue
-              ? 72
-              : 92
-        : 104;
+              ? 54
+              : 74
+        : 90;
     final EdgeInsets padding = EdgeInsets.symmetric(
-      horizontal: compact ? theme.spacing.md : theme.spacing.lg,
-      vertical: compact ? theme.spacing.sm : theme.spacing.md,
+      horizontal: compact ? theme.spacing.sm : theme.spacing.md,
+      vertical: compact ? theme.spacing.xs : theme.spacing.sm,
     );
     final TextStyle? labelStyle = compact
         ? theme.textTheme.titleSmall
@@ -553,7 +553,7 @@ class _SummaryCardBody extends StatelessWidget {
               active: active,
               accentColor: accentColor,
             ),
-            SizedBox(width: compact ? theme.spacing.md : theme.spacing.lg),
+            SizedBox(width: compact ? theme.spacing.sm : theme.spacing.md),
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -603,7 +603,7 @@ class _SummaryCardBody extends StatelessWidget {
               ),
             ),
             if (interactive) ...<Widget>[
-              SizedBox(width: theme.spacing.sm),
+              SizedBox(width: theme.spacing.xs),
               AnimatedOpacity(
                 duration: _AppWorkspaceSummaryCardState._animationDuration,
                 opacity: active ? 1 : 0.58,
@@ -642,13 +642,13 @@ class _SummaryIconTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double tileSize = compact ? 48 : 58;
-    final double iconSize = compact ? 24 : 28;
+    final double tileSize = compact ? 34 : 46;
+    final double iconSize = compact ? 20 : 24;
     final BorderRadius borderRadius = BorderRadius.circular(theme.radius.sm);
 
     return SizedBox(
-      width: tileSize + (showValue ? theme.spacing.sm : 0),
-      height: tileSize + (showValue ? theme.spacing.sm : 0),
+      width: tileSize,
+      height: tileSize,
       child: Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
@@ -674,8 +674,8 @@ class _SummaryIconTile extends StatelessWidget {
           ),
           if (showValue)
             PositionedDirectional(
-              top: 0,
-              end: 0,
+              top: compact ? -9 : -10,
+              end: compact ? -5 : -6,
               child: _SummaryValueBadge(
                 value: value,
                 compact: compact,
@@ -708,45 +708,28 @@ class _SummaryValueBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final double minWidth = compact ? 28 : 34;
-    final double height = compact ? 24 : 28;
+    final TextStyle? textStyle = compact
+        ? theme.textTheme.titleSmall
+        : theme.textTheme.titleMedium;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: accentColor,
-        border: Border.all(
-          color: theme.colorScheme.surface.withValues(alpha: 0.90),
-          width: 1.5,
-        ),
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: accentColor.withValues(alpha: 0.28),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minWidth: minWidth,
-          maxWidth: compact ? 68 : 86,
-          minHeight: height,
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
-          child: Center(
-            child: Text(
-              value.trim(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: foregroundColor,
-                fontWeight: FontWeight.w900,
-                height: 1,
-              ),
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: compact ? 52 : 64),
+      child: Text(
+        value.trim(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.end,
+        style: textStyle?.copyWith(
+          color: accentColor,
+          fontWeight: FontWeight.w900,
+          height: 1,
+          shadows: <Shadow>[
+            Shadow(
+              color: foregroundColor.withValues(alpha: 0.26),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -783,14 +766,14 @@ List<BoxShadow> _summaryCardShadow({
   if (pressed) {
     return <BoxShadow>[
       BoxShadow(
-        color: colorScheme.shadow.withValues(alpha: 0.08),
-        blurRadius: 8,
-        offset: const Offset(0, 3),
+        color: colorScheme.shadow.withValues(alpha: 0.05),
+        blurRadius: 6,
+        offset: const Offset(0, 2),
       ),
       BoxShadow(
-        color: accentColor.withValues(alpha: 0.08),
-        blurRadius: 10,
-        offset: const Offset(0, 3),
+        color: accentColor.withValues(alpha: 0.06),
+        blurRadius: 8,
+        offset: const Offset(0, 2),
       ),
     ];
   }
@@ -798,23 +781,23 @@ List<BoxShadow> _summaryCardShadow({
   if (active) {
     return <BoxShadow>[
       BoxShadow(
-        color: colorScheme.shadow.withValues(alpha: 0.10),
-        blurRadius: 22,
-        offset: const Offset(0, 10),
+        color: colorScheme.shadow.withValues(alpha: 0.08),
+        blurRadius: 14,
+        offset: const Offset(0, 6),
       ),
       BoxShadow(
-        color: accentColor.withValues(alpha: 0.16),
-        blurRadius: 20,
-        offset: const Offset(0, 8),
+        color: accentColor.withValues(alpha: 0.12),
+        blurRadius: 14,
+        offset: const Offset(0, 5),
       ),
     ];
   }
 
   return <BoxShadow>[
     BoxShadow(
-      color: colorScheme.shadow.withValues(alpha: 0.06),
-      blurRadius: 14,
-      offset: const Offset(0, 5),
+      color: colorScheme.shadow.withValues(alpha: 0.04),
+      blurRadius: 8,
+      offset: const Offset(0, 3),
     ),
   ];
 }

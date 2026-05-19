@@ -1,3 +1,4 @@
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
@@ -9,8 +10,10 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
+import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -152,8 +155,14 @@ class _NursingWorkspaceContentState
           value: state.assignedWardCount,
           icon: Icons.local_hospital_outlined,
           tone: AppWorkspaceStatusTone.info,
-          onPressed: () =>
-              controller.applyScope(NursingQueueScope.assignedWard),
+          onPressed: () => _openSummaryPatientsDialog(
+            context,
+            ref,
+            NursingQueueScope.assignedWard,
+            l10n.nursingAssignedWardSummaryLabel,
+            Icons.local_hospital_outlined,
+            AppWorkspaceStatusTone.info,
+          ),
         ),
         _summaryCard(
           context,
@@ -161,7 +170,14 @@ class _NursingWorkspaceContentState
           value: state.urgentCount,
           icon: Icons.priority_high_outlined,
           tone: AppWorkspaceStatusTone.error,
-          onPressed: () => controller.applyScope(NursingQueueScope.urgent),
+          onPressed: () => _openSummaryPatientsDialog(
+            context,
+            ref,
+            NursingQueueScope.urgent,
+            l10n.nursingUrgentSummaryLabel,
+            Icons.priority_high_outlined,
+            AppWorkspaceStatusTone.error,
+          ),
         ),
         _summaryCard(
           context,
@@ -169,8 +185,14 @@ class _NursingWorkspaceContentState
           value: state.medicationDueCount,
           icon: Icons.medication_outlined,
           tone: AppWorkspaceStatusTone.warning,
-          onPressed: () =>
-              controller.applyScope(NursingQueueScope.medicationDue),
+          onPressed: () => _openSummaryPatientsDialog(
+            context,
+            ref,
+            NursingQueueScope.medicationDue,
+            l10n.nursingMedicationDueSummaryLabel,
+            Icons.medication_outlined,
+            AppWorkspaceStatusTone.warning,
+          ),
         ),
         _summaryCard(
           context,
@@ -178,8 +200,14 @@ class _NursingWorkspaceContentState
           value: state.handoverPendingCount,
           icon: Icons.swap_horiz_outlined,
           tone: AppWorkspaceStatusTone.neutral,
-          onPressed: () =>
-              controller.applyScope(NursingQueueScope.handoverPending),
+          onPressed: () => _openSummaryPatientsDialog(
+            context,
+            ref,
+            NursingQueueScope.handoverPending,
+            l10n.nursingHandoverPendingSummaryLabel,
+            Icons.swap_horiz_outlined,
+            AppWorkspaceStatusTone.neutral,
+          ),
         ),
         _summaryCard(
           context,
@@ -187,8 +215,14 @@ class _NursingWorkspaceContentState
           value: state.transferPendingCount,
           icon: Icons.transfer_within_a_station_outlined,
           tone: AppWorkspaceStatusTone.warning,
-          onPressed: () =>
-              controller.applyScope(NursingQueueScope.transferPending),
+          onPressed: () => _openSummaryPatientsDialog(
+            context,
+            ref,
+            NursingQueueScope.transferPending,
+            l10n.nursingTransferPendingSummaryLabel,
+            Icons.transfer_within_a_station_outlined,
+            AppWorkspaceStatusTone.warning,
+          ),
         ),
         _summaryCard(
           context,
@@ -196,8 +230,14 @@ class _NursingWorkspaceContentState
           value: state.dischargePendingCount,
           icon: Icons.logout_outlined,
           tone: AppWorkspaceStatusTone.success,
-          onPressed: () =>
-              controller.applyScope(NursingQueueScope.dischargePending),
+          onPressed: () => _openSummaryPatientsDialog(
+            context,
+            ref,
+            NursingQueueScope.dischargePending,
+            l10n.nursingDischargePendingSummaryLabel,
+            Icons.logout_outlined,
+            AppWorkspaceStatusTone.success,
+          ),
         ),
       ],
       body: _NursingWorklistPanel(
@@ -290,8 +330,7 @@ class _NursingWorklistPanel extends ConsumerWidget {
     );
 
     return AppWorkspaceDetailPanel(
-      title: l10n.nursingWorklistTitle,
-      description: l10n.nursingWorklistDescription,
+      title: l10n.patientsTitle,
       child: AppPaginatedListTable<NursingWorkItem>(
         page: state.worklist,
         isLoading: state.isRefreshing,
@@ -341,56 +380,8 @@ class _NursingWorklistPanel extends ConsumerWidget {
           body: l10n.nursingNoWorklistBody,
           icon: Icons.assignment_outlined,
         ),
-        columns: <AppListTableColumn<NursingWorkItem>>[
-          AppListTableColumn<NursingWorkItem>(
-            label: l10n.opdPatientColumnLabel,
-            cellBuilder: (BuildContext context, NursingWorkItem item) {
-              return _NursingPatientCell(item: item);
-            },
-          ),
-          AppListTableColumn<NursingWorkItem>(
-            label: l10n.nursingLocationColumnLabel,
-            cellBuilder: (BuildContext context, NursingWorkItem item) {
-              return Text(item.locationLabel ?? l10n.profileUnknownValue);
-            },
-          ),
-          AppListTableColumn<NursingWorkItem>(
-            label: l10n.nursingAdmissionColumnLabel,
-            cellBuilder: (BuildContext context, NursingWorkItem item) {
-              return Text(_admissionLabel(context, item));
-            },
-          ),
-          AppListTableColumn<NursingWorkItem>(
-            label: l10n.nursingTaskTypeColumnLabel,
-            cellBuilder: (BuildContext context, NursingWorkItem item) {
-              return Text(_taskTypeLabel(context, item));
-            },
-          ),
-          AppListTableColumn<NursingWorkItem>(
-            label: l10n.nursingPriorityColumnLabel,
-            cellBuilder: (BuildContext context, NursingWorkItem item) {
-              return AppWorkspaceStatusBadge(status: _priorityStatus(context, item));
-            },
-          ),
-          AppListTableColumn<NursingWorkItem>(
-            label: l10n.nursingDueTimeColumnLabel,
-            cellBuilder: (BuildContext context, NursingWorkItem item) {
-              return Text(_dueTimeLabel(context, item));
-            },
-          ),
-          AppListTableColumn<NursingWorkItem>(
-            label: l10n.nursingResponsibleNurseColumnLabel,
-            cellBuilder: (BuildContext context, NursingWorkItem item) {
-              return Text(_responsibleNurseLabel(context, item));
-            },
-          ),
-          AppListTableColumn<NursingWorkItem>(
-            label: l10n.opdStatusColumnLabel,
-            cellBuilder: (BuildContext context, NursingWorkItem item) {
-              return AppWorkspaceStatusBadge(status: _summaryStatus(item));
-            },
-          ),
-        ],
+        columnChoices: _nursingWorklistColumnChoices(l10n),
+        columns: _nursingWorklistDefaultColumns(l10n),
         mobileItemBuilder: (BuildContext context, NursingWorkItem item) {
           final ThemeData theme = Theme.of(context);
           return Padding(
@@ -429,6 +420,205 @@ class _NursingWorklistPanel extends ConsumerWidget {
   }
 }
 
+
+List<AppListTableColumn<NursingWorkItem>> _nursingWorklistDefaultColumns(
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<NursingWorkItem>>[
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.opdPatientColumnLabel,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return _NursingPatientCell(item: item);
+      },
+    ),
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.nursingLocationColumnLabel,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return Text(item.locationLabel ?? l10n.profileUnknownValue);
+      },
+    ),
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.nursingTaskTypeColumnLabel,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return Text(_taskTypeLabel(context, item));
+      },
+    ),
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.nursingPriorityColumnLabel,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return AppWorkspaceStatusBadge(status: _priorityStatus(context, item));
+      },
+    ),
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.opdStatusColumnLabel,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return AppWorkspaceStatusBadge(status: _summaryStatus(item));
+      },
+    ),
+  ];
+}
+
+List<AppListTableColumn<NursingWorkItem>> _nursingWorklistColumnChoices(
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<NursingWorkItem>>[
+    ..._nursingWorklistDefaultColumns(l10n),
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.nursingAdmissionColumnLabel,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return Text(_admissionLabel(context, item));
+      },
+    ),
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.nursingDueTimeColumnLabel,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return Text(_dueTimeLabel(context, item));
+      },
+    ),
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.nursingResponsibleNurseColumnLabel,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return Text(_responsibleNurseLabel(context, item));
+      },
+    ),
+    AppListTableColumn<NursingWorkItem>(
+      label: l10n.nursingObservationsTitle,
+      cellBuilder: (BuildContext context, NursingWorkItem item) {
+        return Text(_lastObservationLabel(context, item));
+      },
+    ),
+  ];
+}
+
+void _openSummaryPatientsDialog(
+  BuildContext context,
+  WidgetRef ref,
+  NursingQueueScope scope,
+  String title,
+  IconData icon,
+  AppWorkspaceStatusTone tone,
+) {
+  final Future<Result<AppPage<NursingWorkItem>>> future = ref
+      .read(nursingWorkspaceControllerProvider.notifier)
+      .previewPatientsForScope(scope);
+
+  showAppDialog<void>(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return _NursingSummaryPatientsDialog(
+        title: title,
+        icon: icon,
+        tone: tone,
+        future: future,
+        onPatientSelected: (NursingWorkItem item) {
+          Navigator.of(dialogContext).maybePop();
+          _openPatientDetailDialog(context, ref, item);
+        },
+      );
+    },
+  );
+}
+
+class _NursingSummaryPatientsDialog extends StatelessWidget {
+  const _NursingSummaryPatientsDialog({
+    required this.title,
+    required this.icon,
+    required this.tone,
+    required this.future,
+    required this.onPatientSelected,
+  });
+
+  final String title;
+  final IconData icon;
+  final AppWorkspaceStatusTone tone;
+  final Future<Result<AppPage<NursingWorkItem>>> future;
+  final ValueChanged<NursingWorkItem> onPatientSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(title),
+      icon: Icon(icon),
+      semanticLabel: title,
+      scrollable: true,
+      maxWidth: 920,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppWorkspaceStatusBadge(
+            status: AppWorkspaceStatus(label: title, tone: tone),
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+          FutureBuilder<Result<AppPage<NursingWorkItem>>>(
+            future: future,
+            builder: (
+              BuildContext context,
+              AsyncSnapshot<Result<AppPage<NursingWorkItem>>> snapshot,
+            ) {
+              final Result<AppPage<NursingWorkItem>>? result = snapshot.data;
+              if (result == null) {
+                return AppWorkspaceStatePanel.loading(
+                  title: l10n.nursingLoadingTitle,
+                  body: l10n.nursingLoadingBody,
+                );
+              }
+              return result.when(
+                success: (AppPage<NursingWorkItem> page) => AppListTable<NursingWorkItem>(
+                  items: page.items,
+                  shrinkWrap: true,
+                  columns: _nursingWorklistDefaultColumns(l10n),
+                  columnChoices: _nursingWorklistColumnChoices(l10n),
+                  onRowSelected: onPatientSelected,
+                  emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+                    variant: AppStateViewVariant.empty,
+                    title: l10n.nursingNoWorklistTitle,
+                    body: l10n.nursingNoWorklistBody,
+                    icon: Icons.assignment_outlined,
+                  ),
+                  mobileItemBuilder: (BuildContext context, NursingWorkItem item) {
+                    final ThemeData theme = Theme.of(context);
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: theme.spacing.sm,
+                        vertical: theme.spacing.sm,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          _NursingPatientCell(item: item),
+                          SizedBox(height: theme.spacing.xs),
+                          Text(
+                            _joinDisplay(<String?>[
+                              item.locationLabel,
+                              _taskTypeLabel(context, item),
+                              _dueTimeLabel(context, item),
+                            ]),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                failure: (AppFailure failure) => AppFailureStateView(
+                  failure: failure,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ],
+    );
+  }
+}
+
 Future<void> _openPatientDetailDialog(
   BuildContext context,
   WidgetRef ref,
@@ -463,12 +653,11 @@ class _NursingPatientDetailDialog extends ConsumerWidget {
     final NursingPatientDetail? detail = _selectedDetailFromState(state);
     final NursingPatientSummary? summary = detail?.enrichedSummary;
 
-    return AppDialog(
-      title: Text(summary?.displayTitle ?? l10n.nursingPatientContextLabel),
+    return AppPatientDetailDialog(
+      title: summary?.displayTitle ?? l10n.nursingPatientContextLabel,
       icon: const Icon(Icons.bed_outlined),
       semanticLabel: l10n.nursingPatientContextLabel,
-      scrollable: true,
-      maxWidth: 1040,
+      closeLabel: l10n.commonCloseActionLabel,
       content: detail == null
           ? AppWorkspaceStatePanel.state(
               variant: AppStateViewVariant.empty,
@@ -477,14 +666,6 @@ class _NursingPatientDetailDialog extends ConsumerWidget {
               icon: Icons.bed_outlined,
             )
           : _NursingPatientDetailContent(detail: detail),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCloseActionLabel,
-          onPressed: () {
-            Navigator.of(context).maybePop();
-          },
-        ),
-      ],
     );
   }
 }
@@ -661,10 +842,10 @@ class _NursingActionBar extends ConsumerWidget {
                 onPressed: () => _openMedicationDialog(context, detail),
               ),
               AppActionItem(
-                label: l10n.nursingActionCompleteTask,
-                leadingIcon: Icons.playlist_add_check_outlined,
+                label: l10n.clinicalPrescribeAction,
+                leadingIcon: Icons.add_circle_outline,
                 enabled: isAllowed,
-                onPressed: () => _openTaskDialog(context),
+                onPressed: () => _openPrescriptionDialog(context, controller),
               ),
               AppActionItem(
                 label: l10n.nursingActionCreateHandover,
@@ -875,328 +1056,6 @@ class _NursingShiftContextDialog extends ConsumerWidget {
   }
 }
 
-class _VitalsDialog extends ConsumerStatefulWidget {
-  const _VitalsDialog();
-
-  @override
-  ConsumerState<_VitalsDialog> createState() => _VitalsDialogState();
-}
-
-class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _temperatureController;
-  late final TextEditingController _systolicController;
-  late final TextEditingController _diastolicController;
-  late final TextEditingController _heartRateController;
-  late final TextEditingController _respiratoryRateController;
-  late final TextEditingController _oxygenSaturationController;
-  late final TextEditingController _weightController;
-  late final TextEditingController _heightController;
-  late final TextEditingController _recordedAtController;
-  String _bloodPressureUnit = AppVitalsUnits.bloodPressureMmHg;
-  String _temperatureUnit = AppVitalsUnits.temperatureCelsius;
-  String _weightUnit = AppVitalsUnits.weightKilograms;
-  String _heightUnit = AppVitalsUnits.heightCentimeters;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _temperatureController = TextEditingController();
-    _systolicController = TextEditingController();
-    _diastolicController = TextEditingController();
-    _heartRateController = TextEditingController();
-    _respiratoryRateController = TextEditingController();
-    _oxygenSaturationController = TextEditingController();
-    _weightController = TextEditingController();
-    _heightController = TextEditingController();
-    _recordedAtController = TextEditingController(
-      text: DateTime.now().toIso8601String(),
-    );
-  }
-
-  @override
-  void dispose() {
-    _temperatureController.dispose();
-    _systolicController.dispose();
-    _diastolicController.dispose();
-    _heartRateController.dispose();
-    _respiratoryRateController.dispose();
-    _oxygenSaturationController.dispose();
-    _weightController.dispose();
-    _heightController.dispose();
-    _recordedAtController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.nursingActionRecordVitals),
-      icon: const Icon(Icons.monitor_heart_outlined),
-      scrollable: true,
-      maxWidth: 760,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppVitalsForm(
-              temperatureController: _temperatureController,
-              systolicController: _systolicController,
-              diastolicController: _diastolicController,
-              heartRateController: _heartRateController,
-              respiratoryRateController: _respiratoryRateController,
-              oxygenSaturationController: _oxygenSaturationController,
-              weightController: _weightController,
-              heightController: _heightController,
-              temperatureLabel: l10n.patientsTemperatureLabel,
-              systolicLabel: l10n.nursingSystolicLabel,
-              diastolicLabel: l10n.nursingDiastolicLabel,
-              heartRateLabel: l10n.patientsHeartRateLabel,
-              respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
-              oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
-              weightLabel: l10n.patientsWeightLabel,
-              heightLabel: l10n.patientsHeightLabel,
-              bloodPressureLabel: l10n.patientsBloodPressureLabel,
-              unitLabel: l10n.nursingVitalUnitLabel,
-              bloodPressureUnit: _bloodPressureUnit,
-              temperatureUnit: _temperatureUnit,
-              weightUnit: _weightUnit,
-              heightUnit: _heightUnit,
-              onBloodPressureUnitChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _bloodPressureUnit = value);
-                }
-              },
-              onTemperatureUnitChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _temperatureUnit = value);
-                }
-              },
-              onWeightUnitChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _weightUnit = value);
-                }
-              },
-              onHeightUnitChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _heightUnit = value);
-                }
-              },
-              enabled: !_isSaving,
-            ),
-            AppTextField(
-              controller: _recordedAtController,
-              labelText: l10n.nursingRecordedAtLabel,
-              hintText: l10n.nursingDateTimeHint,
-              enabled: !_isSaving,
-            ),
-          ],
-        ),
-      ),
-      actions: _dialogActions(
-        context,
-        submitLabel: l10n.nursingActionRecordVitals,
-        isSaving: _isSaving,
-        onSubmit: _submit,
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    final DateTime? recordedAt = DateTime.tryParse(
-      _recordedAtController.text.trim(),
-    );
-    if (recordedAt == null) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-
-    final List<Map<String, Object?>> payloads = _vitalPayloads(recordedAt);
-    if (payloads.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(nursingWorkspaceControllerProvider.notifier)
-        .recordVitalSet(payloads);
-    _finishSubmit(failure);
-  }
-
-  List<Map<String, Object?>> _vitalPayloads(DateTime recordedAt) {
-    final String recordedAtValue = recordedAt.toUtc().toIso8601String();
-    final List<Map<String, Object?>> payloads = <Map<String, Object?>>[];
-
-    final String systolic = _normalizedNumber(_systolicController.text);
-    final String diastolic = _normalizedNumber(_diastolicController.text);
-    if (systolic.isNotEmpty || diastolic.isNotEmpty) {
-      if (systolic.isEmpty || diastolic.isEmpty) {
-        return const <Map<String, Object?>>[];
-      }
-      payloads.add(<String, Object?>{
-        'vital_type': 'BLOOD_PRESSURE',
-        'systolic_value': num.tryParse(systolic),
-        'diastolic_value': num.tryParse(diastolic),
-        'unit': _bloodPressureUnit,
-        'recorded_at': recordedAtValue,
-      });
-    }
-
-    void addValue(String type, TextEditingController controller, String unit) {
-      final String value = _normalizedNumber(controller.text);
-      if (value.isEmpty) {
-        return;
-      }
-      payloads.add(<String, Object?>{
-        'vital_type': type,
-        'value': value,
-        'unit': unit,
-        'recorded_at': recordedAtValue,
-      });
-    }
-
-    addValue('TEMPERATURE', _temperatureController, _temperatureUnit);
-    addValue('HEART_RATE', _heartRateController, AppVitalsUnits.heartRate);
-    addValue(
-      'RESPIRATORY_RATE',
-      _respiratoryRateController,
-      AppVitalsUnits.respiratoryRate,
-    );
-    addValue(
-      'OXYGEN_SATURATION',
-      _oxygenSaturationController,
-      AppVitalsUnits.oxygenSaturation,
-    );
-    addValue('WEIGHT', _weightController, _weightUnit);
-    addValue('HEIGHT', _heightController, _heightUnit);
-    return payloads;
-  }
-
-  String _normalizedNumber(String value) {
-    return value.trim().replaceAll(',', '');
-  }
-
-  void _finishSubmit(AppFailure? failure) {
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
-class _TaskDialog extends ConsumerStatefulWidget {
-  const _TaskDialog();
-
-  @override
-  ConsumerState<_TaskDialog> createState() => _TaskDialogState();
-}
-
-class _TaskDialogState extends ConsumerState<_TaskDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _taskController;
-  late final TextEditingController _notesController;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _taskController = TextEditingController();
-    _notesController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _taskController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.nursingActionCompleteTask),
-      icon: const Icon(Icons.playlist_add_check_outlined),
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _taskController,
-              labelText: l10n.nursingTaskLabel,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.nursingNoteLabel,
-              enabled: !_isSaving,
-              maxLines: 4,
-            ),
-          ],
-        ),
-      ),
-      actions: _dialogActions(
-        context,
-        submitLabel: l10n.nursingActionCompleteTask,
-        isSaving: _isSaving,
-        onSubmit: _submit,
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(nursingWorkspaceControllerProvider.notifier)
-        .completeTask(
-          task: _taskController.text.trim(),
-          notes: _notesController.text.trim(),
-        );
-    _finishSubmit(failure);
-  }
-
-  void _finishSubmit(AppFailure? failure) {
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
 class _MedicationDialog extends ConsumerStatefulWidget {
   const _MedicationDialog({required this.detail});
 
@@ -1210,7 +1069,8 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _doseController;
   late final TextEditingController _unitController;
-  late final TextEditingController _administeredAtController;
+  late DateTime _administeredDate;
+  late TimeOfDay _administeredTime;
   String? _prescriptionId;
   String _route = 'ORAL';
   bool _confirm = false;
@@ -1221,13 +1081,15 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
   void initState() {
     super.initState();
     final MedicationSuggestion? firstSuggestion =
-        widget.detail.medicationSuggestions.firstOrNull;
+        widget.detail.medicationSuggestions.isEmpty
+        ? null
+        : widget.detail.medicationSuggestions.first;
+    final DateTime now = DateTime.now();
     _prescriptionId = firstSuggestion?.id;
     _doseController = TextEditingController(text: firstSuggestion?.dose ?? '');
     _unitController = TextEditingController(text: firstSuggestion?.unit ?? '');
-    _administeredAtController = TextEditingController(
-      text: DateTime.now().toIso8601String(),
-    );
+    _administeredDate = DateTime(now.year, now.month, now.day);
+    _administeredTime = TimeOfDay.fromDateTime(now);
     _route = _supportedMedicationRoute(firstSuggestion?.route) ?? _route;
   }
 
@@ -1235,7 +1097,6 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
   void dispose() {
     _doseController.dispose();
     _unitController.dispose();
-    _administeredAtController.dispose();
     super.dispose();
   }
 
@@ -1256,13 +1117,19 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
               doseLabel: l10n.nursingDoseLabel,
               unitLabel: l10n.nursingVitalUnitLabel,
               routeLabel: l10n.nursingRouteLabel,
-              administeredAtLabel: l10n.nursingAdministeredAtLabel,
+              administeredDateLabel: l10n.nursingAdministeredAtLabel,
+              administeredTimeLabel: l10n.opdTimeColumnLabel,
+              datePickerLabel: l10n.nursingDatePickerLabel,
+              invalidDateMessage: l10n.nursingInvalidDateMessage,
+              timePickerLabel: l10n.appTimePickerAction,
+              invalidTimeMessage: l10n.appTimeInvalidMessage,
               confirmLabel: l10n.nursingConfirmMedicationLabel,
               confirmSubtitle: l10n.nursingConfirmMedicationSubtitle,
               requiredMessage: l10n.validationRequired,
               doseController: _doseController,
               unitController: _unitController,
-              administeredAtController: _administeredAtController,
+              administeredDate: _administeredDate,
+              administeredTime: _administeredTime,
               routeValue: _route,
               routeOptions: _statusOptions(_medicationRoutes),
               confirmed: _confirm,
@@ -1276,13 +1143,28 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
                       suggestion.displayTitle,
                       suggestion.dose,
                       suggestion.unit,
-                      suggestion.route,
+                      suggestion.route == null
+                          ? null
+                          : _apiLabel(suggestion.route!),
                     ]),
                   ),
               ],
-              dateTimeHint: l10n.nursingDateTimeHint,
+              selectedMedicationDescription: _selectedMedicationDescription(
+                context,
+              ),
+              noMedicationMessage: l10n.nursingNoRecordsLabel,
               enabled: !_isSaving,
               onMedicationChanged: _selectMedication,
+              onAdministeredDateChanged: (DateTime? value) {
+                if (value != null) {
+                  setState(() => _administeredDate = value);
+                }
+              },
+              onAdministeredTimeChanged: (TimeOfDay? value) {
+                if (value != null) {
+                  setState(() => _administeredTime = value);
+                }
+              },
               onRouteChanged: (String? value) {
                 if (value != null) {
                   setState(() => _route = value);
@@ -1304,10 +1186,40 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
     );
   }
 
+  MedicationSuggestion? get _selectedSuggestion {
+    if (_prescriptionId == null) {
+      return null;
+    }
+    for (final MedicationSuggestion suggestion
+        in widget.detail.medicationSuggestions) {
+      if (suggestion.id == _prescriptionId) {
+        return suggestion;
+      }
+    }
+    return null;
+  }
+
+  String? _selectedMedicationDescription(BuildContext context) {
+    final MedicationSuggestion? suggestion = _selectedSuggestion;
+    if (suggestion == null) {
+      return null;
+    }
+    return _joinDisplay(<String?>[
+      suggestion.frequency,
+      suggestion.orderStatus == null ? null : _apiLabel(suggestion.orderStatus!),
+      suggestion.itemStatus == null ? null : _apiLabel(suggestion.itemStatus!),
+      suggestion.route == null ? null : _apiLabel(suggestion.route!),
+    ]);
+  }
+
   void _selectMedication(String? value) {
-    final MedicationSuggestion? suggestion = widget.detail.medicationSuggestions
-        .where((MedicationSuggestion item) => item.id == value)
-        .firstOrNull;
+    MedicationSuggestion? suggestion;
+    for (final MedicationSuggestion item in widget.detail.medicationSuggestions) {
+      if (item.id == value) {
+        suggestion = item;
+        break;
+      }
+    }
     setState(() {
       _prescriptionId = value;
       if (suggestion != null) {
@@ -1322,13 +1234,18 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    final DateTime? administeredAt = DateTime.tryParse(
-      _administeredAtController.text.trim(),
-    );
-    if (administeredAt == null) {
+    if ((_prescriptionId ?? '').trim().isEmpty) {
       setState(() => _failure = AppFailure.validation());
       return;
     }
+
+    final DateTime administeredAt = DateTime(
+      _administeredDate.year,
+      _administeredDate.month,
+      _administeredDate.day,
+      _administeredTime.hour,
+      _administeredTime.minute,
+    );
 
     setState(() {
       _isSaving = true;
@@ -1337,7 +1254,7 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
     final AppFailure? failure = await ref
         .read(nursingWorkspaceControllerProvider.notifier)
         .addMedicationAdministration(<String, Object?>{
-          'prescription_id': _uuidOrNull(_prescriptionId),
+          'prescription_id': _prescriptionId?.trim(),
           'administered_at': administeredAt.toUtc().toIso8601String(),
           'dose': _doseController.text.trim(),
           'unit': _unitController.text.trim(),
@@ -1429,8 +1346,10 @@ class _HandoverDialog extends ConsumerStatefulWidget {
 
 class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _toUserController;
   late final TextEditingController _notesController;
+  String? _toUserId;
+  List<NursingUserOption> _userOptions = const <NursingUserOption>[];
+  List<XFile> _attachments = const <XFile>[];
   bool _confirm = false;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -1438,13 +1357,19 @@ class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
   @override
   void initState() {
     super.initState();
-    _toUserController = TextEditingController();
     _notesController = TextEditingController();
+    ref
+        .read(nursingWorkspaceControllerProvider.notifier)
+        .searchUsers('')
+        .then((List<NursingUserOption> users) {
+          if (mounted) {
+            setState(() => _userOptions = users);
+          }
+        });
   }
 
   @override
   void dispose() {
-    _toUserController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -1462,6 +1387,7 @@ class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
             ? Icons.report_problem_outlined
             : Icons.swap_horiz_outlined,
       ),
+      scrollable: true,
       content: Form(
         key: _formKey,
         child: Column(
@@ -1478,14 +1404,40 @@ class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
                   ? l10n.nursingEscalationMessageLabel
                   : l10n.nursingHandoverNotesLabel,
               requiredMessage: l10n.validationRequired,
-              toUserController: _toUserController,
+              toUserValue: _toUserId,
+              userOptions: _userSelectOptions(),
               notesController: _notesController,
+              enabled: !_isSaving,
+              onToUserChanged: (String? value) {
+                setState(() => _toUserId = value);
+              },
+              onUserSearchTextChanged: _loadUsers,
               confirmLabel: widget.escalation
                   ? l10n.nursingConfirmEscalationLabel
                   : null,
               confirmed: _confirm,
-              enabled: !_isSaving,
-              onConfirmedChanged: (bool value) => setState(() => _confirm = value),
+              onConfirmedChanged: widget.escalation
+                  ? (bool value) => setState(() => _confirm = value)
+                  : null,
+              attachmentTitle: widget.escalation
+                  ? null
+                  : l10n.patientsDocumentUploadTitle,
+              attachmentEmptyDescription: widget.escalation
+                  ? null
+                  : l10n.patientsDocumentUploadEmpty,
+              attachmentChooseLabel: widget.escalation
+                  ? null
+                  : l10n.patientsChooseDocumentAction,
+              attachmentClearLabel: widget.escalation
+                  ? null
+                  : l10n.patientsClearFiltersAction,
+              attachmentFileNames: _attachments
+                  .map((XFile file) => file.name)
+                  .toList(growable: false),
+              onChooseAttachments: widget.escalation ? null : _chooseAttachments,
+              onClearAttachments: widget.escalation
+                  ? null
+                  : () => setState(() => _attachments = const <XFile>[]),
             ),
           ],
         ),
@@ -1499,8 +1451,58 @@ class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
     );
   }
 
+  List<AppSelectOption<String>> _userSelectOptions() {
+    return <AppSelectOption<String>>[
+      for (final NursingUserOption user in _userOptions)
+        AppSelectOption<String>(value: user.id, label: user.searchableLabel),
+    ];
+  }
+
+  Future<void> _loadUsers(String query) async {
+    final List<NursingUserOption> users = await ref
+        .read(nursingWorkspaceControllerProvider.notifier)
+        .searchUsers(query);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _userOptions = users);
+  }
+
+  Future<void> _chooseAttachments() async {
+    final List<XFile> files = await openFiles(
+      acceptedTypeGroups: const <XTypeGroup>[
+        XTypeGroup(
+          label: 'Documents',
+          extensions: <String>['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
+        ),
+      ],
+    );
+    if (mounted && files.isNotEmpty) {
+      setState(() => _attachments = files);
+    }
+  }
+
+  Future<List<PatientDocumentUploadFile>> _documentUploadFiles() async {
+    final List<PatientDocumentUploadFile> files = <PatientDocumentUploadFile>[];
+    for (final XFile file in _attachments) {
+      files.add(
+        PatientDocumentUploadFile(
+          name: file.name,
+          bytes: await file.readAsBytes(),
+          contentType: file.mimeType,
+        ),
+      );
+    }
+    return files;
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    final String? toUserId = _toUserId?.trim();
+    if (toUserId == null || toUserId.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
       return;
     }
     setState(() {
@@ -1510,14 +1512,30 @@ class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
     final NursingWorkspaceController controller = ref.read(
       nursingWorkspaceControllerProvider.notifier,
     );
+    final List<PatientDocumentUploadFile> documentFiles;
+    try {
+      documentFiles = widget.escalation
+          ? const <PatientDocumentUploadFile>[]
+          : await _documentUploadFiles();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _failure = AppFailure.validation();
+        _isSaving = false;
+      });
+      return;
+    }
     final AppFailure? failure = widget.escalation
         ? await controller.escalate(
-            toUserId: _toUserController.text.trim(),
+            toUserId: toUserId,
             message: _notesController.text.trim(),
           )
         : await controller.createHandover(
-            toUserId: _toUserController.text.trim(),
+            toUserId: toUserId,
             notes: _notesController.text.trim(),
+            documentFiles: documentFiles,
           );
     _finishSubmit(failure);
   }
@@ -1663,13 +1681,58 @@ List<Widget> _dialogActions(
   ];
 }
 
-Future<void> _openVitalsDialog(BuildContext context) async {
+Future<void> _openVitalsDialog(
+  BuildContext context, {
+  NursingVitalSign? vital,
+}) async {
+  final AppLocalizations l10n = context.l10n;
   await _showActionResult(
     context,
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const _VitalsDialog(),
+      builder: (_) => AppRecordVitalsDialog(
+        title: vital == null
+            ? l10n.nursingActionRecordVitals
+            : l10n.opdEditVitalsAction,
+        submitLabel: vital == null
+            ? l10n.nursingActionRecordVitals
+            : l10n.opdEditVitalsAction,
+        cancelLabel: l10n.commonCancelActionLabel,
+        temperatureLabel: l10n.patientsTemperatureLabel,
+        systolicLabel: l10n.nursingSystolicLabel,
+        diastolicLabel: l10n.nursingDiastolicLabel,
+        heartRateLabel: l10n.patientsHeartRateLabel,
+        respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
+        oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
+        weightLabel: l10n.patientsWeightLabel,
+        heightLabel: l10n.patientsHeightLabel,
+        bloodPressureLabel: l10n.patientsBloodPressureLabel,
+        unitLabel: l10n.nursingVitalUnitLabel,
+        recordedDateLabel: l10n.nursingRecordedAtLabel,
+        recordedTimeLabel: l10n.opdTimeColumnLabel,
+        datePickerLabel: l10n.nursingDatePickerLabel,
+        invalidDateMessage: l10n.nursingInvalidDateMessage,
+        timePickerLabel: l10n.appTimePickerAction,
+        invalidTimeMessage: l10n.appTimeInvalidMessage,
+        requiredMessage: l10n.validationRequired,
+        initialValues: vital == null
+            ? null
+            : AppRecordVitalsInitialValues(
+                id: vital.id,
+                vitalType: vital.vitalType,
+                value: vital.value,
+                unit: vital.unit,
+                systolicValue: vital.systolicValue,
+                diastolicValue: vital.diastolicValue,
+                recordedAt: vital.recordedAt,
+              ),
+        onSubmit: (List<Map<String, Object?>> payloads) {
+          return ProviderScope.containerOf(context, listen: false)
+              .read(nursingWorkspaceControllerProvider.notifier)
+              .recordVitalSet(payloads);
+        },
+      ),
     ),
   );
 }
@@ -1695,17 +1758,6 @@ Future<void> _openNoteDialog(BuildContext context) async {
   );
 }
 
-Future<void> _openTaskDialog(BuildContext context) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const _TaskDialog(),
-    ),
-  );
-}
-
 Future<void> _openMedicationDialog(
   BuildContext context,
   NursingPatientDetail detail,
@@ -1716,6 +1768,28 @@ Future<void> _openMedicationDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => _MedicationDialog(detail: detail),
+    ),
+  );
+}
+
+Future<void> _openPrescriptionDialog(
+  BuildContext context,
+  NursingWorkspaceController controller,
+) async {
+  final ClinicalReferenceData referenceData =
+      await controller.prescriptionReferenceData();
+  if (!context.mounted) {
+    return;
+  }
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalPrescriptionActionDialog(
+        referenceData: referenceData,
+        onSubmit: controller.prescribeMedication,
+      ),
     ),
   );
 }
@@ -1808,6 +1882,7 @@ List<AppNursingRecordEntry> _vitalRecords(
   BuildContext context,
   NursingPatientDetail detail,
 ) {
+  final AppLocalizations l10n = context.l10n;
   return detail.vitalSigns
       .map(
         (NursingVitalSign vital) => AppNursingRecordEntry(
@@ -1815,6 +1890,9 @@ List<AppNursingRecordEntry> _vitalRecords(
           subtitle: _dateTimeLabel(context, vital.recordedAt),
           body: vital.displayValue,
           icon: Icons.monitor_heart_outlined,
+          trailingLabel: l10n.opdEditVitalsAction,
+          trailingIcon: Icons.edit_outlined,
+          onTrailingPressed: () => _openVitalsDialog(context, vital: vital),
         ),
       )
       .toList(growable: false);
@@ -1942,16 +2020,46 @@ List<AppNursingRecordEntry> _medicationRecords(
     for (final MedicationAdministrationRecord medication
         in detail.medicationAdministrations)
       AppNursingRecordEntry(
-        title: _joinDisplay(<String?>[
+        title: _medicationAdministrationTitle(medication, detail),
+        subtitle: _dateTimeLabel(context, medication.administeredAt),
+        body: _joinDisplay(<String?>[
           medication.dose,
           medication.unit,
           medication.route == null ? null : _apiLabel(medication.route!),
         ]),
-        subtitle: _dateTimeLabel(context, medication.administeredAt),
         icon: Icons.done_all_outlined,
+        status: AppWorkspaceStatus(
+          label: _apiLabel('ADMINISTERED'),
+          tone: AppWorkspaceStatusTone.success,
+        ),
       ),
   ];
   return records;
+}
+
+String _medicationAdministrationTitle(
+  MedicationAdministrationRecord medication,
+  NursingPatientDetail detail,
+) {
+  final String? prescriptionId = medication.prescriptionId?.trim();
+  if (prescriptionId != null && prescriptionId.isNotEmpty) {
+    for (final MedicationSuggestion suggestion in detail.medicationSuggestions) {
+      if (suggestion.id == prescriptionId) {
+        return suggestion.displayTitle;
+      }
+    }
+    for (final MedicationReminder reminder in detail.medicationReminders) {
+      if (reminder.prescriptionId == prescriptionId) {
+        return reminder.displayTitle;
+      }
+    }
+  }
+  final String fallback = _joinDisplay(<String?>[
+    medication.dose,
+    medication.unit,
+    medication.route == null ? null : _apiLabel(medication.route!),
+  ]);
+  return fallback.isEmpty ? _apiLabel('ADMINISTERED') : fallback;
 }
 
 List<AppNursingRecordEntry> _carePlanRecords(
@@ -2210,7 +2318,7 @@ List<AppSearchBarFilterGroup> _worklistFilterGroups(AppLocalizations l10n) {
     AppSearchBarFilterGroup(
       key: 'scope',
       label: l10n.nursingScopeFilterLabel,
-      allLabel: l10n.nursingScopeAssignedWardLabel,
+      allLabel: l10n.nursingScopeAllLabel,
       choices: _scopeFilterChoices(l10n),
     ),
     AppSearchBarFilterGroup(
@@ -2348,7 +2456,7 @@ AppSearchBarFilterValue _filterValueFromQuery(NursingWorklistQuery query) {
       if (query.shift.trim().isNotEmpty) 'shift': query.shift,
     }),
     options: Map<String, String>.unmodifiable(<String, String>{
-      if (query.scope != NursingQueueScope.assignedWard)
+      if (query.scope != NursingQueueScope.all)
         'scope': _scopeCode(query.scope),
       if (query.status.trim().isNotEmpty) 'status': query.status,
       if (query.priority.trim().isNotEmpty) 'priority': query.priority,
@@ -2364,6 +2472,11 @@ AppSearchBarFilterValue _filterValueFromQuery(NursingWorklistQuery query) {
 
 List<AppSearchBarFilterChoice> _scopeFilterChoices(AppLocalizations l10n) {
   return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
+      value: _scopeCode(NursingQueueScope.assignedWard),
+      label: l10n.nursingScopeAssignedWardLabel,
+      icon: Icons.local_hospital_outlined,
+    ),
     AppSearchBarFilterChoice(
       value: _scopeCode(NursingQueueScope.urgent),
       label: l10n.nursingScopeUrgentLabel,
@@ -2389,11 +2502,6 @@ List<AppSearchBarFilterChoice> _scopeFilterChoices(AppLocalizations l10n) {
       label: l10n.nursingScopeDischargePendingLabel,
       icon: Icons.logout_outlined,
     ),
-    AppSearchBarFilterChoice(
-      value: _scopeCode(NursingQueueScope.all),
-      label: l10n.nursingScopeAllLabel,
-      icon: Icons.all_inbox_outlined,
-    ),
   ];
 }
 
@@ -2404,8 +2512,9 @@ NursingQueueScope _scopeFromFilterValue(String? value) {
     'handover_pending' => NursingQueueScope.handoverPending,
     'transfer_pending' => NursingQueueScope.transferPending,
     'discharge_pending' => NursingQueueScope.dischargePending,
+    'assigned_ward' => NursingQueueScope.assignedWard,
     'all' => NursingQueueScope.all,
-    _ => NursingQueueScope.assignedWard,
+    _ => NursingQueueScope.all,
   };
 }
 
@@ -2533,6 +2642,11 @@ String _dueTimeLabel(BuildContext context, NursingPatientSummary item) {
   return _dateTimeLabel(context, item.dueReferenceAt);
 }
 
+String _lastObservationLabel(BuildContext context, NursingPatientSummary item) {
+  final String value = item.lastObservation?.trim() ?? '';
+  return value.isEmpty ? context.l10n.profileUnknownValue : value;
+}
+
 String _responsibleNurseLabel(
   BuildContext context,
   NursingPatientSummary item,
@@ -2622,14 +2736,6 @@ const List<String> _medicationRoutes = <String>[
 String? _supportedMedicationRoute(String? route) {
   final String normalized = (route ?? '').trim().toUpperCase();
   return _medicationRoutes.contains(normalized) ? normalized : null;
-}
-
-String? _uuidOrNull(String? value) {
-  final String normalized = (value ?? '').trim();
-  final RegExp uuidPattern = RegExp(
-    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-  );
-  return uuidPattern.hasMatch(normalized) ? normalized : null;
 }
 
 const List<String> _transferActions = <String>[

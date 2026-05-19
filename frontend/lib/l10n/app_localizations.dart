@@ -7894,10 +7894,10 @@ abstract class AppLocalizations {
   /// **'Verify the patient, medication, dose, route, and time before saving.'**
   String get nursingConfirmMedicationSubtitle;
 
-  /// Nursing handover recipient user ID field label.
+  /// Nursing handover recipient searchable user field label.
   ///
   /// In en, this message translates to:
-  /// **'To user ID'**
+  /// **'Recipient'**
   String get nursingHandoverToUserLabel;
 
   /// Nursing handover notes field label.
