@@ -1448,6 +1448,9 @@ const toQueueCardDto = (snapshot) => {
     patient_display_name: publicSnapshot.patient_display_name,
     encounter_display_id: publicSnapshot.encounter_display_id || null,
     ward_display_name: publicSnapshot.ward_display_name,
+    room_id: publicSnapshot?.active_bed_assignment?.bed?.room?.id || null,
+    room_display_label:
+      publicSnapshot?.active_bed_assignment?.bed?.room?.name || null,
     bed_id: publicSnapshot?.active_bed_assignment?.bed?.id || null,
     bed_display_label:
       publicSnapshot?.active_bed_assignment?.bed?.label || null,

@@ -31,6 +31,8 @@ final class NursingRepositoryImpl implements NursingRepository {
         'limit': request.pageSize,
         'search': query.search,
         'queue_scope': query.scope == NursingQueueScope.all ? 'ALL' : 'ACTIVE',
+        'stage': _backendStage(query.status),
+        'transfer_status': _backendTransferStatus(query.transferStatus),
         'include_icu': 'true',
         'sort_by': 'admitted_at',
         'order': 'desc',
@@ -375,6 +377,32 @@ final class NursingRepositoryImpl implements NursingRepository {
   bool _isAccessDenied(AppFailure failure) {
     return failure.category == AppFailureCategory.unauthorized ||
         failure.category == AppFailureCategory.forbidden;
+  }
+
+  String? _backendStage(String status) {
+    final String value = status.trim().toUpperCase();
+    const Set<String> supported = <String>{
+      'ADMITTED_PENDING_BED',
+      'ADMITTED_IN_BED',
+      'TRANSFER_REQUESTED',
+      'TRANSFER_IN_PROGRESS',
+      'DISCHARGE_PLANNED',
+      'DISCHARGED',
+      'CANCELLED',
+    };
+    return supported.contains(value) ? value : null;
+  }
+
+  String? _backendTransferStatus(String transferStatus) {
+    final String value = transferStatus.trim().toUpperCase();
+    const Set<String> supported = <String>{
+      'REQUESTED',
+      'APPROVED',
+      'IN_PROGRESS',
+      'COMPLETED',
+      'CANCELLED',
+    };
+    return supported.contains(value) ? value : null;
   }
 
   Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {

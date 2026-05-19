@@ -45,7 +45,7 @@ final class NursingWorkspaceController
   }
 
   Future<void> _syncFromRealtime() async {
-    await _syncVisibleData();
+    await _syncVisibleData(refreshContext: true);
   }
 
   Future<AppFailure?> refresh() {
@@ -107,13 +107,26 @@ final class NursingWorkspaceController
   }
 
   Future<AppFailure?> applyAdvancedFilters({
+    String? searchField,
+    NursingQueueScope? scope,
     String? patient,
+    String? admission,
+    String? encounter,
     String? ward,
+    String? room,
+    String? bed,
+    String? observation,
+    String? taskType,
     String? unit,
     String? shift,
+    String? assignedNurse,
     String? careTask,
+    String? status,
     String? priority,
     String? admissionStatus,
+    String? transferStatus,
+    String? handoverStatus,
+    String? dischargeStatus,
     String? dischargeReadiness,
     DateTime? dateFrom,
     DateTime? dateTo,
@@ -125,13 +138,26 @@ final class NursingWorkspaceController
     _emit(
       current.copyWith(
         query: current.query.copyWith(
+          searchField: searchField?.trim() ?? '',
+          scope: scope ?? NursingQueueScope.assignedWard,
           patient: patient?.trim() ?? '',
+          admission: admission?.trim() ?? '',
+          encounter: encounter?.trim() ?? '',
           ward: ward?.trim() ?? '',
+          room: room?.trim() ?? '',
+          bed: bed?.trim() ?? '',
+          observation: observation?.trim() ?? '',
+          taskType: taskType?.trim() ?? '',
           unit: unit?.trim() ?? '',
           shift: shift?.trim() ?? '',
+          assignedNurse: assignedNurse?.trim() ?? '',
           careTask: careTask?.trim() ?? '',
+          status: status?.trim() ?? '',
           priority: priority?.trim() ?? '',
           admissionStatus: admissionStatus?.trim() ?? '',
+          transferStatus: transferStatus?.trim() ?? '',
+          handoverStatus: handoverStatus?.trim() ?? '',
+          dischargeStatus: dischargeStatus?.trim() ?? '',
           dischargeReadiness: dischargeReadiness?.trim() ?? '',
           dateFrom: dateFrom,
           dateTo: dateTo,
@@ -402,7 +428,7 @@ final class NursingWorkspaceController
 
   void _startSync() {
     _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
+      unawaited(_syncVisibleData(refreshContext: true));
     });
   }
 
@@ -644,7 +670,7 @@ final class NursingWorkspaceController
             ),
           );
         }
-        unawaited(_refreshWorklist(showLoading: false));
+        unawaited(_syncVisibleData(refreshContext: true));
         return null;
       },
       failure: (AppFailure failure) {

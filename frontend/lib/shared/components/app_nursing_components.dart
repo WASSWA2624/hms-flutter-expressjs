@@ -291,6 +291,51 @@ class AppWardActivityList extends StatelessWidget {
   }
 }
 
+@immutable
+final class AppNursingRecordEntry {
+  const AppNursingRecordEntry({
+    required this.title,
+    required this.icon,
+    this.subtitle,
+    this.body,
+    this.status,
+  });
+
+  final String title;
+  final IconData icon;
+  final String? subtitle;
+  final String? body;
+  final AppWorkspaceStatus? status;
+}
+
+class AppNursingRecordList extends StatelessWidget {
+  const AppNursingRecordList({
+    required this.items,
+    required this.emptyLabel,
+    super.key,
+  });
+
+  final List<AppNursingRecordEntry> items;
+  final String emptyLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StatusRecordList(
+      records: <_StatusRecordView>[
+        for (final AppNursingRecordEntry item in items)
+          _StatusRecordView(
+            title: item.title,
+            subtitle: item.subtitle,
+            body: item.body,
+            icon: item.icon,
+            status: item.status,
+          ),
+      ],
+      emptyLabel: emptyLabel,
+    );
+  }
+}
+
 class _ChecklistRow extends StatelessWidget {
   const _ChecklistRow({required this.item});
 

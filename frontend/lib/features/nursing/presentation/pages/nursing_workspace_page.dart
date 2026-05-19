@@ -79,14 +79,12 @@ class _NursingWorkspaceContentState
   );
 
   late final TextEditingController _searchController;
-  late final TextEditingController _wardController;
   late AppSearchBarFilterValue _filterValue;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
-    _wardController = TextEditingController(text: widget.state.query.ward);
     _filterValue = _filterValueFromQuery(widget.state.query);
   }
 
@@ -97,10 +95,6 @@ class _NursingWorkspaceContentState
         _searchController.text != widget.state.query.search) {
       _searchController.text = widget.state.query.search;
     }
-    if (oldWidget.state.query.ward != widget.state.query.ward &&
-        _wardController.text != widget.state.query.ward) {
-      _wardController.text = widget.state.query.ward;
-    }
     if (oldWidget.state.query != widget.state.query) {
       _filterValue = _filterValueFromQuery(widget.state.query);
     }
@@ -109,7 +103,6 @@ class _NursingWorkspaceContentState
   @override
   void dispose() {
     _searchController.dispose();
-    _wardController.dispose();
     super.dispose();
   }
 
@@ -133,6 +126,12 @@ class _NursingWorkspaceContentState
             : AppWorkspaceStatusTone.success,
       ),
       secondaryActions: <Widget>[
+        AppIconButton(
+          icon: Icons.assignment_ind_outlined,
+          semanticLabel: l10n.nursingShiftContextTitle,
+          tooltip: l10n.nursingShiftContextTitle,
+          onPressed: () => _openShiftContextDialog(context),
+        ),
         AppIconButton(
           icon: Icons.refresh,
           semanticLabel: l10n.commonRefreshActionLabel,
@@ -201,80 +200,50 @@ class _NursingWorkspaceContentState
               controller.applyScope(NursingQueueScope.dischargePending),
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        semanticLabel: l10n.nursingFiltersLabel,
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.nursingSearchLabel,
-          hintText: l10n.nursingSearchHint,
-          advancedFilterButtonLabel: l10n.nursingAdvancedFiltersLabel,
-          advancedFilterTitle: l10n.nursingAdvancedFiltersTitle,
-          advancedFilterApplyLabel: l10n.nursingApplyFiltersLabel,
-          advancedFilterResetLabel: l10n.nursingResetFiltersLabel,
-          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
-          searchFieldLabel: l10n.nursingSearchFieldLabel,
-          allFieldsLabel: l10n.nursingAllFieldsLabel,
-          dateFilterLabel: l10n.nursingDateFilterLabel,
-          dateFromLabel: l10n.nursingDateFromLabel,
-          dateToLabel: l10n.nursingDateToLabel,
-          datePickerButtonLabel: l10n.nursingDatePickerLabel,
-          invalidDateMessage: l10n.nursingInvalidDateMessage,
-          currentDate: DateTime.now(),
-          searchFields: _worklistSearchFields(l10n),
-          textFilters: _worklistTextFilters(l10n),
-          filterGroups: _worklistFilterGroups(l10n),
-          filterValue: _filterValue,
-          hasActiveFilters: state.query.hasAdvancedFilters,
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            setState(() {
-              _filterValue = value;
-            });
-            controller
-                .applyAdvancedFilters(
-                  patient: value.text('patient'),
-                  ward: value.text('ward'),
-                  unit: value.text('unit'),
-                  shift: value.text('shift'),
-                  careTask: value.text('care_task'),
-                  admissionStatus: value.text('admission_status'),
-                  dischargeReadiness: value.text('discharge_readiness'),
-                  priority: value.option('priority'),
-                  dateFrom: value.dateFrom,
-                  dateTo: value.dateTo,
-                )
-                .then((AppFailure? failure) {
-                  if (context.mounted) {
-                    _showFailureIfNeeded(context, failure);
-                  }
-                });
-          },
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-        ),
-        filters: <Widget>[
-          AppSelectField<NursingQueueScope>(
-            value: state.query.scope,
-            labelText: l10n.nursingScopeFilterLabel,
-            options: _scopeOptions(l10n),
-            onChanged: (NursingQueueScope? value) {
-              if (value != null) {
-                controller.applyScope(value);
-              }
-            },
-          ),
-          AppTextField(
-            controller: _wardController,
-            labelText: l10n.nursingWardFilterLabel,
-            hintText: l10n.nursingWardFilterHint,
-            textInputAction: TextInputAction.search,
-            onFieldSubmitted: controller.applyWard,
-          ),
-        ],
+      body: _NursingWorklistPanel(
+        state: state,
+        searchController: _searchController,
+        filterValue: _filterValue,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          setState(() {
+            _filterValue = value;
+          });
+          controller
+              .applyAdvancedFilters(
+                searchField: value.field,
+                scope: _scopeFromFilterValue(value.option('scope')),
+                patient: value.text('patient'),
+                admission: value.text('admission'),
+                encounter: value.text('encounter'),
+                ward: value.text('ward'),
+                room: value.text('room'),
+                bed: value.text('bed'),
+                observation: value.text('observation'),
+                taskType: value.text('task_type'),
+                status: value.option('status'),
+                priority: value.option('priority'),
+                assignedNurse: value.text('assigned_nurse'),
+                shift: value.text('shift'),
+                transferStatus: value.option('transfer_status'),
+                handoverStatus: value.option('handover_status'),
+                dischargeStatus: value.option('discharge_status'),
+                dateFrom: value.dateFrom,
+                dateTo: value.dateTo,
+              )
+              .then((AppFailure? failure) {
+                if (context.mounted) {
+                  _showFailureIfNeeded(context, failure);
+                }
+              });
+        },
       ),
-      body: _NursingWorklistPanel(state: state),
-      detail: _NursingDetailPanel(state: state),
-      activity: _NursingShiftContextPanel(state: state),
+    );
+  }
+
+  void _openShiftContextDialog(BuildContext context) {
+    showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => const _NursingShiftContextDialog(),
     );
   }
 
@@ -301,9 +270,17 @@ class _NursingWorkspaceContentState
 }
 
 class _NursingWorklistPanel extends ConsumerWidget {
-  const _NursingWorklistPanel({required this.state});
+  const _NursingWorklistPanel({
+    required this.state,
+    required this.searchController,
+    required this.filterValue,
+    required this.onFilterChanged,
+  });
 
   final NursingWorkspaceState state;
+  final TextEditingController searchController;
+  final AppSearchBarFilterValue filterValue;
+  final ValueChanged<AppSearchBarFilterValue> onFilterChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -324,7 +301,40 @@ class _NursingWorklistPanel extends ConsumerWidget {
           return _pageLabel(context, page);
         },
         onPageChanged: controller.changePage,
-        onRowSelected: controller.selectPatient,
+        onRowSelected: (NursingWorkItem item) {
+          _openPatientDetailDialog(context, ref, item);
+        },
+        search: AppListTableSearch<NursingWorkItem>(
+          controller: searchController,
+          semanticLabel: l10n.nursingSearchLabel,
+          hintText: l10n.nursingSearchHint,
+          matcher: (NursingWorkItem item, String query) {
+            return item.matchesSearchField(state.query.searchField, query);
+          },
+          onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
+          isLoading: state.isRefreshing,
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.nursingAdvancedFiltersLabel,
+          advancedFilterTitle: l10n.nursingAdvancedFiltersTitle,
+          advancedFilterApplyLabel: l10n.nursingApplyFiltersLabel,
+          advancedFilterResetLabel: l10n.nursingResetFiltersLabel,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          searchFieldLabel: l10n.nursingSearchFieldLabel,
+          allFieldsLabel: l10n.nursingAllFieldsLabel,
+          dateFilterLabel: l10n.nursingDateFilterLabel,
+          dateFromLabel: l10n.nursingDateFromLabel,
+          dateToLabel: l10n.nursingDateToLabel,
+          datePickerButtonLabel: l10n.nursingDatePickerLabel,
+          invalidDateMessage: l10n.nursingInvalidDateMessage,
+          currentDate: DateTime.now(),
+          searchFields: _worklistSearchFields(l10n),
+          textFilters: _worklistTextFilters(l10n),
+          filterGroups: _worklistFilterGroups(l10n),
+          filterValue: filterValue,
+          hasActiveFilters: state.query.hasAdvancedFilters,
+          onFilterChanged: onFilterChanged,
+        ),
         emptyBuilder: (_) => AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
           title: l10n.nursingNoWorklistTitle,
@@ -419,24 +429,74 @@ class _NursingWorklistPanel extends ConsumerWidget {
   }
 }
 
-class _NursingDetailPanel extends ConsumerWidget {
-  const _NursingDetailPanel({required this.state});
+Future<void> _openPatientDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  NursingPatientSummary summary,
+) async {
+  final NursingWorkspaceController controller = ref.read(
+    nursingWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectPatient(summary);
+  if (!context.mounted) {
+    return;
+  }
+  if (failure != null) {
+    _showFailureIfNeeded(context, failure);
+    return;
+  }
+  await showAppDialog<void>(
+    context: context,
+    builder: (BuildContext dialogContext) => const _NursingPatientDetailDialog(),
+  );
+}
 
-  final NursingWorkspaceState state;
+class _NursingPatientDetailDialog extends ConsumerWidget {
+  const _NursingPatientDetailDialog();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final NursingPatientDetail? detail = state.selectedDetail;
-    if (detail == null) {
-      return AppWorkspaceStatePanel.state(
-        variant: AppStateViewVariant.empty,
-        title: l10n.nursingNoSelectionTitle,
-        body: l10n.nursingNoSelectionBody,
-        icon: Icons.bed_outlined,
-      );
-    }
+    final AsyncValue<Result<NursingWorkspaceState>> state = ref.watch(
+      nursingWorkspaceControllerProvider,
+    );
+    final NursingPatientDetail? detail = _selectedDetailFromState(state);
+    final NursingPatientSummary? summary = detail?.enrichedSummary;
 
+    return AppDialog(
+      title: Text(summary?.displayTitle ?? l10n.nursingPatientContextLabel),
+      icon: const Icon(Icons.bed_outlined),
+      semanticLabel: l10n.nursingPatientContextLabel,
+      scrollable: true,
+      maxWidth: 1040,
+      content: detail == null
+          ? AppWorkspaceStatePanel.state(
+              variant: AppStateViewVariant.empty,
+              title: l10n.nursingNoSelectionTitle,
+              body: l10n.nursingNoSelectionBody,
+              icon: Icons.bed_outlined,
+            )
+          : _NursingPatientDetailContent(detail: detail),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () {
+            Navigator.of(context).maybePop();
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _NursingPatientDetailContent extends StatelessWidget {
+  const _NursingPatientDetailContent({required this.detail});
+
+  final NursingPatientDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final NursingPatientSummary summary = detail.enrichedSummary;
     final ThemeData theme = Theme.of(context);
 
@@ -447,9 +507,7 @@ class _NursingDetailPanel extends ConsumerWidget {
           patientName: summary.displayTitle,
           patientNumber: summary.patientDisplayId ?? summary.admissionId,
           demographics: _joinDisplay(<String?>[
-            detail.patientGender == null
-                ? null
-                : _apiLabel(detail.patientGender!),
+            detail.patientGender == null ? null : _apiLabel(detail.patientGender!),
             detail.patientDateOfBirth == null
                 ? null
                 : AppFormatters.mediumDate(
@@ -499,9 +557,7 @@ class _NursingDetailPanel extends ConsumerWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.nursingIcuLabel,
-              value: summary.icuStatus == null
-                  ? ''
-                  : _apiLabel(summary.icuStatus!),
+              value: summary.icuStatus == null ? '' : _apiLabel(summary.icuStatus!),
               icon: Icons.monitor_heart_outlined,
               tone: summary.hasCriticalAlert
                   ? AppWorkspaceStatusTone.error
@@ -555,6 +611,16 @@ class _NursingDetailPanel extends ConsumerWidget {
       ],
     );
   }
+}
+
+NursingPatientDetail? _selectedDetailFromState(
+  AsyncValue<Result<NursingWorkspaceState>> state,
+) {
+  final Result<NursingWorkspaceState>? result = state.asData?.value;
+  return result?.when(
+    success: (NursingWorkspaceState value) => value.selectedDetail,
+    failure: (_) => null,
+  );
 }
 
 class _NursingActionBar extends ConsumerWidget {
@@ -686,14 +752,14 @@ class _NursingRecordPanel extends StatelessWidget {
   });
 
   final String title;
-  final List<_NursingRecordView> records;
+  final List<AppNursingRecordEntry> records;
   final String emptyLabel;
 
   @override
   Widget build(BuildContext context) {
     return AppWorkspaceDetailPanel(
       title: title,
-      child: _RecordList(records: records, emptyLabel: emptyLabel),
+      child: AppNursingRecordList(items: records, emptyLabel: emptyLabel),
     );
   }
 }
@@ -708,8 +774,8 @@ class _NursingHandoverPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     return AppWorkspaceDetailPanel(
       title: l10n.nursingHandoversTitle,
-      child: _RecordList(
-        records: _handoverRecords(context, detail),
+      child: AppNursingRecordList(
+        items: _handoverRecords(context, detail),
         emptyLabel: l10n.nursingNoRecordsLabel,
       ),
     );
@@ -771,101 +837,42 @@ class _NursingShiftContextPanel extends StatelessWidget {
   }
 }
 
-class _RecordList extends StatelessWidget {
-  const _RecordList({required this.records, required this.emptyLabel});
-
-  final List<_NursingRecordView> records;
-  final String emptyLabel;
+class _NursingShiftContextDialog extends ConsumerWidget {
+  const _NursingShiftContextDialog();
 
   @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    if (records.isEmpty) {
-      return Text(
-        emptyLabel,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      );
-    }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<Result<NursingWorkspaceState>> value = ref.watch(
+      nursingWorkspaceControllerProvider,
+    );
+    final NursingWorkspaceState? state = value.asData?.value.when(
+      success: (NursingWorkspaceState data) => data,
+      failure: (_) => null,
+    );
 
-    return Column(
-      children: <Widget>[
-        for (var index = 0; index < records.length; index += 1) ...<Widget>[
-          if (index > 0) const Divider(height: 1),
-          _RecordRow(record: records[index]),
-        ],
+    return AppDialog(
+      title: Text(l10n.nursingShiftContextTitle),
+      icon: const Icon(Icons.assignment_ind_outlined),
+      semanticLabel: l10n.nursingShiftContextTitle,
+      scrollable: true,
+      maxWidth: 760,
+      content: state == null
+          ? AppWorkspaceStatePanel.loading(
+              title: l10n.nursingLoadingTitle,
+              body: l10n.nursingLoadingBody,
+            )
+          : _NursingShiftContextPanel(state: state),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () {
+            Navigator.of(context).maybePop();
+          },
+        ),
       ],
     );
   }
-}
-
-class _RecordRow extends StatelessWidget {
-  const _RecordRow({required this.record});
-
-  final _NursingRecordView record;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(
-            record.icon,
-            size: theme.appTokens.listIconSize,
-            color: colorScheme.primary,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(record.title, style: theme.textTheme.titleSmall),
-                if (record.subtitle != null) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    record.subtitle!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (record.body != null) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  Text(record.body!, style: theme.textTheme.bodyMedium),
-                ],
-              ],
-            ),
-          ),
-          if (record.status != null) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
-            AppWorkspaceStatusBadge(status: record.status!),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-final class _NursingRecordView {
-  const _NursingRecordView({
-    required this.title,
-    required this.icon,
-    this.subtitle,
-    this.body,
-    this.status,
-  });
-
-  final String title;
-  final String? subtitle;
-  final String? body;
-  final IconData icon;
-  final AppWorkspaceStatus? status;
 }
 
 class _VitalsDialog extends ConsumerStatefulWidget {
@@ -1797,13 +1804,13 @@ Future<void> _showActionResult(
   }
 }
 
-List<_NursingRecordView> _vitalRecords(
+List<AppNursingRecordEntry> _vitalRecords(
   BuildContext context,
   NursingPatientDetail detail,
 ) {
   return detail.vitalSigns
       .map(
-        (NursingVitalSign vital) => _NursingRecordView(
+        (NursingVitalSign vital) => AppNursingRecordEntry(
           title: _apiLabel(vital.vitalType),
           subtitle: _dateTimeLabel(context, vital.recordedAt),
           body: vital.displayValue,
@@ -1855,14 +1862,14 @@ String _nursingSummaryHtml(BuildContext context, NursingPatientDetail detail) {
 
 List<String> _recordsAsLines(
   BuildContext context,
-  List<_NursingRecordView> records,
+  List<AppNursingRecordEntry> records,
 ) {
   if (records.isEmpty) {
     return <String>['- ${context.l10n.nursingNoRecordsLabel}'];
   }
   return records
       .map(
-        (_NursingRecordView record) => '- ${_joinDisplay(<String?>[
+        (AppNursingRecordEntry record) => '- ${_joinDisplay(<String?>[
           record.title,
           record.subtitle,
           record.body,
@@ -1881,13 +1888,13 @@ String _htmlEscape(String value) {
       .replaceAll("'", '&#39;');
 }
 
-List<_NursingRecordView> _noteRecords(
+List<AppNursingRecordEntry> _noteRecords(
   BuildContext context,
   NursingPatientDetail detail,
 ) {
   return detail.nursingNotes
       .map(
-        (NursingNoteRecord note) => _NursingRecordView(
+        (NursingNoteRecord note) => AppNursingRecordEntry(
           title: note.nurseName ?? context.l10n.profileUnknownValue,
           subtitle: _dateTimeLabel(context, note.createdAt),
           body: note.note,
@@ -1897,13 +1904,13 @@ List<_NursingRecordView> _noteRecords(
       .toList(growable: false);
 }
 
-List<_NursingRecordView> _medicationRecords(
+List<AppNursingRecordEntry> _medicationRecords(
   BuildContext context,
   NursingPatientDetail detail,
 ) {
-  final List<_NursingRecordView> records = <_NursingRecordView>[
+  final List<AppNursingRecordEntry> records = <AppNursingRecordEntry>[
     for (final MedicationReminder reminder in detail.medicationReminders)
-      _NursingRecordView(
+      AppNursingRecordEntry(
         title: reminder.displayTitle,
         subtitle: _joinDisplay(<String?>[
           _dateTimeLabel(context, reminder.scheduledAt),
@@ -1918,7 +1925,7 @@ List<_NursingRecordView> _medicationRecords(
         status: _statusFromValue(reminder.status),
       ),
     for (final MedicationSuggestion suggestion in detail.medicationSuggestions)
-      _NursingRecordView(
+      AppNursingRecordEntry(
         title: suggestion.displayTitle,
         subtitle: _joinDisplay(<String?>[
           suggestion.frequency,
@@ -1934,7 +1941,7 @@ List<_NursingRecordView> _medicationRecords(
       ),
     for (final MedicationAdministrationRecord medication
         in detail.medicationAdministrations)
-      _NursingRecordView(
+      AppNursingRecordEntry(
         title: _joinDisplay(<String?>[
           medication.dose,
           medication.unit,
@@ -1947,13 +1954,13 @@ List<_NursingRecordView> _medicationRecords(
   return records;
 }
 
-List<_NursingRecordView> _carePlanRecords(
+List<AppNursingRecordEntry> _carePlanRecords(
   BuildContext context,
   NursingPatientDetail detail,
 ) {
   return detail.carePlans
       .map(
-        (NursingCarePlan plan) => _NursingRecordView(
+        (NursingCarePlan plan) => AppNursingRecordEntry(
           title: plan.plan ?? plan.id,
           subtitle: _joinDisplay(<String?>[
             _dateLabel(context, plan.startDate),
@@ -1966,13 +1973,13 @@ List<_NursingRecordView> _carePlanRecords(
       .toList(growable: false);
 }
 
-List<_NursingRecordView> _handoverRecords(
+List<AppNursingRecordEntry> _handoverRecords(
   BuildContext context,
   NursingPatientDetail detail,
 ) {
   return detail.handovers
       .map(
-        (NursingHandover handover) => _NursingRecordView(
+        (NursingHandover handover) => AppNursingRecordEntry(
           title: handover.toUserId ?? handover.id,
           subtitle: _dateTimeLabel(context, handover.createdAt),
           body: handover.signoffNotes,
@@ -2127,9 +2134,13 @@ List<AppWardActivityEntry> _activityEntries(
 List<AppSearchBarFieldChoice> _worklistSearchFields(AppLocalizations l10n) {
   return <AppSearchBarFieldChoice>[
     AppSearchBarFieldChoice(field: 'patient', label: l10n.opdPatientColumnLabel),
-    AppSearchBarFieldChoice(field: 'ward', label: l10n.nursingWardFilterLabel),
+    AppSearchBarFieldChoice(field: 'admission', label: l10n.nursingAdmissionColumnLabel),
+    AppSearchBarFieldChoice(field: 'encounter', label: l10n.nursingEncounterLabel),
+    AppSearchBarFieldChoice(field: 'ward', label: l10n.patientsWardLabel),
+    AppSearchBarFieldChoice(field: 'room', label: l10n.patientsRoomLabel),
     AppSearchBarFieldChoice(field: 'bed', label: l10n.nursingBedLabel),
-    AppSearchBarFieldChoice(field: 'task', label: l10n.nursingTaskLabel),
+    AppSearchBarFieldChoice(field: 'observation', label: l10n.nursingObservationsTitle),
+    AppSearchBarFieldChoice(field: 'task_type', label: l10n.nursingTaskTypeColumnLabel),
     AppSearchBarFieldChoice(field: 'status', label: l10n.opdStatusColumnLabel),
     AppSearchBarFieldChoice(field: 'priority', label: l10n.nursingPriorityColumnLabel),
   ];
@@ -2144,16 +2155,46 @@ List<AppSearchBarTextFilter> _worklistTextFilters(AppLocalizations l10n) {
       icon: Icons.person_search_outlined,
     ),
     AppSearchBarTextFilter(
+      key: 'admission',
+      label: l10n.nursingAdmissionColumnLabel,
+      icon: Icons.hotel_outlined,
+    ),
+    AppSearchBarTextFilter(
+      key: 'encounter',
+      label: l10n.nursingEncounterLabel,
+      icon: Icons.medical_information_outlined,
+    ),
+    AppSearchBarTextFilter(
       key: 'ward',
-      label: l10n.nursingWardFilterLabel,
+      label: l10n.patientsWardLabel,
       hintText: l10n.nursingWardFilterHint,
       icon: Icons.local_hospital_outlined,
     ),
     AppSearchBarTextFilter(
-      key: 'unit',
-      label: l10n.nursingUnitFilterLabel,
-      hintText: l10n.nursingUnitFilterHint,
+      key: 'room',
+      label: l10n.patientsRoomLabel,
       icon: Icons.meeting_room_outlined,
+    ),
+    AppSearchBarTextFilter(
+      key: 'bed',
+      label: l10n.nursingBedLabel,
+      icon: Icons.bed_outlined,
+    ),
+    AppSearchBarTextFilter(
+      key: 'observation',
+      label: l10n.nursingObservationsTitle,
+      icon: Icons.monitor_heart_outlined,
+    ),
+    AppSearchBarTextFilter(
+      key: 'task_type',
+      label: l10n.nursingTaskTypeColumnLabel,
+      hintText: l10n.nursingCareTaskFilterHint,
+      icon: Icons.playlist_add_check_outlined,
+    ),
+    AppSearchBarTextFilter(
+      key: 'assigned_nurse',
+      label: l10n.nursingResponsibleNurseColumnLabel,
+      icon: Icons.badge_outlined,
     ),
     AppSearchBarTextFilter(
       key: 'shift',
@@ -2161,29 +2202,54 @@ List<AppSearchBarTextFilter> _worklistTextFilters(AppLocalizations l10n) {
       hintText: l10n.nursingShiftFilterHint,
       icon: Icons.schedule_outlined,
     ),
-    AppSearchBarTextFilter(
-      key: 'care_task',
-      label: l10n.nursingCareTaskFilterLabel,
-      hintText: l10n.nursingCareTaskFilterHint,
-      icon: Icons.playlist_add_check_outlined,
-    ),
-    AppSearchBarTextFilter(
-      key: 'admission_status',
-      label: l10n.nursingAdmissionStatusFilterLabel,
-      hintText: l10n.nursingAdmissionStatusFilterHint,
-      icon: Icons.hotel_outlined,
-    ),
-    AppSearchBarTextFilter(
-      key: 'discharge_readiness',
-      label: l10n.nursingDischargeReadinessFilterLabel,
-      hintText: l10n.nursingDischargeReadinessFilterHint,
-      icon: Icons.logout_outlined,
-    ),
   ];
 }
 
 List<AppSearchBarFilterGroup> _worklistFilterGroups(AppLocalizations l10n) {
   return <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: 'scope',
+      label: l10n.nursingScopeFilterLabel,
+      allLabel: l10n.nursingScopeAssignedWardLabel,
+      choices: _scopeFilterChoices(l10n),
+    ),
+    AppSearchBarFilterGroup(
+      key: 'status',
+      label: l10n.opdStatusColumnLabel,
+      allLabel: l10n.nursingAllFieldsLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'ADMITTED_PENDING_BED',
+          label: _apiLabel('ADMITTED_PENDING_BED'),
+          icon: Icons.hotel_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'ADMITTED_IN_BED',
+          label: _apiLabel('ADMITTED_IN_BED'),
+          icon: Icons.bed_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'TRANSFER_REQUESTED',
+          label: _apiLabel('TRANSFER_REQUESTED'),
+          icon: Icons.transfer_within_a_station_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'TRANSFER_IN_PROGRESS',
+          label: _apiLabel('TRANSFER_IN_PROGRESS'),
+          icon: Icons.transfer_within_a_station_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'DISCHARGE_PLANNED',
+          label: _apiLabel('DISCHARGE_PLANNED'),
+          icon: Icons.logout_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'DISCHARGED',
+          label: _apiLabel('DISCHARGED'),
+          icon: Icons.task_alt_outlined,
+        ),
+      ],
+    ),
     AppSearchBarFilterGroup(
       key: 'priority',
       label: l10n.nursingPriorityFilterLabel,
@@ -2206,61 +2272,153 @@ List<AppSearchBarFilterGroup> _worklistFilterGroups(AppLocalizations l10n) {
         ),
       ],
     ),
+    AppSearchBarFilterGroup(
+      key: 'transfer_status',
+      label: l10n.nursingTransferPendingSummaryLabel,
+      allLabel: l10n.nursingAllFieldsLabel,
+      choices: <AppSearchBarFilterChoice>[
+        for (final String value in <String>[
+          'REQUESTED',
+          'APPROVED',
+          'IN_PROGRESS',
+          'COMPLETED',
+          'CANCELLED',
+        ])
+          AppSearchBarFilterChoice(
+            value: value,
+            label: _apiLabel(value),
+            icon: Icons.transfer_within_a_station_outlined,
+          ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: 'handover_status',
+      label: l10n.nursingHandoverPendingSummaryLabel,
+      allLabel: l10n.nursingAllFieldsLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'PENDING',
+          label: _apiLabel('PENDING'),
+          icon: Icons.swap_horiz_outlined,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'NONE',
+          label: l10n.nursingNoRecordsLabel,
+          icon: Icons.check_circle_outline,
+        ),
+      ],
+    ),
+    AppSearchBarFilterGroup(
+      key: 'discharge_status',
+      label: l10n.dischargeStatusFilterLabel,
+      allLabel: l10n.nursingAllFieldsLabel,
+      choices: <AppSearchBarFilterChoice>[
+        for (final String value in <String>[
+          'PLANNED',
+          'DISCHARGE_PLANNED',
+          'COMPLETED',
+          'DISCHARGED',
+        ])
+          AppSearchBarFilterChoice(
+            value: value,
+            label: _apiLabel(value),
+            icon: Icons.logout_outlined,
+          ),
+      ],
+    ),
   ];
 }
 
 AppSearchBarFilterValue _filterValueFromQuery(NursingWorklistQuery query) {
   return AppSearchBarFilterValue(
+    field: query.searchField.trim().isEmpty ? null : query.searchField,
     dateFrom: query.dateFrom,
     dateTo: query.dateTo,
     texts: Map<String, String>.unmodifiable(<String, String>{
       if (query.patient.trim().isNotEmpty) 'patient': query.patient,
+      if (query.admission.trim().isNotEmpty) 'admission': query.admission,
+      if (query.encounter.trim().isNotEmpty) 'encounter': query.encounter,
       if (query.ward.trim().isNotEmpty) 'ward': query.ward,
-      if (query.unit.trim().isNotEmpty) 'unit': query.unit,
+      if (query.room.trim().isNotEmpty) 'room': query.room,
+      if (query.bed.trim().isNotEmpty) 'bed': query.bed,
+      if (query.observation.trim().isNotEmpty) 'observation': query.observation,
+      if (query.taskType.trim().isNotEmpty) 'task_type': query.taskType,
+      if (query.assignedNurse.trim().isNotEmpty)
+        'assigned_nurse': query.assignedNurse,
       if (query.shift.trim().isNotEmpty) 'shift': query.shift,
-      if (query.careTask.trim().isNotEmpty) 'care_task': query.careTask,
-      if (query.admissionStatus.trim().isNotEmpty)
-        'admission_status': query.admissionStatus,
-      if (query.dischargeReadiness.trim().isNotEmpty)
-        'discharge_readiness': query.dischargeReadiness,
     }),
     options: Map<String, String>.unmodifiable(<String, String>{
+      if (query.scope != NursingQueueScope.assignedWard)
+        'scope': _scopeCode(query.scope),
+      if (query.status.trim().isNotEmpty) 'status': query.status,
       if (query.priority.trim().isNotEmpty) 'priority': query.priority,
+      if (query.transferStatus.trim().isNotEmpty)
+        'transfer_status': query.transferStatus,
+      if (query.handoverStatus.trim().isNotEmpty)
+        'handover_status': query.handoverStatus,
+      if (query.dischargeStatus.trim().isNotEmpty)
+        'discharge_status': query.dischargeStatus,
     }),
   );
 }
 
-List<AppSelectOption<NursingQueueScope>> _scopeOptions(AppLocalizations l10n) {
-  return <AppSelectOption<NursingQueueScope>>[
-    AppSelectOption<NursingQueueScope>(
-      value: NursingQueueScope.assignedWard,
-      label: l10n.nursingScopeAssignedWardLabel,
-    ),
-    AppSelectOption<NursingQueueScope>(
-      value: NursingQueueScope.urgent,
+List<AppSearchBarFilterChoice> _scopeFilterChoices(AppLocalizations l10n) {
+  return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
+      value: _scopeCode(NursingQueueScope.urgent),
       label: l10n.nursingScopeUrgentLabel,
+      icon: Icons.priority_high_outlined,
     ),
-    AppSelectOption<NursingQueueScope>(
-      value: NursingQueueScope.medicationDue,
+    AppSearchBarFilterChoice(
+      value: _scopeCode(NursingQueueScope.medicationDue),
       label: l10n.nursingScopeMedicationDueLabel,
+      icon: Icons.medication_outlined,
     ),
-    AppSelectOption<NursingQueueScope>(
-      value: NursingQueueScope.handoverPending,
+    AppSearchBarFilterChoice(
+      value: _scopeCode(NursingQueueScope.handoverPending),
       label: l10n.nursingScopeHandoverPendingLabel,
+      icon: Icons.swap_horiz_outlined,
     ),
-    AppSelectOption<NursingQueueScope>(
-      value: NursingQueueScope.transferPending,
+    AppSearchBarFilterChoice(
+      value: _scopeCode(NursingQueueScope.transferPending),
       label: l10n.nursingScopeTransferPendingLabel,
+      icon: Icons.transfer_within_a_station_outlined,
     ),
-    AppSelectOption<NursingQueueScope>(
-      value: NursingQueueScope.dischargePending,
+    AppSearchBarFilterChoice(
+      value: _scopeCode(NursingQueueScope.dischargePending),
       label: l10n.nursingScopeDischargePendingLabel,
+      icon: Icons.logout_outlined,
     ),
-    AppSelectOption<NursingQueueScope>(
-      value: NursingQueueScope.all,
+    AppSearchBarFilterChoice(
+      value: _scopeCode(NursingQueueScope.all),
       label: l10n.nursingScopeAllLabel,
+      icon: Icons.all_inbox_outlined,
     ),
   ];
+}
+
+NursingQueueScope _scopeFromFilterValue(String? value) {
+  return switch (value) {
+    'urgent' => NursingQueueScope.urgent,
+    'medication_due' => NursingQueueScope.medicationDue,
+    'handover_pending' => NursingQueueScope.handoverPending,
+    'transfer_pending' => NursingQueueScope.transferPending,
+    'discharge_pending' => NursingQueueScope.dischargePending,
+    'all' => NursingQueueScope.all,
+    _ => NursingQueueScope.assignedWard,
+  };
+}
+
+String _scopeCode(NursingQueueScope scope) {
+  return switch (scope) {
+    NursingQueueScope.assignedWard => 'assigned_ward',
+    NursingQueueScope.urgent => 'urgent',
+    NursingQueueScope.medicationDue => 'medication_due',
+    NursingQueueScope.handoverPending => 'handover_pending',
+    NursingQueueScope.transferPending => 'transfer_pending',
+    NursingQueueScope.dischargePending => 'discharge_pending',
+    NursingQueueScope.all => 'all',
+  };
 }
 
 List<AppSelectOption<String>> _statusOptions(List<String> values) {

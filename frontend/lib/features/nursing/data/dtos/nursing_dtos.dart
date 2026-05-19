@@ -57,6 +57,8 @@ final class NursingPatientSummaryDto {
           _string(json['transfer_status']) ??
           _string(flowSummary['transfer_status']),
       wardDisplayName: _string(json['ward_display_name']),
+      roomId: _string(json['room_id']),
+      roomDisplayLabel: _string(json['room_display_label']),
       bedId: _string(json['bed_id']),
       bedDisplayLabel: _string(json['bed_display_label']),
       openTransferRequestId: _string(json['open_transfer_request_id']),
@@ -102,6 +104,7 @@ final class NursingPatientDetailDto {
     );
     final NursingJsonMap activeBed = _map(activeBedAssignment['bed']);
     final NursingJsonMap ward = _map(activeBed['ward']);
+    final NursingJsonMap room = _map(activeBed['room']);
     final NursingJsonMap openTransfer = _map(json['open_transfer_request']);
     final NursingJsonMap latestDischarge = _map(
       json['latest_discharge_summary'],
@@ -132,9 +135,16 @@ final class NursingPatientDetailDto {
           _string(flow['transfer_status']) ??
           _string(openTransfer['status']),
       wardDisplayName:
-          _string(json['ward_display_name']) ?? _string(ward['name']),
-      bedId: _string(activeBed['id']),
-      bedDisplayLabel: _string(activeBed['label']),
+          _string(json['ward_display_name']) ??
+          _string(ward['name']) ??
+          fallback.wardDisplayName,
+      roomId: _string(json['room_id']) ?? _string(room['id']) ?? fallback.roomId,
+      roomDisplayLabel:
+          _string(json['room_display_label']) ??
+          _string(room['name']) ??
+          fallback.roomDisplayLabel,
+      bedId: _string(activeBed['id']) ?? fallback.bedId,
+      bedDisplayLabel: _string(activeBed['label']) ?? fallback.bedDisplayLabel,
       openTransferRequestId: _string(openTransfer['id']),
       admittedAt: _date(admission['admitted_at']),
       dischargedAt: _date(admission['discharged_at']),
