@@ -236,14 +236,20 @@ class AppListTable<T> extends StatelessWidget {
 
     final Widget content = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        final bool hasBoundedHeight = constraints.hasBoundedHeight;
+        final bool effectiveShrinkWrap = shrinkWrap || !hasBoundedHeight;
+        final ScrollPhysics? effectivePhysics = hasBoundedHeight
+            ? physics
+            : physics ?? const NeverScrollableScrollPhysics();
+
         if (_usesListLayout(constraints)) {
           return _MobileListTable<T>(
             items: visibleItems,
             itemBuilder: mobileItemBuilder,
             itemKeyBuilder: itemKeyBuilder,
             onRowSelected: onRowSelected,
-            shrinkWrap: shrinkWrap,
-            physics: physics,
+            shrinkWrap: effectiveShrinkWrap,
+            physics: effectivePhysics,
             rowColorBuilder: rowColorBuilder,
           );
         }
@@ -265,18 +271,19 @@ class AppListTable<T> extends StatelessWidget {
       return content;
     }
 
-    if (shrinkWrap) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[content, resolvedFooter],
-      );
-    }
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool canExpand = !shrinkWrap && constraints.hasBoundedHeight;
 
-    return Column(
-      children: <Widget>[
-        Expanded(child: content),
-        resolvedFooter,
-      ],
+        return Column(
+          mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (canExpand) Expanded(child: content) else content,
+            resolvedFooter,
+          ],
+        );
+      },
     );
   }
 
@@ -336,16 +343,21 @@ class _ListTableSearchLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final List<Widget> children = <Widget>[
-      searchBar,
-      SizedBox(height: theme.spacing.sm),
-      if (shrinkWrap) child else Expanded(child: child),
-    ];
 
-    return Column(
-      mainAxisSize: shrinkWrap ? MainAxisSize.min : MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: children,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool canExpand = !shrinkWrap && constraints.hasBoundedHeight;
+
+        return Column(
+          mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            searchBar,
+            SizedBox(height: theme.spacing.sm),
+            if (canExpand) Expanded(child: child) else child,
+          ],
+        );
+      },
     );
   }
 }
