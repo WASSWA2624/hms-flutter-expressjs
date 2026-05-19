@@ -2324,63 +2324,296 @@ class _ProcedureDialog extends ConsumerStatefulWidget {
 }
 
 class _ProcedureDialogState extends ConsumerState<_ProcedureDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _codeController;
-  late final TextEditingController _descriptionController;
+  static const int _searchLimit = 80;
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 160);
+  static const double _menuHeight = 360;
+
+  Timer? _searchDebounce;
+  int _searchRequest = 0;
+  List<ClinicalCatalogOption> _catalogOptions = const <ClinicalCatalogOption>[];
+  final List<ClinicalCatalogOption> _selectedProcedures =
+      <ClinicalCatalogOption>[];
+  ClinicalCatalogOption? _activeProcedure;
+  bool _isSearching = false;
   bool _isSaving = false;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
-    _codeController = TextEditingController();
-    _descriptionController = TextEditingController();
+    _searchRequest += 1;
+    unawaited(_loadProcedureCatalog('', _searchRequest));
   }
 
   @override
   void dispose() {
-    _codeController.dispose();
-    _descriptionController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<ClinicalCatalogOption> options = _catalogWithActive();
+    final ClinicalCatalogOption? activeProcedure = _activeProcedure;
+    final String? activeProcedureKey = activeProcedure == null
+        ? null
+        : _procedureDedupKey(activeProcedure);
+    final bool activeAlreadySelected = activeProcedureKey != null &&
+        _selectedProcedures.any(
+          (ClinicalCatalogOption item) =>
+              _procedureDedupKey(item) == activeProcedureKey,
+        );
+    final bool canAddSelection =
+        activeProcedure != null && !_isSaving && !activeAlreadySelected;
     return AppDialog(
       title: Text(l10n.clinicalRequestProcedureAction),
       icon: const Icon(Icons.healing_outlined),
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _codeController,
-              labelText: l10n.opdProcedureCodeLabel,
-              enabled: !_isSaving,
+      scrollable: true,
+      closeEnabled: !_isSaving,
+      maxWidth: 760,
+      content: AppFormSection(
+        title: l10n.clinicalProcedureSelectedTitle,
+        density: AppFormSectionDensity.spacious,
+        children: <Widget>[
+          if (_failure != null) AppFailureStateView(failure: _failure!),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLowest,
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
-            AppTextField(
-              controller: _descriptionController,
-              labelText: l10n.opdProcedureLabel,
-              maxLines: 3,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Icon(
+                    Icons.manage_search_outlined,
+                    color: colorScheme.primary,
+                    size: theme.appTokens.listIconSize,
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(
+                    child: Text(
+                      l10n.clinicalProcedureDialogHelp,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
+          AppResponsiveFieldRow(
+            gap: AppResponsiveFieldRowGap.form,
+            children: <Widget>[
+              AppSelectField<String>.searchable(
+                value: _activeProcedure?.apiId,
+                labelText: l10n.clinicalProcedureSearchLabel,
+                hintText: l10n.clinicalProcedureSearchHint,
+                enabled: !_isSaving,
+                menuHeight: _menuHeight,
+                options: _procedureNameOptions(options),
+                onSearchTextChanged: _scheduleProcedureSearch,
+                onChanged: _selectProcedureByApiId,
+              ),
+              AppSelectField<String>.searchable(
+                value: _activeProcedure?.apiId,
+                labelText: l10n.opdProcedureCodeLabel,
+                hintText: l10n.clinicalProcedureCodeSearchHint,
+                enabled: !_isSaving,
+                menuHeight: _menuHeight,
+                options: _procedureCodeOptions(options),
+                onSearchTextChanged: _scheduleProcedureSearch,
+                onChanged: _selectProcedureByApiId,
+              ),
+            ],
+          ),
+          if (_isSearching) const LinearProgressIndicator(),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AppButton.secondary(
+              label: l10n.clinicalLabRequestAddSelectionAction,
+              leadingIcon: Icons.add,
+              enabled: canAddSelection,
+              onPressed: _addActiveProcedure,
+            ),
+          ),
+          _ProcedureSelectedPanel(
+            procedures: _selectedProcedures,
+            isSaving: _isSaving,
+            onDelete: _removeProcedure,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
         ),
-      ),
-      actions: _dialogActions(
-        context,
-        l10n.clinicalRequestProcedureAction,
-        _isSaving,
-        _submit,
-      ),
+        AppButton.primary(
+          label: l10n.clinicalRequestProcedureAction,
+          isLoading: _isSaving,
+          enabled: _selectedProcedures.isNotEmpty,
+          onPressed: _submit,
+        ),
+      ],
     );
   }
 
+  List<AppSelectOption<String>> _procedureNameOptions(
+    List<ClinicalCatalogOption> options,
+  ) {
+    return <AppSelectOption<String>>[
+      for (final ClinicalCatalogOption option in options)
+        AppSelectOption<String>(
+          value: option.apiId,
+          label: _procedureTitle(option),
+          labelWidget: _ProcedureOptionLabel(
+            title: _procedureTitle(option),
+            subtitle: _procedureSubtitle(option),
+          ),
+          leadingIcon: const Icon(Icons.healing_outlined),
+        ),
+    ];
+  }
+
+  List<AppSelectOption<String>> _procedureCodeOptions(
+    List<ClinicalCatalogOption> options,
+  ) {
+    return <AppSelectOption<String>>[
+      for (final ClinicalCatalogOption option in options)
+        AppSelectOption<String>(
+          value: option.apiId,
+          label: _procedureCodeLabel(option),
+          labelWidget: _ProcedureOptionLabel(
+            title: _procedureCodeLabel(option),
+            subtitle: _joinDisplay(<String?>[
+              _procedureTitle(option),
+              option.displaySubtitle,
+            ]),
+          ),
+          leadingIcon: const Icon(Icons.tag_outlined),
+        ),
+    ];
+  }
+
+  void _scheduleProcedureSearch(String value) {
+    final String query = value.trim();
+    _searchDebounce?.cancel();
+    _searchRequest += 1;
+    final int requestId = _searchRequest;
+    _searchDebounce = Timer(
+      _searchDebounceDuration,
+      () => _loadProcedureCatalog(query, requestId),
+    );
+  }
+
+  Future<void> _loadProcedureCatalog(String query, int requestId) async {
+    if (!mounted || requestId != _searchRequest) {
+      return;
+    }
+    setState(() => _isSearching = true);
+    final Result<List<ClinicalCatalogOption>> result = await ref
+        .read(clinicalWorkspaceControllerProvider.notifier)
+        .searchClinicalTerms(
+          termType: 'PROCEDURE',
+          query: query,
+          limit: _searchLimit,
+        );
+    if (!mounted || requestId != _searchRequest) {
+      return;
+    }
+    setState(() {
+      _catalogOptions = result.when(
+        success: _dedupeProcedureOptions,
+        failure: (_) => const <ClinicalCatalogOption>[],
+      );
+      _failure = result.when(
+        success: (_) => null,
+        failure: (AppFailure failure) => failure,
+      );
+      _isSearching = false;
+    });
+  }
+
+  void _selectProcedureByApiId(String? value) {
+    if (value == null) {
+      setState(() {
+        _activeProcedure = null;
+        _failure = null;
+      });
+      return;
+    }
+
+    final ClinicalCatalogOption? procedure = _findProcedure(value);
+    if (procedure == null) {
+      return;
+    }
+    setState(() {
+      _activeProcedure = procedure;
+      _catalogOptions = _mergeCatalogOption(_catalogOptions, procedure);
+      _failure = null;
+    });
+  }
+
+  ClinicalCatalogOption? _findProcedure(String apiId) {
+    for (final ClinicalCatalogOption option in _catalogWithActive()) {
+      if (option.apiId == apiId) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  List<ClinicalCatalogOption> _catalogWithActive() {
+    final ClinicalCatalogOption? active = _activeProcedure;
+    if (active == null) {
+      return _catalogOptions;
+    }
+    return _mergeCatalogOption(_catalogOptions, active);
+  }
+
+  void _addActiveProcedure() {
+    final ClinicalCatalogOption? procedure = _activeProcedure;
+    if (procedure == null) {
+      return;
+    }
+    if (_selectedProcedures.any(
+      (ClinicalCatalogOption item) =>
+          _procedureDedupKey(item) == _procedureDedupKey(procedure),
+    )) {
+      setState(() {
+        _activeProcedure = null;
+        _failure = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _selectedProcedures.add(procedure);
+      _activeProcedure = null;
+      _failure = null;
+    });
+  }
+
+  void _removeProcedure(int index) {
+    if (index < 0 || index >= _selectedProcedures.length) {
+      return;
+    }
+    setState(() {
+      _selectedProcedures.removeAt(index);
+      _failure = null;
+    });
+  }
+
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (_selectedProcedures.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
       return;
     }
     setState(() {
@@ -2389,9 +2622,10 @@ class _ProcedureDialogState extends ConsumerState<_ProcedureDialog> {
     });
     final AppFailure? failure = await ref
         .read(clinicalWorkspaceControllerProvider.notifier)
-        .addProcedure(
-          code: _codeController.text.trim(),
-          description: _descriptionController.text.trim(),
+        .addProcedures(
+          procedures: List<ClinicalCatalogOption>.unmodifiable(
+            _selectedProcedures,
+          ),
           performedAt: DateTime.now(),
         );
     _finishSubmit(failure);
@@ -2409,6 +2643,185 @@ class _ProcedureDialogState extends ConsumerState<_ProcedureDialog> {
       _failure = failure;
       _isSaving = false;
     });
+  }
+}
+
+class _ProcedureOptionLabel extends StatelessWidget {
+  const _ProcedureOptionLabel({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (subtitle.isNotEmpty)
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ProcedureSelectedPanel extends StatelessWidget {
+  const _ProcedureSelectedPanel({
+    required this.procedures,
+    required this.isSaving,
+    required this.onDelete,
+  });
+
+  final List<ClinicalCatalogOption> procedures;
+  final bool isSaving;
+  final ValueChanged<int> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(theme.spacing.sm),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.clinicalProcedureSelectedTitle,
+                    style: theme.textTheme.labelLarge,
+                  ),
+                ),
+                Text(
+                  l10n.clinicalProcedureSelectedCount(procedures.length),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 280),
+            child: procedures.isEmpty
+                ? SizedBox(
+                    height: 120,
+                    child: Center(
+                      child: Text(l10n.clinicalProcedureNoSelection),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: procedures.length,
+                    separatorBuilder: (_, _) =>
+                        Divider(height: 1, color: colorScheme.outlineVariant),
+                    itemBuilder: (BuildContext context, int index) {
+                      return _ProcedureSelectedRow(
+                        procedure: procedures[index],
+                        isSaving: isSaving,
+                        onDelete: () => onDelete(index),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProcedureSelectedRow extends StatelessWidget {
+  const _ProcedureSelectedRow({
+    required this.procedure,
+    required this.isSaving,
+    required this.onDelete,
+  });
+
+  final ClinicalCatalogOption procedure;
+  final bool isSaving;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String subtitle = _joinDisplay(<String?>[
+      _trimmedOrNull(procedure.code),
+      procedure.displaySubtitle,
+    ]);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.healing_outlined,
+            color: colorScheme.primary,
+            size: theme.appTokens.listIconSize,
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _procedureTitle(procedure),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
+            onPressed: isSaving ? null : onDelete,
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -5712,6 +6125,41 @@ String _diagnosisCodeLabel(ClinicalCatalogOption option) {
 
 String _diagnosisCodeSubtitle(ClinicalCatalogOption option) {
   return _joinDisplay(<String?>[option.name, option.displaySubtitle]);
+}
+
+List<ClinicalCatalogOption> _dedupeProcedureOptions(
+  List<ClinicalCatalogOption> options,
+) {
+  final Set<String> seen = <String>{};
+  final List<ClinicalCatalogOption> deduped = <ClinicalCatalogOption>[];
+  for (final ClinicalCatalogOption option in options) {
+    final String key = _procedureDedupKey(option);
+    if (seen.add(key)) {
+      deduped.add(option);
+    }
+  }
+  return deduped;
+}
+
+String _procedureTitle(ClinicalCatalogOption option) {
+  return _trimmedOrNull(option.name) ?? option.displayTitle;
+}
+
+String _procedureCodeLabel(ClinicalCatalogOption option) {
+  return _trimmedOrNull(option.code) ?? option.displayTitle;
+}
+
+String _procedureSubtitle(ClinicalCatalogOption option) {
+  return _joinDisplay(<String?>[option.code, option.displaySubtitle]);
+}
+
+String _procedureDedupKey(ClinicalCatalogOption option) {
+  final String code = _trimmedOrNull(option.code)?.toUpperCase() ?? '';
+  final String title = _procedureTitle(option).toUpperCase();
+  if (code.isNotEmpty || title.isNotEmpty) {
+    return '$code::$title';
+  }
+  return _trimmedOrNull(option.apiId)?.toUpperCase() ?? '';
 }
 
 String? _trimmedOrNull(String? value) {

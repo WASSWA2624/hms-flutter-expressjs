@@ -10,6 +10,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { ROLES } = require('@config/roles');
 const { UGANDA_DIAGNOSIS_TERMS } = require('../data/uganda-diagnosis-terms');
+const { COMMON_PROCEDURE_TERMS } = require('../data/common-procedure-terms');
 
 const SHARED_FAVORITE_ROLES = new Set([
   ROLES.SUPER_ADMIN,
@@ -54,6 +55,7 @@ const scoreSuggestion = ({ q, source, createdAt, usageCount }) => {
   if (source.origin === 'SHARED_FAVORITE') score += 90;
   if (source.origin === 'RECENT_HISTORY') score += 60;
   if (source.origin === 'UGANDA_CATALOG') score += 40;
+  if (source.origin === 'PROCEDURE_CATALOG') score += 40;
 
   if (!search) score += 5;
   if (search) {
@@ -210,6 +212,18 @@ const loadUgandaDiagnosisCatalog = ({ q }) => {
   });
 };
 
+const loadCommonProcedureCatalog = ({ q }) => {
+  const tokens = normalizeUpper(q).split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return COMMON_PROCEDURE_TERMS;
+
+  return COMMON_PROCEDURE_TERMS.filter((term) => {
+    const searchText = normalizeUpper(
+      term.search_text || `${term.description || ''} ${term.code || ''} ${term.category || ''}`
+    );
+    return tokens.every((token) => searchText.includes(token));
+  });
+};
+
 const deleteClinicalTermFavorite = async (id, context = {}) => {
   const tenantId = context.tenant_id || null;
   const userId = context.user_id || null;
@@ -326,7 +340,12 @@ const listClinicalTermSuggestions = async (filters = {}, context = {}) => {
       limit: safeLimit * 3,
     }),
   ]);
-  const catalog = termType === 'DIAGNOSIS' ? loadUgandaDiagnosisCatalog({ q }) : [];
+  const catalog =
+    termType === 'DIAGNOSIS'
+      ? loadUgandaDiagnosisCatalog({ q })
+      : termType === 'PROCEDURE'
+        ? loadCommonProcedureCatalog({ q })
+        : [];
 
   const personalFavoriteIds = new Set(
     favorites
@@ -356,8 +375,10 @@ const listClinicalTermSuggestions = async (filters = {}, context = {}) => {
 
     if (!previous || nextScore > previous.score) {
       merged.set(key, {
+        id: item.id || key,
         code: item.code || null,
         description: item.description,
+        category: item.category || null,
         origin: item.origin,
         score: nextScore,
         term_type: termType,
@@ -374,10 +395,13 @@ const listClinicalTermSuggestions = async (filters = {}, context = {}) => {
     .sort((a, b) => b.score - a.score)
     .slice(0, safeLimit)
     .map((item) => ({
+      id: item.id,
       term_type: item.term_type,
       code: item.code,
       description: item.description,
+      category: item.category || null,
       origin: item.origin,
+      source: item.origin,
       score: item.score,
     }));
 };

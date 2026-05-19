@@ -6280,6 +6280,48 @@ abstract class AppLocalizations {
   /// **'Add procedure'**
   String get clinicalRequestProcedureAction;
 
+  /// Clinical procedure dialog helper text.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the procedure catalog, add one or more procedures to the review list, then save them together.'**
+  String get clinicalProcedureDialogHelp;
+
+  /// Clinical procedure searchable select label.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure or minor surgery'**
+  String get clinicalProcedureSearchLabel;
+
+  /// Clinical procedure searchable select hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, body area, or minor surgery type'**
+  String get clinicalProcedureSearchHint;
+
+  /// Clinical procedure code searchable select hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by procedure code'**
+  String get clinicalProcedureCodeSearchHint;
+
+  /// Clinical procedure selected list title.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected procedures'**
+  String get clinicalProcedureSelectedTitle;
+
+  /// Clinical procedure selected item count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String clinicalProcedureSelectedCount(int count);
+
+  /// Clinical procedure empty selected items message.
+  ///
+  /// In en, this message translates to:
+  /// **'No procedures selected'**
+  String get clinicalProcedureNoSelection;
+
   /// Clinical care plan action label.
   ///
   /// In en, this message translates to:

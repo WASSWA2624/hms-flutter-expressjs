@@ -3363,6 +3363,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestProcedureAction => 'Add procedure';
 
   @override
+  String get clinicalProcedureDialogHelp =>
+      'Search the procedure catalog, add one or more procedures to the review list, then save them together.';
+
+  @override
+  String get clinicalProcedureSearchLabel => 'Procedure or minor surgery';
+
+  @override
+  String get clinicalProcedureSearchHint =>
+      'Search by name, body area, or minor surgery type';
+
+  @override
+  String get clinicalProcedureCodeSearchHint => 'Search by procedure code';
+
+  @override
+  String get clinicalProcedureSelectedTitle => 'Selected procedures';
+
+  @override
+  String clinicalProcedureSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get clinicalProcedureNoSelection => 'No procedures selected';
+
+  @override
   String get clinicalCarePlanAction => 'Care plan';
 
   @override

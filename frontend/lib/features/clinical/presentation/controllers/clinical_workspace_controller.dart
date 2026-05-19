@@ -297,14 +297,72 @@ final class ClinicalWorkspaceController
     String? code,
     DateTime? performedAt,
   }) {
-    return _mutateSelectedEncounter(
-      () => _repository.createProcedure(<String, Object?>{
-        'encounter_id': _selectedEntry!.encounterId,
-        'code': code,
-        'description': description,
-        'performed_at': performedAt?.toUtc().toIso8601String(),
-      }),
+    final String normalizedDescription = description.trim();
+    final String? normalizedCode = _normalizedOptionalText(code);
+    if (normalizedDescription.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return addProcedures(
+      procedures: <ClinicalCatalogOption>[
+        ClinicalCatalogOption(
+          id: _joinProcedureKey(normalizedCode, normalizedDescription),
+          code: normalizedCode,
+          name: normalizedDescription,
+        ),
+      ],
+      performedAt: performedAt,
     );
+  }
+
+  Future<AppFailure?> addProcedures({
+    required List<ClinicalCatalogOption> procedures,
+    DateTime? performedAt,
+  }) {
+    final List<ClinicalCatalogOption> normalizedProcedures = procedures
+        .where(
+          (ClinicalCatalogOption procedure) =>
+              _procedureDescription(procedure).isNotEmpty,
+        )
+        .toList(growable: false);
+    if (normalizedProcedures.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    final String performedAtIso = (performedAt ?? DateTime.now())
+        .toUtc()
+        .toIso8601String();
+
+    return _mutateSelectedEncounter(() async {
+      final String encounterId = _selectedEntry!.encounterId;
+      for (final ClinicalCatalogOption procedure in normalizedProcedures) {
+        final String description = _procedureDescription(procedure);
+        final String? code = _normalizedOptionalText(procedure.code);
+        final Result<void> procedureResult = await _repository.createProcedure(
+          <String, Object?>{
+            'encounter_id': encounterId,
+            'code': code,
+            'description': description,
+            'performed_at': performedAtIso,
+          },
+        );
+        final AppFailure? failure = _failureOrNull(procedureResult);
+        if (failure != null) {
+          return Result<void>.failure(failure);
+        }
+      }
+
+      for (final ClinicalCatalogOption procedure in normalizedProcedures) {
+        await _repository.createClinicalTermFavorite(<String, Object?>{
+          'term_type': 'PROCEDURE',
+          'scope': 'SHARED',
+          'code': _normalizedOptionalText(procedure.code),
+          'description': _procedureDescription(procedure),
+        });
+      }
+
+      return const Result<void>.success(null);
+    });
   }
 
   Future<AppFailure?> addCarePlan({
@@ -1050,6 +1108,24 @@ final class ClinicalWorkspaceController
 
   T? _successOrNull<T>(Result<T> result) {
     return result.when(success: (T value) => value, failure: (_) => null);
+  }
+
+  String _procedureDescription(ClinicalCatalogOption procedure) {
+    return _normalizedOptionalText(procedure.name) ??
+        _normalizedOptionalText(procedure.displayTitle) ??
+        '';
+  }
+
+  String? _normalizedOptionalText(String? value) {
+    final String normalized = value?.trim() ?? '';
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  String _joinProcedureKey(String? code, String description) {
+    return <String?>[code, description]
+        .map((String? value) => value?.trim() ?? '')
+        .where((String value) => value.isNotEmpty)
+        .join('::');
   }
 
   AppFailure? _failureOrNull<T>(Result<T> result) {

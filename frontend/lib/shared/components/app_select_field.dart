@@ -39,6 +39,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.searchable = false,
     this.filterCallback,
     this.searchCallback,
+    this.onSearchTextChanged,
     this.focusNode,
     this.restorationId,
     this.menuHeight,
@@ -62,6 +63,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.isLoading = false,
     this.filterCallback,
     this.searchCallback,
+    this.onSearchTextChanged,
     this.focusNode,
     this.restorationId,
     this.menuHeight,
@@ -85,6 +87,7 @@ class AppSelectField<T> extends StatefulWidget {
   final bool searchable;
   final FilterCallback<T>? filterCallback;
   final SearchCallback<T>? searchCallback;
+  final ValueChanged<String>? onSearchTextChanged;
   final FocusNode? focusNode;
   final String? restorationId;
   final double? menuHeight;
@@ -96,6 +99,7 @@ class AppSelectField<T> extends StatefulWidget {
 class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   late final TextEditingController _controller;
   bool _hasControllerText = false;
+  bool _isSyncingControllerText = false;
 
   @override
   void initState() {
@@ -108,11 +112,18 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   @override
   void didUpdateWidget(covariant AppSelectField<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value ||
-        oldWidget.options != widget.options) {
+    final bool selectionChanged = oldWidget.value != widget.value;
+    final bool selectedOptionMayHaveChanged =
+        widget.value != null && oldWidget.options != widget.options;
+    if (selectionChanged || selectedOptionMayHaveChanged) {
       final String label = _labelForValue(widget.value);
       if (_controller.text != label) {
-        _controller.value = TextEditingValue(text: label);
+        _isSyncingControllerText = true;
+        try {
+          _controller.value = TextEditingValue(text: label);
+        } finally {
+          _isSyncingControllerText = false;
+        }
       }
     }
   }
@@ -238,13 +249,15 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
 
   void _handleControllerChanged() {
     final bool hasText = _controller.text.isNotEmpty;
-    if (hasText == _hasControllerText) {
-      return;
+    if (hasText != _hasControllerText) {
+      setState(() {
+        _hasControllerText = hasText;
+      });
     }
 
-    setState(() {
-      _hasControllerText = hasText;
-    });
+    if (!_isSyncingControllerText) {
+      widget.onSearchTextChanged?.call(_controller.text);
+    }
   }
 
   String _labelForValue(T? value) {

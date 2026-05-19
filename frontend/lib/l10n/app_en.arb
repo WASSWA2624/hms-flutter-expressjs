@@ -4347,6 +4347,39 @@
   "@clinicalRequestProcedureAction": {
     "description": "Clinical add procedure action label."
   },
+  "clinicalProcedureDialogHelp": "Search the procedure catalog, add one or more procedures to the review list, then save them together.",
+  "@clinicalProcedureDialogHelp": {
+    "description": "Clinical procedure dialog helper text."
+  },
+  "clinicalProcedureSearchLabel": "Procedure or minor surgery",
+  "@clinicalProcedureSearchLabel": {
+    "description": "Clinical procedure searchable select label."
+  },
+  "clinicalProcedureSearchHint": "Search by name, body area, or minor surgery type",
+  "@clinicalProcedureSearchHint": {
+    "description": "Clinical procedure searchable select hint."
+  },
+  "clinicalProcedureCodeSearchHint": "Search by procedure code",
+  "@clinicalProcedureCodeSearchHint": {
+    "description": "Clinical procedure code searchable select hint."
+  },
+  "clinicalProcedureSelectedTitle": "Selected procedures",
+  "@clinicalProcedureSelectedTitle": {
+    "description": "Clinical procedure selected list title."
+  },
+  "clinicalProcedureSelectedCount": "{count} selected",
+  "@clinicalProcedureSelectedCount": {
+    "description": "Clinical procedure selected item count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalProcedureNoSelection": "No procedures selected",
+  "@clinicalProcedureNoSelection": {
+    "description": "Clinical procedure empty selected items message."
+  },
   "clinicalCarePlanAction": "Care plan",
   "@clinicalCarePlanAction": {
     "description": "Clinical care plan action label."

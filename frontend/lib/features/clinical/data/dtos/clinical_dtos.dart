@@ -361,20 +361,24 @@ final class ClinicalTermOptionDto {
   final ClinicalJsonMap json;
 
   ClinicalCatalogOption toEntity() {
+    final String? code = _string(json['code']);
+    final String? description =
+        _string(json['description']) ?? _string(json['term']) ?? _string(json['name']);
+    final String? category = _string(json['category']) ?? _string(json['term_type']);
+    final String? source = _string(json['source']) ?? _string(json['origin']);
     return ClinicalCatalogOption(
       id:
           _string(json['id']) ??
-          _string(json['code']) ??
-          _string(json['description']) ??
+          _joinDisplay(<String?>[code, description]) ??
+          description ??
+          code ??
           '',
       publicId: _string(json['human_friendly_id']),
-      name:
-          _string(json['description']) ??
-          _string(json['term']) ??
-          _string(json['name']),
-      code: _string(json['code']),
-      category: _string(json['term_type']),
-      secondaryText: _string(json['source']),
+      name: description,
+      code: code,
+      category: category,
+      secondaryText: source,
+      searchText: _joinDisplay(<String?>[description, code, category, source]),
     );
   }
 }
