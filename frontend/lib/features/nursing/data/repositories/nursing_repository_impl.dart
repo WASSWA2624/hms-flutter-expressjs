@@ -63,7 +63,9 @@ final class NursingRepositoryImpl implements NursingRepository {
 
         return Result<NursingPatientDetail>.success(
           detail.copyWith(
-            nursingNotes: nursingNotes.isEmpty ? detail.nursingNotes : nursingNotes,
+            nursingNotes: nursingNotes.isEmpty
+                ? detail.nursingNotes
+                : nursingNotes,
             medicationAdministrations: administrations.isEmpty
                 ? detail.medicationAdministrations
                 : administrations,
@@ -114,10 +116,11 @@ final class NursingRepositoryImpl implements NursingRepository {
     NursingPatientSummary summary,
     Map<String, Object?> payload,
   ) async {
-    final Result<void> result = await _apiClient.post<void>(
-      ApiEndpoints.collection(HmsApiResource.vitalSigns),
-      data: _withoutEmpty(payload),
-      decoder: (_) {},
+    final Map<String, NursingVitalSign> existingVitals =
+        await _latestVitalsByType(payload['encounter_id']);
+    final Result<void> result = await _upsertVitalPayload(
+      payload,
+      existingVitals,
     );
     return _reloadAfterMutation(result, summary);
   }
@@ -127,11 +130,13 @@ final class NursingRepositoryImpl implements NursingRepository {
     NursingPatientSummary summary,
     List<Map<String, Object?>> payloads,
   ) async {
+    final Map<String, NursingVitalSign> existingVitals =
+        await _latestVitalsByType(payloads.firstOrNull?['encounter_id']);
+
     for (final Map<String, Object?> payload in payloads) {
-      final Result<void> result = await _apiClient.post<void>(
-        ApiEndpoints.collection(HmsApiResource.vitalSigns),
-        data: _withoutEmpty(payload),
-        decoder: (_) {},
+      final Result<void> result = await _upsertVitalPayload(
+        payload,
+        existingVitals,
       );
       final AppFailure? failure = result.when(
         success: (_) => null,
@@ -142,6 +147,58 @@ final class NursingRepositoryImpl implements NursingRepository {
       }
     }
     return loadPatientDetail(summary);
+  }
+
+  Future<Result<void>> _upsertVitalPayload(
+    Map<String, Object?> payload,
+    Map<String, NursingVitalSign> existingVitals,
+  ) async {
+    final String vitalType = _vitalType(payload);
+    if (vitalType.isEmpty) {
+      return Result<void>.failure(
+        AppFailure.validation(validationFields: const <String>{'vital_type'}),
+      );
+    }
+
+    final NursingVitalSign? existing = existingVitals[vitalType];
+    final Result<void> result = await _writeVitalPayload(payload, existing);
+    final AppFailure? failure = result.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+
+    if (existing != null || failure?.statusCode != 409) {
+      return result;
+    }
+
+    final Map<String, NursingVitalSign> refreshedVitals =
+        await _latestVitalsByType(payload['encounter_id']);
+    final NursingVitalSign? refreshedExisting = refreshedVitals[vitalType];
+    if (refreshedExisting == null) {
+      return result;
+    }
+
+    return _writeVitalPayload(payload, refreshedExisting);
+  }
+
+  Future<Result<void>> _writeVitalPayload(
+    Map<String, Object?> payload,
+    NursingVitalSign? existing,
+  ) {
+    final Map<String, Object?> data = _withoutEmpty(payload);
+    if (existing == null) {
+      return _apiClient.post<void>(
+        ApiEndpoints.collection(HmsApiResource.vitalSigns),
+        data: data,
+        decoder: (_) {},
+      );
+    }
+
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.vitalSigns, existing.id),
+      data: data,
+      decoder: (_) {},
+    );
   }
 
   @override
@@ -272,8 +329,8 @@ final class NursingRepositoryImpl implements NursingRepository {
 
   Future<List<MedicationAdministrationRecord>>
   _relatedMedicationAdministrations(NursingPatientDetail detail) async {
-    final Result<List<MedicationAdministrationRecord>> result =
-        await _apiClient.get<List<MedicationAdministrationRecord>>(
+    final Result<List<MedicationAdministrationRecord>> result = await _apiClient
+        .get<List<MedicationAdministrationRecord>>(
           ApiEndpoints.collection(HmsApiResource.medicationAdministrations),
           queryParameters: _withoutEmpty(<String, Object?>{
             'page': 1,
@@ -310,6 +367,38 @@ final class NursingRepositoryImpl implements NursingRepository {
         );
 
     return _listOrEmptyOnDenied(result);
+  }
+
+  Future<Map<String, NursingVitalSign>> _latestVitalsByType(
+    Object? encounterId,
+  ) async {
+    final String? normalizedEncounterId = encounterId?.toString();
+    if (!_isNonEmpty(normalizedEncounterId)) {
+      return const <String, NursingVitalSign>{};
+    }
+
+    final Result<List<NursingVitalSign>> result = await _apiClient
+        .get<List<NursingVitalSign>>(
+          ApiEndpoints.collection(HmsApiResource.vitalSigns),
+          queryParameters: _withoutEmpty(<String, Object?>{
+            'page': 1,
+            'limit': 50,
+            'encounter_id': normalizedEncounterId,
+            'sort_by': 'recorded_at',
+            'order': 'desc',
+          }),
+          decoder: decodeNursingVitals,
+        );
+
+    final Map<String, NursingVitalSign> latestVitals =
+        <String, NursingVitalSign>{};
+    for (final NursingVitalSign vital in _listOrEmptyOnDenied(result)) {
+      final String vitalType = vital.vitalType.trim().toUpperCase();
+      if (vitalType.isNotEmpty && !latestVitals.containsKey(vitalType)) {
+        latestVitals[vitalType] = vital;
+      }
+    }
+    return latestVitals;
   }
 
   Future<List<NursingCarePlan>> _relatedCarePlans(
@@ -430,5 +519,9 @@ final class NursingRepositoryImpl implements NursingRepository {
 
   bool _isNonEmpty(String? value) {
     return value != null && value.trim().isNotEmpty;
+  }
+
+  String _vitalType(Map<String, Object?> payload) {
+    return payload['vital_type']?.toString().trim().toUpperCase() ?? '';
   }
 }
