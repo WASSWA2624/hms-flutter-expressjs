@@ -10,6 +10,7 @@ import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dar
 import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -526,50 +527,49 @@ class _TheaterActionBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
 
-    return Wrap(
-      spacing: Theme.of(context).spacing.xs,
-      runSpacing: Theme.of(context).spacing.xs,
-      children: <Widget>[
-        AppButton.secondary(
+    return AppActionList(
+      actions: <AppActionItem>[
+        AppActionItem(
           label: l10n.theaterAssignResourceAction,
           leadingIcon: Icons.meeting_room_outlined,
           enabled: !isMutating,
           onPressed: () => _showAssignResourceDialog(context, ref),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: l10n.theaterUpdateReadinessAction,
           leadingIcon: Icons.fact_check_outlined,
           enabled: !isMutating,
           onPressed: () => _showChecklistDialog(context, ref),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: l10n.theaterAnesthesiaAction,
           leadingIcon: Icons.monitor_heart_outlined,
           enabled: !isMutating,
           onPressed: () => _showAnesthesiaDialog(context, ref, theaterCase),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: l10n.theaterPostOpAction,
           leadingIcon: Icons.note_add_outlined,
           enabled: !isMutating,
           onPressed: () => _showPostOpDialog(context, ref, theaterCase),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: l10n.theaterHandoverAction,
           leadingIcon: Icons.output_outlined,
           enabled: !isMutating,
           onPressed: () => _showHandoverDialog(context, ref),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: l10n.theaterFinalizeAction,
           leadingIcon: Icons.verified_outlined,
           enabled: !isMutating,
           onPressed: () => _showFinalizeDialog(context, ref),
         ),
-        AppButton.tertiary(
+        AppActionItem(
           label: l10n.theaterCancelCaseAction,
           leadingIcon: Icons.cancel_outlined,
           enabled: !isMutating,
+          variant: AppActionVariant.tertiary,
           onPressed: () => _showCancelDialog(context, ref),
         ),
       ],

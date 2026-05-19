@@ -24,6 +24,7 @@ import 'package:hosspi_hms/features/patients/presentation/controllers/patient_re
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -2219,10 +2220,9 @@ class _QuickActions extends ConsumerWidget {
       children: <Widget>[
         Text(l10n.patientsQuickActionsTitle, style: theme.textTheme.titleSmall),
         SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
+        AppActionList(
+          actions: const <AppActionItem>[],
+          extraActions: <Widget>[
             AppPermissionActionButton(
               label: l10n.patientsQuickAppointmentAction,
               icon: Icons.event_available_outlined,

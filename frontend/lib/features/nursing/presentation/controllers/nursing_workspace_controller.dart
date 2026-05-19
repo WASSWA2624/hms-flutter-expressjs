@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/nursing/data/repositories/nursing_repository_impl.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
@@ -28,9 +30,18 @@ final class NursingWorkspaceController
   @override
   Future<Result<NursingWorkspaceState>> build() async {
     ref.onDispose(() => _syncTimer?.cancel());
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.nursing,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     final Result<NursingWorkspaceState> result = await _loadInitialState();
     _startSync();
     return result;
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await _syncVisibleData();
   }
 
   Future<AppFailure?> refresh() {

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_items.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 class ClinicalActionsPanel extends StatelessWidget {
   const ClinicalActionsPanel({
@@ -18,26 +16,21 @@ class ClinicalActionsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return AppWorkspaceDetailPanel(
+    return AppActionPanel(
       title: title,
       description: description,
-      child: Wrap(
-        spacing: theme.spacing.xs,
-        runSpacing: theme.spacing.xs,
-        children: <Widget>[
-          for (final ClinicalActionItem action in actions)
-            AppButton.secondary(
-              label: action.label,
-              leadingIcon: action.icon,
-              enabled: action.enabled,
-              isLoading: action.isLoading,
-              tooltip: action.tooltip,
-              semanticLabel: action.semanticLabel,
-              onPressed: action.onPressed,
-            ),
-        ],
-      ),
+      actions: <AppActionItem>[
+        for (final ClinicalActionItem action in actions)
+          AppActionItem(
+            label: action.label,
+            leadingIcon: action.icon,
+            enabled: action.enabled,
+            isLoading: action.isLoading,
+            tooltip: action.tooltip,
+            semanticLabel: action.semanticLabel,
+            onPressed: action.onPressed,
+          ),
+      ],
     );
   }
 }

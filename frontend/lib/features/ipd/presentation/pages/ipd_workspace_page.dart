@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -525,40 +526,38 @@ class _IpdDetailActions extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final IpdAdmissionSummary summary = admission.summary;
     final bool terminal = summary.isTerminal;
-    return Wrap(
-      spacing: Theme.of(context).spacing.xs,
-      runSpacing: Theme.of(context).spacing.xs,
-      children: <Widget>[
+    return AppActionList(
+      actions: <AppActionItem>[
         if (!summary.hasActiveBed && !terminal)
-          AppButton.secondary(
+          AppActionItem(
             label: l10n.ipdAssignBedAction,
             leadingIcon: Icons.bed_outlined,
             enabled: enabled,
             onPressed: () => _openAssignBedDialog(context, ref),
           ),
         if (summary.hasActiveBed && !terminal)
-          AppButton.secondary(
+          AppActionItem(
             label: l10n.ipdReleaseBedAction,
             leadingIcon: Icons.cleaning_services_outlined,
             enabled: enabled,
             onPressed: () => _openReleaseBedDialog(context, ref),
           ),
         if (!terminal)
-          AppButton.secondary(
+          AppActionItem(
             label: l10n.ipdRequestTransferAction,
             leadingIcon: Icons.swap_horiz,
             enabled: enabled,
             onPressed: () => _openTransferRequestDialog(context, ref),
           ),
         if (admission.openTransferRequest != null && !terminal)
-          AppButton.secondary(
+          AppActionItem(
             label: l10n.ipdManageTransferAction,
             leadingIcon: Icons.move_down_outlined,
             enabled: enabled,
             onPressed: () => _openTransferUpdateDialog(context, ref),
           ),
         if (!terminal)
-          AppButton.secondary(
+          AppActionItem(
             label: l10n.ipdAddWardRoundAction,
             leadingIcon: Icons.fact_check_outlined,
             enabled: enabled,
@@ -575,7 +574,7 @@ class _IpdDetailActions extends ConsumerWidget {
             ),
           ),
         if (!terminal)
-          AppButton.secondary(
+          AppActionItem(
             label: l10n.ipdAddNursingNoteAction,
             leadingIcon: Icons.note_add_outlined,
             enabled: enabled,
@@ -592,14 +591,14 @@ class _IpdDetailActions extends ConsumerWidget {
             ),
           ),
         if (!terminal)
-          AppButton.secondary(
+          AppActionItem(
             label: l10n.ipdRecordMedicationAction,
             leadingIcon: Icons.medication_outlined,
             enabled: enabled,
             onPressed: () => _openMedicationDialog(context, ref),
           ),
         if (!terminal)
-          AppButton.secondary(
+          AppActionItem(
             label: l10n.ipdPlanDischargeAction,
             leadingIcon: Icons.fact_check_outlined,
             enabled: enabled,
@@ -616,10 +615,11 @@ class _IpdDetailActions extends ConsumerWidget {
             ),
           ),
         if (summary.stage == _stageDischargePlanned)
-          AppButton.primary(
+          AppActionItem(
             label: l10n.ipdFinalizeDischargeAction,
             leadingIcon: Icons.logout_outlined,
             enabled: enabled,
+            variant: AppActionVariant.primary,
             onPressed: () => _openTextActionDialog(
               context,
               ref,
@@ -634,10 +634,11 @@ class _IpdDetailActions extends ConsumerWidget {
             ),
           ),
         if (!summary.hasActiveBed && !terminal)
-          AppButton.tertiary(
+          AppActionItem(
             label: l10n.ipdRejectAdmissionAction,
             leadingIcon: Icons.cancel_outlined,
             enabled: enabled,
+            variant: AppActionVariant.tertiary,
             onPressed: () => _openTextActionDialog(
               context,
               ref,
@@ -743,9 +744,9 @@ class _IpdDetailActions extends ConsumerWidget {
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => IpdTextActionDialog(
+      builder: (_) => AppTextActionDialog(
         title: title,
-        icon: icon,
+        icon: Icon(icon),
         fieldLabel: fieldLabel,
         submitLabel: submitLabel,
         initialValue: initialValue,
@@ -1484,108 +1485,6 @@ class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
           transferRequestId: widget.admission.openTransferRequest?.id,
           toBedId: _bedId,
         );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
-class IpdTextActionDialog extends StatefulWidget {
-  const IpdTextActionDialog({
-    required this.title,
-    required this.icon,
-    required this.fieldLabel,
-    required this.submitLabel,
-    required this.onSubmit,
-    this.initialValue,
-    super.key,
-  });
-
-  final String title;
-  final IconData icon;
-  final String fieldLabel;
-  final String submitLabel;
-  final String? initialValue;
-  final Future<AppFailure?> Function(String value) onSubmit;
-
-  @override
-  State<IpdTextActionDialog> createState() => _IpdTextActionDialogState();
-}
-
-class _IpdTextActionDialogState extends State<IpdTextActionDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _controller;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialValue);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(widget.title),
-      icon: Icon(widget.icon),
-      scrollable: true,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _controller,
-              labelText: widget.fieldLabel,
-              enabled: !_isSaving,
-              minLines: 3,
-              maxLines: 8,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: widget.submitLabel,
-          leadingIcon: widget.icon,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSubmit(_controller.text.trim());
     if (!mounted) {
       return;
     }

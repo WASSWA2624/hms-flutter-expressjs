@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dar
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -502,57 +503,55 @@ class _NursingActionBar extends ConsumerWidget {
       child: AppAccessActionGate(
         requirement: _NursingWorkspaceContentState.writeRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          return Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            runSpacing: Theme.of(context).spacing.xs,
-            children: <Widget>[
-              _actionButton(
+          return AppActionList(
+            actions: <AppActionItem>[
+              AppActionItem(
                 label: l10n.nursingActionRecordVitals,
-                icon: Icons.monitor_heart_outlined,
+                leadingIcon: Icons.monitor_heart_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openVitalsDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: l10n.nursingActionAddNote,
-                icon: Icons.note_add_outlined,
+                leadingIcon: Icons.note_add_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openNoteDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: l10n.nursingActionAdministerMedication,
-                icon: Icons.medication_outlined,
+                leadingIcon: Icons.medication_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openMedicationDialog(context, detail),
               ),
-              _actionButton(
+              AppActionItem(
                 label: l10n.nursingActionCompleteTask,
-                icon: Icons.playlist_add_check_outlined,
+                leadingIcon: Icons.playlist_add_check_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openTaskDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: l10n.nursingActionCreateHandover,
-                icon: Icons.swap_horiz_outlined,
+                leadingIcon: Icons.swap_horiz_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openHandoverDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: l10n.nursingActionEscalate,
-                icon: Icons.report_problem_outlined,
+                leadingIcon: Icons.report_problem_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openEscalationDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: l10n.nursingActionAcknowledgeTransfer,
-                icon: Icons.transfer_within_a_station_outlined,
+                leadingIcon: Icons.transfer_within_a_station_outlined,
                 enabled: isAllowed && detail.activeTransfer != null,
                 onPressed: () => _openTransferDialog(context, detail),
               ),
               for (final NursingHandover handover in detail.handovers)
                 if (handover.isPending)
-                  _actionButton(
+                  AppActionItem(
                     label: l10n.nursingActionAcceptHandover,
-                    icon: Icons.done_all_outlined,
+                    leadingIcon: Icons.done_all_outlined,
                     enabled: isAllowed,
                     onPressed: () => _openAcceptHandoverDialog(
                       context,
@@ -564,20 +563,6 @@ class _NursingActionBar extends ConsumerWidget {
           );
         },
       ),
-    );
-  }
-
-  Widget _actionButton({
-    required String label,
-    required IconData icon,
-    required bool enabled,
-    required VoidCallback onPressed,
-  }) {
-    return AppButton.secondary(
-      label: label,
-      leadingIcon: icon,
-      enabled: enabled,
-      onPressed: onPressed,
     );
   }
 }

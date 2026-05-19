@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/emergency/data/repositories/emergency_repository_impl.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/domain/repositories/emergency_repository.dart';
@@ -27,9 +29,18 @@ final class EmergencyWorkspaceController
   @override
   Future<Result<EmergencyWorkspaceState>> build() async {
     ref.onDispose(() => _syncTimer?.cancel());
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.emergencyWorkspace,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     final Result<EmergencyWorkspaceState> result = await _loadInitialState();
     _startSync();
     return result;
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await _syncVisibleData();
   }
 
   Future<AppFailure?> refresh() {

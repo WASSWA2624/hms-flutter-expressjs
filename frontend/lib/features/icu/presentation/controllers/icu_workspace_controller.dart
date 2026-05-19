@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
@@ -25,9 +27,18 @@ final class IcuWorkspaceController
   @override
   Future<Result<IcuWorkspaceState>> build() async {
     ref.onDispose(() => _syncTimer?.cancel());
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.icu,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     final Result<IcuWorkspaceState> result = await _loadInitialState();
     _startSync();
     return result;
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await _syncVisibleData();
   }
 
   Future<AppFailure?> refresh() {

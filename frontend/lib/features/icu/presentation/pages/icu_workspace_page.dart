@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -457,31 +458,29 @@ class _IcuActionPanel extends ConsumerWidget {
       child: AppAccessActionGate(
         requirement: writeRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          return Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            runSpacing: Theme.of(context).spacing.xs,
-            children: <Widget>[
-              _actionButton(
+          return AppActionList(
+            actions: <AppActionItem>[
+              AppActionItem(
                 label: 'Observation',
-                icon: Icons.note_add_outlined,
+                leadingIcon: Icons.note_add_outlined,
                 enabled: isAllowed && hasActiveStay,
                 onPressed: () => _openObservationDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Vitals',
-                icon: Icons.monitor_heart_outlined,
+                leadingIcon: Icons.monitor_heart_outlined,
                 enabled: isAllowed && detail.summary.encounterId != null,
                 onPressed: () => _openVitalsDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Alert',
-                icon: Icons.notification_important_outlined,
+                leadingIcon: Icons.notification_important_outlined,
                 enabled: isAllowed && hasActiveStay,
                 onPressed: () => _openAlertDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Acknowledge',
-                icon: Icons.done_all_outlined,
+                leadingIcon: Icons.done_all_outlined,
                 enabled: isAllowed && hasAlert,
                 onPressed: () => _confirmAction(
                   context: context,
@@ -492,27 +491,27 @@ class _IcuActionPanel extends ConsumerWidget {
                   onConfirmed: controller.acknowledgeLatestAlert,
                 ),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Round',
-                icon: Icons.rate_review_outlined,
+                leadingIcon: Icons.rate_review_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openRoundDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Transfer',
-                icon: Icons.compare_arrows_outlined,
+                leadingIcon: Icons.compare_arrows_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openTransferDialog(context, referenceData),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Readiness',
-                icon: Icons.fact_check_outlined,
+                leadingIcon: Icons.fact_check_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openReadinessDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Transfer out',
-                icon: Icons.output_outlined,
+                leadingIcon: Icons.output_outlined,
                 enabled: isAllowed && hasActiveStay,
                 onPressed: () => _confirmAction(
                   context: context,
@@ -523,6 +522,8 @@ class _IcuActionPanel extends ConsumerWidget {
                   onConfirmed: controller.transferOut,
                 ),
               ),
+            ],
+            extraActions: <Widget>[
               AppReportActionButton.print(
                 label: 'Print summary',
                 onPressed: () async {
@@ -551,20 +552,6 @@ class _IcuActionPanel extends ConsumerWidget {
           );
         },
       ),
-    );
-  }
-
-  Widget _actionButton({
-    required String label,
-    required IconData icon,
-    required bool enabled,
-    required VoidCallback onPressed,
-  }) {
-    return AppButton.secondary(
-      label: label,
-      leadingIcon: icon,
-      enabled: enabled,
-      onPressed: onPressed,
     );
   }
 }
@@ -1399,62 +1386,6 @@ class _ReadinessDialogState extends ConsumerState<_ReadinessDialog> {
   }
 }
 
-class _ConfirmActionDialog extends StatefulWidget {
-  const _ConfirmActionDialog({
-    required this.title,
-    required this.body,
-    required this.actionLabel,
-    required this.onConfirmed,
-  });
-
-  final String title;
-  final String body;
-  final String actionLabel;
-  final Future<AppFailure?> Function() onConfirmed;
-
-  @override
-  State<_ConfirmActionDialog> createState() => _ConfirmActionDialogState();
-}
-
-class _ConfirmActionDialogState extends State<_ConfirmActionDialog> {
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: Text(widget.title),
-      icon: const Icon(Icons.warning_amber_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          Text(widget.body),
-        ],
-      ),
-      actions: _dialogActions(context, widget.actionLabel, _isSaving, _submit),
-    );
-  }
-
-  Future<void> _submit() async {
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onConfirmed();
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
 List<Widget> _dialogActions(
   BuildContext context,
   String submitLabel,
@@ -1568,11 +1499,12 @@ Future<void> _confirmAction({
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _ConfirmActionDialog(
+      builder: (_) => AppConfirmActionDialog(
         title: title,
         body: body,
-        actionLabel: actionLabel,
-        onConfirmed: onConfirmed,
+        submitLabel: actionLabel,
+        icon: const Icon(Icons.warning_amber_outlined),
+        onConfirm: onConfirmed,
       ),
     ),
   );

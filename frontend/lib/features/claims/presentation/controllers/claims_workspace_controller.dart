@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/domain/repositories/claims_repository.dart';
@@ -18,6 +20,11 @@ final class ClaimsWorkspaceController
 
   @override
   Future<Result<ClaimsWorkspaceState>> build() async {
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.claims,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     const ClaimsQueueQuery query = ClaimsQueueQuery();
     final Result<AppPage<ClaimsQueueItem>> queueResult = await _repository
         .listQueue(query);
@@ -48,6 +55,10 @@ final class ClaimsWorkspaceController
         return Result<ClaimsWorkspaceState>.failure(failure);
       },
     );
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await refresh();
   }
 
   Future<AppFailure?> refresh() async {

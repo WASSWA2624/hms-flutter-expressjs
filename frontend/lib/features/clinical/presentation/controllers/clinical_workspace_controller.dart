@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/realtime/realtime_events.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
-import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -24,58 +24,30 @@ final clinicalWorkspaceControllerProvider =
 final class ClinicalWorkspaceController
     extends AsyncNotifier<Result<ClinicalWorkspaceState>> {
   static const Duration _syncInterval = Duration(seconds: 8);
-  static const Duration _realtimeRefreshDebounce = Duration(milliseconds: 250);
-  static const Set<String> _clinicalRealtimeEvents = <String>{
-    RealtimeEvents.labWorkflowUpdated,
-    RealtimeEvents.labResultReady,
-    RealtimeEvents.labResultUpdated,
-    RealtimeEvents.radiologyWorkflowUpdated,
-    RealtimeEvents.radiologyResultReady,
-    RealtimeEvents.radiologyResultUpdated,
-    RealtimeEvents.pharmacyWorkspaceUpdated,
-    RealtimeEvents.pharmacyOrderCreated,
-    RealtimeEvents.pharmacyOrderUpdated,
-    RealtimeEvents.pharmacyOrderDispensed,
-    RealtimeEvents.pharmacyOrderCanceled,
-    RealtimeEvents.opdFlowUpdated,
-    RealtimeEvents.ipdFlowUpdated,
-    RealtimeEvents.visitQueuePositionChanged,
-    RealtimeEvents.visitQueueTriageUpdated,
-    RealtimeEvents.criticalAlertRaised,
-    RealtimeEvents.criticalAlertResolved,
-    RealtimeEvents.patientAdmitted,
-    RealtimeEvents.patientTransferred,
-    RealtimeEvents.patientDischarged,
-    RealtimeEvents.bedAssignmentChanged,
-    RealtimeEvents.billingInvoiceIssued,
-    RealtimeEvents.billingPaymentReceived,
-    RealtimeEvents.billingRefundProcessed,
-  };
-
   ClinicalRepository get _repository => ref.read(clinicalRepositoryProvider);
   OpdRepository get _opdRepository => ref.read(opdRepositoryProvider);
 
   Timer? _syncTimer;
-  Timer? _realtimeRefreshTimer;
   bool _isSyncing = false;
 
   @override
   Future<Result<ClinicalWorkspaceState>> build() async {
     ref.onDispose(() {
       _syncTimer?.cancel();
-      _realtimeRefreshTimer?.cancel();
     });
-    ref.listen<AsyncValue<RealtimeMessage>>(realtimeMessagesProvider, (
-      AsyncValue<RealtimeMessage>? previous,
-      AsyncValue<RealtimeMessage> next,
-    ) {
-      if (next case AsyncData<RealtimeMessage>(value: final message)) {
-        _handleRealtimeMessage(message);
-      }
-    });
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.clinical,
+      shouldRefresh: _clinicalRealtimeEventTouchesVisibleData,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     final Result<ClinicalWorkspaceState> result = await _loadInitialState();
     _startSync();
     return result;
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await _syncVisibleData();
   }
 
   Future<AppFailure?> refresh() {
@@ -670,22 +642,8 @@ final class ClinicalWorkspaceController
     });
   }
 
-  void _handleRealtimeMessage(RealtimeMessage message) {
-    if (!_clinicalRealtimeEvents.contains(message.event)) {
-      return;
-    }
-
-    if (!_clinicalRealtimeEventTouchesVisibleData(message.payload)) {
-      return;
-    }
-
-    _realtimeRefreshTimer?.cancel();
-    _realtimeRefreshTimer = Timer(_realtimeRefreshDebounce, () {
-      unawaited(_syncVisibleData());
-    });
-  }
-
-  bool _clinicalRealtimeEventTouchesVisibleData(Map<String, Object?> payload) {
+  bool _clinicalRealtimeEventTouchesVisibleData(RealtimeMessage message) {
+    final Map<String, Object?> payload = message.payload;
     final ClinicalWorkspaceState? current = _currentState;
     if (current == null) {
       return false;

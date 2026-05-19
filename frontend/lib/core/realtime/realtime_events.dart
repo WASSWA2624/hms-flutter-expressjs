@@ -36,7 +36,16 @@ abstract final class RealtimeEvents {
   static const String pharmacyOrderDispensed = 'pharmacy.order_dispensed';
   static const String pharmacyOrderCanceled = 'pharmacy.order_canceled';
 
+  static const String inventoryStockUpdated = 'inventory.stock_updated';
+  static const String inventoryLowStock = 'inventory.low_stock';
+  static const String inventoryStockAdjusted = 'inventory.stock_adjusted';
+
   static const String billingInvoiceIssued = 'billing.invoice_issued';
   static const String billingPaymentReceived = 'billing.payment_received';
   static const String billingRefundProcessed = 'billing.refund_processed';
+
+  static const String emergencyCaseAssigned = 'emergency.case_assigned';
+  static const String ambulanceDispatched = 'emergency.ambulance_dispatched';
+  static const String ambulanceArrivalUpdated =
+      'emergency.ambulance_arrival_updated';
 }

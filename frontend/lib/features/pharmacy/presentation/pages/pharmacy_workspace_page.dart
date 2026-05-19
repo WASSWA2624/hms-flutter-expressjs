@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.d
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -461,34 +462,34 @@ class _PharmacyActionPanel extends ConsumerWidget {
       child: AppAccessActionGate(
         requirement: writeRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          return Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            runSpacing: Theme.of(context).spacing.xs,
-            children: <Widget>[
-              AppButton.secondary(
+          return AppActionList(
+            actions: <AppActionItem>[
+              AppActionItem(
                 label: l10n.pharmacyDispenseAction,
                 leadingIcon: Icons.medication_liquid_outlined,
                 enabled: isAllowed && canPrepare,
                 onPressed: () => _openDispenseDialog(context, workflow),
               ),
-              AppButton.secondary(
+              AppActionItem(
                 label: l10n.pharmacyAttestAction,
                 leadingIcon: Icons.verified_outlined,
                 enabled: isAllowed && canAttest,
                 onPressed: () => _openAttestDialog(context, workflow),
               ),
-              AppButton.secondary(
+              AppActionItem(
                 label: l10n.pharmacyReturnAction,
                 leadingIcon: Icons.keyboard_return_outlined,
                 enabled: isAllowed && canReturn,
                 onPressed: () => _openReturnDialog(context, workflow),
               ),
-              AppButton.secondary(
+              AppActionItem(
                 label: l10n.pharmacyCancelOrderAction,
                 leadingIcon: Icons.cancel_outlined,
                 enabled: isAllowed && canCancel,
                 onPressed: () => _openCancelDialog(context),
               ),
+            ],
+            extraActions: <Widget>[
               AppReportActionButton.print(
                 label: l10n.pharmacyPrintInstructionsAction,
                 variant: AppButtonVariant.secondary,

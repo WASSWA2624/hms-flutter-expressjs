@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
@@ -28,9 +30,18 @@ final class PatientRegistryController
     ref.onDispose(() {
       _syncTimer?.cancel();
     });
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.patientRegistry,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     final Result<PatientRegistryState> result = await _loadInitialState();
     _startVisibleDataSync();
     return result;
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await _syncVisibleData();
   }
 
   Future<AppFailure?> refresh() async {

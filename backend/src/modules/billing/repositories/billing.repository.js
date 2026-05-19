@@ -310,6 +310,26 @@ const updatePayment = async (id, data) =>
     })
   );
 
+const findRealtimeRecipientUserIds = async ({ tenantId, facilityId = null, roles = [] }) =>
+  withDbErrorHandling(async () => {
+    if (!tenantId || !Array.isArray(roles) || roles.length === 0) return [];
+
+    const rows = await prisma.user_role.findMany({
+      where: {
+        deleted_at: null,
+        tenant_id: tenantId,
+        role: {
+          name: { in: roles },
+          deleted_at: null,
+        },
+        ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {}),
+      },
+      select: { user_id: true },
+    });
+
+    return rows.map((item) => item.user_id).filter(Boolean);
+  });
+
 module.exports = {
   withTransaction,
   findInvoiceById,
@@ -337,4 +357,5 @@ module.exports = {
   createAdjustment,
   updateInvoice,
   updatePayment,
+  findRealtimeRecipientUserIds,
 };

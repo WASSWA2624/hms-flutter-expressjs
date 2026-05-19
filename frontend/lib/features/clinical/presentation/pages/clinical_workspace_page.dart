@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.d
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -1864,37 +1865,21 @@ Future<void> _confirmLabOrderMutation({
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(title),
+    builder: (_) => AppConfirmActionDialog(
+      title: title,
+      body: body,
+      submitLabel: confirmLabel,
       icon: const Icon(Icons.science_outlined),
-      content: Text(body),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: context.l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: confirmLabel,
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
-      ],
+      onConfirm: action,
     ),
   );
   if (confirmed != true || !context.mounted) {
     return;
   }
 
-  final AppFailure? failure = await action();
-  if (!context.mounted) {
-    return;
-  }
-  if (failure == null) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(context.l10n.clinicalSavedMessage)));
-    return;
-  }
-  _showFailureIfNeeded(context, failure);
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.clinicalSavedMessage)));
 }
 
 Future<void> _openRadiologyDialog(

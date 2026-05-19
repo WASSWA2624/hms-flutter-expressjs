@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -475,41 +476,40 @@ class _BillingActionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Wrap(
-      spacing: Theme.of(context).spacing.xs,
-      runSpacing: Theme.of(context).spacing.xs,
-      children: <Widget>[
-        AppButton.primary(
+    return AppActionList(
+      actions: <AppActionItem>[
+        AppActionItem(
           label: 'Receive payment',
           leadingIcon: Icons.point_of_sale,
           enabled: item.canReceivePayment && !isSaving,
+          variant: AppActionVariant.primary,
           onPressed: () => _showPaymentDialog(context, ref, item),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: 'Issue',
           leadingIcon: Icons.outbox_outlined,
           enabled: item.canIssue && !isSaving,
           onPressed: () => _showIssueDialog(context, ref),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: 'Refund',
           leadingIcon: Icons.assignment_return_outlined,
           enabled: item.canRequestRefund && !isSaving,
           onPressed: () => _showRefundDialog(context, ref, item),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: 'Adjust',
           leadingIcon: Icons.tune,
           enabled: item.canRequestAdjustment && !isSaving,
           onPressed: () => _showAdjustmentDialog(context, ref, item),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: 'Void',
           leadingIcon: Icons.block_outlined,
           enabled: item.canRequestVoid && !isSaving,
           onPressed: () => _showVoidDialog(context, ref),
         ),
-        AppButton.secondary(
+        AppActionItem(
           label: 'Send',
           leadingIcon: Icons.send_outlined,
           enabled: !isSaving,
@@ -532,17 +532,17 @@ class _CashierClosePanel extends ConsumerWidget {
       title: 'Cashier close',
       description:
           'Shift and day close are backend-backed and do not block care screens.',
-      child: Wrap(
+      child: AppActionList(
         spacing: Theme.of(context).spacing.sm,
         runSpacing: Theme.of(context).spacing.sm,
-        children: <Widget>[
-          AppButton.secondary(
+        actions: <AppActionItem>[
+          AppActionItem(
             label: 'Close shift',
             leadingIcon: Icons.schedule_send_outlined,
             enabled: canWrite && !isSaving,
             onPressed: () => _showShiftCloseDialog(context, ref),
           ),
-          AppButton.secondary(
+          AppActionItem(
             label: 'Close day',
             leadingIcon: Icons.today_outlined,
             enabled: canWrite && !isSaving,

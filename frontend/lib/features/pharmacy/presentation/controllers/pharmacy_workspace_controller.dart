@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
@@ -26,9 +28,18 @@ final class PharmacyWorkspaceController
   @override
   Future<Result<PharmacyWorkspaceState>> build() async {
     ref.onDispose(() => _syncTimer?.cancel());
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.pharmacyWorkspace,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     final Result<PharmacyWorkspaceState> result = await _loadInitialState();
     _startSync();
     return result;
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await _syncVisibleData();
   }
 
   Future<AppFailure?> refresh() {

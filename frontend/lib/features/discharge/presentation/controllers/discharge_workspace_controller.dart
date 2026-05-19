@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/domain/repositories/discharge_repository.dart';
@@ -19,6 +21,11 @@ final class DischargeWorkspaceController
 
   @override
   Future<Result<DischargeWorkspaceState>> build() async {
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.discharge,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     const DischargeWorklistQuery query = DischargeWorklistQuery();
     final Result<AppPage<IpdAdmissionSummary>> queueResult = await _repository
         .listQueue(query);
@@ -45,6 +52,10 @@ final class DischargeWorkspaceController
         return Result<DischargeWorkspaceState>.failure(failure);
       },
     );
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await refresh();
   }
 
   Future<AppFailure?> refresh() async {

@@ -4,7 +4,7 @@ const { sendEmail } = require('@lib/notifications/sendEmail');
 const { HttpError } = require('@lib/errors');
 const { isFeatureEnabled } = require('@config/feature-flags');
 const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
-const { normalizeRoleName } = require('@config/roles');
+const { normalizeRoleName, ROLES } = require('@config/roles');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const {
@@ -14,6 +14,7 @@ const {
   computeInvoiceFinancials,
 } = require('@lib/billing/financials');
 const { generateInvoicePdfBuffer } = require('@lib/billing/pdf');
+const { emitToUsers, BILLING_EVENTS } = require('@lib/websocket');
 
 const QUEUE_TYPES = {
   NEEDS_ISSUE: 'NEEDS_ISSUE',
@@ -26,6 +27,11 @@ const QUEUE_TYPES = {
 const ADJUSTMENT_ABS_THRESHOLD = 50;
 const ADJUSTMENT_PERCENT_THRESHOLD = 0.2;
 const APPLIED_ADJUSTMENT_STATUSES = new Set(['ISSUED', 'PAID', 'PARTIAL']);
+const BILLING_REALTIME_RECIPIENT_ROLES = Object.freeze([
+  ROLES.BILLING,
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN,
+]);
 
 const INVOICE_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true, name: true } },
@@ -159,6 +165,61 @@ const auditUpdate = (user, ip, entity, entityId, metadata = {}) =>
     diff: { metadata },
     ip_address: ip,
   }).catch(() => {});
+
+const compactId = (value) => clean(value) || null;
+
+const publishBillingRealtimeUpdate = async ({
+  event,
+  action,
+  invoice = null,
+  payment = null,
+  refund = null,
+  approval = null,
+  actorUserId = null,
+}) => {
+  try {
+    const invoiceRecord = invoice || payment?.invoice || refund?.payment?.invoice || null;
+    const paymentRecord = payment || refund?.payment || null;
+    const tenantId = compactId(invoiceRecord?.tenant_id || paymentRecord?.tenant_id || approval?.tenant_id);
+    if (!tenantId) return;
+
+    const facilityId = compactId(invoiceRecord?.facility_id || paymentRecord?.facility_id || approval?.facility_id);
+    const recipientUserIds = await billingRepository.findRealtimeRecipientUserIds({
+      tenantId,
+      facilityId,
+      roles: BILLING_REALTIME_RECIPIENT_ROLES,
+    });
+    const recipients = recipientUserIds.filter((userId) => userId && userId !== actorUserId);
+    if (!recipients.length) return;
+
+    const invoiceDisplayId = invoiceRecord ? displayId(invoiceRecord) : null;
+    const paymentDisplayId = paymentRecord ? displayId(paymentRecord) : null;
+    const patientRecord = invoiceRecord?.patient || paymentRecord?.patient || null;
+    const targetIdentifier = invoiceDisplayId || invoiceRecord?.id;
+
+    emitToUsers(recipients, event, {
+      action: clean(action).toUpperCase() || 'UPDATED',
+      invoice_id: compactId(invoiceRecord?.id),
+      invoice_public_id: invoiceDisplayId,
+      payment_id: compactId(paymentRecord?.id),
+      payment_public_id: paymentDisplayId,
+      refund_id: compactId(refund?.id),
+      approval_id: compactId(approval?.id),
+      patient_id: compactId(invoiceRecord?.patient_id || paymentRecord?.patient_id),
+      patient_public_id: patientRecord ? displayId(patientRecord) : null,
+      status: compactId(
+        invoiceRecord?.billing_status ||
+          invoiceRecord?.status ||
+          paymentRecord?.status ||
+          approval?.status
+      ),
+      occurred_at: new Date().toISOString(),
+      target_path: targetIdentifier ? `/billing?id=${encodeURIComponent(targetIdentifier)}` : '/billing',
+    });
+  } catch (_error) {
+    // Realtime delivery must never block billing mutations.
+  }
+};
 
 const resolveScope = async (filters = {}, user = {}) => {
   const tenantId = clean(filters.tenant_id) || clean(user.tenant_id);
@@ -615,6 +676,12 @@ const issueInvoice = async (invoiceIdentifier, payload = {}, user = {}, ip = nul
   });
   const updated = await billingRepository.findInvoiceById(invoice.id, INVOICE_INCLUDE);
   auditUpdate(user, ip, 'invoice', invoice.id, { transition: 'ISSUE', notes: payload.notes || null });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_INVOICE_ISSUED,
+    action: 'ISSUED',
+    invoice: updated || invoice,
+    actorUserId: user?.id || null,
+  });
   return { invoice: mapInvoice(updated || invoice, true) };
 };
 
@@ -709,6 +776,13 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
     billingRepository.findPaymentById(payment.id, PAYMENT_INCLUDE),
     mutation.invoiceState?.invoice ? billingRepository.findInvoiceById(mutation.invoiceState.invoice.id, INVOICE_INCLUDE) : Promise.resolve(null),
   ]);
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_PAYMENT_RECEIVED,
+    action: 'PAYMENT_RECONCILED',
+    invoice: updatedInvoice,
+    payment: updatedPayment || mutation.payment,
+    actorUserId: user?.id || null,
+  });
   return {
     payment: mapPayment(updatedPayment || mutation.payment),
     invoice: updatedInvoice ? mapInvoice(updatedInvoice, true) : null,
@@ -919,6 +993,16 @@ const approveApproval = async (approvalIdentifier, payload = {}, user = {}, ip =
   if (mutation.execution?.type === 'REFUND' && mutation.execution?.refund?.id) auditCreate(user, ip, 'refund', mutation.execution.refund.id, mutation.execution.refund);
   if (mutation.execution?.type === 'ADJUSTMENT' && mutation.execution?.adjustment?.id) auditCreate(user, ip, 'billing_adjustment', mutation.execution.adjustment.id, mutation.execution.adjustment);
   if (mutation.execution?.type === 'VOID' && mutation.execution?.invoice?.id) auditUpdate(user, ip, 'invoice', mutation.execution.invoice.id, { transition: 'VOID_EXECUTED' });
+
+  if (mutation.execution?.type === 'REFUND' && mutation.execution?.refund?.id) {
+    await publishBillingRealtimeUpdate({
+      event: BILLING_EVENTS.BILLING_REFUND_PROCESSED,
+      action: 'REFUND_PROCESSED',
+      refund: mutation.execution.refund,
+      approval: mutation.approval || approval,
+      actorUserId: user?.id || null,
+    });
+  }
 
   const fullApproval = await billingRepository.findApprovalById(mutation.approval.id, APPROVAL_INCLUDE);
   return {

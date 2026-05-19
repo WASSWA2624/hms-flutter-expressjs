@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -474,49 +475,47 @@ class _EmergencyActionPanel extends ConsumerWidget {
       child: AppAccessActionGate(
         requirement: writeRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          return Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            runSpacing: Theme.of(context).spacing.xs,
-            children: <Widget>[
-              _actionButton(
+          return AppActionList(
+            actions: <AppActionItem>[
+              AppActionItem(
                 label: 'Priority',
-                icon: Icons.priority_high_outlined,
+                leadingIcon: Icons.priority_high_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openPriorityDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Triage',
-                icon: Icons.monitor_heart_outlined,
+                leadingIcon: Icons.monitor_heart_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openTriageDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Response',
-                icon: Icons.medical_services_outlined,
+                leadingIcon: Icons.medical_services_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openResponseDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Dispatch',
-                icon: Icons.airport_shuttle_outlined,
+                leadingIcon: Icons.airport_shuttle_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openDispatchDialog(context, referenceData),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Dispatch status',
-                icon: Icons.route_outlined,
+                leadingIcon: Icons.route_outlined,
                 enabled: isAllowed && detail.summary.isOpen && hasDispatch,
                 onPressed: () => _openDispatchStatusDialog(context),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Start trip',
-                icon: Icons.play_arrow_outlined,
+                leadingIcon: Icons.play_arrow_outlined,
                 enabled: isAllowed && detail.summary.isOpen && canStartTrip,
                 onPressed: () => _startTrip(context, referenceData),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Complete trip',
-                icon: Icons.flag_outlined,
+                leadingIcon: Icons.flag_outlined,
                 enabled: isAllowed && hasTrip,
                 onPressed: () => _confirmAction(
                   context: context,
@@ -527,12 +526,14 @@ class _EmergencyActionPanel extends ConsumerWidget {
                   onConfirmed: controller.completeTrip,
                 ),
               ),
-              _actionButton(
+              AppActionItem(
                 label: 'Handoff',
-                icon: Icons.output_outlined,
+                leadingIcon: Icons.output_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openHandoffDialog(context),
               ),
+            ],
+            extraActions: <Widget>[
               AppReportActionButton.print(
                 label: 'Print summary',
                 onPressed: () async {
@@ -570,20 +571,6 @@ class _EmergencyActionPanel extends ConsumerWidget {
           );
         },
       ),
-    );
-  }
-
-  Widget _actionButton({
-    required String label,
-    required IconData icon,
-    required bool enabled,
-    required VoidCallback onPressed,
-  }) {
-    return AppButton.secondary(
-      label: label,
-      leadingIcon: icon,
-      enabled: enabled,
-      onPressed: onPressed,
     );
   }
 
@@ -763,8 +750,11 @@ class _EmergencyActionPanel extends ConsumerWidget {
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) =>
-          _ConfirmDialog(title: title, body: body, actionLabel: actionLabel),
+      builder: (_) => AppConfirmActionDialog(
+        title: title,
+        body: body,
+        submitLabel: actionLabel,
+      ),
     );
     if (confirmed != true || !context.mounted) {
       return;
@@ -1640,37 +1630,6 @@ class _HandoffDialogState extends State<_HandoffDialog> {
         notes: _nonEmpty(_notesController.text),
         closeCase: _closeCase,
       ),
-    );
-  }
-}
-
-class _ConfirmDialog extends StatelessWidget {
-  const _ConfirmDialog({
-    required this.title,
-    required this.body,
-    required this.actionLabel,
-  });
-
-  final String title;
-  final String body;
-  final String actionLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: Text(title),
-      icon: const Icon(Icons.help_outline),
-      content: Text(body),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: 'Cancel',
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: actionLabel,
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
-      ],
     );
   }
 }

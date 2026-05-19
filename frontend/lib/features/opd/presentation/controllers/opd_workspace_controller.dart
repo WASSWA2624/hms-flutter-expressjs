@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -27,9 +29,18 @@ final class OpdWorkspaceController
     ref.onDispose(() {
       _syncTimer?.cancel();
     });
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.opd,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     final Result<OpdWorkspaceState> result = await _loadInitialState();
     _startVisibleDataSync();
     return result;
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await _syncVisibleData();
   }
 
   Future<AppFailure?> refresh() {

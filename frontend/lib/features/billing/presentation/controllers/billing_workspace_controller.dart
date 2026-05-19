@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/domain/repositories/billing_repository.dart';
@@ -18,6 +20,11 @@ final class BillingWorkspaceController
 
   @override
   Future<Result<BillingWorkspaceState>> build() async {
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.billingWorkspace,
+      onRefresh: (_) => _syncFromRealtime(),
+    );
     const BillingWorkspaceQuery query = BillingWorkspaceQuery();
     final Result<BillingWorkspaceOverview> overviewResult = await _repository
         .getWorkspace(query);
@@ -46,6 +53,10 @@ final class BillingWorkspaceController
         return Result<BillingWorkspaceState>.failure(failure);
       },
     );
+  }
+
+  Future<void> _syncFromRealtime() async {
+    await refresh();
   }
 
   Future<AppFailure?> refresh() async {
