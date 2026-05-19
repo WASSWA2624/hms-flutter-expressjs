@@ -325,6 +325,7 @@ const doctorReviewSchema = z.object({
 const dispositionSchema = z.object({
   decision: z.enum(DISPOSITION_VALUES),
   admission_facility_id: facilityIdentifierSchema.optional().nullable(),
+  reason: z.string().trim().max(2000).optional().nullable(),
   notes: z.string().trim().max(65535).optional().nullable()
 });
 

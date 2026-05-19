@@ -517,11 +517,13 @@ final class ClinicalWorkspaceController
 
   Future<AppFailure?> requestAdmission(ClinicalCatalogOption bed) {
     final ClinicalWorklistEntry? entry = _selectedEntry;
+    final String bedStatus = (bed.status ?? 'AVAILABLE').trim().toUpperCase();
     if (entry == null ||
         entry.tenantId == null ||
         entry.patientId == null ||
         bed.parentId == null ||
-        bed.secondaryId == null) {
+        bed.secondaryId == null ||
+        (bedStatus.isNotEmpty && bedStatus != 'AVAILABLE')) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
@@ -539,31 +541,45 @@ final class ClinicalWorkspaceController
     );
   }
 
-  Future<AppFailure?> completeConsultation(String notes) async {
+  Future<AppFailure?> completeDisposition({
+    required String reason,
+    String? notes,
+  }) async {
     final ClinicalWorklistEntry? entry = _selectedEntry;
-    if (entry == null) {
+    final String normalizedReason = reason.trim();
+    final String normalizedNotes = notes?.trim() ?? '';
+    if (entry == null || normalizedReason.isEmpty) {
       return AppFailure.validation();
     }
 
     final String? opdFlowApiId = entry.opdFlowApiId;
     if (opdFlowApiId != null) {
-      return _mutateSelectedEncounter(() async {
-        if (_requiresOpdDoctorReview(entry)) {
-          final Result<OpdFlowDetail> reviewResult = await _opdRepository
-              .doctorReview(opdFlowApiId, <String, Object?>{'note': notes});
-          final AppFailure? reviewFailure = _failureOrNull(reviewResult);
-          if (reviewFailure != null) {
-            return Result<void>.failure(reviewFailure);
+      return _mutateSelectedEncounter(
+        () async {
+          if (_requiresOpdDoctorReview(entry)) {
+            final Result<OpdFlowDetail> reviewResult = await _opdRepository
+                .doctorReview(opdFlowApiId, <String, Object?>{
+                  'note': _dispositionReviewNote(
+                    reason: normalizedReason,
+                    notes: normalizedNotes,
+                  ),
+                });
+            final AppFailure? reviewFailure = _failureOrNull(reviewResult);
+            if (reviewFailure != null) {
+              return Result<void>.failure(reviewFailure);
+            }
           }
-        }
 
-        return _opdRepository
-            .disposition(opdFlowApiId, <String, Object?>{
-              'decision': 'DISCHARGE',
-              'notes': notes,
-            })
-            .then((Result<OpdFlowDetail> result) => result.map<void>((_) {}));
-      });
+          return _opdRepository
+              .disposition(opdFlowApiId, <String, Object?>{
+                'decision': 'DISCHARGE',
+                'reason': normalizedReason,
+                'notes': normalizedNotes,
+              })
+              .then((Result<OpdFlowDetail> result) => result.map<void>((_) {}));
+        },
+        removeSelectedOnSuccess: true,
+      );
     }
 
     final Result<ClinicalWorklistEntry> result = await _repository
@@ -576,13 +592,26 @@ final class ClinicalWorkspaceController
         final ClinicalWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(worklist: _replaceEntry(latest.worklist, updated)),
+            latest.copyWith(
+              selectedBundle: updated.isTerminal ? null : latest.selectedBundle,
+              clearSelectedBundle: updated.isTerminal,
+              worklist: updated.isTerminal
+                  ? _removeEntry(latest.worklist, updated)
+                  : _replaceEntry(latest.worklist, updated),
+            ),
           );
+        }
+        if (updated.isTerminal) {
+          return null;
         }
         return selectEntry(updated);
       },
       failure: (AppFailure failure) async => failure,
     );
+  }
+
+  Future<AppFailure?> completeConsultation(String notes) {
+    return completeDisposition(reason: 'CONSULTATION_COMPLETED', notes: notes);
   }
 
   Future<Result<ClinicalWorkspaceState>> _loadInitialState() async {
@@ -982,8 +1011,9 @@ final class ClinicalWorkspaceController
   }
 
   Future<AppFailure?> _mutateSelectedEncounter(
-    Future<Result<void>> Function() action,
-  ) async {
+    Future<Result<void>> Function() action, {
+    bool removeSelectedOnSuccess = false,
+  }) async {
     final ClinicalWorklistEntry? entry = _selectedEntry;
     if (entry == null) {
       return AppFailure.validation();
@@ -998,6 +1028,21 @@ final class ClinicalWorkspaceController
     final Result<void> result = await action();
     return result.when(
       success: (_) async {
+        if (removeSelectedOnSuccess) {
+          final ClinicalWorkspaceState? latest = _currentState;
+          if (latest != null) {
+            _emit(
+              latest.copyWith(
+                clearSelectedBundle: true,
+                worklist: _removeEntry(latest.worklist, entry),
+                isSaving: false,
+              ),
+            );
+          }
+          unawaited(_refreshWorklist(showLoading: false));
+          return null;
+        }
+
         final Result<ClinicalEncounterBundle> detailResult = await _repository
             .loadEncounterBundle(entry);
         return detailResult.when<Future<AppFailure?>>(
@@ -1009,8 +1054,11 @@ final class ClinicalWorkspaceController
             if (latest != null) {
               _emit(
                 latest.copyWith(
-                  selectedBundle: hydrated,
-                  worklist: _replaceEntry(latest.worklist, hydrated.entry),
+                  selectedBundle: hydrated.entry.isTerminal ? null : hydrated,
+                  clearSelectedBundle: hydrated.entry.isTerminal,
+                  worklist: hydrated.entry.isTerminal
+                      ? _removeEntry(latest.worklist, hydrated.entry)
+                      : _replaceEntry(latest.worklist, hydrated.entry),
                   isSaving: false,
                 ),
               );
@@ -1050,6 +1098,31 @@ final class ClinicalWorkspaceController
         right.startedAt ??
         DateTime.fromMillisecondsSinceEpoch(0);
     return rightDate.compareTo(leftDate);
+  }
+
+  AppPage<ClinicalWorklistEntry> _removeEntry(
+    AppPage<ClinicalWorklistEntry> page,
+    ClinicalWorklistEntry entry,
+  ) {
+    final List<ClinicalWorklistEntry> items = page.items
+        .where(
+          (ClinicalWorklistEntry item) =>
+              item.encounterId != entry.encounterId ||
+              item.sourceQueue != entry.sourceQueue,
+        )
+        .toList(growable: false);
+    if (items.length == page.items.length) {
+      return page;
+    }
+    return AppPage<ClinicalWorklistEntry>(
+      items: items,
+      request: page.request,
+      totalItemCount: page.totalItemCount == null
+          ? null
+          : page.totalItemCount! > 0
+          ? page.totalItemCount! - 1
+          : 0,
+    );
   }
 
   AppPage<ClinicalWorklistEntry> _replaceEntry(
@@ -1133,6 +1206,14 @@ final class ClinicalWorkspaceController
       success: (_) => null,
       failure: (AppFailure failure) => failure,
     );
+  }
+
+  String _dispositionReviewNote({required String reason, required String notes}) {
+    final List<String> parts = <String>[
+      if (reason.trim().isNotEmpty) reason.trim(),
+      if (notes.trim().isNotEmpty) notes.trim(),
+    ];
+    return parts.join(' — ');
   }
 
   bool _requiresOpdDoctorReview(ClinicalWorklistEntry entry) {

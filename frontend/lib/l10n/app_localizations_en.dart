@@ -51,6 +51,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTimePickerAction => 'Select time';
 
   @override
+  String get appTimeInvalidMessage => 'Enter a valid time.';
+
+  @override
+  String get appTimeFormatHint => 'HH:MM';
+
+  @override
   String get appPhoneCountryLabel => 'Country code';
 
   @override
@@ -947,6 +953,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdFollowUpDateLabel => 'Follow-up date';
+
+  @override
+  String get opdFollowUpTimeLabel => 'Follow-up time';
 
   @override
   String get opdDecisionLabel => 'Decision';
@@ -3397,6 +3406,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalCompleteConsultationAction => 'Complete consultation';
 
   @override
+  String get clinicalCompleteDispositionAction => 'Complete disposition';
+
+  @override
   String get clinicalPrintSummaryAction => 'Print summary';
 
   @override
@@ -3462,6 +3474,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalAvailableBedLabel => 'Available bed';
+
+  @override
+  String get clinicalAdmissionDetailsTitle => 'Admission details';
+
+  @override
+  String get clinicalAdmissionWardLabel => 'Ward';
+
+  @override
+  String get clinicalAdmissionRoomLabel => 'Room';
+
+  @override
+  String get clinicalAdmissionBedLabel => 'Bed';
+
+  @override
+  String get clinicalAdmissionAvailabilityLabel => 'Bed availability';
+
+  @override
+  String get clinicalAdmissionNoBedsTitle => 'No available beds';
+
+  @override
+  String get clinicalAdmissionNoBedsMessage =>
+      'No available beds found. Refresh bed availability before requesting admission.';
+
+  @override
+  String get clinicalDispositionReasonLabel => 'Disposition reason';
 
   @override
   String get clinicalConsultationSummaryTitle => 'Consultation summary';

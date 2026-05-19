@@ -45,3 +45,46 @@ If any files are deleted or renamed, include an appropriate script that can safe
 The script should preserve the intended folder paths and apply only the required delete or rename operations.
 
 # Task
+
+Still on the clinical screen, update the patient details dialog workflows for **Request Admission**, **Follow Up**, and **Complete Disposition**.
+
+## Request Admission / Admit Patient
+
+Update the **Request Admission** form.
+
+Instead of only selecting an available bed, the form should allow the user to view and select admission details clearly, including:
+
+* Ward
+* Room
+* Bed
+* Bed availability
+
+The form should check available beds before admission is requested.
+
+The user should be able to see which wards, rooms, and beds are available, then submit the admission request for the patient.
+
+## Follow Up
+
+Update the **Follow Up** form.
+
+Replace the current follow-up date text input with:
+
+* The reusable date component
+* The reusable time component
+
+The form should capture the patient as a follow-up patient using the selected follow-up date and time.
+
+## Complete Disposition
+
+Update the **Complete Disposition** workflow.
+
+Replace the disposition reason field with a searchable select component.
+
+Pre-fill the reason list with possible disposition reasons.
+
+Keep the notes field optional.
+
+When the disposition is completed, the patient encounter should be removed completely from OPD.
+
+If the patient is moved or assigned elsewhere after disposition, they should no longer appear in OPD.
+

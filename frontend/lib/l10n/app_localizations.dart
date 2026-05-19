@@ -178,6 +178,18 @@ abstract class AppLocalizations {
   /// **'Select time'**
   String get appTimePickerAction;
 
+  /// Validation message for manually typed time fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid time.'**
+  String get appTimeInvalidMessage;
+
+  /// Hint text showing the supported manual time entry format.
+  ///
+  /// In en, this message translates to:
+  /// **'HH:MM'**
+  String get appTimeFormatHint;
+
   /// Label for the country-code selector inside phone input fields.
   ///
   /// In en, this message translates to:
@@ -1881,6 +1893,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Follow-up date'**
   String get opdFollowUpDateLabel;
+
+  /// Follow-up time field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up time'**
+  String get opdFollowUpTimeLabel;
 
   /// Disposition decision field label.
   ///
@@ -6340,6 +6358,12 @@ abstract class AppLocalizations {
   /// **'Complete consultation'**
   String get clinicalCompleteConsultationAction;
 
+  /// Clinical complete disposition action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete disposition'**
+  String get clinicalCompleteDispositionAction;
+
   /// Clinical print summary action label.
   ///
   /// In en, this message translates to:
@@ -6465,6 +6489,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Available bed'**
   String get clinicalAvailableBedLabel;
+
+  /// Clinical admission details form section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission details'**
+  String get clinicalAdmissionDetailsTitle;
+
+  /// Clinical admission ward field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get clinicalAdmissionWardLabel;
+
+  /// Clinical admission room field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get clinicalAdmissionRoomLabel;
+
+  /// Clinical admission bed field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed'**
+  String get clinicalAdmissionBedLabel;
+
+  /// Clinical admission bed availability field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed availability'**
+  String get clinicalAdmissionAvailabilityLabel;
+
+  /// Clinical admission empty-state title when no beds are available.
+  ///
+  /// In en, this message translates to:
+  /// **'No available beds'**
+  String get clinicalAdmissionNoBedsTitle;
+
+  /// Clinical admission empty-state message when no beds are available.
+  ///
+  /// In en, this message translates to:
+  /// **'No available beds found. Refresh bed availability before requesting admission.'**
+  String get clinicalAdmissionNoBedsMessage;
+
+  /// Clinical disposition reason field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Disposition reason'**
+  String get clinicalDispositionReasonLabel;
 
   /// Clinical consultation summary print title.
   ///

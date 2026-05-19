@@ -950,8 +950,9 @@ final class OpdWorkspaceController
         final OpdWorkspaceState latest = _currentState!;
         _emit(
           latest.copyWith(
-            selectedFlow: detail,
-            flows: _upsertFlow(latest.flows, detail.summary),
+            selectedFlow: detail.summary.isTerminal ? null : detail,
+            clearSelectedFlow: detail.summary.isTerminal,
+            flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
             triageQueue: _upsertOrRemoveTriageFlow(
               latest.triageQueue,
               detail.summary,
@@ -1142,6 +1143,16 @@ final class OpdWorkspaceController
       request: page.request,
       totalItemCount: page.totalItemCount,
     );
+  }
+
+  AppPage<OpdFlowSummary> _upsertOrRemoveFlow(
+    AppPage<OpdFlowSummary> page,
+    OpdFlowSummary flow,
+  ) {
+    if (flow.isTerminal || isOpdTerminalStatus(flow.status ?? flow.stage)) {
+      return _removeFlow(page, flow);
+    }
+    return _upsertFlow(page, flow);
   }
 
   AppPage<OpdFlowSummary> _upsertOrRemoveTriageFlow(

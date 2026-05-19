@@ -56,6 +56,14 @@
   "@appTimePickerAction": {
     "description": "Button tooltip or action label for opening a time picker."
   },
+  "appTimeInvalidMessage": "Enter a valid time.",
+  "@appTimeInvalidMessage": {
+    "description": "Validation message for manually typed time fields."
+  },
+  "appTimeFormatHint": "HH:MM",
+  "@appTimeFormatHint": {
+    "description": "Hint text showing the supported manual time entry format."
+  },
   "appPhoneCountryLabel": "Country code",
   "@appPhoneCountryLabel": {
     "description": "Label for the country-code selector inside phone input fields."
@@ -811,6 +819,7 @@
   "opdStageLabel": "Stage",
   "opdExternalFacilityLabel": "External facility",
   "opdFollowUpDateLabel": "Follow-up date",
+  "opdFollowUpTimeLabel": "Follow-up time",
   "opdDecisionLabel": "Decision",
   "opdRouteDecisionLabel": "Route decision",
   "opdArrivalModeLabel": "Arrival mode",
@@ -4392,6 +4401,10 @@
   "@clinicalCompleteConsultationAction": {
     "description": "Clinical complete consultation action label."
   },
+  "clinicalCompleteDispositionAction": "Complete disposition",
+  "@clinicalCompleteDispositionAction": {
+    "description": "Clinical complete disposition action label."
+  },
   "clinicalPrintSummaryAction": "Print summary",
   "@clinicalPrintSummaryAction": {
     "description": "Clinical print summary action label."
@@ -4475,6 +4488,38 @@
   "clinicalAvailableBedLabel": "Available bed",
   "@clinicalAvailableBedLabel": {
     "description": "Clinical admission available bed field label."
+  },
+  "clinicalAdmissionDetailsTitle": "Admission details",
+  "@clinicalAdmissionDetailsTitle": {
+    "description": "Clinical admission details form section title."
+  },
+  "clinicalAdmissionWardLabel": "Ward",
+  "@clinicalAdmissionWardLabel": {
+    "description": "Clinical admission ward field label."
+  },
+  "clinicalAdmissionRoomLabel": "Room",
+  "@clinicalAdmissionRoomLabel": {
+    "description": "Clinical admission room field label."
+  },
+  "clinicalAdmissionBedLabel": "Bed",
+  "@clinicalAdmissionBedLabel": {
+    "description": "Clinical admission bed field label."
+  },
+  "clinicalAdmissionAvailabilityLabel": "Bed availability",
+  "@clinicalAdmissionAvailabilityLabel": {
+    "description": "Clinical admission bed availability field label."
+  },
+  "clinicalAdmissionNoBedsTitle": "No available beds",
+  "@clinicalAdmissionNoBedsTitle": {
+    "description": "Clinical admission empty-state title when no beds are available."
+  },
+  "clinicalAdmissionNoBedsMessage": "No available beds found. Refresh bed availability before requesting admission.",
+  "@clinicalAdmissionNoBedsMessage": {
+    "description": "Clinical admission empty-state message when no beds are available."
+  },
+  "clinicalDispositionReasonLabel": "Disposition reason",
+  "@clinicalDispositionReasonLabel": {
+    "description": "Clinical disposition reason field label."
   },
   "clinicalConsultationSummaryTitle": "Consultation summary",
   "@clinicalConsultationSummaryTitle": {

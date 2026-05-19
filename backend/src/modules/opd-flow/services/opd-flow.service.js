@@ -1071,6 +1071,11 @@ const buildEncounterWhereClause = (filters = {}) => {
     andClauses.push(buildOpdFlowStagePresenceClause());
   }
 
+  const requestedStage = normalizeIdentifier(filters.stage).toUpperCase();
+  if (!TERMINAL_STAGES.has(requestedStage)) {
+    andClauses.push({ status: 'OPEN' });
+  }
+
   const queueScope = String(filters.queue_scope || QUEUE_SCOPES.ALL)
     .trim()
     .toUpperCase();
@@ -2725,6 +2730,8 @@ const disposition = async (id, data, context = {}) => {
     const flow = getOpdFlowState(encounter);
     ensureNonTerminalStage(flow);
     const stageBefore = flow.stage;
+    const dispositionReason = normalizeNotes(data.reason);
+    const dispositionNotes = normalizeNotes(data.notes);
 
     if (!flow.review_completed) {
       throw new HttpError('errors.opd_flow.doctor_review_required', 400);
@@ -2769,10 +2776,15 @@ const disposition = async (id, data, context = {}) => {
       setFlowStage(flow, STAGES.DISCHARGED);
     }
 
+    flow.disposition_reason = dispositionReason;
+    flow.disposition_notes = dispositionNotes;
+    flow.disposition_at = dispositionAt.toISOString();
+
     appendTimelineEvent(flow, 'DISPOSITION_RECORDED', context, {
       decision: data.decision,
       admission_id: admission?.id || null,
-      notes: data.notes || null
+      reason: dispositionReason,
+      notes: dispositionNotes
     });
 
     const finalizedEncounter = await tx.encounter.update({
