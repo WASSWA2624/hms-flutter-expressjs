@@ -25,6 +25,32 @@ final class ClinicalWorkspaceController
     extends AsyncNotifier<Result<ClinicalWorkspaceState>> {
   static const Duration _syncInterval = Duration(seconds: 8);
   static const Duration _realtimeRefreshDebounce = Duration(milliseconds: 250);
+  static const Set<String> _clinicalRealtimeEvents = <String>{
+    RealtimeEvents.labWorkflowUpdated,
+    RealtimeEvents.labResultReady,
+    RealtimeEvents.labResultUpdated,
+    RealtimeEvents.radiologyWorkflowUpdated,
+    RealtimeEvents.radiologyResultReady,
+    RealtimeEvents.radiologyResultUpdated,
+    RealtimeEvents.pharmacyWorkspaceUpdated,
+    RealtimeEvents.pharmacyOrderCreated,
+    RealtimeEvents.pharmacyOrderUpdated,
+    RealtimeEvents.pharmacyOrderDispensed,
+    RealtimeEvents.pharmacyOrderCanceled,
+    RealtimeEvents.opdFlowUpdated,
+    RealtimeEvents.ipdFlowUpdated,
+    RealtimeEvents.visitQueuePositionChanged,
+    RealtimeEvents.visitQueueTriageUpdated,
+    RealtimeEvents.criticalAlertRaised,
+    RealtimeEvents.criticalAlertResolved,
+    RealtimeEvents.patientAdmitted,
+    RealtimeEvents.patientTransferred,
+    RealtimeEvents.patientDischarged,
+    RealtimeEvents.bedAssignmentChanged,
+    RealtimeEvents.billingInvoiceIssued,
+    RealtimeEvents.billingPaymentReceived,
+    RealtimeEvents.billingRefundProcessed,
+  };
 
   ClinicalRepository get _repository => ref.read(clinicalRepositoryProvider);
   OpdRepository get _opdRepository => ref.read(opdRepositoryProvider);
@@ -645,11 +671,11 @@ final class ClinicalWorkspaceController
   }
 
   void _handleRealtimeMessage(RealtimeMessage message) {
-    if (message.event != RealtimeEvents.labWorkflowUpdated) {
+    if (!_clinicalRealtimeEvents.contains(message.event)) {
       return;
     }
 
-    if (!_labWorkflowEventTouchesVisibleData(message.payload)) {
+    if (!_clinicalRealtimeEventTouchesVisibleData(message.payload)) {
       return;
     }
 
@@ -659,7 +685,7 @@ final class ClinicalWorkspaceController
     });
   }
 
-  bool _labWorkflowEventTouchesVisibleData(Map<String, Object?> payload) {
+  bool _clinicalRealtimeEventTouchesVisibleData(Map<String, Object?> payload) {
     final ClinicalWorkspaceState? current = _currentState;
     if (current == null) {
       return false;
@@ -672,7 +698,19 @@ final class ClinicalWorkspaceController
 
     final ClinicalWorklistEntry selected = selectedBundle.entry;
     final Map<String, Object?> workflow = _objectMap(payload['workflow']);
-    final Map<String, Object?> order = _objectMap(workflow['order']);
+    final Map<String, Object?> order = _objectMap(
+      workflow['order'] ?? payload['order'],
+    );
+    final Map<String, Object?> encounter = _objectMap(
+      payload['encounter'] ?? workflow['encounter'],
+    );
+    final Map<String, Object?> patient = _objectMap(
+      payload['patient'] ?? workflow['patient'],
+    );
+    final Map<String, Object?> admission = _objectMap(
+      payload['admission'] ?? workflow['admission'] ?? order['admission'],
+    );
+    final Map<String, Object?> resource = _objectMap(payload['resource']);
 
     final Set<String> selectedPatientIds = _normalizedIds(<String?>[
       selected.apiPatientId,
@@ -684,31 +722,104 @@ final class ClinicalWorkspaceController
       selected.encounterId,
       selected.encounterPublicId,
     ]);
-    final Set<String> selectedLabOrderIds = selectedBundle.labOrders
-        .map((ClinicalRelatedRecord record) => _normalizeId(record.id))
-        .whereType<String>()
-        .toSet();
+    final Set<String> selectedAdmissionIds = _normalizedIds(<String?>[
+      selected.apiAdmissionId,
+      selected.admissionId,
+      selected.admissionPublicId,
+    ]);
+    final Set<String> selectedLabOrderIds = _relatedRecordIds(
+      selectedBundle.labOrders,
+    );
+    final Set<String> selectedRadiologyOrderIds = _relatedRecordIds(
+      selectedBundle.radiologyOrders,
+    );
+    final Set<String> selectedPharmacyOrderIds = _relatedRecordIds(
+      selectedBundle.pharmacyOrders,
+    );
 
     final Set<String> eventPatientIds = _normalizedIds(<String?>[
       _stringValue(payload['patient_id']),
       _stringValue(payload['patient_public_id']),
       _stringValue(order['patient_id']),
+      _stringValue(order['patient_public_id']),
+      _stringValue(patient['id']),
+      _stringValue(patient['public_id']),
+      _stringValue(patient['patient_id']),
+      _stringValue(encounter['patient_id']),
+      _stringValue(admission['patient_id']),
+      _stringValue(resource['patient_id']),
     ]);
     final Set<String> eventEncounterIds = _normalizedIds(<String?>[
       _stringValue(payload['encounter_id']),
+      _stringValue(payload['encounter_public_id']),
       _stringValue(order['encounter_id']),
+      _stringValue(order['encounter_public_id']),
+      _stringValue(encounter['id']),
+      _stringValue(encounter['public_id']),
+      _stringValue(encounter['display_id']),
+      _stringValue(encounter['human_friendly_id']),
+      _stringValue(admission['encounter_id']),
+      _stringValue(resource['encounter_id']),
+    ]);
+    final Set<String> eventAdmissionIds = _normalizedIds(<String?>[
+      _stringValue(payload['admission_id']),
+      _stringValue(payload['admission_public_id']),
+      _stringValue(order['admission_id']),
+      _stringValue(order['admission_public_id']),
+      _stringValue(admission['id']),
+      _stringValue(admission['public_id']),
+      _stringValue(admission['display_id']),
+      _stringValue(resource['admission_id']),
     ]);
     final Set<String> eventLabOrderIds = _normalizedIds(<String?>[
+      _stringValue(payload['lab_order_id']),
       _stringValue(payload['order_id']),
       _stringValue(payload['order_public_id']),
       _stringValue(payload['resource_id']),
       _stringValue(order['id']),
+      _stringValue(order['public_id']),
       _stringValue(order['display_id']),
+      _stringValue(resource['lab_order_id']),
     ]);
+    final Set<String> eventRadiologyOrderIds = _normalizedIds(<String?>[
+      _stringValue(payload['radiology_order_id']),
+      _stringValue(payload['order_id']),
+      _stringValue(payload['order_public_id']),
+      _stringValue(payload['resource_id']),
+      _stringValue(order['id']),
+      _stringValue(order['public_id']),
+      _stringValue(order['display_id']),
+      _stringValue(resource['radiology_order_id']),
+    ]);
+    final Set<String> eventPharmacyOrderIds = _normalizedIds(<String?>[
+      _stringValue(payload['pharmacy_order_id']),
+      _stringValue(payload['order_id']),
+      _stringValue(payload['order_public_id']),
+      _stringValue(payload['resource_id']),
+      _stringValue(order['id']),
+      _stringValue(order['public_id']),
+      _stringValue(order['display_id']),
+      _stringValue(resource['pharmacy_order_id']),
+    ]);
+
+    final bool hasTargetIds = <Set<String>>[
+      eventPatientIds,
+      eventEncounterIds,
+      eventAdmissionIds,
+      eventLabOrderIds,
+      eventRadiologyOrderIds,
+      eventPharmacyOrderIds,
+    ].any((Set<String> ids) => ids.isNotEmpty);
+    if (!hasTargetIds) {
+      return true;
+    }
 
     return _setsIntersect(selectedPatientIds, eventPatientIds) ||
         _setsIntersect(selectedEncounterIds, eventEncounterIds) ||
-        _setsIntersect(selectedLabOrderIds, eventLabOrderIds);
+        _setsIntersect(selectedAdmissionIds, eventAdmissionIds) ||
+        _setsIntersect(selectedLabOrderIds, eventLabOrderIds) ||
+        _setsIntersect(selectedRadiologyOrderIds, eventRadiologyOrderIds) ||
+        _setsIntersect(selectedPharmacyOrderIds, eventPharmacyOrderIds);
   }
 
   Future<AppFailure?> _syncVisibleData({
@@ -1236,6 +1347,13 @@ final class ClinicalWorkspaceController
       );
     }
     return const <String, Object?>{};
+  }
+
+  Set<String> _relatedRecordIds(Iterable<ClinicalRelatedRecord> records) {
+    return records
+        .map((ClinicalRelatedRecord record) => _normalizeId(record.id))
+        .whereType<String>()
+        .toSet();
   }
 
   Set<String> _normalizedIds(Iterable<String?> values) {

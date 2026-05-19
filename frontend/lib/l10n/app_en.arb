@@ -1375,6 +1375,9 @@
   "@opdFollowUpDateLabel": {
     "description": "Follow-up date field label."
   },
+  "@opdFollowUpTimeLabel": {
+    "description": "Follow-up time field label."
+  },
   "@opdDecisionLabel": {
     "description": "Disposition decision field label."
   },

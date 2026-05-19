@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -1203,87 +1204,6 @@ class _CriticalAlertDialogState extends ConsumerState<_CriticalAlertDialog> {
   }
 }
 
-class _RoundNoteDialog extends ConsumerStatefulWidget {
-  const _RoundNoteDialog();
-
-  @override
-  ConsumerState<_RoundNoteDialog> createState() => _RoundNoteDialogState();
-}
-
-class _RoundNoteDialogState extends ConsumerState<_RoundNoteDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _notesController;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _notesController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: const Text('Add ICU round note'),
-      icon: const Icon(Icons.rate_review_outlined),
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _notesController,
-              labelText: 'Round note',
-              enabled: !_isSaving,
-              maxLines: 4,
-              isRequired: true,
-              validator: AppValidators.requiredText(
-                context.l10n.validationRequired,
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: _dialogActions(context, 'Add note', _isSaving, _submit),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(icuWorkspaceControllerProvider.notifier)
-        .addRoundNote(notes: _notesController.text.trim());
-    _finishSubmit(failure);
-  }
-
-  void _finishSubmit(AppFailure? failure) {
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
 class _TransferRequestDialog extends ConsumerStatefulWidget {
   const _TransferRequestDialog({required this.referenceData});
 
@@ -1595,7 +1515,18 @@ Future<void> _openRoundDialog(BuildContext context) {
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const _RoundNoteDialog(),
+      builder: (_) => ClinicalFreeTextActionDialog(
+        title: 'Add ICU round note',
+        label: 'Round note',
+        submitLabel: 'Add note',
+        icon: const Icon(Icons.rate_review_outlined),
+        maxLines: 4,
+        onSubmit: (String note) {
+          return ProviderScope.containerOf(context, listen: false)
+              .read(icuWorkspaceControllerProvider.notifier)
+              .addRoundNote(notes: note);
+        },
+      ),
     ),
   );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 enum ClinicalQueueScope {
@@ -514,62 +515,9 @@ final class ClinicalTriageHandoff {
   }
 }
 
-@immutable
-final class ClinicalCatalogOption {
-  const ClinicalCatalogOption({
-    required this.id,
-    this.publicId,
-    this.name,
-    this.code,
-    this.category,
-    this.secondaryText,
-    this.status,
-    this.parentId,
-    this.secondaryId,
-    this.searchText,
-    this.childIds = const <String>[],
-    this.childCodes = const <String>[],
-  });
+typedef ClinicalCatalogOption = ClinicalActionCatalogOption;
 
-  final String id;
-  final String? publicId;
-  final String? name;
-  final String? code;
-  final String? category;
-  final String? secondaryText;
-  final String? status;
-  final String? parentId;
-  final String? secondaryId;
-  final String? searchText;
-  final List<String> childIds;
-  final List<String> childCodes;
-
-  String get apiId => publicId ?? id;
-  String get displayTitle {
-    return _joinDisplay(<String?>[name, code]) ?? apiId;
-  }
-
-  String? get displaySubtitle {
-    return _joinDisplay(<String?>[category, secondaryText, status]);
-  }
-}
-
-@immutable
-final class ClinicalRadiologyRequest {
-  const ClinicalRadiologyRequest({
-    required this.radiologyTestId,
-    this.clinicalNote,
-    this.bodyRegion,
-    this.laterality,
-    this.priority,
-  });
-
-  final String radiologyTestId;
-  final String? clinicalNote;
-  final String? bodyRegion;
-  final String? laterality;
-  final String? priority;
-}
+typedef ClinicalRadiologyRequest = ClinicalActionRadiologyRequest;
 
 @immutable
 final class ClinicalEncounterBundle {
@@ -652,46 +600,7 @@ final class ClinicalEncounterBundle {
   }
 }
 
-@immutable
-final class ClinicalReferenceData {
-  const ClinicalReferenceData({
-    this.labTests = const <ClinicalCatalogOption>[],
-    this.labPanels = const <ClinicalCatalogOption>[],
-    this.radiologyTests = const <ClinicalCatalogOption>[],
-    this.drugs = const <ClinicalCatalogOption>[],
-    this.availableBeds = const <ClinicalCatalogOption>[],
-    this.wards = const <ClinicalCatalogOption>[],
-    this.rooms = const <ClinicalCatalogOption>[],
-  });
-
-  final List<ClinicalCatalogOption> labTests;
-  final List<ClinicalCatalogOption> labPanels;
-  final List<ClinicalCatalogOption> radiologyTests;
-  final List<ClinicalCatalogOption> drugs;
-  final List<ClinicalCatalogOption> availableBeds;
-  final List<ClinicalCatalogOption> wards;
-  final List<ClinicalCatalogOption> rooms;
-
-  ClinicalReferenceData copyWith({
-    List<ClinicalCatalogOption>? labTests,
-    List<ClinicalCatalogOption>? labPanels,
-    List<ClinicalCatalogOption>? radiologyTests,
-    List<ClinicalCatalogOption>? drugs,
-    List<ClinicalCatalogOption>? availableBeds,
-    List<ClinicalCatalogOption>? wards,
-    List<ClinicalCatalogOption>? rooms,
-  }) {
-    return ClinicalReferenceData(
-      labTests: labTests ?? this.labTests,
-      labPanels: labPanels ?? this.labPanels,
-      radiologyTests: radiologyTests ?? this.radiologyTests,
-      drugs: drugs ?? this.drugs,
-      availableBeds: availableBeds ?? this.availableBeds,
-      wards: wards ?? this.wards,
-      rooms: rooms ?? this.rooms,
-    );
-  }
-}
+typedef ClinicalReferenceData = ClinicalActionReferenceData;
 
 @immutable
 final class ClinicalWorkspaceState {

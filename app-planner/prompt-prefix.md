@@ -45,46 +45,53 @@ If any files are deleted or renamed, include an appropriate script that can safe
 The script should preserve the intended folder paths and apply only the required delete or rename operations.
 
 # Task
+Still on the clinical screen, update the patient details dialog and refactor the clinical action workflows into reusable shared components.
 
-Still on the clinical screen, update the patient details dialog workflows for **Request Admission**, **Follow Up**, and **Complete Disposition**.
+## Clinical Actions Refactor
+In the patient details dialog, the **Clinical actions** section includes actions such as:
+* Add note
+* Add diagnosis
+* Request lab
+* Request radiology
+* Prescribe
+* Add procedure
+* Care plan
+* Refer
+* Request admission
+* Follow up
+* Complete disposition
+* Print summary
+These actions and their dialogs will be reused across different modules in the app.
+Convert these clinical action dialogs/workflows into reusable components and place them in an appropriate shared folder under:`frontend/lib/shared`
+Use a suitable subfolder structure that clearly shows these are reusable clinical actions, modules, dialogs, or components.
 
-## Request Admission / Admit Patient
+## Reusability
+Each reusable clinical action component should accept the required data through parameters or props so it can be used consistently across the app.
+Ensure the same reusable components are used wherever these actions appear, instead of recreating similar dialogs or workflows in different modules.
 
-Update the **Request Admission** form.
+## Real-Time Updates
+Ensure these dialogs and all nested UI update the database in real time.
+The frontend should also update immediately when changes happen.
+This is important so users working in different units can see system changes as they happen.
 
-Instead of only selecting an available bed, the form should allow the user to view and select admission details clearly, including:
-
-* Ward
-* Room
-* Bed
-* Bed availability
-
-The form should check available beds before admission is requested.
-
-The user should be able to see which wards, rooms, and beds are available, then submit the admission request for the patient.
-
-## Follow Up
-
-Update the **Follow Up** form.
-
-Replace the current follow-up date text input with:
-
-* The reusable date component
-* The reusable time component
-
-The form should capture the patient as a follow-up patient using the selected follow-up date and time.
-
-## Complete Disposition
-
-Update the **Complete Disposition** workflow.
-
-Replace the disposition reason field with a searchable select component.
-
-Pre-fill the reason list with possible disposition reasons.
-
-Keep the notes field optional.
-
-When the disposition is completed, the patient encounter should be removed completely from OPD.
-
-If the patient is moved or assigned elsewhere after disposition, they should no longer appear in OPD.
-
+## Full Codebase Refactor
+Review and refactor the entire codebase to reuse these new shared clinical action components.
+Check all relevant modules and screens, including:
+* Patients
+* Billing
+* Claims
+* OPD
+* Emergency
+* IPD
+* ICU
+* Nursing
+* Clinical
+* Lab
+* Radiology
+* Pharmacy
+* Discharge
+* Theater
+* Settings
+* Setup
+Ensure these modules reuse the shared clinical action dialogs/components wherever applicable.
+The goal is to avoid duplicate implementations and ensure maximum uniformity, reusability, and consistency across the app.

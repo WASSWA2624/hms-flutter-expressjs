@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dar
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -924,96 +925,6 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
   }
 }
 
-class _SimpleNoteDialog extends ConsumerStatefulWidget {
-  const _SimpleNoteDialog({
-    required this.title,
-    required this.label,
-    required this.submitLabel,
-    required this.onSubmit,
-  });
-
-  final String title;
-  final String label;
-  final String submitLabel;
-  final Future<AppFailure?> Function(String note) onSubmit;
-
-  @override
-  ConsumerState<_SimpleNoteDialog> createState() => _SimpleNoteDialogState();
-}
-
-class _SimpleNoteDialogState extends ConsumerState<_SimpleNoteDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _noteController;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _noteController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(widget.title),
-      icon: const Icon(Icons.note_add_outlined),
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _noteController,
-              labelText: widget.label,
-              enabled: !_isSaving,
-              maxLines: 5,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-          ],
-        ),
-      ),
-      actions: _dialogActions(
-        context,
-        submitLabel: widget.submitLabel,
-        isSaving: _isSaving,
-        onSubmit: _submit,
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await widget.onSubmit(
-      _noteController.text.trim(),
-    );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
 class _TaskDialog extends ConsumerStatefulWidget {
   const _TaskDialog();
 
@@ -1596,10 +1507,11 @@ Future<void> _openNoteDialog(BuildContext context) async {
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _SimpleNoteDialog(
+      builder: (_) => ClinicalFreeTextActionDialog(
         title: context.l10n.nursingActionAddNote,
         label: context.l10n.nursingNoteLabel,
         submitLabel: context.l10n.nursingActionAddNote,
+        icon: const Icon(Icons.note_add_outlined),
         onSubmit: (String note) {
           return ProviderScope.containerOf(context, listen: false)
               .read(nursingWorkspaceControllerProvider.notifier)
@@ -1681,10 +1593,11 @@ Future<void> _openAcceptHandoverDialog(
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _SimpleNoteDialog(
+      builder: (_) => ClinicalFreeTextActionDialog(
         title: context.l10n.nursingActionAcceptHandover,
         label: context.l10n.nursingHandoverNotesLabel,
         submitLabel: context.l10n.nursingActionAcceptHandover,
+        icon: const Icon(Icons.note_add_outlined),
         onSubmit: (String note) => controller.acceptHandover(handover, note),
       ),
     ),

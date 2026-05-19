@@ -22,6 +22,7 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -6118,223 +6119,44 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
   }
 }
 
-class ReferralDialog extends ConsumerStatefulWidget {
+class ReferralDialog extends ConsumerWidget {
   const ReferralDialog({required this.flow, super.key});
 
   final OpdFlowSummary flow;
 
   @override
-  ConsumerState<ReferralDialog> createState() => _ReferralDialogState();
-}
-
-class _ReferralDialogState extends ConsumerState<ReferralDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _facilityController;
-  late final TextEditingController _reasonController;
-  late final TextEditingController _notesController;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _facilityController = TextEditingController();
-    _reasonController = TextEditingController();
-    _notesController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _facilityController.dispose();
-    _reasonController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.opdReferAction),
-      icon: const Icon(Icons.alt_route_outlined),
-      scrollable: true,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _facilityController,
-              labelText: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdExternalFacilityLabel,
-              ),
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppTextField(
-              controller: _reasonController,
-              labelText: _opdRequiredFieldLabel(l10n, l10n.opdReasonLabel),
-              enabled: !_isSaving,
-              maxLines: 3,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-              enabled: !_isSaving,
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.opdReferAction,
-          leadingIcon: Icons.alt_route_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ClinicalReferralActionDialog(
+      onSubmit: ({
+        required String externalFacilityName,
+        required String reason,
+        required String notes,
+      }) {
+        return ref.read(opdWorkspaceControllerProvider.notifier).createReferral(
+              flow: flow,
+              externalFacilityName: externalFacilityName,
+              reason: reason,
+              notes: notes,
+            );
+      },
     );
   }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .createReferral(
-          flow: widget.flow,
-          externalFacilityName: _facilityController.text.trim(),
-          reason: _reasonController.text.trim(),
-          notes: _notesController.text.trim(),
-        );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
 }
 
-class FollowUpDialog extends ConsumerStatefulWidget {
+class FollowUpDialog extends ConsumerWidget {
   const FollowUpDialog({required this.flow, super.key});
 
   final OpdFlowSummary flow;
 
   @override
-  ConsumerState<FollowUpDialog> createState() => _FollowUpDialogState();
-}
-
-class _FollowUpDialogState extends ConsumerState<FollowUpDialog> {
-  late final TextEditingController _dateController;
-  late final TextEditingController _notesController;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _dateController = TextEditingController(
-      text: DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ClinicalFollowUpActionDialog(
+      onSubmit: ({required DateTime scheduledAt, required String notes}) {
+        return ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .createFollowUp(flow: flow, scheduledAt: scheduledAt, notes: notes);
+      },
     );
-    _notesController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _dateController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.opdFollowUpAction),
-      icon: const Icon(Icons.event_repeat_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppTextField(
-            controller: _dateController,
-            labelText: _opdRequiredFieldLabel(l10n, l10n.opdFollowUpDateLabel),
-            hintText: l10n.opdDateTimeHint,
-            enabled: !_isSaving,
-            validator: AppValidators.requiredText(l10n.validationRequired),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-            enabled: !_isSaving,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.opdFollowUpAction,
-          leadingIcon: Icons.event_repeat_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    final DateTime? scheduledAt = DateTime.tryParse(
-      _dateController.text.trim(),
-    );
-    if (scheduledAt == null) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .createFollowUp(
-          flow: widget.flow,
-          scheduledAt: scheduledAt,
-          notes: _notesController.text.trim(),
-        );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
   }
 }
 
@@ -6431,7 +6253,7 @@ class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
   }
 }
 
-class OpdDispositionDialog extends ConsumerStatefulWidget {
+class OpdDispositionDialog extends ConsumerWidget {
   const OpdDispositionDialog({
     required this.flow,
     required this.hasPharmacyOrder,
@@ -6442,96 +6264,24 @@ class OpdDispositionDialog extends ConsumerStatefulWidget {
   final bool hasPharmacyOrder;
 
   @override
-  ConsumerState<OpdDispositionDialog> createState() =>
-      _OpdDispositionDialogState();
-}
-
-class _OpdDispositionDialogState extends ConsumerState<OpdDispositionDialog> {
-  late final TextEditingController _notesController;
-  String _decision = 'DISCHARGE';
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _notesController = TextEditingController();
-    if (widget.hasPharmacyOrder) {
-      _decision = 'SEND_TO_PHARMACY';
-    }
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.opdDispositionAction),
-      icon: const Icon(Icons.task_alt_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppSelectField<String>(
-            value: _decision,
-            labelText: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
-            enabled: !_isSaving,
-            onChanged: (String? value) =>
-                setState(() => _decision = value ?? _decision),
-            options: _statusOptions(
-              _opdDispositionOptions(hasPharmacyOrder: widget.hasPharmacyOrder),
-            ),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-            enabled: !_isSaving,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.opdDispositionAction,
-          leadingIcon: Icons.task_alt_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    return ClinicalDispositionActionDialog(
+      title: l10n.opdDispositionAction,
+      reasonLabel: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
+      notesLabel: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
+      submitLabel: l10n.opdDispositionAction,
+      initialReason: hasPharmacyOrder ? 'SEND_TO_PHARMACY' : 'DISCHARGE',
+      reasons: _opdDispositionOptions(hasPharmacyOrder: hasPharmacyOrder),
+      onSubmit: ({required String reason, required String notes}) {
+        return ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .completeDisposition(flow, <String, Object?>{
+              'decision': reason,
+              'notes': notes,
+            });
+      },
     );
-  }
-
-  Future<void> _submit() async {
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .completeDisposition(widget.flow, <String, Object?>{
-          'decision': _decision,
-          'notes': _notesController.text.trim(),
-        });
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
   }
 }
 
