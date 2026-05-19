@@ -329,7 +329,7 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
   }
 }
 
-class AppWorkspaceSummaryCard extends StatelessWidget {
+class AppWorkspaceSummaryCard extends StatefulWidget {
   const AppWorkspaceSummaryCard({
     required this.label,
     required this.value,
@@ -352,168 +352,153 @@ class AppWorkspaceSummaryCard extends StatelessWidget {
   final bool compact;
 
   @override
+  State<AppWorkspaceSummaryCard> createState() =>
+      _AppWorkspaceSummaryCardState();
+}
+
+class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
+  static const Duration _animationDuration = Duration(milliseconds: 160);
+
+  bool _hovered = false;
+  bool _focused = false;
+  bool _pressed = false;
+
+  @override
+  void didUpdateWidget(covariant AppWorkspaceSummaryCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.onPressed == null && (_hovered || _focused || _pressed)) {
+      _hovered = false;
+      _focused = false;
+      _pressed = false;
+    }
+  }
+
+  void _setHovered(bool hovered) {
+    if (widget.onPressed == null || _hovered == hovered) {
+      return;
+    }
+
+    setState(() {
+      _hovered = hovered;
+    });
+  }
+
+  void _setFocused(bool focused) {
+    if (_focused == focused) {
+      return;
+    }
+
+    setState(() {
+      _focused = focused;
+    });
+  }
+
+  void _setPressed(bool pressed) {
+    if (_pressed == pressed) {
+      return;
+    }
+
+    setState(() {
+      _pressed = pressed;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final _WorkspaceToneColors? toneColors = tone == null
-        ? null
-        : _toneColors(theme, tone!);
-    final Color iconColor = toneColors?.on ?? colorScheme.primary;
-    final Color labelColor = toneColors?.on ?? colorScheme.onSurfaceVariant;
-    final Color valueColor = toneColors?.on ?? colorScheme.onSurface;
-    final Color borderColor = toneColors?.border ?? colorScheme.outlineVariant;
-    final Color surfaceColor = toneColors?.container ?? colorScheme.surface;
-    final bool hasDescription =
-        description != null && description!.trim().isNotEmpty;
-    final bool useDetailedCompact =
-        compact && (hasDescription || status != null);
-    final Widget cardBody = compact
-        ? useDetailedCompact
-              ? _DetailedCompactSummaryCardBody(
-                  icon: icon,
-                  label: label,
-                  value: value,
-                  description: description,
-                  status: status,
-                  iconColor: iconColor,
-                  labelColor: labelColor,
-                  valueColor: valueColor,
-                  onPressed: onPressed,
-                )
-              : ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 46),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: theme.spacing.sm,
-                      vertical: theme.spacing.xs,
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        if (icon != null) ...<Widget>[
-                          Icon(icon, color: iconColor, size: 18),
-                          SizedBox(width: theme.spacing.xs),
-                        ],
-                        Expanded(
-                          child: Text(
-                            label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: labelColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: theme.spacing.sm),
-                        Text(
-                          value,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: valueColor,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        if (status != null) ...<Widget>[
-                          SizedBox(width: theme.spacing.xs),
-                          Flexible(
-                            child: AppWorkspaceStatusBadge(status: status!),
-                          ),
-                        ],
-                        if (onPressed != null) ...<Widget>[
-                          SizedBox(width: theme.spacing.xs),
-                          Icon(Icons.chevron_right, color: iconColor, size: 18),
-                        ],
-                      ],
-                    ),
-                  ),
-                )
-        : Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.md,
-              vertical: theme.spacing.sm,
-            ),
-            child: Row(
-              children: <Widget>[
-                if (icon != null) ...<Widget>[
-                  Icon(
-                    icon,
-                    color: iconColor,
-                    size: theme.appTokens.listIconSize,
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: labelColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: valueColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      if (description != null && description!.isNotEmpty)
-                        Text(
-                          description!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: labelColor,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (status != null) ...<Widget>[
-                  SizedBox(width: theme.spacing.sm),
-                  AppWorkspaceStatusBadge(status: status!),
-                ],
-                if (onPressed != null) ...<Widget>[
-                  SizedBox(width: theme.spacing.xs),
-                  Icon(
-                    Icons.chevron_right,
-                    color: iconColor,
-                    size: theme.appTokens.listIconSize,
-                  ),
-                ],
-              ],
-            ),
-          );
+    final bool interactive = widget.onPressed != null;
+    final bool active = interactive && (_hovered || _focused);
+    final Color accentColor = _summaryAccentColor(theme, widget.tone);
+    final BorderRadius borderRadius = BorderRadius.circular(theme.radius.sm);
+    final Color surfaceColor = Color.alphaBlend(
+      accentColor.withValues(alpha: active ? 0.055 : 0.025),
+      colorScheme.surface,
+    );
+    final Color borderColor = Color.alphaBlend(
+      accentColor.withValues(alpha: active ? 0.34 : 0.14),
+      colorScheme.outlineVariant,
+    );
+    final double scale = _pressed
+        ? 0.985
+        : active
+        ? 1.01
+        : 1;
+    final List<BoxShadow> boxShadow = _summaryCardShadow(
+      colorScheme: colorScheme,
+      accentColor: accentColor,
+      active: active,
+      pressed: _pressed,
+    );
+    final Widget cardBody = _SummaryCardBody(
+      label: widget.label,
+      value: widget.value,
+      description: widget.description,
+      status: widget.status,
+      icon: widget.icon,
+      compact: widget.compact,
+      interactive: interactive,
+      active: active,
+      accentColor: accentColor,
+    );
 
     return Semantics(
-      button: onPressed != null,
-      child: Material(
-        color: surfaceColor,
-        shape: RoundedRectangleBorder(side: BorderSide(color: borderColor)),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(onTap: onPressed, child: cardBody),
+      button: interactive,
+      enabled: interactive ? true : null,
+      onTap: widget.onPressed,
+      child: MouseRegion(
+        cursor: interactive
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        onEnter: (_) {
+          _setHovered(true);
+        },
+        onExit: (_) {
+          _setHovered(false);
+        },
+        child: AnimatedScale(
+          duration: _animationDuration,
+          curve: Curves.easeOutCubic,
+          scale: scale,
+          child: AnimatedContainer(
+            duration: _animationDuration,
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              border: Border.all(color: borderColor),
+              borderRadius: borderRadius,
+              boxShadow: boxShadow,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: borderRadius),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: widget.onPressed,
+                onFocusChange: _setFocused,
+                onHighlightChanged: _setPressed,
+                hoverColor: Colors.transparent,
+                focusColor: Colors.transparent,
+                highlightColor: accentColor.withValues(alpha: 0.08),
+                splashColor: accentColor.withValues(alpha: 0.10),
+                child: cardBody,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _DetailedCompactSummaryCardBody extends StatelessWidget {
-  const _DetailedCompactSummaryCardBody({
+class _SummaryCardBody extends StatelessWidget {
+  const _SummaryCardBody({
     required this.label,
     required this.value,
-    required this.iconColor,
-    required this.labelColor,
-    required this.valueColor,
-    required this.onPressed,
+    required this.compact,
+    required this.interactive,
+    required this.active,
+    required this.accentColor,
     this.description,
     this.status,
     this.icon,
@@ -524,97 +509,326 @@ class _DetailedCompactSummaryCardBody extends StatelessWidget {
   final String? description;
   final AppWorkspaceStatus? status;
   final IconData? icon;
-  final Color iconColor;
-  final Color labelColor;
-  final Color valueColor;
-  final VoidCallback? onPressed;
+  final bool compact;
+  final bool interactive;
+  final bool active;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final String? trimmedDescription =
+        description == null || description!.trim().isEmpty
+        ? null
+        : description!.trim();
+    final bool overlayValue = _shouldOverlaySummaryValue(value);
+    final double minHeight = compact
+        ? trimmedDescription == null && status == null && overlayValue
+              ? 72
+              : 92
+        : 104;
+    final EdgeInsets padding = EdgeInsets.symmetric(
+      horizontal: compact ? theme.spacing.md : theme.spacing.lg,
+      vertical: compact ? theme.spacing.sm : theme.spacing.md,
+    );
+    final TextStyle? labelStyle = compact
+        ? theme.textTheme.titleSmall
+        : theme.textTheme.titleLarge;
+    final TextStyle? valueStyle = compact
+        ? theme.textTheme.labelLarge
+        : theme.textTheme.titleSmall;
 
-    return Padding(
-      padding: EdgeInsets.all(theme.spacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              if (icon != null) ...<Widget>[
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: 0.08),
-                    border: Border.all(
-                      color: iconColor.withValues(alpha: 0.18),
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minHeight),
+      child: Padding(
+        padding: padding,
+        child: Row(
+          children: <Widget>[
+            _SummaryIconTile(
+              icon: icon ?? Icons.insights_outlined,
+              value: value,
+              showValue: overlayValue,
+              compact: compact,
+              active: active,
+              accentColor: accentColor,
+            ),
+            SizedBox(width: compact ? theme.spacing.md : theme.spacing.lg),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    label,
+                    maxLines: compact ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  child: SizedBox.square(
-                    dimension: 34,
-                    child: Center(
-                      child: Icon(
-                        icon,
-                        color: iconColor,
-                        size: theme.appTokens.listIconSize,
+                  if (!overlayValue) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: valueStyle?.copyWith(
+                        color: accentColor,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-              ],
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: labelColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                  ],
+                  if (trimmedDescription != null) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      trimmedDescription,
+                      maxLines: compact ? 1 : 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  if (status != null) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    _CompactSummaryStatusLine(
+                      status: status!,
+                      fallbackColor: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ],
               ),
-              if (onPressed != null) ...<Widget>[
-                SizedBox(width: theme.spacing.xs),
-                Icon(
+            ),
+            if (interactive) ...<Widget>[
+              SizedBox(width: theme.spacing.sm),
+              AnimatedOpacity(
+                duration: _AppWorkspaceSummaryCardState._animationDuration,
+                opacity: active ? 1 : 0.58,
+                child: Icon(
                   Icons.chevron_right,
-                  color: iconColor,
+                  color: accentColor,
                   size: theme.appTokens.listIconSize,
                 ),
-              ],
+              ),
             ],
-          ),
-          SizedBox(height: theme.spacing.sm),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: valueColor,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (description != null &&
-              description!.trim().isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.xs),
-            Text(
-              description!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(color: labelColor),
-            ),
           ],
-          if (status != null) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            _CompactSummaryStatusLine(
-              status: status!,
-              fallbackColor: colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryIconTile extends StatelessWidget {
+  const _SummaryIconTile({
+    required this.icon,
+    required this.value,
+    required this.showValue,
+    required this.compact,
+    required this.active,
+    required this.accentColor,
+  });
+
+  final IconData icon;
+  final String value;
+  final bool showValue;
+  final bool compact;
+  final bool active;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double tileSize = compact ? 48 : 58;
+    final double iconSize = compact ? 24 : 28;
+    final BorderRadius borderRadius = BorderRadius.circular(theme.radius.sm);
+
+    return SizedBox(
+      width: tileSize + (showValue ? theme.spacing.sm : 0),
+      height: tileSize + (showValue ? theme.spacing.sm : 0),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          Positioned(
+            left: 0,
+            bottom: 0,
+            child: AnimatedContainer(
+              duration: _AppWorkspaceSummaryCardState._animationDuration,
+              curve: Curves.easeOutCubic,
+              width: tileSize,
+              height: tileSize,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: active ? 0.13 : 0.08),
+                border: Border.all(
+                  color: accentColor.withValues(alpha: active ? 0.28 : 0.16),
+                ),
+                borderRadius: borderRadius,
+              ),
+              child: Center(
+                child: Icon(icon, color: accentColor, size: iconSize),
+              ),
             ),
-          ],
+          ),
+          if (showValue)
+            PositionedDirectional(
+              top: 0,
+              end: 0,
+              child: _SummaryValueBadge(
+                value: value,
+                compact: compact,
+                accentColor: accentColor,
+                foregroundColor: _onSummaryAccentColor(
+                  accentColor,
+                  colorScheme,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+}
+
+class _SummaryValueBadge extends StatelessWidget {
+  const _SummaryValueBadge({
+    required this.value,
+    required this.compact,
+    required this.accentColor,
+    required this.foregroundColor,
+  });
+
+  final String value;
+  final bool compact;
+  final Color accentColor;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final double minWidth = compact ? 28 : 34;
+    final double height = compact ? 24 : 28;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: accentColor,
+        border: Border.all(
+          color: theme.colorScheme.surface.withValues(alpha: 0.90),
+          width: 1.5,
+        ),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.28),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: minWidth,
+          maxWidth: compact ? 68 : 86,
+          minHeight: height,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+          child: Center(
+            child: Text(
+              value.trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: foregroundColor,
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _summaryAccentColor(ThemeData theme, AppWorkspaceStatusTone? tone) {
+  final ColorScheme colorScheme = theme.colorScheme;
+  final AppStatusColors statusColors = theme.statusColors;
+
+  return switch (tone) {
+    null || AppWorkspaceStatusTone.neutral => colorScheme.primary,
+    AppWorkspaceStatusTone.success => statusColors.success,
+    AppWorkspaceStatusTone.warning => statusColors.warning,
+    AppWorkspaceStatusTone.error => statusColors.error,
+    AppWorkspaceStatusTone.info => statusColors.info,
+  };
+}
+
+Color _onSummaryAccentColor(Color accentColor, ColorScheme colorScheme) {
+  final Brightness brightness = ThemeData.estimateBrightnessForColor(
+    accentColor,
+  );
+
+  return brightness == Brightness.dark ? Colors.white : colorScheme.onSurface;
+}
+
+List<BoxShadow> _summaryCardShadow({
+  required ColorScheme colorScheme,
+  required Color accentColor,
+  required bool active,
+  required bool pressed,
+}) {
+  if (pressed) {
+    return <BoxShadow>[
+      BoxShadow(
+        color: colorScheme.shadow.withValues(alpha: 0.08),
+        blurRadius: 8,
+        offset: const Offset(0, 3),
+      ),
+      BoxShadow(
+        color: accentColor.withValues(alpha: 0.08),
+        blurRadius: 10,
+        offset: const Offset(0, 3),
+      ),
+    ];
+  }
+
+  if (active) {
+    return <BoxShadow>[
+      BoxShadow(
+        color: colorScheme.shadow.withValues(alpha: 0.10),
+        blurRadius: 22,
+        offset: const Offset(0, 10),
+      ),
+      BoxShadow(
+        color: accentColor.withValues(alpha: 0.16),
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+      ),
+    ];
+  }
+
+  return <BoxShadow>[
+    BoxShadow(
+      color: colorScheme.shadow.withValues(alpha: 0.06),
+      blurRadius: 14,
+      offset: const Offset(0, 5),
+    ),
+  ];
+}
+
+bool _shouldOverlaySummaryValue(String value) {
+  final String text = value.trim();
+  if (text.isEmpty || text.contains('\n') || text.length > 8) {
+    return false;
+  }
+
+  final Iterable<String> words = text
+      .split(RegExp(r'\s+'))
+      .where((String word) => word.isNotEmpty);
+  return words.length <= 2;
 }
 
 class _CompactSummaryStatusLine extends StatelessWidget {
