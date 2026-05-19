@@ -22,22 +22,41 @@ If any files are deleted or renamed, include an appropriate script that can be u
 The script should preserve the intended folder paths and apply only the required delete or rename operations.
 
 # Task
-Improve the **Prescribe** dialog UI and workflow.
-## Prescribe Form Fields
-Update the form to support the following:
-* **Available drug**: searchable select component for selecting available drugs.
-* **Quantity**: input field for the prescribed quantity.
-* **Quantity unit / amount unit**: include the appropriate unit fields where required.
-* **Dose amount**: input field for dosage amount.
-* **Dose unit**: optional, but should use a searchable select component.
-* **Medication route**: keep as a selectable field.
-* **Frequency**: keep the current behavior, but improve the UI and add appropriate icons.
-* **Duration + duration unit**: combine these into one clean component where the user can enter duration and select the duration unit.
-* **Duration unit**: should use a searchable select component.
-* **Instructions**: keep this field, since it looks fine.
-## Multiple Drug Prescriptions
-It should be possible to prescribe more than one drug in the same form.
-Design the dialog so the user can add and prescribe multiple drugs easily.
-## UI and UX Improvements
-Improve the overall design, layout, icons, spacing, and visual appearance of the Prescribe dialog.
-The prescribing workflow should be simple, clean, and easy to use.
+
+On the clinical screen, under the patient details dialog, improve the **Add Procedure** workflow.
+
+The **Add Procedure** button currently opens a dialog with two fields:
+
+* Procedure code
+* Procedure or minor surgery
+
+## Procedure Fields
+
+Convert these fields into searchable select components.
+
+Use the existing reusable searchable select component already available in the app.
+
+## Procedure Data
+
+Populate the procedure options with common procedures and minor surgeries.
+
+Add at least **5,000 procedures**.
+
+## Multiple Procedures
+
+Allow the user to add more than one procedure at the same time.
+
+The workflow should make it easy to select, review, and add multiple procedures.
+
+## Search Performance
+
+Ensure the procedure search is smooth and responsive.
+
+Typing should not become sluggish, even when searching through a large procedure catalog.
+
+## UI and UX
+
+Improve the layout, display, and overall user experience of the Add Procedure dialog.
+
+The process of adding procedures should be clean, simple, and easy to use.
+
