@@ -3331,6 +3331,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalPrescribeAction => 'Prescribe';
 
   @override
+  String get clinicalPrescriptionHeaderTitle => 'Build prescription';
+
+  @override
+  String get clinicalPrescriptionHeaderBody =>
+      'Add one or more medicines, then send them together to pharmacy.';
+
+  @override
+  String get clinicalPrescriptionDrugLabel => 'Available drug';
+
+  @override
+  String get clinicalPrescriptionMedicineLabel => 'Medicine';
+
+  @override
+  String get clinicalPrescriptionItemDescription =>
+      'Select a drug and complete the prescription details.';
+
+  @override
+  String get clinicalPrescriptionQuantityUnitLabel => 'Quantity unit';
+
+  @override
+  String get clinicalPrescriptionAddMedicineAction => 'Add medicine';
+
+  @override
+  String get clinicalPrescriptionRemoveMedicineAction => 'Remove medicine';
+
+  @override
   String get clinicalRequestProcedureAction => 'Add procedure';
 
   @override

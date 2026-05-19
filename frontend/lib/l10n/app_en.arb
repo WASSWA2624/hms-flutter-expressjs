@@ -4307,6 +4307,38 @@
   "@clinicalPrescribeAction": {
     "description": "Clinical prescribe action label."
   },
+  "clinicalPrescriptionHeaderTitle": "Build prescription",
+  "@clinicalPrescriptionHeaderTitle": {
+    "description": "Clinical prescription dialog header title."
+  },
+  "clinicalPrescriptionHeaderBody": "Add one or more medicines, then send them together to pharmacy.",
+  "@clinicalPrescriptionHeaderBody": {
+    "description": "Clinical prescription dialog header body."
+  },
+  "clinicalPrescriptionDrugLabel": "Available drug",
+  "@clinicalPrescriptionDrugLabel": {
+    "description": "Clinical prescription available drug field label."
+  },
+  "clinicalPrescriptionMedicineLabel": "Medicine",
+  "@clinicalPrescriptionMedicineLabel": {
+    "description": "Clinical prescription item title prefix."
+  },
+  "clinicalPrescriptionItemDescription": "Select a drug and complete the prescription details.",
+  "@clinicalPrescriptionItemDescription": {
+    "description": "Clinical prescription item helper text before a drug is selected."
+  },
+  "clinicalPrescriptionQuantityUnitLabel": "Quantity unit",
+  "@clinicalPrescriptionQuantityUnitLabel": {
+    "description": "Clinical prescription quantity unit field label."
+  },
+  "clinicalPrescriptionAddMedicineAction": "Add medicine",
+  "@clinicalPrescriptionAddMedicineAction": {
+    "description": "Clinical prescription add medicine button label."
+  },
+  "clinicalPrescriptionRemoveMedicineAction": "Remove medicine",
+  "@clinicalPrescriptionRemoveMedicineAction": {
+    "description": "Clinical prescription remove medicine button tooltip."
+  },
   "clinicalRequestProcedureAction": "Add procedure",
   "@clinicalRequestProcedureAction": {
     "description": "Clinical add procedure action label."

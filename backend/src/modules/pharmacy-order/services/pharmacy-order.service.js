@@ -136,9 +136,9 @@ const buildDosageText = (item = {}) => {
 
   const doseAmount = normalizePositiveNumber(item.dose_amount);
   const doseUnit = sanitizeString(item.dose_unit);
-  if (!doseAmount || !doseUnit) return null;
+  if (!doseAmount) return null;
 
-  return `${doseAmount} ${doseUnit}`;
+  return doseUnit ? `${doseAmount} ${doseUnit}` : `${doseAmount}`;
 };
 
 const normalizeOrderItemPayloads = async (items = [], scope = {}) => {

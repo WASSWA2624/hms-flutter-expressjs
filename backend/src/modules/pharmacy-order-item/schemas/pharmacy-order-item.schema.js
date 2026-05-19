@@ -64,9 +64,7 @@ const sharedPharmacyOrderItemFields = {
 
 const refinePharmacyOrderItem = (value, ctx) => {
   const hasStructuredDose =
-    value.dose_amount !== undefined &&
-    value.dose_amount !== null &&
-    Boolean(String(value.dose_unit || '').trim());
+    value.dose_amount !== undefined && value.dose_amount !== null;
   const hasLegacyDose = Boolean(String(value.dosage || '').trim());
   const hasCustomPrescription = Boolean(
     String(value.custom_prescription || '').trim()

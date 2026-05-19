@@ -51,9 +51,9 @@ const buildDosageText = (data = {}) => {
 
   const doseAmount = normalizePositiveNumber(data.dose_amount);
   const doseUnit = sanitizeString(data.dose_unit);
-  if (!doseAmount || !doseUnit) return null;
+  if (!doseAmount) return null;
 
-  return `${doseAmount} ${doseUnit}`;
+  return doseUnit ? `${doseAmount} ${doseUnit}` : `${doseAmount}`;
 };
 
 const normalizeItemPayload = (data = {}) => {

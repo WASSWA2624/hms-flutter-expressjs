@@ -6220,6 +6220,54 @@ abstract class AppLocalizations {
   /// **'Prescribe'**
   String get clinicalPrescribeAction;
 
+  /// Clinical prescription dialog header title.
+  ///
+  /// In en, this message translates to:
+  /// **'Build prescription'**
+  String get clinicalPrescriptionHeaderTitle;
+
+  /// Clinical prescription dialog header body.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one or more medicines, then send them together to pharmacy.'**
+  String get clinicalPrescriptionHeaderBody;
+
+  /// Clinical prescription available drug field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Available drug'**
+  String get clinicalPrescriptionDrugLabel;
+
+  /// Clinical prescription item title prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine'**
+  String get clinicalPrescriptionMedicineLabel;
+
+  /// Clinical prescription item helper text before a drug is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a drug and complete the prescription details.'**
+  String get clinicalPrescriptionItemDescription;
+
+  /// Clinical prescription quantity unit field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity unit'**
+  String get clinicalPrescriptionQuantityUnitLabel;
+
+  /// Clinical prescription add medicine button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add medicine'**
+  String get clinicalPrescriptionAddMedicineAction;
+
+  /// Clinical prescription remove medicine button tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove medicine'**
+  String get clinicalPrescriptionRemoveMedicineAction;
+
   /// Clinical add procedure action label.
   ///
   /// In en, this message translates to:

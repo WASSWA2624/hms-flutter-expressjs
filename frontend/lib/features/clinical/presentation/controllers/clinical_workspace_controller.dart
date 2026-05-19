@@ -411,19 +411,10 @@ final class ClinicalWorkspaceController
   }
 
   Future<AppFailure?> prescribe({
-    required String drugId,
-    required int quantity,
-    String? dosage,
-    num? doseAmount,
-    String? doseUnit,
-    String? route,
-    String? frequency,
-    int? durationValue,
-    String? durationUnit,
-    String? instructions,
+    required List<Map<String, Object?>> items,
   }) {
     final ClinicalWorklistEntry? entry = _selectedEntry;
-    if (entry == null || entry.apiPatientId == null) {
+    if (entry == null || entry.apiPatientId == null || items.isEmpty) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
@@ -432,20 +423,7 @@ final class ClinicalWorkspaceController
         'encounter_id': entry.encounterId,
         'patient_id': entry.apiPatientId,
         'ordered_at': DateTime.now().toUtc().toIso8601String(),
-        'items': <Map<String, Object?>>[
-          <String, Object?>{
-            'drug_id': drugId,
-            'quantity': quantity,
-            'dosage': dosage,
-            'dose_amount': doseAmount,
-            'dose_unit': doseUnit,
-            'route': route,
-            'frequency': frequency,
-            'duration_value': durationValue,
-            'duration_unit': durationUnit,
-            'instructions': instructions,
-          },
-        ],
+        'items': items,
       }),
     );
   }
