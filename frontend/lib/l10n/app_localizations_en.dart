@@ -3081,6 +3081,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalScopeFilterLabel => 'Queue scope';
 
   @override
+  String get clinicalAllScopeLabel => 'All active work';
+
+  @override
   String get clinicalTodayScopeLabel => 'Today';
 
   @override

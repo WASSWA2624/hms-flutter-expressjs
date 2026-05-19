@@ -3,6 +3,22 @@ import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.d
 
 void main() {
   group('ClinicalWorklistEntry filtering', () {
+    test('default query shows all active clinical work', () {
+      expect(const ClinicalWorklistQuery().scope, ClinicalQueueScope.all);
+    });
+
+    test('all scope includes records from any date', () {
+      final DateTime now = DateTime.now();
+      final ClinicalWorklistEntry yesterday = _entry(
+        updatedAt: now.subtract(const Duration(days: 1)),
+      );
+
+      expect(
+        clinicalWorklistEntryMatchesScope(yesterday, ClinicalQueueScope.all),
+        isTrue,
+      );
+    });
+
     test('today scope only includes records updated today', () {
       final DateTime now = DateTime.now();
       final ClinicalWorklistEntry today = _entry(updatedAt: now);

@@ -5770,6 +5770,12 @@ abstract class AppLocalizations {
   /// **'Queue scope'**
   String get clinicalScopeFilterLabel;
 
+  /// Clinical queue scope label for all active clinical work.
+  ///
+  /// In en, this message translates to:
+  /// **'All active work'**
+  String get clinicalAllScopeLabel;
+
   /// Clinical queue scope label for today.
   ///
   /// In en, this message translates to:

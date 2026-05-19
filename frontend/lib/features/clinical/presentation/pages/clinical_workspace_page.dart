@@ -4552,7 +4552,6 @@ class _PrescriptionLineHeader extends StatelessWidget {
     final String fallback = l10n.clinicalPrescriptionItemDescription;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         DecoratedBox(
           decoration: BoxDecoration(
@@ -5188,7 +5187,7 @@ Future<void> _showActionResult(
 
 AppSearchBarFilterValue _filterValueFromQuery(
   ClinicalWorklistFilters filters, {
-  ClinicalQueueScope scope = ClinicalQueueScope.today,
+  ClinicalQueueScope scope = ClinicalQueueScope.all,
   String search = '',
 }) {
   return AppSearchBarFilterValue(
@@ -5212,7 +5211,7 @@ AppSearchBarFilterValue _filterValueFromQuery(
       if (_hasText(filters.location)) _clinicalTextLocation: filters.location!,
     },
     options: <String, String>{
-      if (scope != ClinicalQueueScope.today) _clinicalFilterScope: scope.name,
+      if (scope != ClinicalQueueScope.all) _clinicalFilterScope: scope.name,
       if (_hasText(filters.sourceQueue))
         _clinicalFilterSource: filters.sourceQueue!,
       if (_hasText(filters.status)) _clinicalFilterStatus: filters.status!,
@@ -5257,11 +5256,11 @@ AppSearchBarFilterValue _filterValueWithoutText(
 ClinicalQueueScope _scopeFromValue(AppSearchBarFilterValue value) {
   final String? scope = value.option(_clinicalFilterScope);
   if (scope == null) {
-    return ClinicalQueueScope.today;
+    return ClinicalQueueScope.all;
   }
   return ClinicalQueueScope.values.firstWhere(
     (ClinicalQueueScope candidate) => candidate.name == scope,
-    orElse: () => ClinicalQueueScope.today,
+    orElse: () => ClinicalQueueScope.all,
   );
 }
 
@@ -5271,7 +5270,7 @@ bool _hasActiveClinicalFilters(
   String search = '',
 }) {
   return filters.isActive ||
-      scope != ClinicalQueueScope.today ||
+      scope != ClinicalQueueScope.all ||
       _hasText(search);
 }
 
@@ -5347,7 +5346,7 @@ List<AppSearchBarFilterGroup> _clinicalFilterGroups(
       AppSearchBarFilterGroup(
         key: _clinicalFilterScope,
         label: l10n.clinicalScopeFilterLabel,
-        allLabel: l10n.clinicalTodayScopeLabel,
+        allLabel: l10n.clinicalAllScopeLabel,
         choices: _scopeFilterChoices(l10n),
       ),
     AppSearchBarFilterGroup(
@@ -5386,6 +5385,11 @@ List<AppSearchBarFilterGroup> _clinicalFilterGroups(
 
 List<AppSearchBarFilterChoice> _scopeFilterChoices(AppLocalizations l10n) {
   return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
+      value: ClinicalQueueScope.today.name,
+      label: l10n.clinicalTodayScopeLabel,
+      icon: Icons.today_outlined,
+    ),
     AppSearchBarFilterChoice(
       value: ClinicalQueueScope.urgent.name,
       label: l10n.clinicalUrgentSummaryLabel,

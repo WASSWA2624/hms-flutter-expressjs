@@ -3971,6 +3971,10 @@
   "@clinicalScopeFilterLabel": {
     "description": "Clinical queue scope filter label."
   },
+  "clinicalAllScopeLabel": "All active work",
+  "@clinicalAllScopeLabel": {
+    "description": "Clinical queue scope label for all active clinical work."
+  },
   "clinicalTodayScopeLabel": "Today",
   "@clinicalTodayScopeLabel": {
     "description": "Clinical queue scope label for today."

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 enum ClinicalQueueScope {
+  all,
   today,
   urgent,
   waitingReview,
@@ -15,7 +16,7 @@ final class ClinicalWorklistQuery {
   const ClinicalWorklistQuery({
     this.search = '',
     this.filters = const ClinicalWorklistFilters(),
-    this.scope = ClinicalQueueScope.today,
+    this.scope = ClinicalQueueScope.all,
     this.pageRequest = const AppPageRequest(pageSize: 25),
   });
 
@@ -786,6 +787,7 @@ bool clinicalWorklistEntryMatchesScope(
   ClinicalQueueScope scope,
 ) {
   return switch (scope) {
+    ClinicalQueueScope.all => true,
     ClinicalQueueScope.today => _isToday(item.updatedAt ?? item.startedAt),
     ClinicalQueueScope.urgent => item.isUrgent,
     ClinicalQueueScope.waitingReview => _matchesReviewState(item),

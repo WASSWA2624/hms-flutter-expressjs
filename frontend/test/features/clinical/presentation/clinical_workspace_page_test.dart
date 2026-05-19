@@ -134,7 +134,7 @@ void main() {
     expect(find.text('Provider'), findsAtLeastNWidgets(1));
     expect(find.text('Status'), findsAtLeastNWidgets(1));
     expect(find.text('Location'), findsOneWidget);
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('All active work'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.text('Cancel'));
