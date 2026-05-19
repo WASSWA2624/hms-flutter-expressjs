@@ -7714,6 +7714,24 @@ abstract class AppLocalizations {
   /// **'Accept handover'**
   String get nursingActionAcceptHandover;
 
+  /// Action label for printing a nursing summary report.
+  ///
+  /// In en, this message translates to:
+  /// **'Print nursing summary'**
+  String get nursingActionPrintSummary;
+
+  /// Title for the generated nursing care summary report.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing care summary'**
+  String get nursingReportTitle;
+
+  /// Footer note for generated nursing reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from the nursing report template for clinical audit.'**
+  String get nursingReportFooter;
+
   /// Nursing observations section title.
   ///
   /// In en, this message translates to:
@@ -7917,6 +7935,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm transfer update'**
   String get nursingConfirmTransferLabel;
+
+  /// Localized text for nursingAdvancedFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get nursingAdvancedFiltersLabel;
+
+  /// Localized text for nursingAdvancedFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nursing worklist filters'**
+  String get nursingAdvancedFiltersTitle;
+
+  /// Localized text for nursingApplyFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get nursingApplyFiltersLabel;
+
+  /// Localized text for nursingResetFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset filters'**
+  String get nursingResetFiltersLabel;
+
+  /// Localized text for nursingSearchFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search fields'**
+  String get nursingSearchFieldLabel;
+
+  /// Localized text for nursingAllFieldsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get nursingAllFieldsLabel;
+
+  /// Localized text for nursingDateFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due or observation date'**
+  String get nursingDateFilterLabel;
+
+  /// Localized text for nursingDateFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get nursingDateFromLabel;
+
+  /// Localized text for nursingDateToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get nursingDateToLabel;
+
+  /// Localized text for nursingDatePickerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose date'**
+  String get nursingDatePickerLabel;
+
+  /// Localized text for nursingInvalidDateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date.'**
+  String get nursingInvalidDateMessage;
+
+  /// Localized text for nursingPatientFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get nursingPatientFilterLabel;
+
+  /// Localized text for nursingPatientFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, number, admission, or encounter'**
+  String get nursingPatientFilterHint;
+
+  /// Localized text for nursingUnitFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get nursingUnitFilterLabel;
+
+  /// Localized text for nursingUnitFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward, ICU, recovery, or unit'**
+  String get nursingUnitFilterHint;
+
+  /// Localized text for nursingShiftFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get nursingShiftFilterLabel;
+
+  /// Localized text for nursingShiftFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning, evening, night, or current shift'**
+  String get nursingShiftFilterHint;
+
+  /// Localized text for nursingCareTaskFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Care task'**
+  String get nursingCareTaskFilterLabel;
+
+  /// Localized text for nursingCareTaskFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals, medication, handover, transfer, or discharge'**
+  String get nursingCareTaskFilterHint;
+
+  /// Localized text for nursingAdmissionStatusFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission status'**
+  String get nursingAdmissionStatusFilterLabel;
+
+  /// Localized text for nursingAdmissionStatusFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Active, admitted, transfer, or discharge status'**
+  String get nursingAdmissionStatusFilterHint;
+
+  /// Localized text for nursingDischargeReadinessFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge readiness'**
+  String get nursingDischargeReadinessFilterLabel;
+
+  /// Localized text for nursingDischargeReadinessFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned, pending, ready, or blocked'**
+  String get nursingDischargeReadinessFilterHint;
+
+  /// Localized text for nursingPriorityFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get nursingPriorityFilterLabel;
+
+  /// Localized text for nursingPriorityHighLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get nursingPriorityHighLabel;
+
+  /// Localized text for nursingPriorityMediumLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get nursingPriorityMediumLabel;
+
+  /// Localized text for nursingPriorityRoutineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Routine'**
+  String get nursingPriorityRoutineLabel;
+
+  /// Localized text for nursingAdmissionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission'**
+  String get nursingAdmissionColumnLabel;
+
+  /// Localized text for nursingTaskTypeColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Task type'**
+  String get nursingTaskTypeColumnLabel;
+
+  /// Localized text for nursingPriorityColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get nursingPriorityColumnLabel;
+
+  /// Localized text for nursingDueTimeColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due time'**
+  String get nursingDueTimeColumnLabel;
+
+  /// Localized text for nursingResponsibleNurseColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Responsible nurse'**
+  String get nursingResponsibleNurseColumnLabel;
+
+  /// Localized text for nursingDueNowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get nursingDueNowLabel;
+
+  /// Localized text for nursingAssignedShiftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned shift'**
+  String get nursingAssignedShiftLabel;
+
+  /// Localized text for nursingWardAdmissionChecklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward admission checklist'**
+  String get nursingWardAdmissionChecklistTitle;
+
+  /// Localized text for nursingWardAdmissionChecklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks tied to bed location, admission handover, observations, care plan, medication, and discharge readiness.'**
+  String get nursingWardAdmissionChecklistDescription;
+
+  /// Localized text for nursingChecklistCompleteStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get nursingChecklistCompleteStatus;
+
+  /// Localized text for nursingChecklistPendingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get nursingChecklistPendingStatus;
+
+  /// Localized text for nursingChecklistLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location confirmed'**
+  String get nursingChecklistLocationTitle;
+
+  /// Localized text for nursingChecklistLocationReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient location is available.'**
+  String get nursingChecklistLocationReadyBody;
+
+  /// Localized text for nursingChecklistLocationPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for bed allocation or authorized holding area.'**
+  String get nursingChecklistLocationPendingBody;
+
+  /// Localized text for nursingChecklistHandoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission handover'**
+  String get nursingChecklistHandoverTitle;
+
+  /// Localized text for nursingChecklistHandoverReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A nursing handover is linked to this admission.'**
+  String get nursingChecklistHandoverReadyBody;
+
+  /// Localized text for nursingChecklistHandoverPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Record or accept the admission handover before ward care continues.'**
+  String get nursingChecklistHandoverPendingBody;
+
+  /// Localized text for nursingChecklistVitalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial observations'**
+  String get nursingChecklistVitalsTitle;
+
+  /// Localized text for nursingChecklistVitalsPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Record baseline vital signs for the admission.'**
+  String get nursingChecklistVitalsPendingBody;
+
+  /// Localized text for nursingChecklistCarePlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Care plan started'**
+  String get nursingChecklistCarePlanTitle;
+
+  /// Localized text for nursingChecklistCarePlanReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'At least one care task or plan is recorded.'**
+  String get nursingChecklistCarePlanReadyBody;
+
+  /// Localized text for nursingChecklistCarePlanPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a care task or plan for ward follow-up.'**
+  String get nursingChecklistCarePlanPendingBody;
+
+  /// Localized text for nursingChecklistMedicationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication queue clear'**
+  String get nursingChecklistMedicationTitle;
+
+  /// Localized text for nursingChecklistMedicationReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No medication administration is currently due.'**
+  String get nursingChecklistMedicationReadyBody;
+
+  /// Localized text for nursingChecklistMedicationPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication administration remains due for this patient.'**
+  String get nursingChecklistMedicationPendingBody;
+
+  /// Localized text for nursingChecklistDischargeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge nursing readiness'**
+  String get nursingChecklistDischargeTitle;
+
+  /// Localized text for nursingChecklistDischargeReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No discharge nursing checklist is pending.'**
+  String get nursingChecklistDischargeReadyBody;
+
+  /// Localized text for nursingChecklistDischargePendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge nursing checks are pending; do not close the admission here.'**
+  String get nursingChecklistDischargePendingBody;
+
+  /// Localized text for nursingShiftContextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift context'**
+  String get nursingShiftContextTitle;
+
+  /// Localized text for nursingShiftContextDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Current roster and handover items stay visible without opening another module.'**
+  String get nursingShiftContextDescription;
+
+  /// Localized text for nursingRosterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster assignments'**
+  String get nursingRosterTitle;
+
+  /// Localized text for nursingPendingHandoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending handovers'**
+  String get nursingPendingHandoverTitle;
+
+  /// Localized text for nursingNoRosterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No roster assignments found for this shift.'**
+  String get nursingNoRosterLabel;
 
   /// Navigation label for the discharge workspace.
   ///

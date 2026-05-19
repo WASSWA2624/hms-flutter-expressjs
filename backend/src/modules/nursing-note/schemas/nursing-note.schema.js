@@ -9,7 +9,7 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
+  uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
 
@@ -20,8 +20,8 @@ const {
  * Used for POST /nursing-notes endpoint
  */
 const createNursingNoteSchema = z.object({
-  admission_id: uuidSchema,
-  nurse_user_id: uuidSchema,
+  admission_id: uuidOrFriendlyIdentifierSchema,
+  nurse_user_id: uuidOrFriendlyIdentifierSchema,
   note: z.string().trim().min(1).max(65535)
 });
 
@@ -41,7 +41,7 @@ const updateNursingNoteSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const nursingNoteIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================
@@ -52,8 +52,8 @@ const nursingNoteIdParamsSchema = z.object({
  * Extends base listQuerySchema with nursing note-specific filters
  */
 const listNursingNotesQuerySchema = listQuerySchema.extend({
-  admission_id: uuidSchema.optional(),
-  nurse_user_id: uuidSchema.optional()
+  admission_id: uuidOrFriendlyIdentifierSchema.optional(),
+  nurse_user_id: uuidOrFriendlyIdentifierSchema.optional()
 });
 
 module.exports = {

@@ -10,6 +10,53 @@
 const nursingNoteRepository = require('@repositories/nursing-note/nursing-note.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  resolveIdentifierForFilter,
+  resolveIdentifierForPayload,
+} = require('@lib/identifiers/service-identifier-resolution');
+
+const buildPagination = (page, limit, total) => ({
+  page,
+  limit,
+  total,
+  totalPages: Math.ceil(total / limit),
+  hasNextPage: page < Math.ceil(total / limit),
+  hasPreviousPage: page > 1
+});
+
+const buildEmptyListResult = (page, limit) => ({
+  nursingNotes: [],
+  pagination: buildPagination(page, limit, 0)
+});
+
+const resolveNursingNoteId = (id) =>
+  resolveIdentifierForPayload({
+    value: id,
+    field: 'id',
+    model: 'nursing_note',
+    where: { deleted_at: null },
+  });
+
+const resolveNursingNotePayload = async (input = {}) => {
+  const payload = { ...input };
+  if (Object.prototype.hasOwnProperty.call(payload, 'admission_id')) {
+    payload.admission_id = await resolveIdentifierForPayload({
+      value: payload.admission_id,
+      field: 'admission_id',
+      model: 'admission',
+      where: { deleted_at: null },
+    });
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'nurse_user_id')) {
+    payload.nurse_user_id = await resolveIdentifierForPayload({
+      value: payload.nurse_user_id,
+      field: 'nurse_user_id',
+      model: 'user',
+      where: { deleted_at: null },
+    });
+  }
+  return payload;
+};
 
 /**
  * List nursing notes with pagination and filtering
@@ -30,9 +77,25 @@ const listNursingNotes = async (filters, page, limit, sortBy, order, userId, ipA
 
     // Build filter object
     const whereClause = {};
-    
-    if (filters.admission_id) whereClause.admission_id = filters.admission_id;
-    if (filters.nurse_user_id) whereClause.nurse_user_id = filters.nurse_user_id;
+
+    if (filters.admission_id) {
+      const admissionId = await resolveIdentifierForFilter({
+        value: filters.admission_id,
+        model: 'admission',
+        where: { deleted_at: null },
+      });
+      if (admissionId === null) return buildEmptyListResult(page, limit);
+      if (admissionId !== undefined) whereClause.admission_id = admissionId;
+    }
+    if (filters.nurse_user_id) {
+      const nurseUserId = await resolveIdentifierForFilter({
+        value: filters.nurse_user_id,
+        model: 'user',
+        where: { deleted_at: null },
+      });
+      if (nurseUserId === null) return buildEmptyListResult(page, limit);
+      if (nurseUserId !== undefined) whereClause.nurse_user_id = nurseUserId;
+    }
 
     const [nursingNotes, total] = await Promise.all([
       nursingNoteRepository.findMany(whereClause, skip, limit, orderBy),
@@ -41,14 +104,7 @@ const listNursingNotes = async (filters, page, limit, sortBy, order, userId, ipA
 
     return {
       nursingNotes,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1
-      }
+      pagination: buildPagination(page, limit, total)
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -66,7 +122,8 @@ const listNursingNotes = async (filters, page, limit, sortBy, order, userId, ipA
  */
 const getNursingNoteById = async (id, userId, ipAddress) => {
   try {
-    const nursingNote = await nursingNoteRepository.findById(id);
+    const resolvedId = await resolveNursingNoteId(id);
+    const nursingNote = await nursingNoteRepository.findById(resolvedId);
 
     if (!nursingNote) {
       throw new HttpError('errors.nursing_note.not_found', 404);
@@ -90,7 +147,8 @@ const getNursingNoteById = async (id, userId, ipAddress) => {
  */
 const createNursingNote = async (data, userId, ipAddress) => {
   try {
-    const nursingNote = await nursingNoteRepository.create(data);
+    const resolvedPayload = await resolveNursingNotePayload(data);
+    const nursingNote = await nursingNoteRepository.create(resolvedPayload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -122,13 +180,14 @@ const createNursingNote = async (data, userId, ipAddress) => {
 const updateNursingNote = async (id, data, userId, ipAddress) => {
   try {
     // Get current state for audit
-    const before = await nursingNoteRepository.findById(id);
+    const resolvedId = await resolveNursingNoteId(id);
+    const before = await nursingNoteRepository.findById(resolvedId);
 
     if (!before) {
       throw new HttpError('errors.nursing_note.not_found', 404);
     }
 
-    const nursingNote = await nursingNoteRepository.update(id, data);
+    const nursingNote = await nursingNoteRepository.update(resolvedId, data);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -159,20 +218,21 @@ const updateNursingNote = async (id, data, userId, ipAddress) => {
 const deleteNursingNote = async (id, userId, ipAddress) => {
   try {
     // Get current state for audit
-    const before = await nursingNoteRepository.findById(id);
+    const resolvedId = await resolveNursingNoteId(id);
+    const before = await nursingNoteRepository.findById(resolvedId);
 
     if (!before) {
       throw new HttpError('errors.nursing_note.not_found', 404);
     }
 
-    await nursingNoteRepository.softDelete(id);
+    await nursingNoteRepository.softDelete(resolvedId);
 
     // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
       entity: 'nursing_note',
-      entity_id: id,
+      entity_id: resolvedId,
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});

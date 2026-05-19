@@ -20,6 +20,11 @@ abstract interface class NursingRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<NursingPatientDetail>> recordVitalSet(
+    NursingPatientSummary summary,
+    List<Map<String, Object?>> payloads,
+  );
+
   Future<Result<NursingPatientDetail>> addNursingNote(
     NursingPatientSummary summary,
     Map<String, Object?> payload,

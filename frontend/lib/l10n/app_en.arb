@@ -5314,6 +5314,18 @@
   "@nursingActionAcceptHandover": {
     "description": "Action label for accepting a nursing handover."
   },
+  "nursingActionPrintSummary": "Print nursing summary",
+  "@nursingActionPrintSummary": {
+    "description": "Action label for printing a nursing summary report."
+  },
+  "nursingReportTitle": "Nursing care summary",
+  "@nursingReportTitle": {
+    "description": "Title for the generated nursing care summary report."
+  },
+  "nursingReportFooter": "Generated from the nursing report template for clinical audit.",
+  "@nursingReportFooter": {
+    "description": "Footer note for generated nursing reports."
+  },
   "nursingObservationsTitle": "Observations",
   "@nursingObservationsTitle": {
     "description": "Nursing observations section title."
@@ -5449,6 +5461,246 @@
   "nursingConfirmTransferLabel": "Confirm transfer update",
   "@nursingConfirmTransferLabel": {
     "description": "Nursing transfer confirmation checkbox label."
+  },
+  "nursingAdvancedFiltersLabel": "Filters",
+  "@nursingAdvancedFiltersLabel": {
+    "description": "Localized text for nursingAdvancedFiltersLabel."
+  },
+  "nursingAdvancedFiltersTitle": "Nursing worklist filters",
+  "@nursingAdvancedFiltersTitle": {
+    "description": "Localized text for nursingAdvancedFiltersTitle."
+  },
+  "nursingApplyFiltersLabel": "Apply filters",
+  "@nursingApplyFiltersLabel": {
+    "description": "Localized text for nursingApplyFiltersLabel."
+  },
+  "nursingResetFiltersLabel": "Reset filters",
+  "@nursingResetFiltersLabel": {
+    "description": "Localized text for nursingResetFiltersLabel."
+  },
+  "nursingSearchFieldLabel": "Search fields",
+  "@nursingSearchFieldLabel": {
+    "description": "Localized text for nursingSearchFieldLabel."
+  },
+  "nursingAllFieldsLabel": "All",
+  "@nursingAllFieldsLabel": {
+    "description": "Localized text for nursingAllFieldsLabel."
+  },
+  "nursingDateFilterLabel": "Due or observation date",
+  "@nursingDateFilterLabel": {
+    "description": "Localized text for nursingDateFilterLabel."
+  },
+  "nursingDateFromLabel": "From",
+  "@nursingDateFromLabel": {
+    "description": "Localized text for nursingDateFromLabel."
+  },
+  "nursingDateToLabel": "To",
+  "@nursingDateToLabel": {
+    "description": "Localized text for nursingDateToLabel."
+  },
+  "nursingDatePickerLabel": "Choose date",
+  "@nursingDatePickerLabel": {
+    "description": "Localized text for nursingDatePickerLabel."
+  },
+  "nursingInvalidDateMessage": "Enter a valid date.",
+  "@nursingInvalidDateMessage": {
+    "description": "Localized text for nursingInvalidDateMessage."
+  },
+  "nursingPatientFilterLabel": "Patient",
+  "@nursingPatientFilterLabel": {
+    "description": "Localized text for nursingPatientFilterLabel."
+  },
+  "nursingPatientFilterHint": "Name, number, admission, or encounter",
+  "@nursingPatientFilterHint": {
+    "description": "Localized text for nursingPatientFilterHint."
+  },
+  "nursingUnitFilterLabel": "Unit",
+  "@nursingUnitFilterLabel": {
+    "description": "Localized text for nursingUnitFilterLabel."
+  },
+  "nursingUnitFilterHint": "Ward, ICU, recovery, or unit",
+  "@nursingUnitFilterHint": {
+    "description": "Localized text for nursingUnitFilterHint."
+  },
+  "nursingShiftFilterLabel": "Shift",
+  "@nursingShiftFilterLabel": {
+    "description": "Localized text for nursingShiftFilterLabel."
+  },
+  "nursingShiftFilterHint": "Morning, evening, night, or current shift",
+  "@nursingShiftFilterHint": {
+    "description": "Localized text for nursingShiftFilterHint."
+  },
+  "nursingCareTaskFilterLabel": "Care task",
+  "@nursingCareTaskFilterLabel": {
+    "description": "Localized text for nursingCareTaskFilterLabel."
+  },
+  "nursingCareTaskFilterHint": "Vitals, medication, handover, transfer, or discharge",
+  "@nursingCareTaskFilterHint": {
+    "description": "Localized text for nursingCareTaskFilterHint."
+  },
+  "nursingAdmissionStatusFilterLabel": "Admission status",
+  "@nursingAdmissionStatusFilterLabel": {
+    "description": "Localized text for nursingAdmissionStatusFilterLabel."
+  },
+  "nursingAdmissionStatusFilterHint": "Active, admitted, transfer, or discharge status",
+  "@nursingAdmissionStatusFilterHint": {
+    "description": "Localized text for nursingAdmissionStatusFilterHint."
+  },
+  "nursingDischargeReadinessFilterLabel": "Discharge readiness",
+  "@nursingDischargeReadinessFilterLabel": {
+    "description": "Localized text for nursingDischargeReadinessFilterLabel."
+  },
+  "nursingDischargeReadinessFilterHint": "Planned, pending, ready, or blocked",
+  "@nursingDischargeReadinessFilterHint": {
+    "description": "Localized text for nursingDischargeReadinessFilterHint."
+  },
+  "nursingPriorityFilterLabel": "Priority",
+  "@nursingPriorityFilterLabel": {
+    "description": "Localized text for nursingPriorityFilterLabel."
+  },
+  "nursingPriorityHighLabel": "High",
+  "@nursingPriorityHighLabel": {
+    "description": "Localized text for nursingPriorityHighLabel."
+  },
+  "nursingPriorityMediumLabel": "Medium",
+  "@nursingPriorityMediumLabel": {
+    "description": "Localized text for nursingPriorityMediumLabel."
+  },
+  "nursingPriorityRoutineLabel": "Routine",
+  "@nursingPriorityRoutineLabel": {
+    "description": "Localized text for nursingPriorityRoutineLabel."
+  },
+  "nursingAdmissionColumnLabel": "Admission",
+  "@nursingAdmissionColumnLabel": {
+    "description": "Localized text for nursingAdmissionColumnLabel."
+  },
+  "nursingTaskTypeColumnLabel": "Task type",
+  "@nursingTaskTypeColumnLabel": {
+    "description": "Localized text for nursingTaskTypeColumnLabel."
+  },
+  "nursingPriorityColumnLabel": "Priority",
+  "@nursingPriorityColumnLabel": {
+    "description": "Localized text for nursingPriorityColumnLabel."
+  },
+  "nursingDueTimeColumnLabel": "Due time",
+  "@nursingDueTimeColumnLabel": {
+    "description": "Localized text for nursingDueTimeColumnLabel."
+  },
+  "nursingResponsibleNurseColumnLabel": "Responsible nurse",
+  "@nursingResponsibleNurseColumnLabel": {
+    "description": "Localized text for nursingResponsibleNurseColumnLabel."
+  },
+  "nursingDueNowLabel": "Now",
+  "@nursingDueNowLabel": {
+    "description": "Localized text for nursingDueNowLabel."
+  },
+  "nursingAssignedShiftLabel": "Assigned shift",
+  "@nursingAssignedShiftLabel": {
+    "description": "Localized text for nursingAssignedShiftLabel."
+  },
+  "nursingWardAdmissionChecklistTitle": "Ward admission checklist",
+  "@nursingWardAdmissionChecklistTitle": {
+    "description": "Localized text for nursingWardAdmissionChecklistTitle."
+  },
+  "nursingWardAdmissionChecklistDescription": "Checks tied to bed location, admission handover, observations, care plan, medication, and discharge readiness.",
+  "@nursingWardAdmissionChecklistDescription": {
+    "description": "Localized text for nursingWardAdmissionChecklistDescription."
+  },
+  "nursingChecklistCompleteStatus": "Complete",
+  "@nursingChecklistCompleteStatus": {
+    "description": "Localized text for nursingChecklistCompleteStatus."
+  },
+  "nursingChecklistPendingStatus": "Pending",
+  "@nursingChecklistPendingStatus": {
+    "description": "Localized text for nursingChecklistPendingStatus."
+  },
+  "nursingChecklistLocationTitle": "Location confirmed",
+  "@nursingChecklistLocationTitle": {
+    "description": "Localized text for nursingChecklistLocationTitle."
+  },
+  "nursingChecklistLocationReadyBody": "Patient location is available.",
+  "@nursingChecklistLocationReadyBody": {
+    "description": "Localized text for nursingChecklistLocationReadyBody."
+  },
+  "nursingChecklistLocationPendingBody": "Waiting for bed allocation or authorized holding area.",
+  "@nursingChecklistLocationPendingBody": {
+    "description": "Localized text for nursingChecklistLocationPendingBody."
+  },
+  "nursingChecklistHandoverTitle": "Admission handover",
+  "@nursingChecklistHandoverTitle": {
+    "description": "Localized text for nursingChecklistHandoverTitle."
+  },
+  "nursingChecklistHandoverReadyBody": "A nursing handover is linked to this admission.",
+  "@nursingChecklistHandoverReadyBody": {
+    "description": "Localized text for nursingChecklistHandoverReadyBody."
+  },
+  "nursingChecklistHandoverPendingBody": "Record or accept the admission handover before ward care continues.",
+  "@nursingChecklistHandoverPendingBody": {
+    "description": "Localized text for nursingChecklistHandoverPendingBody."
+  },
+  "nursingChecklistVitalsTitle": "Initial observations",
+  "@nursingChecklistVitalsTitle": {
+    "description": "Localized text for nursingChecklistVitalsTitle."
+  },
+  "nursingChecklistVitalsPendingBody": "Record baseline vital signs for the admission.",
+  "@nursingChecklistVitalsPendingBody": {
+    "description": "Localized text for nursingChecklistVitalsPendingBody."
+  },
+  "nursingChecklistCarePlanTitle": "Care plan started",
+  "@nursingChecklistCarePlanTitle": {
+    "description": "Localized text for nursingChecklistCarePlanTitle."
+  },
+  "nursingChecklistCarePlanReadyBody": "At least one care task or plan is recorded.",
+  "@nursingChecklistCarePlanReadyBody": {
+    "description": "Localized text for nursingChecklistCarePlanReadyBody."
+  },
+  "nursingChecklistCarePlanPendingBody": "Add a care task or plan for ward follow-up.",
+  "@nursingChecklistCarePlanPendingBody": {
+    "description": "Localized text for nursingChecklistCarePlanPendingBody."
+  },
+  "nursingChecklistMedicationTitle": "Medication queue clear",
+  "@nursingChecklistMedicationTitle": {
+    "description": "Localized text for nursingChecklistMedicationTitle."
+  },
+  "nursingChecklistMedicationReadyBody": "No medication administration is currently due.",
+  "@nursingChecklistMedicationReadyBody": {
+    "description": "Localized text for nursingChecklistMedicationReadyBody."
+  },
+  "nursingChecklistMedicationPendingBody": "Medication administration remains due for this patient.",
+  "@nursingChecklistMedicationPendingBody": {
+    "description": "Localized text for nursingChecklistMedicationPendingBody."
+  },
+  "nursingChecklistDischargeTitle": "Discharge nursing readiness",
+  "@nursingChecklistDischargeTitle": {
+    "description": "Localized text for nursingChecklistDischargeTitle."
+  },
+  "nursingChecklistDischargeReadyBody": "No discharge nursing checklist is pending.",
+  "@nursingChecklistDischargeReadyBody": {
+    "description": "Localized text for nursingChecklistDischargeReadyBody."
+  },
+  "nursingChecklistDischargePendingBody": "Discharge nursing checks are pending; do not close the admission here.",
+  "@nursingChecklistDischargePendingBody": {
+    "description": "Localized text for nursingChecklistDischargePendingBody."
+  },
+  "nursingShiftContextTitle": "Shift context",
+  "@nursingShiftContextTitle": {
+    "description": "Localized text for nursingShiftContextTitle."
+  },
+  "nursingShiftContextDescription": "Current roster and handover items stay visible without opening another module.",
+  "@nursingShiftContextDescription": {
+    "description": "Localized text for nursingShiftContextDescription."
+  },
+  "nursingRosterTitle": "Roster assignments",
+  "@nursingRosterTitle": {
+    "description": "Localized text for nursingRosterTitle."
+  },
+  "nursingPendingHandoverTitle": "Pending handovers",
+  "@nursingPendingHandoverTitle": {
+    "description": "Localized text for nursingPendingHandoverTitle."
+  },
+  "nursingNoRosterLabel": "No roster assignments found for this shift.",
+  "@nursingNoRosterLabel": {
+    "description": "Localized text for nursingNoRosterLabel."
   },
   "navigationDischargeLabel": "Discharge",
   "@navigationDischargeLabel": {

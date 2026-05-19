@@ -16,33 +16,82 @@ final class NursingWorklistQuery {
   const NursingWorklistQuery({
     this.search = '',
     this.scope = NursingQueueScope.assignedWard,
+    this.patient = '',
     this.ward = '',
+    this.unit = '',
     this.shift = '',
+    this.careTask = '',
+    this.priority = '',
+    this.admissionStatus = '',
+    this.dischargeReadiness = '',
+    this.dateFrom,
+    this.dateTo,
     this.pageRequest = const AppPageRequest(pageSize: 25),
   });
 
   final String search;
   final NursingQueueScope scope;
+  final String patient;
   final String ward;
+  final String unit;
   final String shift;
+  final String careTask;
+  final String priority;
+  final String admissionStatus;
+  final String dischargeReadiness;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
   final AppPageRequest pageRequest;
+
+  bool get hasAdvancedFilters {
+    return patient.trim().isNotEmpty ||
+        ward.trim().isNotEmpty ||
+        unit.trim().isNotEmpty ||
+        shift.trim().isNotEmpty ||
+        careTask.trim().isNotEmpty ||
+        priority.trim().isNotEmpty ||
+        admissionStatus.trim().isNotEmpty ||
+        dischargeReadiness.trim().isNotEmpty ||
+        dateFrom != null ||
+        dateTo != null;
+  }
 
   NursingWorklistQuery copyWith({
     String? search,
     NursingQueueScope? scope,
+    String? patient,
     String? ward,
+    String? unit,
     String? shift,
+    String? careTask,
+    String? priority,
+    String? admissionStatus,
+    String? dischargeReadiness,
+    DateTime? dateFrom,
+    DateTime? dateTo,
     AppPageRequest? pageRequest,
+    bool clearDateFrom = false,
+    bool clearDateTo = false,
   }) {
     return NursingWorklistQuery(
       search: search ?? this.search,
       scope: scope ?? this.scope,
+      patient: patient ?? this.patient,
       ward: ward ?? this.ward,
+      unit: unit ?? this.unit,
       shift: shift ?? this.shift,
+      careTask: careTask ?? this.careTask,
+      priority: priority ?? this.priority,
+      admissionStatus: admissionStatus ?? this.admissionStatus,
+      dischargeReadiness: dischargeReadiness ?? this.dischargeReadiness,
+      dateFrom: clearDateFrom ? null : dateFrom ?? this.dateFrom,
+      dateTo: clearDateTo ? null : dateTo ?? this.dateTo,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
 }
+
+typedef NursingWorkItem = NursingPatientSummary;
 
 @immutable
 final class NursingPatientSummary {
@@ -150,6 +199,35 @@ final class NursingPatientSummary {
 
   bool get hasMedicationDue => medicationDueCount > 0;
 
+  String get priorityCode {
+    if (isUrgent) {
+      return 'HIGH';
+    }
+    if (hasMedicationDue || hasPendingTransfer || isDischargePending) {
+      return 'MEDIUM';
+    }
+    return 'ROUTINE';
+  }
+
+  String get taskTypeCode {
+    if (hasMedicationDue) {
+      return 'MEDICATION_DUE';
+    }
+    if (pendingHandoverCount > 0) {
+      return 'HANDOVER_PENDING';
+    }
+    if (hasPendingTransfer) {
+      return 'TRANSFER_PENDING';
+    }
+    if (isDischargePending) {
+      return 'DISCHARGE_PENDING';
+    }
+    return _firstNonEmpty(<String?>[nextStep, stage, admissionStatus]) ??
+        'WARD_REVIEW';
+  }
+
+  DateTime? get dueReferenceAt => lastObservationAt ?? admittedAt;
+
   bool matchesSearch(String search) {
     final String needle = search.trim().toLowerCase();
     if (needle.isEmpty) {
@@ -174,6 +252,8 @@ final class NursingPatientSummary {
       icuStatus,
       criticalSeverity,
       activeIcuStayId,
+      priorityCode,
+      taskTypeCode,
       lastObservation,
     ].whereType<String>().any(
       (String value) => value.toLowerCase().contains(needle),
@@ -188,6 +268,126 @@ final class NursingPatientSummary {
     return <String?>[wardDisplayName, bedDisplayLabel].whereType<String>().any(
       (String value) => value.toLowerCase().contains(needle),
     );
+  }
+
+  bool matchesPatient(String patient) {
+    final String needle = patient.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[
+      patientId,
+      patientDisplayId,
+      patientDisplayName,
+      displayId,
+      admissionId,
+      encounterDisplayId,
+    ].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
+
+  bool matchesUnit(String unit) {
+    final String needle = unit.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[wardDisplayName, icuStatus, stage].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
+
+  bool matchesCareTask(String careTask) {
+    final String needle = careTask.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[
+      taskTypeCode,
+      nextStep,
+      stage,
+      transferStatus,
+      dischargeStatus,
+      lastObservation,
+    ].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
+
+  bool matchesPriority(String priority) {
+    final String needle = priority.trim().toUpperCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return priorityCode == needle;
+  }
+
+  bool matchesAdmissionStatus(String admissionStatusFilter) {
+    final String needle = admissionStatusFilter.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[admissionStatus, stage].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
+
+  bool matchesDischargeReadiness(String dischargeReadiness) {
+    final String needle = dischargeReadiness.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[dischargeStatus, stage, nextStep].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
+
+  bool matchesShift(String shift) {
+    final String needle = shift.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[stage, nextStep, wardDisplayName].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
+
+  bool matchesDateRange(DateTime? from, DateTime? to) {
+    final DateTime? date = dueReferenceAt ?? admittedAt;
+    if (from == null && to == null) {
+      return true;
+    }
+    if (date == null) {
+      return false;
+    }
+    final DateTime localDate = DateTime(date.year, date.month, date.day);
+    if (from != null) {
+      final DateTime fromDate = DateTime(from.year, from.month, from.day);
+      if (localDate.isBefore(fromDate)) {
+        return false;
+      }
+    }
+    if (to != null) {
+      final DateTime toDate = DateTime(to.year, to.month, to.day);
+      if (localDate.isAfter(toDate)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool matchesWorklistQuery(NursingWorklistQuery query) {
+    return matchesSearch(query.search) &&
+        matchesScope(query.scope) &&
+        matchesPatient(query.patient) &&
+        matchesWard(query.ward) &&
+        matchesUnit(query.unit) &&
+        matchesShift(query.shift) &&
+        matchesCareTask(query.careTask) &&
+        matchesPriority(query.priority) &&
+        matchesAdmissionStatus(query.admissionStatus) &&
+        matchesDischargeReadiness(query.dischargeReadiness) &&
+        matchesDateRange(query.dateFrom, query.dateTo);
   }
 
   bool matchesScope(NursingQueueScope scope) {
@@ -316,6 +516,8 @@ final class NursingPatientDetail {
 
   NursingPatientDetail copyWith({
     NursingPatientSummary? summary,
+    List<NursingNoteRecord>? nursingNotes,
+    List<MedicationAdministrationRecord>? medicationAdministrations,
     List<NursingVitalSign>? vitalSigns,
     List<NursingCarePlan>? carePlans,
     List<NursingHandover>? handovers,
@@ -329,8 +531,9 @@ final class NursingPatientDetail {
       encounterStatus: encounterStatus,
       activeTransfer: activeTransfer,
       latestDischarge: latestDischarge,
-      nursingNotes: nursingNotes,
-      medicationAdministrations: medicationAdministrations,
+      nursingNotes: nursingNotes ?? this.nursingNotes,
+      medicationAdministrations:
+          medicationAdministrations ?? this.medicationAdministrations,
       medicationSuggestions: medicationSuggestions,
       medicationReminders: medicationReminders,
       vitalSigns: vitalSigns ?? this.vitalSigns,

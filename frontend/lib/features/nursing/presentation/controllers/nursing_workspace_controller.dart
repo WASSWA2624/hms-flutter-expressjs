@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -20,6 +23,7 @@ final nursingWorkspaceControllerProvider =
 final class NursingWorkspaceController
     extends AsyncNotifier<Result<NursingWorkspaceState>> {
   static const Duration _syncInterval = Duration(seconds: 10);
+  static const Duration _optionalContextTimeout = Duration(seconds: 4);
   static const AppPageRequest _fetchRequest = AppPageRequest(pageSize: 100);
 
   NursingRepository get _repository => ref.read(nursingRepositoryProvider);
@@ -93,6 +97,46 @@ final class NursingWorkspaceController
       current.copyWith(
         query: current.query.copyWith(
           ward: ward.trim(),
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorklist(showLoading: true);
+  }
+
+  Future<AppFailure?> applyAdvancedFilters({
+    String? patient,
+    String? ward,
+    String? unit,
+    String? shift,
+    String? careTask,
+    String? priority,
+    String? admissionStatus,
+    String? dischargeReadiness,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+  }) {
+    final NursingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          patient: patient?.trim() ?? '',
+          ward: ward?.trim() ?? '',
+          unit: unit?.trim() ?? '',
+          shift: shift?.trim() ?? '',
+          careTask: careTask?.trim() ?? '',
+          priority: priority?.trim() ?? '',
+          admissionStatus: admissionStatus?.trim() ?? '',
+          dischargeReadiness: dischargeReadiness?.trim() ?? '',
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          clearDateFrom: dateFrom == null,
+          clearDateTo: dateTo == null,
           pageRequest: current.query.pageRequest.first(),
         ),
         isRefreshing: true,
@@ -186,21 +230,60 @@ final class NursingWorkspaceController
     );
   }
 
+  Future<AppFailure?> recordVitalSet(List<Map<String, Object?>> payloads) {
+    final NursingPatientDetail? detail = _selectedDetail;
+    if (detail == null || detail.summary.encounterDisplayId == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    if (payloads.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    final List<Map<String, Object?>> normalized = payloads
+        .map(
+          (Map<String, Object?> payload) => <String, Object?>{
+            'encounter_id': detail.summary.encounterDisplayId,
+            ...payload,
+          },
+        )
+        .toList(growable: false);
+
+    return _mutateSelected(
+      (NursingPatientSummary summary) =>
+          _repository.recordVitalSet(summary, normalized),
+    );
+  }
+
   Future<AppFailure?> addNursingNote(String note) {
+    final String? currentUserId = _currentUserId;
+    if (currentUserId == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
     return _mutateSelected(
       (NursingPatientSummary summary) => _repository.addNursingNote(
         summary,
-        <String, Object?>{'nurse_user_id': _currentUserId, 'note': note},
+        <String, Object?>{'nurse_user_id': currentUserId, 'note': note},
       ),
     );
   }
 
   Future<AppFailure?> completeTask({required String task, String? notes}) {
-    final String combinedNote = <String>[
-      '[TASK COMPLETED] ${task.trim()}',
+    final NursingPatientDetail? detail = _selectedDetail;
+    if (detail == null || detail.summary.encounterDisplayId == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    final String combinedPlan = <String>[
+      'Task completed: ${task.trim()}',
       if (notes != null && notes.trim().isNotEmpty) notes.trim(),
     ].join(' - ');
-    return addNursingNote(combinedNote);
+    return _mutateSelected(
+      (NursingPatientSummary summary) =>
+          _repository.addCarePlan(summary, <String, Object?>{
+            'encounter_id': detail.summary.encounterDisplayId,
+            'plan': combinedPlan,
+            'start_date': DateTime.now().toUtc().toIso8601String(),
+          }),
+    );
   }
 
   Future<AppFailure?> addMedicationAdministration(
@@ -291,17 +374,21 @@ final class NursingWorkspaceController
 
   Future<Result<NursingWorkspaceState>> _loadInitialState() async {
     const NursingWorklistQuery query = NursingWorklistQuery();
-    final List<NursingHandover> handovers = await _pendingHandovers();
-    final List<NursingRosterAssignment> rosters = await _currentRosters();
+    final Future<List<NursingHandover>> handoversFuture =
+        _safePendingHandovers();
+    final Future<List<NursingRosterAssignment>> rostersFuture =
+        _safeCurrentRosters();
     final Result<AppPage<NursingPatientSummary>> worklistResult =
-        await _loadWorklist(query, handovers);
+        await _loadWorklist(query, const <NursingHandover>[]);
 
     return worklistResult.when(
-      success: (AppPage<NursingPatientSummary> worklist) {
+      success: (AppPage<NursingPatientSummary> worklist) async {
+        final List<NursingHandover> handovers = await handoversFuture;
+        final List<NursingRosterAssignment> rosters = await rostersFuture;
         return Result<NursingWorkspaceState>.success(
           NursingWorkspaceState(
             query: query,
-            worklist: worklist,
+            worklist: _applyPendingHandovers(worklist, handovers, query),
             pendingHandovers: handovers,
             rosters: rosters,
           ),
@@ -341,10 +428,10 @@ final class NursingWorkspaceController
 
     try {
       final List<NursingHandover> handovers = refreshContext
-          ? await _pendingHandovers()
+          ? await _safePendingHandovers()
           : current.pendingHandovers;
       final List<NursingRosterAssignment> rosters = refreshContext
-          ? await _currentRosters()
+          ? await _safeCurrentRosters()
           : current.rosters;
       final AppFailure? failure = await _refreshWorklist(
         showLoading: showLoading,
@@ -436,10 +523,7 @@ final class NursingWorkspaceController
             return item.copyWith(pendingHandoverCount: handoverCount);
           })
           .where(
-            (NursingPatientSummary item) =>
-                item.matchesSearch(query.search) &&
-                item.matchesWard(query.ward) &&
-                item.matchesScope(query.scope),
+            (NursingPatientSummary item) => item.matchesWorklistQuery(query),
           )
           .toList(growable: true);
 
@@ -475,6 +559,59 @@ final class NursingWorkspaceController
     return result.when(
       success: (List<NursingRosterAssignment> value) => value,
       failure: (_) => const <NursingRosterAssignment>[],
+    );
+  }
+
+  Future<List<NursingHandover>> _safePendingHandovers() {
+    if (!_canReadOperationsContext) {
+      return Future<List<NursingHandover>>.value(const <NursingHandover>[]);
+    }
+    return _optionalList(_pendingHandovers());
+  }
+
+  Future<List<NursingRosterAssignment>> _safeCurrentRosters() {
+    if (!_canReadOperationsContext) {
+      return Future<List<NursingRosterAssignment>>.value(
+        const <NursingRosterAssignment>[],
+      );
+    }
+    return _optionalList(_currentRosters());
+  }
+
+  Future<List<T>> _optionalList<T>(Future<List<T>> future) {
+    return future
+        .timeout(_optionalContextTimeout, onTimeout: () => <T>[])
+        .catchError((_) => <T>[]);
+  }
+
+  AppPage<NursingPatientSummary> _applyPendingHandovers(
+    AppPage<NursingPatientSummary> page,
+    List<NursingHandover> handovers,
+    NursingWorklistQuery query,
+  ) {
+    if (handovers.isEmpty) {
+      return page;
+    }
+
+    final List<NursingPatientSummary> filtered = page.items
+        .map((NursingPatientSummary item) {
+          final int handoverCount = handovers
+              .where(
+                (NursingHandover handover) =>
+                    handover.isPending &&
+                    handover.admissionId != null &&
+                    handover.admissionId == item.admissionId,
+              )
+              .length;
+          return item.copyWith(pendingHandoverCount: handoverCount);
+        })
+        .where((NursingPatientSummary item) => item.matchesWorklistQuery(query))
+        .toList(growable: false);
+
+    return AppPage<NursingPatientSummary>(
+      items: filtered,
+      request: page.request,
+      totalItemCount: page.totalItemCount,
     );
   }
 
@@ -571,6 +708,17 @@ final class NursingWorkspaceController
   String? get _currentUserId {
     final String? id = ref.read(sessionStateProvider).session?.user?.id;
     return id == null || id.trim().isEmpty ? null : id;
+  }
+
+  bool get _canReadOperationsContext {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    return policy.hasActiveModule('hr-rosters') &&
+        policy.grantsAny(const <AppPermission>[
+          AppPermissions.hrRead,
+          AppPermissions.operationsRead,
+          AppPermissions.rosterRead,
+          AppPermissions.unitRead,
+        ]);
   }
 
   NursingPatientDetail? get _selectedDetail => _currentState?.selectedDetail;

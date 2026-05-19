@@ -12,6 +12,7 @@ export 'app_info_tile.dart';
 export 'app_list_item_text.dart';
 export 'app_list_table.dart';
 export 'app_logo.dart';
+export 'app_nursing_components.dart';
 export 'app_permission_action.dart';
 export 'app_phone_field.dart';
 export 'app_radio_group.dart';

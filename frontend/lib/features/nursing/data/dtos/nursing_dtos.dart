@@ -424,6 +424,24 @@ final class NursingCriticalAlertDto {
   }
 }
 
+List<NursingNoteRecord> decodeNursingNotes(Object? responseData) {
+  return _list(_expectMap(responseData)['data'])
+      .map(NursingNoteRecordDto.new)
+      .map((NursingNoteRecordDto dto) => dto.toEntity())
+      .where((NursingNoteRecord item) => item.id.isNotEmpty)
+      .toList(growable: false);
+}
+
+List<MedicationAdministrationRecord> decodeMedicationAdministrations(
+  Object? responseData,
+) {
+  return _list(_expectMap(responseData)['data'])
+      .map(MedicationAdministrationRecordDto.new)
+      .map((MedicationAdministrationRecordDto dto) => dto.toEntity())
+      .where((MedicationAdministrationRecord item) => item.id.isNotEmpty)
+      .toList(growable: false);
+}
+
 List<NursingVitalSign> decodeNursingVitals(Object? responseData) {
   return _list(_expectMap(responseData)['data'])
       .map(NursingVitalSignDto.new)

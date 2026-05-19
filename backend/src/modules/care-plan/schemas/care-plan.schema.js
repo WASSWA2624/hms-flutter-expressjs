@@ -9,7 +9,7 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
+  uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
 
@@ -20,7 +20,7 @@ const {
  * Used for POST /care-plans endpoint
  */
 const createCarePlanSchema = z.object({
-  encounter_id: uuidSchema,
+  encounter_id: uuidOrFriendlyIdentifierSchema,
   plan: z.string().trim().min(1),
   start_date: z.string().datetime().optional().nullable(),
   end_date: z.string().datetime().optional().nullable()
@@ -32,7 +32,7 @@ const createCarePlanSchema = z.object({
  * All fields optional for partial updates
  */
 const updateCarePlanSchema = z.object({
-  encounter_id: uuidSchema.optional(),
+  encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
   plan: z.string().trim().min(1).optional(),
   start_date: z.string().datetime().optional().nullable(),
   end_date: z.string().datetime().optional().nullable()
@@ -45,7 +45,7 @@ const updateCarePlanSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const carePlanIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================
@@ -56,7 +56,7 @@ const carePlanIdParamsSchema = z.object({
  * Extends base listQuerySchema with care plan-specific filters
  */
 const listCarePlansQuerySchema = listQuerySchema.extend({
-  encounter_id: uuidSchema.optional(),
+  encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
   start_date: z.string().datetime().optional(),
   end_date: z.string().datetime().optional()
 });

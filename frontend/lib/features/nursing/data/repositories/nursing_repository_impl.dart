@@ -50,15 +50,24 @@ final class NursingRepositoryImpl implements NursingRepository {
 
     return snapshotResult.when(
       success: (NursingPatientDetail detail) async {
+        final List<NursingNoteRecord> nursingNotes = await _relatedNursingNotes(
+          detail,
+        );
+        final List<MedicationAdministrationRecord> administrations =
+            await _relatedMedicationAdministrations(detail);
         final List<NursingVitalSign> vitals = await _relatedVitals(detail);
         final List<NursingCarePlan> carePlans = await _relatedCarePlans(detail);
         final List<NursingHandover> handovers = await _relatedHandovers(detail);
 
         return Result<NursingPatientDetail>.success(
           detail.copyWith(
+            nursingNotes: nursingNotes.isEmpty ? detail.nursingNotes : nursingNotes,
+            medicationAdministrations: administrations.isEmpty
+                ? detail.medicationAdministrations
+                : administrations,
             vitalSigns: vitals,
             carePlans: carePlans,
-            handovers: handovers,
+            handovers: handovers.isEmpty ? detail.handovers : handovers,
           ),
         );
       },
@@ -112,17 +121,38 @@ final class NursingRepositoryImpl implements NursingRepository {
   }
 
   @override
+  Future<Result<NursingPatientDetail>> recordVitalSet(
+    NursingPatientSummary summary,
+    List<Map<String, Object?>> payloads,
+  ) async {
+    for (final Map<String, Object?> payload in payloads) {
+      final Result<void> result = await _apiClient.post<void>(
+        ApiEndpoints.collection(HmsApiResource.vitalSigns),
+        data: _withoutEmpty(payload),
+        decoder: (_) {},
+      );
+      final AppFailure? failure = result.when(
+        success: (_) => null,
+        failure: (AppFailure failure) => failure,
+      );
+      if (failure != null) {
+        return Result<NursingPatientDetail>.failure(failure);
+      }
+    }
+    return loadPatientDetail(summary);
+  }
+
+  @override
   Future<Result<NursingPatientDetail>> addNursingNote(
     NursingPatientSummary summary,
     Map<String, Object?> payload,
   ) async {
     final Result<void> result = await _apiClient.post<void>(
-      ApiEndpoints.nested(
-        HmsApiResource.ipdFlows,
-        summary.apiAdmissionId,
-        <String>['add-nursing-note'],
-      ),
-      data: _withoutEmpty(payload),
+      ApiEndpoints.collection(HmsApiResource.nursingNotes),
+      data: _withoutEmpty(<String, Object?>{
+        'admission_id': summary.apiAdmissionId,
+        ...payload,
+      }),
       decoder: (_) {},
     );
     return _reloadAfterMutation(result, summary);
@@ -134,12 +164,15 @@ final class NursingRepositoryImpl implements NursingRepository {
     Map<String, Object?> payload,
   ) async {
     final Result<void> result = await _apiClient.post<void>(
-      ApiEndpoints.nested(
-        HmsApiResource.ipdFlows,
-        summary.apiAdmissionId,
-        <String>['add-medication-administration'],
-      ),
-      data: _withoutEmpty(payload),
+      ApiEndpoints.collection(HmsApiResource.medicationAdministrations),
+      data: _withoutEmpty(<String, Object?>{
+        'admission_id': summary.apiAdmissionId,
+        'prescription_id': payload['prescription_id'],
+        'administered_at': payload['administered_at'],
+        'dose': payload['dose'],
+        'unit': payload['unit'],
+        'route': payload['route'],
+      }),
       decoder: (_) {},
     );
     return _reloadAfterMutation(result, summary);
@@ -214,6 +247,43 @@ final class NursingRepositoryImpl implements NursingRepository {
       decoder: (Object? data) =>
           NursingPatientDetailDto.fromResponse(data, summary).toEntity(),
     );
+  }
+
+  Future<List<NursingNoteRecord>> _relatedNursingNotes(
+    NursingPatientDetail detail,
+  ) async {
+    final Result<List<NursingNoteRecord>> result = await _apiClient
+        .get<List<NursingNoteRecord>>(
+          ApiEndpoints.collection(HmsApiResource.nursingNotes),
+          queryParameters: _withoutEmpty(<String, Object?>{
+            'page': 1,
+            'limit': 25,
+            'admission_id': detail.summary.admissionId,
+            'sort_by': 'created_at',
+            'order': 'desc',
+          }),
+          decoder: decodeNursingNotes,
+        );
+
+    return _listOrEmptyOnDenied(result);
+  }
+
+  Future<List<MedicationAdministrationRecord>>
+  _relatedMedicationAdministrations(NursingPatientDetail detail) async {
+    final Result<List<MedicationAdministrationRecord>> result =
+        await _apiClient.get<List<MedicationAdministrationRecord>>(
+          ApiEndpoints.collection(HmsApiResource.medicationAdministrations),
+          queryParameters: _withoutEmpty(<String, Object?>{
+            'page': 1,
+            'limit': 25,
+            'admission_id': detail.summary.admissionId,
+            'sort_by': 'administered_at',
+            'order': 'desc',
+          }),
+          decoder: decodeMedicationAdministrations,
+        );
+
+    return _listOrEmptyOnDenied(result);
   }
 
   Future<List<NursingVitalSign>> _relatedVitals(

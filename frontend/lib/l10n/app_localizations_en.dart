@@ -4106,6 +4106,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nursingActionAcceptHandover => 'Accept handover';
 
   @override
+  String get nursingActionPrintSummary => 'Print nursing summary';
+
+  @override
+  String get nursingReportTitle => 'Nursing care summary';
+
+  @override
+  String get nursingReportFooter =>
+      'Generated from the nursing report template for clinical audit.';
+
+  @override
   String get nursingObservationsTitle => 'Observations';
 
   @override
@@ -4208,6 +4218,205 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nursingConfirmTransferLabel => 'Confirm transfer update';
+
+  @override
+  String get nursingAdvancedFiltersLabel => 'Filters';
+
+  @override
+  String get nursingAdvancedFiltersTitle => 'Nursing worklist filters';
+
+  @override
+  String get nursingApplyFiltersLabel => 'Apply filters';
+
+  @override
+  String get nursingResetFiltersLabel => 'Reset filters';
+
+  @override
+  String get nursingSearchFieldLabel => 'Search fields';
+
+  @override
+  String get nursingAllFieldsLabel => 'All';
+
+  @override
+  String get nursingDateFilterLabel => 'Due or observation date';
+
+  @override
+  String get nursingDateFromLabel => 'From';
+
+  @override
+  String get nursingDateToLabel => 'To';
+
+  @override
+  String get nursingDatePickerLabel => 'Choose date';
+
+  @override
+  String get nursingInvalidDateMessage => 'Enter a valid date.';
+
+  @override
+  String get nursingPatientFilterLabel => 'Patient';
+
+  @override
+  String get nursingPatientFilterHint =>
+      'Name, number, admission, or encounter';
+
+  @override
+  String get nursingUnitFilterLabel => 'Unit';
+
+  @override
+  String get nursingUnitFilterHint => 'Ward, ICU, recovery, or unit';
+
+  @override
+  String get nursingShiftFilterLabel => 'Shift';
+
+  @override
+  String get nursingShiftFilterHint =>
+      'Morning, evening, night, or current shift';
+
+  @override
+  String get nursingCareTaskFilterLabel => 'Care task';
+
+  @override
+  String get nursingCareTaskFilterHint =>
+      'Vitals, medication, handover, transfer, or discharge';
+
+  @override
+  String get nursingAdmissionStatusFilterLabel => 'Admission status';
+
+  @override
+  String get nursingAdmissionStatusFilterHint =>
+      'Active, admitted, transfer, or discharge status';
+
+  @override
+  String get nursingDischargeReadinessFilterLabel => 'Discharge readiness';
+
+  @override
+  String get nursingDischargeReadinessFilterHint =>
+      'Planned, pending, ready, or blocked';
+
+  @override
+  String get nursingPriorityFilterLabel => 'Priority';
+
+  @override
+  String get nursingPriorityHighLabel => 'High';
+
+  @override
+  String get nursingPriorityMediumLabel => 'Medium';
+
+  @override
+  String get nursingPriorityRoutineLabel => 'Routine';
+
+  @override
+  String get nursingAdmissionColumnLabel => 'Admission';
+
+  @override
+  String get nursingTaskTypeColumnLabel => 'Task type';
+
+  @override
+  String get nursingPriorityColumnLabel => 'Priority';
+
+  @override
+  String get nursingDueTimeColumnLabel => 'Due time';
+
+  @override
+  String get nursingResponsibleNurseColumnLabel => 'Responsible nurse';
+
+  @override
+  String get nursingDueNowLabel => 'Now';
+
+  @override
+  String get nursingAssignedShiftLabel => 'Assigned shift';
+
+  @override
+  String get nursingWardAdmissionChecklistTitle => 'Ward admission checklist';
+
+  @override
+  String get nursingWardAdmissionChecklistDescription =>
+      'Checks tied to bed location, admission handover, observations, care plan, medication, and discharge readiness.';
+
+  @override
+  String get nursingChecklistCompleteStatus => 'Complete';
+
+  @override
+  String get nursingChecklistPendingStatus => 'Pending';
+
+  @override
+  String get nursingChecklistLocationTitle => 'Location confirmed';
+
+  @override
+  String get nursingChecklistLocationReadyBody =>
+      'Patient location is available.';
+
+  @override
+  String get nursingChecklistLocationPendingBody =>
+      'Waiting for bed allocation or authorized holding area.';
+
+  @override
+  String get nursingChecklistHandoverTitle => 'Admission handover';
+
+  @override
+  String get nursingChecklistHandoverReadyBody =>
+      'A nursing handover is linked to this admission.';
+
+  @override
+  String get nursingChecklistHandoverPendingBody =>
+      'Record or accept the admission handover before ward care continues.';
+
+  @override
+  String get nursingChecklistVitalsTitle => 'Initial observations';
+
+  @override
+  String get nursingChecklistVitalsPendingBody =>
+      'Record baseline vital signs for the admission.';
+
+  @override
+  String get nursingChecklistCarePlanTitle => 'Care plan started';
+
+  @override
+  String get nursingChecklistCarePlanReadyBody =>
+      'At least one care task or plan is recorded.';
+
+  @override
+  String get nursingChecklistCarePlanPendingBody =>
+      'Add a care task or plan for ward follow-up.';
+
+  @override
+  String get nursingChecklistMedicationTitle => 'Medication queue clear';
+
+  @override
+  String get nursingChecklistMedicationReadyBody =>
+      'No medication administration is currently due.';
+
+  @override
+  String get nursingChecklistMedicationPendingBody =>
+      'Medication administration remains due for this patient.';
+
+  @override
+  String get nursingChecklistDischargeTitle => 'Discharge nursing readiness';
+
+  @override
+  String get nursingChecklistDischargeReadyBody =>
+      'No discharge nursing checklist is pending.';
+
+  @override
+  String get nursingChecklistDischargePendingBody =>
+      'Discharge nursing checks are pending; do not close the admission here.';
+
+  @override
+  String get nursingShiftContextTitle => 'Shift context';
+
+  @override
+  String get nursingShiftContextDescription =>
+      'Current roster and handover items stay visible without opening another module.';
+
+  @override
+  String get nursingRosterTitle => 'Roster assignments';
+
+  @override
+  String get nursingPendingHandoverTitle => 'Pending handovers';
+
+  @override
+  String get nursingNoRosterLabel =>
+      'No roster assignments found for this shift.';
 
   @override
   String get navigationDischargeLabel => 'Discharge';

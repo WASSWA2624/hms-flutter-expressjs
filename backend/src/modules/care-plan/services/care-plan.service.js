@@ -10,6 +10,45 @@
 const carePlanRepository = require('@repositories/care-plan/care-plan.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  resolveIdentifierForFilter,
+  resolveIdentifierForPayload,
+} = require('@lib/identifiers/service-identifier-resolution');
+
+const buildPagination = (page, limit, total) => ({
+  page,
+  limit,
+  total,
+  totalPages: Math.ceil(total / limit),
+  hasNextPage: page < Math.ceil(total / limit),
+  hasPreviousPage: page > 1
+});
+
+const buildEmptyListResult = (page, limit) => ({
+  carePlans: [],
+  pagination: buildPagination(page, limit, 0)
+});
+
+const resolveCarePlanId = (id) =>
+  resolveIdentifierForPayload({
+    value: id,
+    field: 'id',
+    model: 'care_plan',
+    where: { deleted_at: null },
+  });
+
+const resolveCarePlanPayload = async (input = {}) => {
+  const payload = { ...input };
+  if (Object.prototype.hasOwnProperty.call(payload, 'encounter_id')) {
+    payload.encounter_id = await resolveIdentifierForPayload({
+      value: payload.encounter_id,
+      field: 'encounter_id',
+      model: 'encounter',
+      where: { deleted_at: null },
+    });
+  }
+  return payload;
+};
 
 /**
  * List care plans with pagination and filtering
@@ -30,8 +69,16 @@ const listCarePlans = async (filters, page, limit, sortBy, order, userId, ipAddr
 
     // Build filter object
     const whereClause = {};
-    
-    if (filters.encounter_id) whereClause.encounter_id = filters.encounter_id;
+
+    if (filters.encounter_id) {
+      const encounterId = await resolveIdentifierForFilter({
+        value: filters.encounter_id,
+        model: 'encounter',
+        where: { deleted_at: null },
+      });
+      if (encounterId === null) return buildEmptyListResult(page, limit);
+      if (encounterId !== undefined) whereClause.encounter_id = encounterId;
+    }
     if (filters.start_date) whereClause.start_date = { gte: new Date(filters.start_date) };
     if (filters.end_date) whereClause.end_date = { lte: new Date(filters.end_date) };
 
@@ -42,14 +89,7 @@ const listCarePlans = async (filters, page, limit, sortBy, order, userId, ipAddr
 
     return {
       carePlans,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1
-      }
+      pagination: buildPagination(page, limit, total)
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -67,7 +107,8 @@ const listCarePlans = async (filters, page, limit, sortBy, order, userId, ipAddr
  */
 const getCarePlanById = async (id, userId, ipAddress) => {
   try {
-    const carePlan = await carePlanRepository.findById(id);
+    const resolvedId = await resolveCarePlanId(id);
+    const carePlan = await carePlanRepository.findById(resolvedId);
 
     if (!carePlan) {
       throw new HttpError('errors.care_plan.not_found', 404);
@@ -91,7 +132,8 @@ const getCarePlanById = async (id, userId, ipAddress) => {
  */
 const createCarePlan = async (data, userId, ipAddress) => {
   try {
-    const carePlan = await carePlanRepository.create(data);
+    const resolvedPayload = await resolveCarePlanPayload(data);
+    const carePlan = await carePlanRepository.create(resolvedPayload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -123,13 +165,15 @@ const createCarePlan = async (data, userId, ipAddress) => {
 const updateCarePlan = async (id, data, userId, ipAddress) => {
   try {
     // Get current state for audit
-    const before = await carePlanRepository.findById(id);
+    const resolvedId = await resolveCarePlanId(id);
+    const before = await carePlanRepository.findById(resolvedId);
 
     if (!before) {
       throw new HttpError('errors.care_plan.not_found', 404);
     }
 
-    const carePlan = await carePlanRepository.update(id, data);
+    const resolvedPayload = await resolveCarePlanPayload(data);
+    const carePlan = await carePlanRepository.update(resolvedId, resolvedPayload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -160,20 +204,21 @@ const updateCarePlan = async (id, data, userId, ipAddress) => {
 const deleteCarePlan = async (id, userId, ipAddress) => {
   try {
     // Get current state for audit
-    const before = await carePlanRepository.findById(id);
+    const resolvedId = await resolveCarePlanId(id);
+    const before = await carePlanRepository.findById(resolvedId);
 
     if (!before) {
       throw new HttpError('errors.care_plan.not_found', 404);
     }
 
-    await carePlanRepository.softDelete(id);
+    await carePlanRepository.softDelete(resolvedId);
 
     // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
       entity: 'care_plan',
-      entity_id: id,
+      entity_id: resolvedId,
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});

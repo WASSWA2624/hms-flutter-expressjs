@@ -10,6 +10,45 @@
 const medicationAdministrationRepository = require('@repositories/medication-administration/medication-administration.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  resolveIdentifierForFilter,
+  resolveIdentifierForPayload,
+} = require('@lib/identifiers/service-identifier-resolution');
+
+const buildPagination = (page, limit, total) => ({
+  page,
+  limit,
+  total,
+  totalPages: Math.ceil(total / limit),
+  hasNextPage: page < Math.ceil(total / limit),
+  hasPreviousPage: page > 1
+});
+
+const buildEmptyListResult = (page, limit) => ({
+  medicationAdministrations: [],
+  pagination: buildPagination(page, limit, 0)
+});
+
+const resolveMedicationAdministrationId = (id) =>
+  resolveIdentifierForPayload({
+    value: id,
+    field: 'id',
+    model: 'medication_administration',
+    where: { deleted_at: null },
+  });
+
+const resolveMedicationAdministrationPayload = async (input = {}) => {
+  const payload = { ...input };
+  if (Object.prototype.hasOwnProperty.call(payload, 'admission_id')) {
+    payload.admission_id = await resolveIdentifierForPayload({
+      value: payload.admission_id,
+      field: 'admission_id',
+      model: 'admission',
+      where: { deleted_at: null },
+    });
+  }
+  return payload;
+};
 
 /**
  * List medication administrations with pagination and filtering
@@ -30,8 +69,16 @@ const listMedicationAdministrations = async (filters, page, limit, sortBy, order
 
     // Build filter object
     const whereClause = {};
-    
-    if (filters.admission_id) whereClause.admission_id = filters.admission_id;
+
+    if (filters.admission_id) {
+      const admissionId = await resolveIdentifierForFilter({
+        value: filters.admission_id,
+        model: 'admission',
+        where: { deleted_at: null },
+      });
+      if (admissionId === null) return buildEmptyListResult(page, limit);
+      if (admissionId !== undefined) whereClause.admission_id = admissionId;
+    }
     if (filters.prescription_id) whereClause.prescription_id = filters.prescription_id;
     if (filters.route) whereClause.route = filters.route;
 
@@ -42,14 +89,7 @@ const listMedicationAdministrations = async (filters, page, limit, sortBy, order
 
     return {
       medicationAdministrations,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPreviousPage: page > 1
-      }
+      pagination: buildPagination(page, limit, total)
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -67,7 +107,8 @@ const listMedicationAdministrations = async (filters, page, limit, sortBy, order
  */
 const getMedicationAdministrationById = async (id, userId, ipAddress) => {
   try {
-    const medicationAdministration = await medicationAdministrationRepository.findById(id);
+    const resolvedId = await resolveMedicationAdministrationId(id);
+    const medicationAdministration = await medicationAdministrationRepository.findById(resolvedId);
 
     if (!medicationAdministration) {
       throw new HttpError('errors.medication_administration.not_found', 404);
@@ -91,7 +132,8 @@ const getMedicationAdministrationById = async (id, userId, ipAddress) => {
  */
 const createMedicationAdministration = async (data, userId, ipAddress) => {
   try {
-    const medicationAdministration = await medicationAdministrationRepository.create(data);
+    const resolvedPayload = await resolveMedicationAdministrationPayload(data);
+    const medicationAdministration = await medicationAdministrationRepository.create(resolvedPayload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -123,13 +165,14 @@ const createMedicationAdministration = async (data, userId, ipAddress) => {
 const updateMedicationAdministration = async (id, data, userId, ipAddress) => {
   try {
     // Get current state for audit
-    const before = await medicationAdministrationRepository.findById(id);
+    const resolvedId = await resolveMedicationAdministrationId(id);
+    const before = await medicationAdministrationRepository.findById(resolvedId);
 
     if (!before) {
       throw new HttpError('errors.medication_administration.not_found', 404);
     }
 
-    const medicationAdministration = await medicationAdministrationRepository.update(id, data);
+    const medicationAdministration = await medicationAdministrationRepository.update(resolvedId, data);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -160,20 +203,21 @@ const updateMedicationAdministration = async (id, data, userId, ipAddress) => {
 const deleteMedicationAdministration = async (id, userId, ipAddress) => {
   try {
     // Get current state for audit
-    const before = await medicationAdministrationRepository.findById(id);
+    const resolvedId = await resolveMedicationAdministrationId(id);
+    const before = await medicationAdministrationRepository.findById(resolvedId);
 
     if (!before) {
       throw new HttpError('errors.medication_administration.not_found', 404);
     }
 
-    await medicationAdministrationRepository.softDelete(id);
+    await medicationAdministrationRepository.softDelete(resolvedId);
 
     // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
       entity: 'medication_administration',
-      entity_id: id,
+      entity_id: resolvedId,
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});

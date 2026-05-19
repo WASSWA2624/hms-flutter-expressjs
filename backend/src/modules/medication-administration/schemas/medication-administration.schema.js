@@ -9,7 +9,8 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
+  uuidSchema,
+  uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
 
@@ -23,7 +24,7 @@ const MEDICATION_ROUTES = ['ORAL', 'IV', 'IM', 'SC', 'TOPICAL', 'INHALATION', 'R
  * Used for POST /medication-administrations endpoint
  */
 const createMedicationAdministrationSchema = z.object({
-  admission_id: uuidSchema,
+  admission_id: uuidOrFriendlyIdentifierSchema,
   prescription_id: uuidSchema.optional(),
   administered_at: z.string().datetime().optional(),
   dose: z.string().trim().min(1).max(80),
@@ -50,7 +51,7 @@ const updateMedicationAdministrationSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const medicationAdministrationIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================
@@ -61,7 +62,7 @@ const medicationAdministrationIdParamsSchema = z.object({
  * Extends base listQuerySchema with medication administration-specific filters
  */
 const listMedicationAdministrationsQuerySchema = listQuerySchema.extend({
-  admission_id: uuidSchema.optional(),
+  admission_id: uuidOrFriendlyIdentifierSchema.optional(),
   prescription_id: uuidSchema.optional(),
   route: z.enum(MEDICATION_ROUTES).optional()
 });
