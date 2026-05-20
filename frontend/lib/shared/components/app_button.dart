@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 
 enum AppButtonVariant { primary, secondary, tertiary }
 
@@ -70,6 +71,13 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppActionLabelScope? labelScope = AppActionLabelScope.maybeOf(
+      context,
+    );
+    if (labelScope?.forceIconOnly == true && leadingIcon != null) {
+      return _buildIconOnlyButton(context);
+    }
+
     final bool canPress = enabled && !isLoading && onPressed != null;
     final Widget button = _buildButton(context, canPress);
     final Widget sizedButton = fullWidth
@@ -88,6 +96,31 @@ class AppButton extends StatelessWidget {
     }
 
     return Tooltip(message: tooltip!, child: semanticButton);
+  }
+
+  Widget _buildIconOnlyButton(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool canPress = enabled && !isLoading && onPressed != null;
+    final String label = semanticLabel ?? this.label;
+
+    return Semantics(
+      button: true,
+      enabled: canPress,
+      label: label,
+      liveRegion: isLoading,
+      child: IconButton(
+        tooltip: tooltip ?? label,
+        onPressed: canPress ? onPressed : null,
+        autofocus: autofocus,
+        iconSize: theme.appTokens.listIconSize,
+        icon: isLoading
+            ? SizedBox.square(
+                dimension: theme.appTokens.listIconSize,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(leadingIcon),
+      ),
+    );
   }
 
   Widget _buildButton(BuildContext context, bool canPress) {

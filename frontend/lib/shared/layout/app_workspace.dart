@@ -3,10 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
-import 'package:hosspi_hms/shared/components/app_logo.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/layout/responsive_spacing.dart';
@@ -65,7 +65,8 @@ class AppWorkspace extends StatelessWidget {
     required this.title,
     required this.body,
     this.status,
-    this.leading = const AppLogo(size: 36),
+    this.leading,
+    this.leadingIcon,
     this.primaryAction,
     this.secondaryActions = const <Widget>[],
     this.summaryCards = const <Widget>[],
@@ -82,6 +83,7 @@ class AppWorkspace extends StatelessWidget {
   final String title;
   final AppWorkspaceStatus? status;
   final Widget? leading;
+  final IconData? leadingIcon;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
   final List<Widget> summaryCards;
@@ -102,11 +104,16 @@ class AppWorkspace extends StatelessWidget {
       breakpoint,
       spacing: theme.spacing,
     );
+    final Widget? effectiveLeading =
+        leading ??
+        (leadingIcon == null
+            ? null
+            : AppWorkspaceTitleIcon(icon: leadingIcon!, semanticLabel: title));
     final List<Widget> children = <Widget>[
       AppWorkspaceHeader(
         title: title,
         status: status,
-        leading: leading,
+        leading: effectiveLeading,
         primaryAction: primaryAction,
         secondaryActions: secondaryActions,
       ),
@@ -183,7 +190,7 @@ class AppWorkspaceHeader extends StatelessWidget {
     final Widget titleBlock = _WorkspaceHeaderTitle(
       leading: leading,
       title: title,
-      status: status,
+      status: null,
     );
     final Widget actionBar = _WorkspaceHeaderActions(
       actions: actions,
@@ -277,6 +284,46 @@ class AppWorkspaceStatusBadge extends StatelessWidget {
   }
 }
 
+class AppWorkspaceTitleIcon extends StatelessWidget {
+  const AppWorkspaceTitleIcon({
+    required this.icon,
+    required this.semanticLabel,
+    super.key,
+  });
+
+  final IconData icon;
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Semantics(
+      image: true,
+      label: semanticLabel,
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer.withValues(alpha: 0.62),
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.28),
+            ),
+          ),
+          child: SizedBox.square(
+            dimension: 36,
+            child: Icon(
+              icon,
+              color: colorScheme.primary,
+              size: theme.appTokens.listIconSize,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class AppWorkspaceSummaryGrid extends StatelessWidget {
   const AppWorkspaceSummaryGrid({
     required this.children,
@@ -294,6 +341,9 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    if (children.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -301,6 +351,30 @@ class AppWorkspaceSummaryGrid extends StatelessWidget {
           final double gap = constraints.maxWidth < AppBreakpoints.md
               ? theme.spacing.sm
               : theme.spacing.md;
+          if (constraints.maxWidth < AppBreakpoints.md) {
+            final double targetItemWidth =
+                theme.appTokens.minInteractiveDimension + theme.spacing.lg;
+            final int columns = math
+                .max(
+                  1,
+                  ((constraints.maxWidth + gap) / (targetItemWidth + gap))
+                      .floor(),
+                )
+                .clamp(1, children.length)
+                .toInt();
+            final double itemWidth =
+                (constraints.maxWidth - (gap * (columns - 1))) / columns;
+
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: <Widget>[
+                for (final Widget child in children)
+                  SizedBox(width: itemWidth, child: child),
+              ],
+            );
+          }
+
           final int columns = _compactSummaryColumnCount(
             constraints.maxWidth,
             children.length,
@@ -551,6 +625,43 @@ class _SummaryCardBody extends StatelessWidget {
     final TextStyle? valueStyle = compact
         ? theme.textTheme.labelLarge
         : theme.textTheme.titleSmall;
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool iconOnly =
+        compact &&
+        (breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm);
+
+    if (iconOnly) {
+      final String semanticLabel = _joinSummarySemantics(label, value);
+      return Semantics(
+        label: semanticLabel,
+        child: Tooltip(
+          message: semanticLabel,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight:
+                  theme.appTokens.minInteractiveDimension + theme.spacing.md,
+            ),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  top: theme.spacing.sm,
+                  right: theme.spacing.xs,
+                ),
+                child: _SummaryIconTile(
+                  icon: icon ?? Icons.insights_outlined,
+                  value: value,
+                  showValue: true,
+                  compact: compact,
+                  iconOnly: true,
+                  active: active,
+                  accentColor: accentColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
@@ -563,6 +674,7 @@ class _SummaryCardBody extends StatelessWidget {
               value: value,
               showValue: overlayValue,
               compact: compact,
+              iconOnly: false,
               active: active,
               accentColor: accentColor,
             ),
@@ -640,6 +752,7 @@ class _SummaryIconTile extends StatelessWidget {
     required this.value,
     required this.showValue,
     required this.compact,
+    required this.iconOnly,
     required this.active,
     required this.accentColor,
   });
@@ -648,6 +761,7 @@ class _SummaryIconTile extends StatelessWidget {
   final String value;
   final bool showValue;
   final bool compact;
+  final bool iconOnly;
   final bool active;
   final Color accentColor;
 
@@ -655,8 +769,16 @@ class _SummaryIconTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double tileSize = compact ? 34 : 46;
-    final double iconSize = compact ? 20 : 24;
+    final double tileSize = iconOnly
+        ? 42
+        : compact
+        ? 34
+        : 46;
+    final double iconSize = iconOnly
+        ? 23
+        : compact
+        ? 20
+        : 24;
     final BorderRadius borderRadius = BorderRadius.circular(theme.radius.sm);
 
     return SizedBox(
@@ -687,11 +809,19 @@ class _SummaryIconTile extends StatelessWidget {
           ),
           if (showValue)
             PositionedDirectional(
-              top: compact ? -9 : -10,
-              end: compact ? -5 : -6,
+              top: iconOnly
+                  ? -10
+                  : compact
+                  ? -9
+                  : -10,
+              end: iconOnly
+                  ? -10
+                  : compact
+                  ? -5
+                  : -6,
               child: _SummaryValueBadge(
                 value: value,
-                compact: compact,
+                compact: compact || iconOnly,
                 accentColor: accentColor,
                 foregroundColor: _onSummaryAccentColor(
                   accentColor,
@@ -726,23 +856,33 @@ class _SummaryValueBadge extends StatelessWidget {
         : theme.textTheme.titleMedium;
 
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: compact ? 52 : 64),
-      child: Text(
-        value.trim(),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.end,
-        style: textStyle?.copyWith(
+      constraints: BoxConstraints(
+        minWidth: compact ? 22 : 26,
+        minHeight: compact ? 20 : 22,
+        maxWidth: compact ? 58 : 72,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
           color: accentColor,
-          fontWeight: FontWeight.w900,
-          height: 1,
-          shadows: <Shadow>[
-            Shadow(
-              color: foregroundColor.withValues(alpha: 0.26),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
+          border: Border.all(color: foregroundColor.withValues(alpha: 0.24)),
+          borderRadius: BorderRadius.circular(theme.radius.xs),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
+            vertical: 2,
+          ),
+          child: Text(
+            value.trim(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: textStyle?.copyWith(
+              color: foregroundColor,
+              fontWeight: FontWeight.w900,
+              height: 1,
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -825,6 +965,14 @@ bool _shouldOverlaySummaryValue(String value) {
       .split(RegExp(r'\s+'))
       .where((String word) => word.isNotEmpty);
   return words.length <= 2;
+}
+
+String _joinSummarySemantics(String label, String value) {
+  final String trimmedValue = value.trim();
+  if (trimmedValue.isEmpty) {
+    return label;
+  }
+  return '$label: $trimmedValue';
 }
 
 class _CompactSummaryStatusLine extends StatelessWidget {
@@ -2138,7 +2286,14 @@ class _WorkspaceHeaderActions extends StatelessWidget {
       alignment: WrapAlignment.end,
       children: <Widget>[
         for (final Widget action in actions)
-          _WorkspaceHeaderAction(action: action, showIconLabel: showIconLabels),
+          AppActionLabelScope(
+            showLabels: showIconLabels,
+            forceIconOnly: expandIconButtons && !showIconLabels,
+            child: _WorkspaceHeaderAction(
+              action: action,
+              showIconLabel: showIconLabels,
+            ),
+          ),
       ],
     );
   }

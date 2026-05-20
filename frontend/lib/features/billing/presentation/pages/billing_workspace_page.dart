@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -57,6 +58,7 @@ class _BillingWorkspaceContent extends ConsumerWidget {
 
     return AppWorkspace(
       title: 'Billing',
+      leadingIcon: AppRouteIcons.billing,
       status: AppWorkspaceStatus(
         label: state.isSaving ? 'Posting' : 'Live',
         tone: state.isSaving

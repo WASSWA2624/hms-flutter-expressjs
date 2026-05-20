@@ -249,6 +249,49 @@ void main() {
     );
   });
 
+  testWidgets('AppListTable places column settings inside the search bar', (
+    WidgetTester tester,
+  ) async {
+    final searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 420,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          search: AppListTableSearch<_RowItem>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            matcher: (_RowItem item, String query) {
+              return item.title.toLowerCase().contains(query.toLowerCase());
+            },
+          ),
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    final Finder settingsInSearchBar = find.descendant(
+      of: find.byType(AppSearchBar),
+      matching: find.byTooltip('Table column settings'),
+    );
+
+    expect(settingsInSearchBar, findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.view_column_outlined), findsNothing);
+
+    await tester.tap(settingsInSearchBar);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Table columns'), findsOneWidget);
+  });
+
   testWidgets('AppListTable wires page controls to page requests', (
     WidgetTester tester,
   ) async {

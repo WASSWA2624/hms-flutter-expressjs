@@ -1,0 +1,38 @@
+import 'package:flutter/material.dart';
+
+abstract final class AppRouteIcons {
+  static const IconData home = Icons.home_outlined;
+  static const IconData homeSelected = Icons.home;
+  static const IconData patients = Icons.assignment_ind_outlined;
+  static const IconData patientsSelected = Icons.assignment_ind;
+  static const IconData billing = Icons.point_of_sale_outlined;
+  static const IconData billingSelected = Icons.point_of_sale;
+  static const IconData claims = Icons.policy_outlined;
+  static const IconData claimsSelected = Icons.policy;
+  static const IconData opd = Icons.local_hospital_outlined;
+  static const IconData opdSelected = Icons.local_hospital;
+  static const IconData emergency = Icons.emergency_outlined;
+  static const IconData emergencySelected = Icons.emergency;
+  static const IconData ipd = Icons.bed_outlined;
+  static const IconData ipdSelected = Icons.bed;
+  static const IconData icu = Icons.monitor_heart_outlined;
+  static const IconData icuSelected = Icons.monitor_heart;
+  static const IconData nursing = Icons.local_hospital_outlined;
+  static const IconData nursingSelected = Icons.local_hospital;
+  static const IconData clinical = Icons.medical_information_outlined;
+  static const IconData clinicalSelected = Icons.medical_information;
+  static const IconData lab = Icons.science_outlined;
+  static const IconData labSelected = Icons.science;
+  static const IconData radiology = Icons.image_search_outlined;
+  static const IconData radiologySelected = Icons.image_search;
+  static const IconData pharmacy = Icons.medication_liquid_outlined;
+  static const IconData pharmacySelected = Icons.medication_liquid;
+  static const IconData discharge = Icons.exit_to_app_outlined;
+  static const IconData dischargeSelected = Icons.exit_to_app;
+  static const IconData theater = Icons.event_seat_outlined;
+  static const IconData theaterSelected = Icons.event_seat;
+  static const IconData settings = Icons.settings_outlined;
+  static const IconData settingsSelected = Icons.settings;
+  static const IconData setup = Icons.domain_add_outlined;
+  static const IconData setupSelected = Icons.domain;
+}

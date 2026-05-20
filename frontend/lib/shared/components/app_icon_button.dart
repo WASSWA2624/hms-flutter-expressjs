@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 
 class AppIconButton extends StatelessWidget {
   const AppIconButton({
@@ -29,6 +31,22 @@ class AppIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool canPress = enabled && !isLoading && onPressed != null;
+    final AppActionLabelScope? labelScope = AppActionLabelScope.maybeOf(
+      context,
+    );
+
+    if (labelScope?.showLabels == true) {
+      return AppButton.secondary(
+        label: semanticLabel,
+        leadingIcon: icon,
+        enabled: enabled,
+        isLoading: isLoading,
+        semanticLabel: semanticLabel,
+        tooltip: tooltip,
+        autofocus: autofocus,
+        onPressed: onPressed,
+      );
+    }
 
     return Semantics(
       button: true,

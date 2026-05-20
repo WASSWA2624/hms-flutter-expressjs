@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -130,6 +131,7 @@ class _PatientRegistryContentState
 
     return AppWorkspace(
       title: l10n.patientsTitle,
+      leadingIcon: AppRouteIcons.patients,
       compactSummaryCards: true,
       primaryAction: AppAccessActionGate(
         requirement: _PatientRegistryContent._writeRequirement,

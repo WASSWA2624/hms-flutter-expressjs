@@ -107,7 +107,10 @@ final class AppListTableSearch<T> {
   final ValueChanged<AppSearchBarFilterValue>? onFilterChanged;
   final bool hasActiveFilters;
 
-  Widget buildSearchBar(BuildContext context) {
+  Widget buildSearchBar(
+    BuildContext context, {
+    List<AppSearchBarAction> trailingActions = const <AppSearchBarAction>[],
+  }) {
     return AppSearchBar(
       controller: controller,
       semanticLabel: semanticLabel,
@@ -145,6 +148,7 @@ final class AppListTableSearch<T> {
       filterValue: filterValue,
       onFilterChanged: onFilterChanged,
       hasActiveFilters: hasActiveFilters,
+      trailingActions: trailingActions,
     );
   }
 }
@@ -292,7 +296,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       );
     }
 
-    final Widget searchBar = resolvedSearch.buildSearchBar(context);
+    final Widget searchBar = resolvedSearch.buildSearchBar(
+      context,
+      trailingActions: _searchActions(),
+    );
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: resolvedSearch.controller,
       builder: (BuildContext context, TextEditingValue value, _) {
@@ -553,60 +560,23 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   Widget? _buildToolbar(BuildContext context, Widget? searchBar) {
-    final bool showColumnSettings = _availableColumns.length > 1;
-    if (searchBar == null && !showColumnSettings) {
-      return null;
+    return searchBar;
+  }
+
+  List<AppSearchBarAction> _searchActions() {
+    if (_availableColumns.length <= 1) {
+      return const <AppSearchBarAction>[];
     }
 
-    final ThemeData theme = Theme.of(context);
-    final Widget? settingsButton = showColumnSettings
-        ? AppIconButton(
-            icon: Icons.view_column_outlined,
-            semanticLabel: _columnVisibilityLabel,
-            tooltip: _columnVisibilityLabel,
-            color: _hasCustomColumnVisibility
-                ? theme.colorScheme.primary
-                : null,
-            onPressed: _openColumnVisibilityDialog,
-          )
-        : null;
-
-    if (searchBar == null) {
-      return Align(
-        alignment: AlignmentDirectional.centerEnd,
-        child: settingsButton,
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        if (constraints.maxWidth < 560) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              searchBar,
-              if (settingsButton != null) ...<Widget>[
-                SizedBox(height: theme.spacing.xs),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: settingsButton,
-                ),
-              ],
-            ],
-          );
-        }
-
-        return Row(
-          children: <Widget>[
-            Expanded(child: searchBar),
-            if (settingsButton != null) ...<Widget>[
-              SizedBox(width: theme.spacing.xs),
-              settingsButton,
-            ],
-          ],
-        );
-      },
-    );
+    return <AppSearchBarAction>[
+      AppSearchBarAction(
+        icon: Icons.settings_outlined,
+        label: _columnVisibilityLabel,
+        tooltip: _columnVisibilityLabel,
+        active: _hasCustomColumnVisibility,
+        onPressed: _openColumnVisibilityDialog,
+      ),
+    ];
   }
 
   List<AppListTableColumn<T>> get _availableColumns {
@@ -822,7 +792,7 @@ class _ColumnVisibilityDialogState<T>
   Widget build(BuildContext context) {
     return AppDialog(
       title: Text(widget.title),
-      icon: const Icon(Icons.view_column_outlined),
+      icon: const Icon(Icons.settings_outlined),
       maxWidth: 480,
       scrollable: true,
       content: Column(
@@ -1285,11 +1255,20 @@ class _DataColumnHeader<T> extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final double maxWidth = compact ? 132 : 164;
+    final TextStyle? headerStyle = theme.textTheme.labelMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w800,
+    );
 
     if (!column.isSortable) {
       return ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Text(column.label, overflow: TextOverflow.ellipsis),
+        child: Text(
+          column.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: headerStyle,
+        ),
       );
     }
 
@@ -1297,32 +1276,62 @@ class _DataColumnHeader<T> extends StatelessWidget {
         ? sortAscending
               ? Icons.arrow_upward
               : Icons.arrow_downward
-        : Icons.unfold_more;
+        : Icons.swap_vert;
+    final Color foreground = isSorted
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+    final String direction = sortAscending ? 'ascending' : 'descending';
+    final String tooltip = isSorted
+        ? 'Sorted by ${column.label}, $direction'
+        : 'Sort by ${column.label}';
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth),
-      child: TextButton(
-        style: TextButton.styleFrom(
-          alignment: AlignmentDirectional.centerStart,
-          minimumSize: Size.zero,
-          padding: EdgeInsets.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          foregroundColor: isSorted
-              ? colorScheme.primary
-              : colorScheme.onSurfaceVariant,
-        ),
-        onPressed: () {
-          onSort(column);
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Flexible(
-              child: Text(column.label, overflow: TextOverflow.ellipsis),
+      child: Tooltip(
+        message: tooltip,
+        child: Semantics(
+          button: true,
+          selected: isSorted,
+          label: tooltip,
+          child: InkWell(
+            onTap: () {
+              onSort(column);
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isSorted
+                          ? colorScheme.primary
+                          : Colors.transparent,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Flexible(
+                      child: Text(
+                        column.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: headerStyle?.copyWith(color: foreground),
+                      ),
+                    ),
+                    SizedBox(width: theme.spacing.xs),
+                    Icon(
+                      sortIcon,
+                      color: foreground.withValues(alpha: isSorted ? 1 : 0.74),
+                      size: theme.appTokens.listIconSize * 0.82,
+                    ),
+                  ],
+                ),
+              ),
             ),
-            SizedBox(width: theme.spacing.xs),
-            Icon(sortIcon, size: theme.appTokens.listIconSize * 0.82),
-          ],
+          ),
         ),
       ),
     );

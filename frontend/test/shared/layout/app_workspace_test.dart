@@ -49,7 +49,7 @@ void main() {
     );
 
     expect(find.text('Admissions'), findsOneWidget);
-    expect(find.text('Operational'), findsOneWidget);
+    expect(find.text('Operational'), findsNothing);
     expect(find.text('Waiting'), findsOneWidget);
     expect(find.text('Search'), findsOneWidget);
     expect(find.text('Workspace body'), findsOneWidget);
@@ -59,6 +59,46 @@ void main() {
     await tester.pump();
 
     expect(actionCount, 1);
+  });
+
+  testWidgets('AppWorkspaceSummaryGrid renders compact icon cards on phones', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkspaceSummaryGrid(
+        compact: true,
+        children: <Widget>[
+          AppWorkspaceSummaryCard(
+            label: 'First',
+            value: '1',
+            icon: Icons.groups_outlined,
+            compact: true,
+          ),
+          AppWorkspaceSummaryCard(
+            label: 'Second',
+            value: '2',
+            icon: Icons.queue_outlined,
+            compact: true,
+          ),
+        ],
+      ),
+      size: const Size(420, 600),
+    );
+
+    final Offset firstIconTop = tester.getTopLeft(
+      find.byIcon(Icons.groups_outlined),
+    );
+    final Offset secondIconTop = tester.getTopLeft(
+      find.byIcon(Icons.queue_outlined),
+    );
+
+    expect(find.text('First'), findsNothing);
+    expect(find.text('Second'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(secondIconTop.dy, closeTo(firstIconTop.dy, 0.1));
+    expect(secondIconTop.dx, greaterThan(firstIconTop.dx));
   });
 
   testWidgets('AppWorkspaceSummaryGrid stacks cards on narrow screens', (

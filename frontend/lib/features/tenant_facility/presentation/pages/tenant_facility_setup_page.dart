@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -68,6 +69,7 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
 
     return AppWorkspace(
       title: l10n.tenantFacilitySetupTitle,
+      leadingIcon: AppRouteIcons.setup,
       status: AppWorkspaceStatus(
         label: setupComplete
             ? l10n.tenantFacilitySummaryConfigured

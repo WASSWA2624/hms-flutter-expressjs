@@ -156,6 +156,25 @@ final class AppSearchBarFilterValue {
   }
 }
 
+@immutable
+final class AppSearchBarAction {
+  const AppSearchBarAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.tooltip,
+    this.enabled = true,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final String? tooltip;
+  final bool enabled;
+  final bool active;
+}
+
 class AppSearchBar extends StatefulWidget {
   const AppSearchBar({
     required this.controller,
@@ -194,6 +213,7 @@ class AppSearchBar extends StatefulWidget {
     this.filterValue = AppSearchBarFilterValue.empty,
     this.onFilterChanged,
     this.hasActiveFilters = false,
+    this.trailingActions = const <AppSearchBarAction>[],
     super.key,
   });
 
@@ -233,6 +253,7 @@ class AppSearchBar extends StatefulWidget {
   final AppSearchBarFilterValue filterValue;
   final ValueChanged<AppSearchBarFilterValue>? onFilterChanged;
   final bool hasActiveFilters;
+  final List<AppSearchBarAction> trailingActions;
 
   @override
   State<AppSearchBar> createState() => _AppSearchBarState();
@@ -359,6 +380,16 @@ class _AppSearchBarState extends State<AppSearchBar> {
                     label:
                         widget.advancedFilterButtonLabel ?? 'Advanced filters',
                     onPressed: _openAdvancedFilters,
+                  ),
+                for (final AppSearchBarAction action in widget.trailingActions)
+                  _AttachedSearchBarActionButton(
+                    borderColor: borderSide.color,
+                    action: action,
+                    enabled:
+                        widget.enabled &&
+                        !widget.isLoading &&
+                        action.enabled &&
+                        action.onPressed != null,
                   ),
               ],
             ),
@@ -488,6 +519,54 @@ class _AppSearchBarState extends State<AppSearchBar> {
   DateTime _defaultLastDate() {
     final DateTime now = DateTime.now();
     return DateTime(now.year + 20, 12, 31);
+  }
+}
+
+class _AttachedSearchBarActionButton extends StatelessWidget {
+  const _AttachedSearchBarActionButton({
+    required this.borderColor,
+    required this.action,
+    required this.enabled,
+  });
+
+  final Color borderColor;
+  final AppSearchBarAction action;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color foreground = action.active
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+    final Color background = action.active
+        ? colorScheme.primaryContainer.withValues(alpha: 0.54)
+        : Colors.transparent;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: background,
+        border: BorderDirectional(start: BorderSide(color: borderColor)),
+      ),
+      child: SizedBox(
+        width: theme.appTokens.minInteractiveDimension + theme.spacing.sm,
+        child: Center(
+          child: Semantics(
+            button: true,
+            enabled: enabled,
+            label: action.label,
+            selected: action.active,
+            child: IconButton(
+              tooltip: action.tooltip ?? action.label,
+              onPressed: enabled ? action.onPressed : null,
+              color: foreground,
+              icon: Icon(action.icon, size: theme.appTokens.listIconSize),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -121,6 +122,7 @@ class _DischargeWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.dischargeWorkspaceTitle,
+      leadingIcon: AppRouteIcons.discharge,
       status: AppWorkspaceStatus(
         label: l10n.dischargeOperationalStatusLabel,
         tone: state.lastFailure == null

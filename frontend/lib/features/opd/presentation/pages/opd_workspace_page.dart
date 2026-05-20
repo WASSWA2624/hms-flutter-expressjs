@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -113,6 +114,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
 
     return AppWorkspace(
       title: l10n.opdTitle,
+      leadingIcon: AppRouteIcons.opd,
       compactSummaryCards: true,
       primaryAction: AppAccessActionGate(
         requirement: _writeRequirement,

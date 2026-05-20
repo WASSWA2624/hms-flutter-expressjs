@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/router/route_guards.dart';
 import 'package:hosspi_hms/app/router/route_refresh_listenable.dart';
@@ -264,24 +265,24 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.home,
       destination: ResponsiveShellDestination(
         label: l10n.navigationHomeLabel,
-        icon: Icons.home_outlined,
-        selectedIcon: Icons.home,
+        icon: AppRouteIcons.home,
+        selectedIcon: AppRouteIcons.homeSelected,
       ),
     ),
     _ShellDestinationRoute(
       route: AppRoutes.patients,
       destination: ResponsiveShellDestination(
         label: l10n.navigationPatientsLabel,
-        icon: Icons.assignment_ind_outlined,
-        selectedIcon: Icons.assignment_ind,
+        icon: AppRouteIcons.patients,
+        selectedIcon: AppRouteIcons.patientsSelected,
       ),
     ),
     _ShellDestinationRoute(
       route: AppRoutes.billing,
       destination: ResponsiveShellDestination(
         label: 'Billing',
-        icon: Icons.point_of_sale_outlined,
-        selectedIcon: Icons.point_of_sale,
+        icon: AppRouteIcons.billing,
+        selectedIcon: AppRouteIcons.billingSelected,
         badgeCount: billingWorkloadCount,
       ),
     ),
@@ -289,8 +290,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.claims,
       destination: ResponsiveShellDestination(
         label: l10n.navigationClaimsLabel,
-        icon: Icons.policy_outlined,
-        selectedIcon: Icons.policy,
+        icon: AppRouteIcons.claims,
+        selectedIcon: AppRouteIcons.claimsSelected,
         badgeCount: claimsWorkloadCount,
       ),
     ),
@@ -298,8 +299,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.opd,
       destination: ResponsiveShellDestination(
         label: l10n.navigationOpdLabel,
-        icon: Icons.local_hospital_outlined,
-        selectedIcon: Icons.local_hospital,
+        icon: AppRouteIcons.opd,
+        selectedIcon: AppRouteIcons.opdSelected,
         badgeCount: opdWorkloadCount,
       ),
     ),
@@ -307,8 +308,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.emergency,
       destination: ResponsiveShellDestination(
         label: 'Emergency',
-        icon: Icons.emergency_outlined,
-        selectedIcon: Icons.emergency,
+        icon: AppRouteIcons.emergency,
+        selectedIcon: AppRouteIcons.emergencySelected,
         badgeCount: emergencyWorkloadCount,
       ),
     ),
@@ -316,8 +317,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.ipd,
       destination: ResponsiveShellDestination(
         label: l10n.navigationIpdLabel,
-        icon: Icons.bed_outlined,
-        selectedIcon: Icons.bed,
+        icon: AppRouteIcons.ipd,
+        selectedIcon: AppRouteIcons.ipdSelected,
         badgeCount: ipdWorkloadCount,
       ),
     ),
@@ -325,8 +326,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.icu,
       destination: ResponsiveShellDestination(
         label: 'ICU',
-        icon: Icons.monitor_heart_outlined,
-        selectedIcon: Icons.monitor_heart,
+        icon: AppRouteIcons.icu,
+        selectedIcon: AppRouteIcons.icuSelected,
         badgeCount: icuCriticalCount,
       ),
     ),
@@ -334,8 +335,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.nursing,
       destination: ResponsiveShellDestination(
         label: l10n.navigationNursingLabel,
-        icon: Icons.local_hospital_outlined,
-        selectedIcon: Icons.local_hospital,
+        icon: AppRouteIcons.nursing,
+        selectedIcon: AppRouteIcons.nursingSelected,
         badgeCount: nursingWorkloadCount,
       ),
     ),
@@ -343,8 +344,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.clinical,
       destination: ResponsiveShellDestination(
         label: l10n.navigationClinicalLabel,
-        icon: Icons.medical_information_outlined,
-        selectedIcon: Icons.medical_information,
+        icon: AppRouteIcons.clinical,
+        selectedIcon: AppRouteIcons.clinicalSelected,
         badgeCount: clinicalWorkloadCount,
       ),
     ),
@@ -352,8 +353,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.lab,
       destination: ResponsiveShellDestination(
         label: l10n.navigationLabLabel,
-        icon: Icons.science_outlined,
-        selectedIcon: Icons.science,
+        icon: AppRouteIcons.lab,
+        selectedIcon: AppRouteIcons.labSelected,
         badgeCount: labWorkloadCount,
       ),
     ),
@@ -361,8 +362,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.radiology,
       destination: ResponsiveShellDestination(
         label: l10n.navigationRadiologyLabel,
-        icon: Icons.image_search_outlined,
-        selectedIcon: Icons.image_search,
+        icon: AppRouteIcons.radiology,
+        selectedIcon: AppRouteIcons.radiologySelected,
         badgeCount: radiologyWorkloadCount,
       ),
     ),
@@ -370,8 +371,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.pharmacy,
       destination: ResponsiveShellDestination(
         label: l10n.navigationPharmacyLabel,
-        icon: Icons.medication_liquid_outlined,
-        selectedIcon: Icons.medication_liquid,
+        icon: AppRouteIcons.pharmacy,
+        selectedIcon: AppRouteIcons.pharmacySelected,
         badgeCount: pharmacyWorkloadCount,
       ),
     ),
@@ -379,8 +380,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.discharge,
       destination: ResponsiveShellDestination(
         label: 'Discharge',
-        icon: Icons.exit_to_app_outlined,
-        selectedIcon: Icons.exit_to_app,
+        icon: AppRouteIcons.discharge,
+        selectedIcon: AppRouteIcons.dischargeSelected,
         badgeCount: dischargeWorkloadCount,
       ),
     ),
@@ -388,8 +389,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.theater,
       destination: ResponsiveShellDestination(
         label: l10n.navigationTheaterLabel,
-        icon: Icons.event_seat_outlined,
-        selectedIcon: Icons.event_seat,
+        icon: AppRouteIcons.theater,
+        selectedIcon: AppRouteIcons.theaterSelected,
         badgeCount: theaterWorkloadCount,
       ),
     ),
@@ -397,16 +398,16 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       route: AppRoutes.settings,
       destination: ResponsiveShellDestination(
         label: l10n.navigationSettingsLabel,
-        icon: Icons.settings_outlined,
-        selectedIcon: Icons.settings,
+        icon: AppRouteIcons.settings,
+        selectedIcon: AppRouteIcons.settingsSelected,
       ),
     ),
     _ShellDestinationRoute(
       route: AppRoutes.tenantFacilitySetup,
       destination: ResponsiveShellDestination(
         label: l10n.navigationSetupLabel,
-        icon: Icons.domain_add_outlined,
-        selectedIcon: Icons.domain,
+        icon: AppRouteIcons.setup,
+        selectedIcon: AppRouteIcons.setupSelected,
       ),
     ),
   ];
