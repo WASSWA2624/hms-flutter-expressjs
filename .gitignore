@@ -12,6 +12,7 @@ Thumbs.db
 
 # Local tooling
 .codex/
+.playwright-mcp/
 
 # Environment and secrets
 .env
