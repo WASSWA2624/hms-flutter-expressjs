@@ -56,9 +56,8 @@ final class CommunicationsRepositoryImpl implements CommunicationsRepository {
           },
         );
       },
-      failure: (failure) async => Result<CommunicationsWorkspaceState>.failure(
-        failure,
-      ),
+      failure: (failure) async =>
+          Result<CommunicationsWorkspaceState>.failure(failure),
     );
   }
 
@@ -82,7 +81,8 @@ final class CommunicationsRepositoryImpl implements CommunicationsRepository {
       ApiEndpoints.nested(HmsApiResource.notifications, id, const <String>[
         'read',
       ]),
-      decoder: (Object? data) => NotificationItemDto.fromResponse(data).toEntity(),
+      decoder: (Object? data) =>
+          NotificationItemDto.fromResponse(data).toEntity(),
     );
   }
 
@@ -92,7 +92,8 @@ final class CommunicationsRepositoryImpl implements CommunicationsRepository {
       ApiEndpoints.nested(HmsApiResource.notifications, id, const <String>[
         'unread',
       ]),
-      decoder: (Object? data) => NotificationItemDto.fromResponse(data).toEntity(),
+      decoder: (Object? data) =>
+          NotificationItemDto.fromResponse(data).toEntity(),
     );
   }
 

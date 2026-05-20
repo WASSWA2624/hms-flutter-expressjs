@@ -106,6 +106,11 @@ abstract final class RealtimeEventGroups {
     ...billing,
   };
 
+  static const Set<String> physiotherapy = <String>{
+    ...appointments,
+    ...clinical,
+  };
+
   static const Set<String> ipd = <String>{
     ...admissions,
     ...criticalAlerts,
@@ -146,6 +151,15 @@ abstract final class RealtimeEventGroups {
     ...admissions,
     ...criticalAlerts,
     ...billing,
+  };
+
+  static const Set<String> biomedical = <String>{
+    RealtimeEvents.biomedicalWorkspaceUpdated,
+    RealtimeEvents.biomedicalFaultReported,
+    RealtimeEvents.biomedicalWorkOrderAssigned,
+    RealtimeEvents.biomedicalWorkOrderStarted,
+    RealtimeEvents.biomedicalWorkOrderReturnedToService,
+    RealtimeEvents.biomedicalOverdueChanged,
   };
 
   static const Set<String> emergencyWorkspace = <String>{

@@ -14,7 +14,7 @@ final biomedicalRepositoryProvider = Provider<BiomedicalRepository>((ref) {
 
 final class BiomedicalRepositoryImpl implements BiomedicalRepository {
   const BiomedicalRepositoryImpl({required ApiClient apiClient})
-      : _apiClient = apiClient;
+    : _apiClient = apiClient;
 
   final ApiClient _apiClient;
 
@@ -115,11 +115,9 @@ final class BiomedicalRepositoryImpl implements BiomedicalRepository {
     Map<String, Object?> payload,
   ) {
     return _apiClient.post<BiomedicalMutationResult>(
-      ApiEndpoints.nested(
-        HmsApiResource.equipmentWorkOrders,
-        id,
-        <String>['start'],
-      ),
+      ApiEndpoints.nested(HmsApiResource.equipmentWorkOrders, id, <String>[
+        'start',
+      ]),
       data: _withoutEmpty(payload),
       decoder: (Object? data) {
         return BiomedicalMutationResultDto.fromResourceResponse(
@@ -136,11 +134,9 @@ final class BiomedicalRepositoryImpl implements BiomedicalRepository {
     Map<String, Object?> payload,
   ) {
     return _apiClient.post<BiomedicalMutationResult>(
-      ApiEndpoints.nested(
-        HmsApiResource.equipmentWorkOrders,
-        id,
-        <String>['return-to-service'],
-      ),
+      ApiEndpoints.nested(HmsApiResource.equipmentWorkOrders, id, <String>[
+        'return-to-service',
+      ]),
       data: _withoutEmpty(payload),
       decoder: (Object? data) {
         return BiomedicalMutationResultDto.fromResourceResponse(
@@ -163,7 +159,8 @@ HmsApiResource _resourceFor(String resource) {
     BiomedicalResources.workOrders => HmsApiResource.equipmentWorkOrders,
     BiomedicalResources.calibrationLogs =>
       HmsApiResource.equipmentCalibrationLogs,
-    BiomedicalResources.safetyTestLogs => HmsApiResource.equipmentSafetyTestLogs,
+    BiomedicalResources.safetyTestLogs =>
+      HmsApiResource.equipmentSafetyTestLogs,
     BiomedicalResources.downtimeLogs => HmsApiResource.equipmentDowntimeLogs,
     BiomedicalResources.spareParts => HmsApiResource.equipmentSpareParts,
     BiomedicalResources.warrantyContracts =>

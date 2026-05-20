@@ -150,6 +150,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationTheaterLabel => 'Theater';
 
   @override
+  String get navigationCommunicationsLabel => 'Communications';
+
+  @override
+  String get navigationIntegrationsLabel => 'Integrations';
+
+  @override
+  String get navigationMortuaryLabel => 'Mortuary';
+
+  @override
+  String get navigationReportsLabel => 'Reports';
+
+  @override
   String get theaterTitle => 'Theater';
 
   @override
@@ -6617,4 +6629,2509 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get labGapReportGenerationBody =>
       'The frontend shows a shared report preview; no confirmed lab-specific generated PDF endpoint is exposed.';
+
+  @override
+  String get navigationOperationsLabel => 'Operations';
+
+  @override
+  String get operationsTitle => 'Operations';
+
+  @override
+  String get operationsLoadingTitle => 'Loading operations';
+
+  @override
+  String get operationsLoadingBody =>
+      'Loading maintenance requests, assets, and service logs.';
+
+  @override
+  String get operationsLiveStatus => 'Live sync';
+
+  @override
+  String get operationsSavingStatus => 'Saving';
+
+  @override
+  String get operationsSavedMessage => 'Operations changes saved.';
+
+  @override
+  String get operationsCreateRequestAction => 'Create request';
+
+  @override
+  String get operationsOpenReportAction => 'Report';
+
+  @override
+  String get operationsAllRequestsSummaryLabel => 'All requests';
+
+  @override
+  String get operationsOpenSummaryLabel => 'Open';
+
+  @override
+  String get operationsInProgressSummaryLabel => 'In progress';
+
+  @override
+  String get operationsCompletedSummaryLabel => 'Completed';
+
+  @override
+  String get operationsCancelledSummaryLabel => 'Cancelled';
+
+  @override
+  String get operationsAssetsSummaryLabel => 'Assets';
+
+  @override
+  String get operationsQueueTitle => 'Maintenance queue';
+
+  @override
+  String get operationsQueueDescription =>
+      'Track facility repairs, assets, safety notes, and readiness work.';
+
+  @override
+  String get operationsSearchLabel => 'Search operations';
+
+  @override
+  String get operationsSearchHint =>
+      'Search request, location, system, priority, status, assignee, or notes';
+
+  @override
+  String get operationsClearFiltersAction => 'Clear filters';
+
+  @override
+  String get operationsFiltersLabel => 'Operations filters';
+
+  @override
+  String get operationsSearchFieldsLabel => 'Search fields';
+
+  @override
+  String get operationsAllFilterOption => 'All';
+
+  @override
+  String get operationsReportedDateFilterLabel => 'Reported date';
+
+  @override
+  String get operationsReportedFromLabel => 'Reported from';
+
+  @override
+  String get operationsReportedToLabel => 'Reported to';
+
+  @override
+  String get operationsPickReportedDateAction => 'Pick reported date';
+
+  @override
+  String get operationsStatusFilterLabel => 'Status';
+
+  @override
+  String get operationsPriorityFilterLabel => 'Priority';
+
+  @override
+  String get operationsFacilityFilterLabel => 'Facility';
+
+  @override
+  String get operationsAssetFilterLabel => 'Asset';
+
+  @override
+  String operationsPageLabel(int first, int last, int total) {
+    return '$first - $last of $total requests';
+  }
+
+  @override
+  String get operationsNoRequestsTitle => 'No maintenance requests';
+
+  @override
+  String get operationsNoRequestsBody =>
+      'Create a request or adjust the filters.';
+
+  @override
+  String get operationsDetailTitle => 'Request detail';
+
+  @override
+  String get operationsNoSelectionTitle => 'Select a request';
+
+  @override
+  String get operationsNoSelectionBody =>
+      'Choose a queue row to review assignments, service logs, and readiness notes.';
+
+  @override
+  String get operationsRequestColumnLabel => 'Request';
+
+  @override
+  String get operationsAreaColumnLabel => 'Area/system';
+
+  @override
+  String get operationsPriorityColumnLabel => 'Priority';
+
+  @override
+  String get operationsLocationColumnLabel => 'Location';
+
+  @override
+  String get operationsAssigneeColumnLabel => 'Assignee/team';
+
+  @override
+  String get operationsStatusColumnLabel => 'Status';
+
+  @override
+  String get operationsDueColumnLabel => 'Due time';
+
+  @override
+  String get operationsNextActionColumnLabel => 'Next action';
+
+  @override
+  String get operationsCategoryLabel => 'Category';
+
+  @override
+  String get operationsIssueTitle => 'Issue and notes';
+
+  @override
+  String get operationsActionsTitle => 'Actions';
+
+  @override
+  String get operationsAssignAction => 'Assign';
+
+  @override
+  String get operationsUpdateStatusAction => 'Update status';
+
+  @override
+  String get operationsAddServiceLogAction => 'Add service log';
+
+  @override
+  String get operationsPartsVendorAction => 'Parts/vendor note';
+
+  @override
+  String get operationsSafetyNoteAction => 'Safety note';
+
+  @override
+  String get operationsEvidenceNoteAction => 'Evidence note';
+
+  @override
+  String get operationsHandoverNoteAction => 'Handover note';
+
+  @override
+  String get operationsCloseoutNoteAction => 'Closeout note';
+
+  @override
+  String get operationsPartsVendorNoteLabel => 'Parts or vendor note';
+
+  @override
+  String get operationsSafetyNoteLabel => 'Safety note';
+
+  @override
+  String get operationsEvidenceNoteLabel => 'Evidence note';
+
+  @override
+  String get operationsHandoverNoteLabel => 'Handover note';
+
+  @override
+  String get operationsCloseoutNoteLabel => 'Closeout note';
+
+  @override
+  String get operationsSaveNoteAction => 'Save note';
+
+  @override
+  String get operationsServiceLogsTitle => 'Service logs';
+
+  @override
+  String get operationsNoServiceLogsTitle => 'No service logs';
+
+  @override
+  String get operationsNoServiceLogsBody =>
+      'Service logs appear after an asset-backed repair is recorded.';
+
+  @override
+  String get operationsUnknownValue => 'Unknown';
+
+  @override
+  String get operationsUnassignedValue => 'Unassigned';
+
+  @override
+  String get operationsNoDueTimeValue => 'No due time';
+
+  @override
+  String get operationsNoNotesValue => 'No notes recorded.';
+
+  @override
+  String get operationsLocationNoteLabel => 'Location note';
+
+  @override
+  String get operationsIssueFieldLabel => 'Issue';
+
+  @override
+  String get operationsNotesLabel => 'Notes';
+
+  @override
+  String get operationsCreateRequestSubmitAction => 'Create request';
+
+  @override
+  String get operationsAssigneeFieldLabel => 'Technician or team';
+
+  @override
+  String get operationsSlaHoursFieldLabel => 'SLA hours';
+
+  @override
+  String get operationsTriageSummaryFieldLabel => 'Assignment note';
+
+  @override
+  String get operationsAssignSubmitAction => 'Save assignment';
+
+  @override
+  String get operationsStatusNoteLabel => 'Status note';
+
+  @override
+  String get operationsUpdateStatusSubmitAction => 'Save status';
+
+  @override
+  String get operationsServiceNotesLabel => 'Service notes';
+
+  @override
+  String get operationsAddServiceLogSubmitAction => 'Save service log';
+
+  @override
+  String get operationsNoConfiguredAssetsOption => 'No configured assets';
+
+  @override
+  String get operationsStatusOpen => 'Open';
+
+  @override
+  String get operationsStatusInProgress => 'In progress';
+
+  @override
+  String get operationsStatusCompleted => 'Completed';
+
+  @override
+  String get operationsStatusCancelled => 'Cancelled';
+
+  @override
+  String get operationsPriorityUrgent => 'Urgent';
+
+  @override
+  String get operationsPriorityHigh => 'High';
+
+  @override
+  String get operationsPriorityNormal => 'Normal';
+
+  @override
+  String get operationsPriorityLow => 'Low';
+
+  @override
+  String get operationsCategoryElectrical => 'Electrical';
+
+  @override
+  String get operationsCategoryPlumbing => 'Plumbing';
+
+  @override
+  String get operationsCategoryWater => 'Water';
+
+  @override
+  String get operationsCategoryPowerBackup => 'Power backup';
+
+  @override
+  String get operationsCategoryHvac => 'HVAC';
+
+  @override
+  String get operationsCategoryGeneralAsset => 'General asset';
+
+  @override
+  String get operationsCategorySafety => 'Safety';
+
+  @override
+  String get operationsCategoryOther => 'Other';
+
+  @override
+  String get operationsNextActionAssign => 'Assign technician or team';
+
+  @override
+  String get operationsNextActionServiceLog => 'Record service work';
+
+  @override
+  String get operationsNextActionUpdateStatus => 'Update repair status';
+
+  @override
+  String get operationsNextActionCloseout => 'Add closeout note if needed';
+
+  @override
+  String get operationsNextActionCancelled => 'Request cancelled';
+
+  @override
+  String get operationsNextActionReview => 'Review request';
+
+  @override
+  String get operationsReportTitle => 'Operations report';
+
+  @override
+  String get operationsReportPreviewTitle => 'Report preview';
+
+  @override
+  String operationsGeneratedAtLabel(String generatedAt) {
+    return 'Generated $generatedAt';
+  }
+
+  @override
+  String operationsReportSummaryLine(
+    int total,
+    int open,
+    int inProgress,
+    int completed,
+  ) {
+    return '$total requests: $open open, $inProgress in progress, $completed completed.';
+  }
+
+  @override
+  String get navigationBiomedicalLabel => 'Biomedical';
+
+  @override
+  String get biomedicalTitle => 'Biomedical';
+
+  @override
+  String get biomedicalLoadingTitle => 'Loading biomedical';
+
+  @override
+  String get biomedicalLoadingBody =>
+      'Loading equipment registry, work orders, and compliance records.';
+
+  @override
+  String get biomedicalLiveStatus => 'Live sync';
+
+  @override
+  String get biomedicalSavingStatus => 'Saving';
+
+  @override
+  String get biomedicalSavedMessage => 'Biomedical changes saved.';
+
+  @override
+  String get biomedicalRegisterAssetAction => 'Register asset';
+
+  @override
+  String get biomedicalReportFaultAction => 'Report fault';
+
+  @override
+  String get biomedicalTotalEquipmentSummaryLabel => 'Total equipment';
+
+  @override
+  String get biomedicalOverduePmSummaryLabel => 'Overdue PM';
+
+  @override
+  String get biomedicalOpenWorkOrdersSummaryLabel => 'Open work orders';
+
+  @override
+  String get biomedicalCriticalDowntimeSummaryLabel => 'Critical downtime';
+
+  @override
+  String get biomedicalActiveRecallsSummaryLabel => 'Active recalls';
+
+  @override
+  String get biomedicalAssetListTitle => 'Equipment worklist';
+
+  @override
+  String get biomedicalAssetListDescription =>
+      'Search equipment, schedules, work orders, downtime, recalls, and lifecycle records.';
+
+  @override
+  String get biomedicalSearchLabel => 'Search biomedical';
+
+  @override
+  String get biomedicalSearchHint =>
+      'Search asset tag, equipment, category, location, status, date, or provider';
+
+  @override
+  String get biomedicalFiltersLabel => 'Biomedical filters';
+
+  @override
+  String get biomedicalPanelFilterLabel => 'Panel';
+
+  @override
+  String get biomedicalStatusFilterLabel => 'Status';
+
+  @override
+  String get biomedicalPriorityFilterLabel => 'Priority';
+
+  @override
+  String get biomedicalFacilityFilterLabel => 'Facility';
+
+  @override
+  String get biomedicalDatePresetFilterLabel => 'Due date';
+
+  @override
+  String get biomedicalAssetTagColumnLabel => 'Asset tag';
+
+  @override
+  String get biomedicalEquipmentColumnLabel => 'Equipment';
+
+  @override
+  String get biomedicalCategoryColumnLabel => 'Category';
+
+  @override
+  String get biomedicalLocationColumnLabel => 'Location';
+
+  @override
+  String get biomedicalRiskColumnLabel => 'Risk';
+
+  @override
+  String get biomedicalStatusColumnLabel => 'Status';
+
+  @override
+  String get biomedicalOwnerColumnLabel => 'Owner';
+
+  @override
+  String get biomedicalNextActionColumnLabel => 'Next action';
+
+  @override
+  String get biomedicalPreviousPageLabel => 'Previous equipment';
+
+  @override
+  String get biomedicalNextPageLabel => 'Next equipment';
+
+  @override
+  String biomedicalPageLabel(int from, int to, int total) {
+    return 'Showing $from-$to of $total';
+  }
+
+  @override
+  String get biomedicalNoAssetsTitle => 'No equipment records';
+
+  @override
+  String get biomedicalNoAssetsBody =>
+      'Equipment records matching this search and filter will appear here.';
+
+  @override
+  String get biomedicalDetailTitle => 'Equipment detail';
+
+  @override
+  String get biomedicalNoSelectionTitle => 'Select equipment';
+
+  @override
+  String get biomedicalNoSelectionBody =>
+      'Choose equipment or a related record to review readiness, work orders, compliance, and lifecycle actions.';
+
+  @override
+  String get biomedicalRegistrySectionTitle => 'Registry';
+
+  @override
+  String get biomedicalReadinessSectionTitle => 'Readiness';
+
+  @override
+  String get biomedicalMaintenanceSectionTitle => 'Maintenance';
+
+  @override
+  String get biomedicalComplianceSectionTitle => 'Compliance';
+
+  @override
+  String get biomedicalLifecycleSectionTitle => 'Lifecycle';
+
+  @override
+  String get biomedicalReportsSectionTitle => 'Report preview';
+
+  @override
+  String get biomedicalNotAvailableLabel => '-';
+
+  @override
+  String get biomedicalAssetTagLabel => 'Asset tag';
+
+  @override
+  String get biomedicalResourceLabel => 'Record type';
+
+  @override
+  String get biomedicalEquipmentLabel => 'Equipment';
+
+  @override
+  String get biomedicalCategoryLabel => 'Category';
+
+  @override
+  String get biomedicalFacilityLabel => 'Facility';
+
+  @override
+  String get biomedicalOwnerLabel => 'Owner';
+
+  @override
+  String get biomedicalStatusLabel => 'Status';
+
+  @override
+  String get biomedicalPriorityLabel => 'Priority';
+
+  @override
+  String get biomedicalNextDueLabel => 'Next due';
+
+  @override
+  String get biomedicalLastUpdatedLabel => 'Last updated';
+
+  @override
+  String get biomedicalTargetPathLabel => 'Audit path';
+
+  @override
+  String get biomedicalEditAssetAction => 'Edit asset';
+
+  @override
+  String get biomedicalTransferLocationAction => 'Transfer location';
+
+  @override
+  String get biomedicalScheduleMaintenanceAction => 'Schedule maintenance';
+
+  @override
+  String get biomedicalCreateWorkOrderAction => 'Create work order';
+
+  @override
+  String get biomedicalUpdateWorkOrderAction => 'Update work order';
+
+  @override
+  String get biomedicalStartWorkOrderAction => 'Start work order';
+
+  @override
+  String get biomedicalReturnToServiceAction => 'Return to service';
+
+  @override
+  String get biomedicalRecordCalibrationAction => 'Record calibration';
+
+  @override
+  String get biomedicalRecordSafetyTestAction => 'Record safety test';
+
+  @override
+  String get biomedicalReportDowntimeAction => 'Report downtime';
+
+  @override
+  String get biomedicalCloseDowntimeAction => 'Close downtime';
+
+  @override
+  String get biomedicalLogIncidentAction => 'Log incident';
+
+  @override
+  String get biomedicalAcknowledgeRecallAction => 'Acknowledge recall';
+
+  @override
+  String get biomedicalDisposeTransferAction => 'Dispose or transfer';
+
+  @override
+  String get biomedicalPrintReportAction => 'Preview report';
+
+  @override
+  String get biomedicalRegisterAssetDialogTitle => 'Register equipment';
+
+  @override
+  String get biomedicalEditAssetDialogTitle => 'Edit equipment';
+
+  @override
+  String get biomedicalTransferLocationDialogTitle =>
+      'Transfer equipment location';
+
+  @override
+  String get biomedicalScheduleMaintenanceDialogTitle => 'Schedule maintenance';
+
+  @override
+  String get biomedicalWorkOrderDialogTitle => 'Create work order';
+
+  @override
+  String get biomedicalUpdateWorkOrderDialogTitle => 'Update work order';
+
+  @override
+  String get biomedicalStartWorkOrderDialogTitle => 'Start work order';
+
+  @override
+  String get biomedicalReturnToServiceDialogTitle =>
+      'Return equipment to service';
+
+  @override
+  String get biomedicalCalibrationDialogTitle => 'Record calibration';
+
+  @override
+  String get biomedicalSafetyTestDialogTitle => 'Record safety test';
+
+  @override
+  String get biomedicalDowntimeDialogTitle => 'Report downtime';
+
+  @override
+  String get biomedicalCloseDowntimeDialogTitle => 'Close downtime';
+
+  @override
+  String get biomedicalIncidentDialogTitle => 'Log incident';
+
+  @override
+  String get biomedicalRecallDialogTitle => 'Acknowledge recall';
+
+  @override
+  String get biomedicalDisposalDialogTitle => 'Dispose or transfer equipment';
+
+  @override
+  String get biomedicalFaultDialogTitle => 'Report equipment fault';
+
+  @override
+  String get biomedicalPrintReportDialogTitle => 'Biomedical report';
+
+  @override
+  String get biomedicalAssetNameLabel => 'Equipment name';
+
+  @override
+  String get biomedicalAssetCodeLabel => 'Asset code';
+
+  @override
+  String get biomedicalSerialNumberLabel => 'Serial number';
+
+  @override
+  String get biomedicalRoomLabel => 'Room';
+
+  @override
+  String get biomedicalNotesLabel => 'Notes';
+
+  @override
+  String get biomedicalDescriptionLabel => 'Description';
+
+  @override
+  String get biomedicalWorkOrderTitleLabel => 'Work order title';
+
+  @override
+  String get biomedicalEngineerLabel => 'Engineer';
+
+  @override
+  String get biomedicalPlanNameLabel => 'Plan name';
+
+  @override
+  String get biomedicalMaintenanceTypeLabel => 'Maintenance type';
+
+  @override
+  String get biomedicalFrequencyDaysLabel => 'Frequency days';
+
+  @override
+  String get biomedicalNextDueAtLabel => 'Next due at';
+
+  @override
+  String get biomedicalResultLabel => 'Result';
+
+  @override
+  String get biomedicalCalibratedAtLabel => 'Calibrated at';
+
+  @override
+  String get biomedicalTestedAtLabel => 'Tested at';
+
+  @override
+  String get biomedicalDowntimeStartedAtLabel => 'Downtime started';
+
+  @override
+  String get biomedicalDowntimeEndedAtLabel => 'Downtime ended';
+
+  @override
+  String get biomedicalReasonLabel => 'Reason';
+
+  @override
+  String get biomedicalSeverityLabel => 'Severity';
+
+  @override
+  String get biomedicalStartedAtLabel => 'Started at';
+
+  @override
+  String get biomedicalRecordedAtLabel => 'Recorded at';
+
+  @override
+  String get biomedicalEffectiveAtLabel => 'Effective at';
+
+  @override
+  String get biomedicalReportedEquipmentNameLabel => 'Temporary equipment name';
+
+  @override
+  String get biomedicalPatientSafetyRiskLabel => 'Patient safety risk';
+
+  @override
+  String get biomedicalDateTimeHint => 'YYYY-MM-DDTHH:MM';
+
+  @override
+  String get biomedicalSubmitAction => 'Submit';
+
+  @override
+  String get biomedicalSaveAction => 'Save';
+
+  @override
+  String get biomedicalCreateAction => 'Create';
+
+  @override
+  String biomedicalFieldRequiredLabel(String label) {
+    return '$label is required.';
+  }
+
+  @override
+  String get biomedicalPanelOverview => 'Overview';
+
+  @override
+  String get biomedicalPanelRegistry => 'Registry';
+
+  @override
+  String get biomedicalPanelPreventive => 'Preventive';
+
+  @override
+  String get biomedicalPanelWorkOrders => 'Work orders';
+
+  @override
+  String get biomedicalPanelCompliance => 'Compliance';
+
+  @override
+  String get biomedicalPanelSupport => 'Support';
+
+  @override
+  String get biomedicalPanelAnalytics => 'Analytics';
+
+  @override
+  String get biomedicalDatePresetToday => 'Today';
+
+  @override
+  String get biomedicalDatePresetNext7Days => 'Next 7 days';
+
+  @override
+  String get biomedicalDatePresetOverdue => 'Overdue';
+
+  @override
+  String get biomedicalDatePresetThisMonth => 'This month';
+
+  @override
+  String get biomedicalNextActionMaintain => 'Perform maintenance';
+
+  @override
+  String get biomedicalNextActionCalibrate => 'Review compliance';
+
+  @override
+  String get biomedicalNextActionReturnService => 'Return to service';
+
+  @override
+  String get biomedicalNextActionReviewRecall => 'Review recall';
+
+  @override
+  String get biomedicalNextActionWorkOrder => 'Work order follow-up';
+
+  @override
+  String get biomedicalNextActionReview => 'Review record';
+
+  @override
+  String get biomedicalPrintReportBody =>
+      'Generated from backend-backed biomedical registry, readiness, compliance, and lifecycle data.';
+
+  @override
+  String get integrationsLoadErrorTitle => 'Integrations could not load';
+
+  @override
+  String get integrationsLoadErrorBody =>
+      'Refresh the workspace or check service availability.';
+
+  @override
+  String get integrationsLoadingTitle => 'Loading integrations';
+
+  @override
+  String get integrationsLoadingBody =>
+      'Preparing integrations, API keys, webhooks, and logs.';
+
+  @override
+  String get integrationsFailedStatusLabel => 'Failed';
+
+  @override
+  String get integrationsWarningStatusLabel => 'Warning';
+
+  @override
+  String get integrationsOperationalStatusLabel => 'Operational';
+
+  @override
+  String get integrationsWorkspaceTitle => 'Integrations';
+
+  @override
+  String get integrationsCreateIntegrationAction => 'Create integration';
+
+  @override
+  String get integrationsCreateApiKeyAction => 'Create API key';
+
+  @override
+  String get integrationsCreateWebhookAction => 'Create webhook';
+
+  @override
+  String get integrationsAllSummaryLabel => 'Total items';
+
+  @override
+  String get integrationsActiveSummaryLabel => 'Active';
+
+  @override
+  String get integrationsWarningsSummaryLabel => 'Warnings';
+
+  @override
+  String get integrationsFailedSummaryLabel => 'Failed';
+
+  @override
+  String get integrationsApiKeysSummaryLabel => 'API keys';
+
+  @override
+  String get integrationsWebhooksSummaryLabel => 'Webhooks';
+
+  @override
+  String get integrationsWorklistTitle => 'Integration worklist';
+
+  @override
+  String get integrationsWorklistDescription =>
+      'Review integrations, API keys, webhooks, sanitized logs, and interoperability readiness.';
+
+  @override
+  String get integrationsSearchLabel => 'Search integrations';
+
+  @override
+  String get integrationsSearchHint =>
+      'Search by name, type, status, owner, or reference';
+
+  @override
+  String get integrationsFiltersLabel => 'Filters';
+
+  @override
+  String get integrationsFilterAll => 'All';
+
+  @override
+  String get integrationsFilterGroupLabel => 'Group';
+
+  @override
+  String get integrationsPreviousPageLabel => 'Previous page';
+
+  @override
+  String get integrationsNextPageLabel => 'Next page';
+
+  @override
+  String integrationsPageLabel(int from, int to, int total) {
+    return '$from-$to of $total';
+  }
+
+  @override
+  String get integrationsEmptyTitle => 'No integration items';
+
+  @override
+  String get integrationsEmptyBody =>
+      'Create an integration, API key, or webhook to populate this workspace.';
+
+  @override
+  String get integrationsTypeColumnLabel => 'Type';
+
+  @override
+  String get integrationsNameColumnLabel => 'Name';
+
+  @override
+  String get integrationsStatusColumnLabel => 'Status';
+
+  @override
+  String get integrationsOwnerColumnLabel => 'Owner';
+
+  @override
+  String get integrationsScopeColumnLabel => 'Scope';
+
+  @override
+  String get integrationsLastEventColumnLabel => 'Last event';
+
+  @override
+  String get integrationsNextActionColumnLabel => 'Next action';
+
+  @override
+  String integrationsMobileSubtitle(String kind, String scope) {
+    return '$kind | $scope';
+  }
+
+  @override
+  String get integrationsNoSelectionTitle => 'Select an integration item';
+
+  @override
+  String get integrationsNoSelectionBody =>
+      'Choose a row to review configuration, keys, webhooks, logs, and available actions.';
+
+  @override
+  String get integrationsConfigureAction => 'Configure';
+
+  @override
+  String get integrationsTestConnectionAction => 'Test connection';
+
+  @override
+  String get integrationsSyncNowAction => 'Sync now';
+
+  @override
+  String get integrationsDisableAction => 'Disable';
+
+  @override
+  String get integrationsEnableAction => 'Enable';
+
+  @override
+  String get integrationsManagePermissionsAction => 'Manage permissions';
+
+  @override
+  String get integrationsRevokeApiKeyAction => 'Revoke key';
+
+  @override
+  String get integrationsEditWebhookAction => 'Edit webhook';
+
+  @override
+  String get integrationsReplayWebhookAction => 'Replay webhook';
+
+  @override
+  String get integrationsReplayLogAction => 'Replay log';
+
+  @override
+  String get integrationsReferenceLabel => 'Reference';
+
+  @override
+  String get integrationsActionResultTitle => 'Latest action result';
+
+  @override
+  String get integrationsMaskedSecretTitle => 'Masked key';
+
+  @override
+  String get integrationsRotationGapTitle => 'Key rotation gap';
+
+  @override
+  String get integrationsRotationGapBody =>
+      'The backend does not expose a rotate endpoint. Create a replacement key, update downstream systems, then revoke the old key.';
+
+  @override
+  String get integrationsEventLabel => 'Event';
+
+  @override
+  String get integrationsTargetHostLabel => 'Target host';
+
+  @override
+  String get integrationsIntegrationLabel => 'Integration';
+
+  @override
+  String get integrationsSanitizedLogTitle => 'Sanitized log message';
+
+  @override
+  String get integrationsInteropReadyBody =>
+      'Interoperability actions are available through the backend action endpoints.';
+
+  @override
+  String get integrationsConfigurationTitle => 'Configuration';
+
+  @override
+  String get integrationsConfigurationMaskedBody =>
+      'Sensitive values are masked by the backend response.';
+
+  @override
+  String get integrationsConfigurationEmptyBody =>
+      'No configuration values are available for this integration.';
+
+  @override
+  String get integrationsNoConfigurationRows => 'No configuration rows';
+
+  @override
+  String get integrationsRelatedWebhooksTitle => 'Related webhooks';
+
+  @override
+  String get integrationsNoRelatedWebhooks => 'No related webhooks';
+
+  @override
+  String get integrationsRelatedLogsTitle => 'Related logs';
+
+  @override
+  String get integrationsNoRelatedLogs => 'No related logs';
+
+  @override
+  String get integrationsPermissionsTitle => 'Permissions';
+
+  @override
+  String get integrationsNoPermissions => 'No permissions granted';
+
+  @override
+  String get integrationsRemovePermissionDialogTitle => 'Remove permission?';
+
+  @override
+  String get integrationsRemovePermissionDialogBody =>
+      'This API key will immediately lose the selected permission.';
+
+  @override
+  String get integrationsRemovePermissionAction => 'Remove permission';
+
+  @override
+  String get integrationsNameFieldLabel => 'Name';
+
+  @override
+  String get integrationsNameRequiredMessage => 'Enter a name.';
+
+  @override
+  String get integrationsTypeFieldLabel => 'Type';
+
+  @override
+  String get integrationsConfigFieldLabel => 'Configuration';
+
+  @override
+  String get integrationsConfigCreateHelper =>
+      'Enter one key=value setting per line. Sensitive keys are accepted but are not shown again.';
+
+  @override
+  String get integrationsConfigUpdateHelper =>
+      'Enter only settings to change. Existing sensitive values are not shown here.';
+
+  @override
+  String get integrationsCreateIntegrationSubmitAction => 'Create integration';
+
+  @override
+  String get integrationsSaveIntegrationAction => 'Save integration';
+
+  @override
+  String get integrationsApiKeyNameFieldLabel => 'Key name';
+
+  @override
+  String get integrationsApiKeyNameRequiredMessage => 'Enter a key name.';
+
+  @override
+  String get integrationsExpiresAtFieldLabel => 'Expires at';
+
+  @override
+  String get integrationsIsoDateHint => 'YYYY-MM-DD or ISO timestamp';
+
+  @override
+  String get integrationsCreateApiKeySubmitAction => 'Create API key';
+
+  @override
+  String get integrationsIntegrationFieldLabel => 'Integration';
+
+  @override
+  String get integrationsEventFieldLabel => 'Event';
+
+  @override
+  String get integrationsEventRequiredMessage => 'Enter an event name.';
+
+  @override
+  String get integrationsTargetUrlFieldLabel => 'Target URL';
+
+  @override
+  String get integrationsTargetUrlRequiredMessage => 'Enter a target URL.';
+
+  @override
+  String get integrationsWebhookActiveFieldLabel => 'Webhook active';
+
+  @override
+  String get integrationsCreateWebhookSubmitAction => 'Create webhook';
+
+  @override
+  String get integrationsSaveWebhookAction => 'Save webhook';
+
+  @override
+  String get integrationsApiKeyFieldLabel => 'API key';
+
+  @override
+  String get integrationsApiKeyRequiredMessage => 'Choose an API key.';
+
+  @override
+  String get integrationsPermissionFieldLabel => 'Permission';
+
+  @override
+  String get integrationsPermissionRequiredMessage => 'Choose a permission.';
+
+  @override
+  String get integrationsAddPermissionAction => 'Add permission';
+
+  @override
+  String get integrationsCreateIntegrationDialogTitle => 'Create integration';
+
+  @override
+  String get integrationsConfigureIntegrationDialogTitle =>
+      'Configure integration';
+
+  @override
+  String get integrationsCreateApiKeyDialogTitle => 'Create API key';
+
+  @override
+  String get integrationsCreateWebhookDialogTitle => 'Create webhook';
+
+  @override
+  String get integrationsEditWebhookDialogTitle => 'Edit webhook';
+
+  @override
+  String get integrationsManagePermissionsDialogTitle =>
+      'Manage API key permissions';
+
+  @override
+  String get integrationsSecretMissing => 'Secret not returned';
+
+  @override
+  String get integrationsApiKeyCreatedDialogTitle => 'API key created';
+
+  @override
+  String get integrationsApiKeyCreatedSecretTitle => 'One-time secret';
+
+  @override
+  String get integrationsApiKeyCreatedSecretBody =>
+      'This value is shown once. Store it securely before closing this dialog.';
+
+  @override
+  String get integrationsCopySecretAction => 'Copy secret';
+
+  @override
+  String get integrationsTestConnectionDialogTitle => 'Test connection?';
+
+  @override
+  String get integrationsTestConnectionDialogBody =>
+      'The backend will run the integration connection test.';
+
+  @override
+  String get integrationsSyncNowDialogTitle => 'Sync now?';
+
+  @override
+  String get integrationsSyncNowDialogBody =>
+      'The backend will enqueue an immediate integration sync.';
+
+  @override
+  String get integrationsEnableIntegrationDialogTitle => 'Enable integration?';
+
+  @override
+  String get integrationsDisableIntegrationDialogTitle =>
+      'Disable integration?';
+
+  @override
+  String get integrationsEnableIntegrationDialogBody =>
+      'This integration will become available for downstream workflows.';
+
+  @override
+  String get integrationsDisableIntegrationDialogBody =>
+      'This integration will stop participating in downstream workflows.';
+
+  @override
+  String get integrationsEnableApiKeyDialogTitle => 'Enable API key?';
+
+  @override
+  String get integrationsDisableApiKeyDialogTitle => 'Disable API key?';
+
+  @override
+  String get integrationsEnableApiKeyDialogBody =>
+      'This API key can authenticate requests again.';
+
+  @override
+  String get integrationsDisableApiKeyDialogBody =>
+      'This API key will stop authenticating requests.';
+
+  @override
+  String get integrationsEnableWebhookDialogTitle => 'Enable webhook?';
+
+  @override
+  String get integrationsDisableWebhookDialogTitle => 'Disable webhook?';
+
+  @override
+  String get integrationsEnableWebhookDialogBody =>
+      'This webhook will receive matching events again.';
+
+  @override
+  String get integrationsDisableWebhookDialogBody =>
+      'This webhook will stop receiving matching events.';
+
+  @override
+  String get integrationsRevokeApiKeyDialogTitle => 'Revoke API key?';
+
+  @override
+  String get integrationsRevokeApiKeyDialogBody =>
+      'This permanently deletes the API key and its local permission grants.';
+
+  @override
+  String get integrationsReplayWebhookDialogTitle => 'Replay webhook?';
+
+  @override
+  String get integrationsReplayWebhookDialogBody =>
+      'The backend will replay the webhook delivery.';
+
+  @override
+  String get integrationsReplayLogDialogTitle => 'Replay log?';
+
+  @override
+  String get integrationsReplayLogDialogBody =>
+      'The backend will retry the logged integration event.';
+
+  @override
+  String get integrationsFilterIntegrations => 'Integrations';
+
+  @override
+  String get integrationsFilterApiKeys => 'API keys';
+
+  @override
+  String get integrationsFilterWebhooks => 'Webhooks';
+
+  @override
+  String get integrationsFilterLogs => 'Logs';
+
+  @override
+  String get integrationsFilterInterop => 'Interop';
+
+  @override
+  String get integrationsFilterActive => 'Active';
+
+  @override
+  String get integrationsFilterWarning => 'Warning';
+
+  @override
+  String get integrationsFilterFailed => 'Failed';
+
+  @override
+  String get integrationsFilterDisabled => 'Disabled';
+
+  @override
+  String get integrationsTypeHl7 => 'HL7';
+
+  @override
+  String get integrationsTypeFhir => 'FHIR';
+
+  @override
+  String get integrationsTypeLab => 'Lab';
+
+  @override
+  String get integrationsTypeRadiology => 'Radiology';
+
+  @override
+  String get integrationsTypeBilling => 'Billing';
+
+  @override
+  String get integrationsTypeOther => 'Other';
+
+  @override
+  String get integrationsStatusActive => 'Active';
+
+  @override
+  String get integrationsStatusInactive => 'Inactive';
+
+  @override
+  String get integrationsStatusError => 'Error';
+
+  @override
+  String get integrationsStatusFailed => 'Failed';
+
+  @override
+  String get integrationsStatusReady => 'Ready';
+
+  @override
+  String get integrationsStatusBackendGap => 'Backend gap';
+
+  @override
+  String get integrationsStatusQueued => 'Queued';
+
+  @override
+  String get integrationsStatusConnected => 'Connected';
+
+  @override
+  String get integrationsKindIntegration => 'Integration';
+
+  @override
+  String get integrationsKindApiKey => 'API key';
+
+  @override
+  String get integrationsKindWebhook => 'Webhook';
+
+  @override
+  String get integrationsKindLog => 'Log';
+
+  @override
+  String get integrationsKindInterop => 'Interop';
+
+  @override
+  String get integrationsNoScopesLabel => 'No scopes';
+
+  @override
+  String get integrationsOneScopeLabel => '1 scope';
+
+  @override
+  String get integrationsInteropFhirScope => 'FHIR exchange';
+
+  @override
+  String get integrationsInteropHl7Scope => 'HL7 messaging';
+
+  @override
+  String get integrationsInteropDicomScope => 'DICOM linking';
+
+  @override
+  String get integrationsInteropMigrationScope => 'Migration import and export';
+
+  @override
+  String get integrationsInteropStatusScope => 'Readiness status';
+
+  @override
+  String integrationsManyScopesLabel(String count) {
+    return '$count scopes';
+  }
+
+  @override
+  String get integrationsNextActionReviewFailure => 'Review failure';
+
+  @override
+  String get integrationsNextActionEnable => 'Enable item';
+
+  @override
+  String get integrationsNextActionMonitor => 'Monitor';
+
+  @override
+  String get integrationsNextActionReviewKey => 'Review key';
+
+  @override
+  String get integrationsNextActionRotateOrMonitor => 'Rotate or monitor';
+
+  @override
+  String get integrationsNextActionEnableWebhook => 'Enable webhook';
+
+  @override
+  String get integrationsNextActionMonitorDelivery => 'Monitor delivery';
+
+  @override
+  String get integrationsNextActionReplayOrEscalate => 'Replay or escalate';
+
+  @override
+  String get integrationsNextActionReview => 'Review';
+
+  @override
+  String get integrationsNextActionRunEndpoint => 'Run endpoint';
+
+  @override
+  String get integrationsNextActionUseStatusLogs => 'Use status logs';
+
+  @override
+  String get integrationsInteropFhirTitle => 'FHIR exchange';
+
+  @override
+  String get integrationsInteropHl7Title => 'HL7 messages';
+
+  @override
+  String get integrationsInteropDicomTitle => 'DICOM study linking';
+
+  @override
+  String get integrationsInteropMigrationTitle => 'Migration tools';
+
+  @override
+  String get integrationsInteropReadinessTitle => 'Interop readiness';
+
+  @override
+  String get integrationsInteropReadinessGapBody =>
+      'No dedicated interoperability readiness endpoint is exposed. Use integration status and sanitized logs until the backend adds one.';
+
+  @override
+  String get integrationsSavedMessage => 'Integration changes saved.';
+
+  @override
+  String get reportsTitle => 'Reports and audit';
+
+  @override
+  String get reportsLoadingTitle => 'Loading reports workspace';
+
+  @override
+  String get reportsLoadingBody =>
+      'Fetching report definitions, runs, schedules, dashboards, and audit evidence.';
+
+  @override
+  String get reportsLiveStatus => 'Live';
+
+  @override
+  String get reportsSavingStatus => 'Saving';
+
+  @override
+  String get reportsRunAction => 'Run report';
+
+  @override
+  String get reportsScheduleAction => 'Schedule';
+
+  @override
+  String get reportsRetryAction => 'Retry';
+
+  @override
+  String get reportsCancelRunAction => 'Cancel run';
+
+  @override
+  String get reportsDownloadAction => 'Download';
+
+  @override
+  String get reportsPrintAction => 'Print';
+
+  @override
+  String get reportsExportEvidenceAction => 'Export evidence';
+
+  @override
+  String get reportsSearchLabel => 'Search reports and logs';
+
+  @override
+  String get reportsSearchHint =>
+      'Search report name, module, owner, status, or record';
+
+  @override
+  String get reportsComplianceSearchHint =>
+      'Search user, action, record, patient, purpose, or reason';
+
+  @override
+  String get reportsClearSearchLabel => 'Clear reports search';
+
+  @override
+  String get reportsFiltersLabel => 'Report filters';
+
+  @override
+  String get reportsPanelFilterLabel => 'Workspace panel';
+
+  @override
+  String get reportsStatusFilterLabel => 'Status';
+
+  @override
+  String get reportsFormatFilterLabel => 'Format';
+
+  @override
+  String get reportsDatasetFilterLabel => 'Dataset';
+
+  @override
+  String get reportsDateFilterLabel => 'Date range';
+
+  @override
+  String get reportsDateFromLabel => 'From';
+
+  @override
+  String get reportsDateToLabel => 'To';
+
+  @override
+  String get reportsDatePickerLabel => 'Choose date';
+
+  @override
+  String get reportsInvalidDateMessage => 'Enter a valid date.';
+
+  @override
+  String get reportsComplianceTypeFilterLabel => 'Event type';
+
+  @override
+  String get reportsAllStatusesLabel => 'All statuses';
+
+  @override
+  String get reportsAllFormatsLabel => 'All formats';
+
+  @override
+  String get reportsAllDatasetsLabel => 'All datasets';
+
+  @override
+  String get reportsPanelOverview => 'Overview';
+
+  @override
+  String get reportsPanelCatalog => 'Catalog';
+
+  @override
+  String get reportsPanelDelivery => 'Runs and delivery';
+
+  @override
+  String get reportsPanelDashboards => 'Dashboards';
+
+  @override
+  String get reportsPanelMonitor => 'KPI monitor';
+
+  @override
+  String get reportsPanelActivity => 'Analytics activity';
+
+  @override
+  String get reportsPanelAudit => 'Audit logs';
+
+  @override
+  String get reportsPanelPhi => 'PHI access';
+
+  @override
+  String get reportsPanelProcessing => 'Processing logs';
+
+  @override
+  String get reportsWorklistDescription =>
+      'Search, filter, preview, run, schedule, print, and export backend-backed report records.';
+
+  @override
+  String get reportsComplianceDescription =>
+      'Search and review audit, PHI access, and data processing logs within permitted scope.';
+
+  @override
+  String get reportsSchedulesTitle => 'Schedules';
+
+  @override
+  String get reportsSchedulesDescription =>
+      'Saved schedules stay backend-backed and refresh independently from report runs.';
+
+  @override
+  String get reportsNoItemsTitle => 'No report records';
+
+  @override
+  String get reportsNoItemsBody =>
+      'No backend report records match the current filters.';
+
+  @override
+  String get reportsNoSchedulesTitle => 'No schedules';
+
+  @override
+  String get reportsNoSchedulesBody =>
+      'No saved report schedules match this view.';
+
+  @override
+  String get reportsNoComplianceLogsTitle => 'No compliance logs';
+
+  @override
+  String get reportsNoComplianceLogsBody =>
+      'No audit or compliance evidence matches the current filters.';
+
+  @override
+  String get reportsPreviewTitle => 'Report preview';
+
+  @override
+  String get reportsComplianceDetailTitle => 'Evidence detail';
+
+  @override
+  String get reportsNoSelectionTitle => 'No selection';
+
+  @override
+  String get reportsNoSelectionBody =>
+      'Choose a report definition, run, widget, KPI, event, or schedule to preview generated details.';
+
+  @override
+  String get reportsNoComplianceSelectionBody =>
+      'Choose an audit, PHI access, or processing log to review evidence details.';
+
+  @override
+  String get reportsNameColumnLabel => 'Name';
+
+  @override
+  String get reportsStatusColumnLabel => 'Status';
+
+  @override
+  String get reportsReferenceLabel => 'Reference';
+
+  @override
+  String get reportsOwnerLabel => 'Owner';
+
+  @override
+  String get reportsUpdatedColumnLabel => 'Updated';
+
+  @override
+  String get reportsFormatColumnLabel => 'Format';
+
+  @override
+  String get reportsCategoryLabel => 'Category';
+
+  @override
+  String get reportsDatasetLabel => 'Dataset';
+
+  @override
+  String get reportsFacilityLabel => 'Facility';
+
+  @override
+  String get reportsValueLabel => 'Value';
+
+  @override
+  String get reportsErrorLabel => 'Error';
+
+  @override
+  String get reportsEventColumnLabel => 'Event';
+
+  @override
+  String get reportsUserColumnLabel => 'User';
+
+  @override
+  String get reportsRecordColumnLabel => 'Record';
+
+  @override
+  String get reportsTimestampColumnLabel => 'Timestamp';
+
+  @override
+  String get reportsPatientLabel => 'Patient';
+
+  @override
+  String get reportsActionLabel => 'Action';
+
+  @override
+  String get reportsEntityLabel => 'Entity';
+
+  @override
+  String get reportsScopeLabel => 'Scope';
+
+  @override
+  String get reportsPurposeLabel => 'Purpose';
+
+  @override
+  String get reportsLegalBasisLabel => 'Legal basis';
+
+  @override
+  String get reportsIpAddressLabel => 'IP address';
+
+  @override
+  String get reportsDetailsLabel => 'Details';
+
+  @override
+  String get reportsPreviousPageLabel => 'Previous page';
+
+  @override
+  String get reportsNextPageLabel => 'Next page';
+
+  @override
+  String reportsPageLabel(int first, int last, int total) {
+    return '$first-$last of $total';
+  }
+
+  @override
+  String get reportsTimelineTitle => 'Recent report activity';
+
+  @override
+  String get reportsTimelineDescription =>
+      'Latest backend report runs, schedules, KPI snapshots, and analytics events.';
+
+  @override
+  String get reportsRunDialogTitle => 'Run report';
+
+  @override
+  String get reportsRetryDialogTitle => 'Retry report run';
+
+  @override
+  String get reportsScheduleDialogTitle => 'Schedule report';
+
+  @override
+  String get reportsFormatFieldLabel => 'Output format';
+
+  @override
+  String get reportsRetentionDaysFieldLabel => 'Retention days';
+
+  @override
+  String get reportsScheduleNameFieldLabel => 'Schedule name';
+
+  @override
+  String get reportsFrequencyFieldLabel => 'Frequency';
+
+  @override
+  String get reportsTimeOfDayFieldLabel => 'Time of day';
+
+  @override
+  String get reportsTimeOfDayHint => 'HH:mm';
+
+  @override
+  String get reportsCreateScheduleAction => 'Create schedule';
+
+  @override
+  String get reportsFrequencyDaily => 'Daily';
+
+  @override
+  String get reportsFrequencyWeekly => 'Weekly';
+
+  @override
+  String get reportsFrequencyMonthly => 'Monthly';
+
+  @override
+  String get reportsCancelRunDialogTitle => 'Cancel report run';
+
+  @override
+  String get reportsCancelRunDialogBody =>
+      'Cancel this queued or processing report run? The run row will refresh after the backend confirms the change.';
+
+  @override
+  String get reportsExportEvidenceDialogTitle => 'Export evidence';
+
+  @override
+  String get reportsExportEvidenceDialogBody =>
+      'Generate a facility-branded evidence document from this backend log record.';
+
+  @override
+  String get reportsSavedMessage => 'Reports workspace updated.';
+
+  @override
+  String get reportsDownloadRequestedMessage =>
+      'Report download was requested from the backend.';
+
+  @override
+  String get reportsPrintSubtitle => 'Generated report metadata';
+
+  @override
+  String get reportsEvidenceSubtitle => 'Compliance evidence';
+
+  @override
+  String get reportsGeneratedByLabel => 'Generated by';
+
+  @override
+  String get reportsPrintFooter =>
+      'Confidential report document generated from backend data.';
+
+  @override
+  String get reportsEvidenceFooter =>
+      'Compliance evidence generated from backend audit data.';
+
+  @override
+  String get navigationPhysiotherapyLabel => 'Physiotherapy';
+
+  @override
+  String get communicationsLoadingTitle => 'Loading communications';
+
+  @override
+  String get communicationsLoadingBody =>
+      'Loading notifications, conversations, delivery state, and templates.';
+
+  @override
+  String get communicationsWorkspaceTitle => 'Communications';
+
+  @override
+  String get communicationsLiveStatus => 'Live sync';
+
+  @override
+  String get communicationsSavingStatus => 'Saving';
+
+  @override
+  String get communicationsActionSavedMessage => 'Communication action saved.';
+
+  @override
+  String get communicationsMessageSentMessage => 'Message sent.';
+
+  @override
+  String get communicationsInboxPanelLabel => 'Inbox';
+
+  @override
+  String get communicationsNotificationsPanelLabel => 'Notifications';
+
+  @override
+  String get communicationsDeliveriesPanelLabel => 'Deliveries';
+
+  @override
+  String get communicationsTemplatesPanelLabel => 'Templates';
+
+  @override
+  String get communicationsUnreadThreadsSummaryLabel => 'Unread threads';
+
+  @override
+  String get communicationsUnreadNotificationsSummaryLabel => 'Unread alerts';
+
+  @override
+  String get communicationsFailedDeliveriesSummaryLabel => 'Failed deliveries';
+
+  @override
+  String get communicationsTemplatesSummaryLabel => 'Templates';
+
+  @override
+  String get communicationsListDescription =>
+      'Find alerts, threads, delivery state, and message templates.';
+
+  @override
+  String get communicationsSearchSemanticLabel => 'Search communications';
+
+  @override
+  String get communicationsSearchHint =>
+      'Search alert, patient, source, sender, recipient, or message';
+
+  @override
+  String get communicationsClearSearchAction => 'Clear communications search';
+
+  @override
+  String get communicationsAdvancedFiltersLabel => 'Communication filters';
+
+  @override
+  String get communicationsAdvancedFiltersTitle => 'Communication filters';
+
+  @override
+  String get communicationsApplyFiltersAction => 'Apply filters';
+
+  @override
+  String get communicationsResetFiltersAction => 'Reset filters';
+
+  @override
+  String get communicationsQueueFilterLabel => 'Queue';
+
+  @override
+  String get communicationsFlagsFilterLabel => 'Flags';
+
+  @override
+  String get communicationsAllFilterLabel => 'All';
+
+  @override
+  String get communicationsUnreadFilterLabel => 'Unread';
+
+  @override
+  String get communicationsSensitiveFilterLabel => 'Sensitive';
+
+  @override
+  String get communicationsPreviousPageLabel => 'Previous communications page';
+
+  @override
+  String get communicationsNextPageLabel => 'Next communications page';
+
+  @override
+  String communicationsPageLabel(int from, int to, int total) {
+    return '$from-$to of $total';
+  }
+
+  @override
+  String get communicationsThreadColumnLabel => 'Thread';
+
+  @override
+  String get communicationsParticipantsColumnLabel => 'Participants';
+
+  @override
+  String get communicationsStatusColumnLabel => 'Status';
+
+  @override
+  String get communicationsLastMessageColumnLabel => 'Last message';
+
+  @override
+  String get communicationsTimeColumnLabel => 'Time';
+
+  @override
+  String get communicationsAlertColumnLabel => 'Alert';
+
+  @override
+  String get communicationsTypeColumnLabel => 'Type';
+
+  @override
+  String get communicationsPriorityColumnLabel => 'Priority';
+
+  @override
+  String get communicationsStateColumnLabel => 'State';
+
+  @override
+  String get communicationsNotificationColumnLabel => 'Notification';
+
+  @override
+  String get communicationsChannelColumnLabel => 'Channel';
+
+  @override
+  String get communicationsRecipientColumnLabel => 'Recipient';
+
+  @override
+  String get communicationsAttemptsColumnLabel => 'Attempts';
+
+  @override
+  String get communicationsTemplateColumnLabel => 'Template';
+
+  @override
+  String get communicationsVariablesColumnLabel => 'Variables';
+
+  @override
+  String get communicationsNoConversationsTitle => 'No conversations';
+
+  @override
+  String get communicationsNoConversationsBody =>
+      'Matching conversation threads will appear here.';
+
+  @override
+  String get communicationsNoNotificationsTitle => 'No notifications';
+
+  @override
+  String get communicationsNoNotificationsBody =>
+      'Matching workflow alerts and reminders will appear here.';
+
+  @override
+  String get communicationsNoDeliveriesTitle => 'No deliveries';
+
+  @override
+  String get communicationsNoDeliveriesBody =>
+      'Notification channel delivery attempts will appear here.';
+
+  @override
+  String get communicationsNoTemplatesTitle => 'No templates';
+
+  @override
+  String get communicationsNoTemplatesBody =>
+      'Reusable communication templates will appear here.';
+
+  @override
+  String get communicationsConversationDetailTitle => 'Conversation detail';
+
+  @override
+  String get communicationsNotificationDetailTitle => 'Notification detail';
+
+  @override
+  String get communicationsDeliveryDetailTitle => 'Delivery detail';
+
+  @override
+  String get communicationsTemplateDetailTitle => 'Template detail';
+
+  @override
+  String get communicationsNoConversationSelectedTitle =>
+      'Select a conversation';
+
+  @override
+  String get communicationsNoConversationSelectedBody =>
+      'Choose a thread to review messages, participants, and linked records.';
+
+  @override
+  String get communicationsNoNotificationSelectedTitle =>
+      'Select a notification';
+
+  @override
+  String get communicationsNoNotificationSelectedBody =>
+      'Choose an alert to review delivery history and quick actions.';
+
+  @override
+  String get communicationsNoDeliverySelectedTitle => 'Select a delivery';
+
+  @override
+  String get communicationsNoDeliverySelectedBody =>
+      'Choose a delivery attempt to review channel, recipient, and error details.';
+
+  @override
+  String get communicationsNoTemplateSelectedTitle => 'Select a template';
+
+  @override
+  String get communicationsNoTemplateSelectedBody =>
+      'Choose a template to review channel, subject, variables, and preview.';
+
+  @override
+  String get communicationsSubjectLabel => 'Subject';
+
+  @override
+  String get communicationsParticipantsLabel => 'Participants';
+
+  @override
+  String get communicationsCreatedAtLabel => 'Created at';
+
+  @override
+  String get communicationsUpdatedAtLabel => 'Updated at';
+
+  @override
+  String get communicationsReadAtLabel => 'Read at';
+
+  @override
+  String get communicationsTypeLabel => 'Type';
+
+  @override
+  String get communicationsContextLabel => 'Context';
+
+  @override
+  String get communicationsNotificationLabel => 'Notification';
+
+  @override
+  String get communicationsChannelLabel => 'Channel';
+
+  @override
+  String get communicationsRecipientLabel => 'Recipient';
+
+  @override
+  String get communicationsAttemptsLabel => 'Attempts';
+
+  @override
+  String get communicationsProviderLabel => 'Provider';
+
+  @override
+  String get communicationsSentAtLabel => 'Sent at';
+
+  @override
+  String get communicationsDeliveredAtLabel => 'Delivered at';
+
+  @override
+  String get communicationsFailedAtLabel => 'Failed at';
+
+  @override
+  String get communicationsStatusLabel => 'Status';
+
+  @override
+  String get communicationsVariablesLabel => 'Variables';
+
+  @override
+  String get communicationsPreviewTitle => 'Preview';
+
+  @override
+  String get communicationsMessageThreadTitle => 'Message thread';
+
+  @override
+  String get communicationsNoMessagesBody =>
+      'No messages are available for this thread.';
+
+  @override
+  String get communicationsDeliveryHistoryTitle => 'Delivery history';
+
+  @override
+  String get communicationsDeliveryErrorTitle => 'Delivery error';
+
+  @override
+  String get communicationsOpenLinkedRecordAction => 'Open linked record';
+
+  @override
+  String get communicationsMarkReadAction => 'Mark read';
+
+  @override
+  String get communicationsMarkUnreadAction => 'Mark unread';
+
+  @override
+  String get communicationsArchiveAction => 'Archive';
+
+  @override
+  String get communicationsUnarchiveAction => 'Unarchive';
+
+  @override
+  String get communicationsSendMessageAction => 'Send message';
+
+  @override
+  String get communicationsSendMessageDialogTitle => 'Send message';
+
+  @override
+  String get communicationsMessageFieldLabel => 'Message';
+
+  @override
+  String get communicationsMarkReadDialogTitle => 'Mark as read';
+
+  @override
+  String get communicationsMarkUnreadDialogTitle => 'Mark as unread';
+
+  @override
+  String get communicationsArchiveDialogTitle => 'Archive communication';
+
+  @override
+  String get communicationsUnarchiveDialogTitle => 'Unarchive conversation';
+
+  @override
+  String get communicationsMarkConversationReadDialogBody =>
+      'Mark this conversation read for your account.';
+
+  @override
+  String get communicationsMarkNotificationReadDialogBody =>
+      'Mark this notification read for your account.';
+
+  @override
+  String get communicationsMarkNotificationUnreadDialogBody =>
+      'Move this notification back to unread.';
+
+  @override
+  String get communicationsArchiveConversationDialogBody =>
+      'Archive this conversation from your active inbox.';
+
+  @override
+  String get communicationsUnarchiveConversationDialogBody =>
+      'Return this conversation to your active inbox.';
+
+  @override
+  String get communicationsArchiveNotificationDialogBody =>
+      'Archive this notification from your active alerts.';
+
+  @override
+  String get communicationsUnreadStatus => 'Unread';
+
+  @override
+  String get communicationsReadStatus => 'Read';
+
+  @override
+  String get communicationsArchivedStatus => 'Archived';
+
+  @override
+  String get communicationsSensitiveStatus => 'Sensitive';
+
+  @override
+  String get communicationsActiveStatus => 'Active';
+
+  @override
+  String get communicationsInactiveStatus => 'Inactive';
+
+  @override
+  String get housekeepingStatusOpenLabel => 'Open';
+
+  @override
+  String get housekeepingStatusInProgressLabel => 'In progress';
+
+  @override
+  String get physiotherapyTitle => 'Physiotherapy';
+
+  @override
+  String get physiotherapyLoadingTitle => 'Loading physiotherapy workspace';
+
+  @override
+  String get physiotherapyLoadingBody =>
+      'Preparing referrals, sessions, care plans, notes, and follow-ups.';
+
+  @override
+  String get physiotherapyLiveStatus => 'Live';
+
+  @override
+  String get physiotherapySavingStatus => 'Saving';
+
+  @override
+  String get physiotherapySavedMessage => 'Physiotherapy record saved.';
+
+  @override
+  String get physiotherapyReferralsSummaryLabel => 'Referrals';
+
+  @override
+  String get physiotherapyTodaySummaryLabel => 'Today';
+
+  @override
+  String get physiotherapyMissedSummaryLabel => 'Missed';
+
+  @override
+  String get physiotherapyActivePlansSummaryLabel => 'Active plans';
+
+  @override
+  String get physiotherapyFollowUpDueSummaryLabel => 'Follow-up due';
+
+  @override
+  String get physiotherapyCompletedSummaryLabel => 'Completed';
+
+  @override
+  String get physiotherapyWorklistTitle => 'Therapy worklist';
+
+  @override
+  String get physiotherapyWorklistDescription =>
+      'Referrals, therapy sessions, plans, notes, and follow-up work from confirmed clinical endpoints.';
+
+  @override
+  String get physiotherapySearchLabel => 'Search physiotherapy worklist';
+
+  @override
+  String get physiotherapySearchHint =>
+      'Search patient, encounter, therapist, plan, or session';
+
+  @override
+  String get physiotherapyFiltersLabel => 'Filters';
+
+  @override
+  String get physiotherapyApplyFiltersAction => 'Apply filters';
+
+  @override
+  String get physiotherapyClearFiltersAction => 'Clear filters';
+
+  @override
+  String get physiotherapySearchFieldLabel => 'Search in';
+
+  @override
+  String get physiotherapyAllFieldsLabel => 'All fields';
+
+  @override
+  String get physiotherapyDateFilterLabel => 'Date';
+
+  @override
+  String get physiotherapyDateFromLabel => 'From';
+
+  @override
+  String get physiotherapyDateToLabel => 'To';
+
+  @override
+  String get physiotherapyTherapistFilterLabel => 'Therapist';
+
+  @override
+  String get physiotherapyTherapistFilterHint => 'Therapist name or user ID';
+
+  @override
+  String get physiotherapyQueueFilterLabel => 'Queue';
+
+  @override
+  String get physiotherapyFilterAll => 'All';
+
+  @override
+  String get physiotherapyScopeReferrals => 'Referrals';
+
+  @override
+  String get physiotherapyScopeToday => 'Today';
+
+  @override
+  String get physiotherapyScopeMissed => 'Missed';
+
+  @override
+  String get physiotherapyScopeActivePlans => 'Active plans';
+
+  @override
+  String get physiotherapyScopeFollowUpDue => 'Follow-up due';
+
+  @override
+  String get physiotherapyScopeCompleted => 'Completed';
+
+  @override
+  String get physiotherapyScopeAll => 'All work';
+
+  @override
+  String get physiotherapyPatientColumnLabel => 'Patient';
+
+  @override
+  String get physiotherapySourceColumnLabel => 'Source';
+
+  @override
+  String get physiotherapySessionColumnLabel => 'Session';
+
+  @override
+  String get physiotherapyStatusColumnLabel => 'Status';
+
+  @override
+  String get physiotherapyPlanColumnLabel => 'Plan';
+
+  @override
+  String get physiotherapyAttendanceColumnLabel => 'Attendance';
+
+  @override
+  String get physiotherapyBillingColumnLabel => 'Billing';
+
+  @override
+  String get physiotherapyTherapistColumnLabel => 'Therapist';
+
+  @override
+  String get physiotherapyNextActionColumnLabel => 'Next action';
+
+  @override
+  String get physiotherapyTableColumnsTitle => 'Therapy table columns';
+
+  @override
+  String get physiotherapyApplyColumnsAction => 'Apply columns';
+
+  @override
+  String get physiotherapyResetColumnsAction => 'Reset columns';
+
+  @override
+  String get physiotherapyNoWorkTitle => 'No physiotherapy work';
+
+  @override
+  String get physiotherapyNoWorkBody =>
+      'No referrals, sessions, plans, or follow-ups match the current filters.';
+
+  @override
+  String get physiotherapyDetailLoadingTitle => 'Loading therapy record';
+
+  @override
+  String get physiotherapyDetailLoadingBody =>
+      'Fetching session history, plan, notes, and follow-up details.';
+
+  @override
+  String get physiotherapyNoSelectionTitle => 'Select a therapy item';
+
+  @override
+  String get physiotherapyNoSelectionBody =>
+      'Choose a referral or session to review assessment, plan, attendance, and follow-up actions.';
+
+  @override
+  String get physiotherapyPatientNumberLabel => 'Patient number';
+
+  @override
+  String get physiotherapyEncounterLabel => 'Encounter';
+
+  @override
+  String get physiotherapySessionLabel => 'Session';
+
+  @override
+  String get physiotherapyTherapistLabel => 'Therapist';
+
+  @override
+  String get physiotherapyBillingAuthorizationLabel => 'Billing authorization';
+
+  @override
+  String get physiotherapyActionsTitle => 'Therapy actions';
+
+  @override
+  String get physiotherapyReferralPanelTitle => 'Referral and plan';
+
+  @override
+  String get physiotherapySourceLabel => 'Source';
+
+  @override
+  String get physiotherapyStatusLabel => 'Status';
+
+  @override
+  String get physiotherapyAttendanceLabel => 'Attendance';
+
+  @override
+  String get physiotherapyPlanLabel => 'Plan';
+
+  @override
+  String get physiotherapyGoalLabel => 'Goal';
+
+  @override
+  String get physiotherapyInstructionsLabel => 'Instructions';
+
+  @override
+  String get physiotherapySessionsPanelTitle => 'Session history';
+
+  @override
+  String get physiotherapyPlanPanelTitle => 'Care plan';
+
+  @override
+  String get physiotherapyProgressNotesPanelTitle => 'Progress notes';
+
+  @override
+  String get physiotherapyFollowUpPanelTitle => 'Follow-ups';
+
+  @override
+  String get physiotherapyBackendGapsPanelTitle => 'Backend gaps';
+
+  @override
+  String get physiotherapyBackendGapBody =>
+      'This workspace uses confirmed shared clinical endpoints and records unavailable dedicated physiotherapy contracts here.';
+
+  @override
+  String get physiotherapyNoRecordsLabel => 'No records yet.';
+
+  @override
+  String get physiotherapyNoInstructionsLabel =>
+      'No therapy instructions recorded.';
+
+  @override
+  String get physiotherapyAcceptReferralAction => 'Accept referral';
+
+  @override
+  String get physiotherapyScheduleSessionAction => 'Schedule session';
+
+  @override
+  String get physiotherapyRecordAssessmentAction => 'Record assessment';
+
+  @override
+  String get physiotherapyRecordSessionAction => 'Record session';
+
+  @override
+  String get physiotherapyMarkAttendanceAction => 'Mark attendance';
+
+  @override
+  String get physiotherapyUpdatePlanAction => 'Update plan';
+
+  @override
+  String get physiotherapyAddProgressNoteAction => 'Add progress note';
+
+  @override
+  String get physiotherapyScheduleFollowUpAction => 'Schedule follow-up';
+
+  @override
+  String get physiotherapyCloseEpisodeAction => 'Close episode';
+
+  @override
+  String get physiotherapyPrintInstructionsAction => 'Print instructions';
+
+  @override
+  String get physiotherapyAcceptReferralDialogTitle =>
+      'Accept physiotherapy referral';
+
+  @override
+  String get physiotherapyScheduleSessionDialogTitle =>
+      'Schedule therapy session';
+
+  @override
+  String get physiotherapyRecordAssessmentDialogTitle =>
+      'Record therapy assessment';
+
+  @override
+  String get physiotherapyRecordSessionDialogTitle => 'Record therapy session';
+
+  @override
+  String get physiotherapyMarkAttendanceDialogTitle =>
+      'Mark session attendance';
+
+  @override
+  String get physiotherapyUpdatePlanDialogTitle => 'Update therapy plan';
+
+  @override
+  String get physiotherapyAddProgressNoteDialogTitle => 'Add progress note';
+
+  @override
+  String get physiotherapyScheduleFollowUpDialogTitle => 'Schedule follow-up';
+
+  @override
+  String get physiotherapyCloseEpisodeDialogTitle => 'Close therapy episode';
+
+  @override
+  String get physiotherapyNoteFieldLabel => 'Note';
+
+  @override
+  String get physiotherapyReasonFieldLabel => 'Reason';
+
+  @override
+  String get physiotherapyAssessmentFieldLabel => 'Assessment';
+
+  @override
+  String get physiotherapyGoalsFieldLabel => 'Goals';
+
+  @override
+  String get physiotherapyPlanFieldLabel => 'Plan';
+
+  @override
+  String get physiotherapyInstructionsFieldLabel => 'Instructions';
+
+  @override
+  String get physiotherapySessionNoteFieldLabel => 'Session note';
+
+  @override
+  String get physiotherapyAttendanceStatusFieldLabel => 'Attendance status';
+
+  @override
+  String get physiotherapySummaryFieldLabel => 'Summary';
+
+  @override
+  String get physiotherapyStartDateFieldLabel => 'Start date';
+
+  @override
+  String get physiotherapyStartTimeFieldLabel => 'Start time';
+
+  @override
+  String get physiotherapyEndDateFieldLabel => 'End date';
+
+  @override
+  String get physiotherapyEndTimeFieldLabel => 'End time';
+
+  @override
+  String get physiotherapyDateFieldLabel => 'Date';
+
+  @override
+  String get physiotherapyTimeFieldLabel => 'Time';
+
+  @override
+  String get physiotherapySaveAction => 'Save';
+
+  @override
+  String get physiotherapyStatusReferral => 'Referral';
+
+  @override
+  String get physiotherapyStatusAccepted => 'Accepted';
+
+  @override
+  String get physiotherapyStatusAssessment => 'Assessment';
+
+  @override
+  String get physiotherapyStatusToday => 'Today';
+
+  @override
+  String get physiotherapyStatusInTreatment => 'In treatment';
+
+  @override
+  String get physiotherapyStatusActivePlan => 'Active plan';
+
+  @override
+  String get physiotherapyStatusFollowUpDue => 'Follow-up due';
+
+  @override
+  String get physiotherapyStatusMissed => 'Missed';
+
+  @override
+  String get physiotherapyStatusCompleted => 'Completed';
+
+  @override
+  String get physiotherapyUnknownStatusLabel => 'Unknown';
+
+  @override
+  String get physiotherapySourceReferral => 'Referral';
+
+  @override
+  String get physiotherapySourceAppointment => 'Appointment';
+
+  @override
+  String get physiotherapySourceCarePlan => 'Care plan';
+
+  @override
+  String get physiotherapySourceProcedure => 'Procedure';
+
+  @override
+  String get physiotherapySourceUnknown => 'Unknown source';
+
+  @override
+  String get physiotherapyAttendanceScheduled => 'Scheduled';
+
+  @override
+  String get physiotherapyAttendanceConfirmed => 'Confirmed';
+
+  @override
+  String get physiotherapyAttendanceInProgress => 'In progress';
+
+  @override
+  String get physiotherapyAttendanceCompleted => 'Completed';
+
+  @override
+  String get physiotherapyAttendanceCancelled => 'Cancelled';
+
+  @override
+  String get physiotherapyAttendanceNoShow => 'No-show';
+
+  @override
+  String get physiotherapyBillingBackendGap => 'No confirmed billing gate';
+
+  @override
+  String get physiotherapyMissingValueLabel => 'Not recorded';
+
+  @override
+  String get physiotherapyBackendGapStatusEndpoint =>
+      'Dedicated physiotherapy episode and therapy status endpoints are not available; status is derived from procedures, care plans, appointments, and follow-ups.';
+
+  @override
+  String get physiotherapyBackendGapBillingEndpoint =>
+      'A physiotherapy-specific billing authorization gate is not available; billing is shown as a documented backend gap.';
+
+  @override
+  String get physiotherapyBackendGapReportEndpoint =>
+      'Generated physiotherapy assessment and discharge report endpoints are not available; printing uses the shared report template.';
+
+  @override
+  String get physiotherapyBackendGapUnknown =>
+      'An unavailable physiotherapy backend contract was recorded.';
+
+  @override
+  String get physiotherapyInstructionsReportTitle =>
+      'Physiotherapy instructions';
+
+  @override
+  String get physiotherapyReportPatientLabel => 'Patient';
+
+  @override
+  String get physiotherapyReportEncounterLabel => 'Encounter';
+
+  @override
+  String get physiotherapyReportPlanLabel => 'Plan and goals';
+
+  @override
+  String get physiotherapyReportInstructionsLabel => 'Instructions';
+
+  @override
+  String get physiotherapyReportSessionsLabel => 'Sessions';
+
+  @override
+  String get physiotherapyReportFooterNote =>
+      'Generated from confirmed shared clinical workflow data.';
 }

@@ -21,8 +21,9 @@ final class BiomedicalWorkbenchDto {
 
     return BiomedicalWorkbenchDto(
       workbench: BiomedicalWorkbench(
-        summary: BiomedicalSummaryDto.fromList(_list(data['summary']))
-            .toEntity(),
+        summary: BiomedicalSummaryDto.fromList(
+          _list(data['summary']),
+        ).toEntity(),
         queues: _list(data['queue_summaries'])
             .map((Object? item) => BiomedicalQueueSummaryDto(_map(item)))
             .map((BiomedicalQueueSummaryDto dto) => dto.toEntity())
@@ -152,14 +153,16 @@ final class BiomedicalLookupOptionDto {
 
 final class BiomedicalAssetDto {
   const BiomedicalAssetDto(this.json, {String? resource})
-      : resourceOverride = resource;
+    : resourceOverride = resource;
 
   final BiomedicalJsonMap json;
   final String? resourceOverride;
 
   BiomedicalAsset toEntity() {
     final String resource =
-        resourceOverride ?? _string(json['resource']) ?? BiomedicalResources.registries;
+        resourceOverride ??
+        _string(json['resource']) ??
+        BiomedicalResources.registries;
     final String? id = _firstNonEmpty(<String?>[
       _string(json['id']),
       _string(json['human_friendly_id']),
@@ -219,7 +222,8 @@ final class BiomedicalAssetDto {
         _string(json['equipment_category_label']),
         _string(_map(json['category'])['name']),
       ]),
-      engineerId: _string(json['engineer_id']) ??
+      engineerId:
+          _string(json['engineer_id']) ??
           _string(json['assigned_engineer_user_id']),
       engineerLabel: _string(json['engineer_label']),
       nextDueAt: _date(json['next_due_at']),
@@ -262,7 +266,8 @@ final class BiomedicalMutationResultDto {
       asset: resource == null
           ? null
           : BiomedicalAssetDto(json, resource: resource).toEntity(),
-      workOrderId: _string(workOrder['id']) ?? _string(workOrder['human_friendly_id']),
+      workOrderId:
+          _string(workOrder['id']) ?? _string(workOrder['human_friendly_id']),
       deepLink: _string(json['deep_link']),
       raw: json,
     );

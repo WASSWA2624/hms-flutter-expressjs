@@ -72,17 +72,15 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
 
     final Set<String> matchedAppointmentIds = <String>{};
     final List<TherapyWorkItem> items = <TherapyWorkItem>[];
-    for (final Result<_PhysiotherapyEncounterBundle> result
-        in bundleResults) {
+    for (final Result<_PhysiotherapyEncounterBundle> result in bundleResults) {
       final _PhysiotherapyEncounterBundle bundle = _successValue(result);
       final TherapyWorkItem base = bundle.summary.toBaseWorkItem();
-      final List<PhysiotherapyRecord> matchingAppointments =
-          therapyAppointments
-              .where(
-                (PhysiotherapyRecord appointment) =>
-                    _appointmentMatchesWorkItem(appointment, base),
-              )
-              .toList(growable: false);
+      final List<PhysiotherapyRecord> matchingAppointments = therapyAppointments
+          .where(
+            (PhysiotherapyRecord appointment) =>
+                _appointmentMatchesWorkItem(appointment, base),
+          )
+          .toList(growable: false);
       if (!bundle.hasTherapyContent && matchingAppointments.isEmpty) {
         continue;
       }
@@ -99,18 +97,19 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
       items.add(_workItemFromAppointment(appointment));
     }
 
-    final List<TherapyWorkItem> filteredItems = items
-        .where(
-          (TherapyWorkItem item) =>
-              item.matchesSearch(
-                query.search,
-                field: query.filters.searchField,
-              ) &&
-              item.matchesFilters(query.filters) &&
-              physiotherapyItemMatchesScope(item, query.scope),
-        )
-        .toList(growable: false)
-      ..sort(_workItemSort);
+    final List<TherapyWorkItem> filteredItems =
+        items
+            .where(
+              (TherapyWorkItem item) =>
+                  item.matchesSearch(
+                    query.search,
+                    field: query.filters.searchField,
+                  ) &&
+                  item.matchesFilters(query.filters) &&
+                  physiotherapyItemMatchesScope(item, query.scope),
+            )
+            .toList(growable: false)
+          ..sort(_workItemSort);
 
     return Result<AppPage<TherapyWorkItem>>.success(
       _pageSlice(filteredItems, query.pageRequest),
@@ -315,7 +314,10 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
       data: _withoutEmpty(<String, Object?>{
         'encounter_id': item.apiEncounterId,
         'author_user_id': authorUserId,
-        'note': _joinLines(<String>['Physiotherapy progress note:', note.trim()]),
+        'note': _joinLines(<String>[
+          'Physiotherapy progress note:',
+          note.trim(),
+        ]),
       }),
       decoder: (_) {},
     );
@@ -440,30 +442,29 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
   Future<Result<_PhysiotherapyEncounterBundle>> _loadEncounterBundle(
     PhysiotherapyEncounterSummary summary,
   ) async {
-    final List<Result<List<PhysiotherapyRecord>>> results = await Future.wait(
-      <Future<Result<List<PhysiotherapyRecord>>>>[
-        _fetchRelatedList(
-          HmsApiResource.procedures,
-          summary.encounterId,
-          PhysiotherapyRecordKind.procedure,
-        ),
-        _fetchRelatedList(
-          HmsApiResource.carePlans,
-          summary.encounterId,
-          PhysiotherapyRecordKind.carePlan,
-        ),
-        _fetchRelatedList(
-          HmsApiResource.clinicalNotes,
-          summary.encounterId,
-          PhysiotherapyRecordKind.clinicalNote,
-        ),
-        _fetchRelatedList(
-          HmsApiResource.followUps,
-          summary.encounterId,
-          PhysiotherapyRecordKind.followUp,
-        ),
-      ],
-    );
+    final List<Result<List<PhysiotherapyRecord>>> results =
+        await Future.wait(<Future<Result<List<PhysiotherapyRecord>>>>[
+          _fetchRelatedList(
+            HmsApiResource.procedures,
+            summary.encounterId,
+            PhysiotherapyRecordKind.procedure,
+          ),
+          _fetchRelatedList(
+            HmsApiResource.carePlans,
+            summary.encounterId,
+            PhysiotherapyRecordKind.carePlan,
+          ),
+          _fetchRelatedList(
+            HmsApiResource.clinicalNotes,
+            summary.encounterId,
+            PhysiotherapyRecordKind.clinicalNote,
+          ),
+          _fetchRelatedList(
+            HmsApiResource.followUps,
+            summary.encounterId,
+            PhysiotherapyRecordKind.followUp,
+          ),
+        ]);
 
     final AppFailure? failure = _firstFailure(results);
     if (failure != null) {
@@ -534,9 +535,7 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
       data: _withoutEmpty(<String, Object?>{
         'encounter_id': item.apiEncounterId,
         'plan': plan.trim(),
-        'start_date': (startDate ?? DateTime.now())
-            .toUtc()
-            .toIso8601String(),
+        'start_date': (startDate ?? DateTime.now()).toUtc().toIso8601String(),
         'end_date': endDate?.toUtc().toIso8601String(),
       }),
       decoder: (_) {},
@@ -580,18 +579,12 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
     final List<PhysiotherapyRecord> procedures = _therapyOrAll(
       bundle.procedures,
     );
-    final List<PhysiotherapyRecord> carePlans = _therapyOrAll(
-      bundle.carePlans,
-    );
+    final List<PhysiotherapyRecord> carePlans = _therapyOrAll(bundle.carePlans);
     final List<PhysiotherapyRecord> progressNotes = _therapyOrAll(
       bundle.progressNotes,
     );
-    final List<PhysiotherapyRecord> followUps = _therapyOrAll(
-      bundle.followUps,
-    );
-    final PhysiotherapyRecord? nextAppointment = _nextAppointment(
-      appointments,
-    );
+    final List<PhysiotherapyRecord> followUps = _therapyOrAll(bundle.followUps);
+    final PhysiotherapyRecord? nextAppointment = _nextAppointment(appointments);
     final PhysiotherapyRecord? latestProcedure = _latestRecord(procedures);
     final PhysiotherapyRecord? latestPlan = _latestRecord(carePlans);
     final PhysiotherapyRecord? latestFollowUp = _latestRecord(followUps);
@@ -615,7 +608,10 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
         appointments: appointments,
       ),
       sourceId:
-          latestProcedure?.id ?? latestPlan?.id ?? nextAppointment?.id ?? base.id,
+          latestProcedure?.id ??
+          latestPlan?.id ??
+          nextAppointment?.id ??
+          base.id,
       sourceTitle:
           latestProcedure?.displayTitle ??
           latestPlan?.displayTitle ??
@@ -631,7 +627,6 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
         appointments: appointments,
       ),
       attendanceStatus: nextAppointment?.status,
-      billingStatus: 'BACKEND_GAP',
       therapistUserId: nextAppointment?.providerUserId ?? base.therapistUserId,
       therapistName: nextAppointment?.providerName ?? base.therapistName,
       appointmentId: nextAppointment?.id,
@@ -649,7 +644,9 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
         base.lastActivityAt,
       ]),
       plan: _extractSection(plan, 'Plan') ?? plan,
-      goals: _extractSection(plan, 'Goals') ?? _extractSection(assessment, 'Goals'),
+      goals:
+          _extractSection(plan, 'Goals') ??
+          _extractSection(assessment, 'Goals'),
       instructions:
           _extractSection(plan, 'Instructions') ??
           _extractSection(assessment, 'Instructions'),
@@ -669,7 +666,6 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
       referralReason: appointment.description,
       status: _statusForAppointment(appointment),
       attendanceStatus: appointment.status,
-      billingStatus: 'BACKEND_GAP',
       therapistUserId: appointment.providerUserId,
       therapistName: appointment.providerName,
       appointmentId: appointment.id,
@@ -727,17 +723,18 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
 
   PhysiotherapyRecord? _nextAppointment(List<PhysiotherapyRecord> records) {
     final DateTime now = DateTime.now();
-    final List<PhysiotherapyRecord> future = records
-        .where(
-          (PhysiotherapyRecord record) =>
-              record.startAt != null &&
-              !record.startAt!.toLocal().isBefore(now) &&
-              !_isTerminalAppointment(record.status),
-        )
-        .toList(growable: false)
-      ..sort((PhysiotherapyRecord left, PhysiotherapyRecord right) {
-        return left.startAt!.compareTo(right.startAt!);
-      });
+    final List<PhysiotherapyRecord> future =
+        records
+            .where(
+              (PhysiotherapyRecord record) =>
+                  record.startAt != null &&
+                  !record.startAt!.toLocal().isBefore(now) &&
+                  !_isTerminalAppointment(record.status),
+            )
+            .toList(growable: false)
+          ..sort((PhysiotherapyRecord left, PhysiotherapyRecord right) {
+            return left.startAt!.compareTo(right.startAt!);
+          });
     if (future.isNotEmpty) {
       return future.first;
     }
@@ -957,14 +954,15 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
 
   String _appointmentSearchText(TherapyWorkItem item) {
     return <String?>[
-      'physio',
-      item.encounterPublicId,
-      item.encounterId,
-      item.patientPublicId,
-      item.patientDisplayName,
-    ].whereType<String>().where((String value) => value.trim().isNotEmpty).join(
-      ' ',
-    );
+          'physio',
+          item.encounterPublicId,
+          item.encounterId,
+          item.patientPublicId,
+          item.patientDisplayName,
+        ]
+        .whereType<String>()
+        .where((String value) => value.trim().isNotEmpty)
+        .join(' ');
   }
 
   String _appointmentReason(TherapyWorkItem item, String? note) {

@@ -279,9 +279,7 @@ final class CommunicationsWorkspaceController
     );
   }
 
-  Future<AppFailure?> createConversation(
-    CommunicationConversationDraft draft,
-  ) {
+  Future<AppFailure?> createConversation(CommunicationConversationDraft draft) {
     return _submitAction(() => _repository.createConversation(draft), (
       CommunicationsWorkspaceState current,
     ) async {
@@ -293,7 +291,8 @@ final class CommunicationsWorkspaceController
               <CommunicationsConversation>[
                 conversation,
                 ...current.conversations.items.where(
-                  (CommunicationsConversation item) => item.id != conversation.id,
+                  (CommunicationsConversation item) =>
+                      item.id != conversation.id,
                 ),
               ];
           _emit(
@@ -439,8 +438,7 @@ final class CommunicationsWorkspaceController
           _emit(
             current.copyWith(
               summary: current.summary.copyWith(
-                unreadThreads:
-                    current.summary.unreadThreads + unreadDelta < 0
+                unreadThreads: current.summary.unreadThreads + unreadDelta < 0
                     ? 0
                     : current.summary.unreadThreads + unreadDelta,
                 archivedThreads: _archivedCountAfter(
@@ -469,7 +467,8 @@ final class CommunicationsWorkspaceController
 
   Future<AppFailure?> _submitAction<T>(
     Future<Result<T>> Function() submit,
-    Future<AppFailure?> Function(CommunicationsWorkspaceState current) onSuccess, {
+    Future<AppFailure?> Function(CommunicationsWorkspaceState current)
+    onSuccess, {
     bool alreadySubmittedByHandler = false,
   }) async {
     final CommunicationsWorkspaceState? current = _currentState;
@@ -519,10 +518,7 @@ List<T> _replaceItem<T>(
   bool replaced = false;
   final List<T> nextItems = <T>[
     for (final T item in items)
-      if (idOf(item) == idOf(replacement)) ...<T>[
-        replacement,
-      ] else
-        item,
+      if (idOf(item) == idOf(replacement)) ...<T>[replacement] else item,
   ];
   replaced = items.any((T item) => idOf(item) == idOf(replacement));
   if (!replaced) {

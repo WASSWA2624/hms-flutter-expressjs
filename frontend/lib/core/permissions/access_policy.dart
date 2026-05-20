@@ -78,6 +78,9 @@ abstract final class AppPermissions {
   static const communicationsRead = AppPermission('communications:read');
   static const communicationsWrite = AppPermission('communications:write');
   static const communicationsDelete = AppPermission('communications:delete');
+  static const integrationRead = AppPermission('integration:read');
+  static const integrationWrite = AppPermission('integration:write');
+  static const integrationDelete = AppPermission('integration:delete');
   static const reportsRead = AppPermission('reports:read');
   static const reportsWrite = AppPermission('reports:write');
   static const reportsDelete = AppPermission('reports:delete');
@@ -143,6 +146,9 @@ abstract final class AppPermissions {
     communicationsRead,
     communicationsWrite,
     communicationsDelete,
+    integrationRead,
+    integrationWrite,
+    integrationDelete,
     reportsRead,
     reportsWrite,
     reportsDelete,

@@ -13,7 +13,10 @@ final class ReportsWorkspaceOverviewDto {
     Object? responseData, {
     required AppPageRequest request,
   }) {
-    return ReportsWorkspaceOverviewDto(_dataMap(responseData), request: request);
+    return ReportsWorkspaceOverviewDto(
+      _dataMap(responseData),
+      request: request,
+    );
   }
 
   ReportsWorkspaceOverview toEntity() {
@@ -372,7 +375,8 @@ final class ComplianceLogItemDto {
     return ComplianceLogItem(
       id: _id(),
       kind: kind,
-      title: _joinDisplay(<String?>[
+      title:
+          _joinDisplay(<String?>[
             _string(json['action']),
             _string(json['entity']),
           ]) ??
@@ -384,7 +388,8 @@ final class ComplianceLogItemDto {
       userLabel: _string(json['user_label']),
       action: _string(json['action']),
       entity: _string(json['entity']),
-      recordReference: _string(json['entity_reference']) ??
+      recordReference:
+          _string(json['entity_reference']) ??
           _string(json['entity_id']) ??
           _string(json['display_id']),
       ipAddress: _string(json['ip_address']),
@@ -462,7 +467,11 @@ List<ReportsLookupOption> _options(Object? value) {
       .map((ReportsJsonMap item) {
         return ReportsLookupOption(
           id: _firstString(<Object?>[item['id'], item['key']]),
-          label: _firstString(<Object?>[item['label'], item['name'], item['id']]),
+          label: _firstString(<Object?>[
+            item['label'],
+            item['name'],
+            item['id'],
+          ]),
           subtitle: _string(item['subtitle']),
           meta: _map(item['meta']),
         );

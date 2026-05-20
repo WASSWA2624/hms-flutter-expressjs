@@ -389,12 +389,8 @@ final class BiomedicalAsset {
 
   String get displayId => _firstNonEmpty(<String?>[humanFriendlyId, id]) ?? id;
 
-  String get displayTitle => _firstNonEmpty(<String?>[
-        title,
-        equipmentLabel,
-        subtitle,
-        displayId,
-      ]) ??
+  String get displayTitle =>
+      _firstNonEmpty(<String?>[title, equipmentLabel, subtitle, displayId]) ??
       id;
 
   String? get displaySubtitle {

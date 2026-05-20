@@ -154,10 +154,7 @@ final class IntegrationsRepositoryImpl implements IntegrationsRepository {
   @override
   Future<Result<void>> deleteApiKeyPermission(String permissionGrantId) {
     return _apiClient.delete<void>(
-      ApiEndpoints.byId(
-        HmsApiResource.apiKeyPermissions,
-        permissionGrantId,
-      ),
+      ApiEndpoints.byId(HmsApiResource.apiKeyPermissions, permissionGrantId),
       decoder: (_) {},
     );
   }
@@ -246,7 +243,8 @@ final class IntegrationsRepositoryImpl implements IntegrationsRepository {
   Future<Result<IntegrationLogRecord>> getLog(String logId) {
     return _apiClient.get<IntegrationLogRecord>(
       ApiEndpoints.byId(HmsApiResource.integrationLogs, logId),
-      decoder: (Object? data) => IntegrationLogDto.fromResponse(data).toEntity(),
+      decoder: (Object? data) =>
+          IntegrationLogDto.fromResponse(data).toEntity(),
     );
   }
 

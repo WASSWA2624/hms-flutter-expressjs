@@ -515,7 +515,9 @@ final class CommunicationsWorkspaceState {
   int get unreadBadgeCount => summary.unreadThreads + metrics.unread;
 
   int get workloadCount {
-    return summary.unreadThreads + metrics.attentionRequired + metrics.failedDeliveries;
+    return summary.unreadThreads +
+        metrics.attentionRequired +
+        metrics.failedDeliveries;
   }
 
   CommunicationsWorkspaceState copyWith({
@@ -572,7 +574,10 @@ final class CommunicationsWorkspaceState {
 
 @immutable
 final class CommunicationMessageDraft {
-  const CommunicationMessageDraft({required this.content, this.replyToMessageId});
+  const CommunicationMessageDraft({
+    required this.content,
+    this.replyToMessageId,
+  });
 
   final String content;
   final String? replyToMessageId;

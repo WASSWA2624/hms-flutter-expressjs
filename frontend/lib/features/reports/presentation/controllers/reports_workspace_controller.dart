@@ -94,6 +94,25 @@ final class ReportsWorkspaceController
     );
   }
 
+  Future<AppFailure?> applyReportFilters({
+    String? status,
+    String? format,
+    String? dataset,
+  }) {
+    return _applyQuery(
+      (ReportsWorkspaceQuery current) => current.copyWith(
+        status: status,
+        format: format,
+        dataset: dataset,
+        pageRequest: current.pageRequest.first(),
+        clearStatus: status == null || status.trim().isEmpty,
+        clearFormat: format == null || format.trim().isEmpty,
+        clearDataset: dataset == null || dataset.trim().isEmpty,
+      ),
+      clearSelections: true,
+    );
+  }
+
   Future<AppFailure?> applyFormat(String? value) {
     return _applyQuery(
       (ReportsWorkspaceQuery current) => current.copyWith(
@@ -118,9 +137,7 @@ final class ReportsWorkspaceController
 
   Future<AppFailure?> changePage(AppPageRequest request) {
     return _applyQuery(
-      (ReportsWorkspaceQuery current) => current.copyWith(
-        pageRequest: request,
-      ),
+      (ReportsWorkspaceQuery current) => current.copyWith(pageRequest: request),
     );
   }
 
@@ -165,7 +182,6 @@ final class ReportsWorkspaceController
         resource: ReportsWorkspaceResource.reportRuns,
         pageRequest: current.pageRequest.first(),
         clearStatus: true,
-        clearFormat: false,
       ),
     );
   }
@@ -269,10 +285,19 @@ final class ReportsWorkspaceController
     return result.when<Future<AppFailure?>>(
       success: (ReportsWorkspaceItem item) async {
         final ReportsWorkspaceState latest = _currentState!;
-        if (onSuccessQuery != null) {
-          _emit(latest.copyWith(query: onSuccessQuery(latest.query)));
-        }
-        return _refreshCurrent(preferredItemId: item.id);
+        final ReportsWorkspaceQuery nextQuery =
+            onSuccessQuery?.call(latest.query) ?? latest.query;
+        _emit(
+          latest.copyWith(
+            query: nextQuery,
+            overview: _mergeActionItem(latest.overview, item, nextQuery),
+            selectedItem: item,
+            isRefreshing: false,
+            isSaving: false,
+            clearSelectedComplianceLog: true,
+          ),
+        );
+        return null;
       },
       failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
@@ -389,7 +414,8 @@ final class ReportsWorkspaceController
         }
       }
     }
-    return overview.items.items.firstOrNull ?? overview.schedules.items.firstOrNull;
+    return overview.items.items.firstOrNull ??
+        overview.schedules.items.firstOrNull;
   }
 
   ComplianceLogItem? _selectComplianceLog(
@@ -443,4 +469,74 @@ AppPage<ComplianceLogItem> _emptyCompliancePage(AppPageRequest request) {
     request: request,
     totalItemCount: 0,
   );
+}
+
+ReportsWorkspaceOverview _mergeActionItem(
+  ReportsWorkspaceOverview overview,
+  ReportsWorkspaceItem item,
+  ReportsWorkspaceQuery query,
+) {
+  if (item.isSchedule) {
+    return overview.copyWith(schedules: _upsertPage(overview.schedules, item));
+  }
+
+  if (!_itemBelongsToResource(item, query.resource)) {
+    return overview;
+  }
+
+  if (overview.items.items.every(
+    (ReportsWorkspaceItem existing) =>
+        _itemBelongsToResource(existing, query.resource),
+  )) {
+    return overview.copyWith(items: _upsertPage(overview.items, item));
+  }
+
+  return overview.copyWith(
+    items: AppPage<ReportsWorkspaceItem>(
+      items: <ReportsWorkspaceItem>[item],
+      request: query.pageRequest,
+      totalItemCount: 1,
+    ),
+  );
+}
+
+AppPage<ReportsWorkspaceItem> _upsertPage(
+  AppPage<ReportsWorkspaceItem> page,
+  ReportsWorkspaceItem item,
+) {
+  final bool replaced = page.items.any((ReportsWorkspaceItem existing) {
+    return existing.id == item.id;
+  });
+
+  final List<ReportsWorkspaceItem> nextItems = replaced
+      ? <ReportsWorkspaceItem>[
+          for (final ReportsWorkspaceItem existing in page.items)
+            existing.id == item.id ? item : existing,
+        ]
+      : <ReportsWorkspaceItem>[item, ...page.items];
+  final int? total = page.totalItemCount;
+  return AppPage<ReportsWorkspaceItem>(
+    items: nextItems,
+    request: page.request,
+    totalItemCount: total == null
+        ? null
+        : (nextItems.length > total ? nextItems.length : total),
+  );
+}
+
+bool _itemBelongsToResource(
+  ReportsWorkspaceItem item,
+  ReportsWorkspaceResource resource,
+) {
+  return switch (resource) {
+    ReportsWorkspaceResource.reportDefinitions =>
+      item.kind == ReportItemKind.definition,
+    ReportsWorkspaceResource.reportRuns => item.kind == ReportItemKind.run,
+    ReportsWorkspaceResource.dashboardWidgets =>
+      item.kind == ReportItemKind.dashboardWidget,
+    ReportsWorkspaceResource.kpiSnapshots =>
+      item.kind == ReportItemKind.kpiSnapshot,
+    ReportsWorkspaceResource.analyticsEvents =>
+      item.kind == ReportItemKind.analyticsEvent,
+  };
 }

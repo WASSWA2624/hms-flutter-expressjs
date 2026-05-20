@@ -17,13 +17,12 @@ final class CommunicationsWorkspaceDto {
     final CommunicationsJsonMap pagination = _map(data['pagination']);
     final CommunicationsJsonMap totals = _map(pagination['totals']);
     final AppPageRequest request = query.pageRequest;
-    final List<CommunicationsConversation> conversations = _list(
-      data['conversations'],
-    )
-        .map(CommunicationsConversationDto.new)
-        .map((CommunicationsConversationDto dto) => dto.toEntity())
-        .where((CommunicationsConversation item) => item.id.isNotEmpty)
-        .toList(growable: false);
+    final List<CommunicationsConversation> conversations =
+        _list(data['conversations'])
+            .map(CommunicationsConversationDto.new)
+            .map((CommunicationsConversationDto dto) => dto.toEntity())
+            .where((CommunicationsConversation item) => item.id.isNotEmpty)
+            .toList(growable: false);
     final List<NotificationItem> notifications = _list(data['notifications'])
         .map(NotificationItemDto.new)
         .map((NotificationItemDto dto) => dto.toEntity())

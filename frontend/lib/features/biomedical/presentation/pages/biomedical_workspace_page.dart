@@ -179,7 +179,8 @@ class _BiomedicalWorkspaceContentState
           value: state.workbench.summary.overduePm,
           icon: Icons.event_busy_outlined,
           tone: AppWorkspaceStatusTone.warning,
-          onPressed: () => _applyQueue(controller, state, BiomedicalQueues.overduePm),
+          onPressed: () =>
+              _applyQueue(controller, state, BiomedicalQueues.overduePm),
         ),
         _summaryCard(
           context,
@@ -187,11 +188,8 @@ class _BiomedicalWorkspaceContentState
           value: state.workbench.summary.openWorkOrders,
           icon: Icons.build_outlined,
           tone: AppWorkspaceStatusTone.info,
-          onPressed: () => _applyQueue(
-            controller,
-            state,
-            BiomedicalQueues.openWorkOrders,
-          ),
+          onPressed: () =>
+              _applyQueue(controller, state, BiomedicalQueues.openWorkOrders),
         ),
         _summaryCard(
           context,
@@ -199,11 +197,8 @@ class _BiomedicalWorkspaceContentState
           value: state.workbench.summary.criticalDowntime,
           icon: Icons.power_settings_new_outlined,
           tone: AppWorkspaceStatusTone.error,
-          onPressed: () => _applyQueue(
-            controller,
-            state,
-            BiomedicalQueues.criticalDowntime,
-          ),
+          onPressed: () =>
+              _applyQueue(controller, state, BiomedicalQueues.criticalDowntime),
         ),
         _summaryCard(
           context,
@@ -211,11 +206,8 @@ class _BiomedicalWorkspaceContentState
           value: state.workbench.summary.activeRecalls,
           icon: Icons.campaign_outlined,
           tone: AppWorkspaceStatusTone.warning,
-          onPressed: () => _applyQueue(
-            controller,
-            state,
-            BiomedicalQueues.recallActions,
-          ),
+          onPressed: () =>
+              _applyQueue(controller, state, BiomedicalQueues.recallActions),
         ),
       ],
       body: _BiomedicalWorklistPanel(
@@ -349,8 +341,8 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
           onFilterChanged: (AppSearchBarFilterValue value) {
             unawaited(
               controller.applyFilters(
-                panel: value.option(_panelFilterKey) ??
-                    BiomedicalPanels.registry,
+                panel:
+                    value.option(_panelFilterKey) ?? BiomedicalPanels.registry,
                 status: value.option(_statusFilterKey),
                 priority: value.option(_priorityFilterKey),
                 facilityId: value.option(_facilityFilterKey),
@@ -381,9 +373,8 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
         },
         onPageChanged: controller.changePage,
         onRowSelected: controller.selectAsset,
-        itemKeyBuilder: (BiomedicalAsset item) => ValueKey<String>(
-          '${item.resource}:${item.displayId}',
-        ),
+        itemKeyBuilder: (BiomedicalAsset item) =>
+            ValueKey<String>('${item.resource}:${item.displayId}'),
         emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
           title: l10n.biomedicalNoAssetsTitle,
           body: l10n.biomedicalNoAssetsBody,
@@ -406,10 +397,7 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
             id: 'equipment',
             label: l10n.biomedicalEquipmentColumnLabel,
             sortComparator: (BiomedicalAsset left, BiomedicalAsset right) =>
-                appListTableCompareText(
-                  left.displayTitle,
-                  right.displayTitle,
-                ),
+                appListTableCompareText(left.displayTitle, right.displayTitle),
             cellBuilder: (_, BiomedicalAsset item) {
               return _AssetTitleCell(asset: item);
             },
@@ -433,7 +421,10 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
             label: l10n.biomedicalRiskColumnLabel,
             cellBuilder: (_, BiomedicalAsset item) {
               return _statusBadge(
-                _labelForCode(item.priority, fallback: l10n.biomedicalNotAvailableLabel),
+                _labelForCode(
+                  item.priority,
+                  fallback: l10n.biomedicalNotAvailableLabel,
+                ),
                 _toneForPriority(item.priority),
               );
             },
@@ -443,7 +434,10 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
             label: l10n.biomedicalStatusColumnLabel,
             cellBuilder: (_, BiomedicalAsset item) {
               return _statusBadge(
-                _labelForCode(item.status, fallback: l10n.biomedicalNotAvailableLabel),
+                _labelForCode(
+                  item.status,
+                  fallback: l10n.biomedicalNotAvailableLabel,
+                ),
                 _toneForStatus(item.status),
               );
             },
@@ -452,7 +446,9 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
             id: 'owner',
             label: l10n.biomedicalOwnerColumnLabel,
             cellBuilder: (_, BiomedicalAsset item) {
-              return Text(_dash(item.engineerLabel ?? item.facilityLabel, l10n));
+              return Text(
+                _dash(item.engineerLabel ?? item.facilityLabel, l10n),
+              );
             },
           ),
           AppListTableColumn<BiomedicalAsset>(
@@ -507,7 +503,10 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
               patientNumberLabel: l10n.biomedicalAssetTagLabel,
               demographics: asset.displaySubtitle,
               status: AppWorkspaceStatus(
-                label: _labelForCode(asset.priority, fallback: l10n.biomedicalNotAvailableLabel),
+                label: _labelForCode(
+                  asset.priority,
+                  fallback: l10n.biomedicalNotAvailableLabel,
+                ),
                 tone: _toneForPriority(asset.priority),
               ),
               fields: <AppWorkspacePatientContextField>[
@@ -953,16 +952,16 @@ class _AssetTitleCell extends StatelessWidget {
         Text(
           asset.displayTitle,
           overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         Text(
           _dash(asset.displaySubtitle, l10n),
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -1144,9 +1143,7 @@ class _BiomedicalActionDialogState
             options: _selectOptions(lookups.equipment),
             isRequired: true,
             validator: AppValidators.requiredValue<String>(
-              l10n.biomedicalFieldRequiredLabel(
-                l10n.biomedicalEquipmentLabel,
-              ),
+              l10n.biomedicalFieldRequiredLabel(l10n.biomedicalEquipmentLabel),
             ),
             onChanged: (String? value) {
               setState(() => _selectedEquipmentId = value);
@@ -1158,9 +1155,7 @@ class _BiomedicalActionDialogState
             labelText: l10n.biomedicalAssetNameLabel,
             isRequired: true,
             validator: AppValidators.requiredText(
-              l10n.biomedicalFieldRequiredLabel(
-                l10n.biomedicalAssetNameLabel,
-              ),
+              l10n.biomedicalFieldRequiredLabel(l10n.biomedicalAssetNameLabel),
             ),
           ),
           AppTextField(
@@ -1406,27 +1401,39 @@ class _BiomedicalActionDialogState
     final BiomedicalAsset? asset = widget.asset;
     return switch (widget.kind) {
       _BiomedicalActionKind.asset => controller.saveAsset(
-          payload,
-          existing: asset?.isRegistryAsset == true ? asset : null,
-        ),
+        payload,
+        existing: asset?.isRegistryAsset == true ? asset : null,
+      ),
       _BiomedicalActionKind.transfer => controller.transferLocation(payload),
-      _BiomedicalActionKind.maintenance =>
-        controller.scheduleMaintenance(payload),
-      _BiomedicalActionKind.workOrder =>
-        controller.saveWorkOrder(payload, existing: asset),
-      _BiomedicalActionKind.startWorkOrder =>
-        controller.startWorkOrder(asset!, payload),
-      _BiomedicalActionKind.returnToService =>
-        controller.returnToService(asset!, payload),
-      _BiomedicalActionKind.calibration =>
-        controller.recordCalibration(payload),
+      _BiomedicalActionKind.maintenance => controller.scheduleMaintenance(
+        payload,
+      ),
+      _BiomedicalActionKind.workOrder => controller.saveWorkOrder(
+        payload,
+        existing: asset,
+      ),
+      _BiomedicalActionKind.startWorkOrder => controller.startWorkOrder(
+        asset!,
+        payload,
+      ),
+      _BiomedicalActionKind.returnToService => controller.returnToService(
+        asset!,
+        payload,
+      ),
+      _BiomedicalActionKind.calibration => controller.recordCalibration(
+        payload,
+      ),
       _BiomedicalActionKind.safety => controller.recordSafetyTest(payload),
       _BiomedicalActionKind.downtime => controller.reportDowntime(payload),
-      _BiomedicalActionKind.closeDowntime =>
-        controller.closeDowntime(asset!, payload),
+      _BiomedicalActionKind.closeDowntime => controller.closeDowntime(
+        asset!,
+        payload,
+      ),
       _BiomedicalActionKind.incident => controller.logIncident(payload),
-      _BiomedicalActionKind.recall =>
-        controller.acknowledgeRecall(asset!, payload),
+      _BiomedicalActionKind.recall => controller.acknowledgeRecall(
+        asset!,
+        payload,
+      ),
       _BiomedicalActionKind.disposal => controller.disposeOrTransfer(payload),
       _BiomedicalActionKind.fault => controller.createFaultReport(payload),
       _BiomedicalActionKind.report => Future<AppFailure?>.value(),
@@ -1463,8 +1470,10 @@ class _BiomedicalActionDialogState
         'frequency_days': int.tryParse(_frequencyDaysController.text.trim()),
         'is_active': true,
       },
-      if (_usesDateOne) _dateOnePayloadKey: _normalizedDate(_dateOneController.text),
-      if (_usesDateTwo) _dateTwoPayloadKey: _normalizedDate(_dateTwoController.text),
+      if (_usesDateOne)
+        _dateOnePayloadKey: _normalizedDate(_dateOneController.text),
+      if (_usesDateTwo)
+        _dateTwoPayloadKey: _normalizedDate(_dateTwoController.text),
       if (_showsResult) 'result': _resultController.text.trim(),
       if (_showsReason) 'reason': _reasonController.text.trim(),
       if (_showsDescription) 'description': _descriptionController.text.trim(),
@@ -1529,6 +1538,7 @@ class _BiomedicalActionDialogState
       _ => false,
     };
   }
+
   bool get _usesFacility =>
       widget.kind == _BiomedicalActionKind.asset ||
       widget.kind == _BiomedicalActionKind.transfer ||
@@ -1548,7 +1558,8 @@ class _BiomedicalActionDialogState
       widget.kind == _BiomedicalActionKind.incident ||
       widget.kind == _BiomedicalActionKind.fault;
   bool get _usesEngineer => widget.kind == _BiomedicalActionKind.workOrder;
-  bool get _showsWorkOrderTitle => widget.kind == _BiomedicalActionKind.workOrder;
+  bool get _showsWorkOrderTitle =>
+      widget.kind == _BiomedicalActionKind.workOrder;
   bool get _showsPlanFields => widget.kind == _BiomedicalActionKind.maintenance;
   bool get _usesDateOne =>
       widget.kind != _BiomedicalActionKind.asset &&
@@ -1587,17 +1598,18 @@ class _BiomedicalActionDialogState
 
   String _dialogTitle(AppLocalizations l10n) {
     return switch (widget.kind) {
-      _BiomedicalActionKind.asset => widget.asset == null
-          ? l10n.biomedicalRegisterAssetDialogTitle
-          : l10n.biomedicalEditAssetDialogTitle,
+      _BiomedicalActionKind.asset =>
+        widget.asset == null
+            ? l10n.biomedicalRegisterAssetDialogTitle
+            : l10n.biomedicalEditAssetDialogTitle,
       _BiomedicalActionKind.transfer =>
         l10n.biomedicalTransferLocationDialogTitle,
       _BiomedicalActionKind.maintenance =>
         l10n.biomedicalScheduleMaintenanceDialogTitle,
-      _BiomedicalActionKind.workOrder => widget.asset?.resource ==
-              BiomedicalResources.workOrders
-          ? l10n.biomedicalUpdateWorkOrderDialogTitle
-          : l10n.biomedicalWorkOrderDialogTitle,
+      _BiomedicalActionKind.workOrder =>
+        widget.asset?.resource == BiomedicalResources.workOrders
+            ? l10n.biomedicalUpdateWorkOrderDialogTitle
+            : l10n.biomedicalWorkOrderDialogTitle,
       _BiomedicalActionKind.startWorkOrder =>
         l10n.biomedicalStartWorkOrderDialogTitle,
       _BiomedicalActionKind.returnToService =>
@@ -1619,7 +1631,9 @@ class _BiomedicalActionDialogState
   String _submitLabel(AppLocalizations l10n) {
     return switch (widget.kind) {
       _BiomedicalActionKind.asset =>
-        widget.asset == null ? l10n.biomedicalCreateAction : l10n.biomedicalSaveAction,
+        widget.asset == null
+            ? l10n.biomedicalCreateAction
+            : l10n.biomedicalSaveAction,
       _ => l10n.biomedicalSubmitAction,
     };
   }
@@ -1630,7 +1644,8 @@ class _BiomedicalActionDialogState
       _BiomedicalActionKind.calibration => l10n.biomedicalCalibratedAtLabel,
       _BiomedicalActionKind.safety => l10n.biomedicalTestedAtLabel,
       _BiomedicalActionKind.downtime => l10n.biomedicalDowntimeStartedAtLabel,
-      _BiomedicalActionKind.closeDowntime => l10n.biomedicalDowntimeEndedAtLabel,
+      _BiomedicalActionKind.closeDowntime =>
+        l10n.biomedicalDowntimeEndedAtLabel,
       _BiomedicalActionKind.startWorkOrder => l10n.biomedicalStartedAtLabel,
       _BiomedicalActionKind.disposal => l10n.biomedicalEffectiveAtLabel,
       _ => l10n.biomedicalRecordedAtLabel,
@@ -1779,10 +1794,8 @@ List<AppSearchBarFilterChoice> _lookupChoices(
 
   return fallbackValues
       .map(
-        (String value) => AppSearchBarFilterChoice(
-          value: value,
-          label: _labelForCode(value),
-        ),
+        (String value) =>
+            AppSearchBarFilterChoice(value: value, label: _labelForCode(value)),
       )
       .toList(growable: false);
 }
@@ -1807,15 +1820,16 @@ List<AppSelectOption<String>> _selectOptions(
 List<AppSelectOption<String>> _valuesToOptions(List<String> values) {
   return values
       .map(
-        (String value) => AppSelectOption<String>(
-          value: value,
-          label: _labelForCode(value),
-        ),
+        (String value) =>
+            AppSelectOption<String>(value: value, label: _labelForCode(value)),
       )
       .toList(growable: false);
 }
 
-AppWorkspaceStatusBadge _statusBadge(String label, AppWorkspaceStatusTone tone) {
+AppWorkspaceStatusBadge _statusBadge(
+  String label,
+  AppWorkspaceStatusTone tone,
+) {
   return AppWorkspaceStatusBadge(
     status: AppWorkspaceStatus(label: label, tone: tone),
   );
@@ -1824,12 +1838,20 @@ AppWorkspaceStatusBadge _statusBadge(String label, AppWorkspaceStatusTone tone) 
 AppWorkspaceStatusTone _toneForStatus(String? value) {
   final String normalized = (value ?? '').trim().toUpperCase();
   return switch (normalized) {
-    'ACTIVE' || 'COMPLETED' || 'RETURNED_TO_SERVICE' || 'PASS' =>
-      AppWorkspaceStatusTone.success,
+    'ACTIVE' ||
+    'COMPLETED' ||
+    'RETURNED_TO_SERVICE' ||
+    'PASS' => AppWorkspaceStatusTone.success,
     'OPEN' || 'IN_PROGRESS' || 'PENDING' => AppWorkspaceStatusTone.info,
-    'OVERDUE' || 'DUE' || 'RECALL' || 'WARNING' => AppWorkspaceStatusTone.warning,
-    'INACTIVE' || 'CANCELLED' || 'FAILED' || 'DOWN' || 'CRITICAL' =>
-      AppWorkspaceStatusTone.error,
+    'OVERDUE' ||
+    'DUE' ||
+    'RECALL' ||
+    'WARNING' => AppWorkspaceStatusTone.warning,
+    'INACTIVE' ||
+    'CANCELLED' ||
+    'FAILED' ||
+    'DOWN' ||
+    'CRITICAL' => AppWorkspaceStatusTone.error,
     _ => AppWorkspaceStatusTone.neutral,
   };
 }
@@ -1907,14 +1929,20 @@ String? _formatDate(BuildContext context, DateTime? value) {
   if (value == null) {
     return null;
   }
-  return AppFormatters.mediumDate(value.toLocal(), Localizations.localeOf(context));
+  return AppFormatters.mediumDate(
+    value.toLocal(),
+    Localizations.localeOf(context),
+  );
 }
 
 String? _formatDateTime(BuildContext context, DateTime? value) {
   if (value == null) {
     return null;
   }
-  return AppFormatters.dateTime(value.toLocal(), Localizations.localeOf(context));
+  return AppFormatters.dateTime(
+    value.toLocal(),
+    Localizations.localeOf(context),
+  );
 }
 
 String _defaultDateTimeText() {
@@ -1935,6 +1963,10 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   }
   final AppLocalizations l10n = context.l10n;
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('${l10n.failureTitle(failure)}: ${l10n.failureMessage(failure)}')),
+    SnackBar(
+      content: Text(
+        '${l10n.failureTitle(failure)}: ${l10n.failureMessage(failure)}',
+      ),
+    ),
   );
 }

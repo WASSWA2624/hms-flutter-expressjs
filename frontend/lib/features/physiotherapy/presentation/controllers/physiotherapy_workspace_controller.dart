@@ -165,10 +165,7 @@ final class PhysiotherapyWorkspaceController
         final PhysiotherapyWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingDetail: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingDetail: false, lastFailure: failure),
           );
         }
         return failure;
@@ -248,16 +245,10 @@ final class PhysiotherapyWorkspaceController
     );
   }
 
-  Future<AppFailure?> markAttendance({
-    required String status,
-    String? note,
-  }) {
+  Future<AppFailure?> markAttendance({required String status, String? note}) {
     return _mutateSelected(
-      (TherapyWorkItem item) => _repository.markAttendance(
-        item: item,
-        status: status,
-        note: note,
-      ),
+      (TherapyWorkItem item) =>
+          _repository.markAttendance(item: item, status: status, note: note),
     );
   }
 
@@ -368,12 +359,9 @@ final class PhysiotherapyWorkspaceController
           _emit(
             latest.copyWith(
               worklist: worklist,
-              selectedDetail: selected == null
-                  ? null
-                  : selected.copyWith(
-                      item: _matchingItem(worklist, selected.item) ??
-                          selected.item,
-                    ),
+              selectedDetail: selected?.copyWith(
+                item: _matchingItem(worklist, selected.item) ?? selected.item,
+              ),
               isRefreshing: showLoading ? false : latest.isRefreshing,
             ),
           );
@@ -444,7 +432,9 @@ final class PhysiotherapyWorkspaceController
   ) {
     return AppPage<TherapyWorkItem>(
       items: page.items
-          .map((TherapyWorkItem current) => current.id == item.id ? item : current)
+          .map(
+            (TherapyWorkItem current) => current.id == item.id ? item : current,
+          )
           .toList(growable: false),
       request: page.request,
       totalItemCount: page.totalItemCount,

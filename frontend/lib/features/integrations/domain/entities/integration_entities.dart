@@ -119,7 +119,8 @@ final class ApiKeyRecord {
   String get apiId => id;
 
   String get title {
-    return _firstNonEmpty(<String?>[name, displayId, humanFriendlyId, id]) ?? id;
+    return _firstNonEmpty(<String?>[name, displayId, humanFriendlyId, id]) ??
+        id;
   }
 
   String get maskedValue {
@@ -352,11 +353,11 @@ final class IntegrationWorkItem {
     ApiKeyRecord record,
     Iterable<ApiKeyPermissionRecord> permissions,
   ) {
-    final int permissionCount = permissions
-        .where((ApiKeyPermissionRecord permission) {
-          return permission.apiKeyId == record.id;
-        })
-        .length;
+    final int permissionCount = permissions.where((
+      ApiKeyPermissionRecord permission,
+    ) {
+      return permission.apiKeyId == record.id;
+    }).length;
     final bool warning = record.isExpired || !record.isActive;
     return IntegrationWorkItem(
       kind: IntegrationWorkItemKind.apiKey,
@@ -386,7 +387,8 @@ final class IntegrationWorkItem {
       title: record.title,
       status: record.isActive ? 'ACTIVE' : 'INACTIVE',
       owner: record.tenantLabel ?? record.tenantId,
-      scope: _firstNonEmpty(<String?>[
+      scope:
+          _firstNonEmpty(<String?>[
             record.integrationLabel,
             record.integrationDisplayId,
             record.integrationType,
@@ -494,11 +496,15 @@ final class IntegrationWorkspaceState {
         IntegrationWorkItem.interop(record),
     ];
 
-    final List<IntegrationWorkItem> filtered = items
-        .where(_matchesFilter)
-        .where((IntegrationWorkItem item) => matchesIntegrationSearch(item, query.search))
-        .toList(growable: false)
-      ..sort(_compareWorkItems);
+    final List<IntegrationWorkItem> filtered =
+        items
+            .where(_matchesFilter)
+            .where(
+              (IntegrationWorkItem item) =>
+                  matchesIntegrationSearch(item, query.search),
+            )
+            .toList(growable: false)
+          ..sort(_compareWorkItems);
 
     return filtered;
   }
@@ -613,7 +619,9 @@ final class IntegrationWorkspaceState {
       webhooks: webhooks ?? this.webhooks,
       logs: logs ?? this.logs,
       interopStatuses: interopStatuses ?? this.interopStatuses,
-      selectedItem: clearSelectedItem ? null : selectedItem ?? this.selectedItem,
+      selectedItem: clearSelectedItem
+          ? null
+          : selectedItem ?? this.selectedItem,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
       lastActionResult: clearLastActionResult
           ? null
@@ -632,18 +640,21 @@ final class IntegrationWorkspaceState {
         item.kind == IntegrationWorkItemKind.apiKey,
       IntegrationWorkspaceFilter.webhooks =>
         item.kind == IntegrationWorkItemKind.webhook,
-      IntegrationWorkspaceFilter.logs => item.kind == IntegrationWorkItemKind.log,
+      IntegrationWorkspaceFilter.logs =>
+        item.kind == IntegrationWorkItemKind.log,
       IntegrationWorkspaceFilter.interop =>
         item.kind == IntegrationWorkItemKind.interop,
-      IntegrationWorkspaceFilter.active => item.status.toUpperCase() == 'ACTIVE',
+      IntegrationWorkspaceFilter.active =>
+        item.status.toUpperCase() == 'ACTIVE',
       IntegrationWorkspaceFilter.warning =>
         item.errorSummary != null ||
-        item.status.toUpperCase() == 'WARNING' ||
-        item.status.toUpperCase() == 'INACTIVE',
+            item.status.toUpperCase() == 'WARNING' ||
+            item.status.toUpperCase() == 'INACTIVE',
       IntegrationWorkspaceFilter.failed =>
         item.status.toUpperCase() == 'ERROR' ||
-        item.status.toUpperCase() == 'FAILED' ||
-        item.errorSummary != null && item.kind == IntegrationWorkItemKind.log,
+            item.status.toUpperCase() == 'FAILED' ||
+            item.errorSummary != null &&
+                item.kind == IntegrationWorkItemKind.log,
       IntegrationWorkspaceFilter.disabled =>
         item.status.toUpperCase() == 'INACTIVE',
     };

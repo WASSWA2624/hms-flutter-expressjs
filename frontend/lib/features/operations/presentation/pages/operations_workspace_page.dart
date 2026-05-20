@@ -151,7 +151,10 @@ class _OperationsWorkspaceContentState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(failure: lastFailure, onRetry: controller.refresh),
+            AppFailureStateView(
+              failure: lastFailure,
+              onRetry: controller.refresh,
+            ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
           _OperationsQueuePanel(
@@ -172,7 +175,8 @@ class _OperationsWorkspaceContentState
   ) {
     final Locale locale = Localizations.localeOf(context);
     final AppLocalizations l10n = context.l10n;
-    final int total = state.workItems.totalItemCount ?? state.workItems.items.length;
+    final int total =
+        state.workItems.totalItemCount ?? state.workItems.items.length;
 
     return <Widget>[
       if (total > 0)
@@ -349,10 +353,7 @@ class _OperationsQueuePanel extends ConsumerWidget {
 }
 
 class _OperationsDetailPanel extends ConsumerWidget {
-  const _OperationsDetailPanel({
-    required this.state,
-    required this.canMutate,
-  });
+  const _OperationsDetailPanel({required this.state, required this.canMutate});
 
   final OperationsWorkspaceState state;
   final bool canMutate;
@@ -431,7 +432,10 @@ class _OperationsDetailBody extends ConsumerWidget {
           ),
           AppInfoTileData(
             label: l10n.operationsAssigneeColumnLabel,
-            value: _display(item.metadata.assignee, l10n.operationsUnassignedValue),
+            value: _display(
+              item.metadata.assignee,
+              l10n.operationsUnassignedValue,
+            ),
             icon: Icons.assignment_ind_outlined,
           ),
           AppInfoTileData(
@@ -493,7 +497,10 @@ class _OperationsStatusBanner extends StatelessWidget {
       density: AppContentPanelDensity.compact,
       child: Row(
         children: <Widget>[
-          Icon(_statusIcon(item.status), size: Theme.of(context).appTokens.listIconSize),
+          Icon(
+            _statusIcon(item.status),
+            size: Theme.of(context).appTokens.listIconSize,
+          ),
           SizedBox(width: Theme.of(context).spacing.sm),
           Expanded(
             child: Text(
@@ -525,7 +532,6 @@ class _OperationsActionPanel extends ConsumerWidget {
       leadingIcon: Icons.handyman_outlined,
       children: <Widget>[
         AppResponsiveWrap(
-          minItemWidth: 180,
           maxColumns: 2,
           children: <Widget>[
             AppButton.secondary(
@@ -643,9 +649,14 @@ class _ServiceLogsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          for (var index = 0; index < logs.items.length; index += 1) ...<Widget>[
+          for (
+            var index = 0;
+            index < logs.items.length;
+            index += 1
+          ) ...<Widget>[
             _ServiceLogTile(log: logs.items[index]),
-            if (index < logs.items.length - 1) SizedBox(height: theme.spacing.sm),
+            if (index < logs.items.length - 1)
+              SizedBox(height: theme.spacing.sm),
           ],
         ],
       ),
@@ -669,7 +680,10 @@ class _ServiceLogTile extends StatelessWidget {
         log.servicedAt ?? log.createdAt,
         l10n.operationsUnknownValue,
       ),
-      description: _display(log.assetLabel, log.assetId ?? l10n.operationsUnknownValue),
+      description: _display(
+        log.assetLabel,
+        log.assetId ?? l10n.operationsUnknownValue,
+      ),
       children: <Widget>[
         Text(_display(log.notes, l10n.operationsNoNotesValue)),
       ],
@@ -956,7 +970,8 @@ class _StatusUpdateFormState extends State<_StatusUpdateForm> {
   @override
   void initState() {
     super.initState();
-    _status = operationsMaintenanceStatuses.contains(widget.item.normalizedStatus)
+    _status =
+        operationsMaintenanceStatuses.contains(widget.item.normalizedStatus)
         ? widget.item.normalizedStatus
         : 'OPEN';
   }
@@ -1094,16 +1109,17 @@ Future<void> _showCreateRequestDialog(
   WidgetRef ref,
   OperationsWorkspaceState state,
 ) async {
-  final OperationsRequestDraft? draft = await showAppDialog<OperationsRequestDraft>(
-    context: context,
-    builder: (_) => AppDialog(
-      title: Text(context.l10n.operationsCreateRequestAction),
-      icon: const Icon(Icons.add_task_outlined),
-      scrollable: true,
-      maxWidth: 720,
-      content: _CreateRequestForm(assets: state.assets.items),
-    ),
-  );
+  final OperationsRequestDraft? draft =
+      await showAppDialog<OperationsRequestDraft>(
+        context: context,
+        builder: (_) => AppDialog(
+          title: Text(context.l10n.operationsCreateRequestAction),
+          icon: const Icon(Icons.add_task_outlined),
+          scrollable: true,
+          maxWidth: 720,
+          content: _CreateRequestForm(assets: state.assets.items),
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -1117,16 +1133,17 @@ Future<void> _showCreateRequestDialog(
 }
 
 Future<void> _showAssignDialog(BuildContext context, WidgetRef ref) async {
-  final OperationsTriageDraft? draft = await showAppDialog<OperationsTriageDraft>(
-    context: context,
-    builder: (_) => AppDialog(
-      title: Text(context.l10n.operationsAssignAction),
-      icon: const Icon(Icons.assignment_ind_outlined),
-      scrollable: true,
-      maxWidth: 640,
-      content: const _AssignRequestForm(),
-    ),
-  );
+  final OperationsTriageDraft? draft =
+      await showAppDialog<OperationsTriageDraft>(
+        context: context,
+        builder: (_) => AppDialog(
+          title: Text(context.l10n.operationsAssignAction),
+          icon: const Icon(Icons.assignment_ind_outlined),
+          scrollable: true,
+          maxWidth: 640,
+          content: const _AssignRequestForm(),
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -1146,15 +1163,15 @@ Future<void> _showStatusDialog(
 ) async {
   final OperationsStatusUpdateDraft? draft =
       await showAppDialog<OperationsStatusUpdateDraft>(
-    context: context,
-    builder: (_) => AppDialog(
-      title: Text(context.l10n.operationsUpdateStatusAction),
-      icon: const Icon(Icons.fact_check_outlined),
-      scrollable: true,
-      maxWidth: 640,
-      content: _StatusUpdateForm(item: item),
-    ),
-  );
+        context: context,
+        builder: (_) => AppDialog(
+          title: Text(context.l10n.operationsUpdateStatusAction),
+          icon: const Icon(Icons.fact_check_outlined),
+          scrollable: true,
+          maxWidth: 640,
+          content: _StatusUpdateForm(item: item),
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -1174,18 +1191,18 @@ Future<void> _showServiceLogDialog(
 ) async {
   final OperationsServiceLogDraft? draft =
       await showAppDialog<OperationsServiceLogDraft>(
-    context: context,
-    builder: (_) => AppDialog(
-      title: Text(context.l10n.operationsAddServiceLogAction),
-      icon: const Icon(Icons.build_outlined),
-      scrollable: true,
-      maxWidth: 640,
-      content: _ServiceLogForm(
-        assets: state.assets.items,
-        initialAssetId: state.selectedItem?.assetId,
-      ),
-    ),
-  );
+        context: context,
+        builder: (_) => AppDialog(
+          title: Text(context.l10n.operationsAddServiceLogAction),
+          icon: const Icon(Icons.build_outlined),
+          scrollable: true,
+          maxWidth: 640,
+          content: _ServiceLogForm(
+            assets: state.assets.items,
+            initialAssetId: state.selectedItem?.assetId,
+          ),
+        ),
+      );
   if (draft == null || !context.mounted) {
     return;
   }
@@ -1323,7 +1340,8 @@ class _OperationsReportDialog extends StatelessWidget {
               AppReportSummaryItem(
                 label: l10n.operationsAllRequestsSummaryLabel,
                 value: AppFormatters.compactNumber(
-                  state.workItems.totalItemCount ?? state.workItems.items.length,
+                  state.workItems.totalItemCount ??
+                      state.workItems.items.length,
                   locale,
                 ),
                 icon: Icons.inventory_2_outlined,
@@ -1335,7 +1353,10 @@ class _OperationsReportDialog extends StatelessWidget {
               ),
               AppReportSummaryItem(
                 label: l10n.operationsInProgressSummaryLabel,
-                value: AppFormatters.compactNumber(state.inProgressCount, locale),
+                value: AppFormatters.compactNumber(
+                  state.inProgressCount,
+                  locale,
+                ),
                 icon: Icons.engineering_outlined,
               ),
               AppReportSummaryItem(
@@ -1370,9 +1391,9 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
       label: l10n.operationsRequestColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
-        _issueLabel(l10n, left),
-        _issueLabel(l10n, right),
-      ),
+            _issueLabel(l10n, left),
+            _issueLabel(l10n, right),
+          ),
       cellBuilder: (BuildContext context, OperationsWorkItem item) {
         return _TwoLineCell(
           title: _issueLabel(l10n, item),
@@ -1384,9 +1405,9 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
       label: l10n.operationsAreaColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
-        _categoryLabel(l10n, left.metadata.category),
-        _categoryLabel(l10n, right.metadata.category),
-      ),
+            _categoryLabel(l10n, left.metadata.category),
+            _categoryLabel(l10n, right.metadata.category),
+          ),
       cellBuilder: (BuildContext context, OperationsWorkItem item) {
         return _TwoLineCell(
           title: _categoryLabel(l10n, item.metadata.category),
@@ -1397,7 +1418,10 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
     AppListTableColumn<OperationsWorkItem>(
       label: l10n.operationsPriorityColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
-          appListTableCompareText(left.normalizedPriority, right.normalizedPriority),
+          appListTableCompareText(
+            left.normalizedPriority,
+            right.normalizedPriority,
+          ),
       cellBuilder: (BuildContext context, OperationsWorkItem item) {
         return _OperationPriorityBadge(priority: item.metadata.priority);
       },
@@ -1406,9 +1430,9 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
       label: l10n.operationsLocationColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
-        _locationLabel(l10n, left),
-        _locationLabel(l10n, right),
-      ),
+            _locationLabel(l10n, left),
+            _locationLabel(l10n, right),
+          ),
       cellBuilder: (BuildContext context, OperationsWorkItem item) {
         return Text(_locationLabel(l10n, item));
       },
@@ -1432,9 +1456,14 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumnChoices(
     AppListTableColumn<OperationsWorkItem>(
       label: l10n.operationsAssigneeColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
-          appListTableCompareText(left.metadata.assignee, right.metadata.assignee),
+          appListTableCompareText(
+            left.metadata.assignee,
+            right.metadata.assignee,
+          ),
       cellBuilder: (BuildContext context, OperationsWorkItem item) {
-        return Text(_display(item.metadata.assignee, l10n.operationsUnassignedValue));
+        return Text(
+          _display(item.metadata.assignee, l10n.operationsUnassignedValue),
+        );
       },
     ),
     AppListTableColumn<OperationsWorkItem>(
@@ -1455,9 +1484,9 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumnChoices(
       label: l10n.operationsNextActionColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
-        _nextActionLabel(l10n, left),
-        _nextActionLabel(l10n, right),
-      ),
+            _nextActionLabel(l10n, left),
+            _nextActionLabel(l10n, right),
+          ),
       cellBuilder: (BuildContext context, OperationsWorkItem item) {
         return Text(_nextActionLabel(l10n, item));
       },
@@ -1681,9 +1710,10 @@ IconData _statusIcon(String? status) {
 String _nextActionLabel(AppLocalizations l10n, OperationsWorkItem item) {
   return switch (item.normalizedStatus) {
     'OPEN' => l10n.operationsNextActionAssign,
-    'IN_PROGRESS' => _hasValue(item.assetId)
-        ? l10n.operationsNextActionServiceLog
-        : l10n.operationsNextActionUpdateStatus,
+    'IN_PROGRESS' =>
+      _hasValue(item.assetId)
+          ? l10n.operationsNextActionServiceLog
+          : l10n.operationsNextActionUpdateStatus,
     'COMPLETED' => l10n.operationsNextActionCloseout,
     'CANCELLED' => l10n.operationsNextActionCancelled,
     _ => l10n.operationsNextActionReview,
@@ -1691,7 +1721,10 @@ String _nextActionLabel(AppLocalizations l10n, OperationsWorkItem item) {
 }
 
 String _issueLabel(AppLocalizations l10n, OperationsWorkItem item) {
-  return _display(item.metadata.issue, item.description ?? l10n.operationsUnknownValue);
+  return _display(
+    item.metadata.issue,
+    item.description ?? l10n.operationsUnknownValue,
+  );
 }
 
 String _locationLabel(AppLocalizations l10n, OperationsWorkItem item) {
@@ -1710,9 +1743,11 @@ String _reportText(
   final Locale locale = Localizations.localeOf(context);
   final StringBuffer buffer = StringBuffer()
     ..writeln(l10n.operationsReportTitle)
-    ..writeln(l10n.operationsGeneratedAtLabel(
-      AppFormatters.dateTime(DateTime.now(), locale),
-    ))
+    ..writeln(
+      l10n.operationsGeneratedAtLabel(
+        AppFormatters.dateTime(DateTime.now(), locale),
+      ),
+    )
     ..writeln()
     ..writeln(
       l10n.operationsReportSummaryLine(
@@ -1728,10 +1763,18 @@ String _reportText(
       ..writeln()
       ..writeln(l10n.operationsRequestColumnLabel)
       ..writeln('${item.effectiveDisplayId} - ${_issueLabel(l10n, item)}')
-      ..writeln('${l10n.operationsStatusColumnLabel}: ${_statusLabel(l10n, item.status)}')
-      ..writeln('${l10n.operationsLocationColumnLabel}: ${_locationLabel(l10n, item)}')
-      ..writeln('${l10n.operationsPriorityColumnLabel}: ${_priorityLabel(l10n, item.metadata.priority)}')
-      ..writeln('${l10n.operationsNextActionColumnLabel}: ${_nextActionLabel(l10n, item)}');
+      ..writeln(
+        '${l10n.operationsStatusColumnLabel}: ${_statusLabel(l10n, item.status)}',
+      )
+      ..writeln(
+        '${l10n.operationsLocationColumnLabel}: ${_locationLabel(l10n, item)}',
+      )
+      ..writeln(
+        '${l10n.operationsPriorityColumnLabel}: ${_priorityLabel(l10n, item.metadata.priority)}',
+      )
+      ..writeln(
+        '${l10n.operationsNextActionColumnLabel}: ${_nextActionLabel(l10n, item)}',
+      );
   }
 
   return buffer.toString();

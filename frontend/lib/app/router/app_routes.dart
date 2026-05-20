@@ -166,6 +166,18 @@ abstract final class AppRoutes {
     ],
     requiredActiveModules: <String>['encounters-vitals'],
   );
+  static const AppRouteData physiotherapy = AppRouteData(
+    name: 'physiotherapy',
+    path: '/physiotherapy',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.clinicalWrite,
+      AppPermissions.patientRead,
+      AppPermissions.billingRead,
+    ],
+    requiredActiveModules: <String>['encounters-vitals'],
+  );
   static const AppRouteData lab = AppRouteData(
     name: 'lab',
     path: '/lab',
@@ -211,6 +223,18 @@ abstract final class AppRoutes {
     requiredActiveModules: <String>['facilities-maintenance'],
     requiresFacilityContext: true,
   );
+  static const AppRouteData biomedical = AppRouteData(
+    name: 'biomedical',
+    path: '/biomedical',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.biomedRead,
+      AppPermissions.biomedWrite,
+      AppPermissions.operationsRead,
+      AppPermissions.operationsWrite,
+    ],
+    requiredActiveModules: <String>['biomedical-engineering-suite'],
+  );
   static const AppRouteData communications = AppRouteData(
     name: 'communications',
     path: '/communications',
@@ -219,6 +243,19 @@ abstract final class AppRoutes {
       AppPermissions.communicationsRead,
       AppPermissions.communicationsWrite,
     ],
+  );
+  static const AppRouteData integrations = AppRouteData(
+    name: 'integrations',
+    path: '/integrations',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.integrationRead,
+      AppPermissions.integrationWrite,
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.systemAdmin,
+    ],
+    requiredActiveModules: <String>['integrations-core'],
   );
   static const AppRouteData discharge = AppRouteData(
     name: 'discharge',
@@ -244,6 +281,20 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
     ],
     requiredActiveModules: <String>['theatre-anesthesia'],
+  );
+  static const AppRouteData reports = AppRouteData(
+    name: 'reports',
+    path: '/reports',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.reportsRead,
+      AppPermissions.reportsWrite,
+      AppPermissions.complianceRead,
+      AppPermissions.evidenceExport,
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.systemAdmin,
+    ],
   );
   static const AppRouteData mortuary = AppRouteData(
     name: 'mortuary',
@@ -317,14 +368,18 @@ abstract final class AppRoutes {
     icu,
     nursing,
     clinical,
+    physiotherapy,
     lab,
     radiology,
     pharmacy,
     operations,
+    biomedical,
     communications,
+    integrations,
     discharge,
     mortuary,
     theater,
+    reports,
     settings,
     tenantFacilitySetup,
     profile,
@@ -347,14 +402,18 @@ abstract final class AppRoutes {
     icu,
     nursing,
     clinical,
+    physiotherapy,
     lab,
     radiology,
     pharmacy,
     operations,
+    biomedical,
     communications,
+    integrations,
     discharge,
     mortuary,
     theater,
+    reports,
     settings,
     tenantFacilitySetup,
     profile,

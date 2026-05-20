@@ -154,7 +154,9 @@ final class ReportsRepositoryImpl implements ReportsRepository {
   }
 
   @override
-  Future<Result<ReportsWorkspaceItem>> createSchedule(ReportScheduleDraft draft) {
+  Future<Result<ReportsWorkspaceItem>> createSchedule(
+    ReportScheduleDraft draft,
+  ) {
     return _apiClient.post<ReportsWorkspaceItem>(
       ApiEndpoints.collection(HmsApiResource.reportSchedules),
       data: _withoutEmpty(<String, Object?>{

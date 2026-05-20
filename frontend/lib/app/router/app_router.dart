@@ -19,6 +19,9 @@ import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_di
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
+import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
+import 'package:hosspi_hms/features/biomedical/presentation/controllers/biomedical_workspace_controller.dart';
+import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_workspace_page.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/controllers/claims_workspace_controller.dart';
 import 'package:hosspi_hms/features/claims/presentation/pages/claims_workspace_page.dart';
@@ -38,6 +41,9 @@ import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
+import 'package:hosspi_hms/features/integrations/domain/entities/integration_entities.dart';
+import 'package:hosspi_hms/features/integrations/presentation/controllers/integrations_workspace_controller.dart';
+import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
@@ -60,10 +66,12 @@ import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
+import 'package:hosspi_hms/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart';
 import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
 import 'package:hosspi_hms/features/radiology/presentation/pages/radiology_workspace_page.dart';
+import 'package:hosspi_hms/features/reports/presentation/pages/reports_workspace_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
@@ -157,6 +165,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const ClinicalWorkspacePage(),
           ),
           GoRoute(
+            path: AppRoutes.physiotherapy.path,
+            name: AppRoutes.physiotherapy.name,
+            builder: (_, _) => const PhysiotherapyWorkspacePage(),
+          ),
+          GoRoute(
             path: AppRoutes.lab.path,
             name: AppRoutes.lab.name,
             builder: (_, _) => const LabWorkspacePage(),
@@ -177,6 +190,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const OperationsWorkspacePage(),
           ),
           GoRoute(
+            path: AppRoutes.biomedical.path,
+            name: AppRoutes.biomedical.name,
+            builder: (_, _) => const BiomedicalWorkspacePage(),
+          ),
+          GoRoute(
             path: AppRoutes.communications.path,
             name: AppRoutes.communications.name,
             builder: (_, GoRouterState state) {
@@ -184,6 +202,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 initialQuery: CommunicationsWorkspaceQuery.fromUri(state.uri),
               );
             },
+          ),
+          GoRoute(
+            path: AppRoutes.integrations.path,
+            name: AppRoutes.integrations.name,
+            builder: (_, _) => const IntegrationsWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.discharge.path,
@@ -199,6 +222,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.theater.path,
             name: AppRoutes.theater.name,
             builder: (_, _) => const TheaterWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.reports.path,
+            name: AppRoutes.reports.name,
+            builder: (_, _) => const ReportsWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.settings.path,
@@ -286,7 +314,9 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   int? radiologyWorkloadCount,
   int? pharmacyWorkloadCount,
   int? operationsWorkloadCount,
+  int? biomedicalWorkloadCount,
   int? communicationsWorkloadCount,
+  int? integrationsWorkloadCount,
   int? dischargeWorkloadCount,
   int? mortuaryWorkloadCount,
   int? theaterWorkloadCount,
@@ -381,6 +411,14 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.physiotherapy,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationPhysiotherapyLabel,
+        icon: AppRouteIcons.physiotherapy,
+        selectedIcon: AppRouteIcons.physiotherapySelected,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.lab,
       destination: ResponsiveShellDestination(
         label: l10n.navigationLabLabel,
@@ -417,12 +455,30 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.biomedical,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationBiomedicalLabel,
+        icon: AppRouteIcons.biomedical,
+        selectedIcon: AppRouteIcons.biomedicalSelected,
+        badgeCount: biomedicalWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.communications,
       destination: ResponsiveShellDestination(
         label: l10n.navigationCommunicationsLabel,
         icon: AppRouteIcons.communications,
         selectedIcon: AppRouteIcons.communicationsSelected,
         badgeCount: communicationsWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.integrations,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationIntegrationsLabel,
+        icon: AppRouteIcons.integrations,
+        selectedIcon: AppRouteIcons.integrationsSelected,
+        badgeCount: integrationsWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -450,6 +506,14 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         icon: AppRouteIcons.theater,
         selectedIcon: AppRouteIcons.theaterSelected,
         badgeCount: theaterWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.reports,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationReportsLabel,
+        icon: AppRouteIcons.reports,
+        selectedIcon: AppRouteIcons.reportsSelected,
       ),
     ),
     _ShellDestinationRoute(
@@ -517,8 +581,16 @@ class _AppShell extends ConsumerWidget {
       AppRoutes.operations,
       accessPolicy,
     );
+    final bool canAccessBiomedical = _canAccessShellRoute(
+      AppRoutes.biomedical,
+      accessPolicy,
+    );
     final bool canAccessCommunications = _canAccessShellRoute(
       AppRoutes.communications,
+      accessPolicy,
+    );
+    final bool canAccessIntegrations = _canAccessShellRoute(
+      AppRoutes.integrations,
       accessPolicy,
     );
     final bool canAccessDischarge = _canAccessShellRoute(
@@ -679,6 +751,18 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
+    final int? biomedicalWorkloadCount = canAccessBiomedical
+        ? ref
+              .watch(biomedicalWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (BiomedicalWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
     final int? communicationsWorkloadCount = canAccessCommunications
         ? ref
               .watch(communicationsWorkspaceControllerProvider)
@@ -686,6 +770,18 @@ class _AppShell extends ConsumerWidget {
               ?.value
               .when(
                 success: (CommunicationsWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? integrationsWorkloadCount = canAccessIntegrations
+        ? ref
+              .watch(integrationsWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (IntegrationWorkspaceState state) {
                   return state.workloadCount > 0 ? state.workloadCount : null;
                 },
                 failure: (_) => null,
@@ -756,7 +852,9 @@ class _AppShell extends ConsumerWidget {
               radiologyWorkloadCount: radiologyWorkloadCount,
               pharmacyWorkloadCount: pharmacyWorkloadCount,
               operationsWorkloadCount: operationsWorkloadCount,
+              biomedicalWorkloadCount: biomedicalWorkloadCount,
               communicationsWorkloadCount: communicationsWorkloadCount,
+              integrationsWorkloadCount: integrationsWorkloadCount,
               dischargeWorkloadCount: dischargeWorkloadCount,
               mortuaryWorkloadCount: mortuaryWorkloadCount,
               theaterWorkloadCount: theaterWorkloadCount,
@@ -797,15 +895,13 @@ class _AppShell extends ConsumerWidget {
       ),
       onNotificationsSelected: canAccessCommunications
           ? () {
-              if (!AppRoutes.communications.matchesPath(location.path)) {
-                context.go(
-                  AppRoutes.communications.location(
-                    queryParameters: <String, String>{
-                      'panel': CommunicationsPanel.notifications.serverValue,
-                    },
-                  ),
-                );
-              }
+              context.go(
+                AppRoutes.communications.location(
+                  queryParameters: <String, String>{
+                    'panel': CommunicationsPanel.notifications.serverValue,
+                  },
+                ),
+              );
             }
           : null,
       profileLabel: l10n.appUserMenuProfileLabel,

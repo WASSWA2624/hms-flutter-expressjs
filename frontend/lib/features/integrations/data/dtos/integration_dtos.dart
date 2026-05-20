@@ -232,9 +232,7 @@ List<ApiKeyRecord> decodeApiKeyList(Object? responseData) {
       .toList(growable: false);
 }
 
-List<ApiKeyPermissionRecord> decodeApiKeyPermissionList(
-  Object? responseData,
-) {
+List<ApiKeyPermissionRecord> decodeApiKeyPermissionList(Object? responseData) {
   return _dataList(responseData)
       .map(ApiKeyPermissionDto.new)
       .map((ApiKeyPermissionDto dto) => dto.toEntity())

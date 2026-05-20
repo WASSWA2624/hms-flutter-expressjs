@@ -27,7 +27,9 @@ abstract interface class ReportsRepository {
 
   Future<Result<ReportsWorkspaceItem>> cancelReportRun(String reportRunId);
 
-  Future<Result<ReportsWorkspaceItem>> createSchedule(ReportScheduleDraft draft);
+  Future<Result<ReportsWorkspaceItem>> createSchedule(
+    ReportScheduleDraft draft,
+  );
 
   Future<Result<ReportsWorkspaceItem>> pauseSchedule(String scheduleId);
 

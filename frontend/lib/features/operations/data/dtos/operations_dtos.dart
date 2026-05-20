@@ -22,27 +22,31 @@ final class OperationsWorkItemPageDto {
         .map((OperationsWorkItemDto dto) => dto.toEntity())
         .where((OperationsWorkItem item) => item.id.isNotEmpty)
         .toList(growable: false);
-    final List<OperationsWorkItem> items = sourceItems.where((
-      OperationsWorkItem item,
-    ) {
-      if (normalizedPriority != null &&
-          item.normalizedPriority != normalizedPriority) {
-        return false;
-      }
-      if (reportedFrom != null &&
-          item.reportedAt != null &&
-          item.reportedAt!.isBefore(_startOfDay(reportedFrom))) {
-        return false;
-      }
-      if (reportedTo != null &&
-          item.reportedAt != null &&
-          !item.reportedAt!.isBefore(_startOfDay(reportedTo).add(const Duration(days: 1)))) {
-        return false;
-      }
-      return true;
-    }).toList(growable: false);
+    final List<OperationsWorkItem> items = sourceItems
+        .where((OperationsWorkItem item) {
+          if (normalizedPriority != null &&
+              item.normalizedPriority != normalizedPriority) {
+            return false;
+          }
+          if (reportedFrom != null &&
+              item.reportedAt != null &&
+              item.reportedAt!.isBefore(_startOfDay(reportedFrom))) {
+            return false;
+          }
+          if (reportedTo != null &&
+              item.reportedAt != null &&
+              !item.reportedAt!.isBefore(
+                _startOfDay(reportedTo).add(const Duration(days: 1)),
+              )) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
     final bool clientFiltered =
-        normalizedPriority != null || reportedFrom != null || reportedTo != null;
+        normalizedPriority != null ||
+        reportedFrom != null ||
+        reportedTo != null;
 
     return OperationsWorkItemPageDto(
       page: AppPage<OperationsWorkItem>(
@@ -76,7 +80,8 @@ final class OperationsWorkItemDto {
 
     return OperationsWorkItem(
       id: id,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       status: _string(json['status']),
       description: description,
       reportedAt: _date(json['reported_at']),
@@ -132,7 +137,8 @@ final class OperationsAssetDto {
 
     return OperationsAsset(
       id: id,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       name: _string(json['name']),
       assetTag: _string(json['asset_tag']),
       status: _string(json['status']),
@@ -189,7 +195,8 @@ final class OperationsServiceLogDto {
 
     return OperationsServiceLog(
       id: id,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       assetId: _string(json['asset_id']),
       assetLabel: _string(json['asset_label']),
       facilityId: _string(json['facility_id']),
@@ -233,7 +240,8 @@ final class OperationsRequestMetadataDto {
       }
       if (trimmed.startsWith('[TRIAGE]')) {
         final Map<String, String> triage = _parseKeyValueSuffix(trimmed);
-        assignee = triage['assigned_engineer_id'] ?? triage['assigned_engineer'];
+        assignee =
+            triage['assigned_engineer_id'] ?? triage['assigned_engineer'];
         slaHours = _int(triage['sla_hours']);
         triageSummary = triage['triage_summary'];
         if (triageSummary != null) {

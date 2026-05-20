@@ -20,7 +20,8 @@ final class BiomedicalWorkspaceController
     extends AsyncNotifier<Result<BiomedicalWorkspaceState>> {
   static const Duration _syncInterval = Duration(seconds: 15);
 
-  BiomedicalRepository get _repository => ref.read(biomedicalRepositoryProvider);
+  BiomedicalRepository get _repository =>
+      ref.read(biomedicalRepositoryProvider);
 
   Timer? _syncTimer;
   bool _isSyncing = false;
@@ -138,9 +139,8 @@ final class BiomedicalWorkspaceController
 
   Future<AppFailure?> clearFilters() {
     return _applyQuery(
-      (BiomedicalWorkspaceQuery query) => BiomedicalWorkspaceQuery(
-        pageRequest: query.pageRequest.first(),
-      ),
+      (BiomedicalWorkspaceQuery query) =>
+          BiomedicalWorkspaceQuery(pageRequest: query.pageRequest.first()),
     );
   }
 
@@ -164,7 +164,8 @@ final class BiomedicalWorkspaceController
   }) {
     if (existing == null) {
       return _mutate(
-        () => _repository.createResource(BiomedicalResources.registries, payload),
+        () =>
+            _repository.createResource(BiomedicalResources.registries, payload),
       );
     }
 
@@ -199,7 +200,8 @@ final class BiomedicalWorkspaceController
     Map<String, Object?> payload, {
     BiomedicalAsset? existing,
   }) {
-    if (existing != null && existing.resource == BiomedicalResources.workOrders) {
+    if (existing != null &&
+        existing.resource == BiomedicalResources.workOrders) {
       return _mutate(
         () => _repository.updateResource(
           BiomedicalResources.workOrders,
@@ -248,7 +250,8 @@ final class BiomedicalWorkspaceController
 
   Future<AppFailure?> reportDowntime(Map<String, Object?> payload) {
     return _mutate(
-      () => _repository.createResource(BiomedicalResources.downtimeLogs, payload),
+      () =>
+          _repository.createResource(BiomedicalResources.downtimeLogs, payload),
     );
   }
 
@@ -511,8 +514,7 @@ final class BiomedicalWorkspaceController
   }
 
   BiomedicalWorkspaceState? get _currentState {
-    final Result<BiomedicalWorkspaceState>? currentResult =
-        state.asData?.value;
+    final Result<BiomedicalWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {
       ResultSuccess<BiomedicalWorkspaceState>(value: final value) => value,
       _ => null,

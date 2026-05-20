@@ -45,9 +45,7 @@ final class IntegrationsWorkspaceController
         return null;
       },
       failure: (AppFailure failure) {
-        _emit(
-          current.copyWith(isRefreshing: false, lastFailure: failure),
-        );
+        _emit(current.copyWith(isRefreshing: false, lastFailure: failure));
         return failure;
       },
     );
@@ -206,7 +204,9 @@ final class IntegrationsWorkspaceController
     return _runAction(_repository.syncNow(integrationId, payload));
   }
 
-  Future<Result<ApiKeyRecord>> createApiKey(Map<String, Object?> payload) async {
+  Future<Result<ApiKeyRecord>> createApiKey(
+    Map<String, Object?> payload,
+  ) async {
     final IntegrationWorkspaceState? current = _currentState;
     if (current == null) {
       return const Result<ApiKeyRecord>.failure(AppFailure.unexpected());
@@ -290,21 +290,19 @@ final class IntegrationsWorkspaceController
         'api_key_id': apiKeyId,
         'permission_id': permissionId,
       }),
-      onSuccess: (
-        IntegrationWorkspaceState current,
-        ApiKeyPermissionRecord record,
-      ) {
-        final IntegrationWorkspaceState next = current.copyWith(
-          apiKeyPermissions: _upsertById(
-            current.apiKeyPermissions,
-            record,
-            (ApiKeyPermissionRecord item) => item.id,
-          ),
-        );
-        return next.copyWith(
-          selectedItem: _selectedFromSnapshot(next, current.selectedItem),
-        );
-      },
+      onSuccess:
+          (IntegrationWorkspaceState current, ApiKeyPermissionRecord record) {
+            final IntegrationWorkspaceState next = current.copyWith(
+              apiKeyPermissions: _upsertById(
+                current.apiKeyPermissions,
+                record,
+                (ApiKeyPermissionRecord item) => item.id,
+              ),
+            );
+            return next.copyWith(
+              selectedItem: _selectedFromSnapshot(next, current.selectedItem),
+            );
+          },
     );
   }
 
@@ -329,19 +327,20 @@ final class IntegrationsWorkspaceController
   Future<AppFailure?> createWebhook(Map<String, Object?> payload) async {
     return _mutateRecord<WebhookSubscriptionRecord>(
       _repository.createWebhook(payload),
-      onSuccess: (
-        IntegrationWorkspaceState current,
-        WebhookSubscriptionRecord record,
-      ) {
-        return current.copyWith(
-          webhooks: _upsertById(
-            current.webhooks,
-            record,
-            (WebhookSubscriptionRecord item) => item.id,
-          ),
-          selectedItem: IntegrationWorkItem.webhook(record),
-        );
-      },
+      onSuccess:
+          (
+            IntegrationWorkspaceState current,
+            WebhookSubscriptionRecord record,
+          ) {
+            return current.copyWith(
+              webhooks: _upsertById(
+                current.webhooks,
+                record,
+                (WebhookSubscriptionRecord item) => item.id,
+              ),
+              selectedItem: IntegrationWorkItem.webhook(record),
+            );
+          },
     );
   }
 
@@ -351,19 +350,20 @@ final class IntegrationsWorkspaceController
   ) async {
     return _mutateRecord<WebhookSubscriptionRecord>(
       _repository.updateWebhook(webhookId, payload),
-      onSuccess: (
-        IntegrationWorkspaceState current,
-        WebhookSubscriptionRecord record,
-      ) {
-        return current.copyWith(
-          webhooks: _upsertById(
-            current.webhooks,
-            record,
-            (WebhookSubscriptionRecord item) => item.id,
-          ),
-          selectedItem: IntegrationWorkItem.webhook(record),
-        );
-      },
+      onSuccess:
+          (
+            IntegrationWorkspaceState current,
+            WebhookSubscriptionRecord record,
+          ) {
+            return current.copyWith(
+              webhooks: _upsertById(
+                current.webhooks,
+                record,
+                (WebhookSubscriptionRecord item) => item.id,
+              ),
+              selectedItem: IntegrationWorkItem.webhook(record),
+            );
+          },
     );
   }
 
@@ -416,8 +416,8 @@ final class IntegrationsWorkspaceController
   Future<Result<IntegrationWorkspaceState>> _loadSnapshot(
     IntegrationWorkspaceQuery query,
   ) async {
-    final Result<List<IntegrationRecord>> integrationsResult =
-        await _repository.listIntegrations();
+    final Result<List<IntegrationRecord>> integrationsResult = await _repository
+        .listIntegrations();
     final Result<List<ApiKeyRecord>> apiKeysResult = await _repository
         .listApiKeys();
     final Result<List<ApiKeyPermissionRecord>> apiKeyPermissionsResult =
@@ -473,10 +473,7 @@ final class IntegrationsWorkspaceController
         final IntegrationWorkspaceState? refreshed = _currentState;
         if (refreshed != null) {
           _emit(
-            refreshed.copyWith(
-              isSaving: false,
-              lastActionResult: actionResult,
-            ),
+            refreshed.copyWith(isSaving: false, lastActionResult: actionResult),
           );
         }
         return Result<IntegrationActionResult>.success(actionResult);
@@ -511,7 +508,10 @@ final class IntegrationsWorkspaceController
     final Result<T> result = await action;
     return result.when(
       success: (T record) {
-        final IntegrationWorkspaceState next = onSuccess(_currentState!, record);
+        final IntegrationWorkspaceState next = onSuccess(
+          _currentState!,
+          record,
+        );
         _emit(next.copyWith(isSaving: false));
         return null;
       },
@@ -524,7 +524,9 @@ final class IntegrationsWorkspaceController
 
   Future<AppFailure?> _mutateVoid(
     Future<Result<void>> action, {
-    required IntegrationWorkspaceState Function(IntegrationWorkspaceState current)
+    required IntegrationWorkspaceState Function(
+      IntegrationWorkspaceState current,
+    )
     onSuccess,
   }) async {
     final IntegrationWorkspaceState? current = _currentState;
@@ -639,11 +641,7 @@ T _valueOf<T>(Result<T> result) {
   );
 }
 
-List<T> _upsertById<T>(
-  List<T> source,
-  T value,
-  String Function(T value) idOf,
-) {
+List<T> _upsertById<T>(List<T> source, T value, String Function(T value) idOf) {
   final String id = idOf(value);
   final List<T> items = List<T>.of(source);
   final int index = items.indexWhere((T item) => idOf(item) == id);

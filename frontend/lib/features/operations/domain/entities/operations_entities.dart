@@ -131,7 +131,9 @@ final class OperationsWorkspaceState {
   final AppFailure? lastFailure;
 
   int get workloadCount {
-    return workItems.items.where((OperationsWorkItem item) => item.isActive).length;
+    return workItems.items
+        .where((OperationsWorkItem item) => item.isActive)
+        .length;
   }
 
   int get openCount {

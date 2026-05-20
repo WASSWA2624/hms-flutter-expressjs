@@ -118,9 +118,11 @@ final class OperationsRepositoryImpl implements OperationsRepository {
     OperationsTriageDraft draft,
   ) {
     return _apiClient.post<OperationsWorkItem>(
-      ApiEndpoints.nested(HmsApiResource.maintenanceRequests, requestId, <String>[
-        'triage',
-      ]),
+      ApiEndpoints.nested(
+        HmsApiResource.maintenanceRequests,
+        requestId,
+        <String>['triage'],
+      ),
       data: _withoutEmpty(<String, Object?>{
         'status': 'IN_PROGRESS',
         'assigned_engineer': draft.assignedEngineer,
@@ -146,11 +148,7 @@ final class OperationsRepositoryImpl implements OperationsRepository {
       ),
       data: _withoutEmpty(<String, Object?>{
         'status': normalizedStatus,
-        'description': _appendNote(
-          request.description,
-          'STATUS',
-          draft.notes,
-        ),
+        'description': _appendNote(request.description, 'STATUS', draft.notes),
         'resolved_at': terminalStatus
             ? (draft.resolvedAt ?? DateTime.now()).toUtc().toIso8601String()
             : null,
@@ -171,11 +169,7 @@ final class OperationsRepositoryImpl implements OperationsRepository {
         request.effectiveDisplayId,
       ),
       data: _withoutEmpty(<String, Object?>{
-        'description': _appendNote(
-          request.description,
-          draft.kind,
-          draft.note,
-        ),
+        'description': _appendNote(request.description, draft.kind, draft.note),
       }),
       decoder: (Object? data) =>
           OperationsWorkItemDto.fromResponse(data).toEntity(),
@@ -206,7 +200,8 @@ String _buildRequestDescription(OperationsRequestDraft draft) {
     'Category: ${_apiLabel(draft.category)}',
     'Priority: ${_apiLabel(draft.priority)}',
     'Issue: ${draft.issue.trim()}',
-    if (_nonEmpty(draft.location) != null) 'Location: ${draft.location!.trim()}',
+    if (_nonEmpty(draft.location) != null)
+      'Location: ${draft.location!.trim()}',
     if (_nonEmpty(draft.notes) != null) 'Notes: ${draft.notes!.trim()}',
   ];
   return lines.join('\n');

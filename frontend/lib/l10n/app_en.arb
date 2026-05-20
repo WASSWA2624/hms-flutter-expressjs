@@ -181,6 +181,22 @@
   "@navigationTheaterLabel": {
     "description": "Navigation label for the theater workflow destination."
   },
+  "navigationCommunicationsLabel": "Communications",
+  "@navigationCommunicationsLabel": {
+    "description": "Navigation label for the communications workspace."
+  },
+  "navigationIntegrationsLabel": "Integrations",
+  "@navigationIntegrationsLabel": {
+    "description": "Navigation label for the integrations workspace."
+  },
+  "navigationMortuaryLabel": "Mortuary",
+  "@navigationMortuaryLabel": {
+    "description": "Navigation label for the mortuary workspace."
+  },
+  "navigationReportsLabel": "Reports",
+  "@navigationReportsLabel": {
+    "description": "Navigation label for the reports workspace."
+  },
   "theaterTitle": "Theater",
   "@theaterTitle": {
     "description": "Title for the theater workspace."
@@ -8547,5 +8563,3277 @@
   "labGapReportGenerationBody": "The frontend shows a shared report preview; no confirmed lab-specific generated PDF endpoint is exposed.",
   "@labGapReportGenerationBody": {
     "description": "Localized text for labGapReportGenerationBody."
+  },
+  "navigationOperationsLabel": "Operations",
+  "@navigationOperationsLabel": {
+    "description": "Navigation label for the operations workspace."
+  },
+  "operationsTitle": "Operations",
+  "@operationsTitle": {
+    "description": "Title for the operations workspace."
+  },
+  "operationsLoadingTitle": "Loading operations",
+  "@operationsLoadingTitle": {
+    "description": "Loading title for the operations workspace."
+  },
+  "operationsLoadingBody": "Loading maintenance requests, assets, and service logs.",
+  "@operationsLoadingBody": {
+    "description": "Loading body for the operations workspace."
+  },
+  "operationsLiveStatus": "Live sync",
+  "@operationsLiveStatus": {
+    "description": "Status label when operations data is synced."
+  },
+  "operationsSavingStatus": "Saving",
+  "@operationsSavingStatus": {
+    "description": "Status label when operations data is being saved."
+  },
+  "operationsSavedMessage": "Operations changes saved.",
+  "@operationsSavedMessage": {
+    "description": "Snackbar message after operations mutations succeed."
+  },
+  "operationsCreateRequestAction": "Create request",
+  "@operationsCreateRequestAction": {
+    "description": "Action label for creating an operations maintenance request."
+  },
+  "operationsOpenReportAction": "Report",
+  "@operationsOpenReportAction": {
+    "description": "Action label for opening an operations report preview."
+  },
+  "operationsAllRequestsSummaryLabel": "All requests",
+  "@operationsAllRequestsSummaryLabel": {
+    "description": "Summary card label for all operations requests."
+  },
+  "operationsOpenSummaryLabel": "Open",
+  "@operationsOpenSummaryLabel": {
+    "description": "Summary card label for open operations requests."
+  },
+  "operationsInProgressSummaryLabel": "In progress",
+  "@operationsInProgressSummaryLabel": {
+    "description": "Summary card label for in-progress operations requests."
+  },
+  "operationsCompletedSummaryLabel": "Completed",
+  "@operationsCompletedSummaryLabel": {
+    "description": "Summary card label for completed operations requests."
+  },
+  "operationsCancelledSummaryLabel": "Cancelled",
+  "@operationsCancelledSummaryLabel": {
+    "description": "Summary card label for cancelled operations requests."
+  },
+  "operationsAssetsSummaryLabel": "Assets",
+  "@operationsAssetsSummaryLabel": {
+    "description": "Summary card label for configured assets."
+  },
+  "operationsQueueTitle": "Maintenance queue",
+  "@operationsQueueTitle": {
+    "description": "Title for the operations maintenance queue."
+  },
+  "operationsQueueDescription": "Track facility repairs, assets, safety notes, and readiness work.",
+  "@operationsQueueDescription": {
+    "description": "Description for the operations maintenance queue."
+  },
+  "operationsSearchLabel": "Search operations",
+  "@operationsSearchLabel": {
+    "description": "Accessibility label for operations search."
+  },
+  "operationsSearchHint": "Search request, location, system, priority, status, assignee, or notes",
+  "@operationsSearchHint": {
+    "description": "Hint text for operations search."
+  },
+  "operationsClearFiltersAction": "Clear filters",
+  "@operationsClearFiltersAction": {
+    "description": "Action label for clearing operations filters."
+  },
+  "operationsFiltersLabel": "Operations filters",
+  "@operationsFiltersLabel": {
+    "description": "Title and label for operations filters."
+  },
+  "operationsSearchFieldsLabel": "Search fields",
+  "@operationsSearchFieldsLabel": {
+    "description": "Label for choosing operations search fields."
+  },
+  "operationsAllFilterOption": "All",
+  "@operationsAllFilterOption": {
+    "description": "All option label for operations filters."
+  },
+  "operationsReportedDateFilterLabel": "Reported date",
+  "@operationsReportedDateFilterLabel": {
+    "description": "Label for reported date filtering."
+  },
+  "operationsReportedFromLabel": "Reported from",
+  "@operationsReportedFromLabel": {
+    "description": "Label for the start reported date filter."
+  },
+  "operationsReportedToLabel": "Reported to",
+  "@operationsReportedToLabel": {
+    "description": "Label for the end reported date filter."
+  },
+  "operationsPickReportedDateAction": "Pick reported date",
+  "@operationsPickReportedDateAction": {
+    "description": "Action label for choosing a reported date."
+  },
+  "operationsStatusFilterLabel": "Status",
+  "@operationsStatusFilterLabel": {
+    "description": "Filter label for operations request status."
+  },
+  "operationsPriorityFilterLabel": "Priority",
+  "@operationsPriorityFilterLabel": {
+    "description": "Filter label for operations request priority."
+  },
+  "operationsFacilityFilterLabel": "Facility",
+  "@operationsFacilityFilterLabel": {
+    "description": "Filter and field label for facility identifier."
+  },
+  "operationsAssetFilterLabel": "Asset",
+  "@operationsAssetFilterLabel": {
+    "description": "Filter and field label for asset identifier."
+  },
+  "operationsPageLabel": "{first} - {last} of {total} requests",
+  "@operationsPageLabel": {
+    "description": "Pagination label for operations requests.",
+    "placeholders": {
+      "first": {
+        "type": "int"
+      },
+      "last": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "operationsNoRequestsTitle": "No maintenance requests",
+  "@operationsNoRequestsTitle": {
+    "description": "Empty-state title for operations requests."
+  },
+  "operationsNoRequestsBody": "Create a request or adjust the filters.",
+  "@operationsNoRequestsBody": {
+    "description": "Empty-state body for operations requests."
+  },
+  "operationsDetailTitle": "Request detail",
+  "@operationsDetailTitle": {
+    "description": "Title for operations request detail."
+  },
+  "operationsNoSelectionTitle": "Select a request",
+  "@operationsNoSelectionTitle": {
+    "description": "Empty detail title when no operations request is selected."
+  },
+  "operationsNoSelectionBody": "Choose a queue row to review assignments, service logs, and readiness notes.",
+  "@operationsNoSelectionBody": {
+    "description": "Empty detail body when no operations request is selected."
+  },
+  "operationsRequestColumnLabel": "Request",
+  "@operationsRequestColumnLabel": {
+    "description": "Column label for operations request reference."
+  },
+  "operationsAreaColumnLabel": "Area/system",
+  "@operationsAreaColumnLabel": {
+    "description": "Column label for operations area or system."
+  },
+  "operationsPriorityColumnLabel": "Priority",
+  "@operationsPriorityColumnLabel": {
+    "description": "Column label for operations request priority."
+  },
+  "operationsLocationColumnLabel": "Location",
+  "@operationsLocationColumnLabel": {
+    "description": "Column label for operations request location."
+  },
+  "operationsAssigneeColumnLabel": "Assignee/team",
+  "@operationsAssigneeColumnLabel": {
+    "description": "Column label for operations assignee or team."
+  },
+  "operationsStatusColumnLabel": "Status",
+  "@operationsStatusColumnLabel": {
+    "description": "Column label for operations request status."
+  },
+  "operationsDueColumnLabel": "Due time",
+  "@operationsDueColumnLabel": {
+    "description": "Column label for operations request due time."
+  },
+  "operationsNextActionColumnLabel": "Next action",
+  "@operationsNextActionColumnLabel": {
+    "description": "Column label for operations request next action."
+  },
+  "operationsCategoryLabel": "Category",
+  "@operationsCategoryLabel": {
+    "description": "Field label for operations request category."
+  },
+  "operationsIssueTitle": "Issue and notes",
+  "@operationsIssueTitle": {
+    "description": "Section title for operations issue details."
+  },
+  "operationsActionsTitle": "Actions",
+  "@operationsActionsTitle": {
+    "description": "Section title for operations request actions."
+  },
+  "operationsAssignAction": "Assign",
+  "@operationsAssignAction": {
+    "description": "Action label for assigning an operations request."
+  },
+  "operationsUpdateStatusAction": "Update status",
+  "@operationsUpdateStatusAction": {
+    "description": "Action label for updating operations request status."
+  },
+  "operationsAddServiceLogAction": "Add service log",
+  "@operationsAddServiceLogAction": {
+    "description": "Action label for adding an asset service log."
+  },
+  "operationsPartsVendorAction": "Parts/vendor note",
+  "@operationsPartsVendorAction": {
+    "description": "Action label for adding parts or vendor notes."
+  },
+  "operationsSafetyNoteAction": "Safety note",
+  "@operationsSafetyNoteAction": {
+    "description": "Action label for adding a safety note."
+  },
+  "operationsEvidenceNoteAction": "Evidence note",
+  "@operationsEvidenceNoteAction": {
+    "description": "Action label for adding evidence notes."
+  },
+  "operationsHandoverNoteAction": "Handover note",
+  "@operationsHandoverNoteAction": {
+    "description": "Action label for adding handover notes."
+  },
+  "operationsCloseoutNoteAction": "Closeout note",
+  "@operationsCloseoutNoteAction": {
+    "description": "Action label for adding closeout notes."
+  },
+  "operationsPartsVendorNoteLabel": "Parts or vendor note",
+  "@operationsPartsVendorNoteLabel": {
+    "description": "Field label for parts or vendor note."
+  },
+  "operationsSafetyNoteLabel": "Safety note",
+  "@operationsSafetyNoteLabel": {
+    "description": "Field label for safety note."
+  },
+  "operationsEvidenceNoteLabel": "Evidence note",
+  "@operationsEvidenceNoteLabel": {
+    "description": "Field label for evidence note."
+  },
+  "operationsHandoverNoteLabel": "Handover note",
+  "@operationsHandoverNoteLabel": {
+    "description": "Field label for handover note."
+  },
+  "operationsCloseoutNoteLabel": "Closeout note",
+  "@operationsCloseoutNoteLabel": {
+    "description": "Field label for closeout note."
+  },
+  "operationsSaveNoteAction": "Save note",
+  "@operationsSaveNoteAction": {
+    "description": "Action label for saving an operations note."
+  },
+  "operationsServiceLogsTitle": "Service logs",
+  "@operationsServiceLogsTitle": {
+    "description": "Title for asset service logs in operations."
+  },
+  "operationsNoServiceLogsTitle": "No service logs",
+  "@operationsNoServiceLogsTitle": {
+    "description": "Empty-state title for operations service logs."
+  },
+  "operationsNoServiceLogsBody": "Service logs appear after an asset-backed repair is recorded.",
+  "@operationsNoServiceLogsBody": {
+    "description": "Empty-state body for operations service logs."
+  },
+  "operationsUnknownValue": "Unknown",
+  "@operationsUnknownValue": {
+    "description": "Fallback value for unknown operations fields."
+  },
+  "operationsUnassignedValue": "Unassigned",
+  "@operationsUnassignedValue": {
+    "description": "Fallback value when an operations request has no assignee."
+  },
+  "operationsNoDueTimeValue": "No due time",
+  "@operationsNoDueTimeValue": {
+    "description": "Fallback value when an operations request has no due time."
+  },
+  "operationsNoNotesValue": "No notes recorded.",
+  "@operationsNoNotesValue": {
+    "description": "Fallback value when an operations record has no notes."
+  },
+  "operationsLocationNoteLabel": "Location note",
+  "@operationsLocationNoteLabel": {
+    "description": "Field label for free-text operations location note."
+  },
+  "operationsIssueFieldLabel": "Issue",
+  "@operationsIssueFieldLabel": {
+    "description": "Field label for operations issue."
+  },
+  "operationsNotesLabel": "Notes",
+  "@operationsNotesLabel": {
+    "description": "Field label for operations notes."
+  },
+  "operationsCreateRequestSubmitAction": "Create request",
+  "@operationsCreateRequestSubmitAction": {
+    "description": "Submit label for creating an operations request."
+  },
+  "operationsAssigneeFieldLabel": "Technician or team",
+  "@operationsAssigneeFieldLabel": {
+    "description": "Field label for operations technician or team."
+  },
+  "operationsSlaHoursFieldLabel": "SLA hours",
+  "@operationsSlaHoursFieldLabel": {
+    "description": "Field label for operations SLA hours."
+  },
+  "operationsTriageSummaryFieldLabel": "Assignment note",
+  "@operationsTriageSummaryFieldLabel": {
+    "description": "Field label for operations triage summary."
+  },
+  "operationsAssignSubmitAction": "Save assignment",
+  "@operationsAssignSubmitAction": {
+    "description": "Submit label for assigning an operations request."
+  },
+  "operationsStatusNoteLabel": "Status note",
+  "@operationsStatusNoteLabel": {
+    "description": "Field label for operations status note."
+  },
+  "operationsUpdateStatusSubmitAction": "Save status",
+  "@operationsUpdateStatusSubmitAction": {
+    "description": "Submit label for updating operations request status."
+  },
+  "operationsServiceNotesLabel": "Service notes",
+  "@operationsServiceNotesLabel": {
+    "description": "Field label for operations service log notes."
+  },
+  "operationsAddServiceLogSubmitAction": "Save service log",
+  "@operationsAddServiceLogSubmitAction": {
+    "description": "Submit label for adding an operations service log."
+  },
+  "operationsNoConfiguredAssetsOption": "No configured assets",
+  "@operationsNoConfiguredAssetsOption": {
+    "description": "Disabled select option when no assets are loaded."
+  },
+  "operationsStatusOpen": "Open",
+  "@operationsStatusOpen": {
+    "description": "Status label for open operations requests."
+  },
+  "operationsStatusInProgress": "In progress",
+  "@operationsStatusInProgress": {
+    "description": "Status label for in-progress operations requests."
+  },
+  "operationsStatusCompleted": "Completed",
+  "@operationsStatusCompleted": {
+    "description": "Status label for completed operations requests."
+  },
+  "operationsStatusCancelled": "Cancelled",
+  "@operationsStatusCancelled": {
+    "description": "Status label for cancelled operations requests."
+  },
+  "operationsPriorityUrgent": "Urgent",
+  "@operationsPriorityUrgent": {
+    "description": "Priority label for urgent operations requests."
+  },
+  "operationsPriorityHigh": "High",
+  "@operationsPriorityHigh": {
+    "description": "Priority label for high operations requests."
+  },
+  "operationsPriorityNormal": "Normal",
+  "@operationsPriorityNormal": {
+    "description": "Priority label for normal operations requests."
+  },
+  "operationsPriorityLow": "Low",
+  "@operationsPriorityLow": {
+    "description": "Priority label for low operations requests."
+  },
+  "operationsCategoryElectrical": "Electrical",
+  "@operationsCategoryElectrical": {
+    "description": "Category label for electrical operations requests."
+  },
+  "operationsCategoryPlumbing": "Plumbing",
+  "@operationsCategoryPlumbing": {
+    "description": "Category label for plumbing operations requests."
+  },
+  "operationsCategoryWater": "Water",
+  "@operationsCategoryWater": {
+    "description": "Category label for water operations requests."
+  },
+  "operationsCategoryPowerBackup": "Power backup",
+  "@operationsCategoryPowerBackup": {
+    "description": "Category label for power backup operations requests."
+  },
+  "operationsCategoryHvac": "HVAC",
+  "@operationsCategoryHvac": {
+    "description": "Category label for HVAC operations requests."
+  },
+  "operationsCategoryGeneralAsset": "General asset",
+  "@operationsCategoryGeneralAsset": {
+    "description": "Category label for general asset operations requests."
+  },
+  "operationsCategorySafety": "Safety",
+  "@operationsCategorySafety": {
+    "description": "Category label for safety operations requests."
+  },
+  "operationsCategoryOther": "Other",
+  "@operationsCategoryOther": {
+    "description": "Category label for other operations requests."
+  },
+  "operationsNextActionAssign": "Assign technician or team",
+  "@operationsNextActionAssign": {
+    "description": "Next action label for open operations requests."
+  },
+  "operationsNextActionServiceLog": "Record service work",
+  "@operationsNextActionServiceLog": {
+    "description": "Next action label for asset-backed in-progress operations requests."
+  },
+  "operationsNextActionUpdateStatus": "Update repair status",
+  "@operationsNextActionUpdateStatus": {
+    "description": "Next action label for in-progress operations requests."
+  },
+  "operationsNextActionCloseout": "Add closeout note if needed",
+  "@operationsNextActionCloseout": {
+    "description": "Next action label for completed operations requests."
+  },
+  "operationsNextActionCancelled": "Request cancelled",
+  "@operationsNextActionCancelled": {
+    "description": "Next action label for cancelled operations requests."
+  },
+  "operationsNextActionReview": "Review request",
+  "@operationsNextActionReview": {
+    "description": "Fallback next action label for operations requests."
+  },
+  "operationsReportTitle": "Operations report",
+  "@operationsReportTitle": {
+    "description": "Title for the operations report preview."
+  },
+  "operationsReportPreviewTitle": "Report preview",
+  "@operationsReportPreviewTitle": {
+    "description": "Title for the operations report preview body."
+  },
+  "operationsGeneratedAtLabel": "Generated {generatedAt}",
+  "@operationsGeneratedAtLabel": {
+    "description": "Generated timestamp line for operations reports.",
+    "placeholders": {
+      "generatedAt": {
+        "type": "String"
+      }
+    }
+  },
+  "operationsReportSummaryLine": "{total} requests: {open} open, {inProgress} in progress, {completed} completed.",
+  "@operationsReportSummaryLine": {
+    "description": "Summary line for operations report counts.",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "open": {
+        "type": "int"
+      },
+      "inProgress": {
+        "type": "int"
+      },
+      "completed": {
+        "type": "int"
+      }
+    }
+  },
+  "navigationBiomedicalLabel": "Biomedical",
+  "@navigationBiomedicalLabel": {
+    "description": "Navigation label for the biomedical workspace."
+  },
+  "biomedicalTitle": "Biomedical",
+  "@biomedicalTitle": {
+    "description": "Title for the biomedical workspace."
+  },
+  "biomedicalLoadingTitle": "Loading biomedical",
+  "@biomedicalLoadingTitle": {
+    "description": "Loading title for the biomedical workspace."
+  },
+  "biomedicalLoadingBody": "Loading equipment registry, work orders, and compliance records.",
+  "@biomedicalLoadingBody": {
+    "description": "Loading body for the biomedical workspace."
+  },
+  "biomedicalLiveStatus": "Live sync",
+  "@biomedicalLiveStatus": {
+    "description": "Status label when biomedical data is synced."
+  },
+  "biomedicalSavingStatus": "Saving",
+  "@biomedicalSavingStatus": {
+    "description": "Status label when biomedical data is being saved."
+  },
+  "biomedicalSavedMessage": "Biomedical changes saved.",
+  "@biomedicalSavedMessage": {
+    "description": "Snackbar message after biomedical mutations succeed."
+  },
+  "biomedicalRegisterAssetAction": "Register asset",
+  "@biomedicalRegisterAssetAction": {
+    "description": "Action label for registering biomedical equipment."
+  },
+  "biomedicalReportFaultAction": "Report fault",
+  "@biomedicalReportFaultAction": {
+    "description": "Action label for reporting a biomedical equipment fault."
+  },
+  "biomedicalTotalEquipmentSummaryLabel": "Total equipment",
+  "@biomedicalTotalEquipmentSummaryLabel": {
+    "description": "Summary label for total equipment."
+  },
+  "biomedicalOverduePmSummaryLabel": "Overdue PM",
+  "@biomedicalOverduePmSummaryLabel": {
+    "description": "Summary label for overdue preventive maintenance."
+  },
+  "biomedicalOpenWorkOrdersSummaryLabel": "Open work orders",
+  "@biomedicalOpenWorkOrdersSummaryLabel": {
+    "description": "Summary label for open biomedical work orders."
+  },
+  "biomedicalCriticalDowntimeSummaryLabel": "Critical downtime",
+  "@biomedicalCriticalDowntimeSummaryLabel": {
+    "description": "Summary label for critical equipment downtime."
+  },
+  "biomedicalActiveRecallsSummaryLabel": "Active recalls",
+  "@biomedicalActiveRecallsSummaryLabel": {
+    "description": "Summary label for active equipment recalls."
+  },
+  "biomedicalAssetListTitle": "Equipment worklist",
+  "@biomedicalAssetListTitle": {
+    "description": "Title for the biomedical equipment list."
+  },
+  "biomedicalAssetListDescription": "Search equipment, schedules, work orders, downtime, recalls, and lifecycle records.",
+  "@biomedicalAssetListDescription": {
+    "description": "Description for the biomedical equipment list."
+  },
+  "biomedicalSearchLabel": "Search biomedical",
+  "@biomedicalSearchLabel": {
+    "description": "Search field label for the biomedical workspace."
+  },
+  "biomedicalSearchHint": "Search asset tag, equipment, category, location, status, date, or provider",
+  "@biomedicalSearchHint": {
+    "description": "Search field hint for the biomedical workspace."
+  },
+  "biomedicalFiltersLabel": "Biomedical filters",
+  "@biomedicalFiltersLabel": {
+    "description": "Advanced filter label for the biomedical workspace."
+  },
+  "biomedicalPanelFilterLabel": "Panel",
+  "@biomedicalPanelFilterLabel": {
+    "description": "Filter label for biomedical panel."
+  },
+  "biomedicalStatusFilterLabel": "Status",
+  "@biomedicalStatusFilterLabel": {
+    "description": "Filter label for biomedical status."
+  },
+  "biomedicalPriorityFilterLabel": "Priority",
+  "@biomedicalPriorityFilterLabel": {
+    "description": "Filter label for biomedical priority."
+  },
+  "biomedicalFacilityFilterLabel": "Facility",
+  "@biomedicalFacilityFilterLabel": {
+    "description": "Filter label for biomedical facility."
+  },
+  "biomedicalDatePresetFilterLabel": "Due date",
+  "@biomedicalDatePresetFilterLabel": {
+    "description": "Filter label for biomedical due-date preset."
+  },
+  "biomedicalAssetTagColumnLabel": "Asset tag",
+  "@biomedicalAssetTagColumnLabel": {
+    "description": "Biomedical list asset tag column label."
+  },
+  "biomedicalEquipmentColumnLabel": "Equipment",
+  "@biomedicalEquipmentColumnLabel": {
+    "description": "Biomedical list equipment column label."
+  },
+  "biomedicalCategoryColumnLabel": "Category",
+  "@biomedicalCategoryColumnLabel": {
+    "description": "Biomedical list category column label."
+  },
+  "biomedicalLocationColumnLabel": "Location",
+  "@biomedicalLocationColumnLabel": {
+    "description": "Biomedical list location column label."
+  },
+  "biomedicalRiskColumnLabel": "Risk",
+  "@biomedicalRiskColumnLabel": {
+    "description": "Biomedical list risk column label."
+  },
+  "biomedicalStatusColumnLabel": "Status",
+  "@biomedicalStatusColumnLabel": {
+    "description": "Biomedical list status column label."
+  },
+  "biomedicalOwnerColumnLabel": "Owner",
+  "@biomedicalOwnerColumnLabel": {
+    "description": "Biomedical list owner column label."
+  },
+  "biomedicalNextActionColumnLabel": "Next action",
+  "@biomedicalNextActionColumnLabel": {
+    "description": "Biomedical list next action column label."
+  },
+  "biomedicalPreviousPageLabel": "Previous equipment",
+  "@biomedicalPreviousPageLabel": {
+    "description": "Previous page action label for biomedical lists."
+  },
+  "biomedicalNextPageLabel": "Next equipment",
+  "@biomedicalNextPageLabel": {
+    "description": "Next page action label for biomedical lists."
+  },
+  "biomedicalPageLabel": "Showing {from}-{to} of {total}",
+  "@biomedicalPageLabel": {
+    "description": "Pagination label for biomedical lists.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "biomedicalNoAssetsTitle": "No equipment records",
+  "@biomedicalNoAssetsTitle": {
+    "description": "Empty title for biomedical equipment list."
+  },
+  "biomedicalNoAssetsBody": "Equipment records matching this search and filter will appear here.",
+  "@biomedicalNoAssetsBody": {
+    "description": "Empty body for biomedical equipment list."
+  },
+  "biomedicalDetailTitle": "Equipment detail",
+  "@biomedicalDetailTitle": {
+    "description": "Title for the biomedical detail panel."
+  },
+  "biomedicalNoSelectionTitle": "Select equipment",
+  "@biomedicalNoSelectionTitle": {
+    "description": "Empty title when no biomedical record is selected."
+  },
+  "biomedicalNoSelectionBody": "Choose equipment or a related record to review readiness, work orders, compliance, and lifecycle actions.",
+  "@biomedicalNoSelectionBody": {
+    "description": "Empty body when no biomedical record is selected."
+  },
+  "biomedicalRegistrySectionTitle": "Registry",
+  "@biomedicalRegistrySectionTitle": {
+    "description": "Biomedical detail registry section title."
+  },
+  "biomedicalReadinessSectionTitle": "Readiness",
+  "@biomedicalReadinessSectionTitle": {
+    "description": "Biomedical detail readiness section title."
+  },
+  "biomedicalMaintenanceSectionTitle": "Maintenance",
+  "@biomedicalMaintenanceSectionTitle": {
+    "description": "Biomedical detail maintenance section title."
+  },
+  "biomedicalComplianceSectionTitle": "Compliance",
+  "@biomedicalComplianceSectionTitle": {
+    "description": "Biomedical detail compliance section title."
+  },
+  "biomedicalLifecycleSectionTitle": "Lifecycle",
+  "@biomedicalLifecycleSectionTitle": {
+    "description": "Biomedical detail lifecycle section title."
+  },
+  "biomedicalReportsSectionTitle": "Report preview",
+  "@biomedicalReportsSectionTitle": {
+    "description": "Biomedical detail report preview section title."
+  },
+  "biomedicalNotAvailableLabel": "-",
+  "@biomedicalNotAvailableLabel": {
+    "description": "Fallback value when biomedical data is unavailable."
+  },
+  "biomedicalAssetTagLabel": "Asset tag",
+  "@biomedicalAssetTagLabel": {
+    "description": "Label for biomedical asset tag."
+  },
+  "biomedicalResourceLabel": "Record type",
+  "@biomedicalResourceLabel": {
+    "description": "Label for biomedical resource type."
+  },
+  "biomedicalEquipmentLabel": "Equipment",
+  "@biomedicalEquipmentLabel": {
+    "description": "Label for biomedical equipment."
+  },
+  "biomedicalCategoryLabel": "Category",
+  "@biomedicalCategoryLabel": {
+    "description": "Label for biomedical equipment category."
+  },
+  "biomedicalFacilityLabel": "Facility",
+  "@biomedicalFacilityLabel": {
+    "description": "Label for biomedical facility."
+  },
+  "biomedicalOwnerLabel": "Owner",
+  "@biomedicalOwnerLabel": {
+    "description": "Label for biomedical owner."
+  },
+  "biomedicalStatusLabel": "Status",
+  "@biomedicalStatusLabel": {
+    "description": "Label for biomedical status."
+  },
+  "biomedicalPriorityLabel": "Priority",
+  "@biomedicalPriorityLabel": {
+    "description": "Label for biomedical priority."
+  },
+  "biomedicalNextDueLabel": "Next due",
+  "@biomedicalNextDueLabel": {
+    "description": "Label for biomedical next due date."
+  },
+  "biomedicalLastUpdatedLabel": "Last updated",
+  "@biomedicalLastUpdatedLabel": {
+    "description": "Label for biomedical last updated timestamp."
+  },
+  "biomedicalTargetPathLabel": "Audit path",
+  "@biomedicalTargetPathLabel": {
+    "description": "Label for biomedical target path."
+  },
+  "biomedicalEditAssetAction": "Edit asset",
+  "@biomedicalEditAssetAction": {
+    "description": "Action label for editing biomedical asset."
+  },
+  "biomedicalTransferLocationAction": "Transfer location",
+  "@biomedicalTransferLocationAction": {
+    "description": "Action label for transferring equipment location."
+  },
+  "biomedicalScheduleMaintenanceAction": "Schedule maintenance",
+  "@biomedicalScheduleMaintenanceAction": {
+    "description": "Action label for scheduling maintenance."
+  },
+  "biomedicalCreateWorkOrderAction": "Create work order",
+  "@biomedicalCreateWorkOrderAction": {
+    "description": "Action label for creating biomedical work order."
+  },
+  "biomedicalUpdateWorkOrderAction": "Update work order",
+  "@biomedicalUpdateWorkOrderAction": {
+    "description": "Action label for updating biomedical work order."
+  },
+  "biomedicalStartWorkOrderAction": "Start work order",
+  "@biomedicalStartWorkOrderAction": {
+    "description": "Action label for starting biomedical work order."
+  },
+  "biomedicalReturnToServiceAction": "Return to service",
+  "@biomedicalReturnToServiceAction": {
+    "description": "Action label for returning equipment to service."
+  },
+  "biomedicalRecordCalibrationAction": "Record calibration",
+  "@biomedicalRecordCalibrationAction": {
+    "description": "Action label for recording calibration."
+  },
+  "biomedicalRecordSafetyTestAction": "Record safety test",
+  "@biomedicalRecordSafetyTestAction": {
+    "description": "Action label for recording safety test."
+  },
+  "biomedicalReportDowntimeAction": "Report downtime",
+  "@biomedicalReportDowntimeAction": {
+    "description": "Action label for reporting downtime."
+  },
+  "biomedicalCloseDowntimeAction": "Close downtime",
+  "@biomedicalCloseDowntimeAction": {
+    "description": "Action label for closing downtime."
+  },
+  "biomedicalLogIncidentAction": "Log incident",
+  "@biomedicalLogIncidentAction": {
+    "description": "Action label for logging biomedical incident."
+  },
+  "biomedicalAcknowledgeRecallAction": "Acknowledge recall",
+  "@biomedicalAcknowledgeRecallAction": {
+    "description": "Action label for acknowledging recall."
+  },
+  "biomedicalDisposeTransferAction": "Dispose or transfer",
+  "@biomedicalDisposeTransferAction": {
+    "description": "Action label for equipment disposal or transfer."
+  },
+  "biomedicalPrintReportAction": "Preview report",
+  "@biomedicalPrintReportAction": {
+    "description": "Action label for previewing biomedical report."
+  },
+  "biomedicalRegisterAssetDialogTitle": "Register equipment",
+  "@biomedicalRegisterAssetDialogTitle": {
+    "description": "Dialog title for registering equipment."
+  },
+  "biomedicalEditAssetDialogTitle": "Edit equipment",
+  "@biomedicalEditAssetDialogTitle": {
+    "description": "Dialog title for editing equipment."
+  },
+  "biomedicalTransferLocationDialogTitle": "Transfer equipment location",
+  "@biomedicalTransferLocationDialogTitle": {
+    "description": "Dialog title for transferring equipment."
+  },
+  "biomedicalScheduleMaintenanceDialogTitle": "Schedule maintenance",
+  "@biomedicalScheduleMaintenanceDialogTitle": {
+    "description": "Dialog title for scheduling maintenance."
+  },
+  "biomedicalWorkOrderDialogTitle": "Create work order",
+  "@biomedicalWorkOrderDialogTitle": {
+    "description": "Dialog title for creating work order."
+  },
+  "biomedicalUpdateWorkOrderDialogTitle": "Update work order",
+  "@biomedicalUpdateWorkOrderDialogTitle": {
+    "description": "Dialog title for updating work order."
+  },
+  "biomedicalStartWorkOrderDialogTitle": "Start work order",
+  "@biomedicalStartWorkOrderDialogTitle": {
+    "description": "Dialog title for starting work order."
+  },
+  "biomedicalReturnToServiceDialogTitle": "Return equipment to service",
+  "@biomedicalReturnToServiceDialogTitle": {
+    "description": "Dialog title for returning equipment to service."
+  },
+  "biomedicalCalibrationDialogTitle": "Record calibration",
+  "@biomedicalCalibrationDialogTitle": {
+    "description": "Dialog title for recording calibration."
+  },
+  "biomedicalSafetyTestDialogTitle": "Record safety test",
+  "@biomedicalSafetyTestDialogTitle": {
+    "description": "Dialog title for recording safety test."
+  },
+  "biomedicalDowntimeDialogTitle": "Report downtime",
+  "@biomedicalDowntimeDialogTitle": {
+    "description": "Dialog title for reporting downtime."
+  },
+  "biomedicalCloseDowntimeDialogTitle": "Close downtime",
+  "@biomedicalCloseDowntimeDialogTitle": {
+    "description": "Dialog title for closing downtime."
+  },
+  "biomedicalIncidentDialogTitle": "Log incident",
+  "@biomedicalIncidentDialogTitle": {
+    "description": "Dialog title for logging incident."
+  },
+  "biomedicalRecallDialogTitle": "Acknowledge recall",
+  "@biomedicalRecallDialogTitle": {
+    "description": "Dialog title for acknowledging recall."
+  },
+  "biomedicalDisposalDialogTitle": "Dispose or transfer equipment",
+  "@biomedicalDisposalDialogTitle": {
+    "description": "Dialog title for disposal or transfer."
+  },
+  "biomedicalFaultDialogTitle": "Report equipment fault",
+  "@biomedicalFaultDialogTitle": {
+    "description": "Dialog title for reporting equipment fault."
+  },
+  "biomedicalPrintReportDialogTitle": "Biomedical report",
+  "@biomedicalPrintReportDialogTitle": {
+    "description": "Dialog title for biomedical report preview."
+  },
+  "biomedicalAssetNameLabel": "Equipment name",
+  "@biomedicalAssetNameLabel": {
+    "description": "Form label for equipment name."
+  },
+  "biomedicalAssetCodeLabel": "Asset code",
+  "@biomedicalAssetCodeLabel": {
+    "description": "Form label for asset code."
+  },
+  "biomedicalSerialNumberLabel": "Serial number",
+  "@biomedicalSerialNumberLabel": {
+    "description": "Form label for serial number."
+  },
+  "biomedicalRoomLabel": "Room",
+  "@biomedicalRoomLabel": {
+    "description": "Form label for room."
+  },
+  "biomedicalNotesLabel": "Notes",
+  "@biomedicalNotesLabel": {
+    "description": "Form label for notes."
+  },
+  "biomedicalDescriptionLabel": "Description",
+  "@biomedicalDescriptionLabel": {
+    "description": "Form label for description."
+  },
+  "biomedicalWorkOrderTitleLabel": "Work order title",
+  "@biomedicalWorkOrderTitleLabel": {
+    "description": "Form label for work order title."
+  },
+  "biomedicalEngineerLabel": "Engineer",
+  "@biomedicalEngineerLabel": {
+    "description": "Form label for engineer."
+  },
+  "biomedicalPlanNameLabel": "Plan name",
+  "@biomedicalPlanNameLabel": {
+    "description": "Form label for maintenance plan name."
+  },
+  "biomedicalMaintenanceTypeLabel": "Maintenance type",
+  "@biomedicalMaintenanceTypeLabel": {
+    "description": "Form label for maintenance type."
+  },
+  "biomedicalFrequencyDaysLabel": "Frequency days",
+  "@biomedicalFrequencyDaysLabel": {
+    "description": "Form label for maintenance frequency days."
+  },
+  "biomedicalNextDueAtLabel": "Next due at",
+  "@biomedicalNextDueAtLabel": {
+    "description": "Form label for next due date time."
+  },
+  "biomedicalResultLabel": "Result",
+  "@biomedicalResultLabel": {
+    "description": "Form label for result."
+  },
+  "biomedicalCalibratedAtLabel": "Calibrated at",
+  "@biomedicalCalibratedAtLabel": {
+    "description": "Form label for calibration date."
+  },
+  "biomedicalTestedAtLabel": "Tested at",
+  "@biomedicalTestedAtLabel": {
+    "description": "Form label for safety test date."
+  },
+  "biomedicalDowntimeStartedAtLabel": "Downtime started",
+  "@biomedicalDowntimeStartedAtLabel": {
+    "description": "Form label for downtime start date."
+  },
+  "biomedicalDowntimeEndedAtLabel": "Downtime ended",
+  "@biomedicalDowntimeEndedAtLabel": {
+    "description": "Form label for downtime end date."
+  },
+  "biomedicalReasonLabel": "Reason",
+  "@biomedicalReasonLabel": {
+    "description": "Form label for reason."
+  },
+  "biomedicalSeverityLabel": "Severity",
+  "@biomedicalSeverityLabel": {
+    "description": "Form label for severity."
+  },
+  "biomedicalStartedAtLabel": "Started at",
+  "@biomedicalStartedAtLabel": {
+    "description": "Form label for started at."
+  },
+  "biomedicalRecordedAtLabel": "Recorded at",
+  "@biomedicalRecordedAtLabel": {
+    "description": "Form label for recorded at."
+  },
+  "biomedicalEffectiveAtLabel": "Effective at",
+  "@biomedicalEffectiveAtLabel": {
+    "description": "Form label for effective date."
+  },
+  "biomedicalReportedEquipmentNameLabel": "Temporary equipment name",
+  "@biomedicalReportedEquipmentNameLabel": {
+    "description": "Form label for temporary equipment name in fault reports."
+  },
+  "biomedicalPatientSafetyRiskLabel": "Patient safety risk",
+  "@biomedicalPatientSafetyRiskLabel": {
+    "description": "Checkbox label for patient safety risk."
+  },
+  "biomedicalDateTimeHint": "YYYY-MM-DDTHH:MM",
+  "@biomedicalDateTimeHint": {
+    "description": "Hint for biomedical date time fields."
+  },
+  "biomedicalSubmitAction": "Submit",
+  "@biomedicalSubmitAction": {
+    "description": "Submit action label for biomedical dialogs."
+  },
+  "biomedicalSaveAction": "Save",
+  "@biomedicalSaveAction": {
+    "description": "Save action label for biomedical dialogs."
+  },
+  "biomedicalCreateAction": "Create",
+  "@biomedicalCreateAction": {
+    "description": "Create action label for biomedical dialogs."
+  },
+  "biomedicalFieldRequiredLabel": "{label} is required.",
+  "@biomedicalFieldRequiredLabel": {
+    "description": "Validation message for required biomedical fields.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "biomedicalPanelOverview": "Overview",
+  "@biomedicalPanelOverview": {
+    "description": "Biomedical overview panel label."
+  },
+  "biomedicalPanelRegistry": "Registry",
+  "@biomedicalPanelRegistry": {
+    "description": "Biomedical registry panel label."
+  },
+  "biomedicalPanelPreventive": "Preventive",
+  "@biomedicalPanelPreventive": {
+    "description": "Biomedical preventive maintenance panel label."
+  },
+  "biomedicalPanelWorkOrders": "Work orders",
+  "@biomedicalPanelWorkOrders": {
+    "description": "Biomedical work orders panel label."
+  },
+  "biomedicalPanelCompliance": "Compliance",
+  "@biomedicalPanelCompliance": {
+    "description": "Biomedical compliance panel label."
+  },
+  "biomedicalPanelSupport": "Support",
+  "@biomedicalPanelSupport": {
+    "description": "Biomedical support panel label."
+  },
+  "biomedicalPanelAnalytics": "Analytics",
+  "@biomedicalPanelAnalytics": {
+    "description": "Biomedical analytics panel label."
+  },
+  "biomedicalDatePresetToday": "Today",
+  "@biomedicalDatePresetToday": {
+    "description": "Biomedical date preset for today."
+  },
+  "biomedicalDatePresetNext7Days": "Next 7 days",
+  "@biomedicalDatePresetNext7Days": {
+    "description": "Biomedical date preset for next 7 days."
+  },
+  "biomedicalDatePresetOverdue": "Overdue",
+  "@biomedicalDatePresetOverdue": {
+    "description": "Biomedical date preset for overdue items."
+  },
+  "biomedicalDatePresetThisMonth": "This month",
+  "@biomedicalDatePresetThisMonth": {
+    "description": "Biomedical date preset for this month."
+  },
+  "biomedicalNextActionMaintain": "Perform maintenance",
+  "@biomedicalNextActionMaintain": {
+    "description": "Next action label for maintenance records."
+  },
+  "biomedicalNextActionCalibrate": "Review compliance",
+  "@biomedicalNextActionCalibrate": {
+    "description": "Next action label for calibration and safety records."
+  },
+  "biomedicalNextActionReturnService": "Return to service",
+  "@biomedicalNextActionReturnService": {
+    "description": "Next action label for downtime records."
+  },
+  "biomedicalNextActionReviewRecall": "Review recall",
+  "@biomedicalNextActionReviewRecall": {
+    "description": "Next action label for recall records."
+  },
+  "biomedicalNextActionWorkOrder": "Work order follow-up",
+  "@biomedicalNextActionWorkOrder": {
+    "description": "Next action label for work orders."
+  },
+  "biomedicalNextActionReview": "Review record",
+  "@biomedicalNextActionReview": {
+    "description": "Default next action label for biomedical records."
+  },
+  "biomedicalPrintReportBody": "Generated from backend-backed biomedical registry, readiness, compliance, and lifecycle data.",
+  "@biomedicalPrintReportBody": {
+    "description": "Body text for the biomedical report preview."
+  },
+  "navigationIntegrationsLabel": "Integrations",
+  "@navigationIntegrationsLabel": {
+    "description": "Localized text for navigationIntegrationsLabel."
+  },
+  "integrationsLoadErrorTitle": "Integrations could not load",
+  "@integrationsLoadErrorTitle": {
+    "description": "Localized text for integrationsLoadErrorTitle."
+  },
+  "integrationsLoadErrorBody": "Refresh the workspace or check service availability.",
+  "@integrationsLoadErrorBody": {
+    "description": "Localized text for integrationsLoadErrorBody."
+  },
+  "integrationsLoadingTitle": "Loading integrations",
+  "@integrationsLoadingTitle": {
+    "description": "Localized text for integrationsLoadingTitle."
+  },
+  "integrationsLoadingBody": "Preparing integrations, API keys, webhooks, and logs.",
+  "@integrationsLoadingBody": {
+    "description": "Localized text for integrationsLoadingBody."
+  },
+  "integrationsFailedStatusLabel": "Failed",
+  "@integrationsFailedStatusLabel": {
+    "description": "Localized text for integrationsFailedStatusLabel."
+  },
+  "integrationsWarningStatusLabel": "Warning",
+  "@integrationsWarningStatusLabel": {
+    "description": "Localized text for integrationsWarningStatusLabel."
+  },
+  "integrationsOperationalStatusLabel": "Operational",
+  "@integrationsOperationalStatusLabel": {
+    "description": "Localized text for integrationsOperationalStatusLabel."
+  },
+  "integrationsWorkspaceTitle": "Integrations",
+  "@integrationsWorkspaceTitle": {
+    "description": "Localized text for integrationsWorkspaceTitle."
+  },
+  "integrationsCreateIntegrationAction": "Create integration",
+  "@integrationsCreateIntegrationAction": {
+    "description": "Localized text for integrationsCreateIntegrationAction."
+  },
+  "integrationsCreateApiKeyAction": "Create API key",
+  "@integrationsCreateApiKeyAction": {
+    "description": "Localized text for integrationsCreateApiKeyAction."
+  },
+  "integrationsCreateWebhookAction": "Create webhook",
+  "@integrationsCreateWebhookAction": {
+    "description": "Localized text for integrationsCreateWebhookAction."
+  },
+  "integrationsAllSummaryLabel": "Total items",
+  "@integrationsAllSummaryLabel": {
+    "description": "Localized text for integrationsAllSummaryLabel."
+  },
+  "integrationsActiveSummaryLabel": "Active",
+  "@integrationsActiveSummaryLabel": {
+    "description": "Localized text for integrationsActiveSummaryLabel."
+  },
+  "integrationsWarningsSummaryLabel": "Warnings",
+  "@integrationsWarningsSummaryLabel": {
+    "description": "Localized text for integrationsWarningsSummaryLabel."
+  },
+  "integrationsFailedSummaryLabel": "Failed",
+  "@integrationsFailedSummaryLabel": {
+    "description": "Localized text for integrationsFailedSummaryLabel."
+  },
+  "integrationsApiKeysSummaryLabel": "API keys",
+  "@integrationsApiKeysSummaryLabel": {
+    "description": "Localized text for integrationsApiKeysSummaryLabel."
+  },
+  "integrationsWebhooksSummaryLabel": "Webhooks",
+  "@integrationsWebhooksSummaryLabel": {
+    "description": "Localized text for integrationsWebhooksSummaryLabel."
+  },
+  "integrationsWorklistTitle": "Integration worklist",
+  "@integrationsWorklistTitle": {
+    "description": "Localized text for integrationsWorklistTitle."
+  },
+  "integrationsWorklistDescription": "Review integrations, API keys, webhooks, sanitized logs, and interoperability readiness.",
+  "@integrationsWorklistDescription": {
+    "description": "Localized text for integrationsWorklistDescription."
+  },
+  "integrationsSearchLabel": "Search integrations",
+  "@integrationsSearchLabel": {
+    "description": "Localized text for integrationsSearchLabel."
+  },
+  "integrationsSearchHint": "Search by name, type, status, owner, or reference",
+  "@integrationsSearchHint": {
+    "description": "Localized text for integrationsSearchHint."
+  },
+  "integrationsFiltersLabel": "Filters",
+  "@integrationsFiltersLabel": {
+    "description": "Localized text for integrationsFiltersLabel."
+  },
+  "integrationsFilterAll": "All",
+  "@integrationsFilterAll": {
+    "description": "Localized text for integrationsFilterAll."
+  },
+  "integrationsFilterGroupLabel": "Group",
+  "@integrationsFilterGroupLabel": {
+    "description": "Localized text for integrationsFilterGroupLabel."
+  },
+  "integrationsPreviousPageLabel": "Previous page",
+  "@integrationsPreviousPageLabel": {
+    "description": "Localized text for integrationsPreviousPageLabel."
+  },
+  "integrationsNextPageLabel": "Next page",
+  "@integrationsNextPageLabel": {
+    "description": "Localized text for integrationsNextPageLabel."
+  },
+  "integrationsPageLabel": "{from}-{to} of {total}",
+  "@integrationsPageLabel": {
+    "description": "Localized text for integrationsPageLabel.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "integrationsEmptyTitle": "No integration items",
+  "@integrationsEmptyTitle": {
+    "description": "Localized text for integrationsEmptyTitle."
+  },
+  "integrationsEmptyBody": "Create an integration, API key, or webhook to populate this workspace.",
+  "@integrationsEmptyBody": {
+    "description": "Localized text for integrationsEmptyBody."
+  },
+  "integrationsTypeColumnLabel": "Type",
+  "@integrationsTypeColumnLabel": {
+    "description": "Localized text for integrationsTypeColumnLabel."
+  },
+  "integrationsNameColumnLabel": "Name",
+  "@integrationsNameColumnLabel": {
+    "description": "Localized text for integrationsNameColumnLabel."
+  },
+  "integrationsStatusColumnLabel": "Status",
+  "@integrationsStatusColumnLabel": {
+    "description": "Localized text for integrationsStatusColumnLabel."
+  },
+  "integrationsOwnerColumnLabel": "Owner",
+  "@integrationsOwnerColumnLabel": {
+    "description": "Localized text for integrationsOwnerColumnLabel."
+  },
+  "integrationsScopeColumnLabel": "Scope",
+  "@integrationsScopeColumnLabel": {
+    "description": "Localized text for integrationsScopeColumnLabel."
+  },
+  "integrationsLastEventColumnLabel": "Last event",
+  "@integrationsLastEventColumnLabel": {
+    "description": "Localized text for integrationsLastEventColumnLabel."
+  },
+  "integrationsNextActionColumnLabel": "Next action",
+  "@integrationsNextActionColumnLabel": {
+    "description": "Localized text for integrationsNextActionColumnLabel."
+  },
+  "integrationsMobileSubtitle": "{kind} | {scope}",
+  "@integrationsMobileSubtitle": {
+    "description": "Localized text for integrationsMobileSubtitle.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "scope": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsNoSelectionTitle": "Select an integration item",
+  "@integrationsNoSelectionTitle": {
+    "description": "Localized text for integrationsNoSelectionTitle."
+  },
+  "integrationsNoSelectionBody": "Choose a row to review configuration, keys, webhooks, logs, and available actions.",
+  "@integrationsNoSelectionBody": {
+    "description": "Localized text for integrationsNoSelectionBody."
+  },
+  "integrationsConfigureAction": "Configure",
+  "@integrationsConfigureAction": {
+    "description": "Localized text for integrationsConfigureAction."
+  },
+  "integrationsTestConnectionAction": "Test connection",
+  "@integrationsTestConnectionAction": {
+    "description": "Localized text for integrationsTestConnectionAction."
+  },
+  "integrationsSyncNowAction": "Sync now",
+  "@integrationsSyncNowAction": {
+    "description": "Localized text for integrationsSyncNowAction."
+  },
+  "integrationsDisableAction": "Disable",
+  "@integrationsDisableAction": {
+    "description": "Localized text for integrationsDisableAction."
+  },
+  "integrationsEnableAction": "Enable",
+  "@integrationsEnableAction": {
+    "description": "Localized text for integrationsEnableAction."
+  },
+  "integrationsManagePermissionsAction": "Manage permissions",
+  "@integrationsManagePermissionsAction": {
+    "description": "Localized text for integrationsManagePermissionsAction."
+  },
+  "integrationsRevokeApiKeyAction": "Revoke key",
+  "@integrationsRevokeApiKeyAction": {
+    "description": "Localized text for integrationsRevokeApiKeyAction."
+  },
+  "integrationsEditWebhookAction": "Edit webhook",
+  "@integrationsEditWebhookAction": {
+    "description": "Localized text for integrationsEditWebhookAction."
+  },
+  "integrationsReplayWebhookAction": "Replay webhook",
+  "@integrationsReplayWebhookAction": {
+    "description": "Localized text for integrationsReplayWebhookAction."
+  },
+  "integrationsReplayLogAction": "Replay log",
+  "@integrationsReplayLogAction": {
+    "description": "Localized text for integrationsReplayLogAction."
+  },
+  "integrationsReferenceLabel": "Reference",
+  "@integrationsReferenceLabel": {
+    "description": "Localized text for integrationsReferenceLabel."
+  },
+  "integrationsActionResultTitle": "Latest action result",
+  "@integrationsActionResultTitle": {
+    "description": "Localized text for integrationsActionResultTitle."
+  },
+  "integrationsMaskedSecretTitle": "Masked key",
+  "@integrationsMaskedSecretTitle": {
+    "description": "Localized text for integrationsMaskedSecretTitle."
+  },
+  "integrationsRotationGapTitle": "Key rotation gap",
+  "@integrationsRotationGapTitle": {
+    "description": "Localized text for integrationsRotationGapTitle."
+  },
+  "integrationsRotationGapBody": "The backend does not expose a rotate endpoint. Create a replacement key, update downstream systems, then revoke the old key.",
+  "@integrationsRotationGapBody": {
+    "description": "Localized text for integrationsRotationGapBody."
+  },
+  "integrationsEventLabel": "Event",
+  "@integrationsEventLabel": {
+    "description": "Localized text for integrationsEventLabel."
+  },
+  "integrationsTargetHostLabel": "Target host",
+  "@integrationsTargetHostLabel": {
+    "description": "Localized text for integrationsTargetHostLabel."
+  },
+  "integrationsIntegrationLabel": "Integration",
+  "@integrationsIntegrationLabel": {
+    "description": "Localized text for integrationsIntegrationLabel."
+  },
+  "integrationsSanitizedLogTitle": "Sanitized log message",
+  "@integrationsSanitizedLogTitle": {
+    "description": "Localized text for integrationsSanitizedLogTitle."
+  },
+  "integrationsInteropReadyBody": "Interoperability actions are available through the backend action endpoints.",
+  "@integrationsInteropReadyBody": {
+    "description": "Localized text for integrationsInteropReadyBody."
+  },
+  "integrationsConfigurationTitle": "Configuration",
+  "@integrationsConfigurationTitle": {
+    "description": "Localized text for integrationsConfigurationTitle."
+  },
+  "integrationsConfigurationMaskedBody": "Sensitive values are masked by the backend response.",
+  "@integrationsConfigurationMaskedBody": {
+    "description": "Localized text for integrationsConfigurationMaskedBody."
+  },
+  "integrationsConfigurationEmptyBody": "No configuration values are available for this integration.",
+  "@integrationsConfigurationEmptyBody": {
+    "description": "Localized text for integrationsConfigurationEmptyBody."
+  },
+  "integrationsNoConfigurationRows": "No configuration rows",
+  "@integrationsNoConfigurationRows": {
+    "description": "Localized text for integrationsNoConfigurationRows."
+  },
+  "integrationsRelatedWebhooksTitle": "Related webhooks",
+  "@integrationsRelatedWebhooksTitle": {
+    "description": "Localized text for integrationsRelatedWebhooksTitle."
+  },
+  "integrationsNoRelatedWebhooks": "No related webhooks",
+  "@integrationsNoRelatedWebhooks": {
+    "description": "Localized text for integrationsNoRelatedWebhooks."
+  },
+  "integrationsRelatedLogsTitle": "Related logs",
+  "@integrationsRelatedLogsTitle": {
+    "description": "Localized text for integrationsRelatedLogsTitle."
+  },
+  "integrationsNoRelatedLogs": "No related logs",
+  "@integrationsNoRelatedLogs": {
+    "description": "Localized text for integrationsNoRelatedLogs."
+  },
+  "integrationsPermissionsTitle": "Permissions",
+  "@integrationsPermissionsTitle": {
+    "description": "Localized text for integrationsPermissionsTitle."
+  },
+  "integrationsNoPermissions": "No permissions granted",
+  "@integrationsNoPermissions": {
+    "description": "Localized text for integrationsNoPermissions."
+  },
+  "integrationsRemovePermissionDialogTitle": "Remove permission?",
+  "@integrationsRemovePermissionDialogTitle": {
+    "description": "Localized text for integrationsRemovePermissionDialogTitle."
+  },
+  "integrationsRemovePermissionDialogBody": "This API key will immediately lose the selected permission.",
+  "@integrationsRemovePermissionDialogBody": {
+    "description": "Localized text for integrationsRemovePermissionDialogBody."
+  },
+  "integrationsRemovePermissionAction": "Remove permission",
+  "@integrationsRemovePermissionAction": {
+    "description": "Localized text for integrationsRemovePermissionAction."
+  },
+  "integrationsNameFieldLabel": "Name",
+  "@integrationsNameFieldLabel": {
+    "description": "Localized text for integrationsNameFieldLabel."
+  },
+  "integrationsNameRequiredMessage": "Enter a name.",
+  "@integrationsNameRequiredMessage": {
+    "description": "Localized text for integrationsNameRequiredMessage."
+  },
+  "integrationsTypeFieldLabel": "Type",
+  "@integrationsTypeFieldLabel": {
+    "description": "Localized text for integrationsTypeFieldLabel."
+  },
+  "integrationsConfigFieldLabel": "Configuration",
+  "@integrationsConfigFieldLabel": {
+    "description": "Localized text for integrationsConfigFieldLabel."
+  },
+  "integrationsConfigCreateHelper": "Enter one key=value setting per line. Sensitive keys are accepted but are not shown again.",
+  "@integrationsConfigCreateHelper": {
+    "description": "Localized text for integrationsConfigCreateHelper."
+  },
+  "integrationsConfigUpdateHelper": "Enter only settings to change. Existing sensitive values are not shown here.",
+  "@integrationsConfigUpdateHelper": {
+    "description": "Localized text for integrationsConfigUpdateHelper."
+  },
+  "integrationsCreateIntegrationSubmitAction": "Create integration",
+  "@integrationsCreateIntegrationSubmitAction": {
+    "description": "Localized text for integrationsCreateIntegrationSubmitAction."
+  },
+  "integrationsSaveIntegrationAction": "Save integration",
+  "@integrationsSaveIntegrationAction": {
+    "description": "Localized text for integrationsSaveIntegrationAction."
+  },
+  "integrationsApiKeyNameFieldLabel": "Key name",
+  "@integrationsApiKeyNameFieldLabel": {
+    "description": "Localized text for integrationsApiKeyNameFieldLabel."
+  },
+  "integrationsApiKeyNameRequiredMessage": "Enter a key name.",
+  "@integrationsApiKeyNameRequiredMessage": {
+    "description": "Localized text for integrationsApiKeyNameRequiredMessage."
+  },
+  "integrationsExpiresAtFieldLabel": "Expires at",
+  "@integrationsExpiresAtFieldLabel": {
+    "description": "Localized text for integrationsExpiresAtFieldLabel."
+  },
+  "integrationsIsoDateHint": "YYYY-MM-DD or ISO timestamp",
+  "@integrationsIsoDateHint": {
+    "description": "Localized text for integrationsIsoDateHint."
+  },
+  "integrationsCreateApiKeySubmitAction": "Create API key",
+  "@integrationsCreateApiKeySubmitAction": {
+    "description": "Localized text for integrationsCreateApiKeySubmitAction."
+  },
+  "integrationsIntegrationFieldLabel": "Integration",
+  "@integrationsIntegrationFieldLabel": {
+    "description": "Localized text for integrationsIntegrationFieldLabel."
+  },
+  "integrationsEventFieldLabel": "Event",
+  "@integrationsEventFieldLabel": {
+    "description": "Localized text for integrationsEventFieldLabel."
+  },
+  "integrationsEventRequiredMessage": "Enter an event name.",
+  "@integrationsEventRequiredMessage": {
+    "description": "Localized text for integrationsEventRequiredMessage."
+  },
+  "integrationsTargetUrlFieldLabel": "Target URL",
+  "@integrationsTargetUrlFieldLabel": {
+    "description": "Localized text for integrationsTargetUrlFieldLabel."
+  },
+  "integrationsTargetUrlRequiredMessage": "Enter a target URL.",
+  "@integrationsTargetUrlRequiredMessage": {
+    "description": "Localized text for integrationsTargetUrlRequiredMessage."
+  },
+  "integrationsWebhookActiveFieldLabel": "Webhook active",
+  "@integrationsWebhookActiveFieldLabel": {
+    "description": "Localized text for integrationsWebhookActiveFieldLabel."
+  },
+  "integrationsCreateWebhookSubmitAction": "Create webhook",
+  "@integrationsCreateWebhookSubmitAction": {
+    "description": "Localized text for integrationsCreateWebhookSubmitAction."
+  },
+  "integrationsSaveWebhookAction": "Save webhook",
+  "@integrationsSaveWebhookAction": {
+    "description": "Localized text for integrationsSaveWebhookAction."
+  },
+  "integrationsApiKeyFieldLabel": "API key",
+  "@integrationsApiKeyFieldLabel": {
+    "description": "Localized text for integrationsApiKeyFieldLabel."
+  },
+  "integrationsApiKeyRequiredMessage": "Choose an API key.",
+  "@integrationsApiKeyRequiredMessage": {
+    "description": "Localized text for integrationsApiKeyRequiredMessage."
+  },
+  "integrationsPermissionFieldLabel": "Permission",
+  "@integrationsPermissionFieldLabel": {
+    "description": "Localized text for integrationsPermissionFieldLabel."
+  },
+  "integrationsPermissionRequiredMessage": "Choose a permission.",
+  "@integrationsPermissionRequiredMessage": {
+    "description": "Localized text for integrationsPermissionRequiredMessage."
+  },
+  "integrationsAddPermissionAction": "Add permission",
+  "@integrationsAddPermissionAction": {
+    "description": "Localized text for integrationsAddPermissionAction."
+  },
+  "integrationsCreateIntegrationDialogTitle": "Create integration",
+  "@integrationsCreateIntegrationDialogTitle": {
+    "description": "Localized text for integrationsCreateIntegrationDialogTitle."
+  },
+  "integrationsConfigureIntegrationDialogTitle": "Configure integration",
+  "@integrationsConfigureIntegrationDialogTitle": {
+    "description": "Localized text for integrationsConfigureIntegrationDialogTitle."
+  },
+  "integrationsCreateApiKeyDialogTitle": "Create API key",
+  "@integrationsCreateApiKeyDialogTitle": {
+    "description": "Localized text for integrationsCreateApiKeyDialogTitle."
+  },
+  "integrationsCreateWebhookDialogTitle": "Create webhook",
+  "@integrationsCreateWebhookDialogTitle": {
+    "description": "Localized text for integrationsCreateWebhookDialogTitle."
+  },
+  "integrationsEditWebhookDialogTitle": "Edit webhook",
+  "@integrationsEditWebhookDialogTitle": {
+    "description": "Localized text for integrationsEditWebhookDialogTitle."
+  },
+  "integrationsManagePermissionsDialogTitle": "Manage API key permissions",
+  "@integrationsManagePermissionsDialogTitle": {
+    "description": "Localized text for integrationsManagePermissionsDialogTitle."
+  },
+  "integrationsSecretMissing": "Secret not returned",
+  "@integrationsSecretMissing": {
+    "description": "Localized text for integrationsSecretMissing."
+  },
+  "integrationsApiKeyCreatedDialogTitle": "API key created",
+  "@integrationsApiKeyCreatedDialogTitle": {
+    "description": "Localized text for integrationsApiKeyCreatedDialogTitle."
+  },
+  "integrationsApiKeyCreatedSecretTitle": "One-time secret",
+  "@integrationsApiKeyCreatedSecretTitle": {
+    "description": "Localized text for integrationsApiKeyCreatedSecretTitle."
+  },
+  "integrationsApiKeyCreatedSecretBody": "This value is shown once. Store it securely before closing this dialog.",
+  "@integrationsApiKeyCreatedSecretBody": {
+    "description": "Localized text for integrationsApiKeyCreatedSecretBody."
+  },
+  "integrationsCopySecretAction": "Copy secret",
+  "@integrationsCopySecretAction": {
+    "description": "Localized text for integrationsCopySecretAction."
+  },
+  "integrationsTestConnectionDialogTitle": "Test connection?",
+  "@integrationsTestConnectionDialogTitle": {
+    "description": "Localized text for integrationsTestConnectionDialogTitle."
+  },
+  "integrationsTestConnectionDialogBody": "The backend will run the integration connection test.",
+  "@integrationsTestConnectionDialogBody": {
+    "description": "Localized text for integrationsTestConnectionDialogBody."
+  },
+  "integrationsSyncNowDialogTitle": "Sync now?",
+  "@integrationsSyncNowDialogTitle": {
+    "description": "Localized text for integrationsSyncNowDialogTitle."
+  },
+  "integrationsSyncNowDialogBody": "The backend will enqueue an immediate integration sync.",
+  "@integrationsSyncNowDialogBody": {
+    "description": "Localized text for integrationsSyncNowDialogBody."
+  },
+  "integrationsEnableIntegrationDialogTitle": "Enable integration?",
+  "@integrationsEnableIntegrationDialogTitle": {
+    "description": "Localized text for integrationsEnableIntegrationDialogTitle."
+  },
+  "integrationsDisableIntegrationDialogTitle": "Disable integration?",
+  "@integrationsDisableIntegrationDialogTitle": {
+    "description": "Localized text for integrationsDisableIntegrationDialogTitle."
+  },
+  "integrationsEnableIntegrationDialogBody": "This integration will become available for downstream workflows.",
+  "@integrationsEnableIntegrationDialogBody": {
+    "description": "Localized text for integrationsEnableIntegrationDialogBody."
+  },
+  "integrationsDisableIntegrationDialogBody": "This integration will stop participating in downstream workflows.",
+  "@integrationsDisableIntegrationDialogBody": {
+    "description": "Localized text for integrationsDisableIntegrationDialogBody."
+  },
+  "integrationsEnableApiKeyDialogTitle": "Enable API key?",
+  "@integrationsEnableApiKeyDialogTitle": {
+    "description": "Localized text for integrationsEnableApiKeyDialogTitle."
+  },
+  "integrationsDisableApiKeyDialogTitle": "Disable API key?",
+  "@integrationsDisableApiKeyDialogTitle": {
+    "description": "Localized text for integrationsDisableApiKeyDialogTitle."
+  },
+  "integrationsEnableApiKeyDialogBody": "This API key can authenticate requests again.",
+  "@integrationsEnableApiKeyDialogBody": {
+    "description": "Localized text for integrationsEnableApiKeyDialogBody."
+  },
+  "integrationsDisableApiKeyDialogBody": "This API key will stop authenticating requests.",
+  "@integrationsDisableApiKeyDialogBody": {
+    "description": "Localized text for integrationsDisableApiKeyDialogBody."
+  },
+  "integrationsEnableWebhookDialogTitle": "Enable webhook?",
+  "@integrationsEnableWebhookDialogTitle": {
+    "description": "Localized text for integrationsEnableWebhookDialogTitle."
+  },
+  "integrationsDisableWebhookDialogTitle": "Disable webhook?",
+  "@integrationsDisableWebhookDialogTitle": {
+    "description": "Localized text for integrationsDisableWebhookDialogTitle."
+  },
+  "integrationsEnableWebhookDialogBody": "This webhook will receive matching events again.",
+  "@integrationsEnableWebhookDialogBody": {
+    "description": "Localized text for integrationsEnableWebhookDialogBody."
+  },
+  "integrationsDisableWebhookDialogBody": "This webhook will stop receiving matching events.",
+  "@integrationsDisableWebhookDialogBody": {
+    "description": "Localized text for integrationsDisableWebhookDialogBody."
+  },
+  "integrationsRevokeApiKeyDialogTitle": "Revoke API key?",
+  "@integrationsRevokeApiKeyDialogTitle": {
+    "description": "Localized text for integrationsRevokeApiKeyDialogTitle."
+  },
+  "integrationsRevokeApiKeyDialogBody": "This permanently deletes the API key and its local permission grants.",
+  "@integrationsRevokeApiKeyDialogBody": {
+    "description": "Localized text for integrationsRevokeApiKeyDialogBody."
+  },
+  "integrationsReplayWebhookDialogTitle": "Replay webhook?",
+  "@integrationsReplayWebhookDialogTitle": {
+    "description": "Localized text for integrationsReplayWebhookDialogTitle."
+  },
+  "integrationsReplayWebhookDialogBody": "The backend will replay the webhook delivery.",
+  "@integrationsReplayWebhookDialogBody": {
+    "description": "Localized text for integrationsReplayWebhookDialogBody."
+  },
+  "integrationsReplayLogDialogTitle": "Replay log?",
+  "@integrationsReplayLogDialogTitle": {
+    "description": "Localized text for integrationsReplayLogDialogTitle."
+  },
+  "integrationsReplayLogDialogBody": "The backend will retry the logged integration event.",
+  "@integrationsReplayLogDialogBody": {
+    "description": "Localized text for integrationsReplayLogDialogBody."
+  },
+  "integrationsFilterIntegrations": "Integrations",
+  "@integrationsFilterIntegrations": {
+    "description": "Localized text for integrationsFilterIntegrations."
+  },
+  "integrationsFilterApiKeys": "API keys",
+  "@integrationsFilterApiKeys": {
+    "description": "Localized text for integrationsFilterApiKeys."
+  },
+  "integrationsFilterWebhooks": "Webhooks",
+  "@integrationsFilterWebhooks": {
+    "description": "Localized text for integrationsFilterWebhooks."
+  },
+  "integrationsFilterLogs": "Logs",
+  "@integrationsFilterLogs": {
+    "description": "Localized text for integrationsFilterLogs."
+  },
+  "integrationsFilterInterop": "Interop",
+  "@integrationsFilterInterop": {
+    "description": "Localized text for integrationsFilterInterop."
+  },
+  "integrationsFilterActive": "Active",
+  "@integrationsFilterActive": {
+    "description": "Localized text for integrationsFilterActive."
+  },
+  "integrationsFilterWarning": "Warning",
+  "@integrationsFilterWarning": {
+    "description": "Localized text for integrationsFilterWarning."
+  },
+  "integrationsFilterFailed": "Failed",
+  "@integrationsFilterFailed": {
+    "description": "Localized text for integrationsFilterFailed."
+  },
+  "integrationsFilterDisabled": "Disabled",
+  "@integrationsFilterDisabled": {
+    "description": "Localized text for integrationsFilterDisabled."
+  },
+  "integrationsTypeHl7": "HL7",
+  "@integrationsTypeHl7": {
+    "description": "Localized text for integrationsTypeHl7."
+  },
+  "integrationsTypeFhir": "FHIR",
+  "@integrationsTypeFhir": {
+    "description": "Localized text for integrationsTypeFhir."
+  },
+  "integrationsTypeLab": "Lab",
+  "@integrationsTypeLab": {
+    "description": "Localized text for integrationsTypeLab."
+  },
+  "integrationsTypeRadiology": "Radiology",
+  "@integrationsTypeRadiology": {
+    "description": "Localized text for integrationsTypeRadiology."
+  },
+  "integrationsTypeBilling": "Billing",
+  "@integrationsTypeBilling": {
+    "description": "Localized text for integrationsTypeBilling."
+  },
+  "integrationsTypeOther": "Other",
+  "@integrationsTypeOther": {
+    "description": "Localized text for integrationsTypeOther."
+  },
+  "integrationsStatusActive": "Active",
+  "@integrationsStatusActive": {
+    "description": "Localized text for integrationsStatusActive."
+  },
+  "integrationsStatusInactive": "Inactive",
+  "@integrationsStatusInactive": {
+    "description": "Localized text for integrationsStatusInactive."
+  },
+  "integrationsStatusError": "Error",
+  "@integrationsStatusError": {
+    "description": "Localized text for integrationsStatusError."
+  },
+  "integrationsStatusFailed": "Failed",
+  "@integrationsStatusFailed": {
+    "description": "Localized text for integrationsStatusFailed."
+  },
+  "integrationsStatusReady": "Ready",
+  "@integrationsStatusReady": {
+    "description": "Localized text for integrationsStatusReady."
+  },
+  "integrationsStatusBackendGap": "Backend gap",
+  "@integrationsStatusBackendGap": {
+    "description": "Localized text for integrationsStatusBackendGap."
+  },
+  "integrationsStatusQueued": "Queued",
+  "@integrationsStatusQueued": {
+    "description": "Localized text for integrationsStatusQueued."
+  },
+  "integrationsStatusConnected": "Connected",
+  "@integrationsStatusConnected": {
+    "description": "Localized text for integrationsStatusConnected."
+  },
+  "integrationsKindIntegration": "Integration",
+  "@integrationsKindIntegration": {
+    "description": "Localized text for integrationsKindIntegration."
+  },
+  "integrationsKindApiKey": "API key",
+  "@integrationsKindApiKey": {
+    "description": "Localized text for integrationsKindApiKey."
+  },
+  "integrationsKindWebhook": "Webhook",
+  "@integrationsKindWebhook": {
+    "description": "Localized text for integrationsKindWebhook."
+  },
+  "integrationsKindLog": "Log",
+  "@integrationsKindLog": {
+    "description": "Localized text for integrationsKindLog."
+  },
+  "integrationsKindInterop": "Interop",
+  "@integrationsKindInterop": {
+    "description": "Localized text for integrationsKindInterop."
+  },
+  "integrationsNoScopesLabel": "No scopes",
+  "@integrationsNoScopesLabel": {
+    "description": "Localized text for integrationsNoScopesLabel."
+  },
+  "integrationsOneScopeLabel": "1 scope",
+  "@integrationsOneScopeLabel": {
+    "description": "Localized text for integrationsOneScopeLabel."
+  },
+  "integrationsInteropFhirScope": "FHIR exchange",
+  "@integrationsInteropFhirScope": {
+    "description": "Localized text for integrationsInteropFhirScope."
+  },
+  "integrationsInteropHl7Scope": "HL7 messaging",
+  "@integrationsInteropHl7Scope": {
+    "description": "Localized text for integrationsInteropHl7Scope."
+  },
+  "integrationsInteropDicomScope": "DICOM linking",
+  "@integrationsInteropDicomScope": {
+    "description": "Localized text for integrationsInteropDicomScope."
+  },
+  "integrationsInteropMigrationScope": "Migration import and export",
+  "@integrationsInteropMigrationScope": {
+    "description": "Localized text for integrationsInteropMigrationScope."
+  },
+  "integrationsInteropStatusScope": "Readiness status",
+  "@integrationsInteropStatusScope": {
+    "description": "Localized text for integrationsInteropStatusScope."
+  },
+  "integrationsManyScopesLabel": "{count} scopes",
+  "@integrationsManyScopesLabel": {
+    "description": "Localized text for integrationsManyScopesLabel.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "integrationsNextActionReviewFailure": "Review failure",
+  "@integrationsNextActionReviewFailure": {
+    "description": "Localized text for integrationsNextActionReviewFailure."
+  },
+  "integrationsNextActionEnable": "Enable item",
+  "@integrationsNextActionEnable": {
+    "description": "Localized text for integrationsNextActionEnable."
+  },
+  "integrationsNextActionMonitor": "Monitor",
+  "@integrationsNextActionMonitor": {
+    "description": "Localized text for integrationsNextActionMonitor."
+  },
+  "integrationsNextActionReviewKey": "Review key",
+  "@integrationsNextActionReviewKey": {
+    "description": "Localized text for integrationsNextActionReviewKey."
+  },
+  "integrationsNextActionRotateOrMonitor": "Rotate or monitor",
+  "@integrationsNextActionRotateOrMonitor": {
+    "description": "Localized text for integrationsNextActionRotateOrMonitor."
+  },
+  "integrationsNextActionEnableWebhook": "Enable webhook",
+  "@integrationsNextActionEnableWebhook": {
+    "description": "Localized text for integrationsNextActionEnableWebhook."
+  },
+  "integrationsNextActionMonitorDelivery": "Monitor delivery",
+  "@integrationsNextActionMonitorDelivery": {
+    "description": "Localized text for integrationsNextActionMonitorDelivery."
+  },
+  "integrationsNextActionReplayOrEscalate": "Replay or escalate",
+  "@integrationsNextActionReplayOrEscalate": {
+    "description": "Localized text for integrationsNextActionReplayOrEscalate."
+  },
+  "integrationsNextActionReview": "Review",
+  "@integrationsNextActionReview": {
+    "description": "Localized text for integrationsNextActionReview."
+  },
+  "integrationsNextActionRunEndpoint": "Run endpoint",
+  "@integrationsNextActionRunEndpoint": {
+    "description": "Localized text for integrationsNextActionRunEndpoint."
+  },
+  "integrationsNextActionUseStatusLogs": "Use status logs",
+  "@integrationsNextActionUseStatusLogs": {
+    "description": "Localized text for integrationsNextActionUseStatusLogs."
+  },
+  "integrationsInteropFhirTitle": "FHIR exchange",
+  "@integrationsInteropFhirTitle": {
+    "description": "Localized text for integrationsInteropFhirTitle."
+  },
+  "integrationsInteropHl7Title": "HL7 messages",
+  "@integrationsInteropHl7Title": {
+    "description": "Localized text for integrationsInteropHl7Title."
+  },
+  "integrationsInteropDicomTitle": "DICOM study linking",
+  "@integrationsInteropDicomTitle": {
+    "description": "Localized text for integrationsInteropDicomTitle."
+  },
+  "integrationsInteropMigrationTitle": "Migration tools",
+  "@integrationsInteropMigrationTitle": {
+    "description": "Localized text for integrationsInteropMigrationTitle."
+  },
+  "integrationsInteropReadinessTitle": "Interop readiness",
+  "@integrationsInteropReadinessTitle": {
+    "description": "Localized text for integrationsInteropReadinessTitle."
+  },
+  "integrationsInteropReadinessGapBody": "No dedicated interoperability readiness endpoint is exposed. Use integration status and sanitized logs until the backend adds one.",
+  "@integrationsInteropReadinessGapBody": {
+    "description": "Localized text for integrationsInteropReadinessGapBody."
+  },
+  "integrationsSavedMessage": "Integration changes saved.",
+  "@integrationsSavedMessage": {
+    "description": "Localized text for integrationsSavedMessage."
+  },
+  "reportsTitle": "Reports and audit",
+  "@reportsTitle": {
+    "description": "Title for the reports and audit workspace."
+  },
+  "reportsLoadingTitle": "Loading reports workspace",
+  "@reportsLoadingTitle": {
+    "description": "Loading title for the reports workspace."
+  },
+  "reportsLoadingBody": "Fetching report definitions, runs, schedules, dashboards, and audit evidence.",
+  "@reportsLoadingBody": {
+    "description": "Loading body for the reports workspace."
+  },
+  "reportsLiveStatus": "Live",
+  "@reportsLiveStatus": {
+    "description": "Status label when the reports workspace is live."
+  },
+  "reportsSavingStatus": "Saving",
+  "@reportsSavingStatus": {
+    "description": "Status label while a report action is saving."
+  },
+  "reportsRunAction": "Run report",
+  "@reportsRunAction": {
+    "description": "Action label to run a report."
+  },
+  "reportsScheduleAction": "Schedule",
+  "@reportsScheduleAction": {
+    "description": "Action label to schedule a report."
+  },
+  "reportsRetryAction": "Retry",
+  "@reportsRetryAction": {
+    "description": "Action label to retry a report run."
+  },
+  "reportsCancelRunAction": "Cancel run",
+  "@reportsCancelRunAction": {
+    "description": "Action label to cancel a report run."
+  },
+  "reportsDownloadAction": "Download",
+  "@reportsDownloadAction": {
+    "description": "Action label to download a generated report."
+  },
+  "reportsPrintAction": "Print",
+  "@reportsPrintAction": {
+    "description": "Action label to print report or evidence details."
+  },
+  "reportsExportEvidenceAction": "Export evidence",
+  "@reportsExportEvidenceAction": {
+    "description": "Action label to export compliance evidence."
+  },
+  "reportsSearchLabel": "Search reports and logs",
+  "@reportsSearchLabel": {
+    "description": "Accessible label for reports workspace search."
+  },
+  "reportsSearchHint": "Search report name, module, owner, status, or record",
+  "@reportsSearchHint": {
+    "description": "Search hint for report data."
+  },
+  "reportsComplianceSearchHint": "Search user, action, record, patient, purpose, or reason",
+  "@reportsComplianceSearchHint": {
+    "description": "Search hint for compliance logs."
+  },
+  "reportsClearSearchLabel": "Clear reports search",
+  "@reportsClearSearchLabel": {
+    "description": "Clear search action label for reports search."
+  },
+  "reportsFiltersLabel": "Report filters",
+  "@reportsFiltersLabel": {
+    "description": "Advanced filter dialog label for reports."
+  },
+  "reportsPanelFilterLabel": "Workspace panel",
+  "@reportsPanelFilterLabel": {
+    "description": "Filter label for reports workspace panel."
+  },
+  "reportsStatusFilterLabel": "Status",
+  "@reportsStatusFilterLabel": {
+    "description": "Filter label for report status."
+  },
+  "reportsFormatFilterLabel": "Format",
+  "@reportsFormatFilterLabel": {
+    "description": "Filter label for report output format."
+  },
+  "reportsDatasetFilterLabel": "Dataset",
+  "@reportsDatasetFilterLabel": {
+    "description": "Filter label for report dataset."
+  },
+  "reportsDateFilterLabel": "Date range",
+  "@reportsDateFilterLabel": {
+    "description": "Filter label for report date range."
+  },
+  "reportsDateFromLabel": "From",
+  "@reportsDateFromLabel": {
+    "description": "Start date label for report filters."
+  },
+  "reportsDateToLabel": "To",
+  "@reportsDateToLabel": {
+    "description": "End date label for report filters."
+  },
+  "reportsDatePickerLabel": "Choose date",
+  "@reportsDatePickerLabel": {
+    "description": "Date picker button label for report filters."
+  },
+  "reportsInvalidDateMessage": "Enter a valid date.",
+  "@reportsInvalidDateMessage": {
+    "description": "Validation message for invalid report filter dates."
+  },
+  "reportsComplianceTypeFilterLabel": "Event type",
+  "@reportsComplianceTypeFilterLabel": {
+    "description": "Filter label for compliance event type."
+  },
+  "reportsAllStatusesLabel": "All statuses",
+  "@reportsAllStatusesLabel": {
+    "description": "All statuses filter label."
+  },
+  "reportsAllFormatsLabel": "All formats",
+  "@reportsAllFormatsLabel": {
+    "description": "All formats filter label."
+  },
+  "reportsAllDatasetsLabel": "All datasets",
+  "@reportsAllDatasetsLabel": {
+    "description": "All datasets filter label."
+  },
+  "reportsPanelOverview": "Overview",
+  "@reportsPanelOverview": {
+    "description": "Reports workspace overview panel label."
+  },
+  "reportsPanelCatalog": "Catalog",
+  "@reportsPanelCatalog": {
+    "description": "Reports workspace catalog panel label."
+  },
+  "reportsPanelDelivery": "Runs and delivery",
+  "@reportsPanelDelivery": {
+    "description": "Reports workspace delivery panel label."
+  },
+  "reportsPanelDashboards": "Dashboards",
+  "@reportsPanelDashboards": {
+    "description": "Reports workspace dashboards panel label."
+  },
+  "reportsPanelMonitor": "KPI monitor",
+  "@reportsPanelMonitor": {
+    "description": "Reports workspace KPI monitor panel label."
+  },
+  "reportsPanelActivity": "Analytics activity",
+  "@reportsPanelActivity": {
+    "description": "Reports workspace analytics activity panel label."
+  },
+  "reportsPanelAudit": "Audit logs",
+  "@reportsPanelAudit": {
+    "description": "Reports workspace audit logs panel label."
+  },
+  "reportsPanelPhi": "PHI access",
+  "@reportsPanelPhi": {
+    "description": "Reports workspace PHI access panel label."
+  },
+  "reportsPanelProcessing": "Processing logs",
+  "@reportsPanelProcessing": {
+    "description": "Reports workspace data processing logs panel label."
+  },
+  "reportsWorklistDescription": "Search, filter, preview, run, schedule, print, and export backend-backed report records.",
+  "@reportsWorklistDescription": {
+    "description": "Description for the report worklist panel."
+  },
+  "reportsComplianceDescription": "Search and review audit, PHI access, and data processing logs within permitted scope.",
+  "@reportsComplianceDescription": {
+    "description": "Description for compliance log worklists."
+  },
+  "reportsSchedulesTitle": "Schedules",
+  "@reportsSchedulesTitle": {
+    "description": "Title for report schedule list."
+  },
+  "reportsSchedulesDescription": "Saved schedules stay backend-backed and refresh independently from report runs.",
+  "@reportsSchedulesDescription": {
+    "description": "Description for report schedule list."
+  },
+  "reportsNoItemsTitle": "No report records",
+  "@reportsNoItemsTitle": {
+    "description": "Empty state title for report records."
+  },
+  "reportsNoItemsBody": "No backend report records match the current filters.",
+  "@reportsNoItemsBody": {
+    "description": "Empty state body for report records."
+  },
+  "reportsNoSchedulesTitle": "No schedules",
+  "@reportsNoSchedulesTitle": {
+    "description": "Empty state title for report schedules."
+  },
+  "reportsNoSchedulesBody": "No saved report schedules match this view.",
+  "@reportsNoSchedulesBody": {
+    "description": "Empty state body for report schedules."
+  },
+  "reportsNoComplianceLogsTitle": "No compliance logs",
+  "@reportsNoComplianceLogsTitle": {
+    "description": "Empty state title for compliance logs."
+  },
+  "reportsNoComplianceLogsBody": "No audit or compliance evidence matches the current filters.",
+  "@reportsNoComplianceLogsBody": {
+    "description": "Empty state body for compliance logs."
+  },
+  "reportsPreviewTitle": "Report preview",
+  "@reportsPreviewTitle": {
+    "description": "Title for report preview panel."
+  },
+  "reportsComplianceDetailTitle": "Evidence detail",
+  "@reportsComplianceDetailTitle": {
+    "description": "Title for compliance evidence detail panel."
+  },
+  "reportsNoSelectionTitle": "No selection",
+  "@reportsNoSelectionTitle": {
+    "description": "No selection title in reports workspace."
+  },
+  "reportsNoSelectionBody": "Choose a report definition, run, widget, KPI, event, or schedule to preview generated details.",
+  "@reportsNoSelectionBody": {
+    "description": "No selection body in reports workspace."
+  },
+  "reportsNoComplianceSelectionBody": "Choose an audit, PHI access, or processing log to review evidence details.",
+  "@reportsNoComplianceSelectionBody": {
+    "description": "No selection body for compliance detail."
+  },
+  "reportsNameColumnLabel": "Name",
+  "@reportsNameColumnLabel": {
+    "description": "Report table name column label."
+  },
+  "reportsStatusColumnLabel": "Status",
+  "@reportsStatusColumnLabel": {
+    "description": "Report table status column label."
+  },
+  "reportsReferenceLabel": "Reference",
+  "@reportsReferenceLabel": {
+    "description": "Report reference label."
+  },
+  "reportsOwnerLabel": "Owner",
+  "@reportsOwnerLabel": {
+    "description": "Report owner label."
+  },
+  "reportsUpdatedColumnLabel": "Updated",
+  "@reportsUpdatedColumnLabel": {
+    "description": "Report updated timestamp column label."
+  },
+  "reportsFormatColumnLabel": "Format",
+  "@reportsFormatColumnLabel": {
+    "description": "Report format column label."
+  },
+  "reportsCategoryLabel": "Category",
+  "@reportsCategoryLabel": {
+    "description": "Report category label."
+  },
+  "reportsDatasetLabel": "Dataset",
+  "@reportsDatasetLabel": {
+    "description": "Report dataset label."
+  },
+  "reportsFacilityLabel": "Facility",
+  "@reportsFacilityLabel": {
+    "description": "Report facility label."
+  },
+  "reportsValueLabel": "Value",
+  "@reportsValueLabel": {
+    "description": "Report value label."
+  },
+  "reportsErrorLabel": "Error",
+  "@reportsErrorLabel": {
+    "description": "Report error label."
+  },
+  "reportsEventColumnLabel": "Event",
+  "@reportsEventColumnLabel": {
+    "description": "Compliance event column label."
+  },
+  "reportsUserColumnLabel": "User",
+  "@reportsUserColumnLabel": {
+    "description": "Compliance user column label."
+  },
+  "reportsRecordColumnLabel": "Record",
+  "@reportsRecordColumnLabel": {
+    "description": "Compliance record column label."
+  },
+  "reportsTimestampColumnLabel": "Timestamp",
+  "@reportsTimestampColumnLabel": {
+    "description": "Compliance timestamp column label."
+  },
+  "reportsPatientLabel": "Patient",
+  "@reportsPatientLabel": {
+    "description": "Compliance patient label."
+  },
+  "reportsActionLabel": "Action",
+  "@reportsActionLabel": {
+    "description": "Compliance action label."
+  },
+  "reportsEntityLabel": "Entity",
+  "@reportsEntityLabel": {
+    "description": "Compliance entity label."
+  },
+  "reportsScopeLabel": "Scope",
+  "@reportsScopeLabel": {
+    "description": "PHI access scope label."
+  },
+  "reportsPurposeLabel": "Purpose",
+  "@reportsPurposeLabel": {
+    "description": "Data processing purpose label."
+  },
+  "reportsLegalBasisLabel": "Legal basis",
+  "@reportsLegalBasisLabel": {
+    "description": "Data processing legal basis label."
+  },
+  "reportsIpAddressLabel": "IP address",
+  "@reportsIpAddressLabel": {
+    "description": "Audit IP address label."
+  },
+  "reportsDetailsLabel": "Details",
+  "@reportsDetailsLabel": {
+    "description": "Compliance details label."
+  },
+  "reportsPreviousPageLabel": "Previous page",
+  "@reportsPreviousPageLabel": {
+    "description": "Previous page action label for reports tables."
+  },
+  "reportsNextPageLabel": "Next page",
+  "@reportsNextPageLabel": {
+    "description": "Next page action label for reports tables."
+  },
+  "reportsPageLabel": "{first}-{last} of {total}",
+  "@reportsPageLabel": {
+    "description": "Pagination label for reports tables.",
+    "placeholders": {
+      "first": {
+        "type": "int"
+      },
+      "last": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsTimelineTitle": "Recent report activity",
+  "@reportsTimelineTitle": {
+    "description": "Title for recent report activity panel."
+  },
+  "reportsTimelineDescription": "Latest backend report runs, schedules, KPI snapshots, and analytics events.",
+  "@reportsTimelineDescription": {
+    "description": "Description for recent report activity panel."
+  },
+  "reportsRunDialogTitle": "Run report",
+  "@reportsRunDialogTitle": {
+    "description": "Dialog title for running a report."
+  },
+  "reportsRetryDialogTitle": "Retry report run",
+  "@reportsRetryDialogTitle": {
+    "description": "Dialog title for retrying a report run."
+  },
+  "reportsScheduleDialogTitle": "Schedule report",
+  "@reportsScheduleDialogTitle": {
+    "description": "Dialog title for scheduling a report."
+  },
+  "reportsFormatFieldLabel": "Output format",
+  "@reportsFormatFieldLabel": {
+    "description": "Output format field label."
+  },
+  "reportsRetentionDaysFieldLabel": "Retention days",
+  "@reportsRetentionDaysFieldLabel": {
+    "description": "Retention days field label."
+  },
+  "reportsScheduleNameFieldLabel": "Schedule name",
+  "@reportsScheduleNameFieldLabel": {
+    "description": "Schedule name field label."
+  },
+  "reportsFrequencyFieldLabel": "Frequency",
+  "@reportsFrequencyFieldLabel": {
+    "description": "Frequency field label."
+  },
+  "reportsTimeOfDayFieldLabel": "Time of day",
+  "@reportsTimeOfDayFieldLabel": {
+    "description": "Time of day field label."
+  },
+  "reportsTimeOfDayHint": "HH:mm",
+  "@reportsTimeOfDayHint": {
+    "description": "Hint for report schedule time of day."
+  },
+  "reportsCreateScheduleAction": "Create schedule",
+  "@reportsCreateScheduleAction": {
+    "description": "Action label to create a report schedule."
+  },
+  "reportsFrequencyDaily": "Daily",
+  "@reportsFrequencyDaily": {
+    "description": "Daily report schedule frequency label."
+  },
+  "reportsFrequencyWeekly": "Weekly",
+  "@reportsFrequencyWeekly": {
+    "description": "Weekly report schedule frequency label."
+  },
+  "reportsFrequencyMonthly": "Monthly",
+  "@reportsFrequencyMonthly": {
+    "description": "Monthly report schedule frequency label."
+  },
+  "reportsCancelRunDialogTitle": "Cancel report run",
+  "@reportsCancelRunDialogTitle": {
+    "description": "Dialog title for canceling a report run."
+  },
+  "reportsCancelRunDialogBody": "Cancel this queued or processing report run? The run row will refresh after the backend confirms the change.",
+  "@reportsCancelRunDialogBody": {
+    "description": "Dialog body for canceling a report run."
+  },
+  "reportsExportEvidenceDialogTitle": "Export evidence",
+  "@reportsExportEvidenceDialogTitle": {
+    "description": "Dialog title for exporting evidence."
+  },
+  "reportsExportEvidenceDialogBody": "Generate a facility-branded evidence document from this backend log record.",
+  "@reportsExportEvidenceDialogBody": {
+    "description": "Dialog body for exporting evidence."
+  },
+  "reportsSavedMessage": "Reports workspace updated.",
+  "@reportsSavedMessage": {
+    "description": "Success message after reports workspace actions."
+  },
+  "reportsDownloadRequestedMessage": "Report download was requested from the backend.",
+  "@reportsDownloadRequestedMessage": {
+    "description": "Message after requesting report download."
+  },
+  "reportsPrintSubtitle": "Generated report metadata",
+  "@reportsPrintSubtitle": {
+    "description": "Subtitle for printed report metadata."
+  },
+  "reportsEvidenceSubtitle": "Compliance evidence",
+  "@reportsEvidenceSubtitle": {
+    "description": "Subtitle for printed compliance evidence."
+  },
+  "reportsGeneratedByLabel": "Generated by",
+  "@reportsGeneratedByLabel": {
+    "description": "Generated by metadata label."
+  },
+  "reportsPrintFooter": "Confidential report document generated from backend data.",
+  "@reportsPrintFooter": {
+    "description": "Footer for printed report documents."
+  },
+  "reportsEvidenceFooter": "Compliance evidence generated from backend audit data.",
+  "@reportsEvidenceFooter": {
+    "description": "Footer for printed evidence documents."
+  },
+  "navigationPhysiotherapyLabel": "Physiotherapy",
+  "@navigationPhysiotherapyLabel": {
+    "description": "Navigation label for the physiotherapy workspace."
+  },
+  "communicationsLoadingTitle": "Loading communications",
+  "@communicationsLoadingTitle": {
+    "description": "Loading title for the communications workspace."
+  },
+  "communicationsLoadingBody": "Loading notifications, conversations, delivery state, and templates.",
+  "@communicationsLoadingBody": {
+    "description": "Loading body for the communications workspace."
+  },
+  "communicationsWorkspaceTitle": "Communications",
+  "@communicationsWorkspaceTitle": {
+    "description": "Title for the communications workspace."
+  },
+  "communicationsLiveStatus": "Live sync",
+  "@communicationsLiveStatus": {
+    "description": "Status label for synchronized communications data."
+  },
+  "communicationsSavingStatus": "Saving",
+  "@communicationsSavingStatus": {
+    "description": "Status label while communications changes are being saved."
+  },
+  "communicationsActionSavedMessage": "Communication action saved.",
+  "@communicationsActionSavedMessage": {
+    "description": "Snackbar message after a communications action succeeds."
+  },
+  "communicationsMessageSentMessage": "Message sent.",
+  "@communicationsMessageSentMessage": {
+    "description": "Snackbar message after a conversation message is sent."
+  },
+  "communicationsInboxPanelLabel": "Inbox",
+  "@communicationsInboxPanelLabel": {
+    "description": "Panel label for conversation inbox."
+  },
+  "communicationsNotificationsPanelLabel": "Notifications",
+  "@communicationsNotificationsPanelLabel": {
+    "description": "Panel label for notifications."
+  },
+  "communicationsDeliveriesPanelLabel": "Deliveries",
+  "@communicationsDeliveriesPanelLabel": {
+    "description": "Panel label for notification deliveries."
+  },
+  "communicationsTemplatesPanelLabel": "Templates",
+  "@communicationsTemplatesPanelLabel": {
+    "description": "Panel label for communication templates."
+  },
+  "communicationsUnreadThreadsSummaryLabel": "Unread threads",
+  "@communicationsUnreadThreadsSummaryLabel": {
+    "description": "Summary card label for unread conversation threads."
+  },
+  "communicationsUnreadNotificationsSummaryLabel": "Unread alerts",
+  "@communicationsUnreadNotificationsSummaryLabel": {
+    "description": "Summary card label for unread notifications."
+  },
+  "communicationsFailedDeliveriesSummaryLabel": "Failed deliveries",
+  "@communicationsFailedDeliveriesSummaryLabel": {
+    "description": "Summary card label for failed notification deliveries."
+  },
+  "communicationsTemplatesSummaryLabel": "Templates",
+  "@communicationsTemplatesSummaryLabel": {
+    "description": "Summary card label for communication templates."
+  },
+  "communicationsListDescription": "Find alerts, threads, delivery state, and message templates.",
+  "@communicationsListDescription": {
+    "description": "Description for the communications worklist."
+  },
+  "communicationsSearchSemanticLabel": "Search communications",
+  "@communicationsSearchSemanticLabel": {
+    "description": "Accessibility label for communications search."
+  },
+  "communicationsSearchHint": "Search alert, patient, source, sender, recipient, or message",
+  "@communicationsSearchHint": {
+    "description": "Hint text for communications search."
+  },
+  "communicationsClearSearchAction": "Clear communications search",
+  "@communicationsClearSearchAction": {
+    "description": "Action label for clearing communications search."
+  },
+  "communicationsAdvancedFiltersLabel": "Communication filters",
+  "@communicationsAdvancedFiltersLabel": {
+    "description": "Action label for communications filters."
+  },
+  "communicationsAdvancedFiltersTitle": "Communication filters",
+  "@communicationsAdvancedFiltersTitle": {
+    "description": "Dialog title for communications filters."
+  },
+  "communicationsApplyFiltersAction": "Apply filters",
+  "@communicationsApplyFiltersAction": {
+    "description": "Action label for applying communications filters."
+  },
+  "communicationsResetFiltersAction": "Reset filters",
+  "@communicationsResetFiltersAction": {
+    "description": "Action label for resetting communications filters."
+  },
+  "communicationsQueueFilterLabel": "Queue",
+  "@communicationsQueueFilterLabel": {
+    "description": "Filter group label for communications queues."
+  },
+  "communicationsFlagsFilterLabel": "Flags",
+  "@communicationsFlagsFilterLabel": {
+    "description": "Filter group label for communications flags."
+  },
+  "communicationsAllFilterLabel": "All",
+  "@communicationsAllFilterLabel": {
+    "description": "Filter option label for all communications."
+  },
+  "communicationsUnreadFilterLabel": "Unread",
+  "@communicationsUnreadFilterLabel": {
+    "description": "Filter label for unread communications."
+  },
+  "communicationsSensitiveFilterLabel": "Sensitive",
+  "@communicationsSensitiveFilterLabel": {
+    "description": "Filter label for sensitive communications."
+  },
+  "communicationsPreviousPageLabel": "Previous communications page",
+  "@communicationsPreviousPageLabel": {
+    "description": "Pagination label for the previous communications page."
+  },
+  "communicationsNextPageLabel": "Next communications page",
+  "@communicationsNextPageLabel": {
+    "description": "Pagination label for the next communications page."
+  },
+  "communicationsPageLabel": "{from}-{to} of {total}",
+  "@communicationsPageLabel": {
+    "description": "Pagination range label for communications tables.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "communicationsThreadColumnLabel": "Thread",
+  "@communicationsThreadColumnLabel": {
+    "description": "Conversation table thread column label."
+  },
+  "communicationsParticipantsColumnLabel": "Participants",
+  "@communicationsParticipantsColumnLabel": {
+    "description": "Conversation table participants column label."
+  },
+  "communicationsStatusColumnLabel": "Status",
+  "@communicationsStatusColumnLabel": {
+    "description": "Communications table status column label."
+  },
+  "communicationsLastMessageColumnLabel": "Last message",
+  "@communicationsLastMessageColumnLabel": {
+    "description": "Conversation table last message column label."
+  },
+  "communicationsTimeColumnLabel": "Time",
+  "@communicationsTimeColumnLabel": {
+    "description": "Communications table time column label."
+  },
+  "communicationsAlertColumnLabel": "Alert",
+  "@communicationsAlertColumnLabel": {
+    "description": "Notification table alert column label."
+  },
+  "communicationsTypeColumnLabel": "Type",
+  "@communicationsTypeColumnLabel": {
+    "description": "Notification table type column label."
+  },
+  "communicationsPriorityColumnLabel": "Priority",
+  "@communicationsPriorityColumnLabel": {
+    "description": "Notification table priority column label."
+  },
+  "communicationsStateColumnLabel": "State",
+  "@communicationsStateColumnLabel": {
+    "description": "Communications table state column label."
+  },
+  "communicationsNotificationColumnLabel": "Notification",
+  "@communicationsNotificationColumnLabel": {
+    "description": "Delivery table notification column label."
+  },
+  "communicationsChannelColumnLabel": "Channel",
+  "@communicationsChannelColumnLabel": {
+    "description": "Communications table channel column label."
+  },
+  "communicationsRecipientColumnLabel": "Recipient",
+  "@communicationsRecipientColumnLabel": {
+    "description": "Delivery table recipient column label."
+  },
+  "communicationsAttemptsColumnLabel": "Attempts",
+  "@communicationsAttemptsColumnLabel": {
+    "description": "Delivery table attempts column label."
+  },
+  "communicationsTemplateColumnLabel": "Template",
+  "@communicationsTemplateColumnLabel": {
+    "description": "Template table template column label."
+  },
+  "communicationsVariablesColumnLabel": "Variables",
+  "@communicationsVariablesColumnLabel": {
+    "description": "Template table variables column label."
+  },
+  "communicationsNoConversationsTitle": "No conversations",
+  "@communicationsNoConversationsTitle": {
+    "description": "Empty title for conversations table."
+  },
+  "communicationsNoConversationsBody": "Matching conversation threads will appear here.",
+  "@communicationsNoConversationsBody": {
+    "description": "Empty body for conversations table."
+  },
+  "communicationsNoNotificationsTitle": "No notifications",
+  "@communicationsNoNotificationsTitle": {
+    "description": "Empty title for notifications table."
+  },
+  "communicationsNoNotificationsBody": "Matching workflow alerts and reminders will appear here.",
+  "@communicationsNoNotificationsBody": {
+    "description": "Empty body for notifications table."
+  },
+  "communicationsNoDeliveriesTitle": "No deliveries",
+  "@communicationsNoDeliveriesTitle": {
+    "description": "Empty title for notification deliveries table."
+  },
+  "communicationsNoDeliveriesBody": "Notification channel delivery attempts will appear here.",
+  "@communicationsNoDeliveriesBody": {
+    "description": "Empty body for notification deliveries table."
+  },
+  "communicationsNoTemplatesTitle": "No templates",
+  "@communicationsNoTemplatesTitle": {
+    "description": "Empty title for communication templates table."
+  },
+  "communicationsNoTemplatesBody": "Reusable communication templates will appear here.",
+  "@communicationsNoTemplatesBody": {
+    "description": "Empty body for communication templates table."
+  },
+  "communicationsConversationDetailTitle": "Conversation detail",
+  "@communicationsConversationDetailTitle": {
+    "description": "Title for conversation detail panel."
+  },
+  "communicationsNotificationDetailTitle": "Notification detail",
+  "@communicationsNotificationDetailTitle": {
+    "description": "Title for notification detail panel."
+  },
+  "communicationsDeliveryDetailTitle": "Delivery detail",
+  "@communicationsDeliveryDetailTitle": {
+    "description": "Title for delivery detail panel."
+  },
+  "communicationsTemplateDetailTitle": "Template detail",
+  "@communicationsTemplateDetailTitle": {
+    "description": "Title for template detail panel."
+  },
+  "communicationsNoConversationSelectedTitle": "Select a conversation",
+  "@communicationsNoConversationSelectedTitle": {
+    "description": "Empty title when no conversation is selected."
+  },
+  "communicationsNoConversationSelectedBody": "Choose a thread to review messages, participants, and linked records.",
+  "@communicationsNoConversationSelectedBody": {
+    "description": "Empty body when no conversation is selected."
+  },
+  "communicationsNoNotificationSelectedTitle": "Select a notification",
+  "@communicationsNoNotificationSelectedTitle": {
+    "description": "Empty title when no notification is selected."
+  },
+  "communicationsNoNotificationSelectedBody": "Choose an alert to review delivery history and quick actions.",
+  "@communicationsNoNotificationSelectedBody": {
+    "description": "Empty body when no notification is selected."
+  },
+  "communicationsNoDeliverySelectedTitle": "Select a delivery",
+  "@communicationsNoDeliverySelectedTitle": {
+    "description": "Empty title when no delivery is selected."
+  },
+  "communicationsNoDeliverySelectedBody": "Choose a delivery attempt to review channel, recipient, and error details.",
+  "@communicationsNoDeliverySelectedBody": {
+    "description": "Empty body when no delivery is selected."
+  },
+  "communicationsNoTemplateSelectedTitle": "Select a template",
+  "@communicationsNoTemplateSelectedTitle": {
+    "description": "Empty title when no template is selected."
+  },
+  "communicationsNoTemplateSelectedBody": "Choose a template to review channel, subject, variables, and preview.",
+  "@communicationsNoTemplateSelectedBody": {
+    "description": "Empty body when no template is selected."
+  },
+  "communicationsSubjectLabel": "Subject",
+  "@communicationsSubjectLabel": {
+    "description": "Label for communication subject."
+  },
+  "communicationsParticipantsLabel": "Participants",
+  "@communicationsParticipantsLabel": {
+    "description": "Label for conversation participants."
+  },
+  "communicationsCreatedAtLabel": "Created at",
+  "@communicationsCreatedAtLabel": {
+    "description": "Label for communication creation time."
+  },
+  "communicationsUpdatedAtLabel": "Updated at",
+  "@communicationsUpdatedAtLabel": {
+    "description": "Label for communication update time."
+  },
+  "communicationsReadAtLabel": "Read at",
+  "@communicationsReadAtLabel": {
+    "description": "Label for notification read time."
+  },
+  "communicationsTypeLabel": "Type",
+  "@communicationsTypeLabel": {
+    "description": "Label for communication type."
+  },
+  "communicationsContextLabel": "Context",
+  "@communicationsContextLabel": {
+    "description": "Label for linked communication context."
+  },
+  "communicationsNotificationLabel": "Notification",
+  "@communicationsNotificationLabel": {
+    "description": "Label for notification."
+  },
+  "communicationsChannelLabel": "Channel",
+  "@communicationsChannelLabel": {
+    "description": "Label for delivery channel."
+  },
+  "communicationsRecipientLabel": "Recipient",
+  "@communicationsRecipientLabel": {
+    "description": "Label for delivery recipient."
+  },
+  "communicationsAttemptsLabel": "Attempts",
+  "@communicationsAttemptsLabel": {
+    "description": "Label for delivery attempts."
+  },
+  "communicationsProviderLabel": "Provider",
+  "@communicationsProviderLabel": {
+    "description": "Label for delivery provider."
+  },
+  "communicationsSentAtLabel": "Sent at",
+  "@communicationsSentAtLabel": {
+    "description": "Label for sent time."
+  },
+  "communicationsDeliveredAtLabel": "Delivered at",
+  "@communicationsDeliveredAtLabel": {
+    "description": "Label for delivered time."
+  },
+  "communicationsFailedAtLabel": "Failed at",
+  "@communicationsFailedAtLabel": {
+    "description": "Label for failed time."
+  },
+  "communicationsStatusLabel": "Status",
+  "@communicationsStatusLabel": {
+    "description": "Label for status."
+  },
+  "communicationsVariablesLabel": "Variables",
+  "@communicationsVariablesLabel": {
+    "description": "Label for template variables."
+  },
+  "communicationsPreviewTitle": "Preview",
+  "@communicationsPreviewTitle": {
+    "description": "Title for template preview section."
+  },
+  "communicationsMessageThreadTitle": "Message thread",
+  "@communicationsMessageThreadTitle": {
+    "description": "Title for conversation message thread."
+  },
+  "communicationsNoMessagesBody": "No messages are available for this thread.",
+  "@communicationsNoMessagesBody": {
+    "description": "Empty body for conversation messages."
+  },
+  "communicationsDeliveryHistoryTitle": "Delivery history",
+  "@communicationsDeliveryHistoryTitle": {
+    "description": "Title for notification delivery history."
+  },
+  "communicationsDeliveryErrorTitle": "Delivery error",
+  "@communicationsDeliveryErrorTitle": {
+    "description": "Title for notification delivery error details."
+  },
+  "communicationsOpenLinkedRecordAction": "Open linked record",
+  "@communicationsOpenLinkedRecordAction": {
+    "description": "Action label for opening a linked workflow record."
+  },
+  "communicationsMarkReadAction": "Mark read",
+  "@communicationsMarkReadAction": {
+    "description": "Action label for marking a communication as read."
+  },
+  "communicationsMarkUnreadAction": "Mark unread",
+  "@communicationsMarkUnreadAction": {
+    "description": "Action label for marking a notification as unread."
+  },
+  "communicationsArchiveAction": "Archive",
+  "@communicationsArchiveAction": {
+    "description": "Action label for archiving a communication."
+  },
+  "communicationsUnarchiveAction": "Unarchive",
+  "@communicationsUnarchiveAction": {
+    "description": "Action label for unarchiving a communication."
+  },
+  "communicationsSendMessageAction": "Send message",
+  "@communicationsSendMessageAction": {
+    "description": "Action label for sending a conversation message."
+  },
+  "communicationsSendMessageDialogTitle": "Send message",
+  "@communicationsSendMessageDialogTitle": {
+    "description": "Dialog title for sending a message."
+  },
+  "communicationsMessageFieldLabel": "Message",
+  "@communicationsMessageFieldLabel": {
+    "description": "Field label for message body."
+  },
+  "communicationsMarkReadDialogTitle": "Mark as read",
+  "@communicationsMarkReadDialogTitle": {
+    "description": "Dialog title for marking a communication read."
+  },
+  "communicationsMarkUnreadDialogTitle": "Mark as unread",
+  "@communicationsMarkUnreadDialogTitle": {
+    "description": "Dialog title for marking a notification unread."
+  },
+  "communicationsArchiveDialogTitle": "Archive communication",
+  "@communicationsArchiveDialogTitle": {
+    "description": "Dialog title for archiving a communication."
+  },
+  "communicationsUnarchiveDialogTitle": "Unarchive conversation",
+  "@communicationsUnarchiveDialogTitle": {
+    "description": "Dialog title for unarchiving a conversation."
+  },
+  "communicationsMarkConversationReadDialogBody": "Mark this conversation read for your account.",
+  "@communicationsMarkConversationReadDialogBody": {
+    "description": "Dialog body for marking a conversation read."
+  },
+  "communicationsMarkNotificationReadDialogBody": "Mark this notification read for your account.",
+  "@communicationsMarkNotificationReadDialogBody": {
+    "description": "Dialog body for marking a notification read."
+  },
+  "communicationsMarkNotificationUnreadDialogBody": "Move this notification back to unread.",
+  "@communicationsMarkNotificationUnreadDialogBody": {
+    "description": "Dialog body for marking a notification unread."
+  },
+  "communicationsArchiveConversationDialogBody": "Archive this conversation from your active inbox.",
+  "@communicationsArchiveConversationDialogBody": {
+    "description": "Dialog body for archiving a conversation."
+  },
+  "communicationsUnarchiveConversationDialogBody": "Return this conversation to your active inbox.",
+  "@communicationsUnarchiveConversationDialogBody": {
+    "description": "Dialog body for unarchiving a conversation."
+  },
+  "communicationsArchiveNotificationDialogBody": "Archive this notification from your active alerts.",
+  "@communicationsArchiveNotificationDialogBody": {
+    "description": "Dialog body for archiving a notification."
+  },
+  "communicationsUnreadStatus": "Unread",
+  "@communicationsUnreadStatus": {
+    "description": "Status label for unread communications."
+  },
+  "communicationsReadStatus": "Read",
+  "@communicationsReadStatus": {
+    "description": "Status label for read notifications."
+  },
+  "communicationsArchivedStatus": "Archived",
+  "@communicationsArchivedStatus": {
+    "description": "Status label for archived conversations."
+  },
+  "communicationsSensitiveStatus": "Sensitive",
+  "@communicationsSensitiveStatus": {
+    "description": "Status label for sensitive conversations."
+  },
+  "communicationsActiveStatus": "Active",
+  "@communicationsActiveStatus": {
+    "description": "Status label for active templates."
+  },
+  "communicationsInactiveStatus": "Inactive",
+  "@communicationsInactiveStatus": {
+    "description": "Status label for inactive templates."
+  },
+  "housekeepingStatusOpenLabel": "Open",
+  "@housekeepingStatusOpenLabel": {
+    "description": "Status option label for an open housekeeping task."
+  },
+  "housekeepingStatusInProgressLabel": "In progress",
+  "@housekeepingStatusInProgressLabel": {
+    "description": "Status option label for an in-progress housekeeping task."
+  },
+  "physiotherapyTitle": "Physiotherapy",
+  "@physiotherapyTitle": {
+    "description": "Localized text for physiotherapyTitle."
+  },
+  "physiotherapyLoadingTitle": "Loading physiotherapy workspace",
+  "@physiotherapyLoadingTitle": {
+    "description": "Localized text for physiotherapyLoadingTitle."
+  },
+  "physiotherapyLoadingBody": "Preparing referrals, sessions, care plans, notes, and follow-ups.",
+  "@physiotherapyLoadingBody": {
+    "description": "Localized text for physiotherapyLoadingBody."
+  },
+  "physiotherapyLiveStatus": "Live",
+  "@physiotherapyLiveStatus": {
+    "description": "Localized text for physiotherapyLiveStatus."
+  },
+  "physiotherapySavingStatus": "Saving",
+  "@physiotherapySavingStatus": {
+    "description": "Localized text for physiotherapySavingStatus."
+  },
+  "physiotherapySavedMessage": "Physiotherapy record saved.",
+  "@physiotherapySavedMessage": {
+    "description": "Localized text for physiotherapySavedMessage."
+  },
+  "physiotherapyReferralsSummaryLabel": "Referrals",
+  "@physiotherapyReferralsSummaryLabel": {
+    "description": "Localized text for physiotherapyReferralsSummaryLabel."
+  },
+  "physiotherapyTodaySummaryLabel": "Today",
+  "@physiotherapyTodaySummaryLabel": {
+    "description": "Localized text for physiotherapyTodaySummaryLabel."
+  },
+  "physiotherapyMissedSummaryLabel": "Missed",
+  "@physiotherapyMissedSummaryLabel": {
+    "description": "Localized text for physiotherapyMissedSummaryLabel."
+  },
+  "physiotherapyActivePlansSummaryLabel": "Active plans",
+  "@physiotherapyActivePlansSummaryLabel": {
+    "description": "Localized text for physiotherapyActivePlansSummaryLabel."
+  },
+  "physiotherapyFollowUpDueSummaryLabel": "Follow-up due",
+  "@physiotherapyFollowUpDueSummaryLabel": {
+    "description": "Localized text for physiotherapyFollowUpDueSummaryLabel."
+  },
+  "physiotherapyCompletedSummaryLabel": "Completed",
+  "@physiotherapyCompletedSummaryLabel": {
+    "description": "Localized text for physiotherapyCompletedSummaryLabel."
+  },
+  "physiotherapyWorklistTitle": "Therapy worklist",
+  "@physiotherapyWorklistTitle": {
+    "description": "Localized text for physiotherapyWorklistTitle."
+  },
+  "physiotherapyWorklistDescription": "Referrals, therapy sessions, plans, notes, and follow-up work from confirmed clinical endpoints.",
+  "@physiotherapyWorklistDescription": {
+    "description": "Localized text for physiotherapyWorklistDescription."
+  },
+  "physiotherapySearchLabel": "Search physiotherapy worklist",
+  "@physiotherapySearchLabel": {
+    "description": "Localized text for physiotherapySearchLabel."
+  },
+  "physiotherapySearchHint": "Search patient, encounter, therapist, plan, or session",
+  "@physiotherapySearchHint": {
+    "description": "Localized text for physiotherapySearchHint."
+  },
+  "physiotherapyFiltersLabel": "Filters",
+  "@physiotherapyFiltersLabel": {
+    "description": "Localized text for physiotherapyFiltersLabel."
+  },
+  "physiotherapyApplyFiltersAction": "Apply filters",
+  "@physiotherapyApplyFiltersAction": {
+    "description": "Localized text for physiotherapyApplyFiltersAction."
+  },
+  "physiotherapyClearFiltersAction": "Clear filters",
+  "@physiotherapyClearFiltersAction": {
+    "description": "Localized text for physiotherapyClearFiltersAction."
+  },
+  "physiotherapySearchFieldLabel": "Search in",
+  "@physiotherapySearchFieldLabel": {
+    "description": "Localized text for physiotherapySearchFieldLabel."
+  },
+  "physiotherapyAllFieldsLabel": "All fields",
+  "@physiotherapyAllFieldsLabel": {
+    "description": "Localized text for physiotherapyAllFieldsLabel."
+  },
+  "physiotherapyDateFilterLabel": "Date",
+  "@physiotherapyDateFilterLabel": {
+    "description": "Localized text for physiotherapyDateFilterLabel."
+  },
+  "physiotherapyDateFromLabel": "From",
+  "@physiotherapyDateFromLabel": {
+    "description": "Localized text for physiotherapyDateFromLabel."
+  },
+  "physiotherapyDateToLabel": "To",
+  "@physiotherapyDateToLabel": {
+    "description": "Localized text for physiotherapyDateToLabel."
+  },
+  "physiotherapyTherapistFilterLabel": "Therapist",
+  "@physiotherapyTherapistFilterLabel": {
+    "description": "Localized text for physiotherapyTherapistFilterLabel."
+  },
+  "physiotherapyTherapistFilterHint": "Therapist name or user ID",
+  "@physiotherapyTherapistFilterHint": {
+    "description": "Localized text for physiotherapyTherapistFilterHint."
+  },
+  "physiotherapyQueueFilterLabel": "Queue",
+  "@physiotherapyQueueFilterLabel": {
+    "description": "Localized text for physiotherapyQueueFilterLabel."
+  },
+  "physiotherapyFilterAll": "All",
+  "@physiotherapyFilterAll": {
+    "description": "Localized text for physiotherapyFilterAll."
+  },
+  "physiotherapyScopeReferrals": "Referrals",
+  "@physiotherapyScopeReferrals": {
+    "description": "Localized text for physiotherapyScopeReferrals."
+  },
+  "physiotherapyScopeToday": "Today",
+  "@physiotherapyScopeToday": {
+    "description": "Localized text for physiotherapyScopeToday."
+  },
+  "physiotherapyScopeMissed": "Missed",
+  "@physiotherapyScopeMissed": {
+    "description": "Localized text for physiotherapyScopeMissed."
+  },
+  "physiotherapyScopeActivePlans": "Active plans",
+  "@physiotherapyScopeActivePlans": {
+    "description": "Localized text for physiotherapyScopeActivePlans."
+  },
+  "physiotherapyScopeFollowUpDue": "Follow-up due",
+  "@physiotherapyScopeFollowUpDue": {
+    "description": "Localized text for physiotherapyScopeFollowUpDue."
+  },
+  "physiotherapyScopeCompleted": "Completed",
+  "@physiotherapyScopeCompleted": {
+    "description": "Localized text for physiotherapyScopeCompleted."
+  },
+  "physiotherapyScopeAll": "All work",
+  "@physiotherapyScopeAll": {
+    "description": "Localized text for physiotherapyScopeAll."
+  },
+  "physiotherapyPatientColumnLabel": "Patient",
+  "@physiotherapyPatientColumnLabel": {
+    "description": "Localized text for physiotherapyPatientColumnLabel."
+  },
+  "physiotherapySourceColumnLabel": "Source",
+  "@physiotherapySourceColumnLabel": {
+    "description": "Localized text for physiotherapySourceColumnLabel."
+  },
+  "physiotherapySessionColumnLabel": "Session",
+  "@physiotherapySessionColumnLabel": {
+    "description": "Localized text for physiotherapySessionColumnLabel."
+  },
+  "physiotherapyStatusColumnLabel": "Status",
+  "@physiotherapyStatusColumnLabel": {
+    "description": "Localized text for physiotherapyStatusColumnLabel."
+  },
+  "physiotherapyPlanColumnLabel": "Plan",
+  "@physiotherapyPlanColumnLabel": {
+    "description": "Localized text for physiotherapyPlanColumnLabel."
+  },
+  "physiotherapyAttendanceColumnLabel": "Attendance",
+  "@physiotherapyAttendanceColumnLabel": {
+    "description": "Localized text for physiotherapyAttendanceColumnLabel."
+  },
+  "physiotherapyBillingColumnLabel": "Billing",
+  "@physiotherapyBillingColumnLabel": {
+    "description": "Localized text for physiotherapyBillingColumnLabel."
+  },
+  "physiotherapyTherapistColumnLabel": "Therapist",
+  "@physiotherapyTherapistColumnLabel": {
+    "description": "Localized text for physiotherapyTherapistColumnLabel."
+  },
+  "physiotherapyNextActionColumnLabel": "Next action",
+  "@physiotherapyNextActionColumnLabel": {
+    "description": "Localized text for physiotherapyNextActionColumnLabel."
+  },
+  "physiotherapyTableColumnsTitle": "Therapy table columns",
+  "@physiotherapyTableColumnsTitle": {
+    "description": "Localized text for physiotherapyTableColumnsTitle."
+  },
+  "physiotherapyApplyColumnsAction": "Apply columns",
+  "@physiotherapyApplyColumnsAction": {
+    "description": "Localized text for physiotherapyApplyColumnsAction."
+  },
+  "physiotherapyResetColumnsAction": "Reset columns",
+  "@physiotherapyResetColumnsAction": {
+    "description": "Localized text for physiotherapyResetColumnsAction."
+  },
+  "physiotherapyNoWorkTitle": "No physiotherapy work",
+  "@physiotherapyNoWorkTitle": {
+    "description": "Localized text for physiotherapyNoWorkTitle."
+  },
+  "physiotherapyNoWorkBody": "No referrals, sessions, plans, or follow-ups match the current filters.",
+  "@physiotherapyNoWorkBody": {
+    "description": "Localized text for physiotherapyNoWorkBody."
+  },
+  "physiotherapyDetailLoadingTitle": "Loading therapy record",
+  "@physiotherapyDetailLoadingTitle": {
+    "description": "Localized text for physiotherapyDetailLoadingTitle."
+  },
+  "physiotherapyDetailLoadingBody": "Fetching session history, plan, notes, and follow-up details.",
+  "@physiotherapyDetailLoadingBody": {
+    "description": "Localized text for physiotherapyDetailLoadingBody."
+  },
+  "physiotherapyNoSelectionTitle": "Select a therapy item",
+  "@physiotherapyNoSelectionTitle": {
+    "description": "Localized text for physiotherapyNoSelectionTitle."
+  },
+  "physiotherapyNoSelectionBody": "Choose a referral or session to review assessment, plan, attendance, and follow-up actions.",
+  "@physiotherapyNoSelectionBody": {
+    "description": "Localized text for physiotherapyNoSelectionBody."
+  },
+  "physiotherapyPatientNumberLabel": "Patient number",
+  "@physiotherapyPatientNumberLabel": {
+    "description": "Localized text for physiotherapyPatientNumberLabel."
+  },
+  "physiotherapyEncounterLabel": "Encounter",
+  "@physiotherapyEncounterLabel": {
+    "description": "Localized text for physiotherapyEncounterLabel."
+  },
+  "physiotherapySessionLabel": "Session",
+  "@physiotherapySessionLabel": {
+    "description": "Localized text for physiotherapySessionLabel."
+  },
+  "physiotherapyTherapistLabel": "Therapist",
+  "@physiotherapyTherapistLabel": {
+    "description": "Localized text for physiotherapyTherapistLabel."
+  },
+  "physiotherapyBillingAuthorizationLabel": "Billing authorization",
+  "@physiotherapyBillingAuthorizationLabel": {
+    "description": "Localized text for physiotherapyBillingAuthorizationLabel."
+  },
+  "physiotherapyActionsTitle": "Therapy actions",
+  "@physiotherapyActionsTitle": {
+    "description": "Localized text for physiotherapyActionsTitle."
+  },
+  "physiotherapyReferralPanelTitle": "Referral and plan",
+  "@physiotherapyReferralPanelTitle": {
+    "description": "Localized text for physiotherapyReferralPanelTitle."
+  },
+  "physiotherapySourceLabel": "Source",
+  "@physiotherapySourceLabel": {
+    "description": "Localized text for physiotherapySourceLabel."
+  },
+  "physiotherapyStatusLabel": "Status",
+  "@physiotherapyStatusLabel": {
+    "description": "Localized text for physiotherapyStatusLabel."
+  },
+  "physiotherapyAttendanceLabel": "Attendance",
+  "@physiotherapyAttendanceLabel": {
+    "description": "Localized text for physiotherapyAttendanceLabel."
+  },
+  "physiotherapyPlanLabel": "Plan",
+  "@physiotherapyPlanLabel": {
+    "description": "Localized text for physiotherapyPlanLabel."
+  },
+  "physiotherapyGoalLabel": "Goal",
+  "@physiotherapyGoalLabel": {
+    "description": "Localized text for physiotherapyGoalLabel."
+  },
+  "physiotherapyInstructionsLabel": "Instructions",
+  "@physiotherapyInstructionsLabel": {
+    "description": "Localized text for physiotherapyInstructionsLabel."
+  },
+  "physiotherapySessionsPanelTitle": "Session history",
+  "@physiotherapySessionsPanelTitle": {
+    "description": "Localized text for physiotherapySessionsPanelTitle."
+  },
+  "physiotherapyPlanPanelTitle": "Care plan",
+  "@physiotherapyPlanPanelTitle": {
+    "description": "Localized text for physiotherapyPlanPanelTitle."
+  },
+  "physiotherapyProgressNotesPanelTitle": "Progress notes",
+  "@physiotherapyProgressNotesPanelTitle": {
+    "description": "Localized text for physiotherapyProgressNotesPanelTitle."
+  },
+  "physiotherapyFollowUpPanelTitle": "Follow-ups",
+  "@physiotherapyFollowUpPanelTitle": {
+    "description": "Localized text for physiotherapyFollowUpPanelTitle."
+  },
+  "physiotherapyBackendGapsPanelTitle": "Backend gaps",
+  "@physiotherapyBackendGapsPanelTitle": {
+    "description": "Localized text for physiotherapyBackendGapsPanelTitle."
+  },
+  "physiotherapyBackendGapBody": "This workspace uses confirmed shared clinical endpoints and records unavailable dedicated physiotherapy contracts here.",
+  "@physiotherapyBackendGapBody": {
+    "description": "Localized text for physiotherapyBackendGapBody."
+  },
+  "physiotherapyNoRecordsLabel": "No records yet.",
+  "@physiotherapyNoRecordsLabel": {
+    "description": "Localized text for physiotherapyNoRecordsLabel."
+  },
+  "physiotherapyNoInstructionsLabel": "No therapy instructions recorded.",
+  "@physiotherapyNoInstructionsLabel": {
+    "description": "Localized text for physiotherapyNoInstructionsLabel."
+  },
+  "physiotherapyAcceptReferralAction": "Accept referral",
+  "@physiotherapyAcceptReferralAction": {
+    "description": "Localized text for physiotherapyAcceptReferralAction."
+  },
+  "physiotherapyScheduleSessionAction": "Schedule session",
+  "@physiotherapyScheduleSessionAction": {
+    "description": "Localized text for physiotherapyScheduleSessionAction."
+  },
+  "physiotherapyRecordAssessmentAction": "Record assessment",
+  "@physiotherapyRecordAssessmentAction": {
+    "description": "Localized text for physiotherapyRecordAssessmentAction."
+  },
+  "physiotherapyRecordSessionAction": "Record session",
+  "@physiotherapyRecordSessionAction": {
+    "description": "Localized text for physiotherapyRecordSessionAction."
+  },
+  "physiotherapyMarkAttendanceAction": "Mark attendance",
+  "@physiotherapyMarkAttendanceAction": {
+    "description": "Localized text for physiotherapyMarkAttendanceAction."
+  },
+  "physiotherapyUpdatePlanAction": "Update plan",
+  "@physiotherapyUpdatePlanAction": {
+    "description": "Localized text for physiotherapyUpdatePlanAction."
+  },
+  "physiotherapyAddProgressNoteAction": "Add progress note",
+  "@physiotherapyAddProgressNoteAction": {
+    "description": "Localized text for physiotherapyAddProgressNoteAction."
+  },
+  "physiotherapyScheduleFollowUpAction": "Schedule follow-up",
+  "@physiotherapyScheduleFollowUpAction": {
+    "description": "Localized text for physiotherapyScheduleFollowUpAction."
+  },
+  "physiotherapyCloseEpisodeAction": "Close episode",
+  "@physiotherapyCloseEpisodeAction": {
+    "description": "Localized text for physiotherapyCloseEpisodeAction."
+  },
+  "physiotherapyPrintInstructionsAction": "Print instructions",
+  "@physiotherapyPrintInstructionsAction": {
+    "description": "Localized text for physiotherapyPrintInstructionsAction."
+  },
+  "physiotherapyAcceptReferralDialogTitle": "Accept physiotherapy referral",
+  "@physiotherapyAcceptReferralDialogTitle": {
+    "description": "Localized text for physiotherapyAcceptReferralDialogTitle."
+  },
+  "physiotherapyScheduleSessionDialogTitle": "Schedule therapy session",
+  "@physiotherapyScheduleSessionDialogTitle": {
+    "description": "Localized text for physiotherapyScheduleSessionDialogTitle."
+  },
+  "physiotherapyRecordAssessmentDialogTitle": "Record therapy assessment",
+  "@physiotherapyRecordAssessmentDialogTitle": {
+    "description": "Localized text for physiotherapyRecordAssessmentDialogTitle."
+  },
+  "physiotherapyRecordSessionDialogTitle": "Record therapy session",
+  "@physiotherapyRecordSessionDialogTitle": {
+    "description": "Localized text for physiotherapyRecordSessionDialogTitle."
+  },
+  "physiotherapyMarkAttendanceDialogTitle": "Mark session attendance",
+  "@physiotherapyMarkAttendanceDialogTitle": {
+    "description": "Localized text for physiotherapyMarkAttendanceDialogTitle."
+  },
+  "physiotherapyUpdatePlanDialogTitle": "Update therapy plan",
+  "@physiotherapyUpdatePlanDialogTitle": {
+    "description": "Localized text for physiotherapyUpdatePlanDialogTitle."
+  },
+  "physiotherapyAddProgressNoteDialogTitle": "Add progress note",
+  "@physiotherapyAddProgressNoteDialogTitle": {
+    "description": "Localized text for physiotherapyAddProgressNoteDialogTitle."
+  },
+  "physiotherapyScheduleFollowUpDialogTitle": "Schedule follow-up",
+  "@physiotherapyScheduleFollowUpDialogTitle": {
+    "description": "Localized text for physiotherapyScheduleFollowUpDialogTitle."
+  },
+  "physiotherapyCloseEpisodeDialogTitle": "Close therapy episode",
+  "@physiotherapyCloseEpisodeDialogTitle": {
+    "description": "Localized text for physiotherapyCloseEpisodeDialogTitle."
+  },
+  "physiotherapyNoteFieldLabel": "Note",
+  "@physiotherapyNoteFieldLabel": {
+    "description": "Localized text for physiotherapyNoteFieldLabel."
+  },
+  "physiotherapyReasonFieldLabel": "Reason",
+  "@physiotherapyReasonFieldLabel": {
+    "description": "Localized text for physiotherapyReasonFieldLabel."
+  },
+  "physiotherapyAssessmentFieldLabel": "Assessment",
+  "@physiotherapyAssessmentFieldLabel": {
+    "description": "Localized text for physiotherapyAssessmentFieldLabel."
+  },
+  "physiotherapyGoalsFieldLabel": "Goals",
+  "@physiotherapyGoalsFieldLabel": {
+    "description": "Localized text for physiotherapyGoalsFieldLabel."
+  },
+  "physiotherapyPlanFieldLabel": "Plan",
+  "@physiotherapyPlanFieldLabel": {
+    "description": "Localized text for physiotherapyPlanFieldLabel."
+  },
+  "physiotherapyInstructionsFieldLabel": "Instructions",
+  "@physiotherapyInstructionsFieldLabel": {
+    "description": "Localized text for physiotherapyInstructionsFieldLabel."
+  },
+  "physiotherapySessionNoteFieldLabel": "Session note",
+  "@physiotherapySessionNoteFieldLabel": {
+    "description": "Localized text for physiotherapySessionNoteFieldLabel."
+  },
+  "physiotherapyAttendanceStatusFieldLabel": "Attendance status",
+  "@physiotherapyAttendanceStatusFieldLabel": {
+    "description": "Localized text for physiotherapyAttendanceStatusFieldLabel."
+  },
+  "physiotherapySummaryFieldLabel": "Summary",
+  "@physiotherapySummaryFieldLabel": {
+    "description": "Localized text for physiotherapySummaryFieldLabel."
+  },
+  "physiotherapyStartDateFieldLabel": "Start date",
+  "@physiotherapyStartDateFieldLabel": {
+    "description": "Localized text for physiotherapyStartDateFieldLabel."
+  },
+  "physiotherapyStartTimeFieldLabel": "Start time",
+  "@physiotherapyStartTimeFieldLabel": {
+    "description": "Localized text for physiotherapyStartTimeFieldLabel."
+  },
+  "physiotherapyEndDateFieldLabel": "End date",
+  "@physiotherapyEndDateFieldLabel": {
+    "description": "Localized text for physiotherapyEndDateFieldLabel."
+  },
+  "physiotherapyEndTimeFieldLabel": "End time",
+  "@physiotherapyEndTimeFieldLabel": {
+    "description": "Localized text for physiotherapyEndTimeFieldLabel."
+  },
+  "physiotherapyDateFieldLabel": "Date",
+  "@physiotherapyDateFieldLabel": {
+    "description": "Localized text for physiotherapyDateFieldLabel."
+  },
+  "physiotherapyTimeFieldLabel": "Time",
+  "@physiotherapyTimeFieldLabel": {
+    "description": "Localized text for physiotherapyTimeFieldLabel."
+  },
+  "physiotherapySaveAction": "Save",
+  "@physiotherapySaveAction": {
+    "description": "Localized text for physiotherapySaveAction."
+  },
+  "physiotherapyStatusReferral": "Referral",
+  "@physiotherapyStatusReferral": {
+    "description": "Localized text for physiotherapyStatusReferral."
+  },
+  "physiotherapyStatusAccepted": "Accepted",
+  "@physiotherapyStatusAccepted": {
+    "description": "Localized text for physiotherapyStatusAccepted."
+  },
+  "physiotherapyStatusAssessment": "Assessment",
+  "@physiotherapyStatusAssessment": {
+    "description": "Localized text for physiotherapyStatusAssessment."
+  },
+  "physiotherapyStatusToday": "Today",
+  "@physiotherapyStatusToday": {
+    "description": "Localized text for physiotherapyStatusToday."
+  },
+  "physiotherapyStatusInTreatment": "In treatment",
+  "@physiotherapyStatusInTreatment": {
+    "description": "Localized text for physiotherapyStatusInTreatment."
+  },
+  "physiotherapyStatusActivePlan": "Active plan",
+  "@physiotherapyStatusActivePlan": {
+    "description": "Localized text for physiotherapyStatusActivePlan."
+  },
+  "physiotherapyStatusFollowUpDue": "Follow-up due",
+  "@physiotherapyStatusFollowUpDue": {
+    "description": "Localized text for physiotherapyStatusFollowUpDue."
+  },
+  "physiotherapyStatusMissed": "Missed",
+  "@physiotherapyStatusMissed": {
+    "description": "Localized text for physiotherapyStatusMissed."
+  },
+  "physiotherapyStatusCompleted": "Completed",
+  "@physiotherapyStatusCompleted": {
+    "description": "Localized text for physiotherapyStatusCompleted."
+  },
+  "physiotherapyUnknownStatusLabel": "Unknown",
+  "@physiotherapyUnknownStatusLabel": {
+    "description": "Localized text for physiotherapyUnknownStatusLabel."
+  },
+  "physiotherapySourceReferral": "Referral",
+  "@physiotherapySourceReferral": {
+    "description": "Localized text for physiotherapySourceReferral."
+  },
+  "physiotherapySourceAppointment": "Appointment",
+  "@physiotherapySourceAppointment": {
+    "description": "Localized text for physiotherapySourceAppointment."
+  },
+  "physiotherapySourceCarePlan": "Care plan",
+  "@physiotherapySourceCarePlan": {
+    "description": "Localized text for physiotherapySourceCarePlan."
+  },
+  "physiotherapySourceProcedure": "Procedure",
+  "@physiotherapySourceProcedure": {
+    "description": "Localized text for physiotherapySourceProcedure."
+  },
+  "physiotherapySourceUnknown": "Unknown source",
+  "@physiotherapySourceUnknown": {
+    "description": "Localized text for physiotherapySourceUnknown."
+  },
+  "physiotherapyAttendanceScheduled": "Scheduled",
+  "@physiotherapyAttendanceScheduled": {
+    "description": "Localized text for physiotherapyAttendanceScheduled."
+  },
+  "physiotherapyAttendanceConfirmed": "Confirmed",
+  "@physiotherapyAttendanceConfirmed": {
+    "description": "Localized text for physiotherapyAttendanceConfirmed."
+  },
+  "physiotherapyAttendanceInProgress": "In progress",
+  "@physiotherapyAttendanceInProgress": {
+    "description": "Localized text for physiotherapyAttendanceInProgress."
+  },
+  "physiotherapyAttendanceCompleted": "Completed",
+  "@physiotherapyAttendanceCompleted": {
+    "description": "Localized text for physiotherapyAttendanceCompleted."
+  },
+  "physiotherapyAttendanceCancelled": "Cancelled",
+  "@physiotherapyAttendanceCancelled": {
+    "description": "Localized text for physiotherapyAttendanceCancelled."
+  },
+  "physiotherapyAttendanceNoShow": "No-show",
+  "@physiotherapyAttendanceNoShow": {
+    "description": "Localized text for physiotherapyAttendanceNoShow."
+  },
+  "physiotherapyBillingBackendGap": "No confirmed billing gate",
+  "@physiotherapyBillingBackendGap": {
+    "description": "Localized text for physiotherapyBillingBackendGap."
+  },
+  "physiotherapyMissingValueLabel": "Not recorded",
+  "@physiotherapyMissingValueLabel": {
+    "description": "Localized text for physiotherapyMissingValueLabel."
+  },
+  "physiotherapyBackendGapStatusEndpoint": "Dedicated physiotherapy episode and therapy status endpoints are not available; status is derived from procedures, care plans, appointments, and follow-ups.",
+  "@physiotherapyBackendGapStatusEndpoint": {
+    "description": "Localized text for physiotherapyBackendGapStatusEndpoint."
+  },
+  "physiotherapyBackendGapBillingEndpoint": "A physiotherapy-specific billing authorization gate is not available; billing is shown as a documented backend gap.",
+  "@physiotherapyBackendGapBillingEndpoint": {
+    "description": "Localized text for physiotherapyBackendGapBillingEndpoint."
+  },
+  "physiotherapyBackendGapReportEndpoint": "Generated physiotherapy assessment and discharge report endpoints are not available; printing uses the shared report template.",
+  "@physiotherapyBackendGapReportEndpoint": {
+    "description": "Localized text for physiotherapyBackendGapReportEndpoint."
+  },
+  "physiotherapyBackendGapUnknown": "An unavailable physiotherapy backend contract was recorded.",
+  "@physiotherapyBackendGapUnknown": {
+    "description": "Localized text for physiotherapyBackendGapUnknown."
+  },
+  "physiotherapyInstructionsReportTitle": "Physiotherapy instructions",
+  "@physiotherapyInstructionsReportTitle": {
+    "description": "Localized text for physiotherapyInstructionsReportTitle."
+  },
+  "physiotherapyReportPatientLabel": "Patient",
+  "@physiotherapyReportPatientLabel": {
+    "description": "Localized text for physiotherapyReportPatientLabel."
+  },
+  "physiotherapyReportEncounterLabel": "Encounter",
+  "@physiotherapyReportEncounterLabel": {
+    "description": "Localized text for physiotherapyReportEncounterLabel."
+  },
+  "physiotherapyReportPlanLabel": "Plan and goals",
+  "@physiotherapyReportPlanLabel": {
+    "description": "Localized text for physiotherapyReportPlanLabel."
+  },
+  "physiotherapyReportInstructionsLabel": "Instructions",
+  "@physiotherapyReportInstructionsLabel": {
+    "description": "Localized text for physiotherapyReportInstructionsLabel."
+  },
+  "physiotherapyReportSessionsLabel": "Sessions",
+  "@physiotherapyReportSessionsLabel": {
+    "description": "Localized text for physiotherapyReportSessionsLabel."
+  },
+  "physiotherapyReportFooterNote": "Generated from confirmed shared clinical workflow data.",
+  "@physiotherapyReportFooterNote": {
+    "description": "Localized text for physiotherapyReportFooterNote."
   }
 }

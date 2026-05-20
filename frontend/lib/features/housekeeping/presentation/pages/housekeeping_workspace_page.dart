@@ -92,7 +92,9 @@ class _HousekeepingWorkspaceContentState
     final HousekeepingWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final _HousekeepingCapabilities capabilities = _capabilities(accessPolicy);
-    final controller = ref.read(housekeepingWorkspaceControllerProvider.notifier);
+    final controller = ref.read(
+      housekeepingWorkspaceControllerProvider.notifier,
+    );
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
@@ -183,7 +185,9 @@ class _HousekeepingWorkspaceContentState
   ) {
     final l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
-    final controller = ref.read(housekeepingWorkspaceControllerProvider.notifier);
+    final controller = ref.read(
+      housekeepingWorkspaceControllerProvider.notifier,
+    );
 
     return <Widget>[
       AppWorkspaceSummaryCard(
@@ -275,7 +279,9 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final controller = ref.read(housekeepingWorkspaceControllerProvider.notifier);
+    final controller = ref.read(
+      housekeepingWorkspaceControllerProvider.notifier,
+    );
 
     return AppWorkspaceDetailPanel(
       title: _resourceLabel(l10n, state.query.resource),
@@ -321,9 +327,8 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
             );
           },
         ),
-        itemKeyBuilder: (HousekeepingWorkItem item) => ValueKey<String>(
-          '${item.resource.serverValue}:${item.id}',
-        ),
+        itemKeyBuilder: (HousekeepingWorkItem item) =>
+            ValueKey<String>('${item.resource.serverValue}:${item.id}'),
         onRowSelected: controller.selectItem,
         previousPageLabel: l10n.housekeepingPreviousPageLabel,
         nextPageLabel: l10n.housekeepingNextPageLabel,
@@ -931,7 +936,8 @@ class _MaintenanceRequestForm extends StatefulWidget {
   final HousekeepingWorkspaceState state;
 
   @override
-  State<_MaintenanceRequestForm> createState() => _MaintenanceRequestFormState();
+  State<_MaintenanceRequestForm> createState() =>
+      _MaintenanceRequestFormState();
 }
 
 class _MaintenanceRequestFormState extends State<_MaintenanceRequestForm> {
@@ -1074,11 +1080,14 @@ class _TriageFormState extends State<_TriageForm> {
         AppSelectField<String>(
           value: _status,
           labelText: l10n.housekeepingStatusFieldLabel,
-          options: const <AppSelectOption<String>>[
-            AppSelectOption<String>(value: 'OPEN', label: 'Open'),
+          options: <AppSelectOption<String>>[
+            AppSelectOption<String>(
+              value: 'OPEN',
+              label: l10n.housekeepingStatusOpenLabel,
+            ),
             AppSelectOption<String>(
               value: 'IN_PROGRESS',
-              label: 'In progress',
+              label: l10n.housekeepingStatusInProgressLabel,
             ),
           ],
           onChanged: (String? value) {
@@ -1529,7 +1538,8 @@ AppSearchBarFilterValue _filterValue(HousekeepingWorkspaceQuery query) {
     options: <String, String>{
       if (query.resource != HousekeepingResource.tasks)
         _resourceFilterKey: query.resource.name,
-      if (query.queue != HousekeepingQueue.all) _queueFilterKey: query.queue.name,
+      if (query.queue != HousekeepingQueue.all)
+        _queueFilterKey: query.queue.name,
       if (_notEmpty(query.status)) _statusFilterKey: query.status!,
       if (_notEmpty(query.facilityId)) _facilityFilterKey: query.facilityId!,
       if (_notEmpty(query.roomId)) _roomFilterKey: query.roomId!,
@@ -1608,15 +1618,11 @@ String _queueLabel(AppLocalizations l10n, HousekeepingQueue queue) {
     HousekeepingQueue.today => l10n.housekeepingQueueToday,
     HousekeepingQueue.overdueTasks => l10n.housekeepingQueueOverdueTasks,
     HousekeepingQueue.openRequests => l10n.housekeepingQueueOpenRequests,
-    HousekeepingQueue.overdueRequests =>
-      l10n.housekeepingQueueOverdueRequests,
+    HousekeepingQueue.overdueRequests => l10n.housekeepingQueueOverdueRequests,
   };
 }
 
-String _datePresetLabel(
-  AppLocalizations l10n,
-  HousekeepingDatePreset preset,
-) {
+String _datePresetLabel(AppLocalizations l10n, HousekeepingDatePreset preset) {
   return switch (preset) {
     HousekeepingDatePreset.all => l10n.housekeepingDateAll,
     HousekeepingDatePreset.today => l10n.housekeepingDateToday,
@@ -1627,11 +1633,7 @@ String _datePresetLabel(
 }
 
 String _statusLabel(AppLocalizations l10n, HousekeepingWorkItem item) {
-  return _statusLabelForResource(
-    l10n,
-    item.resource,
-    item.status,
-  );
+  return _statusLabelForResource(l10n, item.resource, item.status);
 }
 
 String _statusLabelForResource(
@@ -1642,8 +1644,10 @@ String _statusLabelForResource(
   return switch (resource) {
     HousekeepingResource.tasks => _taskStatusLabel(l10n, status),
     HousekeepingResource.schedules => l10n.housekeepingStatusScheduled,
-    HousekeepingResource.maintenanceRequests =>
-      _maintenanceStatusLabel(l10n, status),
+    HousekeepingResource.maintenanceRequests => _maintenanceStatusLabel(
+      l10n,
+      status,
+    ),
   };
 }
 

@@ -169,7 +169,9 @@ final class OperationsWorkspaceController
     );
     return result.when(
       success: (OperationsWorkItem detail) async {
-        final AppPage<OperationsServiceLog> logs = await _serviceLogsFor(detail);
+        final AppPage<OperationsServiceLog> logs = await _serviceLogsFor(
+          detail,
+        );
         final OperationsWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
@@ -371,9 +373,7 @@ final class OperationsWorkspaceController
     } finally {
       final OperationsWorkspaceState? latest = _currentState;
       if (showLoading && latest != null) {
-        _emit(
-          latest.copyWith(isRefreshing: false, isRefreshingDetail: false),
-        );
+        _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
     }
@@ -559,8 +559,7 @@ final class OperationsWorkspaceController
   }
 
   OperationsWorkspaceState? get _currentState {
-    final Result<OperationsWorkspaceState>? currentResult =
-        state.asData?.value;
+    final Result<OperationsWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {
       ResultSuccess<OperationsWorkspaceState>(value: final value) => value,
       _ => null,

@@ -232,8 +232,9 @@ class _MortuaryWorklist extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppListTableColumn<MortuaryWorkspaceItem>> columns =
-        _columns(context);
+    final List<AppListTableColumn<MortuaryWorkspaceItem>> columns = _columns(
+      context,
+    );
 
     return AppWorkspaceDetailPanel(
       title: l10n.mortuaryWorklistTitle,
@@ -329,12 +330,13 @@ class _MortuaryWorklist extends StatelessWidget {
       AppListTableColumn<MortuaryWorkspaceItem>(
         id: 'reference',
         label: l10n.mortuaryReferenceColumnLabel,
-        sortComparator: (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
-          return appListTableCompareText(
-            left.effectiveDisplayId,
-            right.effectiveDisplayId,
-          );
-        },
+        sortComparator:
+            (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
+              return appListTableCompareText(
+                left.effectiveDisplayId,
+                right.effectiveDisplayId,
+              );
+            },
         cellBuilder: (_, MortuaryWorkspaceItem item) {
           return _ReferenceCell(item: item);
         },
@@ -342,15 +344,18 @@ class _MortuaryWorklist extends StatelessWidget {
       AppListTableColumn<MortuaryWorkspaceItem>(
         id: 'deceased',
         label: l10n.mortuaryDeceasedColumnLabel,
-        sortComparator: (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
-          return appListTableCompareText(
-            left.effectiveDeceasedLabel,
-            right.effectiveDeceasedLabel,
-          );
-        },
+        sortComparator:
+            (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
+              return appListTableCompareText(
+                left.effectiveDeceasedLabel,
+                right.effectiveDeceasedLabel,
+              );
+            },
         cellBuilder: (_, MortuaryWorkspaceItem item) {
           return _TwoLineCell(
-            title: item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
+            title:
+                item.effectiveDeceasedLabel ??
+                l10n.mortuaryUnknownDeceasedLabel,
             subtitle: item.patientLabel ?? item.deceasedProfileId,
           );
         },
@@ -397,9 +402,13 @@ class _MortuaryWorklist extends StatelessWidget {
                 AppWorkspaceStatusBadge(
                   status: AppWorkspaceStatus(
                     label:
-                        _displayCode(item.caseBillingStatus ?? item.billingStatus) ??
+                        _displayCode(
+                          item.caseBillingStatus ?? item.billingStatus,
+                        ) ??
                         l10n.mortuaryUnknownValueLabel,
-                    tone: _billingTone(item.caseBillingStatus ?? item.billingStatus),
+                    tone: _billingTone(
+                      item.caseBillingStatus ?? item.billingStatus,
+                    ),
                   ),
                 ),
             ],
@@ -409,9 +418,13 @@ class _MortuaryWorklist extends StatelessWidget {
       AppListTableColumn<MortuaryWorkspaceItem>(
         id: 'date',
         label: l10n.mortuaryDateColumnLabel,
-        sortComparator: (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
-          return appListTableCompareDateTime(left.timelineAt, right.timelineAt);
-        },
+        sortComparator:
+            (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
+              return appListTableCompareDateTime(
+                left.timelineAt,
+                right.timelineAt,
+              );
+            },
         cellBuilder: (_, MortuaryWorkspaceItem item) {
           return Text(_formatDateTime(context, item.timelineAt));
         },
@@ -495,7 +508,8 @@ class _MortuaryDetailPanel extends StatelessWidget {
           if (state.isRefreshingDetail) const LinearProgressIndicator(),
           AppWorkspacePatientContextHeader(
             patientName:
-                item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
+                item.effectiveDeceasedLabel ??
+                l10n.mortuaryUnknownDeceasedLabel,
             patientNumber: item.caseId ?? item.effectiveDisplayId,
             patientNumberLabel: l10n.mortuaryCaseNumberLabel,
             semanticLabel: l10n.mortuaryDeceasedContextLabel,
@@ -776,24 +790,25 @@ class _CustodySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppWorkspaceActivityItem> events = item.custodyEvents.map((
-      MortuaryTimelineEvent event,
-    ) {
-      return AppWorkspaceActivityItem(
-        title:
-            _displayCode(event.eventType) ?? l10n.mortuaryCustodySectionTitle,
-        subtitle: _formatDateTime(context, event.eventAt),
-        description: _joinValues(<String?>[
-          event.actorName,
-          event.actorRole,
-          event.locationLabel,
-          event.reason,
-          event.notes,
-        ]),
-        icon: Icons.swap_horiz_outlined,
-        tone: AppWorkspaceStatusTone.info,
-      );
-    }).toList(growable: false);
+    final List<AppWorkspaceActivityItem> events = item.custodyEvents
+        .map((MortuaryTimelineEvent event) {
+          return AppWorkspaceActivityItem(
+            title:
+                _displayCode(event.eventType) ??
+                l10n.mortuaryCustodySectionTitle,
+            subtitle: _formatDateTime(context, event.eventAt),
+            description: _joinValues(<String?>[
+              event.actorName,
+              event.actorRole,
+              event.locationLabel,
+              event.reason,
+              event.notes,
+            ]),
+            icon: Icons.swap_horiz_outlined,
+            tone: AppWorkspaceStatusTone.info,
+          );
+        })
+        .toList(growable: false);
 
     return AppWorkspaceActivityList(
       title: l10n.mortuaryCustodySectionTitle,
@@ -812,21 +827,23 @@ class _ViewingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppWorkspaceActivityItem> events = item.viewings.map((
-      MortuaryViewing viewing,
-    ) {
-      return AppWorkspaceActivityItem(
-        title: _displayCode(viewing.status) ?? l10n.mortuaryViewingSectionTitle,
-        subtitle: _formatDateTime(context, viewing.scheduledAt),
-        description: _joinValues(<String?>[
-          viewing.authorisedByName,
-          viewing.attendeeSummary,
-          _formatDateTime(context, viewing.completedAt),
-        ]),
-        icon: Icons.event_available_outlined,
-        tone: _statusTone(viewing.status),
-      );
-    }).toList(growable: false);
+    final List<AppWorkspaceActivityItem> events = item.viewings
+        .map((MortuaryViewing viewing) {
+          return AppWorkspaceActivityItem(
+            title:
+                _displayCode(viewing.status) ??
+                l10n.mortuaryViewingSectionTitle,
+            subtitle: _formatDateTime(context, viewing.scheduledAt),
+            description: _joinValues(<String?>[
+              viewing.authorisedByName,
+              viewing.attendeeSummary,
+              _formatDateTime(context, viewing.completedAt),
+            ]),
+            icon: Icons.event_available_outlined,
+            tone: _statusTone(viewing.status),
+          );
+        })
+        .toList(growable: false);
 
     return AppWorkspaceActivityList(
       title: l10n.mortuaryViewingSectionTitle,
@@ -845,24 +862,25 @@ class _PostMortemSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppWorkspaceActivityItem> events = item.postMortemRequests.map((
-      MortuaryPostMortemRequest request,
-    ) {
-      return AppWorkspaceActivityItem(
-        title:
-            _displayCode(request.status) ?? l10n.mortuaryPostMortemSectionTitle,
-        subtitle: _formatDateTime(context, request.scheduledAt),
-        description: _joinValues(<String?>[
-          request.requestedByName,
-          request.requestReason,
-          request.diagnosticsReferenceId,
-          _formatDateTime(context, request.completedAt),
-          _formatDateTime(context, request.reportReceivedAt),
-        ]),
-        icon: Icons.fact_check_outlined,
-        tone: _statusTone(request.status),
-      );
-    }).toList(growable: false);
+    final List<AppWorkspaceActivityItem> events = item.postMortemRequests
+        .map((MortuaryPostMortemRequest request) {
+          return AppWorkspaceActivityItem(
+            title:
+                _displayCode(request.status) ??
+                l10n.mortuaryPostMortemSectionTitle,
+            subtitle: _formatDateTime(context, request.scheduledAt),
+            description: _joinValues(<String?>[
+              request.requestedByName,
+              request.requestReason,
+              request.diagnosticsReferenceId,
+              _formatDateTime(context, request.completedAt),
+              _formatDateTime(context, request.reportReceivedAt),
+            ]),
+            icon: Icons.fact_check_outlined,
+            tone: _statusTone(request.status),
+          );
+        })
+        .toList(growable: false);
 
     return AppWorkspaceActivityList(
       title: l10n.mortuaryPostMortemSectionTitle,
@@ -881,27 +899,29 @@ class _ReleaseSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppWorkspaceActivityItem> events = item.releaseAuthorisations.map((
-      MortuaryReleaseAuthorisation release,
-    ) {
-      return AppWorkspaceActivityItem(
-        title: _displayCode(release.status) ?? l10n.mortuaryReleaseSectionTitle,
-        subtitle: _formatDateTime(
-          context,
-          release.releasedAt ?? release.approvedAt,
-        ),
-        description: _joinValues(<String?>[
-          release.recipientName,
-          release.recipientRelationship,
-          release.verificationReference,
-          release.funeralServiceName,
-          release.releaseMethod,
-          release.approvedByName,
-        ]),
-        icon: Icons.outbox_outlined,
-        tone: _statusTone(release.status),
-      );
-    }).toList(growable: false);
+    final List<AppWorkspaceActivityItem> events = item.releaseAuthorisations
+        .map((MortuaryReleaseAuthorisation release) {
+          return AppWorkspaceActivityItem(
+            title:
+                _displayCode(release.status) ??
+                l10n.mortuaryReleaseSectionTitle,
+            subtitle: _formatDateTime(
+              context,
+              release.releasedAt ?? release.approvedAt,
+            ),
+            description: _joinValues(<String?>[
+              release.recipientName,
+              release.recipientRelationship,
+              release.verificationReference,
+              release.funeralServiceName,
+              release.releaseMethod,
+              release.approvedByName,
+            ]),
+            icon: Icons.outbox_outlined,
+            tone: _statusTone(release.status),
+          );
+        })
+        .toList(growable: false);
 
     return AppWorkspaceActivityList(
       title: l10n.mortuaryReleaseSectionTitle,
@@ -920,23 +940,24 @@ class _BillingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppWorkspaceActivityItem> events = item.billableEvents.map((
-      MortuaryBillableEvent event,
-    ) {
-      return AppWorkspaceActivityItem(
-        title: _displayCode(event.status) ?? l10n.mortuaryBillingSectionTitle,
-        subtitle: _formatDateTime(context, event.chargedAt),
-        description: _joinValues(<String?>[
-          _displayCode(event.eventType),
-          event.description,
-          _formatAmount(context, event.amountText, event.currency),
-          event.billingReferenceId,
-          _formatDateTime(context, event.settledAt),
-        ]),
-        icon: Icons.receipt_long_outlined,
-        tone: _billingTone(event.status),
-      );
-    }).toList(growable: false);
+    final List<AppWorkspaceActivityItem> events = item.billableEvents
+        .map((MortuaryBillableEvent event) {
+          return AppWorkspaceActivityItem(
+            title:
+                _displayCode(event.status) ?? l10n.mortuaryBillingSectionTitle,
+            subtitle: _formatDateTime(context, event.chargedAt),
+            description: _joinValues(<String?>[
+              _displayCode(event.eventType),
+              event.description,
+              _formatAmount(context, event.amountText, event.currency),
+              event.billingReferenceId,
+              _formatDateTime(context, event.settledAt),
+            ]),
+            icon: Icons.receipt_long_outlined,
+            tone: _billingTone(event.status),
+          );
+        })
+        .toList(growable: false);
 
     return AppWorkspaceActivityList(
       title: l10n.mortuaryBillingSectionTitle,
@@ -1208,7 +1229,11 @@ List<AppSearchBarFilterChoice> _lookupChoices(
 ) {
   return <AppSearchBarFilterChoice>[
     for (final MortuaryLookupOption option in options)
-      AppSearchBarFilterChoice(value: option.id, label: option.label, icon: icon),
+      AppSearchBarFilterChoice(
+        value: option.id,
+        label: option.label,
+        icon: icon,
+      ),
   ];
 }
 
@@ -1276,13 +1301,10 @@ String _queueLabel(AppLocalizations l10n, String id) {
   return switch (id) {
     mortuaryQueueIdentificationPending =>
       l10n.mortuaryQueueIdentificationPendingLabel,
-    mortuaryQueueStorageExceptions =>
-      l10n.mortuaryQueueStorageExceptionsLabel,
+    mortuaryQueueStorageExceptions => l10n.mortuaryQueueStorageExceptionsLabel,
     mortuaryQueueReleaseReady => l10n.mortuaryQueueReleaseReadyLabel,
-    mortuaryQueueUnsettledBilling =>
-      l10n.mortuaryQueueUnsettledBillingLabel,
-    mortuaryQueuePostMortemPending =>
-      l10n.mortuaryQueuePostMortemPendingLabel,
+    mortuaryQueueUnsettledBilling => l10n.mortuaryQueueUnsettledBillingLabel,
+    mortuaryQueuePostMortemPending => l10n.mortuaryQueuePostMortemPendingLabel,
     _ => _displayCode(id) ?? id,
   };
 }
@@ -1345,7 +1367,8 @@ IconData _queueIcon(String queue) {
 
 AppWorkspaceStatusTone _summaryTone(String id) {
   return switch (id) {
-    'identification_pending' || 'unsettled_billing' => AppWorkspaceStatusTone.warning,
+    'identification_pending' ||
+    'unsettled_billing' => AppWorkspaceStatusTone.warning,
     'release_ready' => AppWorkspaceStatusTone.success,
     'in_storage' => AppWorkspaceStatusTone.info,
     _ => AppWorkspaceStatusTone.neutral,
@@ -1365,11 +1388,16 @@ AppWorkspaceStatusTone _queueTone(String queue) {
 
 AppWorkspaceStatusTone _statusTone(String? status) {
   return switch (_normalized(status)) {
-    'RELEASED' || 'CLOSED' || 'COMPLETED' || 'APPROVED' || 'VERIFIED' =>
-      AppWorkspaceStatusTone.success,
+    'RELEASED' ||
+    'CLOSED' ||
+    'COMPLETED' ||
+    'APPROVED' ||
+    'VERIFIED' => AppWorkspaceStatusTone.success,
     'CANCELLED' || 'OUT_OF_SERVICE' => AppWorkspaceStatusTone.error,
-    'READY_FOR_RELEASE' || 'IN_STORAGE' || 'ACTIVE' || 'SCHEDULED' =>
-      AppWorkspaceStatusTone.info,
+    'READY_FOR_RELEASE' ||
+    'IN_STORAGE' ||
+    'ACTIVE' ||
+    'SCHEDULED' => AppWorkspaceStatusTone.info,
     'IDENTIFICATION_PENDING' ||
     'POST_MORTEM_PENDING' ||
     'REQUESTED' ||
@@ -1561,8 +1589,12 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
 
   final AppLocalizations l10n = context.l10n;
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('${l10n.failureTitle(failure)}: ${l10n.failureMessage(failure)}')),
+    SnackBar(content: Text(_failureSnackBarMessage(l10n, failure))),
   );
+}
+
+String _failureSnackBarMessage(AppLocalizations l10n, AppFailure failure) {
+  return '${l10n.failureTitle(failure)}: ${l10n.failureMessage(failure)}';
 }
 
 String _formatDateTime(BuildContext context, DateTime? value) {
@@ -1601,12 +1633,14 @@ String? _displayCode(String? value) {
       .split(RegExp(r'\s+'))
       .where((String word) => word.isNotEmpty)
       .toList(growable: false);
-  return words.map((String word) {
-    if (word.length == 1) {
-      return word.toUpperCase();
-    }
-    return '${word.substring(0, 1).toUpperCase()}${word.substring(1)}';
-  }).join(' ');
+  return words
+      .map((String word) {
+        if (word.length == 1) {
+          return word.toUpperCase();
+        }
+        return '${word.substring(0, 1).toUpperCase()}${word.substring(1)}';
+      })
+      .join(' ');
 }
 
 String? _normalized(String? value) {

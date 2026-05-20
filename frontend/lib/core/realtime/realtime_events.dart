@@ -42,6 +42,17 @@ abstract final class RealtimeEvents {
   static const String inventoryLowStock = 'inventory.low_stock';
   static const String inventoryStockAdjusted = 'inventory.stock_adjusted';
 
+  static const String biomedicalWorkspaceUpdated =
+      'biomedical.workspace_updated';
+  static const String biomedicalFaultReported = 'biomedical.fault_reported';
+  static const String biomedicalWorkOrderAssigned =
+      'biomedical.work_order_assigned';
+  static const String biomedicalWorkOrderStarted =
+      'biomedical.work_order_started';
+  static const String biomedicalWorkOrderReturnedToService =
+      'biomedical.work_order_returned_to_service';
+  static const String biomedicalOverdueChanged = 'biomedical.overdue_changed';
+
   static const String billingInvoiceIssued = 'billing.invoice_issued';
   static const String billingPaymentReceived = 'billing.payment_received';
   static const String billingRefundProcessed = 'billing.refund_processed';
@@ -64,8 +75,7 @@ abstract final class RealtimeEvents {
       'notification.delivery_updated';
   static const String conversationMessageCreated =
       'conversation.message_created';
-  static const String conversationThreadUpdated =
-      'conversation.thread_updated';
+  static const String conversationThreadUpdated = 'conversation.thread_updated';
   static const String conversationReadStateUpdated =
       'conversation.read_state_updated';
 }

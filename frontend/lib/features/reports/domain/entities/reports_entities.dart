@@ -458,7 +458,9 @@ final class ReportsWorkspaceState {
       query: query ?? this.query,
       overview: overview ?? this.overview,
       complianceLogs: complianceLogs ?? this.complianceLogs,
-      selectedItem: clearSelectedItem ? null : selectedItem ?? this.selectedItem,
+      selectedItem: clearSelectedItem
+          ? null
+          : selectedItem ?? this.selectedItem,
       selectedComplianceLog: clearSelectedComplianceLog
           ? null
           : selectedComplianceLog ?? this.selectedComplianceLog,

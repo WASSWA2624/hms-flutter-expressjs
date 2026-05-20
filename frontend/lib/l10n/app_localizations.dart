@@ -358,6 +358,30 @@ abstract class AppLocalizations {
   /// **'Theater'**
   String get navigationTheaterLabel;
 
+  /// Navigation label for the communications workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Communications'**
+  String get navigationCommunicationsLabel;
+
+  /// Localized text for navigationIntegrationsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations'**
+  String get navigationIntegrationsLabel;
+
+  /// Navigation label for the mortuary workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary'**
+  String get navigationMortuaryLabel;
+
+  /// Navigation label for the reports workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get navigationReportsLabel;
+
   /// Title for the theater workspace.
   ///
   /// In en, this message translates to:
@@ -12411,6 +12435,4775 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The frontend shows a shared report preview; no confirmed lab-specific generated PDF endpoint is exposed.'**
   String get labGapReportGenerationBody;
+
+  /// Navigation label for the operations workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get navigationOperationsLabel;
+
+  /// Title for the operations workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get operationsTitle;
+
+  /// Loading title for the operations workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading operations'**
+  String get operationsLoadingTitle;
+
+  /// Loading body for the operations workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading maintenance requests, assets, and service logs.'**
+  String get operationsLoadingBody;
+
+  /// Status label when operations data is synced.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get operationsLiveStatus;
+
+  /// Status label when operations data is being saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get operationsSavingStatus;
+
+  /// Snackbar message after operations mutations succeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations changes saved.'**
+  String get operationsSavedMessage;
+
+  /// Action label for creating an operations maintenance request.
+  ///
+  /// In en, this message translates to:
+  /// **'Create request'**
+  String get operationsCreateRequestAction;
+
+  /// Action label for opening an operations report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get operationsOpenReportAction;
+
+  /// Summary card label for all operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'All requests'**
+  String get operationsAllRequestsSummaryLabel;
+
+  /// Summary card label for open operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get operationsOpenSummaryLabel;
+
+  /// Summary card label for in-progress operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get operationsInProgressSummaryLabel;
+
+  /// Summary card label for completed operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get operationsCompletedSummaryLabel;
+
+  /// Summary card label for cancelled operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get operationsCancelledSummaryLabel;
+
+  /// Summary card label for configured assets.
+  ///
+  /// In en, this message translates to:
+  /// **'Assets'**
+  String get operationsAssetsSummaryLabel;
+
+  /// Title for the operations maintenance queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance queue'**
+  String get operationsQueueTitle;
+
+  /// Description for the operations maintenance queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Track facility repairs, assets, safety notes, and readiness work.'**
+  String get operationsQueueDescription;
+
+  /// Accessibility label for operations search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search operations'**
+  String get operationsSearchLabel;
+
+  /// Hint text for operations search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search request, location, system, priority, status, assignee, or notes'**
+  String get operationsSearchHint;
+
+  /// Action label for clearing operations filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get operationsClearFiltersAction;
+
+  /// Title and label for operations filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations filters'**
+  String get operationsFiltersLabel;
+
+  /// Label for choosing operations search fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Search fields'**
+  String get operationsSearchFieldsLabel;
+
+  /// All option label for operations filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get operationsAllFilterOption;
+
+  /// Label for reported date filtering.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported date'**
+  String get operationsReportedDateFilterLabel;
+
+  /// Label for the start reported date filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported from'**
+  String get operationsReportedFromLabel;
+
+  /// Label for the end reported date filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported to'**
+  String get operationsReportedToLabel;
+
+  /// Action label for choosing a reported date.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick reported date'**
+  String get operationsPickReportedDateAction;
+
+  /// Filter label for operations request status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get operationsStatusFilterLabel;
+
+  /// Filter label for operations request priority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get operationsPriorityFilterLabel;
+
+  /// Filter and field label for facility identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get operationsFacilityFilterLabel;
+
+  /// Filter and field label for asset identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset'**
+  String get operationsAssetFilterLabel;
+
+  /// Pagination label for operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} - {last} of {total} requests'**
+  String operationsPageLabel(int first, int last, int total);
+
+  /// Empty-state title for operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'No maintenance requests'**
+  String get operationsNoRequestsTitle;
+
+  /// Empty-state body for operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a request or adjust the filters.'**
+  String get operationsNoRequestsBody;
+
+  /// Title for operations request detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Request detail'**
+  String get operationsDetailTitle;
+
+  /// Empty detail title when no operations request is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a request'**
+  String get operationsNoSelectionTitle;
+
+  /// Empty detail body when no operations request is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a queue row to review assignments, service logs, and readiness notes.'**
+  String get operationsNoSelectionBody;
+
+  /// Column label for operations request reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get operationsRequestColumnLabel;
+
+  /// Column label for operations area or system.
+  ///
+  /// In en, this message translates to:
+  /// **'Area/system'**
+  String get operationsAreaColumnLabel;
+
+  /// Column label for operations request priority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get operationsPriorityColumnLabel;
+
+  /// Column label for operations request location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get operationsLocationColumnLabel;
+
+  /// Column label for operations assignee or team.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee/team'**
+  String get operationsAssigneeColumnLabel;
+
+  /// Column label for operations request status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get operationsStatusColumnLabel;
+
+  /// Column label for operations request due time.
+  ///
+  /// In en, this message translates to:
+  /// **'Due time'**
+  String get operationsDueColumnLabel;
+
+  /// Column label for operations request next action.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get operationsNextActionColumnLabel;
+
+  /// Field label for operations request category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get operationsCategoryLabel;
+
+  /// Section title for operations issue details.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue and notes'**
+  String get operationsIssueTitle;
+
+  /// Section title for operations request actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get operationsActionsTitle;
+
+  /// Action label for assigning an operations request.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign'**
+  String get operationsAssignAction;
+
+  /// Action label for updating operations request status.
+  ///
+  /// In en, this message translates to:
+  /// **'Update status'**
+  String get operationsUpdateStatusAction;
+
+  /// Action label for adding an asset service log.
+  ///
+  /// In en, this message translates to:
+  /// **'Add service log'**
+  String get operationsAddServiceLogAction;
+
+  /// Action label for adding parts or vendor notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Parts/vendor note'**
+  String get operationsPartsVendorAction;
+
+  /// Action label for adding a safety note.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety note'**
+  String get operationsSafetyNoteAction;
+
+  /// Action label for adding evidence notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence note'**
+  String get operationsEvidenceNoteAction;
+
+  /// Action label for adding handover notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover note'**
+  String get operationsHandoverNoteAction;
+
+  /// Action label for adding closeout notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Closeout note'**
+  String get operationsCloseoutNoteAction;
+
+  /// Field label for parts or vendor note.
+  ///
+  /// In en, this message translates to:
+  /// **'Parts or vendor note'**
+  String get operationsPartsVendorNoteLabel;
+
+  /// Field label for safety note.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety note'**
+  String get operationsSafetyNoteLabel;
+
+  /// Field label for evidence note.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence note'**
+  String get operationsEvidenceNoteLabel;
+
+  /// Field label for handover note.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover note'**
+  String get operationsHandoverNoteLabel;
+
+  /// Field label for closeout note.
+  ///
+  /// In en, this message translates to:
+  /// **'Closeout note'**
+  String get operationsCloseoutNoteLabel;
+
+  /// Action label for saving an operations note.
+  ///
+  /// In en, this message translates to:
+  /// **'Save note'**
+  String get operationsSaveNoteAction;
+
+  /// Title for asset service logs in operations.
+  ///
+  /// In en, this message translates to:
+  /// **'Service logs'**
+  String get operationsServiceLogsTitle;
+
+  /// Empty-state title for operations service logs.
+  ///
+  /// In en, this message translates to:
+  /// **'No service logs'**
+  String get operationsNoServiceLogsTitle;
+
+  /// Empty-state body for operations service logs.
+  ///
+  /// In en, this message translates to:
+  /// **'Service logs appear after an asset-backed repair is recorded.'**
+  String get operationsNoServiceLogsBody;
+
+  /// Fallback value for unknown operations fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get operationsUnknownValue;
+
+  /// Fallback value when an operations request has no assignee.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get operationsUnassignedValue;
+
+  /// Fallback value when an operations request has no due time.
+  ///
+  /// In en, this message translates to:
+  /// **'No due time'**
+  String get operationsNoDueTimeValue;
+
+  /// Fallback value when an operations record has no notes.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes recorded.'**
+  String get operationsNoNotesValue;
+
+  /// Field label for free-text operations location note.
+  ///
+  /// In en, this message translates to:
+  /// **'Location note'**
+  String get operationsLocationNoteLabel;
+
+  /// Field label for operations issue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue'**
+  String get operationsIssueFieldLabel;
+
+  /// Field label for operations notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get operationsNotesLabel;
+
+  /// Submit label for creating an operations request.
+  ///
+  /// In en, this message translates to:
+  /// **'Create request'**
+  String get operationsCreateRequestSubmitAction;
+
+  /// Field label for operations technician or team.
+  ///
+  /// In en, this message translates to:
+  /// **'Technician or team'**
+  String get operationsAssigneeFieldLabel;
+
+  /// Field label for operations SLA hours.
+  ///
+  /// In en, this message translates to:
+  /// **'SLA hours'**
+  String get operationsSlaHoursFieldLabel;
+
+  /// Field label for operations triage summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment note'**
+  String get operationsTriageSummaryFieldLabel;
+
+  /// Submit label for assigning an operations request.
+  ///
+  /// In en, this message translates to:
+  /// **'Save assignment'**
+  String get operationsAssignSubmitAction;
+
+  /// Field label for operations status note.
+  ///
+  /// In en, this message translates to:
+  /// **'Status note'**
+  String get operationsStatusNoteLabel;
+
+  /// Submit label for updating operations request status.
+  ///
+  /// In en, this message translates to:
+  /// **'Save status'**
+  String get operationsUpdateStatusSubmitAction;
+
+  /// Field label for operations service log notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Service notes'**
+  String get operationsServiceNotesLabel;
+
+  /// Submit label for adding an operations service log.
+  ///
+  /// In en, this message translates to:
+  /// **'Save service log'**
+  String get operationsAddServiceLogSubmitAction;
+
+  /// Disabled select option when no assets are loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'No configured assets'**
+  String get operationsNoConfiguredAssetsOption;
+
+  /// Status label for open operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get operationsStatusOpen;
+
+  /// Status label for in-progress operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get operationsStatusInProgress;
+
+  /// Status label for completed operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get operationsStatusCompleted;
+
+  /// Status label for cancelled operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get operationsStatusCancelled;
+
+  /// Priority label for urgent operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get operationsPriorityUrgent;
+
+  /// Priority label for high operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get operationsPriorityHigh;
+
+  /// Priority label for normal operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get operationsPriorityNormal;
+
+  /// Priority label for low operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get operationsPriorityLow;
+
+  /// Category label for electrical operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Electrical'**
+  String get operationsCategoryElectrical;
+
+  /// Category label for plumbing operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Plumbing'**
+  String get operationsCategoryPlumbing;
+
+  /// Category label for water operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Water'**
+  String get operationsCategoryWater;
+
+  /// Category label for power backup operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Power backup'**
+  String get operationsCategoryPowerBackup;
+
+  /// Category label for HVAC operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'HVAC'**
+  String get operationsCategoryHvac;
+
+  /// Category label for general asset operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'General asset'**
+  String get operationsCategoryGeneralAsset;
+
+  /// Category label for safety operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety'**
+  String get operationsCategorySafety;
+
+  /// Category label for other operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get operationsCategoryOther;
+
+  /// Next action label for open operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign technician or team'**
+  String get operationsNextActionAssign;
+
+  /// Next action label for asset-backed in-progress operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Record service work'**
+  String get operationsNextActionServiceLog;
+
+  /// Next action label for in-progress operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Update repair status'**
+  String get operationsNextActionUpdateStatus;
+
+  /// Next action label for completed operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Add closeout note if needed'**
+  String get operationsNextActionCloseout;
+
+  /// Next action label for cancelled operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Request cancelled'**
+  String get operationsNextActionCancelled;
+
+  /// Fallback next action label for operations requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Review request'**
+  String get operationsNextActionReview;
+
+  /// Title for the operations report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations report'**
+  String get operationsReportTitle;
+
+  /// Title for the operations report preview body.
+  ///
+  /// In en, this message translates to:
+  /// **'Report preview'**
+  String get operationsReportPreviewTitle;
+
+  /// Generated timestamp line for operations reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated {generatedAt}'**
+  String operationsGeneratedAtLabel(String generatedAt);
+
+  /// Summary line for operations report counts.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} requests: {open} open, {inProgress} in progress, {completed} completed.'**
+  String operationsReportSummaryLine(
+    int total,
+    int open,
+    int inProgress,
+    int completed,
+  );
+
+  /// Navigation label for the biomedical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical'**
+  String get navigationBiomedicalLabel;
+
+  /// Title for the biomedical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical'**
+  String get biomedicalTitle;
+
+  /// Loading title for the biomedical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading biomedical'**
+  String get biomedicalLoadingTitle;
+
+  /// Loading body for the biomedical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading equipment registry, work orders, and compliance records.'**
+  String get biomedicalLoadingBody;
+
+  /// Status label when biomedical data is synced.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get biomedicalLiveStatus;
+
+  /// Status label when biomedical data is being saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get biomedicalSavingStatus;
+
+  /// Snackbar message after biomedical mutations succeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical changes saved.'**
+  String get biomedicalSavedMessage;
+
+  /// Action label for registering biomedical equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Register asset'**
+  String get biomedicalRegisterAssetAction;
+
+  /// Action label for reporting a biomedical equipment fault.
+  ///
+  /// In en, this message translates to:
+  /// **'Report fault'**
+  String get biomedicalReportFaultAction;
+
+  /// Summary label for total equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Total equipment'**
+  String get biomedicalTotalEquipmentSummaryLabel;
+
+  /// Summary label for overdue preventive maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue PM'**
+  String get biomedicalOverduePmSummaryLabel;
+
+  /// Summary label for open biomedical work orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Open work orders'**
+  String get biomedicalOpenWorkOrdersSummaryLabel;
+
+  /// Summary label for critical equipment downtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical downtime'**
+  String get biomedicalCriticalDowntimeSummaryLabel;
+
+  /// Summary label for active equipment recalls.
+  ///
+  /// In en, this message translates to:
+  /// **'Active recalls'**
+  String get biomedicalActiveRecallsSummaryLabel;
+
+  /// Title for the biomedical equipment list.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment worklist'**
+  String get biomedicalAssetListTitle;
+
+  /// Description for the biomedical equipment list.
+  ///
+  /// In en, this message translates to:
+  /// **'Search equipment, schedules, work orders, downtime, recalls, and lifecycle records.'**
+  String get biomedicalAssetListDescription;
+
+  /// Search field label for the biomedical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Search biomedical'**
+  String get biomedicalSearchLabel;
+
+  /// Search field hint for the biomedical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Search asset tag, equipment, category, location, status, date, or provider'**
+  String get biomedicalSearchHint;
+
+  /// Advanced filter label for the biomedical workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical filters'**
+  String get biomedicalFiltersLabel;
+
+  /// Filter label for biomedical panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Panel'**
+  String get biomedicalPanelFilterLabel;
+
+  /// Filter label for biomedical status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get biomedicalStatusFilterLabel;
+
+  /// Filter label for biomedical priority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get biomedicalPriorityFilterLabel;
+
+  /// Filter label for biomedical facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get biomedicalFacilityFilterLabel;
+
+  /// Filter label for biomedical due-date preset.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get biomedicalDatePresetFilterLabel;
+
+  /// Biomedical list asset tag column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset tag'**
+  String get biomedicalAssetTagColumnLabel;
+
+  /// Biomedical list equipment column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get biomedicalEquipmentColumnLabel;
+
+  /// Biomedical list category column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get biomedicalCategoryColumnLabel;
+
+  /// Biomedical list location column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get biomedicalLocationColumnLabel;
+
+  /// Biomedical list risk column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk'**
+  String get biomedicalRiskColumnLabel;
+
+  /// Biomedical list status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get biomedicalStatusColumnLabel;
+
+  /// Biomedical list owner column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get biomedicalOwnerColumnLabel;
+
+  /// Biomedical list next action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get biomedicalNextActionColumnLabel;
+
+  /// Previous page action label for biomedical lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous equipment'**
+  String get biomedicalPreviousPageLabel;
+
+  /// Next page action label for biomedical lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Next equipment'**
+  String get biomedicalNextPageLabel;
+
+  /// Pagination label for biomedical lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {from}-{to} of {total}'**
+  String biomedicalPageLabel(int from, int to, int total);
+
+  /// Empty title for biomedical equipment list.
+  ///
+  /// In en, this message translates to:
+  /// **'No equipment records'**
+  String get biomedicalNoAssetsTitle;
+
+  /// Empty body for biomedical equipment list.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment records matching this search and filter will appear here.'**
+  String get biomedicalNoAssetsBody;
+
+  /// Title for the biomedical detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment detail'**
+  String get biomedicalDetailTitle;
+
+  /// Empty title when no biomedical record is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select equipment'**
+  String get biomedicalNoSelectionTitle;
+
+  /// Empty body when no biomedical record is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose equipment or a related record to review readiness, work orders, compliance, and lifecycle actions.'**
+  String get biomedicalNoSelectionBody;
+
+  /// Biomedical detail registry section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Registry'**
+  String get biomedicalRegistrySectionTitle;
+
+  /// Biomedical detail readiness section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness'**
+  String get biomedicalReadinessSectionTitle;
+
+  /// Biomedical detail maintenance section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get biomedicalMaintenanceSectionTitle;
+
+  /// Biomedical detail compliance section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance'**
+  String get biomedicalComplianceSectionTitle;
+
+  /// Biomedical detail lifecycle section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifecycle'**
+  String get biomedicalLifecycleSectionTitle;
+
+  /// Biomedical detail report preview section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Report preview'**
+  String get biomedicalReportsSectionTitle;
+
+  /// Fallback value when biomedical data is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'-'**
+  String get biomedicalNotAvailableLabel;
+
+  /// Label for biomedical asset tag.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset tag'**
+  String get biomedicalAssetTagLabel;
+
+  /// Label for biomedical resource type.
+  ///
+  /// In en, this message translates to:
+  /// **'Record type'**
+  String get biomedicalResourceLabel;
+
+  /// Label for biomedical equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get biomedicalEquipmentLabel;
+
+  /// Label for biomedical equipment category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get biomedicalCategoryLabel;
+
+  /// Label for biomedical facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get biomedicalFacilityLabel;
+
+  /// Label for biomedical owner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get biomedicalOwnerLabel;
+
+  /// Label for biomedical status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get biomedicalStatusLabel;
+
+  /// Label for biomedical priority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get biomedicalPriorityLabel;
+
+  /// Label for biomedical next due date.
+  ///
+  /// In en, this message translates to:
+  /// **'Next due'**
+  String get biomedicalNextDueLabel;
+
+  /// Label for biomedical last updated timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get biomedicalLastUpdatedLabel;
+
+  /// Label for biomedical target path.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit path'**
+  String get biomedicalTargetPathLabel;
+
+  /// Action label for editing biomedical asset.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit asset'**
+  String get biomedicalEditAssetAction;
+
+  /// Action label for transferring equipment location.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer location'**
+  String get biomedicalTransferLocationAction;
+
+  /// Action label for scheduling maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule maintenance'**
+  String get biomedicalScheduleMaintenanceAction;
+
+  /// Action label for creating biomedical work order.
+  ///
+  /// In en, this message translates to:
+  /// **'Create work order'**
+  String get biomedicalCreateWorkOrderAction;
+
+  /// Action label for updating biomedical work order.
+  ///
+  /// In en, this message translates to:
+  /// **'Update work order'**
+  String get biomedicalUpdateWorkOrderAction;
+
+  /// Action label for starting biomedical work order.
+  ///
+  /// In en, this message translates to:
+  /// **'Start work order'**
+  String get biomedicalStartWorkOrderAction;
+
+  /// Action label for returning equipment to service.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to service'**
+  String get biomedicalReturnToServiceAction;
+
+  /// Action label for recording calibration.
+  ///
+  /// In en, this message translates to:
+  /// **'Record calibration'**
+  String get biomedicalRecordCalibrationAction;
+
+  /// Action label for recording safety test.
+  ///
+  /// In en, this message translates to:
+  /// **'Record safety test'**
+  String get biomedicalRecordSafetyTestAction;
+
+  /// Action label for reporting downtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Report downtime'**
+  String get biomedicalReportDowntimeAction;
+
+  /// Action label for closing downtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Close downtime'**
+  String get biomedicalCloseDowntimeAction;
+
+  /// Action label for logging biomedical incident.
+  ///
+  /// In en, this message translates to:
+  /// **'Log incident'**
+  String get biomedicalLogIncidentAction;
+
+  /// Action label for acknowledging recall.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge recall'**
+  String get biomedicalAcknowledgeRecallAction;
+
+  /// Action label for equipment disposal or transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispose or transfer'**
+  String get biomedicalDisposeTransferAction;
+
+  /// Action label for previewing biomedical report.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview report'**
+  String get biomedicalPrintReportAction;
+
+  /// Dialog title for registering equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Register equipment'**
+  String get biomedicalRegisterAssetDialogTitle;
+
+  /// Dialog title for editing equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit equipment'**
+  String get biomedicalEditAssetDialogTitle;
+
+  /// Dialog title for transferring equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer equipment location'**
+  String get biomedicalTransferLocationDialogTitle;
+
+  /// Dialog title for scheduling maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule maintenance'**
+  String get biomedicalScheduleMaintenanceDialogTitle;
+
+  /// Dialog title for creating work order.
+  ///
+  /// In en, this message translates to:
+  /// **'Create work order'**
+  String get biomedicalWorkOrderDialogTitle;
+
+  /// Dialog title for updating work order.
+  ///
+  /// In en, this message translates to:
+  /// **'Update work order'**
+  String get biomedicalUpdateWorkOrderDialogTitle;
+
+  /// Dialog title for starting work order.
+  ///
+  /// In en, this message translates to:
+  /// **'Start work order'**
+  String get biomedicalStartWorkOrderDialogTitle;
+
+  /// Dialog title for returning equipment to service.
+  ///
+  /// In en, this message translates to:
+  /// **'Return equipment to service'**
+  String get biomedicalReturnToServiceDialogTitle;
+
+  /// Dialog title for recording calibration.
+  ///
+  /// In en, this message translates to:
+  /// **'Record calibration'**
+  String get biomedicalCalibrationDialogTitle;
+
+  /// Dialog title for recording safety test.
+  ///
+  /// In en, this message translates to:
+  /// **'Record safety test'**
+  String get biomedicalSafetyTestDialogTitle;
+
+  /// Dialog title for reporting downtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Report downtime'**
+  String get biomedicalDowntimeDialogTitle;
+
+  /// Dialog title for closing downtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Close downtime'**
+  String get biomedicalCloseDowntimeDialogTitle;
+
+  /// Dialog title for logging incident.
+  ///
+  /// In en, this message translates to:
+  /// **'Log incident'**
+  String get biomedicalIncidentDialogTitle;
+
+  /// Dialog title for acknowledging recall.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledge recall'**
+  String get biomedicalRecallDialogTitle;
+
+  /// Dialog title for disposal or transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispose or transfer equipment'**
+  String get biomedicalDisposalDialogTitle;
+
+  /// Dialog title for reporting equipment fault.
+  ///
+  /// In en, this message translates to:
+  /// **'Report equipment fault'**
+  String get biomedicalFaultDialogTitle;
+
+  /// Dialog title for biomedical report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Biomedical report'**
+  String get biomedicalPrintReportDialogTitle;
+
+  /// Form label for equipment name.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment name'**
+  String get biomedicalAssetNameLabel;
+
+  /// Form label for asset code.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset code'**
+  String get biomedicalAssetCodeLabel;
+
+  /// Form label for serial number.
+  ///
+  /// In en, this message translates to:
+  /// **'Serial number'**
+  String get biomedicalSerialNumberLabel;
+
+  /// Form label for room.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get biomedicalRoomLabel;
+
+  /// Form label for notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get biomedicalNotesLabel;
+
+  /// Form label for description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get biomedicalDescriptionLabel;
+
+  /// Form label for work order title.
+  ///
+  /// In en, this message translates to:
+  /// **'Work order title'**
+  String get biomedicalWorkOrderTitleLabel;
+
+  /// Form label for engineer.
+  ///
+  /// In en, this message translates to:
+  /// **'Engineer'**
+  String get biomedicalEngineerLabel;
+
+  /// Form label for maintenance plan name.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan name'**
+  String get biomedicalPlanNameLabel;
+
+  /// Form label for maintenance type.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance type'**
+  String get biomedicalMaintenanceTypeLabel;
+
+  /// Form label for maintenance frequency days.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency days'**
+  String get biomedicalFrequencyDaysLabel;
+
+  /// Form label for next due date time.
+  ///
+  /// In en, this message translates to:
+  /// **'Next due at'**
+  String get biomedicalNextDueAtLabel;
+
+  /// Form label for result.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get biomedicalResultLabel;
+
+  /// Form label for calibration date.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrated at'**
+  String get biomedicalCalibratedAtLabel;
+
+  /// Form label for safety test date.
+  ///
+  /// In en, this message translates to:
+  /// **'Tested at'**
+  String get biomedicalTestedAtLabel;
+
+  /// Form label for downtime start date.
+  ///
+  /// In en, this message translates to:
+  /// **'Downtime started'**
+  String get biomedicalDowntimeStartedAtLabel;
+
+  /// Form label for downtime end date.
+  ///
+  /// In en, this message translates to:
+  /// **'Downtime ended'**
+  String get biomedicalDowntimeEndedAtLabel;
+
+  /// Form label for reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get biomedicalReasonLabel;
+
+  /// Form label for severity.
+  ///
+  /// In en, this message translates to:
+  /// **'Severity'**
+  String get biomedicalSeverityLabel;
+
+  /// Form label for started at.
+  ///
+  /// In en, this message translates to:
+  /// **'Started at'**
+  String get biomedicalStartedAtLabel;
+
+  /// Form label for recorded at.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded at'**
+  String get biomedicalRecordedAtLabel;
+
+  /// Form label for effective date.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective at'**
+  String get biomedicalEffectiveAtLabel;
+
+  /// Form label for temporary equipment name in fault reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary equipment name'**
+  String get biomedicalReportedEquipmentNameLabel;
+
+  /// Checkbox label for patient safety risk.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient safety risk'**
+  String get biomedicalPatientSafetyRiskLabel;
+
+  /// Hint for biomedical date time fields.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DDTHH:MM'**
+  String get biomedicalDateTimeHint;
+
+  /// Submit action label for biomedical dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get biomedicalSubmitAction;
+
+  /// Save action label for biomedical dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get biomedicalSaveAction;
+
+  /// Create action label for biomedical dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get biomedicalCreateAction;
+
+  /// Validation message for required biomedical fields.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} is required.'**
+  String biomedicalFieldRequiredLabel(String label);
+
+  /// Biomedical overview panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get biomedicalPanelOverview;
+
+  /// Biomedical registry panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Registry'**
+  String get biomedicalPanelRegistry;
+
+  /// Biomedical preventive maintenance panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Preventive'**
+  String get biomedicalPanelPreventive;
+
+  /// Biomedical work orders panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Work orders'**
+  String get biomedicalPanelWorkOrders;
+
+  /// Biomedical compliance panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance'**
+  String get biomedicalPanelCompliance;
+
+  /// Biomedical support panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get biomedicalPanelSupport;
+
+  /// Biomedical analytics panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get biomedicalPanelAnalytics;
+
+  /// Biomedical date preset for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get biomedicalDatePresetToday;
+
+  /// Biomedical date preset for next 7 days.
+  ///
+  /// In en, this message translates to:
+  /// **'Next 7 days'**
+  String get biomedicalDatePresetNext7Days;
+
+  /// Biomedical date preset for overdue items.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get biomedicalDatePresetOverdue;
+
+  /// Biomedical date preset for this month.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get biomedicalDatePresetThisMonth;
+
+  /// Next action label for maintenance records.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform maintenance'**
+  String get biomedicalNextActionMaintain;
+
+  /// Next action label for calibration and safety records.
+  ///
+  /// In en, this message translates to:
+  /// **'Review compliance'**
+  String get biomedicalNextActionCalibrate;
+
+  /// Next action label for downtime records.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to service'**
+  String get biomedicalNextActionReturnService;
+
+  /// Next action label for recall records.
+  ///
+  /// In en, this message translates to:
+  /// **'Review recall'**
+  String get biomedicalNextActionReviewRecall;
+
+  /// Next action label for work orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Work order follow-up'**
+  String get biomedicalNextActionWorkOrder;
+
+  /// Default next action label for biomedical records.
+  ///
+  /// In en, this message translates to:
+  /// **'Review record'**
+  String get biomedicalNextActionReview;
+
+  /// Body text for the biomedical report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from backend-backed biomedical registry, readiness, compliance, and lifecycle data.'**
+  String get biomedicalPrintReportBody;
+
+  /// Localized text for integrationsLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations could not load'**
+  String get integrationsLoadErrorTitle;
+
+  /// Localized text for integrationsLoadErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh the workspace or check service availability.'**
+  String get integrationsLoadErrorBody;
+
+  /// Localized text for integrationsLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading integrations'**
+  String get integrationsLoadingTitle;
+
+  /// Localized text for integrationsLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing integrations, API keys, webhooks, and logs.'**
+  String get integrationsLoadingBody;
+
+  /// Localized text for integrationsFailedStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get integrationsFailedStatusLabel;
+
+  /// Localized text for integrationsWarningStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get integrationsWarningStatusLabel;
+
+  /// Localized text for integrationsOperationalStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational'**
+  String get integrationsOperationalStatusLabel;
+
+  /// Localized text for integrationsWorkspaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations'**
+  String get integrationsWorkspaceTitle;
+
+  /// Localized text for integrationsCreateIntegrationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create integration'**
+  String get integrationsCreateIntegrationAction;
+
+  /// Localized text for integrationsCreateApiKeyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create API key'**
+  String get integrationsCreateApiKeyAction;
+
+  /// Localized text for integrationsCreateWebhookAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create webhook'**
+  String get integrationsCreateWebhookAction;
+
+  /// Localized text for integrationsAllSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total items'**
+  String get integrationsAllSummaryLabel;
+
+  /// Localized text for integrationsActiveSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get integrationsActiveSummaryLabel;
+
+  /// Localized text for integrationsWarningsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Warnings'**
+  String get integrationsWarningsSummaryLabel;
+
+  /// Localized text for integrationsFailedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get integrationsFailedSummaryLabel;
+
+  /// Localized text for integrationsApiKeysSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API keys'**
+  String get integrationsApiKeysSummaryLabel;
+
+  /// Localized text for integrationsWebhooksSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Webhooks'**
+  String get integrationsWebhooksSummaryLabel;
+
+  /// Localized text for integrationsWorklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration worklist'**
+  String get integrationsWorklistTitle;
+
+  /// Localized text for integrationsWorklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review integrations, API keys, webhooks, sanitized logs, and interoperability readiness.'**
+  String get integrationsWorklistDescription;
+
+  /// Localized text for integrationsSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search integrations'**
+  String get integrationsSearchLabel;
+
+  /// Localized text for integrationsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, type, status, owner, or reference'**
+  String get integrationsSearchHint;
+
+  /// Localized text for integrationsFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get integrationsFiltersLabel;
+
+  /// Localized text for integrationsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get integrationsFilterAll;
+
+  /// Localized text for integrationsFilterGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get integrationsFilterGroupLabel;
+
+  /// Localized text for integrationsPreviousPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get integrationsPreviousPageLabel;
+
+  /// Localized text for integrationsNextPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get integrationsNextPageLabel;
+
+  /// Localized text for integrationsPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String integrationsPageLabel(int from, int to, int total);
+
+  /// Localized text for integrationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No integration items'**
+  String get integrationsEmptyTitle;
+
+  /// Localized text for integrationsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an integration, API key, or webhook to populate this workspace.'**
+  String get integrationsEmptyBody;
+
+  /// Localized text for integrationsTypeColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get integrationsTypeColumnLabel;
+
+  /// Localized text for integrationsNameColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get integrationsNameColumnLabel;
+
+  /// Localized text for integrationsStatusColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get integrationsStatusColumnLabel;
+
+  /// Localized text for integrationsOwnerColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get integrationsOwnerColumnLabel;
+
+  /// Localized text for integrationsScopeColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get integrationsScopeColumnLabel;
+
+  /// Localized text for integrationsLastEventColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last event'**
+  String get integrationsLastEventColumnLabel;
+
+  /// Localized text for integrationsNextActionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get integrationsNextActionColumnLabel;
+
+  /// Localized text for integrationsMobileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind} | {scope}'**
+  String integrationsMobileSubtitle(String kind, String scope);
+
+  /// Localized text for integrationsNoSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an integration item'**
+  String get integrationsNoSelectionTitle;
+
+  /// Localized text for integrationsNoSelectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a row to review configuration, keys, webhooks, logs, and available actions.'**
+  String get integrationsNoSelectionBody;
+
+  /// Localized text for integrationsConfigureAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure'**
+  String get integrationsConfigureAction;
+
+  /// Localized text for integrationsTestConnectionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get integrationsTestConnectionAction;
+
+  /// Localized text for integrationsSyncNowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get integrationsSyncNowAction;
+
+  /// Localized text for integrationsDisableAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable'**
+  String get integrationsDisableAction;
+
+  /// Localized text for integrationsEnableAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get integrationsEnableAction;
+
+  /// Localized text for integrationsManagePermissionsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage permissions'**
+  String get integrationsManagePermissionsAction;
+
+  /// Localized text for integrationsRevokeApiKeyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke key'**
+  String get integrationsRevokeApiKeyAction;
+
+  /// Localized text for integrationsEditWebhookAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit webhook'**
+  String get integrationsEditWebhookAction;
+
+  /// Localized text for integrationsReplayWebhookAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay webhook'**
+  String get integrationsReplayWebhookAction;
+
+  /// Localized text for integrationsReplayLogAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay log'**
+  String get integrationsReplayLogAction;
+
+  /// Localized text for integrationsReferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get integrationsReferenceLabel;
+
+  /// Localized text for integrationsActionResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest action result'**
+  String get integrationsActionResultTitle;
+
+  /// Localized text for integrationsMaskedSecretTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Masked key'**
+  String get integrationsMaskedSecretTitle;
+
+  /// Localized text for integrationsRotationGapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Key rotation gap'**
+  String get integrationsRotationGapTitle;
+
+  /// Localized text for integrationsRotationGapBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The backend does not expose a rotate endpoint. Create a replacement key, update downstream systems, then revoke the old key.'**
+  String get integrationsRotationGapBody;
+
+  /// Localized text for integrationsEventLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get integrationsEventLabel;
+
+  /// Localized text for integrationsTargetHostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target host'**
+  String get integrationsTargetHostLabel;
+
+  /// Localized text for integrationsIntegrationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration'**
+  String get integrationsIntegrationLabel;
+
+  /// Localized text for integrationsSanitizedLogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sanitized log message'**
+  String get integrationsSanitizedLogTitle;
+
+  /// Localized text for integrationsInteropReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Interoperability actions are available through the backend action endpoints.'**
+  String get integrationsInteropReadyBody;
+
+  /// Localized text for integrationsConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
+  String get integrationsConfigurationTitle;
+
+  /// Localized text for integrationsConfigurationMaskedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive values are masked by the backend response.'**
+  String get integrationsConfigurationMaskedBody;
+
+  /// Localized text for integrationsConfigurationEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No configuration values are available for this integration.'**
+  String get integrationsConfigurationEmptyBody;
+
+  /// Localized text for integrationsNoConfigurationRows.
+  ///
+  /// In en, this message translates to:
+  /// **'No configuration rows'**
+  String get integrationsNoConfigurationRows;
+
+  /// Localized text for integrationsRelatedWebhooksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related webhooks'**
+  String get integrationsRelatedWebhooksTitle;
+
+  /// Localized text for integrationsNoRelatedWebhooks.
+  ///
+  /// In en, this message translates to:
+  /// **'No related webhooks'**
+  String get integrationsNoRelatedWebhooks;
+
+  /// Localized text for integrationsRelatedLogsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related logs'**
+  String get integrationsRelatedLogsTitle;
+
+  /// Localized text for integrationsNoRelatedLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'No related logs'**
+  String get integrationsNoRelatedLogs;
+
+  /// Localized text for integrationsPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get integrationsPermissionsTitle;
+
+  /// Localized text for integrationsNoPermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions granted'**
+  String get integrationsNoPermissions;
+
+  /// Localized text for integrationsRemovePermissionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove permission?'**
+  String get integrationsRemovePermissionDialogTitle;
+
+  /// Localized text for integrationsRemovePermissionDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This API key will immediately lose the selected permission.'**
+  String get integrationsRemovePermissionDialogBody;
+
+  /// Localized text for integrationsRemovePermissionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove permission'**
+  String get integrationsRemovePermissionAction;
+
+  /// Localized text for integrationsNameFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get integrationsNameFieldLabel;
+
+  /// Localized text for integrationsNameRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get integrationsNameRequiredMessage;
+
+  /// Localized text for integrationsTypeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get integrationsTypeFieldLabel;
+
+  /// Localized text for integrationsConfigFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
+  String get integrationsConfigFieldLabel;
+
+  /// Localized text for integrationsConfigCreateHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter one key=value setting per line. Sensitive keys are accepted but are not shown again.'**
+  String get integrationsConfigCreateHelper;
+
+  /// Localized text for integrationsConfigUpdateHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter only settings to change. Existing sensitive values are not shown here.'**
+  String get integrationsConfigUpdateHelper;
+
+  /// Localized text for integrationsCreateIntegrationSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create integration'**
+  String get integrationsCreateIntegrationSubmitAction;
+
+  /// Localized text for integrationsSaveIntegrationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save integration'**
+  String get integrationsSaveIntegrationAction;
+
+  /// Localized text for integrationsApiKeyNameFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Key name'**
+  String get integrationsApiKeyNameFieldLabel;
+
+  /// Localized text for integrationsApiKeyNameRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a key name.'**
+  String get integrationsApiKeyNameRequiredMessage;
+
+  /// Localized text for integrationsExpiresAtFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires at'**
+  String get integrationsExpiresAtFieldLabel;
+
+  /// Localized text for integrationsIsoDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM-DD or ISO timestamp'**
+  String get integrationsIsoDateHint;
+
+  /// Localized text for integrationsCreateApiKeySubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create API key'**
+  String get integrationsCreateApiKeySubmitAction;
+
+  /// Localized text for integrationsIntegrationFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration'**
+  String get integrationsIntegrationFieldLabel;
+
+  /// Localized text for integrationsEventFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get integrationsEventFieldLabel;
+
+  /// Localized text for integrationsEventRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an event name.'**
+  String get integrationsEventRequiredMessage;
+
+  /// Localized text for integrationsTargetUrlFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target URL'**
+  String get integrationsTargetUrlFieldLabel;
+
+  /// Localized text for integrationsTargetUrlRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a target URL.'**
+  String get integrationsTargetUrlRequiredMessage;
+
+  /// Localized text for integrationsWebhookActiveFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Webhook active'**
+  String get integrationsWebhookActiveFieldLabel;
+
+  /// Localized text for integrationsCreateWebhookSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create webhook'**
+  String get integrationsCreateWebhookSubmitAction;
+
+  /// Localized text for integrationsSaveWebhookAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save webhook'**
+  String get integrationsSaveWebhookAction;
+
+  /// Localized text for integrationsApiKeyFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get integrationsApiKeyFieldLabel;
+
+  /// Localized text for integrationsApiKeyRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an API key.'**
+  String get integrationsApiKeyRequiredMessage;
+
+  /// Localized text for integrationsPermissionFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission'**
+  String get integrationsPermissionFieldLabel;
+
+  /// Localized text for integrationsPermissionRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a permission.'**
+  String get integrationsPermissionRequiredMessage;
+
+  /// Localized text for integrationsAddPermissionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add permission'**
+  String get integrationsAddPermissionAction;
+
+  /// Localized text for integrationsCreateIntegrationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create integration'**
+  String get integrationsCreateIntegrationDialogTitle;
+
+  /// Localized text for integrationsConfigureIntegrationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure integration'**
+  String get integrationsConfigureIntegrationDialogTitle;
+
+  /// Localized text for integrationsCreateApiKeyDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create API key'**
+  String get integrationsCreateApiKeyDialogTitle;
+
+  /// Localized text for integrationsCreateWebhookDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create webhook'**
+  String get integrationsCreateWebhookDialogTitle;
+
+  /// Localized text for integrationsEditWebhookDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit webhook'**
+  String get integrationsEditWebhookDialogTitle;
+
+  /// Localized text for integrationsManagePermissionsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage API key permissions'**
+  String get integrationsManagePermissionsDialogTitle;
+
+  /// Localized text for integrationsSecretMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Secret not returned'**
+  String get integrationsSecretMissing;
+
+  /// Localized text for integrationsApiKeyCreatedDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API key created'**
+  String get integrationsApiKeyCreatedDialogTitle;
+
+  /// Localized text for integrationsApiKeyCreatedSecretTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time secret'**
+  String get integrationsApiKeyCreatedSecretTitle;
+
+  /// Localized text for integrationsApiKeyCreatedSecretBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This value is shown once. Store it securely before closing this dialog.'**
+  String get integrationsApiKeyCreatedSecretBody;
+
+  /// Localized text for integrationsCopySecretAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy secret'**
+  String get integrationsCopySecretAction;
+
+  /// Localized text for integrationsTestConnectionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection?'**
+  String get integrationsTestConnectionDialogTitle;
+
+  /// Localized text for integrationsTestConnectionDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The backend will run the integration connection test.'**
+  String get integrationsTestConnectionDialogBody;
+
+  /// Localized text for integrationsSyncNowDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now?'**
+  String get integrationsSyncNowDialogTitle;
+
+  /// Localized text for integrationsSyncNowDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The backend will enqueue an immediate integration sync.'**
+  String get integrationsSyncNowDialogBody;
+
+  /// Localized text for integrationsEnableIntegrationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable integration?'**
+  String get integrationsEnableIntegrationDialogTitle;
+
+  /// Localized text for integrationsDisableIntegrationDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable integration?'**
+  String get integrationsDisableIntegrationDialogTitle;
+
+  /// Localized text for integrationsEnableIntegrationDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This integration will become available for downstream workflows.'**
+  String get integrationsEnableIntegrationDialogBody;
+
+  /// Localized text for integrationsDisableIntegrationDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This integration will stop participating in downstream workflows.'**
+  String get integrationsDisableIntegrationDialogBody;
+
+  /// Localized text for integrationsEnableApiKeyDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable API key?'**
+  String get integrationsEnableApiKeyDialogTitle;
+
+  /// Localized text for integrationsDisableApiKeyDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable API key?'**
+  String get integrationsDisableApiKeyDialogTitle;
+
+  /// Localized text for integrationsEnableApiKeyDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This API key can authenticate requests again.'**
+  String get integrationsEnableApiKeyDialogBody;
+
+  /// Localized text for integrationsDisableApiKeyDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This API key will stop authenticating requests.'**
+  String get integrationsDisableApiKeyDialogBody;
+
+  /// Localized text for integrationsEnableWebhookDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable webhook?'**
+  String get integrationsEnableWebhookDialogTitle;
+
+  /// Localized text for integrationsDisableWebhookDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable webhook?'**
+  String get integrationsDisableWebhookDialogTitle;
+
+  /// Localized text for integrationsEnableWebhookDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This webhook will receive matching events again.'**
+  String get integrationsEnableWebhookDialogBody;
+
+  /// Localized text for integrationsDisableWebhookDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This webhook will stop receiving matching events.'**
+  String get integrationsDisableWebhookDialogBody;
+
+  /// Localized text for integrationsRevokeApiKeyDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke API key?'**
+  String get integrationsRevokeApiKeyDialogTitle;
+
+  /// Localized text for integrationsRevokeApiKeyDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes the API key and its local permission grants.'**
+  String get integrationsRevokeApiKeyDialogBody;
+
+  /// Localized text for integrationsReplayWebhookDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay webhook?'**
+  String get integrationsReplayWebhookDialogTitle;
+
+  /// Localized text for integrationsReplayWebhookDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The backend will replay the webhook delivery.'**
+  String get integrationsReplayWebhookDialogBody;
+
+  /// Localized text for integrationsReplayLogDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay log?'**
+  String get integrationsReplayLogDialogTitle;
+
+  /// Localized text for integrationsReplayLogDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The backend will retry the logged integration event.'**
+  String get integrationsReplayLogDialogBody;
+
+  /// Localized text for integrationsFilterIntegrations.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations'**
+  String get integrationsFilterIntegrations;
+
+  /// Localized text for integrationsFilterApiKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'API keys'**
+  String get integrationsFilterApiKeys;
+
+  /// Localized text for integrationsFilterWebhooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Webhooks'**
+  String get integrationsFilterWebhooks;
+
+  /// Localized text for integrationsFilterLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs'**
+  String get integrationsFilterLogs;
+
+  /// Localized text for integrationsFilterInterop.
+  ///
+  /// In en, this message translates to:
+  /// **'Interop'**
+  String get integrationsFilterInterop;
+
+  /// Localized text for integrationsFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get integrationsFilterActive;
+
+  /// Localized text for integrationsFilterWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get integrationsFilterWarning;
+
+  /// Localized text for integrationsFilterFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get integrationsFilterFailed;
+
+  /// Localized text for integrationsFilterDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get integrationsFilterDisabled;
+
+  /// Localized text for integrationsTypeHl7.
+  ///
+  /// In en, this message translates to:
+  /// **'HL7'**
+  String get integrationsTypeHl7;
+
+  /// Localized text for integrationsTypeFhir.
+  ///
+  /// In en, this message translates to:
+  /// **'FHIR'**
+  String get integrationsTypeFhir;
+
+  /// Localized text for integrationsTypeLab.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab'**
+  String get integrationsTypeLab;
+
+  /// Localized text for integrationsTypeRadiology.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology'**
+  String get integrationsTypeRadiology;
+
+  /// Localized text for integrationsTypeBilling.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get integrationsTypeBilling;
+
+  /// Localized text for integrationsTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get integrationsTypeOther;
+
+  /// Localized text for integrationsStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get integrationsStatusActive;
+
+  /// Localized text for integrationsStatusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get integrationsStatusInactive;
+
+  /// Localized text for integrationsStatusError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get integrationsStatusError;
+
+  /// Localized text for integrationsStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get integrationsStatusFailed;
+
+  /// Localized text for integrationsStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get integrationsStatusReady;
+
+  /// Localized text for integrationsStatusBackendGap.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend gap'**
+  String get integrationsStatusBackendGap;
+
+  /// Localized text for integrationsStatusQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get integrationsStatusQueued;
+
+  /// Localized text for integrationsStatusConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get integrationsStatusConnected;
+
+  /// Localized text for integrationsKindIntegration.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration'**
+  String get integrationsKindIntegration;
+
+  /// Localized text for integrationsKindApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get integrationsKindApiKey;
+
+  /// Localized text for integrationsKindWebhook.
+  ///
+  /// In en, this message translates to:
+  /// **'Webhook'**
+  String get integrationsKindWebhook;
+
+  /// Localized text for integrationsKindLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Log'**
+  String get integrationsKindLog;
+
+  /// Localized text for integrationsKindInterop.
+  ///
+  /// In en, this message translates to:
+  /// **'Interop'**
+  String get integrationsKindInterop;
+
+  /// Localized text for integrationsNoScopesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No scopes'**
+  String get integrationsNoScopesLabel;
+
+  /// Localized text for integrationsOneScopeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'1 scope'**
+  String get integrationsOneScopeLabel;
+
+  /// Localized text for integrationsInteropFhirScope.
+  ///
+  /// In en, this message translates to:
+  /// **'FHIR exchange'**
+  String get integrationsInteropFhirScope;
+
+  /// Localized text for integrationsInteropHl7Scope.
+  ///
+  /// In en, this message translates to:
+  /// **'HL7 messaging'**
+  String get integrationsInteropHl7Scope;
+
+  /// Localized text for integrationsInteropDicomScope.
+  ///
+  /// In en, this message translates to:
+  /// **'DICOM linking'**
+  String get integrationsInteropDicomScope;
+
+  /// Localized text for integrationsInteropMigrationScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Migration import and export'**
+  String get integrationsInteropMigrationScope;
+
+  /// Localized text for integrationsInteropStatusScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness status'**
+  String get integrationsInteropStatusScope;
+
+  /// Localized text for integrationsManyScopesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} scopes'**
+  String integrationsManyScopesLabel(String count);
+
+  /// Localized text for integrationsNextActionReviewFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Review failure'**
+  String get integrationsNextActionReviewFailure;
+
+  /// Localized text for integrationsNextActionEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable item'**
+  String get integrationsNextActionEnable;
+
+  /// Localized text for integrationsNextActionMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor'**
+  String get integrationsNextActionMonitor;
+
+  /// Localized text for integrationsNextActionReviewKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Review key'**
+  String get integrationsNextActionReviewKey;
+
+  /// Localized text for integrationsNextActionRotateOrMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate or monitor'**
+  String get integrationsNextActionRotateOrMonitor;
+
+  /// Localized text for integrationsNextActionEnableWebhook.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable webhook'**
+  String get integrationsNextActionEnableWebhook;
+
+  /// Localized text for integrationsNextActionMonitorDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor delivery'**
+  String get integrationsNextActionMonitorDelivery;
+
+  /// Localized text for integrationsNextActionReplayOrEscalate.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay or escalate'**
+  String get integrationsNextActionReplayOrEscalate;
+
+  /// Localized text for integrationsNextActionReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get integrationsNextActionReview;
+
+  /// Localized text for integrationsNextActionRunEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Run endpoint'**
+  String get integrationsNextActionRunEndpoint;
+
+  /// Localized text for integrationsNextActionUseStatusLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Use status logs'**
+  String get integrationsNextActionUseStatusLogs;
+
+  /// Localized text for integrationsInteropFhirTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FHIR exchange'**
+  String get integrationsInteropFhirTitle;
+
+  /// Localized text for integrationsInteropHl7Title.
+  ///
+  /// In en, this message translates to:
+  /// **'HL7 messages'**
+  String get integrationsInteropHl7Title;
+
+  /// Localized text for integrationsInteropDicomTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'DICOM study linking'**
+  String get integrationsInteropDicomTitle;
+
+  /// Localized text for integrationsInteropMigrationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Migration tools'**
+  String get integrationsInteropMigrationTitle;
+
+  /// Localized text for integrationsInteropReadinessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Interop readiness'**
+  String get integrationsInteropReadinessTitle;
+
+  /// Localized text for integrationsInteropReadinessGapBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No dedicated interoperability readiness endpoint is exposed. Use integration status and sanitized logs until the backend adds one.'**
+  String get integrationsInteropReadinessGapBody;
+
+  /// Localized text for integrationsSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration changes saved.'**
+  String get integrationsSavedMessage;
+
+  /// Title for the reports and audit workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports and audit'**
+  String get reportsTitle;
+
+  /// Loading title for the reports workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading reports workspace'**
+  String get reportsLoadingTitle;
+
+  /// Loading body for the reports workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching report definitions, runs, schedules, dashboards, and audit evidence.'**
+  String get reportsLoadingBody;
+
+  /// Status label when the reports workspace is live.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get reportsLiveStatus;
+
+  /// Status label while a report action is saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get reportsSavingStatus;
+
+  /// Action label to run a report.
+  ///
+  /// In en, this message translates to:
+  /// **'Run report'**
+  String get reportsRunAction;
+
+  /// Action label to schedule a report.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get reportsScheduleAction;
+
+  /// Action label to retry a report run.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get reportsRetryAction;
+
+  /// Action label to cancel a report run.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel run'**
+  String get reportsCancelRunAction;
+
+  /// Action label to download a generated report.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get reportsDownloadAction;
+
+  /// Action label to print report or evidence details.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get reportsPrintAction;
+
+  /// Action label to export compliance evidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Export evidence'**
+  String get reportsExportEvidenceAction;
+
+  /// Accessible label for reports workspace search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search reports and logs'**
+  String get reportsSearchLabel;
+
+  /// Search hint for report data.
+  ///
+  /// In en, this message translates to:
+  /// **'Search report name, module, owner, status, or record'**
+  String get reportsSearchHint;
+
+  /// Search hint for compliance logs.
+  ///
+  /// In en, this message translates to:
+  /// **'Search user, action, record, patient, purpose, or reason'**
+  String get reportsComplianceSearchHint;
+
+  /// Clear search action label for reports search.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear reports search'**
+  String get reportsClearSearchLabel;
+
+  /// Advanced filter dialog label for reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Report filters'**
+  String get reportsFiltersLabel;
+
+  /// Filter label for reports workspace panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace panel'**
+  String get reportsPanelFilterLabel;
+
+  /// Filter label for report status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get reportsStatusFilterLabel;
+
+  /// Filter label for report output format.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get reportsFormatFilterLabel;
+
+  /// Filter label for report dataset.
+  ///
+  /// In en, this message translates to:
+  /// **'Dataset'**
+  String get reportsDatasetFilterLabel;
+
+  /// Filter label for report date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get reportsDateFilterLabel;
+
+  /// Start date label for report filters.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get reportsDateFromLabel;
+
+  /// End date label for report filters.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get reportsDateToLabel;
+
+  /// Date picker button label for report filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose date'**
+  String get reportsDatePickerLabel;
+
+  /// Validation message for invalid report filter dates.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date.'**
+  String get reportsInvalidDateMessage;
+
+  /// Filter label for compliance event type.
+  ///
+  /// In en, this message translates to:
+  /// **'Event type'**
+  String get reportsComplianceTypeFilterLabel;
+
+  /// All statuses filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'All statuses'**
+  String get reportsAllStatusesLabel;
+
+  /// All formats filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'All formats'**
+  String get reportsAllFormatsLabel;
+
+  /// All datasets filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'All datasets'**
+  String get reportsAllDatasetsLabel;
+
+  /// Reports workspace overview panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get reportsPanelOverview;
+
+  /// Reports workspace catalog panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog'**
+  String get reportsPanelCatalog;
+
+  /// Reports workspace delivery panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs and delivery'**
+  String get reportsPanelDelivery;
+
+  /// Reports workspace dashboards panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboards'**
+  String get reportsPanelDashboards;
+
+  /// Reports workspace KPI monitor panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'KPI monitor'**
+  String get reportsPanelMonitor;
+
+  /// Reports workspace analytics activity panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics activity'**
+  String get reportsPanelActivity;
+
+  /// Reports workspace audit logs panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit logs'**
+  String get reportsPanelAudit;
+
+  /// Reports workspace PHI access panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'PHI access'**
+  String get reportsPanelPhi;
+
+  /// Reports workspace data processing logs panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing logs'**
+  String get reportsPanelProcessing;
+
+  /// Description for the report worklist panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search, filter, preview, run, schedule, print, and export backend-backed report records.'**
+  String get reportsWorklistDescription;
+
+  /// Description for compliance log worklists.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and review audit, PHI access, and data processing logs within permitted scope.'**
+  String get reportsComplianceDescription;
+
+  /// Title for report schedule list.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules'**
+  String get reportsSchedulesTitle;
+
+  /// Description for report schedule list.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved schedules stay backend-backed and refresh independently from report runs.'**
+  String get reportsSchedulesDescription;
+
+  /// Empty state title for report records.
+  ///
+  /// In en, this message translates to:
+  /// **'No report records'**
+  String get reportsNoItemsTitle;
+
+  /// Empty state body for report records.
+  ///
+  /// In en, this message translates to:
+  /// **'No backend report records match the current filters.'**
+  String get reportsNoItemsBody;
+
+  /// Empty state title for report schedules.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedules'**
+  String get reportsNoSchedulesTitle;
+
+  /// Empty state body for report schedules.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved report schedules match this view.'**
+  String get reportsNoSchedulesBody;
+
+  /// Empty state title for compliance logs.
+  ///
+  /// In en, this message translates to:
+  /// **'No compliance logs'**
+  String get reportsNoComplianceLogsTitle;
+
+  /// Empty state body for compliance logs.
+  ///
+  /// In en, this message translates to:
+  /// **'No audit or compliance evidence matches the current filters.'**
+  String get reportsNoComplianceLogsBody;
+
+  /// Title for report preview panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report preview'**
+  String get reportsPreviewTitle;
+
+  /// Title for compliance evidence detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence detail'**
+  String get reportsComplianceDetailTitle;
+
+  /// No selection title in reports workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'No selection'**
+  String get reportsNoSelectionTitle;
+
+  /// No selection body in reports workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a report definition, run, widget, KPI, event, or schedule to preview generated details.'**
+  String get reportsNoSelectionBody;
+
+  /// No selection body for compliance detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an audit, PHI access, or processing log to review evidence details.'**
+  String get reportsNoComplianceSelectionBody;
+
+  /// Report table name column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get reportsNameColumnLabel;
+
+  /// Report table status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get reportsStatusColumnLabel;
+
+  /// Report reference label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get reportsReferenceLabel;
+
+  /// Report owner label.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get reportsOwnerLabel;
+
+  /// Report updated timestamp column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get reportsUpdatedColumnLabel;
+
+  /// Report format column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get reportsFormatColumnLabel;
+
+  /// Report category label.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get reportsCategoryLabel;
+
+  /// Report dataset label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dataset'**
+  String get reportsDatasetLabel;
+
+  /// Report facility label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get reportsFacilityLabel;
+
+  /// Report value label.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get reportsValueLabel;
+
+  /// Report error label.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get reportsErrorLabel;
+
+  /// Compliance event column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get reportsEventColumnLabel;
+
+  /// Compliance user column label.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get reportsUserColumnLabel;
+
+  /// Compliance record column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get reportsRecordColumnLabel;
+
+  /// Compliance timestamp column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamp'**
+  String get reportsTimestampColumnLabel;
+
+  /// Compliance patient label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get reportsPatientLabel;
+
+  /// Compliance action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get reportsActionLabel;
+
+  /// Compliance entity label.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity'**
+  String get reportsEntityLabel;
+
+  /// PHI access scope label.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get reportsScopeLabel;
+
+  /// Data processing purpose label.
+  ///
+  /// In en, this message translates to:
+  /// **'Purpose'**
+  String get reportsPurposeLabel;
+
+  /// Data processing legal basis label.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal basis'**
+  String get reportsLegalBasisLabel;
+
+  /// Audit IP address label.
+  ///
+  /// In en, this message translates to:
+  /// **'IP address'**
+  String get reportsIpAddressLabel;
+
+  /// Compliance details label.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get reportsDetailsLabel;
+
+  /// Previous page action label for reports tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get reportsPreviousPageLabel;
+
+  /// Next page action label for reports tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get reportsNextPageLabel;
+
+  /// Pagination label for reports tables.
+  ///
+  /// In en, this message translates to:
+  /// **'{first}-{last} of {total}'**
+  String reportsPageLabel(int first, int last, int total);
+
+  /// Title for recent report activity panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent report activity'**
+  String get reportsTimelineTitle;
+
+  /// Description for recent report activity panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest backend report runs, schedules, KPI snapshots, and analytics events.'**
+  String get reportsTimelineDescription;
+
+  /// Dialog title for running a report.
+  ///
+  /// In en, this message translates to:
+  /// **'Run report'**
+  String get reportsRunDialogTitle;
+
+  /// Dialog title for retrying a report run.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry report run'**
+  String get reportsRetryDialogTitle;
+
+  /// Dialog title for scheduling a report.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule report'**
+  String get reportsScheduleDialogTitle;
+
+  /// Output format field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Output format'**
+  String get reportsFormatFieldLabel;
+
+  /// Retention days field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Retention days'**
+  String get reportsRetentionDaysFieldLabel;
+
+  /// Schedule name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule name'**
+  String get reportsScheduleNameFieldLabel;
+
+  /// Frequency field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get reportsFrequencyFieldLabel;
+
+  /// Time of day field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Time of day'**
+  String get reportsTimeOfDayFieldLabel;
+
+  /// Hint for report schedule time of day.
+  ///
+  /// In en, this message translates to:
+  /// **'HH:mm'**
+  String get reportsTimeOfDayHint;
+
+  /// Action label to create a report schedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Create schedule'**
+  String get reportsCreateScheduleAction;
+
+  /// Daily report schedule frequency label.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get reportsFrequencyDaily;
+
+  /// Weekly report schedule frequency label.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get reportsFrequencyWeekly;
+
+  /// Monthly report schedule frequency label.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get reportsFrequencyMonthly;
+
+  /// Dialog title for canceling a report run.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel report run'**
+  String get reportsCancelRunDialogTitle;
+
+  /// Dialog body for canceling a report run.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this queued or processing report run? The run row will refresh after the backend confirms the change.'**
+  String get reportsCancelRunDialogBody;
+
+  /// Dialog title for exporting evidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Export evidence'**
+  String get reportsExportEvidenceDialogTitle;
+
+  /// Dialog body for exporting evidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a facility-branded evidence document from this backend log record.'**
+  String get reportsExportEvidenceDialogBody;
+
+  /// Success message after reports workspace actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports workspace updated.'**
+  String get reportsSavedMessage;
+
+  /// Message after requesting report download.
+  ///
+  /// In en, this message translates to:
+  /// **'Report download was requested from the backend.'**
+  String get reportsDownloadRequestedMessage;
+
+  /// Subtitle for printed report metadata.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated report metadata'**
+  String get reportsPrintSubtitle;
+
+  /// Subtitle for printed compliance evidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance evidence'**
+  String get reportsEvidenceSubtitle;
+
+  /// Generated by metadata label.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated by'**
+  String get reportsGeneratedByLabel;
+
+  /// Footer for printed report documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Confidential report document generated from backend data.'**
+  String get reportsPrintFooter;
+
+  /// Footer for printed evidence documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance evidence generated from backend audit data.'**
+  String get reportsEvidenceFooter;
+
+  /// Navigation label for the physiotherapy workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy'**
+  String get navigationPhysiotherapyLabel;
+
+  /// Loading title for the communications workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading communications'**
+  String get communicationsLoadingTitle;
+
+  /// Loading body for the communications workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading notifications, conversations, delivery state, and templates.'**
+  String get communicationsLoadingBody;
+
+  /// Title for the communications workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Communications'**
+  String get communicationsWorkspaceTitle;
+
+  /// Status label for synchronized communications data.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get communicationsLiveStatus;
+
+  /// Status label while communications changes are being saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get communicationsSavingStatus;
+
+  /// Snackbar message after a communications action succeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication action saved.'**
+  String get communicationsActionSavedMessage;
+
+  /// Snackbar message after a conversation message is sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Message sent.'**
+  String get communicationsMessageSentMessage;
+
+  /// Panel label for conversation inbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get communicationsInboxPanelLabel;
+
+  /// Panel label for notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get communicationsNotificationsPanelLabel;
+
+  /// Panel label for notification deliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliveries'**
+  String get communicationsDeliveriesPanelLabel;
+
+  /// Panel label for communication templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get communicationsTemplatesPanelLabel;
+
+  /// Summary card label for unread conversation threads.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread threads'**
+  String get communicationsUnreadThreadsSummaryLabel;
+
+  /// Summary card label for unread notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread alerts'**
+  String get communicationsUnreadNotificationsSummaryLabel;
+
+  /// Summary card label for failed notification deliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed deliveries'**
+  String get communicationsFailedDeliveriesSummaryLabel;
+
+  /// Summary card label for communication templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get communicationsTemplatesSummaryLabel;
+
+  /// Description for the communications worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Find alerts, threads, delivery state, and message templates.'**
+  String get communicationsListDescription;
+
+  /// Accessibility label for communications search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search communications'**
+  String get communicationsSearchSemanticLabel;
+
+  /// Hint text for communications search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search alert, patient, source, sender, recipient, or message'**
+  String get communicationsSearchHint;
+
+  /// Action label for clearing communications search.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear communications search'**
+  String get communicationsClearSearchAction;
+
+  /// Action label for communications filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication filters'**
+  String get communicationsAdvancedFiltersLabel;
+
+  /// Dialog title for communications filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication filters'**
+  String get communicationsAdvancedFiltersTitle;
+
+  /// Action label for applying communications filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get communicationsApplyFiltersAction;
+
+  /// Action label for resetting communications filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset filters'**
+  String get communicationsResetFiltersAction;
+
+  /// Filter group label for communications queues.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get communicationsQueueFilterLabel;
+
+  /// Filter group label for communications flags.
+  ///
+  /// In en, this message translates to:
+  /// **'Flags'**
+  String get communicationsFlagsFilterLabel;
+
+  /// Filter option label for all communications.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get communicationsAllFilterLabel;
+
+  /// Filter label for unread communications.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get communicationsUnreadFilterLabel;
+
+  /// Filter label for sensitive communications.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive'**
+  String get communicationsSensitiveFilterLabel;
+
+  /// Pagination label for the previous communications page.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous communications page'**
+  String get communicationsPreviousPageLabel;
+
+  /// Pagination label for the next communications page.
+  ///
+  /// In en, this message translates to:
+  /// **'Next communications page'**
+  String get communicationsNextPageLabel;
+
+  /// Pagination range label for communications tables.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String communicationsPageLabel(int from, int to, int total);
+
+  /// Conversation table thread column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Thread'**
+  String get communicationsThreadColumnLabel;
+
+  /// Conversation table participants column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants'**
+  String get communicationsParticipantsColumnLabel;
+
+  /// Communications table status column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get communicationsStatusColumnLabel;
+
+  /// Conversation table last message column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Last message'**
+  String get communicationsLastMessageColumnLabel;
+
+  /// Communications table time column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get communicationsTimeColumnLabel;
+
+  /// Notification table alert column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert'**
+  String get communicationsAlertColumnLabel;
+
+  /// Notification table type column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get communicationsTypeColumnLabel;
+
+  /// Notification table priority column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get communicationsPriorityColumnLabel;
+
+  /// Communications table state column label.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get communicationsStateColumnLabel;
+
+  /// Delivery table notification column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification'**
+  String get communicationsNotificationColumnLabel;
+
+  /// Communications table channel column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel'**
+  String get communicationsChannelColumnLabel;
+
+  /// Delivery table recipient column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient'**
+  String get communicationsRecipientColumnLabel;
+
+  /// Delivery table attempts column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempts'**
+  String get communicationsAttemptsColumnLabel;
+
+  /// Template table template column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Template'**
+  String get communicationsTemplateColumnLabel;
+
+  /// Template table variables column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Variables'**
+  String get communicationsVariablesColumnLabel;
+
+  /// Empty title for conversations table.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations'**
+  String get communicationsNoConversationsTitle;
+
+  /// Empty body for conversations table.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching conversation threads will appear here.'**
+  String get communicationsNoConversationsBody;
+
+  /// Empty title for notifications table.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications'**
+  String get communicationsNoNotificationsTitle;
+
+  /// Empty body for notifications table.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching workflow alerts and reminders will appear here.'**
+  String get communicationsNoNotificationsBody;
+
+  /// Empty title for notification deliveries table.
+  ///
+  /// In en, this message translates to:
+  /// **'No deliveries'**
+  String get communicationsNoDeliveriesTitle;
+
+  /// Empty body for notification deliveries table.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification channel delivery attempts will appear here.'**
+  String get communicationsNoDeliveriesBody;
+
+  /// Empty title for communication templates table.
+  ///
+  /// In en, this message translates to:
+  /// **'No templates'**
+  String get communicationsNoTemplatesTitle;
+
+  /// Empty body for communication templates table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reusable communication templates will appear here.'**
+  String get communicationsNoTemplatesBody;
+
+  /// Title for conversation detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation detail'**
+  String get communicationsConversationDetailTitle;
+
+  /// Title for notification detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification detail'**
+  String get communicationsNotificationDetailTitle;
+
+  /// Title for delivery detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery detail'**
+  String get communicationsDeliveryDetailTitle;
+
+  /// Title for template detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Template detail'**
+  String get communicationsTemplateDetailTitle;
+
+  /// Empty title when no conversation is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a conversation'**
+  String get communicationsNoConversationSelectedTitle;
+
+  /// Empty body when no conversation is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a thread to review messages, participants, and linked records.'**
+  String get communicationsNoConversationSelectedBody;
+
+  /// Empty title when no notification is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a notification'**
+  String get communicationsNoNotificationSelectedTitle;
+
+  /// Empty body when no notification is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an alert to review delivery history and quick actions.'**
+  String get communicationsNoNotificationSelectedBody;
+
+  /// Empty title when no delivery is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a delivery'**
+  String get communicationsNoDeliverySelectedTitle;
+
+  /// Empty body when no delivery is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a delivery attempt to review channel, recipient, and error details.'**
+  String get communicationsNoDeliverySelectedBody;
+
+  /// Empty title when no template is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a template'**
+  String get communicationsNoTemplateSelectedTitle;
+
+  /// Empty body when no template is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a template to review channel, subject, variables, and preview.'**
+  String get communicationsNoTemplateSelectedBody;
+
+  /// Label for communication subject.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject'**
+  String get communicationsSubjectLabel;
+
+  /// Label for conversation participants.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants'**
+  String get communicationsParticipantsLabel;
+
+  /// Label for communication creation time.
+  ///
+  /// In en, this message translates to:
+  /// **'Created at'**
+  String get communicationsCreatedAtLabel;
+
+  /// Label for communication update time.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated at'**
+  String get communicationsUpdatedAtLabel;
+
+  /// Label for notification read time.
+  ///
+  /// In en, this message translates to:
+  /// **'Read at'**
+  String get communicationsReadAtLabel;
+
+  /// Label for communication type.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get communicationsTypeLabel;
+
+  /// Label for linked communication context.
+  ///
+  /// In en, this message translates to:
+  /// **'Context'**
+  String get communicationsContextLabel;
+
+  /// Label for notification.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification'**
+  String get communicationsNotificationLabel;
+
+  /// Label for delivery channel.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel'**
+  String get communicationsChannelLabel;
+
+  /// Label for delivery recipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient'**
+  String get communicationsRecipientLabel;
+
+  /// Label for delivery attempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Attempts'**
+  String get communicationsAttemptsLabel;
+
+  /// Label for delivery provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get communicationsProviderLabel;
+
+  /// Label for sent time.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent at'**
+  String get communicationsSentAtLabel;
+
+  /// Label for delivered time.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered at'**
+  String get communicationsDeliveredAtLabel;
+
+  /// Label for failed time.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed at'**
+  String get communicationsFailedAtLabel;
+
+  /// Label for status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get communicationsStatusLabel;
+
+  /// Label for template variables.
+  ///
+  /// In en, this message translates to:
+  /// **'Variables'**
+  String get communicationsVariablesLabel;
+
+  /// Title for template preview section.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get communicationsPreviewTitle;
+
+  /// Title for conversation message thread.
+  ///
+  /// In en, this message translates to:
+  /// **'Message thread'**
+  String get communicationsMessageThreadTitle;
+
+  /// Empty body for conversation messages.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages are available for this thread.'**
+  String get communicationsNoMessagesBody;
+
+  /// Title for notification delivery history.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery history'**
+  String get communicationsDeliveryHistoryTitle;
+
+  /// Title for notification delivery error details.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery error'**
+  String get communicationsDeliveryErrorTitle;
+
+  /// Action label for opening a linked workflow record.
+  ///
+  /// In en, this message translates to:
+  /// **'Open linked record'**
+  String get communicationsOpenLinkedRecordAction;
+
+  /// Action label for marking a communication as read.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark read'**
+  String get communicationsMarkReadAction;
+
+  /// Action label for marking a notification as unread.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark unread'**
+  String get communicationsMarkUnreadAction;
+
+  /// Action label for archiving a communication.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get communicationsArchiveAction;
+
+  /// Action label for unarchiving a communication.
+  ///
+  /// In en, this message translates to:
+  /// **'Unarchive'**
+  String get communicationsUnarchiveAction;
+
+  /// Action label for sending a conversation message.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get communicationsSendMessageAction;
+
+  /// Dialog title for sending a message.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get communicationsSendMessageDialogTitle;
+
+  /// Field label for message body.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get communicationsMessageFieldLabel;
+
+  /// Dialog title for marking a communication read.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as read'**
+  String get communicationsMarkReadDialogTitle;
+
+  /// Dialog title for marking a notification unread.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as unread'**
+  String get communicationsMarkUnreadDialogTitle;
+
+  /// Dialog title for archiving a communication.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive communication'**
+  String get communicationsArchiveDialogTitle;
+
+  /// Dialog title for unarchiving a conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Unarchive conversation'**
+  String get communicationsUnarchiveDialogTitle;
+
+  /// Dialog body for marking a conversation read.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this conversation read for your account.'**
+  String get communicationsMarkConversationReadDialogBody;
+
+  /// Dialog body for marking a notification read.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this notification read for your account.'**
+  String get communicationsMarkNotificationReadDialogBody;
+
+  /// Dialog body for marking a notification unread.
+  ///
+  /// In en, this message translates to:
+  /// **'Move this notification back to unread.'**
+  String get communicationsMarkNotificationUnreadDialogBody;
+
+  /// Dialog body for archiving a conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive this conversation from your active inbox.'**
+  String get communicationsArchiveConversationDialogBody;
+
+  /// Dialog body for unarchiving a conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Return this conversation to your active inbox.'**
+  String get communicationsUnarchiveConversationDialogBody;
+
+  /// Dialog body for archiving a notification.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive this notification from your active alerts.'**
+  String get communicationsArchiveNotificationDialogBody;
+
+  /// Status label for unread communications.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get communicationsUnreadStatus;
+
+  /// Status label for read notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get communicationsReadStatus;
+
+  /// Status label for archived conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get communicationsArchivedStatus;
+
+  /// Status label for sensitive conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive'**
+  String get communicationsSensitiveStatus;
+
+  /// Status label for active templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get communicationsActiveStatus;
+
+  /// Status label for inactive templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get communicationsInactiveStatus;
+
+  /// Status option label for an open housekeeping task.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get housekeepingStatusOpenLabel;
+
+  /// Status option label for an in-progress housekeeping task.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get housekeepingStatusInProgressLabel;
+
+  /// Localized text for physiotherapyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy'**
+  String get physiotherapyTitle;
+
+  /// Localized text for physiotherapyLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading physiotherapy workspace'**
+  String get physiotherapyLoadingTitle;
+
+  /// Localized text for physiotherapyLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing referrals, sessions, care plans, notes, and follow-ups.'**
+  String get physiotherapyLoadingBody;
+
+  /// Localized text for physiotherapyLiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get physiotherapyLiveStatus;
+
+  /// Localized text for physiotherapySavingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get physiotherapySavingStatus;
+
+  /// Localized text for physiotherapySavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy record saved.'**
+  String get physiotherapySavedMessage;
+
+  /// Localized text for physiotherapyReferralsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Referrals'**
+  String get physiotherapyReferralsSummaryLabel;
+
+  /// Localized text for physiotherapyTodaySummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get physiotherapyTodaySummaryLabel;
+
+  /// Localized text for physiotherapyMissedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get physiotherapyMissedSummaryLabel;
+
+  /// Localized text for physiotherapyActivePlansSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active plans'**
+  String get physiotherapyActivePlansSummaryLabel;
+
+  /// Localized text for physiotherapyFollowUpDueSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up due'**
+  String get physiotherapyFollowUpDueSummaryLabel;
+
+  /// Localized text for physiotherapyCompletedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get physiotherapyCompletedSummaryLabel;
+
+  /// Localized text for physiotherapyWorklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapy worklist'**
+  String get physiotherapyWorklistTitle;
+
+  /// Localized text for physiotherapyWorklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Referrals, therapy sessions, plans, notes, and follow-up work from confirmed clinical endpoints.'**
+  String get physiotherapyWorklistDescription;
+
+  /// Localized text for physiotherapySearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search physiotherapy worklist'**
+  String get physiotherapySearchLabel;
+
+  /// Localized text for physiotherapySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, encounter, therapist, plan, or session'**
+  String get physiotherapySearchHint;
+
+  /// Localized text for physiotherapyFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get physiotherapyFiltersLabel;
+
+  /// Localized text for physiotherapyApplyFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get physiotherapyApplyFiltersAction;
+
+  /// Localized text for physiotherapyClearFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get physiotherapyClearFiltersAction;
+
+  /// Localized text for physiotherapySearchFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search in'**
+  String get physiotherapySearchFieldLabel;
+
+  /// Localized text for physiotherapyAllFieldsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All fields'**
+  String get physiotherapyAllFieldsLabel;
+
+  /// Localized text for physiotherapyDateFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get physiotherapyDateFilterLabel;
+
+  /// Localized text for physiotherapyDateFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get physiotherapyDateFromLabel;
+
+  /// Localized text for physiotherapyDateToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get physiotherapyDateToLabel;
+
+  /// Localized text for physiotherapyTherapistFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapist'**
+  String get physiotherapyTherapistFilterLabel;
+
+  /// Localized text for physiotherapyTherapistFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapist name or user ID'**
+  String get physiotherapyTherapistFilterHint;
+
+  /// Localized text for physiotherapyQueueFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get physiotherapyQueueFilterLabel;
+
+  /// Localized text for physiotherapyFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get physiotherapyFilterAll;
+
+  /// Localized text for physiotherapyScopeReferrals.
+  ///
+  /// In en, this message translates to:
+  /// **'Referrals'**
+  String get physiotherapyScopeReferrals;
+
+  /// Localized text for physiotherapyScopeToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get physiotherapyScopeToday;
+
+  /// Localized text for physiotherapyScopeMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get physiotherapyScopeMissed;
+
+  /// Localized text for physiotherapyScopeActivePlans.
+  ///
+  /// In en, this message translates to:
+  /// **'Active plans'**
+  String get physiotherapyScopeActivePlans;
+
+  /// Localized text for physiotherapyScopeFollowUpDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up due'**
+  String get physiotherapyScopeFollowUpDue;
+
+  /// Localized text for physiotherapyScopeCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get physiotherapyScopeCompleted;
+
+  /// Localized text for physiotherapyScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All work'**
+  String get physiotherapyScopeAll;
+
+  /// Localized text for physiotherapyPatientColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get physiotherapyPatientColumnLabel;
+
+  /// Localized text for physiotherapySourceColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get physiotherapySourceColumnLabel;
+
+  /// Localized text for physiotherapySessionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get physiotherapySessionColumnLabel;
+
+  /// Localized text for physiotherapyStatusColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get physiotherapyStatusColumnLabel;
+
+  /// Localized text for physiotherapyPlanColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get physiotherapyPlanColumnLabel;
+
+  /// Localized text for physiotherapyAttendanceColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get physiotherapyAttendanceColumnLabel;
+
+  /// Localized text for physiotherapyBillingColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get physiotherapyBillingColumnLabel;
+
+  /// Localized text for physiotherapyTherapistColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapist'**
+  String get physiotherapyTherapistColumnLabel;
+
+  /// Localized text for physiotherapyNextActionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get physiotherapyNextActionColumnLabel;
+
+  /// Localized text for physiotherapyTableColumnsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapy table columns'**
+  String get physiotherapyTableColumnsTitle;
+
+  /// Localized text for physiotherapyApplyColumnsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply columns'**
+  String get physiotherapyApplyColumnsAction;
+
+  /// Localized text for physiotherapyResetColumnsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset columns'**
+  String get physiotherapyResetColumnsAction;
+
+  /// Localized text for physiotherapyNoWorkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No physiotherapy work'**
+  String get physiotherapyNoWorkTitle;
+
+  /// Localized text for physiotherapyNoWorkBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No referrals, sessions, plans, or follow-ups match the current filters.'**
+  String get physiotherapyNoWorkBody;
+
+  /// Localized text for physiotherapyDetailLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading therapy record'**
+  String get physiotherapyDetailLoadingTitle;
+
+  /// Localized text for physiotherapyDetailLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching session history, plan, notes, and follow-up details.'**
+  String get physiotherapyDetailLoadingBody;
+
+  /// Localized text for physiotherapyNoSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a therapy item'**
+  String get physiotherapyNoSelectionTitle;
+
+  /// Localized text for physiotherapyNoSelectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a referral or session to review assessment, plan, attendance, and follow-up actions.'**
+  String get physiotherapyNoSelectionBody;
+
+  /// Localized text for physiotherapyPatientNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient number'**
+  String get physiotherapyPatientNumberLabel;
+
+  /// Localized text for physiotherapyEncounterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get physiotherapyEncounterLabel;
+
+  /// Localized text for physiotherapySessionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get physiotherapySessionLabel;
+
+  /// Localized text for physiotherapyTherapistLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapist'**
+  String get physiotherapyTherapistLabel;
+
+  /// Localized text for physiotherapyBillingAuthorizationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing authorization'**
+  String get physiotherapyBillingAuthorizationLabel;
+
+  /// Localized text for physiotherapyActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Therapy actions'**
+  String get physiotherapyActionsTitle;
+
+  /// Localized text for physiotherapyReferralPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral and plan'**
+  String get physiotherapyReferralPanelTitle;
+
+  /// Localized text for physiotherapySourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get physiotherapySourceLabel;
+
+  /// Localized text for physiotherapyStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get physiotherapyStatusLabel;
+
+  /// Localized text for physiotherapyAttendanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get physiotherapyAttendanceLabel;
+
+  /// Localized text for physiotherapyPlanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get physiotherapyPlanLabel;
+
+  /// Localized text for physiotherapyGoalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get physiotherapyGoalLabel;
+
+  /// Localized text for physiotherapyInstructionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get physiotherapyInstructionsLabel;
+
+  /// Localized text for physiotherapySessionsPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session history'**
+  String get physiotherapySessionsPanelTitle;
+
+  /// Localized text for physiotherapyPlanPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Care plan'**
+  String get physiotherapyPlanPanelTitle;
+
+  /// Localized text for physiotherapyProgressNotesPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress notes'**
+  String get physiotherapyProgressNotesPanelTitle;
+
+  /// Localized text for physiotherapyFollowUpPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-ups'**
+  String get physiotherapyFollowUpPanelTitle;
+
+  /// Localized text for physiotherapyBackendGapsPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend gaps'**
+  String get physiotherapyBackendGapsPanelTitle;
+
+  /// Localized text for physiotherapyBackendGapBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace uses confirmed shared clinical endpoints and records unavailable dedicated physiotherapy contracts here.'**
+  String get physiotherapyBackendGapBody;
+
+  /// Localized text for physiotherapyNoRecordsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet.'**
+  String get physiotherapyNoRecordsLabel;
+
+  /// Localized text for physiotherapyNoInstructionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No therapy instructions recorded.'**
+  String get physiotherapyNoInstructionsLabel;
+
+  /// Localized text for physiotherapyAcceptReferralAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept referral'**
+  String get physiotherapyAcceptReferralAction;
+
+  /// Localized text for physiotherapyScheduleSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule session'**
+  String get physiotherapyScheduleSessionAction;
+
+  /// Localized text for physiotherapyRecordAssessmentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Record assessment'**
+  String get physiotherapyRecordAssessmentAction;
+
+  /// Localized text for physiotherapyRecordSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Record session'**
+  String get physiotherapyRecordSessionAction;
+
+  /// Localized text for physiotherapyMarkAttendanceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark attendance'**
+  String get physiotherapyMarkAttendanceAction;
+
+  /// Localized text for physiotherapyUpdatePlanAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update plan'**
+  String get physiotherapyUpdatePlanAction;
+
+  /// Localized text for physiotherapyAddProgressNoteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add progress note'**
+  String get physiotherapyAddProgressNoteAction;
+
+  /// Localized text for physiotherapyScheduleFollowUpAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule follow-up'**
+  String get physiotherapyScheduleFollowUpAction;
+
+  /// Localized text for physiotherapyCloseEpisodeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close episode'**
+  String get physiotherapyCloseEpisodeAction;
+
+  /// Localized text for physiotherapyPrintInstructionsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Print instructions'**
+  String get physiotherapyPrintInstructionsAction;
+
+  /// Localized text for physiotherapyAcceptReferralDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept physiotherapy referral'**
+  String get physiotherapyAcceptReferralDialogTitle;
+
+  /// Localized text for physiotherapyScheduleSessionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule therapy session'**
+  String get physiotherapyScheduleSessionDialogTitle;
+
+  /// Localized text for physiotherapyRecordAssessmentDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record therapy assessment'**
+  String get physiotherapyRecordAssessmentDialogTitle;
+
+  /// Localized text for physiotherapyRecordSessionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record therapy session'**
+  String get physiotherapyRecordSessionDialogTitle;
+
+  /// Localized text for physiotherapyMarkAttendanceDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark session attendance'**
+  String get physiotherapyMarkAttendanceDialogTitle;
+
+  /// Localized text for physiotherapyUpdatePlanDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update therapy plan'**
+  String get physiotherapyUpdatePlanDialogTitle;
+
+  /// Localized text for physiotherapyAddProgressNoteDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add progress note'**
+  String get physiotherapyAddProgressNoteDialogTitle;
+
+  /// Localized text for physiotherapyScheduleFollowUpDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule follow-up'**
+  String get physiotherapyScheduleFollowUpDialogTitle;
+
+  /// Localized text for physiotherapyCloseEpisodeDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close therapy episode'**
+  String get physiotherapyCloseEpisodeDialogTitle;
+
+  /// Localized text for physiotherapyNoteFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get physiotherapyNoteFieldLabel;
+
+  /// Localized text for physiotherapyReasonFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get physiotherapyReasonFieldLabel;
+
+  /// Localized text for physiotherapyAssessmentFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assessment'**
+  String get physiotherapyAssessmentFieldLabel;
+
+  /// Localized text for physiotherapyGoalsFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get physiotherapyGoalsFieldLabel;
+
+  /// Localized text for physiotherapyPlanFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get physiotherapyPlanFieldLabel;
+
+  /// Localized text for physiotherapyInstructionsFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get physiotherapyInstructionsFieldLabel;
+
+  /// Localized text for physiotherapySessionNoteFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Session note'**
+  String get physiotherapySessionNoteFieldLabel;
+
+  /// Localized text for physiotherapyAttendanceStatusFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance status'**
+  String get physiotherapyAttendanceStatusFieldLabel;
+
+  /// Localized text for physiotherapySummaryFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get physiotherapySummaryFieldLabel;
+
+  /// Localized text for physiotherapyStartDateFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get physiotherapyStartDateFieldLabel;
+
+  /// Localized text for physiotherapyStartTimeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get physiotherapyStartTimeFieldLabel;
+
+  /// Localized text for physiotherapyEndDateFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get physiotherapyEndDateFieldLabel;
+
+  /// Localized text for physiotherapyEndTimeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get physiotherapyEndTimeFieldLabel;
+
+  /// Localized text for physiotherapyDateFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get physiotherapyDateFieldLabel;
+
+  /// Localized text for physiotherapyTimeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get physiotherapyTimeFieldLabel;
+
+  /// Localized text for physiotherapySaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get physiotherapySaveAction;
+
+  /// Localized text for physiotherapyStatusReferral.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral'**
+  String get physiotherapyStatusReferral;
+
+  /// Localized text for physiotherapyStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get physiotherapyStatusAccepted;
+
+  /// Localized text for physiotherapyStatusAssessment.
+  ///
+  /// In en, this message translates to:
+  /// **'Assessment'**
+  String get physiotherapyStatusAssessment;
+
+  /// Localized text for physiotherapyStatusToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get physiotherapyStatusToday;
+
+  /// Localized text for physiotherapyStatusInTreatment.
+  ///
+  /// In en, this message translates to:
+  /// **'In treatment'**
+  String get physiotherapyStatusInTreatment;
+
+  /// Localized text for physiotherapyStatusActivePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Active plan'**
+  String get physiotherapyStatusActivePlan;
+
+  /// Localized text for physiotherapyStatusFollowUpDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up due'**
+  String get physiotherapyStatusFollowUpDue;
+
+  /// Localized text for physiotherapyStatusMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get physiotherapyStatusMissed;
+
+  /// Localized text for physiotherapyStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get physiotherapyStatusCompleted;
+
+  /// Localized text for physiotherapyUnknownStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get physiotherapyUnknownStatusLabel;
+
+  /// Localized text for physiotherapySourceReferral.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral'**
+  String get physiotherapySourceReferral;
+
+  /// Localized text for physiotherapySourceAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment'**
+  String get physiotherapySourceAppointment;
+
+  /// Localized text for physiotherapySourceCarePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Care plan'**
+  String get physiotherapySourceCarePlan;
+
+  /// Localized text for physiotherapySourceProcedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure'**
+  String get physiotherapySourceProcedure;
+
+  /// Localized text for physiotherapySourceUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown source'**
+  String get physiotherapySourceUnknown;
+
+  /// Localized text for physiotherapyAttendanceScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get physiotherapyAttendanceScheduled;
+
+  /// Localized text for physiotherapyAttendanceConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get physiotherapyAttendanceConfirmed;
+
+  /// Localized text for physiotherapyAttendanceInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get physiotherapyAttendanceInProgress;
+
+  /// Localized text for physiotherapyAttendanceCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get physiotherapyAttendanceCompleted;
+
+  /// Localized text for physiotherapyAttendanceCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get physiotherapyAttendanceCancelled;
+
+  /// Localized text for physiotherapyAttendanceNoShow.
+  ///
+  /// In en, this message translates to:
+  /// **'No-show'**
+  String get physiotherapyAttendanceNoShow;
+
+  /// Localized text for physiotherapyBillingBackendGap.
+  ///
+  /// In en, this message translates to:
+  /// **'No confirmed billing gate'**
+  String get physiotherapyBillingBackendGap;
+
+  /// Localized text for physiotherapyMissingValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get physiotherapyMissingValueLabel;
+
+  /// Localized text for physiotherapyBackendGapStatusEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Dedicated physiotherapy episode and therapy status endpoints are not available; status is derived from procedures, care plans, appointments, and follow-ups.'**
+  String get physiotherapyBackendGapStatusEndpoint;
+
+  /// Localized text for physiotherapyBackendGapBillingEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'A physiotherapy-specific billing authorization gate is not available; billing is shown as a documented backend gap.'**
+  String get physiotherapyBackendGapBillingEndpoint;
+
+  /// Localized text for physiotherapyBackendGapReportEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated physiotherapy assessment and discharge report endpoints are not available; printing uses the shared report template.'**
+  String get physiotherapyBackendGapReportEndpoint;
+
+  /// Localized text for physiotherapyBackendGapUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'An unavailable physiotherapy backend contract was recorded.'**
+  String get physiotherapyBackendGapUnknown;
+
+  /// Localized text for physiotherapyInstructionsReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy instructions'**
+  String get physiotherapyInstructionsReportTitle;
+
+  /// Localized text for physiotherapyReportPatientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get physiotherapyReportPatientLabel;
+
+  /// Localized text for physiotherapyReportEncounterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get physiotherapyReportEncounterLabel;
+
+  /// Localized text for physiotherapyReportPlanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan and goals'**
+  String get physiotherapyReportPlanLabel;
+
+  /// Localized text for physiotherapyReportInstructionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get physiotherapyReportInstructionsLabel;
+
+  /// Localized text for physiotherapyReportSessionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get physiotherapyReportSessionsLabel;
+
+  /// Localized text for physiotherapyReportFooterNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from confirmed shared clinical workflow data.'**
+  String get physiotherapyReportFooterNote;
 }
 
 class _AppLocalizationsDelegate

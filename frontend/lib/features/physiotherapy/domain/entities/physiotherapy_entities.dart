@@ -66,9 +66,7 @@ final class PhysiotherapyWorklistFilters {
     bool clearDateTo = false,
   }) {
     return PhysiotherapyWorklistFilters(
-      searchField: clearSearchField
-          ? null
-          : searchField ?? this.searchField,
+      searchField: clearSearchField ? null : searchField ?? this.searchField,
       source: clearSource ? null : source ?? this.source,
       status: clearStatus ? null : status ?? this.status,
       attendance: clearAttendance ? null : attendance ?? this.attendance,
@@ -203,7 +201,8 @@ final class PhysiotherapyWorkItem {
     ]);
   }
 
-  String? get apiPatientId => _firstNonEmpty(<String?>[patientId, patientPublicId]);
+  String? get apiPatientId =>
+      _firstNonEmpty(<String?>[patientId, patientPublicId]);
 
   String get apiEncounterId => encounterId;
 
@@ -512,7 +511,9 @@ final class PhysiotherapyWorkspaceState {
 
   int _countScope(PhysiotherapyQueueScope scope) {
     return worklist.items
-        .where((TherapyWorkItem item) => physiotherapyItemMatchesScope(item, scope))
+        .where(
+          (TherapyWorkItem item) => physiotherapyItemMatchesScope(item, scope),
+        )
         .length;
   }
 

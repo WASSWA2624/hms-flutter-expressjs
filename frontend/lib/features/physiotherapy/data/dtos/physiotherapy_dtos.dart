@@ -114,7 +114,8 @@ final class PhysiotherapyEncounterDto {
       status: _string(json['status']),
       providerUserId: _string(json['provider_user_id']),
       providerName:
-          _string(json['provider_display_name']) ?? _providerDisplayName(provider),
+          _string(json['provider_display_name']) ??
+          _providerDisplayName(provider),
       startedAt: _date(json['started_at']),
       updatedAt: _date(json['updated_at']) ?? _date(json['ended_at']),
     );
@@ -154,7 +155,8 @@ final class PhysiotherapyRecordDto {
       title: reason ?? displayId,
       subtitle: _joinDisplay(<String?>[
         _string(json['patient_display_name']) ?? _patientDisplayName(patient),
-        _string(json['provider_display_name']) ?? _providerDisplayName(provider),
+        _string(json['provider_display_name']) ??
+            _providerDisplayName(provider),
       ]),
       description: reason,
       patientId: _string(json['patient_id']) ?? _string(patient?['id']),
@@ -165,7 +167,8 @@ final class PhysiotherapyRecordDto {
           _string(json['patient_display_name']) ?? _patientDisplayName(patient),
       providerUserId: _string(json['provider_user_id']),
       providerName:
-          _string(json['provider_display_name']) ?? _providerDisplayName(provider),
+          _string(json['provider_display_name']) ??
+          _providerDisplayName(provider),
       startAt: startAt,
       endAt: endAt,
       occurredAt: startAt,
@@ -233,7 +236,9 @@ final class PhysiotherapyRecordDto {
       kind: kind,
       status: _string(json['status']),
       title: note ?? displayId,
-      subtitle: _string(json['author_display_name']) ?? _string(json['author_user_id']),
+      subtitle:
+          _string(json['author_display_name']) ??
+          _string(json['author_user_id']),
       description: note,
       providerUserId: _string(json['author_user_id']),
       providerName: _string(json['author_display_name']),
@@ -255,7 +260,10 @@ final class PhysiotherapyRecordDto {
       kind: kind,
       status: _string(json['status']),
       title: notes ?? _string(json['status']) ?? displayId,
-      subtitle: _joinDisplay(<String?>[_dateDisplay(scheduledAt), _string(json['status'])]),
+      subtitle: _joinDisplay(<String?>[
+        _dateDisplay(scheduledAt),
+        _string(json['status']),
+      ]),
       description: notes,
       startAt: scheduledAt,
       occurredAt: scheduledAt,
@@ -272,10 +280,8 @@ AppPage<PhysiotherapyRecord> decodeAppointmentPage(
   final PhysiotherapyJsonMap response = _expectMap(responseData);
   final List<PhysiotherapyRecord> items = _list(response['data'])
       .map(
-        (PhysiotherapyJsonMap json) => PhysiotherapyRecordDto(
-          json,
-          PhysiotherapyRecordKind.appointment,
-        ),
+        (PhysiotherapyJsonMap json) =>
+            PhysiotherapyRecordDto(json, PhysiotherapyRecordKind.appointment),
       )
       .map((PhysiotherapyRecordDto dto) => dto.toEntity())
       .where((PhysiotherapyRecord item) => item.apiId.trim().isNotEmpty)
