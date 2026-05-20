@@ -61,9 +61,7 @@ class _SubscriptionsWorkspaceContentState
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController(
-      text: widget.state.query.search,
-    );
+    _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<SubscriptionItem>();
   }
@@ -88,7 +86,9 @@ class _SubscriptionsWorkspaceContentState
   Widget build(BuildContext context) {
     final SubscriptionsWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite = accessPolicy.grants(AppPermissions.subscriptionsWrite);
+    final bool canWrite = accessPolicy.grants(
+      AppPermissions.subscriptionsWrite,
+    );
     final controller = ref.read(
       subscriptionsWorkspaceControllerProvider.notifier,
     );
@@ -503,7 +503,9 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
             controller.applyFilters(
               status: _emptyOption(value.option(_FilterKeys.status)),
               tierCode: _emptyOption(value.option(_FilterKeys.tier)),
-              billingCycle: _emptyOption(value.option(_FilterKeys.billingCycle)),
+              billingCycle: _emptyOption(
+                value.option(_FilterKeys.billingCycle),
+              ),
               planId: _emptyOption(value.option(_FilterKeys.plan)),
               moduleId: _emptyOption(value.option(_FilterKeys.module)),
               fitStatus: _emptyOption(value.option(_FilterKeys.fit)),
@@ -529,9 +531,8 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
             ),
           ],
         ),
-        itemKeyBuilder: (SubscriptionItem item) => ValueKey<String>(
-          '${item.resource.serverValue}:${item.id}',
-        ),
+        itemKeyBuilder: (SubscriptionItem item) =>
+            ValueKey<String>('${item.resource.serverValue}:${item.id}'),
         onRowSelected: controller.selectItem,
         previousPageLabel: _SubscriptionsText.previousPage,
         nextPageLabel: _SubscriptionsText.nextPage,
@@ -625,7 +626,9 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
         ],
         mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
           return Padding(
-            padding: EdgeInsets.symmetric(vertical: Theme.of(context).spacing.sm),
+            padding: EdgeInsets.symmetric(
+              vertical: Theme.of(context).spacing.sm,
+            ),
             child: _SubscriptionMobileTile(item: item),
           );
         },
@@ -772,9 +775,11 @@ class _DetailActions extends ConsumerWidget {
             label: _SubscriptionsText.updateLicense,
             leadingIcon: Icons.key_outlined,
             enabled: !state.isSaving,
-            onPressed: () => _showLicenseDialog(context, ref, state, initial: item),
+            onPressed: () =>
+                _showLicenseDialog(context, ref, state, initial: item),
           ),
-        if (item.resource == SubscriptionResource.subscriptionInvoices) ...<Widget>[
+        if (item.resource ==
+            SubscriptionResource.subscriptionInvoices) ...<Widget>[
           AppButton.secondary(
             label: _SubscriptionsText.collectInvoice,
             leadingIcon: Icons.payments_outlined,
@@ -1378,7 +1383,8 @@ class _ModuleSubscriptionForm extends StatefulWidget {
   final SubscriptionsWorkspaceState state;
 
   @override
-  State<_ModuleSubscriptionForm> createState() => _ModuleSubscriptionFormState();
+  State<_ModuleSubscriptionForm> createState() =>
+      _ModuleSubscriptionFormState();
 }
 
 class _ModuleSubscriptionFormState extends State<_ModuleSubscriptionForm> {
@@ -1395,8 +1401,7 @@ class _ModuleSubscriptionFormState extends State<_ModuleSubscriptionForm> {
 
   @override
   Widget build(BuildContext context) {
-    final List<SubscriptionLookupItem> subscriptions =
-        <SubscriptionLookupItem>[
+    final List<SubscriptionLookupItem> subscriptions = <SubscriptionLookupItem>[
       if (widget.state.overview.currentSubscription case final item?)
         SubscriptionLookupItem(
           id: item.id,
@@ -1696,12 +1701,15 @@ Future<void> _showPlanDialog(
   final SubscriptionPlanDraft? draft = await showAppWorkspaceActionDialog(
     context: context,
     title: Text(
-      initial == null ? _SubscriptionsText.createPlan : _SubscriptionsText.editPlan,
+      initial == null
+          ? _SubscriptionsText.createPlan
+          : _SubscriptionsText.editPlan,
     ),
     icon: const Icon(Icons.workspace_premium_outlined),
     content: _PlanForm(
-      submitLabel:
-          initial == null ? _SubscriptionsText.createPlan : _SubscriptionsText.savePlan,
+      submitLabel: initial == null
+          ? _SubscriptionsText.createPlan
+          : _SubscriptionsText.savePlan,
       initial: initial,
     ),
   );
@@ -1813,7 +1821,9 @@ Future<void> _showLicenseDialog(
   final LicenseDraft? draft = await showAppWorkspaceActionDialog(
     context: context,
     title: Text(
-      initial == null ? _SubscriptionsText.addLicense : _SubscriptionsText.updateLicense,
+      initial == null
+          ? _SubscriptionsText.addLicense
+          : _SubscriptionsText.updateLicense,
     ),
     icon: const Icon(Icons.key_outlined),
     content: _LicenseForm(state: state, initial: initial),
@@ -1909,7 +1919,10 @@ Future<void> _showCollectInvoiceDialog(
   }
 }
 
-Future<void> _showRetryInvoiceDialog(BuildContext context, WidgetRef ref) async {
+Future<void> _showRetryInvoiceDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
   final SubscriptionActionDraft? draft = await showAppWorkspaceActionDialog(
     context: context,
     title: const Text(_SubscriptionsText.retryInvoice),
@@ -2077,17 +2090,26 @@ List<AppSearchBarFilterChoice> _choices(List<SubscriptionLookupItem> items) {
   ];
 }
 
-List<AppSearchBarFilterChoice> _statusChoices(SubscriptionsWorkspaceState state) {
+List<AppSearchBarFilterChoice> _statusChoices(
+  SubscriptionsWorkspaceState state,
+) {
   return switch (state.query.resource) {
-    SubscriptionResource.moduleSubscriptions => const <AppSearchBarFilterChoice>[
-      AppSearchBarFilterChoice(value: _SubscriptionStatuses.active, label: _SubscriptionsText.active),
-      AppSearchBarFilterChoice(value: _SubscriptionStatuses.inactive, label: _SubscriptionsText.inactive),
-    ],
+    SubscriptionResource.moduleSubscriptions =>
+      const <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: _SubscriptionStatuses.active,
+          label: _SubscriptionsText.active,
+        ),
+        AppSearchBarFilterChoice(
+          value: _SubscriptionStatuses.inactive,
+          label: _SubscriptionsText.inactive,
+        ),
+      ],
     SubscriptionResource.subscriptionInvoices => _choices(
       state.lookups.invoiceStatuses,
     ),
-    SubscriptionResource.licenses || SubscriptionResource.subscriptions =>
-      _choices(state.lookups.statuses),
+    SubscriptionResource.licenses ||
+    SubscriptionResource.subscriptions => _choices(state.lookups.statuses),
     _ => const <AppSearchBarFilterChoice>[],
   };
 }
@@ -2151,27 +2173,60 @@ List<AppSelectOption<String>> _lookupOptions(
 
 List<AppSelectOption<String>> _tierOptions() {
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: _TierValues.basic, label: _SubscriptionsText.basic),
-    AppSelectOption<String>(value: _TierValues.standard, label: _SubscriptionsText.standard),
-    AppSelectOption<String>(value: _TierValues.premium, label: _SubscriptionsText.premium),
-    AppSelectOption<String>(value: _TierValues.enterprise, label: _SubscriptionsText.enterprise),
+    AppSelectOption<String>(
+      value: _TierValues.basic,
+      label: _SubscriptionsText.basic,
+    ),
+    AppSelectOption<String>(
+      value: _TierValues.standard,
+      label: _SubscriptionsText.standard,
+    ),
+    AppSelectOption<String>(
+      value: _TierValues.premium,
+      label: _SubscriptionsText.premium,
+    ),
+    AppSelectOption<String>(
+      value: _TierValues.enterprise,
+      label: _SubscriptionsText.enterprise,
+    ),
   ];
 }
 
 List<AppSelectOption<String>> _billingCycleOptions() {
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: _BillingCycles.monthly, label: _SubscriptionsText.monthly),
-    AppSelectOption<String>(value: _BillingCycles.quarterly, label: _SubscriptionsText.quarterly),
-    AppSelectOption<String>(value: _BillingCycles.yearly, label: _SubscriptionsText.yearly),
+    AppSelectOption<String>(
+      value: _BillingCycles.monthly,
+      label: _SubscriptionsText.monthly,
+    ),
+    AppSelectOption<String>(
+      value: _BillingCycles.quarterly,
+      label: _SubscriptionsText.quarterly,
+    ),
+    AppSelectOption<String>(
+      value: _BillingCycles.yearly,
+      label: _SubscriptionsText.yearly,
+    ),
   ];
 }
 
 List<AppSelectOption<String>> _subscriptionStatusOptions() {
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: _SubscriptionStatuses.active, label: _SubscriptionsText.active),
-    AppSelectOption<String>(value: _SubscriptionStatuses.trial, label: _SubscriptionsText.trial),
-    AppSelectOption<String>(value: _SubscriptionStatuses.pastDue, label: _SubscriptionsText.pastDue),
-    AppSelectOption<String>(value: _SubscriptionStatuses.cancelled, label: _SubscriptionsText.cancelled),
+    AppSelectOption<String>(
+      value: _SubscriptionStatuses.active,
+      label: _SubscriptionsText.active,
+    ),
+    AppSelectOption<String>(
+      value: _SubscriptionStatuses.trial,
+      label: _SubscriptionsText.trial,
+    ),
+    AppSelectOption<String>(
+      value: _SubscriptionStatuses.pastDue,
+      label: _SubscriptionsText.pastDue,
+    ),
+    AppSelectOption<String>(
+      value: _SubscriptionStatuses.cancelled,
+      label: _SubscriptionsText.cancelled,
+    ),
   ];
 }
 
@@ -2182,19 +2237,43 @@ List<AppSelectOption<String>> _licenseTypeOptions(
     return _lookupOptions(state.lookups.licenseTypes);
   }
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: _LicenseTypes.perUser, label: _SubscriptionsText.perUser),
-    AppSelectOption<String>(value: _LicenseTypes.perFacility, label: _SubscriptionsText.perFacility),
-    AppSelectOption<String>(value: _LicenseTypes.enterprise, label: _SubscriptionsText.enterprise),
+    AppSelectOption<String>(
+      value: _LicenseTypes.perUser,
+      label: _SubscriptionsText.perUser,
+    ),
+    AppSelectOption<String>(
+      value: _LicenseTypes.perFacility,
+      label: _SubscriptionsText.perFacility,
+    ),
+    AppSelectOption<String>(
+      value: _LicenseTypes.enterprise,
+      label: _SubscriptionsText.enterprise,
+    ),
   ];
 }
 
 List<AppSelectOption<String>> _paymentMethodOptions() {
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: _PaymentMethods.cash, label: _SubscriptionsText.cash),
-    AppSelectOption<String>(value: _PaymentMethods.mobileMoney, label: _SubscriptionsText.mobileMoney),
-    AppSelectOption<String>(value: _PaymentMethods.bankTransfer, label: _SubscriptionsText.bankTransfer),
-    AppSelectOption<String>(value: _PaymentMethods.card, label: _SubscriptionsText.card),
-    AppSelectOption<String>(value: _PaymentMethods.other, label: _SubscriptionsText.other),
+    AppSelectOption<String>(
+      value: _PaymentMethods.cash,
+      label: _SubscriptionsText.cash,
+    ),
+    AppSelectOption<String>(
+      value: _PaymentMethods.mobileMoney,
+      label: _SubscriptionsText.mobileMoney,
+    ),
+    AppSelectOption<String>(
+      value: _PaymentMethods.bankTransfer,
+      label: _SubscriptionsText.bankTransfer,
+    ),
+    AppSelectOption<String>(
+      value: _PaymentMethods.card,
+      label: _SubscriptionsText.card,
+    ),
+    AppSelectOption<String>(
+      value: _PaymentMethods.other,
+      label: _SubscriptionsText.other,
+    ),
   ];
 }
 
@@ -2245,8 +2324,7 @@ String _amountOrLimit(BuildContext context, SubscriptionItem item) {
     return _money(context, amount, item.currency);
   }
   final List<String> limits = <String>[
-    if (item.maxUsers != null)
-      _SubscriptionsText.usersLimit(item.maxUsers!),
+    if (item.maxUsers != null) _SubscriptionsText.usersLimit(item.maxUsers!),
     if (item.maxModules != null)
       _SubscriptionsText.modulesLimit(item.maxModules!),
   ];
@@ -2282,22 +2360,26 @@ DateTime? _timelineDate(SubscriptionItem item) {
 String _nextAction(SubscriptionItem item) {
   return switch (item.resource) {
     SubscriptionResource.subscriptionPlans => _SubscriptionsText.reviewLimits,
-    SubscriptionResource.modules => item.isAddOn == true
-        ? _SubscriptionsText.addOnAvailable
-        : _SubscriptionsText.includedByPlan,
-    SubscriptionResource.subscriptions => item.canActivateSubscription
-        ? _SubscriptionsText.activate
-        : item.canCancelSubscription
-            ? _SubscriptionsText.monitorRenewal
-            : _SubscriptionsText.review,
-    SubscriptionResource.moduleSubscriptions => item.entitlementDenied
-        ? _SubscriptionsText.reviewEntitlement
-        : item.isActive == true
-            ? _SubscriptionsText.disableModule
-            : _SubscriptionsText.enableModule,
-    SubscriptionResource.subscriptionInvoices => item.canCollectInvoice
-        ? _SubscriptionsText.collectInvoice
-        : _SubscriptionsText.printInvoice,
+    SubscriptionResource.modules =>
+      item.isAddOn == true
+          ? _SubscriptionsText.addOnAvailable
+          : _SubscriptionsText.includedByPlan,
+    SubscriptionResource.subscriptions =>
+      item.canActivateSubscription
+          ? _SubscriptionsText.activate
+          : item.canCancelSubscription
+          ? _SubscriptionsText.monitorRenewal
+          : _SubscriptionsText.review,
+    SubscriptionResource.moduleSubscriptions =>
+      item.entitlementDenied
+          ? _SubscriptionsText.reviewEntitlement
+          : item.isActive == true
+          ? _SubscriptionsText.disableModule
+          : _SubscriptionsText.enableModule,
+    SubscriptionResource.subscriptionInvoices =>
+      item.canCollectInvoice
+          ? _SubscriptionsText.collectInvoice
+          : _SubscriptionsText.printInvoice,
     SubscriptionResource.licenses => _SubscriptionsText.reviewExpiry,
   };
 }
@@ -2320,13 +2402,32 @@ String _statusLabel(String? value) {
 
 AppWorkspaceStatusTone _statusTone(String? status) {
   final String normalized = status?.trim().toUpperCase() ?? '';
-  if (<String>{'ACTIVE', 'TRIAL', 'PAID', 'HEALTHY', 'FIT'}.contains(normalized)) {
+  if (<String>{
+    'ACTIVE',
+    'TRIAL',
+    'PAID',
+    'HEALTHY',
+    'FIT',
+  }.contains(normalized)) {
     return AppWorkspaceStatusTone.success;
   }
-  if (<String>{'PAST_DUE', 'OVERDUE', 'PARTIAL', 'WARNING', 'PENDING', 'SENT'}.contains(normalized)) {
+  if (<String>{
+    'PAST_DUE',
+    'OVERDUE',
+    'PARTIAL',
+    'WARNING',
+    'PENDING',
+    'SENT',
+  }.contains(normalized)) {
     return AppWorkspaceStatusTone.warning;
   }
-  if (<String>{'DENIED', 'CANCELLED', 'CRITICAL', 'INACTIVE', 'DISABLED'}.contains(normalized)) {
+  if (<String>{
+    'DENIED',
+    'CANCELLED',
+    'CRITICAL',
+    'INACTIVE',
+    'DISABLED',
+  }.contains(normalized)) {
     return AppWorkspaceStatusTone.error;
   }
   return AppWorkspaceStatusTone.neutral;
@@ -2364,7 +2465,11 @@ String _isoText(DateTime? value) {
 }
 
 final class _LimitRow {
-  const _LimitRow({required this.label, required this.used, required this.limit});
+  const _LimitRow({
+    required this.label,
+    required this.used,
+    required this.limit,
+  });
 
   final String label;
   final int? used;
@@ -2480,7 +2585,8 @@ abstract final class _SubscriptionsText {
   static const String modules = 'Modules';
   static const String recommendations = 'Recommendations';
   static const String searchLabel = 'Search subscriptions';
-  static const String searchHint = 'Tenant, plan, module, invoice, status, or date';
+  static const String searchHint =
+      'Tenant, plan, module, invoice, status, or date';
   static const String clearSearch = 'Clear subscription search';
   static const String filters = 'Subscription filters';
   static const String applyFilters = 'Apply filters';
@@ -2528,6 +2634,7 @@ abstract final class _SubscriptionsText {
   static const String billingCycle = 'Billing cycle';
   static const String amount = 'Amount';
   static const String fitStatus = 'Fit status';
+  static const String allFitStatuses = 'All fit statuses';
   static const String startDate = 'Start date';
   static const String endDate = 'End date';
   static const String updated = 'Updated';

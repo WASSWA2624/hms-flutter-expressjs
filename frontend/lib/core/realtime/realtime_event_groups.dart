@@ -67,6 +67,13 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.maintenanceRequestConverted,
   };
 
+  static const Set<String> hr = <String>{RealtimeEvents.hrWorkspaceUpdated};
+
+  static const Set<String> housekeeping = <String>{
+    ...operations,
+    ...admissions,
+  };
+
   static const Set<String> communications = <String>{
     RealtimeEvents.notificationCreated,
     RealtimeEvents.notificationDeliveryUpdated,

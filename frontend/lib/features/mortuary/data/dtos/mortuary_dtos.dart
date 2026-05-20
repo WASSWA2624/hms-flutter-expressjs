@@ -176,7 +176,8 @@ final class MortuaryWorkspaceItemDto {
 
     return MortuaryWorkspaceItem(
       id: id,
-      displayId: _string(json['human_friendly_id']) ?? _string(json['display_id']),
+      displayId:
+          _string(json['human_friendly_id']) ?? _string(json['display_id']),
       resource: resource,
       title: _string(json['title']),
       subtitle: _string(json['subtitle']),
@@ -474,9 +475,12 @@ List<MortuaryJsonMap> _list(Object? value) {
     return const <MortuaryJsonMap>[];
   }
 
-  return value.map(_map).where((MortuaryJsonMap item) {
-    return item.isNotEmpty;
-  }).toList(growable: false);
+  return value
+      .map(_map)
+      .where((MortuaryJsonMap item) {
+        return item.isNotEmpty;
+      })
+      .toList(growable: false);
 }
 
 String? _string(Object? value) {

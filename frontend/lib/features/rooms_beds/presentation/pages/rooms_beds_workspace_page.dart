@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
@@ -36,7 +38,6 @@ class RoomsBedsWorkspacePage extends ConsumerWidget {
       loadingTitle: l10n.roomsBedsLoadingTitle,
       loadingBody: l10n.roomsBedsLoadingBody,
       maxWidth: PageMaxWidth.dataHeavy,
-      centerVertically: false,
       onRetry: () {
         ref.read(roomsBedsWorkspaceControllerProvider.notifier).refresh();
       },
@@ -104,7 +105,9 @@ class _RoomsBedsWorkspaceContentState
       title: l10n.roomsBedsTitle,
       leadingIcon: AppRouteIcons.roomsBeds,
       status: AppWorkspaceStatus(
-        label: state.isSaving ? l10n.roomsBedsSavingStatus : l10n.roomsBedsLiveStatus,
+        label: state.isSaving
+            ? l10n.roomsBedsSavingStatus
+            : l10n.roomsBedsLiveStatus,
         tone: state.isSaving
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.success,
@@ -198,14 +201,16 @@ class _RoomsBedsWorkspaceContentState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(failure: lastFailure, onRetry: controller.refresh),
+            AppFailureStateView(
+              failure: lastFailure,
+              onRetry: controller.refresh,
+            ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
           AppMessagePanel(
             title: l10n.roomsBedsBackendGapsTitle,
             message: l10n.roomsBedsBackendGapsBody,
             icon: Icons.api_outlined,
-            tone: AppWorkspaceStatusTone.info,
           ),
           SizedBox(height: Theme.of(context).spacing.md),
           _BedBoardPanel(
@@ -372,7 +377,10 @@ class _BedBoardPanel extends ConsumerWidget {
               cellBuilder: (BuildContext context, BedBoardItem item) {
                 return _TwoLineCell(
                   title: item.label,
-                  subtitle: _joinDisplay(<String?>[item.id, item.facility?.name]),
+                  subtitle: _joinDisplay(<String?>[
+                    item.id,
+                    item.facility?.name,
+                  ]),
                 );
               },
             ),
@@ -397,7 +405,9 @@ class _BedBoardPanel extends ConsumerWidget {
                 );
               },
               cellBuilder: (BuildContext context, BedBoardItem item) {
-                return AppWorkspaceStatusBadge(status: _statusFor(context, item));
+                return AppWorkspaceStatusBadge(
+                  status: _statusFor(context, item),
+                );
               },
             ),
             AppListTableColumn<BedBoardItem>(
@@ -553,7 +563,8 @@ class _BedDetailContent extends ConsumerWidget {
                   label: l10n.tenantFacilityEditBedTitle,
                   leadingIcon: Icons.edit_outlined,
                   enabled: !state.isSaving,
-                  onPressed: () => _showBedDialog(context, ref, state, item: item),
+                  onPressed: () =>
+                      _showBedDialog(context, ref, state, item: item),
                 ),
               if (canAdminBeds && item.status != BedSetupStatus.reserved)
                 AppButton.secondary(
@@ -747,11 +758,7 @@ class _TwoLineCell extends StatelessWidget {
 }
 
 class _WardForm extends StatefulWidget {
-  const _WardForm({
-    required this.state,
-    required this.onSubmit,
-    this.ward,
-  });
+  const _WardForm({required this.state, required this.onSubmit, this.ward});
 
   final RoomsBedsWorkspaceState state;
   final WardProfile? ward;
@@ -800,7 +807,9 @@ class _WardFormState extends State<_WardForm> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         AppTextField(
           controller: _nameController,
@@ -841,7 +850,7 @@ class _WardFormState extends State<_WardForm> {
           onChanged: (String? value) => setState(() => _departmentId = value),
         ),
         AppSwitchField(
-          title: l10n.tenantFacilityActiveStatusLabel,
+          title: l10n.tenantFacilityActiveLabel,
           value: _isActive,
           onChanged: (bool value) => setState(() => _isActive = value),
         ),
@@ -894,11 +903,7 @@ class _WardFormState extends State<_WardForm> {
 }
 
 class _RoomForm extends StatefulWidget {
-  const _RoomForm({
-    required this.state,
-    required this.onSubmit,
-    this.room,
-  });
+  const _RoomForm({required this.state, required this.onSubmit, this.room});
 
   final RoomsBedsWorkspaceState state;
   final RoomProfile? room;
@@ -945,7 +950,9 @@ class _RoomFormState extends State<_RoomForm> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         AppTextField(
           controller: _nameController,
@@ -1016,11 +1023,7 @@ class _RoomFormState extends State<_RoomForm> {
 }
 
 class _BedForm extends StatefulWidget {
-  const _BedForm({
-    required this.state,
-    required this.onSubmit,
-    this.item,
-  });
+  const _BedForm({required this.state, required this.onSubmit, this.item});
 
   final RoomsBedsWorkspaceState state;
   final BedBoardItem? item;
@@ -1073,7 +1076,9 @@ class _BedFormState extends State<_BedForm> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         AppTextField(
           controller: _labelController,
@@ -1222,7 +1227,9 @@ class _AdmissionActionFormState extends State<_AdmissionActionForm> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         if (widget.body != null) Text(widget.body!),
         AppTextField(
@@ -1317,7 +1324,9 @@ class _TransferFormState extends State<_TransferForm> {
 
     return AppFormShell(
       formKey: _formKey,
-      formStatus: _failure == null ? null : AppFailureStateView(failure: _failure!),
+      formStatus: _failure == null
+          ? null
+          : AppFailureStateView(failure: _failure!),
       children: <Widget>[
         Text(l10n.roomsBedsTransferDialogBody),
         AppTextField(
@@ -1397,11 +1406,7 @@ Future<void> _showWardDialog(
           ? l10n.tenantFacilityAddWardTitle
           : l10n.tenantFacilityEditWardTitle,
     ),
-    content: _WardForm(
-      state: state,
-      ward: ward,
-      onSubmit: controller.saveWard,
-    ),
+    content: _WardForm(state: state, ward: ward, onSubmit: controller.saveWard),
   );
   if (context.mounted && saved == true) {
     _showSaved(context);
@@ -1425,11 +1430,7 @@ Future<void> _showRoomDialog(
           ? l10n.tenantFacilityAddRoomTitle
           : l10n.tenantFacilityEditRoomTitle,
     ),
-    content: _RoomForm(
-      state: state,
-      room: room,
-      onSubmit: controller.saveRoom,
-    ),
+    content: _RoomForm(state: state, room: room, onSubmit: controller.saveRoom),
   );
   if (context.mounted && saved == true) {
     _showSaved(context);
@@ -1453,11 +1454,7 @@ Future<void> _showBedDialog(
           ? l10n.tenantFacilityAddBedTitle
           : l10n.tenantFacilityEditBedTitle,
     ),
-    content: _BedForm(
-      state: state,
-      item: item,
-      onSubmit: controller.saveBed,
-    ),
+    content: _BedForm(state: state, item: item, onSubmit: controller.saveBed),
   );
   if (context.mounted && saved == true) {
     _showSaved(context);
@@ -1653,7 +1650,10 @@ String _dateLabel(BuildContext context, DateTime? value) {
   if (value == null) {
     return context.l10n.profileUnknownValue;
   }
-  return AppFormatters.dateTime(value.toLocal(), Localizations.localeOf(context));
+  return AppFormatters.dateTime(
+    value.toLocal(),
+    Localizations.localeOf(context),
+  );
 }
 
 List<AppSearchBarFilterChoice> _facilityChoices(

@@ -619,7 +619,8 @@ final class RoomsBedsWorkspaceController
       return null;
     }
 
-    final FacilityProfile? facility = snapshot.facilities
+    final FacilityProfile? facility =
+        snapshot.facilities
             .where((FacilityProfile item) => item.id == bed.facilityId)
             .firstOrNull ??
         snapshot.facility;
@@ -682,11 +683,7 @@ final class RoomsBedsWorkspaceController
         .firstOrNull;
   }
 
-  List<T> _upsertById<T>(
-    List<T> items,
-    T value,
-    String Function(T item) idOf,
-  ) {
+  List<T> _upsertById<T>(List<T> items, T value, String Function(T item) idOf) {
     final String id = idOf(value);
     final int index = items.indexWhere((T item) => idOf(item) == id);
     if (index == -1) {

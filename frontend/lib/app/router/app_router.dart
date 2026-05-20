@@ -38,6 +38,12 @@ import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
+import 'package:hosspi_hms/features/housekeeping/presentation/controllers/housekeeping_workspace_controller.dart';
+import 'package:hosspi_hms/features/housekeeping/presentation/pages/housekeeping_workspace_page.dart';
+import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
+import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/pages/hr_workspace_page.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
@@ -72,7 +78,13 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
 import 'package:hosspi_hms/features/radiology/presentation/pages/radiology_workspace_page.dart';
 import 'package:hosspi_hms/features/reports/presentation/pages/reports_workspace_page.dart';
+import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
+import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
+import 'package:hosspi_hms/features/rooms_beds/presentation/pages/rooms_beds_workspace_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
+import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/pages/subscriptions_workspace_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
@@ -135,6 +147,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const ClaimsWorkspacePage(),
           ),
           GoRoute(
+            path: AppRoutes.subscriptions.path,
+            name: AppRoutes.subscriptions.name,
+            builder: (_, _) => const SubscriptionsWorkspacePage(),
+          ),
+          GoRoute(
             path: AppRoutes.opd.path,
             name: AppRoutes.opd.name,
             builder: (_, _) => const OpdWorkspacePage(),
@@ -148,6 +165,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.ipd.path,
             name: AppRoutes.ipd.name,
             builder: (_, _) => const IpdWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.roomsBeds.path,
+            name: AppRoutes.roomsBeds.name,
+            builder: (_, _) => const RoomsBedsWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.icu.path,
@@ -188,6 +210,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.operations.path,
             name: AppRoutes.operations.name,
             builder: (_, _) => const OperationsWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.housekeeping.path,
+            name: AppRoutes.housekeeping.name,
+            builder: (_, _) => const HousekeepingWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.hr.path,
+            name: AppRoutes.hr.name,
+            builder: (_, _) => const HrWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.biomedical.path,
@@ -304,9 +336,11 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   AppLocalizations l10n, {
   int? billingWorkloadCount,
   int? claimsWorkloadCount,
+  int? subscriptionsWorkloadCount,
   int? opdWorkloadCount,
   int? emergencyWorkloadCount,
   int? ipdWorkloadCount,
+  int? roomsBedsWorkloadCount,
   int? icuCriticalCount,
   int? nursingWorkloadCount,
   int? clinicalWorkloadCount,
@@ -314,6 +348,8 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   int? radiologyWorkloadCount,
   int? pharmacyWorkloadCount,
   int? operationsWorkloadCount,
+  int? housekeepingWorkloadCount,
+  int? hrWorkloadCount,
   int? biomedicalWorkloadCount,
   int? communicationsWorkloadCount,
   int? integrationsWorkloadCount,
@@ -357,6 +393,15 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.subscriptions,
+      destination: ResponsiveShellDestination(
+        label: 'Subscriptions',
+        icon: AppRouteIcons.subscriptions,
+        selectedIcon: AppRouteIcons.subscriptionsSelected,
+        badgeCount: subscriptionsWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.opd,
       destination: ResponsiveShellDestination(
         label: l10n.navigationOpdLabel,
@@ -381,6 +426,15 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         icon: AppRouteIcons.ipd,
         selectedIcon: AppRouteIcons.ipdSelected,
         badgeCount: ipdWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.roomsBeds,
+      destination: ResponsiveShellDestination(
+        label: l10n.roomsBedsTitle,
+        icon: AppRouteIcons.roomsBeds,
+        selectedIcon: AppRouteIcons.roomsBedsSelected,
+        badgeCount: roomsBedsWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -452,6 +506,24 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         icon: AppRouteIcons.operations,
         selectedIcon: AppRouteIcons.operationsSelected,
         badgeCount: operationsWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.housekeeping,
+      destination: ResponsiveShellDestination(
+        label: l10n.housekeepingTitle,
+        icon: AppRouteIcons.housekeeping,
+        selectedIcon: AppRouteIcons.housekeepingSelected,
+        badgeCount: housekeepingWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.hr,
+      destination: ResponsiveShellDestination(
+        label: 'HR',
+        icon: AppRouteIcons.hr,
+        selectedIcon: AppRouteIcons.hrSelected,
+        badgeCount: hrWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -553,12 +625,20 @@ class _AppShell extends ConsumerWidget {
       AppRoutes.claims,
       accessPolicy,
     );
+    final bool canAccessSubscriptions = _canAccessShellRoute(
+      AppRoutes.subscriptions,
+      accessPolicy,
+    );
     final bool canAccessOpd = _canAccessShellRoute(AppRoutes.opd, accessPolicy);
     final bool canAccessEmergency = _canAccessShellRoute(
       AppRoutes.emergency,
       accessPolicy,
     );
     final bool canAccessIpd = _canAccessShellRoute(AppRoutes.ipd, accessPolicy);
+    final bool canAccessRoomsBeds = _canAccessShellRoute(
+      AppRoutes.roomsBeds,
+      accessPolicy,
+    );
     final bool canAccessIcu = _canAccessShellRoute(AppRoutes.icu, accessPolicy);
     final bool canAccessNursing = _canAccessShellRoute(
       AppRoutes.nursing,
@@ -581,6 +661,11 @@ class _AppShell extends ConsumerWidget {
       AppRoutes.operations,
       accessPolicy,
     );
+    final bool canAccessHousekeeping = _canAccessShellRoute(
+      AppRoutes.housekeeping,
+      accessPolicy,
+    );
+    final bool canAccessHr = _canAccessShellRoute(AppRoutes.hr, accessPolicy);
     final bool canAccessBiomedical = _canAccessShellRoute(
       AppRoutes.biomedical,
       accessPolicy,
@@ -634,6 +719,18 @@ class _AppShell extends ConsumerWidget {
               ?.value
               .when(
                 success: (IpdWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? roomsBedsWorkloadCount = canAccessRoomsBeds
+        ? ref
+              .watch(roomsBedsWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (RoomsBedsWorkspaceState state) {
                   return state.workloadCount > 0 ? state.workloadCount : null;
                 },
                 failure: (_) => null,
@@ -727,6 +824,18 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
+    final int? subscriptionsWorkloadCount = canAccessSubscriptions
+        ? ref
+              .watch(subscriptionsWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (SubscriptionsWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
     final int? pharmacyWorkloadCount = canAccessPharmacy
         ? ref
               .watch(pharmacyWorkspaceControllerProvider)
@@ -746,6 +855,30 @@ class _AppShell extends ConsumerWidget {
               ?.value
               .when(
                 success: (OperationsWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? housekeepingWorkloadCount = canAccessHousekeeping
+        ? ref
+              .watch(housekeepingWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (HousekeepingWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? hrWorkloadCount = canAccessHr
+        ? ref
+              .watch(hrWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (HrWorkspaceState state) {
                   return state.workloadCount > 0 ? state.workloadCount : null;
                 },
                 failure: (_) => null,
@@ -842,9 +975,11 @@ class _AppShell extends ConsumerWidget {
               l10n,
               billingWorkloadCount: billingWorkloadCount,
               claimsWorkloadCount: claimsWorkloadCount,
+              subscriptionsWorkloadCount: subscriptionsWorkloadCount,
               opdWorkloadCount: opdWorkloadCount,
               emergencyWorkloadCount: emergencyWorkloadCount,
               ipdWorkloadCount: ipdWorkloadCount,
+              roomsBedsWorkloadCount: roomsBedsWorkloadCount,
               icuCriticalCount: icuCriticalCount,
               nursingWorkloadCount: nursingWorkloadCount,
               clinicalWorkloadCount: clinicalWorkloadCount,
@@ -852,6 +987,8 @@ class _AppShell extends ConsumerWidget {
               radiologyWorkloadCount: radiologyWorkloadCount,
               pharmacyWorkloadCount: pharmacyWorkloadCount,
               operationsWorkloadCount: operationsWorkloadCount,
+              housekeepingWorkloadCount: housekeepingWorkloadCount,
+              hrWorkloadCount: hrWorkloadCount,
               biomedicalWorkloadCount: biomedicalWorkloadCount,
               communicationsWorkloadCount: communicationsWorkloadCount,
               integrationsWorkloadCount: integrationsWorkloadCount,

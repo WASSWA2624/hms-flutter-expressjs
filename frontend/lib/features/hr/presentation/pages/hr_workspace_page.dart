@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
@@ -73,7 +74,8 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     );
     _staffColumnController =
         AppListTableColumnVisibilityController<HrStaffProfile>();
-    _queueColumnController = AppListTableColumnVisibilityController<HrWorkItem>();
+    _queueColumnController =
+        AppListTableColumnVisibilityController<HrWorkItem>();
   }
 
   @override
@@ -138,7 +140,10 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(failure: lastFailure, onRetry: controller.refresh),
+            AppFailureStateView(
+              failure: lastFailure,
+              onRetry: controller.refresh,
+            ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
           _HrStaffDirectory(
@@ -338,7 +343,10 @@ class _HrStaffDirectory extends ConsumerWidget {
           AppListTableColumn<HrStaffProfile>(
             label: l10n.hrRolePositionColumnLabel,
             sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-                appListTableCompareText(left.assignmentLine, right.assignmentLine),
+                appListTableCompareText(
+                  left.assignmentLine,
+                  right.assignmentLine,
+                ),
             cellBuilder: (BuildContext context, HrStaffProfile item) {
               return _TwoLineCell(
                 title: item.position ?? context.l10n.profileUnknownValue,
@@ -351,7 +359,10 @@ class _HrStaffDirectory extends ConsumerWidget {
           AppListTableColumn<HrStaffProfile>(
             label: l10n.hrDepartmentColumnLabel,
             sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-                appListTableCompareText(left.departmentName, right.departmentName),
+                appListTableCompareText(
+                  left.departmentName,
+                  right.departmentName,
+                ),
             cellBuilder: (BuildContext context, HrStaffProfile item) {
               return Text(
                 _joinDisplay(<String?>[
@@ -491,7 +502,11 @@ class _HrStaffDetailBody extends ConsumerWidget {
                   assignment.departmentId,
                   assignment.unitId,
                 ]).ifEmpty(l10n.hrAssignmentLabel),
-                subtitle: _dateRange(context, assignment.startDate, assignment.endDate),
+                subtitle: _dateRange(
+                  context,
+                  assignment.startDate,
+                  assignment.endDate,
+                ),
               ),
           ],
         ),
@@ -515,7 +530,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
           icon: Icons.schedule_outlined,
           emptyText: l10n.hrNoAvailabilityLabel,
           rows: <_RecordLine>[
-            for (final HrStaffAvailability availability in detail.availabilities)
+            for (final HrStaffAvailability availability
+                in detail.availabilities)
               _RecordLine(
                 title: _dayLabel(l10n, availability.dayOfWeek),
                 subtitle: _joinDisplay(<String?>[
@@ -679,7 +695,8 @@ class _HrWorkQueuePanel extends ConsumerWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemKeyBuilder: (HrWorkItem item) => ValueKey<String>(item.id),
-        onRowSelected: (HrWorkItem item) => _showWorkItemDialog(context, ref, item),
+        onRowSelected: (HrWorkItem item) =>
+            _showWorkItemDialog(context, ref, item),
         previousPageLabel: l10n.hrPreviousQueuePageLabel,
         nextPageLabel: l10n.hrNextQueuePageLabel,
         pageLabelBuilder: (AppPage<HrWorkItem> page) {
@@ -804,7 +821,7 @@ class _HrActivityPanel extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final List<HrTimelineItem> items = state.overview.timeline.take(6).toList();
 
-    return AppWorkspaceActivityFeed(
+    return AppWorkspaceActivityList(
       title: l10n.hrActivityTitle,
       description: l10n.hrActivityDescription,
       emptyTitle: l10n.hrNoActivityTitle,
@@ -851,8 +868,7 @@ class _SmallRecordSection extends StatelessWidget {
       children: rows.isEmpty
           ? <Widget>[Text(emptyText)]
           : <Widget>[
-              for (final _RecordLine row in rows)
-                _RecordLineTile(line: row),
+              for (final _RecordLine row in rows) _RecordLineTile(line: row),
             ],
     );
   }
@@ -970,7 +986,10 @@ class _HrStaffListTile extends StatelessWidget {
           ),
           SizedBox(width: theme.spacing.sm),
           Text(_staffNextAction(context, staff), maxLines: 2),
-          Semantics(label: l10n.hrStaffColumnLabel, child: const SizedBox.shrink()),
+          Semantics(
+            label: l10n.hrStaffColumnLabel,
+            child: const SizedBox.shrink(),
+          ),
         ],
       ),
     );
@@ -1014,19 +1033,24 @@ Future<void> _showStaffProfileDialog(
 ]) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(staff == null ? l10n.hrAddStaffDialogTitle : l10n.hrEditStaffDialogTitle),
-      icon: const Icon(Icons.badge_outlined),
-      scrollable: true,
-      content: _StaffProfileForm(
-        staff: staff,
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-      ),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(
+            staff == null
+                ? l10n.hrAddStaffDialogTitle
+                : l10n.hrEditStaffDialogTitle,
+          ),
+          icon: const Icon(Icons.badge_outlined),
+          scrollable: true,
+          content: _StaffProfileForm(
+            staff: staff,
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+          ),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1048,15 +1072,16 @@ Future<void> _showPositionDialog(
   HrStaffProfile staff,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrAssignPositionDialogTitle),
-      icon: const Icon(Icons.work_outline),
-      content: _PositionForm(staff: staff),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrAssignPositionDialogTitle),
+          icon: const Icon(Icons.work_outline),
+          content: _PositionForm(staff: staff),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1071,17 +1096,18 @@ Future<void> _showPositionDialog(
 Future<void> _showAssignmentDialog(BuildContext context, WidgetRef ref) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrAssignDepartmentDialogTitle),
-      icon: const Icon(Icons.account_tree_outlined),
-      content: _AssignmentForm(
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-      ),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrAssignDepartmentDialogTitle),
+          icon: const Icon(Icons.account_tree_outlined),
+          content: _AssignmentForm(
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+          ),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1093,17 +1119,21 @@ Future<void> _showAssignmentDialog(BuildContext context, WidgetRef ref) async {
   }
 }
 
-Future<void> _showAvailabilityDialog(BuildContext context, WidgetRef ref) async {
+Future<void> _showAvailabilityDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrAvailabilityDialogTitle),
-      icon: const Icon(Icons.schedule_outlined),
-      content: const _AvailabilityForm(),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrAvailabilityDialogTitle),
+          icon: const Icon(Icons.schedule_outlined),
+          content: const _AvailabilityForm(),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1117,15 +1147,16 @@ Future<void> _showAvailabilityDialog(BuildContext context, WidgetRef ref) async 
 
 Future<void> _showLeaveDialog(BuildContext context, WidgetRef ref) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrLeaveDialogTitle),
-      icon: const Icon(Icons.event_busy_outlined),
-      content: const _LeaveForm(),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrLeaveDialogTitle),
+          icon: const Icon(Icons.event_busy_outlined),
+          content: const _LeaveForm(),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1142,15 +1173,16 @@ Future<void> _showShiftAssignmentDialog(
   WidgetRef ref,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrAssignShiftDialogTitle),
-      icon: const Icon(Icons.calendar_view_week_outlined),
-      content: const _ShiftAssignmentForm(),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrAssignShiftDialogTitle),
+          icon: const Icon(Icons.calendar_view_week_outlined),
+          content: const _ShiftAssignmentForm(),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1165,17 +1197,18 @@ Future<void> _showShiftAssignmentDialog(
 Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrSwapShiftDialogTitle),
-      icon: const Icon(Icons.swap_horiz_outlined),
-      content: _ShiftSwapForm(
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-      ),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrSwapShiftDialogTitle),
+          icon: const Icon(Icons.swap_horiz_outlined),
+          content: _ShiftSwapForm(
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+          ),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1193,15 +1226,16 @@ Future<void> _showPayrollRunDialog(
   HrStaffProfile staff,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrPayrollRunDialogTitle),
-      icon: const Icon(Icons.payments_outlined),
-      content: _PayrollRunForm(staff: staff),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrPayrollRunDialogTitle),
+          icon: const Icon(Icons.payments_outlined),
+          content: _PayrollRunForm(staff: staff),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1358,10 +1392,8 @@ class _WorkItemActions extends ConsumerWidget {
           label: l10n.hrGenerateRosterAction,
           icon: Icons.auto_awesome_outlined,
           enabled: enabled,
-          onPressed: () => _submitSimple(
-            context,
-            controller.generateRoster(item),
-          ),
+          onPressed: () =>
+              _submitSimple(context, controller.generateRoster(item)),
         ),
         AppPermissionActionItem(
           requirement: _rosterPublishRequirement,
@@ -1371,7 +1403,8 @@ class _WorkItemActions extends ConsumerWidget {
           onPressed: () => _showRosterPublishDialog(context, controller, item),
         ),
       ],
-      HrQueue.unassignedShifts || HrQueue.overdueShifts => <AppPermissionActionItem>[
+      HrQueue.unassignedShifts ||
+      HrQueue.overdueShifts => <AppPermissionActionItem>[
         AppPermissionActionItem(
           requirement: _rosterWriteRequirement,
           label: l10n.hrOverrideShiftAction,
@@ -1427,15 +1460,16 @@ Future<void> _showRosterPublishDialog(
   HrWorkItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrPublishRosterDialogTitle),
-      icon: const Icon(Icons.publish_outlined),
-      content: const _RosterPublishForm(),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrPublishRosterDialogTitle),
+          icon: const Icon(Icons.publish_outlined),
+          content: const _RosterPublishForm(),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1457,17 +1491,18 @@ Future<void> _showOverrideShiftDialog(
 ) async {
   final AppLocalizations l10n = context.l10n;
   final HrWorkspaceState? state = _readHrState(ref);
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrOverrideShiftDialogTitle),
-      icon: const Icon(Icons.manage_accounts_outlined),
-      content: _OverrideShiftForm(
-        referenceData: state?.referenceData ?? const HrReferenceData(),
-      ),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrOverrideShiftDialogTitle),
+          icon: const Icon(Icons.manage_accounts_outlined),
+          content: _OverrideShiftForm(
+            referenceData: state?.referenceData ?? const HrReferenceData(),
+          ),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1489,15 +1524,16 @@ Future<void> _showProcessPayrollDialog(
   HrWorkItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final Map<String, Object?>? payload = await showAppDialog<Map<String, Object?>>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppDialog(
-      title: Text(l10n.hrProcessPayrollDialogTitle),
-      icon: const Icon(Icons.price_check_outlined),
-      content: const _ProcessPayrollForm(),
-    ),
-  );
+  final Map<String, Object?>? payload =
+      await showAppDialog<Map<String, Object?>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AppDialog(
+          title: Text(l10n.hrProcessPayrollDialogTitle),
+          icon: const Icon(Icons.price_check_outlined),
+          content: const _ProcessPayrollForm(),
+        ),
+      );
   if (payload == null || !context.mounted) {
     return;
   }
@@ -1581,8 +1617,12 @@ class _StaffProfileFormState extends State<_StaffProfileForm> {
     );
     _staffNumberController = TextEditingController(text: staff?.staffNumber);
     _positionController = TextEditingController(text: staff?.position);
-    _feeController = TextEditingController(text: staff?.consultationFee?.toString());
-    _currencyController = TextEditingController(text: staff?.consultationCurrency);
+    _feeController = TextEditingController(
+      text: staff?.consultationFee?.toString(),
+    );
+    _currencyController = TextEditingController(
+      text: staff?.consultationCurrency,
+    );
     _departmentId = staff?.departmentDisplayId ?? staff?.departmentId;
     _practitionerType = staff?.practitionerType;
     _hireDate = staff?.hireDate;
@@ -1670,7 +1710,9 @@ class _StaffProfileFormState extends State<_StaffProfileForm> {
         ),
         AppFormActions(
           cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: _isCreate ? l10n.hrCreateStaffAction : l10n.hrSaveStaffAction,
+          submitLabel: _isCreate
+              ? l10n.hrCreateStaffAction
+              : l10n.hrSaveStaffAction,
           submitIcon: Icons.save_outlined,
           onCancel: () => Navigator.of(context).maybePop(),
           onSubmit: () {
@@ -1873,10 +1915,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
           isRequired: true,
           options: <AppSelectOption<int>>[
             for (var index = 0; index < 7; index += 1)
-              AppSelectOption<int>(
-                value: index,
-                label: _dayLabel(l10n, index),
-              ),
+              AppSelectOption<int>(value: index, label: _dayLabel(l10n, index)),
           ],
           validator: AppValidators.requiredValue(
             l10n.hrFieldRequiredLabel(l10n.hrDayOfWeekLabel),
@@ -1929,7 +1968,8 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
           currentDate: DateTime.now(),
           pickerButtonLabel: l10n.hrPickDateAction,
           invalidDateMessage: l10n.appDateInvalidMessage,
-          onChanged: (DateTime? value) => setState(() => _effectiveFrom = value),
+          onChanged: (DateTime? value) =>
+              setState(() => _effectiveFrom = value),
         ),
         AppDateField(
           value: _effectiveTo,
@@ -2235,10 +2275,7 @@ class _PayrollRunFormState extends State<_PayrollRunForm> {
 }
 
 class _ReasonForm extends StatefulWidget {
-  const _ReasonForm({
-    required this.submitLabel,
-    required this.requiredReason,
-  });
+  const _ReasonForm({required this.submitLabel, required this.requiredReason});
 
   final String submitLabel;
   final bool requiredReason;
@@ -2508,7 +2545,8 @@ AppSearchBarFilterValue _staffFilterValue(HrStaffQuery query) {
       if (query.position != null) _hrPositionFilterKey: query.position!,
     },
     options: <String, String>{
-      if (query.departmentId != null) _hrDepartmentFilterKey: query.departmentId!,
+      if (query.departmentId != null)
+        _hrDepartmentFilterKey: query.departmentId!,
       if (query.practitionerType != null)
         _hrPractitionerFilterKey: query.practitionerType!,
     },
@@ -2563,11 +2601,10 @@ String _workItemTitle(BuildContext context, HrWorkItem item) {
       item.periodLabel,
       item.rosterId,
     ]).ifEmpty(l10n.hrRosterDraftTitle),
-    HrQueue.unassignedShifts || HrQueue.overdueShifts =>
-      _joinDisplay(<String?>[
-        item.shiftType == null ? null : _apiLabel(item.shiftType),
-        item.shiftId,
-      ]).ifEmpty(l10n.hrShiftQueueTitle),
+    HrQueue.unassignedShifts || HrQueue.overdueShifts => _joinDisplay(<String?>[
+      item.shiftType == null ? null : _apiLabel(item.shiftType),
+      item.shiftId,
+    ]).ifEmpty(l10n.hrShiftQueueTitle),
     HrQueue.payrollDrafts => _joinDisplay(<String?>[
       item.periodLabel,
       item.payrollRunId ?? item.displayId,
@@ -2581,8 +2618,8 @@ String _workItemNextAction(BuildContext context, HrWorkItem item) {
     HrQueue.leaveRequests => l10n.hrApproveLeaveAction,
     HrQueue.swapRequests => l10n.hrApproveSwapAction,
     HrQueue.rosterDrafts => l10n.hrPublishRosterAction,
-    HrQueue.unassignedShifts || HrQueue.overdueShifts =>
-      l10n.hrOverrideShiftAction,
+    HrQueue.unassignedShifts ||
+    HrQueue.overdueShifts => l10n.hrOverrideShiftAction,
     HrQueue.payrollDrafts => l10n.hrProcessPayrollAction,
   };
 }
@@ -2591,9 +2628,11 @@ String _workItemPeriod(BuildContext context, HrWorkItem item) {
   if ((item.periodLabel ?? '').trim().isNotEmpty) {
     return item.periodLabel!;
   }
-  return _dateRange(context, item.startAt, item.endAt).ifEmpty(
-    context.l10n.profileUnknownValue,
-  );
+  return _dateRange(
+    context,
+    item.startAt,
+    item.endAt,
+  ).ifEmpty(context.l10n.profileUnknownValue);
 }
 
 String _queueLabel(AppLocalizations l10n, HrQueue queue) {
@@ -2680,7 +2719,7 @@ AppWorkspaceStatusTone _statusTone(String? status) {
 String _formatDate(BuildContext context, DateTime? value) {
   return value == null
       ? ''
-      : AppFormatters.date(value, Localizations.localeOf(context));
+      : AppFormatters.mediumDate(value, Localizations.localeOf(context));
 }
 
 String _formatDateTime(BuildContext context, DateTime? value) {
@@ -2690,7 +2729,10 @@ String _formatDateTime(BuildContext context, DateTime? value) {
 }
 
 String _dateRange(BuildContext context, DateTime? start, DateTime? end) {
-  return _joinDisplay(<String?>[_formatDate(context, start), _formatDate(context, end)]);
+  return _joinDisplay(<String?>[
+    _formatDate(context, start),
+    _formatDate(context, end),
+  ]);
 }
 
 String? _datePayload(DateTime? value) {

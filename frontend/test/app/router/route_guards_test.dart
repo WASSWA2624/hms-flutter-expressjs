@@ -100,8 +100,12 @@ void main() {
     });
 
     test('allows protected routes with an authenticated session', () {
-      const AppRouteGuards guards = AppRouteGuards(
-        sessionState: SessionState.authenticated(),
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(tenantId: 'tenant-1'),
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
         routes: <AppRouteData>[protectedRoute],
       );
 
@@ -161,6 +165,63 @@ void main() {
       expect(
         guards.redirect(AppRouteGuardRequest(location: targetLocation)),
         AppRoutes.forbidden.locationWithFrom(targetLocation),
+      );
+    });
+
+    test('gates the subscriptions workspace by subscription permissions', () {
+      final Uri targetLocation = Uri(path: AppRoutes.subscriptions.path);
+      const AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(),
+        routes: <AppRouteData>[AppRoutes.subscriptions],
+      );
+
+      expect(
+        guards.redirect(AppRouteGuardRequest(location: targetLocation)),
+        AppRoutes.forbidden.locationWithFrom(targetLocation),
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: targetLocation,
+            grantedPermissions: AppPermissionGrant(<AppPermission>{
+              const AppPermission('subscriptions:read'),
+            }),
+          ),
+        ),
+        isNull,
+      );
+    });
+
+    test('gates the HR workspace by HR and roster permissions', () {
+      final Uri targetLocation = Uri(path: AppRoutes.hr.path);
+      final AuthSession session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(tenantId: 'tenant-1'),
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'hr-rosters'),
+        ],
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+        routes: <AppRouteData>[AppRoutes.hr],
+      );
+
+      expect(
+        guards.redirect(AppRouteGuardRequest(location: targetLocation)),
+        AppRoutes.forbidden.locationWithFrom(targetLocation),
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(
+            location: targetLocation,
+            grantedPermissions: AppPermissionGrant(<AppPermission>{
+              const AppPermission('hr:read'),
+            }),
+          ),
+        ),
+        isNull,
       );
     });
   });

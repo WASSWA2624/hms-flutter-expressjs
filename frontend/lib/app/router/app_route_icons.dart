@@ -9,12 +9,16 @@ abstract final class AppRouteIcons {
   static const IconData billingSelected = Icons.point_of_sale;
   static const IconData claims = Icons.policy_outlined;
   static const IconData claimsSelected = Icons.policy;
+  static const IconData subscriptions = Icons.workspace_premium_outlined;
+  static const IconData subscriptionsSelected = Icons.workspace_premium;
   static const IconData opd = Icons.local_hospital_outlined;
   static const IconData opdSelected = Icons.local_hospital;
   static const IconData emergency = Icons.emergency_outlined;
   static const IconData emergencySelected = Icons.emergency;
   static const IconData ipd = Icons.bed_outlined;
   static const IconData ipdSelected = Icons.bed;
+  static const IconData roomsBeds = Icons.hotel_outlined;
+  static const IconData roomsBedsSelected = Icons.hotel;
   static const IconData icu = Icons.monitor_heart_outlined;
   static const IconData icuSelected = Icons.monitor_heart;
   static const IconData nursing = Icons.local_hospital_outlined;
@@ -29,6 +33,8 @@ abstract final class AppRouteIcons {
   static const IconData radiologySelected = Icons.image_search;
   static const IconData pharmacy = Icons.medication_liquid_outlined;
   static const IconData pharmacySelected = Icons.medication_liquid;
+  static const IconData hr = Icons.badge_outlined;
+  static const IconData hrSelected = Icons.badge;
   static const IconData biomedical = Icons.biotech_outlined;
   static const IconData biomedicalSelected = Icons.biotech;
   static const IconData communications = Icons.notifications_active_outlined;
@@ -37,6 +43,8 @@ abstract final class AppRouteIcons {
   static const IconData integrationsSelected = Icons.hub;
   static const IconData operations = Icons.engineering_outlined;
   static const IconData operationsSelected = Icons.engineering;
+  static const IconData housekeeping = Icons.cleaning_services_outlined;
+  static const IconData housekeepingSelected = Icons.cleaning_services;
   static const IconData discharge = Icons.exit_to_app_outlined;
   static const IconData dischargeSelected = Icons.exit_to_app;
   static const IconData mortuary = Icons.spa_outlined;

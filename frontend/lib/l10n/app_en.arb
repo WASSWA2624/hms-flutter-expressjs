@@ -185,6 +185,10 @@
   "@navigationCommunicationsLabel": {
     "description": "Navigation label for the communications workspace."
   },
+  "hrTitle": "Human resources",
+  "@hrTitle": {
+    "description": "Human resources workspace text for hrTitle."
+  },
   "navigationIntegrationsLabel": "Integrations",
   "@navigationIntegrationsLabel": {
     "description": "Navigation label for the integrations workspace."
@@ -9590,10 +9594,6 @@
   "@biomedicalPrintReportBody": {
     "description": "Body text for the biomedical report preview."
   },
-  "navigationIntegrationsLabel": "Integrations",
-  "@navigationIntegrationsLabel": {
-    "description": "Localized text for navigationIntegrationsLabel."
-  },
   "integrationsLoadErrorTitle": "Integrations could not load",
   "@integrationsLoadErrorTitle": {
     "description": "Localized text for integrationsLoadErrorTitle."
@@ -11256,6 +11256,545 @@
   "@communicationsInactiveStatus": {
     "description": "Status label for inactive templates."
   },
+  "housekeepingTitle": "Housekeeping",
+  "@housekeepingTitle": {
+    "description": "Localized text for housekeepingTitle."
+  },
+  "housekeepingLoadingTitle": "Loading housekeeping",
+  "@housekeepingLoadingTitle": {
+    "description": "Localized text for housekeepingLoadingTitle."
+  },
+  "housekeepingLoadingBody": "Preparing cleaning tasks, schedules, bed turnover, and readiness.",
+  "@housekeepingLoadingBody": {
+    "description": "Localized text for housekeepingLoadingBody."
+  },
+  "housekeepingLiveStatus": "Live sync",
+  "@housekeepingLiveStatus": {
+    "description": "Localized text for housekeepingLiveStatus."
+  },
+  "housekeepingSavingStatus": "Saving",
+  "@housekeepingSavingStatus": {
+    "description": "Localized text for housekeepingSavingStatus."
+  },
+  "housekeepingSavedMessage": "Housekeeping changes saved.",
+  "@housekeepingSavedMessage": {
+    "description": "Localized text for housekeepingSavedMessage."
+  },
+  "housekeepingCreateTaskAction": "Create task",
+  "@housekeepingCreateTaskAction": {
+    "description": "Localized text for housekeepingCreateTaskAction."
+  },
+  "housekeepingCreateScheduleAction": "Create schedule",
+  "@housekeepingCreateScheduleAction": {
+    "description": "Localized text for housekeepingCreateScheduleAction."
+  },
+  "housekeepingRequestMaintenanceAction": "Request maintenance",
+  "@housekeepingRequestMaintenanceAction": {
+    "description": "Localized text for housekeepingRequestMaintenanceAction."
+  },
+  "housekeepingReportSummaryAction": "Report",
+  "@housekeepingReportSummaryAction": {
+    "description": "Localized text for housekeepingReportSummaryAction."
+  },
+  "housekeepingPendingTasksSummaryLabel": "Pending tasks",
+  "@housekeepingPendingTasksSummaryLabel": {
+    "description": "Localized text for housekeepingPendingTasksSummaryLabel."
+  },
+  "housekeepingCompletedTodaySummaryLabel": "Completed today",
+  "@housekeepingCompletedTodaySummaryLabel": {
+    "description": "Localized text for housekeepingCompletedTodaySummaryLabel."
+  },
+  "housekeepingOpenRequestsSummaryLabel": "Open requests",
+  "@housekeepingOpenRequestsSummaryLabel": {
+    "description": "Localized text for housekeepingOpenRequestsSummaryLabel."
+  },
+  "housekeepingOverdueRequestsSummaryLabel": "Overdue requests",
+  "@housekeepingOverdueRequestsSummaryLabel": {
+    "description": "Localized text for housekeepingOverdueRequestsSummaryLabel."
+  },
+  "housekeepingAssetsSummaryLabel": "Assets",
+  "@housekeepingAssetsSummaryLabel": {
+    "description": "Localized text for housekeepingAssetsSummaryLabel."
+  },
+  "housekeepingWorklistDescription": "Track cleaning tasks, schedules, bed turnover, and maintenance handoffs.",
+  "@housekeepingWorklistDescription": {
+    "description": "Localized text for housekeepingWorklistDescription."
+  },
+  "housekeepingSearchLabel": "Search housekeeping",
+  "@housekeepingSearchLabel": {
+    "description": "Localized text for housekeepingSearchLabel."
+  },
+  "housekeepingSearchHint": "Search location, room, bed, assignee, status, priority, or date",
+  "@housekeepingSearchHint": {
+    "description": "Localized text for housekeepingSearchHint."
+  },
+  "housekeepingClearSearchAction": "Clear search",
+  "@housekeepingClearSearchAction": {
+    "description": "Localized text for housekeepingClearSearchAction."
+  },
+  "housekeepingFiltersAction": "Filters",
+  "@housekeepingFiltersAction": {
+    "description": "Localized text for housekeepingFiltersAction."
+  },
+  "housekeepingFiltersTitle": "Housekeeping filters",
+  "@housekeepingFiltersTitle": {
+    "description": "Localized text for housekeepingFiltersTitle."
+  },
+  "housekeepingApplyFiltersAction": "Apply filters",
+  "@housekeepingApplyFiltersAction": {
+    "description": "Localized text for housekeepingApplyFiltersAction."
+  },
+  "housekeepingClearFiltersAction": "Clear filters",
+  "@housekeepingClearFiltersAction": {
+    "description": "Localized text for housekeepingClearFiltersAction."
+  },
+  "housekeepingPreviousPageLabel": "Previous page",
+  "@housekeepingPreviousPageLabel": {
+    "description": "Localized text for housekeepingPreviousPageLabel."
+  },
+  "housekeepingNextPageLabel": "Next page",
+  "@housekeepingNextPageLabel": {
+    "description": "Localized text for housekeepingNextPageLabel."
+  },
+  "housekeepingPageLabel": "{first} - {last} of {total} items",
+  "@housekeepingPageLabel": {
+    "description": "Pagination label for housekeeping items.",
+    "placeholders": {
+      "first": {
+        "type": "int"
+      },
+      "last": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "housekeepingEmptyQueueTitle": "No housekeeping items",
+  "@housekeepingEmptyQueueTitle": {
+    "description": "Localized text for housekeepingEmptyQueueTitle."
+  },
+  "housekeepingEmptyQueueBody": "No tasks, schedules, or maintenance handoffs match the current filters.",
+  "@housekeepingEmptyQueueBody": {
+    "description": "Localized text for housekeepingEmptyQueueBody."
+  },
+  "housekeepingTaskColumnLabel": "Task",
+  "@housekeepingTaskColumnLabel": {
+    "description": "Localized text for housekeepingTaskColumnLabel."
+  },
+  "housekeepingLocationColumnLabel": "Location",
+  "@housekeepingLocationColumnLabel": {
+    "description": "Localized text for housekeepingLocationColumnLabel."
+  },
+  "housekeepingAssigneeColumnLabel": "Assignee",
+  "@housekeepingAssigneeColumnLabel": {
+    "description": "Localized text for housekeepingAssigneeColumnLabel."
+  },
+  "housekeepingDueColumnLabel": "Due time",
+  "@housekeepingDueColumnLabel": {
+    "description": "Localized text for housekeepingDueColumnLabel."
+  },
+  "housekeepingStatusColumnLabel": "Status",
+  "@housekeepingStatusColumnLabel": {
+    "description": "Localized text for housekeepingStatusColumnLabel."
+  },
+  "housekeepingNextActionColumnLabel": "Next action",
+  "@housekeepingNextActionColumnLabel": {
+    "description": "Localized text for housekeepingNextActionColumnLabel."
+  },
+  "housekeepingNoSelectionTitle": "Select a housekeeping item",
+  "@housekeepingNoSelectionTitle": {
+    "description": "Localized text for housekeepingNoSelectionTitle."
+  },
+  "housekeepingNoSelectionBody": "Choose a task, schedule, or maintenance handoff to review readiness and available actions.",
+  "@housekeepingNoSelectionBody": {
+    "description": "Localized text for housekeepingNoSelectionBody."
+  },
+  "housekeepingDetailTitle": "Housekeeping detail",
+  "@housekeepingDetailTitle": {
+    "description": "Localized text for housekeepingDetailTitle."
+  },
+  "housekeepingReferenceLabel": "Reference",
+  "@housekeepingReferenceLabel": {
+    "description": "Localized text for housekeepingReferenceLabel."
+  },
+  "housekeepingLocationLabel": "Location",
+  "@housekeepingLocationLabel": {
+    "description": "Localized text for housekeepingLocationLabel."
+  },
+  "housekeepingAssigneeLabel": "Assignee",
+  "@housekeepingAssigneeLabel": {
+    "description": "Localized text for housekeepingAssigneeLabel."
+  },
+  "housekeepingDueLabel": "Due",
+  "@housekeepingDueLabel": {
+    "description": "Localized text for housekeepingDueLabel."
+  },
+  "housekeepingReadinessTitle": "Readiness",
+  "@housekeepingReadinessTitle": {
+    "description": "Localized text for housekeepingReadinessTitle."
+  },
+  "housekeepingAssignAction": "Assign",
+  "@housekeepingAssignAction": {
+    "description": "Localized text for housekeepingAssignAction."
+  },
+  "housekeepingStartAction": "Start",
+  "@housekeepingStartAction": {
+    "description": "Localized text for housekeepingStartAction."
+  },
+  "housekeepingStartDialogTitle": "Start cleaning",
+  "@housekeepingStartDialogTitle": {
+    "description": "Localized text for housekeepingStartDialogTitle."
+  },
+  "housekeepingStartDialogBody": "Mark this housekeeping task as in progress.",
+  "@housekeepingStartDialogBody": {
+    "description": "Localized text for housekeepingStartDialogBody."
+  },
+  "housekeepingCompleteAction": "Complete",
+  "@housekeepingCompleteAction": {
+    "description": "Localized text for housekeepingCompleteAction."
+  },
+  "housekeepingCompleteDialogTitle": "Complete cleaning",
+  "@housekeepingCompleteDialogTitle": {
+    "description": "Localized text for housekeepingCompleteDialogTitle."
+  },
+  "housekeepingCompleteDialogBody": "Mark this cleaning task as completed and refresh readiness from the backend.",
+  "@housekeepingCompleteDialogBody": {
+    "description": "Localized text for housekeepingCompleteDialogBody."
+  },
+  "housekeepingCancelAction": "Cancel",
+  "@housekeepingCancelAction": {
+    "description": "Localized text for housekeepingCancelAction."
+  },
+  "housekeepingCancelDialogTitle": "Cancel task",
+  "@housekeepingCancelDialogTitle": {
+    "description": "Localized text for housekeepingCancelDialogTitle."
+  },
+  "housekeepingCancelDialogBody": "Cancel this housekeeping task.",
+  "@housekeepingCancelDialogBody": {
+    "description": "Localized text for housekeepingCancelDialogBody."
+  },
+  "housekeepingMarkReadyAction": "Mark ready",
+  "@housekeepingMarkReadyAction": {
+    "description": "Localized text for housekeepingMarkReadyAction."
+  },
+  "housekeepingBackendGapTooltip": "Backend support is not available yet.",
+  "@housekeepingBackendGapTooltip": {
+    "description": "Localized text for housekeepingBackendGapTooltip."
+  },
+  "housekeepingTriageAction": "Triage",
+  "@housekeepingTriageAction": {
+    "description": "Localized text for housekeepingTriageAction."
+  },
+  "housekeepingCompleteRequestAction": "Complete request",
+  "@housekeepingCompleteRequestAction": {
+    "description": "Localized text for housekeepingCompleteRequestAction."
+  },
+  "housekeepingCompleteRequestDialogTitle": "Complete maintenance request",
+  "@housekeepingCompleteRequestDialogTitle": {
+    "description": "Localized text for housekeepingCompleteRequestDialogTitle."
+  },
+  "housekeepingCompleteRequestDialogBody": "Mark this maintenance handoff as completed.",
+  "@housekeepingCompleteRequestDialogBody": {
+    "description": "Localized text for housekeepingCompleteRequestDialogBody."
+  },
+  "housekeepingCancelRequestAction": "Cancel request",
+  "@housekeepingCancelRequestAction": {
+    "description": "Localized text for housekeepingCancelRequestAction."
+  },
+  "housekeepingCancelRequestDialogTitle": "Cancel maintenance request",
+  "@housekeepingCancelRequestDialogTitle": {
+    "description": "Localized text for housekeepingCancelRequestDialogTitle."
+  },
+  "housekeepingCancelRequestDialogBody": "Cancel this maintenance handoff.",
+  "@housekeepingCancelRequestDialogBody": {
+    "description": "Localized text for housekeepingCancelRequestDialogBody."
+  },
+  "housekeepingTaskReadinessBody": "Cleaning progress and readiness are refreshed from the housekeeping task record.",
+  "@housekeepingTaskReadinessBody": {
+    "description": "Localized text for housekeepingTaskReadinessBody."
+  },
+  "housekeepingScheduleReadinessBody": "Scheduled cleaning keeps this location on a recurring readiness plan.",
+  "@housekeepingScheduleReadinessBody": {
+    "description": "Localized text for housekeepingScheduleReadinessBody."
+  },
+  "housekeepingMaintenanceReadinessBody": "Maintenance handoffs keep cleaning issues visible without losing location context.",
+  "@housekeepingMaintenanceReadinessBody": {
+    "description": "Localized text for housekeepingMaintenanceReadinessBody."
+  },
+  "housekeepingBackendGapsTitle": "Backend gaps",
+  "@housekeepingBackendGapsTitle": {
+    "description": "Localized text for housekeepingBackendGapsTitle."
+  },
+  "housekeepingBackendGapsBody": "The workspace only exposes actions backed by confirmed API routes.",
+  "@housekeepingBackendGapsBody": {
+    "description": "Localized text for housekeepingBackendGapsBody."
+  },
+  "housekeepingFacilityFieldLabel": "Facility",
+  "@housekeepingFacilityFieldLabel": {
+    "description": "Localized text for housekeepingFacilityFieldLabel."
+  },
+  "housekeepingFacilityFieldHint": "Select a facility",
+  "@housekeepingFacilityFieldHint": {
+    "description": "Localized text for housekeepingFacilityFieldHint."
+  },
+  "housekeepingRoomFieldLabel": "Room or bed",
+  "@housekeepingRoomFieldLabel": {
+    "description": "Localized text for housekeepingRoomFieldLabel."
+  },
+  "housekeepingRoomFieldHint": "Select a room or bed",
+  "@housekeepingRoomFieldHint": {
+    "description": "Localized text for housekeepingRoomFieldHint."
+  },
+  "housekeepingAssigneeFieldLabel": "Assignee or team",
+  "@housekeepingAssigneeFieldLabel": {
+    "description": "Localized text for housekeepingAssigneeFieldLabel."
+  },
+  "housekeepingAssigneeFieldHint": "Select staff or team",
+  "@housekeepingAssigneeFieldHint": {
+    "description": "Localized text for housekeepingAssigneeFieldHint."
+  },
+  "housekeepingStatusFieldLabel": "Status",
+  "@housekeepingStatusFieldLabel": {
+    "description": "Localized text for housekeepingStatusFieldLabel."
+  },
+  "housekeepingStatusRequiredMessage": "Select a status.",
+  "@housekeepingStatusRequiredMessage": {
+    "description": "Localized text for housekeepingStatusRequiredMessage."
+  },
+  "housekeepingScheduledDateFieldLabel": "Scheduled date",
+  "@housekeepingScheduledDateFieldLabel": {
+    "description": "Localized text for housekeepingScheduledDateFieldLabel."
+  },
+  "housekeepingCreateTaskSubmitAction": "Create task",
+  "@housekeepingCreateTaskSubmitAction": {
+    "description": "Localized text for housekeepingCreateTaskSubmitAction."
+  },
+  "housekeepingFrequencyFieldLabel": "Frequency",
+  "@housekeepingFrequencyFieldLabel": {
+    "description": "Localized text for housekeepingFrequencyFieldLabel."
+  },
+  "housekeepingFrequencyFieldHint": "Daily, weekly, terminal clean, or custom",
+  "@housekeepingFrequencyFieldHint": {
+    "description": "Localized text for housekeepingFrequencyFieldHint."
+  },
+  "housekeepingFrequencyRequiredMessage": "Enter a cleaning frequency.",
+  "@housekeepingFrequencyRequiredMessage": {
+    "description": "Localized text for housekeepingFrequencyRequiredMessage."
+  },
+  "housekeepingStartDateFieldLabel": "Start date",
+  "@housekeepingStartDateFieldLabel": {
+    "description": "Localized text for housekeepingStartDateFieldLabel."
+  },
+  "housekeepingEndDateFieldLabel": "End date",
+  "@housekeepingEndDateFieldLabel": {
+    "description": "Localized text for housekeepingEndDateFieldLabel."
+  },
+  "housekeepingCreateScheduleSubmitAction": "Create schedule",
+  "@housekeepingCreateScheduleSubmitAction": {
+    "description": "Localized text for housekeepingCreateScheduleSubmitAction."
+  },
+  "housekeepingAssetFieldLabel": "Asset",
+  "@housekeepingAssetFieldLabel": {
+    "description": "Localized text for housekeepingAssetFieldLabel."
+  },
+  "housekeepingAssetFieldHint": "Select asset or fixture",
+  "@housekeepingAssetFieldHint": {
+    "description": "Localized text for housekeepingAssetFieldHint."
+  },
+  "housekeepingDescriptionFieldLabel": "Description",
+  "@housekeepingDescriptionFieldLabel": {
+    "description": "Localized text for housekeepingDescriptionFieldLabel."
+  },
+  "housekeepingDescriptionFieldHint": "Describe the issue or cleaning concern",
+  "@housekeepingDescriptionFieldHint": {
+    "description": "Localized text for housekeepingDescriptionFieldHint."
+  },
+  "housekeepingDescriptionRequiredMessage": "Enter a description.",
+  "@housekeepingDescriptionRequiredMessage": {
+    "description": "Localized text for housekeepingDescriptionRequiredMessage."
+  },
+  "housekeepingRequestMaintenanceSubmitAction": "Create request",
+  "@housekeepingRequestMaintenanceSubmitAction": {
+    "description": "Localized text for housekeepingRequestMaintenanceSubmitAction."
+  },
+  "housekeepingAssignSubmitAction": "Save assignment",
+  "@housekeepingAssignSubmitAction": {
+    "description": "Localized text for housekeepingAssignSubmitAction."
+  },
+  "housekeepingTriageSummaryFieldLabel": "Triage note",
+  "@housekeepingTriageSummaryFieldLabel": {
+    "description": "Localized text for housekeepingTriageSummaryFieldLabel."
+  },
+  "housekeepingSlaHoursFieldLabel": "SLA hours",
+  "@housekeepingSlaHoursFieldLabel": {
+    "description": "Localized text for housekeepingSlaHoursFieldLabel."
+  },
+  "housekeepingTriageSubmitAction": "Save triage",
+  "@housekeepingTriageSubmitAction": {
+    "description": "Localized text for housekeepingTriageSubmitAction."
+  },
+  "housekeepingPickDateAction": "Pick date",
+  "@housekeepingPickDateAction": {
+    "description": "Localized text for housekeepingPickDateAction."
+  },
+  "housekeepingCreateTaskDialogTitle": "Create housekeeping task",
+  "@housekeepingCreateTaskDialogTitle": {
+    "description": "Localized text for housekeepingCreateTaskDialogTitle."
+  },
+  "housekeepingCreateScheduleDialogTitle": "Create cleaning schedule",
+  "@housekeepingCreateScheduleDialogTitle": {
+    "description": "Localized text for housekeepingCreateScheduleDialogTitle."
+  },
+  "housekeepingRequestMaintenanceDialogTitle": "Request maintenance",
+  "@housekeepingRequestMaintenanceDialogTitle": {
+    "description": "Localized text for housekeepingRequestMaintenanceDialogTitle."
+  },
+  "housekeepingAssignDialogTitle": "Assign housekeeping task",
+  "@housekeepingAssignDialogTitle": {
+    "description": "Localized text for housekeepingAssignDialogTitle."
+  },
+  "housekeepingTriageDialogTitle": "Triage maintenance handoff",
+  "@housekeepingTriageDialogTitle": {
+    "description": "Localized text for housekeepingTriageDialogTitle."
+  },
+  "housekeepingReportSummaryTitle": "Housekeeping report",
+  "@housekeepingReportSummaryTitle": {
+    "description": "Localized text for housekeepingReportSummaryTitle."
+  },
+  "housekeepingReportPreviewTitle": "Report preview",
+  "@housekeepingReportPreviewTitle": {
+    "description": "Localized text for housekeepingReportPreviewTitle."
+  },
+  "housekeepingReportPreviewBody": "Generated housekeeping report templates are pending backend report-run support.",
+  "@housekeepingReportPreviewBody": {
+    "description": "Localized text for housekeepingReportPreviewBody."
+  },
+  "housekeepingResourceFilterLabel": "Resource",
+  "@housekeepingResourceFilterLabel": {
+    "description": "Localized text for housekeepingResourceFilterLabel."
+  },
+  "housekeepingResourceTasks": "Tasks",
+  "@housekeepingResourceTasks": {
+    "description": "Localized text for housekeepingResourceTasks."
+  },
+  "housekeepingResourceSchedules": "Schedules",
+  "@housekeepingResourceSchedules": {
+    "description": "Localized text for housekeepingResourceSchedules."
+  },
+  "housekeepingResourceMaintenanceRequests": "Maintenance requests",
+  "@housekeepingResourceMaintenanceRequests": {
+    "description": "Localized text for housekeepingResourceMaintenanceRequests."
+  },
+  "housekeepingQueueFilterLabel": "Queue",
+  "@housekeepingQueueFilterLabel": {
+    "description": "Localized text for housekeepingQueueFilterLabel."
+  },
+  "housekeepingQueueAll": "All",
+  "@housekeepingQueueAll": {
+    "description": "Localized text for housekeepingQueueAll."
+  },
+  "housekeepingQueueToday": "Today",
+  "@housekeepingQueueToday": {
+    "description": "Localized text for housekeepingQueueToday."
+  },
+  "housekeepingQueueOverdueTasks": "Overdue tasks",
+  "@housekeepingQueueOverdueTasks": {
+    "description": "Localized text for housekeepingQueueOverdueTasks."
+  },
+  "housekeepingQueueOpenRequests": "Open requests",
+  "@housekeepingQueueOpenRequests": {
+    "description": "Localized text for housekeepingQueueOpenRequests."
+  },
+  "housekeepingQueueOverdueRequests": "Overdue requests",
+  "@housekeepingQueueOverdueRequests": {
+    "description": "Localized text for housekeepingQueueOverdueRequests."
+  },
+  "housekeepingStatusFilterLabel": "Status",
+  "@housekeepingStatusFilterLabel": {
+    "description": "Localized text for housekeepingStatusFilterLabel."
+  },
+  "housekeepingStatusAll": "All statuses",
+  "@housekeepingStatusAll": {
+    "description": "Localized text for housekeepingStatusAll."
+  },
+  "housekeepingAllFacilities": "All facilities",
+  "@housekeepingAllFacilities": {
+    "description": "Localized text for housekeepingAllFacilities."
+  },
+  "housekeepingFacilityFilterLabel": "Facility",
+  "@housekeepingFacilityFilterLabel": {
+    "description": "Localized text for housekeepingFacilityFilterLabel."
+  },
+  "housekeepingRoomFilterLabel": "Room or bed",
+  "@housekeepingRoomFilterLabel": {
+    "description": "Localized text for housekeepingRoomFilterLabel."
+  },
+  "housekeepingAllRooms": "All rooms and beds",
+  "@housekeepingAllRooms": {
+    "description": "Localized text for housekeepingAllRooms."
+  },
+  "housekeepingAssigneeFilterLabel": "Assignee",
+  "@housekeepingAssigneeFilterLabel": {
+    "description": "Localized text for housekeepingAssigneeFilterLabel."
+  },
+  "housekeepingAllAssignees": "All assignees",
+  "@housekeepingAllAssignees": {
+    "description": "Localized text for housekeepingAllAssignees."
+  },
+  "housekeepingDateFilterLabel": "Date",
+  "@housekeepingDateFilterLabel": {
+    "description": "Localized text for housekeepingDateFilterLabel."
+  },
+  "housekeepingDateAll": "Any date",
+  "@housekeepingDateAll": {
+    "description": "Localized text for housekeepingDateAll."
+  },
+  "housekeepingDateToday": "Today",
+  "@housekeepingDateToday": {
+    "description": "Localized text for housekeepingDateToday."
+  },
+  "housekeepingDateNextSevenDays": "Next 7 days",
+  "@housekeepingDateNextSevenDays": {
+    "description": "Localized text for housekeepingDateNextSevenDays."
+  },
+  "housekeepingDateOverdue": "Overdue",
+  "@housekeepingDateOverdue": {
+    "description": "Localized text for housekeepingDateOverdue."
+  },
+  "housekeepingDateThisMonth": "This month",
+  "@housekeepingDateThisMonth": {
+    "description": "Localized text for housekeepingDateThisMonth."
+  },
+  "housekeepingStatusScheduled": "Scheduled",
+  "@housekeepingStatusScheduled": {
+    "description": "Localized text for housekeepingStatusScheduled."
+  },
+  "housekeepingStatusPending": "Pending",
+  "@housekeepingStatusPending": {
+    "description": "Localized text for housekeepingStatusPending."
+  },
+  "housekeepingStatusInProgress": "In progress",
+  "@housekeepingStatusInProgress": {
+    "description": "Localized text for housekeepingStatusInProgress."
+  },
+  "housekeepingStatusCompleted": "Completed",
+  "@housekeepingStatusCompleted": {
+    "description": "Localized text for housekeepingStatusCompleted."
+  },
+  "housekeepingStatusCancelled": "Cancelled",
+  "@housekeepingStatusCancelled": {
+    "description": "Localized text for housekeepingStatusCancelled."
+  },
+  "housekeepingStatusUnknown": "Unknown",
+  "@housekeepingStatusUnknown": {
+    "description": "Localized text for housekeepingStatusUnknown."
+  },
+  "housekeepingStatusOpen": "Open",
+  "@housekeepingStatusOpen": {
+    "description": "Localized text for housekeepingStatusOpen."
+  },
   "housekeepingStatusOpenLabel": "Open",
   "@housekeepingStatusOpenLabel": {
     "description": "Status option label for an open housekeeping task."
@@ -11263,6 +11802,46 @@
   "housekeepingStatusInProgressLabel": "In progress",
   "@housekeepingStatusInProgressLabel": {
     "description": "Status option label for an in-progress housekeeping task."
+  },
+  "housekeepingNextActionAssign": "Assign staff or team",
+  "@housekeepingNextActionAssign": {
+    "description": "Localized text for housekeepingNextActionAssign."
+  },
+  "housekeepingNextActionStart": "Start cleaning",
+  "@housekeepingNextActionStart": {
+    "description": "Localized text for housekeepingNextActionStart."
+  },
+  "housekeepingNextActionComplete": "Complete cleaning",
+  "@housekeepingNextActionComplete": {
+    "description": "Localized text for housekeepingNextActionComplete."
+  },
+  "housekeepingNextActionTriage": "Triage handoff",
+  "@housekeepingNextActionTriage": {
+    "description": "Localized text for housekeepingNextActionTriage."
+  },
+  "housekeepingNextActionReviewSchedule": "Review schedule",
+  "@housekeepingNextActionReviewSchedule": {
+    "description": "Localized text for housekeepingNextActionReviewSchedule."
+  },
+  "housekeepingNextActionNoAction": "No action needed",
+  "@housekeepingNextActionNoAction": {
+    "description": "Localized text for housekeepingNextActionNoAction."
+  },
+  "housekeepingNextActionView": "View details",
+  "@housekeepingNextActionView": {
+    "description": "Localized text for housekeepingNextActionView."
+  },
+  "housekeepingLocationNotSet": "Location not set",
+  "@housekeepingLocationNotSet": {
+    "description": "Localized text for housekeepingLocationNotSet."
+  },
+  "housekeepingNotRecorded": "Not recorded",
+  "@housekeepingNotRecorded": {
+    "description": "Localized text for housekeepingNotRecorded."
+  },
+  "housekeepingUnassigned": "Unassigned",
+  "@housekeepingUnassigned": {
+    "description": "Localized text for housekeepingUnassigned."
   },
   "physiotherapyTitle": "Physiotherapy",
   "@physiotherapyTitle": {
@@ -11835,5 +12414,1497 @@
   "physiotherapyReportFooterNote": "Generated from confirmed shared clinical workflow data.",
   "@physiotherapyReportFooterNote": {
     "description": "Localized text for physiotherapyReportFooterNote."
+  },
+  "mortuaryTitle": "Mortuary",
+  "@mortuaryTitle": {
+    "description": "Title for the mortuary workspace."
+  },
+  "mortuaryLoadErrorTitle": "Mortuary workspace unavailable",
+  "@mortuaryLoadErrorTitle": {
+    "description": "Title shown when the mortuary workspace cannot load."
+  },
+  "mortuaryLoadErrorBody": "The mortuary workspace could not be loaded. Try again or contact an administrator if the issue continues.",
+  "@mortuaryLoadErrorBody": {
+    "description": "Body shown when the mortuary workspace cannot load."
+  },
+  "mortuaryLoadingTitle": "Loading mortuary workspace",
+  "@mortuaryLoadingTitle": {
+    "description": "Title shown while loading the mortuary workspace."
+  },
+  "mortuaryLoadingBody": "Retrieving cases, storage, custody, release, and billing information.",
+  "@mortuaryLoadingBody": {
+    "description": "Body shown while loading the mortuary workspace."
+  },
+  "mortuaryOperationalStatusLabel": "Operational",
+  "@mortuaryOperationalStatusLabel": {
+    "description": "Operational status label for the mortuary workspace."
+  },
+  "mortuaryAttentionStatusLabel": "Needs attention",
+  "@mortuaryAttentionStatusLabel": {
+    "description": "Attention status label for the mortuary workspace."
+  },
+  "mortuaryPrintDocumentsAction": "Print documents",
+  "@mortuaryPrintDocumentsAction": {
+    "description": "Action label for printing mortuary documents."
+  },
+  "mortuaryReceiveCaseAction": "Receive case",
+  "@mortuaryReceiveCaseAction": {
+    "description": "Action label for receiving a mortuary case."
+  },
+  "mortuaryAssignStorageAction": "Assign storage",
+  "@mortuaryAssignStorageAction": {
+    "description": "Action label for assigning mortuary storage."
+  },
+  "mortuaryRecordCustodyAction": "Record custody",
+  "@mortuaryRecordCustodyAction": {
+    "description": "Action label for recording a custody event."
+  },
+  "mortuaryScheduleViewingAction": "Schedule viewing",
+  "@mortuaryScheduleViewingAction": {
+    "description": "Action label for scheduling a viewing."
+  },
+  "mortuaryPostMortemAction": "Post-mortem step",
+  "@mortuaryPostMortemAction": {
+    "description": "Action label for post-mortem workflow steps."
+  },
+  "mortuaryRequestBillingAction": "Request billing",
+  "@mortuaryRequestBillingAction": {
+    "description": "Action label for requesting mortuary billing."
+  },
+  "mortuaryApproveReleaseAction": "Approve release",
+  "@mortuaryApproveReleaseAction": {
+    "description": "Action label for approving release."
+  },
+  "mortuaryConfirmReleaseAction": "Confirm release",
+  "@mortuaryConfirmReleaseAction": {
+    "description": "Action label for confirming release."
+  },
+  "mortuaryActionsUnavailableTooltip": "This action is waiting for a backend action endpoint.",
+  "@mortuaryActionsUnavailableTooltip": {
+    "description": "Tooltip for mortuary actions that are not supported by the current backend."
+  },
+  "mortuaryWorklistTitle": "Mortuary worklist",
+  "@mortuaryWorklistTitle": {
+    "description": "Title for the mortuary worklist."
+  },
+  "mortuaryWorklistEmptyTitle": "No mortuary records found",
+  "@mortuaryWorklistEmptyTitle": {
+    "description": "Empty state title for the mortuary worklist."
+  },
+  "mortuaryWorklistEmptyBody": "Adjust the filters or search terms to view matching mortuary records.",
+  "@mortuaryWorklistEmptyBody": {
+    "description": "Empty state body for the mortuary worklist."
+  },
+  "mortuaryReferenceColumnLabel": "Case",
+  "@mortuaryReferenceColumnLabel": {
+    "description": "Column label for mortuary case reference."
+  },
+  "mortuaryDeceasedColumnLabel": "Deceased",
+  "@mortuaryDeceasedColumnLabel": {
+    "description": "Column label for deceased person context."
+  },
+  "mortuarySourceColumnLabel": "Source",
+  "@mortuarySourceColumnLabel": {
+    "description": "Column label for source context."
+  },
+  "mortuaryStorageColumnLabel": "Storage",
+  "@mortuaryStorageColumnLabel": {
+    "description": "Column label for storage context."
+  },
+  "mortuaryStatusColumnLabel": "Status",
+  "@mortuaryStatusColumnLabel": {
+    "description": "Column label for mortuary status."
+  },
+  "mortuaryDateColumnLabel": "Date",
+  "@mortuaryDateColumnLabel": {
+    "description": "Column label for mortuary dates."
+  },
+  "mortuaryNextActionColumnLabel": "Next action",
+  "@mortuaryNextActionColumnLabel": {
+    "description": "Column label for the next mortuary action."
+  },
+  "mortuaryPreviousPageLabel": "Previous page",
+  "@mortuaryPreviousPageLabel": {
+    "description": "Label for previous page action in mortuary tables."
+  },
+  "mortuaryNextPageLabel": "Next page",
+  "@mortuaryNextPageLabel": {
+    "description": "Label for next page action in mortuary tables."
+  },
+  "mortuaryPageLabel": "Showing {from}-{to} of {total}",
+  "@mortuaryPageLabel": {
+    "description": "Pagination label for the mortuary worklist.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mortuarySearchLabel": "Search mortuary records",
+  "@mortuarySearchLabel": {
+    "description": "Semantic label for mortuary search."
+  },
+  "mortuarySearchHint": "Search case, name, source, storage, or status",
+  "@mortuarySearchHint": {
+    "description": "Hint text for mortuary search."
+  },
+  "mortuarySearchFieldLabel": "Search",
+  "@mortuarySearchFieldLabel": {
+    "description": "Search field label for mortuary filters."
+  },
+  "mortuaryFiltersLabel": "Filters",
+  "@mortuaryFiltersLabel": {
+    "description": "Label for mortuary filters."
+  },
+  "mortuaryApplyFiltersAction": "Apply",
+  "@mortuaryApplyFiltersAction": {
+    "description": "Action label for applying mortuary filters."
+  },
+  "mortuaryResetFiltersAction": "Reset",
+  "@mortuaryResetFiltersAction": {
+    "description": "Action label for resetting mortuary filters."
+  },
+  "mortuaryAllFieldsLabel": "All",
+  "@mortuaryAllFieldsLabel": {
+    "description": "All option label for mortuary filters."
+  },
+  "mortuaryDateFilterLabel": "Date",
+  "@mortuaryDateFilterLabel": {
+    "description": "Date filter label for mortuary search."
+  },
+  "mortuaryDateFromLabel": "From",
+  "@mortuaryDateFromLabel": {
+    "description": "Start date label for mortuary filters."
+  },
+  "mortuaryDateToLabel": "To",
+  "@mortuaryDateToLabel": {
+    "description": "End date label for mortuary filters."
+  },
+  "mortuaryDatePickerButtonLabel": "Choose date",
+  "@mortuaryDatePickerButtonLabel": {
+    "description": "Date picker button label for mortuary filters."
+  },
+  "mortuaryInvalidDateMessage": "Enter a valid date.",
+  "@mortuaryInvalidDateMessage": {
+    "description": "Validation message for invalid mortuary filter dates."
+  },
+  "mortuaryPanelFilterLabel": "Panel",
+  "@mortuaryPanelFilterLabel": {
+    "description": "Filter label for mortuary panels."
+  },
+  "mortuaryResourceFilterLabel": "Resource",
+  "@mortuaryResourceFilterLabel": {
+    "description": "Filter label for mortuary resources."
+  },
+  "mortuaryQueueFilterLabel": "Queue",
+  "@mortuaryQueueFilterLabel": {
+    "description": "Filter label for mortuary queues."
+  },
+  "mortuaryStatusFilterLabel": "Status",
+  "@mortuaryStatusFilterLabel": {
+    "description": "Filter label for mortuary status."
+  },
+  "mortuaryIdentificationFilterLabel": "Identification",
+  "@mortuaryIdentificationFilterLabel": {
+    "description": "Filter label for mortuary identification status."
+  },
+  "mortuaryFacilityFilterLabel": "Facility",
+  "@mortuaryFacilityFilterLabel": {
+    "description": "Filter label for mortuary facility."
+  },
+  "mortuaryStorageUnitFilterLabel": "Storage unit",
+  "@mortuaryStorageUnitFilterLabel": {
+    "description": "Filter label for mortuary storage units."
+  },
+  "mortuaryStorageSlotFilterLabel": "Storage slot",
+  "@mortuaryStorageSlotFilterLabel": {
+    "description": "Filter label for mortuary storage slots."
+  },
+  "mortuaryDatePresetFilterLabel": "Date preset",
+  "@mortuaryDatePresetFilterLabel": {
+    "description": "Filter label for mortuary date presets."
+  },
+  "mortuaryDatePresetTodayLabel": "Today",
+  "@mortuaryDatePresetTodayLabel": {
+    "description": "Mortuary date preset label for today."
+  },
+  "mortuaryDatePresetNext7DaysLabel": "Next 7 days",
+  "@mortuaryDatePresetNext7DaysLabel": {
+    "description": "Mortuary date preset label for the next 7 days."
+  },
+  "mortuaryDatePresetOverdueLabel": "Overdue",
+  "@mortuaryDatePresetOverdueLabel": {
+    "description": "Mortuary date preset label for overdue items."
+  },
+  "mortuaryDatePresetThisMonthLabel": "This month",
+  "@mortuaryDatePresetThisMonthLabel": {
+    "description": "Mortuary date preset label for this month."
+  },
+  "mortuaryTotalCasesSummaryLabel": "Total cases",
+  "@mortuaryTotalCasesSummaryLabel": {
+    "description": "Summary label for total mortuary cases."
+  },
+  "mortuaryIdentificationPendingSummaryLabel": "Identification pending",
+  "@mortuaryIdentificationPendingSummaryLabel": {
+    "description": "Summary label for cases pending identification."
+  },
+  "mortuaryInStorageSummaryLabel": "In storage",
+  "@mortuaryInStorageSummaryLabel": {
+    "description": "Summary label for cases in storage."
+  },
+  "mortuaryReleaseReadySummaryLabel": "Release ready",
+  "@mortuaryReleaseReadySummaryLabel": {
+    "description": "Summary label for release-ready mortuary cases."
+  },
+  "mortuaryUnsettledBillingSummaryLabel": "Unsettled billing",
+  "@mortuaryUnsettledBillingSummaryLabel": {
+    "description": "Summary label for unsettled mortuary billing."
+  },
+  "mortuaryPanelOverviewLabel": "Overview",
+  "@mortuaryPanelOverviewLabel": {
+    "description": "Mortuary overview panel label."
+  },
+  "mortuaryPanelIntakeLabel": "Intake",
+  "@mortuaryPanelIntakeLabel": {
+    "description": "Mortuary intake panel label."
+  },
+  "mortuaryPanelStorageLabel": "Storage",
+  "@mortuaryPanelStorageLabel": {
+    "description": "Mortuary storage panel label."
+  },
+  "mortuaryPanelCustodyLabel": "Custody",
+  "@mortuaryPanelCustodyLabel": {
+    "description": "Mortuary custody panel label."
+  },
+  "mortuaryPanelReleaseLabel": "Release",
+  "@mortuaryPanelReleaseLabel": {
+    "description": "Mortuary release panel label."
+  },
+  "mortuaryPanelReportingLabel": "Reports",
+  "@mortuaryPanelReportingLabel": {
+    "description": "Mortuary reports panel label."
+  },
+  "mortuaryResourceCasesLabel": "Cases",
+  "@mortuaryResourceCasesLabel": {
+    "description": "Mortuary cases resource label."
+  },
+  "mortuaryResourceStorageUnitsLabel": "Storage units",
+  "@mortuaryResourceStorageUnitsLabel": {
+    "description": "Mortuary storage units resource label."
+  },
+  "mortuaryResourceStorageSlotsLabel": "Storage slots",
+  "@mortuaryResourceStorageSlotsLabel": {
+    "description": "Mortuary storage slots resource label."
+  },
+  "mortuaryResourceStorageAssignmentsLabel": "Storage assignments",
+  "@mortuaryResourceStorageAssignmentsLabel": {
+    "description": "Mortuary storage assignments resource label."
+  },
+  "mortuaryResourceCustodyEventsLabel": "Custody events",
+  "@mortuaryResourceCustodyEventsLabel": {
+    "description": "Mortuary custody events resource label."
+  },
+  "mortuaryResourceViewingsLabel": "Viewings",
+  "@mortuaryResourceViewingsLabel": {
+    "description": "Mortuary viewings resource label."
+  },
+  "mortuaryResourcePostMortemRequestsLabel": "Post-mortem requests",
+  "@mortuaryResourcePostMortemRequestsLabel": {
+    "description": "Mortuary post-mortem requests resource label."
+  },
+  "mortuaryResourceReleaseAuthorisationsLabel": "Release authorisations",
+  "@mortuaryResourceReleaseAuthorisationsLabel": {
+    "description": "Mortuary release authorisations resource label."
+  },
+  "mortuaryResourceBillableEventsLabel": "Billable events",
+  "@mortuaryResourceBillableEventsLabel": {
+    "description": "Mortuary billable events resource label."
+  },
+  "mortuaryQueueIdentificationPendingLabel": "Identification pending",
+  "@mortuaryQueueIdentificationPendingLabel": {
+    "description": "Mortuary identification pending queue label."
+  },
+  "mortuaryQueueStorageExceptionsLabel": "Storage exceptions",
+  "@mortuaryQueueStorageExceptionsLabel": {
+    "description": "Mortuary storage exceptions queue label."
+  },
+  "mortuaryQueueReleaseReadyLabel": "Release ready",
+  "@mortuaryQueueReleaseReadyLabel": {
+    "description": "Mortuary release ready queue label."
+  },
+  "mortuaryQueueUnsettledBillingLabel": "Unsettled billing",
+  "@mortuaryQueueUnsettledBillingLabel": {
+    "description": "Mortuary unsettled billing queue label."
+  },
+  "mortuaryQueuePostMortemPendingLabel": "Post-mortem pending",
+  "@mortuaryQueuePostMortemPendingLabel": {
+    "description": "Mortuary post-mortem pending queue label."
+  },
+  "mortuaryDetailTitle": "Case detail",
+  "@mortuaryDetailTitle": {
+    "description": "Title for the mortuary case detail panel."
+  },
+  "mortuaryNoSelectionTitle": "Select a case",
+  "@mortuaryNoSelectionTitle": {
+    "description": "Empty state title when no mortuary case is selected."
+  },
+  "mortuaryNoSelectionBody": "Choose a record from the worklist to review identity, storage, custody, release, billing, and documents.",
+  "@mortuaryNoSelectionBody": {
+    "description": "Empty state body when no mortuary case is selected."
+  },
+  "mortuaryUnknownDeceasedLabel": "Name not recorded",
+  "@mortuaryUnknownDeceasedLabel": {
+    "description": "Fallback label when deceased name is unavailable."
+  },
+  "mortuaryUnknownValueLabel": "Not recorded",
+  "@mortuaryUnknownValueLabel": {
+    "description": "Fallback label when mortuary field data is unavailable."
+  },
+  "mortuaryCaseNumberLabel": "Case number",
+  "@mortuaryCaseNumberLabel": {
+    "description": "Label for mortuary case number."
+  },
+  "mortuaryDeceasedContextLabel": "Deceased person context",
+  "@mortuaryDeceasedContextLabel": {
+    "description": "Semantic label for deceased person context."
+  },
+  "mortuaryIdentificationFieldLabel": "Identification",
+  "@mortuaryIdentificationFieldLabel": {
+    "description": "Field label for identification status."
+  },
+  "mortuaryBillingFieldLabel": "Billing",
+  "@mortuaryBillingFieldLabel": {
+    "description": "Field label for billing status."
+  },
+  "mortuaryStorageSlotFieldLabel": "Storage slot",
+  "@mortuaryStorageSlotFieldLabel": {
+    "description": "Field label for storage slot."
+  },
+  "mortuaryFacilityFieldLabel": "Facility",
+  "@mortuaryFacilityFieldLabel": {
+    "description": "Field label for facility."
+  },
+  "mortuaryActionGapTitle": "Backend actions pending",
+  "@mortuaryActionGapTitle": {
+    "description": "Title for unsupported mortuary action notice."
+  },
+  "mortuaryActionGapBody": "The current backend exposes mortuary workspace and lookup data only. Action buttons are shown for permissions and audit planning, but remain disabled until backend action endpoints are mounted.",
+  "@mortuaryActionGapBody": {
+    "description": "Body for unsupported mortuary action notice."
+  },
+  "mortuaryIdentitySectionTitle": "Identity and source",
+  "@mortuaryIdentitySectionTitle": {
+    "description": "Section title for mortuary identity and source details."
+  },
+  "mortuaryStorageSectionTitle": "Storage",
+  "@mortuaryStorageSectionTitle": {
+    "description": "Section title for mortuary storage details."
+  },
+  "mortuaryCustodySectionTitle": "Custody log",
+  "@mortuaryCustodySectionTitle": {
+    "description": "Section title for mortuary custody log."
+  },
+  "mortuaryViewingSectionTitle": "Viewing",
+  "@mortuaryViewingSectionTitle": {
+    "description": "Section title for mortuary viewing details."
+  },
+  "mortuaryPostMortemSectionTitle": "Post-mortem",
+  "@mortuaryPostMortemSectionTitle": {
+    "description": "Section title for mortuary post-mortem details."
+  },
+  "mortuaryReleaseSectionTitle": "Release",
+  "@mortuaryReleaseSectionTitle": {
+    "description": "Section title for mortuary release details."
+  },
+  "mortuaryBillingSectionTitle": "Billing",
+  "@mortuaryBillingSectionTitle": {
+    "description": "Section title for mortuary billing details."
+  },
+  "mortuaryDocumentsSectionTitle": "Documents",
+  "@mortuaryDocumentsSectionTitle": {
+    "description": "Section title for mortuary documents."
+  },
+  "mortuaryCaseFieldLabel": "Case",
+  "@mortuaryCaseFieldLabel": {
+    "description": "Field label for mortuary case."
+  },
+  "mortuaryDeceasedFieldLabel": "Deceased",
+  "@mortuaryDeceasedFieldLabel": {
+    "description": "Field label for deceased person."
+  },
+  "mortuaryPatientFieldLabel": "Patient",
+  "@mortuaryPatientFieldLabel": {
+    "description": "Field label for linked patient."
+  },
+  "mortuaryStatusFieldLabel": "Status",
+  "@mortuaryStatusFieldLabel": {
+    "description": "Field label for status."
+  },
+  "mortuaryReceivedAtFieldLabel": "Received",
+  "@mortuaryReceivedAtFieldLabel": {
+    "description": "Field label for received date."
+  },
+  "mortuarySourceWorkflowFieldLabel": "Source workflow",
+  "@mortuarySourceWorkflowFieldLabel": {
+    "description": "Field label for source workflow."
+  },
+  "mortuarySourceDepartmentFieldLabel": "Source department",
+  "@mortuarySourceDepartmentFieldLabel": {
+    "description": "Field label for source department."
+  },
+  "mortuarySourceReferenceFieldLabel": "Source reference",
+  "@mortuarySourceReferenceFieldLabel": {
+    "description": "Field label for source reference."
+  },
+  "mortuaryReceivedFromFieldLabel": "Received from",
+  "@mortuaryReceivedFromFieldLabel": {
+    "description": "Field label for received-from context."
+  },
+  "mortuaryStorageUnitFieldLabel": "Storage unit",
+  "@mortuaryStorageUnitFieldLabel": {
+    "description": "Field label for storage unit."
+  },
+  "mortuaryStorageStatusFieldLabel": "Storage status",
+  "@mortuaryStorageStatusFieldLabel": {
+    "description": "Field label for storage status."
+  },
+  "mortuaryAssignedAtFieldLabel": "Assigned",
+  "@mortuaryAssignedAtFieldLabel": {
+    "description": "Field label for storage assignment date."
+  },
+  "mortuaryActorFieldLabel": "Actor",
+  "@mortuaryActorFieldLabel": {
+    "description": "Field label for custody actor."
+  },
+  "mortuaryLocationFieldLabel": "Location",
+  "@mortuaryLocationFieldLabel": {
+    "description": "Field label for custody location."
+  },
+  "mortuaryNotesFieldLabel": "Notes",
+  "@mortuaryNotesFieldLabel": {
+    "description": "Field label for notes."
+  },
+  "mortuaryReleaseFieldLabel": "Release",
+  "@mortuaryReleaseFieldLabel": {
+    "description": "Field label for release."
+  },
+  "mortuaryReleasedAtFieldLabel": "Released",
+  "@mortuaryReleasedAtFieldLabel": {
+    "description": "Field label for released date."
+  },
+  "mortuaryNoCustodyEventsLabel": "No custody events recorded",
+  "@mortuaryNoCustodyEventsLabel": {
+    "description": "Empty label for custody events."
+  },
+  "mortuaryNoCustodyEventsBody": "Custody movements and handovers will appear here when recorded by the backend.",
+  "@mortuaryNoCustodyEventsBody": {
+    "description": "Empty body for custody events."
+  },
+  "mortuaryNoViewingsLabel": "No viewings scheduled",
+  "@mortuaryNoViewingsLabel": {
+    "description": "Empty label for mortuary viewings."
+  },
+  "mortuaryNoViewingsBody": "Viewing appointments will appear here when scheduled.",
+  "@mortuaryNoViewingsBody": {
+    "description": "Empty body for mortuary viewings."
+  },
+  "mortuaryNoPostMortemLabel": "No post-mortem request recorded",
+  "@mortuaryNoPostMortemLabel": {
+    "description": "Empty label for post-mortem requests."
+  },
+  "mortuaryNoPostMortemBody": "Post-mortem requests and reports will appear here when available.",
+  "@mortuaryNoPostMortemBody": {
+    "description": "Empty body for post-mortem requests."
+  },
+  "mortuaryNoReleaseLabel": "No release recorded",
+  "@mortuaryNoReleaseLabel": {
+    "description": "Empty label for release authorisations."
+  },
+  "mortuaryNoReleaseBody": "Release authorisations and handover details will appear here when available.",
+  "@mortuaryNoReleaseBody": {
+    "description": "Empty body for release authorisations."
+  },
+  "mortuaryNoBillingLabel": "No billing events recorded",
+  "@mortuaryNoBillingLabel": {
+    "description": "Empty label for mortuary billing events."
+  },
+  "mortuaryNoBillingBody": "Storage, post-mortem, and release billing events will appear here when available.",
+  "@mortuaryNoBillingBody": {
+    "description": "Empty body for mortuary billing events."
+  },
+  "mortuaryNoDocumentsBody": "Generated intake, custody, release, and billing documents are available from the print action when case data is selected.",
+  "@mortuaryNoDocumentsBody": {
+    "description": "Body text for the mortuary documents section."
+  },
+  "mortuaryIntakeDocumentLabel": "Intake form",
+  "@mortuaryIntakeDocumentLabel": {
+    "description": "Document label for mortuary intake form."
+  },
+  "mortuaryCustodyLogDocumentLabel": "Custody log",
+  "@mortuaryCustodyLogDocumentLabel": {
+    "description": "Document label for mortuary custody log."
+  },
+  "mortuaryReleaseDocumentLabel": "Release authorisation",
+  "@mortuaryReleaseDocumentLabel": {
+    "description": "Document label for mortuary release authorisation."
+  },
+  "mortuaryNextActionVerifyIdentity": "Verify identity",
+  "@mortuaryNextActionVerifyIdentity": {
+    "description": "Next action label for identity verification."
+  },
+  "mortuaryNextActionAssignStorage": "Assign storage",
+  "@mortuaryNextActionAssignStorage": {
+    "description": "Next action label for storage assignment."
+  },
+  "mortuaryNextActionPostMortem": "Review post-mortem",
+  "@mortuaryNextActionPostMortem": {
+    "description": "Next action label for post-mortem review."
+  },
+  "mortuaryNextActionClearBilling": "Clear billing",
+  "@mortuaryNextActionClearBilling": {
+    "description": "Next action label for billing clearance."
+  },
+  "mortuaryNextActionApproveRelease": "Approve release",
+  "@mortuaryNextActionApproveRelease": {
+    "description": "Next action label for release approval."
+  },
+  "mortuaryNextActionReleased": "Released",
+  "@mortuaryNextActionReleased": {
+    "description": "Next action label for released cases."
+  },
+  "mortuaryNextActionReview": "Review case",
+  "@mortuaryNextActionReview": {
+    "description": "Default next action label for mortuary cases."
+  },
+  "mortuaryReportTitle": "Mortuary case record",
+  "@mortuaryReportTitle": {
+    "description": "Title for generated mortuary case reports."
+  },
+  "mortuaryReportFooter": "Generated from confirmed mortuary workspace data.",
+  "@mortuaryReportFooter": {
+    "description": "Footer text for generated mortuary documents."
+  },
+  "mortuaryReportGeneratedMessage": "Mortuary document generated.",
+  "@mortuaryReportGeneratedMessage": {
+    "description": "Snackbar message after generating a mortuary document."
+  },
+  "roomsBedsTitle": "Rooms and beds",
+  "@roomsBedsTitle": {
+    "description": "Title for the rooms and beds workspace."
+  },
+  "roomsBedsLoadingTitle": "Loading rooms and beds",
+  "@roomsBedsLoadingTitle": {
+    "description": "Title shown while loading the rooms and beds workspace."
+  },
+  "roomsBedsLoadingBody": "Retrieving wards, rooms, beds, assignments, and facility context.",
+  "@roomsBedsLoadingBody": {
+    "description": "Body shown while loading the rooms and beds workspace."
+  },
+  "roomsBedsSavingStatus": "Saving",
+  "@roomsBedsSavingStatus": {
+    "description": "Workspace status label while a rooms and beds mutation is saving."
+  },
+  "roomsBedsLiveStatus": "Live board",
+  "@roomsBedsLiveStatus": {
+    "description": "Workspace status label when the rooms and beds board is loaded."
+  },
+  "roomsBedsTotalSummaryLabel": "Total beds",
+  "@roomsBedsTotalSummaryLabel": {
+    "description": "Summary card label for total beds."
+  },
+  "roomsBedsBackendGapsTitle": "Backend status gaps",
+  "@roomsBedsBackendGapsTitle": {
+    "description": "Title for the rooms and beds backend gap notice."
+  },
+  "roomsBedsBackendGapsBody": "Cleaning, maintenance, block, isolation, and detailed readiness states depend on backend support. Current actions use mounted ward, room, bed, bed assignment, and IPD flow endpoints only.",
+  "@roomsBedsBackendGapsBody": {
+    "description": "Body for the rooms and beds backend gap notice."
+  },
+  "roomsBedsBoardTitle": "Bed board",
+  "@roomsBedsBoardTitle": {
+    "description": "Title for the rooms and beds board panel."
+  },
+  "roomsBedsBoardDescription": "Track availability, occupancy, reservations, and bed readiness by facility location.",
+  "@roomsBedsBoardDescription": {
+    "description": "Description for the rooms and beds board panel."
+  },
+  "roomsBedsSearchLabel": "Search rooms and beds",
+  "@roomsBedsSearchLabel": {
+    "description": "Semantic label for rooms and beds search."
+  },
+  "roomsBedsSearchHint": "Search bed, ward, room, patient admission, status, or facility",
+  "@roomsBedsSearchHint": {
+    "description": "Hint text for rooms and beds search."
+  },
+  "roomsBedsFiltersLabel": "Filters",
+  "@roomsBedsFiltersLabel": {
+    "description": "Label for rooms and beds filters."
+  },
+  "roomsBedsAllFilterLabel": "All",
+  "@roomsBedsAllFilterLabel": {
+    "description": "All-fields label for rooms and beds filtering."
+  },
+  "roomsBedsFacilityFilterLabel": "Facility",
+  "@roomsBedsFacilityFilterLabel": {
+    "description": "Filter label for facility."
+  },
+  "roomsBedsAllFacilitiesLabel": "All facilities",
+  "@roomsBedsAllFacilitiesLabel": {
+    "description": "All option label for facilities."
+  },
+  "roomsBedsWardFilterLabel": "Ward",
+  "@roomsBedsWardFilterLabel": {
+    "description": "Filter label for ward."
+  },
+  "roomsBedsAllWardsLabel": "All wards",
+  "@roomsBedsAllWardsLabel": {
+    "description": "All option label for wards."
+  },
+  "roomsBedsRoomFilterLabel": "Room",
+  "@roomsBedsRoomFilterLabel": {
+    "description": "Filter label for room."
+  },
+  "roomsBedsAllRoomsLabel": "All rooms",
+  "@roomsBedsAllRoomsLabel": {
+    "description": "All option label for rooms."
+  },
+  "roomsBedsStatusFilterLabel": "Status",
+  "@roomsBedsStatusFilterLabel": {
+    "description": "Filter label for bed status."
+  },
+  "roomsBedsAllStatusesLabel": "All statuses",
+  "@roomsBedsAllStatusesLabel": {
+    "description": "All option label for bed statuses."
+  },
+  "roomsBedsPreviousPageLabel": "Previous page",
+  "@roomsBedsPreviousPageLabel": {
+    "description": "Label for the previous page action in the rooms and beds table."
+  },
+  "roomsBedsNextPageLabel": "Next page",
+  "@roomsBedsNextPageLabel": {
+    "description": "Label for the next page action in the rooms and beds table."
+  },
+  "roomsBedsPageLabel": "Showing {from}-{to} of {total}",
+  "@roomsBedsPageLabel": {
+    "description": "Pagination label for rooms and beds.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "roomsBedsEmptyTitle": "No beds found",
+  "@roomsBedsEmptyTitle": {
+    "description": "Empty state title for rooms and beds."
+  },
+  "roomsBedsEmptyBody": "Adjust the filters or add beds from facility setup to start using the operational board.",
+  "@roomsBedsEmptyBody": {
+    "description": "Empty state body for rooms and beds."
+  },
+  "roomsBedsBedColumnLabel": "Bed",
+  "@roomsBedsBedColumnLabel": {
+    "description": "Column label for bed identity."
+  },
+  "roomsBedsLocationColumnLabel": "Location",
+  "@roomsBedsLocationColumnLabel": {
+    "description": "Column label for bed location."
+  },
+  "roomsBedsStatusColumnLabel": "Status",
+  "@roomsBedsStatusColumnLabel": {
+    "description": "Column label for bed status."
+  },
+  "roomsBedsAssignmentColumnLabel": "Assignment",
+  "@roomsBedsAssignmentColumnLabel": {
+    "description": "Column label for bed assignment."
+  },
+  "roomsBedsNextActionColumnLabel": "Next action",
+  "@roomsBedsNextActionColumnLabel": {
+    "description": "Column label for the next rooms and beds action."
+  },
+  "roomsBedsDetailTitle": "Bed detail",
+  "@roomsBedsDetailTitle": {
+    "description": "Title for the bed detail dialog."
+  },
+  "roomsBedsCurrentAdmissionLabel": "Current admission",
+  "@roomsBedsCurrentAdmissionLabel": {
+    "description": "Field label for the active admission assigned to a bed."
+  },
+  "roomsBedsReadinessLabel": "Readiness",
+  "@roomsBedsReadinessLabel": {
+    "description": "Field label for bed readiness."
+  },
+  "roomsBedsReserveAction": "Reserve",
+  "@roomsBedsReserveAction": {
+    "description": "Action label for reserving a bed."
+  },
+  "roomsBedsMarkAvailableAction": "Mark available",
+  "@roomsBedsMarkAvailableAction": {
+    "description": "Action label for marking a bed available."
+  },
+  "roomsBedsMarkOutOfServiceAction": "Mark out of service",
+  "@roomsBedsMarkOutOfServiceAction": {
+    "description": "Action label for marking a bed out of service."
+  },
+  "roomsBedsAssignAction": "Assign bed",
+  "@roomsBedsAssignAction": {
+    "description": "Action label for assigning a bed."
+  },
+  "roomsBedsReleaseAction": "Release bed",
+  "@roomsBedsReleaseAction": {
+    "description": "Action label for releasing a bed."
+  },
+  "roomsBedsRequestTransferAction": "Request transfer",
+  "@roomsBedsRequestTransferAction": {
+    "description": "Action label for requesting an inpatient transfer."
+  },
+  "roomsBedsAssignmentHistoryTitle": "Assignment history",
+  "@roomsBedsAssignmentHistoryTitle": {
+    "description": "Section title for bed assignment history."
+  },
+  "roomsBedsNoAssignmentsLabel": "No assignment history recorded",
+  "@roomsBedsNoAssignmentsLabel": {
+    "description": "Empty label for bed assignment history."
+  },
+  "roomsBedsCurrentAssignmentLabel": "Current",
+  "@roomsBedsCurrentAssignmentLabel": {
+    "description": "Status label for a current bed assignment."
+  },
+  "roomsBedsReleasedAssignmentLabel": "Released",
+  "@roomsBedsReleasedAssignmentLabel": {
+    "description": "Status label for a released bed assignment."
+  },
+  "roomsBedsAdmissionFieldLabel": "Admission ID",
+  "@roomsBedsAdmissionFieldLabel": {
+    "description": "Field label for admission ID in bed action dialogs."
+  },
+  "roomsBedsAdmissionFieldHint": "Enter the admission ID",
+  "@roomsBedsAdmissionFieldHint": {
+    "description": "Hint text for admission ID in bed action dialogs."
+  },
+  "roomsBedsDestinationWardLabel": "Destination ward",
+  "@roomsBedsDestinationWardLabel": {
+    "description": "Field label for transfer destination ward."
+  },
+  "roomsBedsAssignDialogTitle": "Assign bed",
+  "@roomsBedsAssignDialogTitle": {
+    "description": "Dialog title for assigning a bed."
+  },
+  "roomsBedsReleaseDialogTitle": "Release bed",
+  "@roomsBedsReleaseDialogTitle": {
+    "description": "Dialog title for releasing a bed."
+  },
+  "roomsBedsReleaseDialogBody": "Releasing the bed sends the admission through the backend bed release flow.",
+  "@roomsBedsReleaseDialogBody": {
+    "description": "Body text for the release bed dialog."
+  },
+  "roomsBedsTransferDialogTitle": "Request transfer",
+  "@roomsBedsTransferDialogTitle": {
+    "description": "Dialog title for requesting a bed transfer."
+  },
+  "roomsBedsTransferDialogBody": "Choose the destination ward. Bed selection is completed by the IPD transfer workflow when the backend approves and starts the transfer.",
+  "@roomsBedsTransferDialogBody": {
+    "description": "Body text for the transfer request dialog."
+  },
+  "roomsBedsAdmissionAssignment": "Admission {admissionId}",
+  "@roomsBedsAdmissionAssignment": {
+    "description": "Display label for a bed assignment linked to an admission.",
+    "placeholders": {
+      "admissionId": {
+        "type": "String"
+      }
+    }
+  },
+  "roomsBedsAssignmentNotLinked": "Assignment not linked",
+  "@roomsBedsAssignmentNotLinked": {
+    "description": "Fallback label when a bed status implies assignment but no active assignment is returned."
+  },
+  "roomsBedsNextActionAssign": "Assign next admission",
+  "@roomsBedsNextActionAssign": {
+    "description": "Next action label for available beds."
+  },
+  "roomsBedsNextActionReleaseOrTransfer": "Release or transfer",
+  "@roomsBedsNextActionReleaseOrTransfer": {
+    "description": "Next action label for occupied beds."
+  },
+  "roomsBedsNextActionAssignOrReleaseHold": "Assign or release hold",
+  "@roomsBedsNextActionAssignOrReleaseHold": {
+    "description": "Next action label for reserved beds."
+  },
+  "roomsBedsNextActionResolveBlock": "Resolve block",
+  "@roomsBedsNextActionResolveBlock": {
+    "description": "Next action label for out-of-service beds."
+  },
+  "roomsBedsReadyLabel": "Ready",
+  "@roomsBedsReadyLabel": {
+    "description": "Readiness label for available beds."
+  },
+  "roomsBedsUnavailableLabel": "Unavailable",
+  "@roomsBedsUnavailableLabel": {
+    "description": "Readiness label for unavailable beds."
+  },
+  "roomsBedsReadinessBackendGapLabel": "Readiness pending backend status",
+  "@roomsBedsReadinessBackendGapLabel": {
+    "description": "Readiness fallback when the backend does not expose detailed readiness status."
+  },
+  "roomsBedsSavedMessage": "Rooms and beds updated.",
+  "@roomsBedsSavedMessage": {
+    "description": "Snackbar message after rooms and beds changes are saved."
+  },
+  "roomsBedsRequiredMessage": "{field} is required.",
+  "@roomsBedsRequiredMessage": {
+    "description": "Validation message for required rooms and beds fields.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "hrActivityDescription": "Recent HR updates, approvals, and roster changes.",
+  "@hrActivityDescription": {
+    "description": "Human resources workspace text for hrActivityDescription."
+  },
+  "hrActivityTitle": "HR activity",
+  "@hrActivityTitle": {
+    "description": "Human resources workspace text for hrActivityTitle."
+  },
+  "hrAddStaffAction": "Add staff",
+  "@hrAddStaffAction": {
+    "description": "Human resources workspace text for hrAddStaffAction."
+  },
+  "hrAddStaffDialogTitle": "Add staff profile",
+  "@hrAddStaffDialogTitle": {
+    "description": "Human resources workspace text for hrAddStaffDialogTitle."
+  },
+  "hrAllowPartialPublishLabel": "Allow partial publish",
+  "@hrAllowPartialPublishLabel": {
+    "description": "Human resources workspace text for hrAllowPartialPublishLabel."
+  },
+  "hrApproveLeaveAction": "Approve leave",
+  "@hrApproveLeaveAction": {
+    "description": "Human resources workspace text for hrApproveLeaveAction."
+  },
+  "hrApproveLeaveDialogTitle": "Approve leave",
+  "@hrApproveLeaveDialogTitle": {
+    "description": "Human resources workspace text for hrApproveLeaveDialogTitle."
+  },
+  "hrApproveSwapAction": "Approve swap",
+  "@hrApproveSwapAction": {
+    "description": "Human resources workspace text for hrApproveSwapAction."
+  },
+  "hrApproveSwapDialogTitle": "Approve shift swap",
+  "@hrApproveSwapDialogTitle": {
+    "description": "Human resources workspace text for hrApproveSwapDialogTitle."
+  },
+  "hrAssignDepartmentAction": "Assign department",
+  "@hrAssignDepartmentAction": {
+    "description": "Human resources workspace text for hrAssignDepartmentAction."
+  },
+  "hrAssignDepartmentDialogTitle": "Assign department",
+  "@hrAssignDepartmentDialogTitle": {
+    "description": "Human resources workspace text for hrAssignDepartmentDialogTitle."
+  },
+  "hrAssignmentLabel": "Assignment",
+  "@hrAssignmentLabel": {
+    "description": "Human resources workspace text for hrAssignmentLabel."
+  },
+  "hrAssignmentsSectionTitle": "Assignments",
+  "@hrAssignmentsSectionTitle": {
+    "description": "Human resources workspace text for hrAssignmentsSectionTitle."
+  },
+  "hrAssignPositionAction": "Assign position",
+  "@hrAssignPositionAction": {
+    "description": "Human resources workspace text for hrAssignPositionAction."
+  },
+  "hrAssignPositionDialogTitle": "Assign position",
+  "@hrAssignPositionDialogTitle": {
+    "description": "Human resources workspace text for hrAssignPositionDialogTitle."
+  },
+  "hrAssignShiftAction": "Assign shift",
+  "@hrAssignShiftAction": {
+    "description": "Human resources workspace text for hrAssignShiftAction."
+  },
+  "hrAssignShiftDialogTitle": "Assign shift",
+  "@hrAssignShiftDialogTitle": {
+    "description": "Human resources workspace text for hrAssignShiftDialogTitle."
+  },
+  "hrAvailabilityAvailable": "Available",
+  "@hrAvailabilityAvailable": {
+    "description": "Human resources workspace text for hrAvailabilityAvailable."
+  },
+  "hrAvailabilityDialogTitle": "Record availability",
+  "@hrAvailabilityDialogTitle": {
+    "description": "Human resources workspace text for hrAvailabilityDialogTitle."
+  },
+  "hrAvailabilityPreferenceLabel": "Availability",
+  "@hrAvailabilityPreferenceLabel": {
+    "description": "Human resources workspace text for hrAvailabilityPreferenceLabel."
+  },
+  "hrAvailabilityPreferred": "Preferred",
+  "@hrAvailabilityPreferred": {
+    "description": "Human resources workspace text for hrAvailabilityPreferred."
+  },
+  "hrAvailabilitySectionTitle": "Availability",
+  "@hrAvailabilitySectionTitle": {
+    "description": "Human resources workspace text for hrAvailabilitySectionTitle."
+  },
+  "hrAvailabilityUnavailable": "Unavailable",
+  "@hrAvailabilityUnavailable": {
+    "description": "Human resources workspace text for hrAvailabilityUnavailable."
+  },
+  "hrClearFiltersAction": "Clear filters",
+  "@hrClearFiltersAction": {
+    "description": "Human resources workspace text for hrClearFiltersAction."
+  },
+  "hrConsultationCurrencyLabel": "Consultation currency",
+  "@hrConsultationCurrencyLabel": {
+    "description": "Human resources workspace text for hrConsultationCurrencyLabel."
+  },
+  "hrConsultationFeeLabel": "Consultation fee",
+  "@hrConsultationFeeLabel": {
+    "description": "Human resources workspace text for hrConsultationFeeLabel."
+  },
+  "hrCreateStaffAction": "Create staff",
+  "@hrCreateStaffAction": {
+    "description": "Human resources workspace text for hrCreateStaffAction."
+  },
+  "hrDayOfWeekLabel": "Day of week",
+  "@hrDayOfWeekLabel": {
+    "description": "Human resources workspace text for hrDayOfWeekLabel."
+  },
+  "hrDepartmentColumnLabel": "Department",
+  "@hrDepartmentColumnLabel": {
+    "description": "Human resources workspace text for hrDepartmentColumnLabel."
+  },
+  "hrDepartmentFilterLabel": "Department",
+  "@hrDepartmentFilterLabel": {
+    "description": "Human resources workspace text for hrDepartmentFilterLabel."
+  },
+  "hrDepartmentLabel": "Department",
+  "@hrDepartmentLabel": {
+    "description": "Human resources workspace text for hrDepartmentLabel."
+  },
+  "hrEditStaffAction": "Edit staff",
+  "@hrEditStaffAction": {
+    "description": "Human resources workspace text for hrEditStaffAction."
+  },
+  "hrEditStaffDialogTitle": "Edit staff profile",
+  "@hrEditStaffDialogTitle": {
+    "description": "Human resources workspace text for hrEditStaffDialogTitle."
+  },
+  "hrEffectiveFromLabel": "Effective from",
+  "@hrEffectiveFromLabel": {
+    "description": "Human resources workspace text for hrEffectiveFromLabel."
+  },
+  "hrEffectiveToLabel": "Effective to",
+  "@hrEffectiveToLabel": {
+    "description": "Human resources workspace text for hrEffectiveToLabel."
+  },
+  "hrEndDateLabel": "End date",
+  "@hrEndDateLabel": {
+    "description": "Human resources workspace text for hrEndDateLabel."
+  },
+  "hrEndTimeLabel": "End time",
+  "@hrEndTimeLabel": {
+    "description": "Human resources workspace text for hrEndTimeLabel."
+  },
+  "hrFieldRequiredLabel": "{label} is required.",
+  "@hrFieldRequiredLabel": {
+    "description": "Human resources workspace text for hrFieldRequiredLabel.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "hrFiltersLabel": "Filters",
+  "@hrFiltersLabel": {
+    "description": "Human resources workspace text for hrFiltersLabel."
+  },
+  "hrFridayLabel": "Friday",
+  "@hrFridayLabel": {
+    "description": "Human resources workspace text for hrFridayLabel."
+  },
+  "hrGenerateRosterAction": "Generate roster",
+  "@hrGenerateRosterAction": {
+    "description": "Human resources workspace text for hrGenerateRosterAction."
+  },
+  "hrHireDateLabel": "Hire date",
+  "@hrHireDateLabel": {
+    "description": "Human resources workspace text for hrHireDateLabel."
+  },
+  "hrLeaveDialogTitle": "Request leave",
+  "@hrLeaveDialogTitle": {
+    "description": "Human resources workspace text for hrLeaveDialogTitle."
+  },
+  "hrLeaveLabel": "Leave",
+  "@hrLeaveLabel": {
+    "description": "Human resources workspace text for hrLeaveLabel."
+  },
+  "hrLeaveReportLabel": "Leave summary",
+  "@hrLeaveReportLabel": {
+    "description": "Human resources workspace text for hrLeaveReportLabel."
+  },
+  "hrLeaveRequestsSummaryLabel": "Leave requests",
+  "@hrLeaveRequestsSummaryLabel": {
+    "description": "Human resources workspace text for hrLeaveRequestsSummaryLabel."
+  },
+  "hrLeaveRequestTitle": "Leave request",
+  "@hrLeaveRequestTitle": {
+    "description": "Human resources workspace text for hrLeaveRequestTitle."
+  },
+  "hrLeaveSectionTitle": "Leave",
+  "@hrLeaveSectionTitle": {
+    "description": "Human resources workspace text for hrLeaveSectionTitle."
+  },
+  "hrLiveStatus": "Live",
+  "@hrLiveStatus": {
+    "description": "Human resources workspace text for hrLiveStatus."
+  },
+  "hrLoadingBody": "Loading staff records and rosters.",
+  "@hrLoadingBody": {
+    "description": "Human resources workspace text for hrLoadingBody."
+  },
+  "hrLoadingTitle": "Loading HR workspace",
+  "@hrLoadingTitle": {
+    "description": "Human resources workspace text for hrLoadingTitle."
+  },
+  "hrMondayLabel": "Monday",
+  "@hrMondayLabel": {
+    "description": "Human resources workspace text for hrMondayLabel."
+  },
+  "hrNextActionAssignDepartment": "Assign department",
+  "@hrNextActionAssignDepartment": {
+    "description": "Human resources workspace text for hrNextActionAssignDepartment."
+  },
+  "hrNextActionAssignPosition": "Assign position",
+  "@hrNextActionAssignPosition": {
+    "description": "Human resources workspace text for hrNextActionAssignPosition."
+  },
+  "hrNextActionColumnLabel": "Next action",
+  "@hrNextActionColumnLabel": {
+    "description": "Human resources workspace text for hrNextActionColumnLabel."
+  },
+  "hrNextActionReviewProfile": "Review profile",
+  "@hrNextActionReviewProfile": {
+    "description": "Human resources workspace text for hrNextActionReviewProfile."
+  },
+  "hrNextPageLabel": "Next staff page",
+  "@hrNextPageLabel": {
+    "description": "Human resources workspace text for hrNextPageLabel."
+  },
+  "hrNextQueuePageLabel": "Next queue page",
+  "@hrNextQueuePageLabel": {
+    "description": "Human resources workspace text for hrNextQueuePageLabel."
+  },
+  "hrNoActivityBody": "HR activity will appear here.",
+  "@hrNoActivityBody": {
+    "description": "Human resources workspace text for hrNoActivityBody."
+  },
+  "hrNoActivityTitle": "No activity yet",
+  "@hrNoActivityTitle": {
+    "description": "Human resources workspace text for hrNoActivityTitle."
+  },
+  "hrNoAssignmentsLabel": "No assignments recorded.",
+  "@hrNoAssignmentsLabel": {
+    "description": "Human resources workspace text for hrNoAssignmentsLabel."
+  },
+  "hrNoAvailabilityLabel": "No availability recorded.",
+  "@hrNoAvailabilityLabel": {
+    "description": "Human resources workspace text for hrNoAvailabilityLabel."
+  },
+  "hrNoLeaveLabel": "No leave recorded.",
+  "@hrNoLeaveLabel": {
+    "description": "Human resources workspace text for hrNoLeaveLabel."
+  },
+  "hrNoQueueItemsBody": "No HR queue items match the current filter.",
+  "@hrNoQueueItemsBody": {
+    "description": "Human resources workspace text for hrNoQueueItemsBody."
+  },
+  "hrNoQueueItemsTitle": "No queue items",
+  "@hrNoQueueItemsTitle": {
+    "description": "Human resources workspace text for hrNoQueueItemsTitle."
+  },
+  "hrNoShiftsLabel": "No shifts assigned.",
+  "@hrNoShiftsLabel": {
+    "description": "Human resources workspace text for hrNoShiftsLabel."
+  },
+  "hrNoStaffBody": "No staff profiles match the current filters.",
+  "@hrNoStaffBody": {
+    "description": "Human resources workspace text for hrNoStaffBody."
+  },
+  "hrNoStaffSelectedBody": "Select a staff member to review assignments, availability, leave, shifts, and payroll links.",
+  "@hrNoStaffSelectedBody": {
+    "description": "Human resources workspace text for hrNoStaffSelectedBody."
+  },
+  "hrNoStaffSelectedTitle": "No staff selected",
+  "@hrNoStaffSelectedTitle": {
+    "description": "Human resources workspace text for hrNoStaffSelectedTitle."
+  },
+  "hrNoStaffTitle": "No staff found",
+  "@hrNoStaffTitle": {
+    "description": "Human resources workspace text for hrNoStaffTitle."
+  },
+  "hrNotesLabel": "Notes",
+  "@hrNotesLabel": {
+    "description": "Human resources workspace text for hrNotesLabel."
+  },
+  "hrNotifyStaffLabel": "Notify staff",
+  "@hrNotifyStaffLabel": {
+    "description": "Human resources workspace text for hrNotifyStaffLabel."
+  },
+  "hrOverrideShiftAction": "Override shift",
+  "@hrOverrideShiftAction": {
+    "description": "Human resources workspace text for hrOverrideShiftAction."
+  },
+  "hrOverrideShiftDialogTitle": "Override shift",
+  "@hrOverrideShiftDialogTitle": {
+    "description": "Human resources workspace text for hrOverrideShiftDialogTitle."
+  },
+  "hrPageLabel": "{from}-{to} of {total}",
+  "@hrPageLabel": {
+    "description": "Human resources workspace text for hrPageLabel.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "hrPayrollDraftsSummaryLabel": "Payroll drafts",
+  "@hrPayrollDraftsSummaryLabel": {
+    "description": "Human resources workspace text for hrPayrollDraftsSummaryLabel."
+  },
+  "hrPayrollDraftTitle": "Payroll draft",
+  "@hrPayrollDraftTitle": {
+    "description": "Human resources workspace text for hrPayrollDraftTitle."
+  },
+  "hrPayrollReportLabel": "Payroll summary",
+  "@hrPayrollReportLabel": {
+    "description": "Human resources workspace text for hrPayrollReportLabel."
+  },
+  "hrPayrollRunDialogTitle": "Run payroll",
+  "@hrPayrollRunDialogTitle": {
+    "description": "Human resources workspace text for hrPayrollRunDialogTitle."
+  },
+  "hrPeriodColumnLabel": "Period",
+  "@hrPeriodColumnLabel": {
+    "description": "Human resources workspace text for hrPeriodColumnLabel."
+  },
+  "hrPeriodEndLabel": "Period end",
+  "@hrPeriodEndLabel": {
+    "description": "Human resources workspace text for hrPeriodEndLabel."
+  },
+  "hrPeriodStartLabel": "Period start",
+  "@hrPeriodStartLabel": {
+    "description": "Human resources workspace text for hrPeriodStartLabel."
+  },
+  "hrPickDateAction": "Pick date",
+  "@hrPickDateAction": {
+    "description": "Human resources workspace text for hrPickDateAction."
+  },
+  "hrPositionFilterLabel": "Position",
+  "@hrPositionFilterLabel": {
+    "description": "Human resources workspace text for hrPositionFilterLabel."
+  },
+  "hrPositionLabel": "Position",
+  "@hrPositionLabel": {
+    "description": "Human resources workspace text for hrPositionLabel."
+  },
+  "hrPractitionerTypeFilterLabel": "Practitioner type",
+  "@hrPractitionerTypeFilterLabel": {
+    "description": "Human resources workspace text for hrPractitionerTypeFilterLabel."
+  },
+  "hrPractitionerTypeLabel": "Practitioner type",
+  "@hrPractitionerTypeLabel": {
+    "description": "Human resources workspace text for hrPractitionerTypeLabel."
+  },
+  "hrPreviewStaffProfileReportAction": "Preview staff profile",
+  "@hrPreviewStaffProfileReportAction": {
+    "description": "Human resources workspace text for hrPreviewStaffProfileReportAction."
+  },
+  "hrPreviousPageLabel": "Previous staff page",
+  "@hrPreviousPageLabel": {
+    "description": "Human resources workspace text for hrPreviousPageLabel."
+  },
+  "hrPreviousQueuePageLabel": "Previous queue page",
+  "@hrPreviousQueuePageLabel": {
+    "description": "Human resources workspace text for hrPreviousQueuePageLabel."
+  },
+  "hrProcessPayrollAction": "Process payroll",
+  "@hrProcessPayrollAction": {
+    "description": "Human resources workspace text for hrProcessPayrollAction."
+  },
+  "hrProcessPayrollDialogTitle": "Process payroll",
+  "@hrProcessPayrollDialogTitle": {
+    "description": "Human resources workspace text for hrProcessPayrollDialogTitle."
+  },
+  "hrPublishNoteLabel": "Publish note",
+  "@hrPublishNoteLabel": {
+    "description": "Human resources workspace text for hrPublishNoteLabel."
+  },
+  "hrPublishRosterAction": "Publish roster",
+  "@hrPublishRosterAction": {
+    "description": "Human resources workspace text for hrPublishRosterAction."
+  },
+  "hrPublishRosterDialogTitle": "Publish roster",
+  "@hrPublishRosterDialogTitle": {
+    "description": "Human resources workspace text for hrPublishRosterDialogTitle."
+  },
+  "hrQueueColumnLabel": "Queue",
+  "@hrQueueColumnLabel": {
+    "description": "Human resources workspace text for hrQueueColumnLabel."
+  },
+  "hrQueueItemColumnLabel": "Item",
+  "@hrQueueItemColumnLabel": {
+    "description": "Human resources workspace text for hrQueueItemColumnLabel."
+  },
+  "hrQueueLeaveRequests": "Leave requests",
+  "@hrQueueLeaveRequests": {
+    "description": "Human resources workspace text for hrQueueLeaveRequests."
+  },
+  "hrQueueOverdueShifts": "Overdue shifts",
+  "@hrQueueOverdueShifts": {
+    "description": "Human resources workspace text for hrQueueOverdueShifts."
+  },
+  "hrQueuePayrollDrafts": "Payroll drafts",
+  "@hrQueuePayrollDrafts": {
+    "description": "Human resources workspace text for hrQueuePayrollDrafts."
+  },
+  "hrQueueRosterDrafts": "Roster drafts",
+  "@hrQueueRosterDrafts": {
+    "description": "Human resources workspace text for hrQueueRosterDrafts."
+  },
+  "hrQueueSwapRequests": "Swap requests",
+  "@hrQueueSwapRequests": {
+    "description": "Human resources workspace text for hrQueueSwapRequests."
+  },
+  "hrQueueUnassignedShifts": "Unassigned shifts",
+  "@hrQueueUnassignedShifts": {
+    "description": "Human resources workspace text for hrQueueUnassignedShifts."
+  },
+  "hrReasonLabel": "Reason",
+  "@hrReasonLabel": {
+    "description": "Human resources workspace text for hrReasonLabel."
+  },
+  "hrRecordAvailabilityAction": "Record availability",
+  "@hrRecordAvailabilityAction": {
+    "description": "Human resources workspace text for hrRecordAvailabilityAction."
+  },
+  "hrRejectLeaveAction": "Reject leave",
+  "@hrRejectLeaveAction": {
+    "description": "Human resources workspace text for hrRejectLeaveAction."
+  },
+  "hrRejectLeaveDialogTitle": "Reject leave",
+  "@hrRejectLeaveDialogTitle": {
+    "description": "Human resources workspace text for hrRejectLeaveDialogTitle."
+  },
+  "hrRejectSwapAction": "Reject swap",
+  "@hrRejectSwapAction": {
+    "description": "Human resources workspace text for hrRejectSwapAction."
+  },
+  "hrRejectSwapDialogTitle": "Reject shift swap",
+  "@hrRejectSwapDialogTitle": {
+    "description": "Human resources workspace text for hrRejectSwapDialogTitle."
+  },
+  "hrReplacePayrollItemsLabel": "Replace existing payroll items",
+  "@hrReplacePayrollItemsLabel": {
+    "description": "Human resources workspace text for hrReplacePayrollItemsLabel."
+  },
+  "hrReportsSectionTitle": "Reports",
+  "@hrReportsSectionTitle": {
+    "description": "Human resources workspace text for hrReportsSectionTitle."
+  },
+  "hrRequestLeaveAction": "Request leave",
+  "@hrRequestLeaveAction": {
+    "description": "Human resources workspace text for hrRequestLeaveAction."
+  },
+  "hrRolePositionColumnLabel": "Role / position",
+  "@hrRolePositionColumnLabel": {
+    "description": "Human resources workspace text for hrRolePositionColumnLabel."
+  },
+  "hrRosterDraftsSummaryLabel": "Roster drafts",
+  "@hrRosterDraftsSummaryLabel": {
+    "description": "Human resources workspace text for hrRosterDraftsSummaryLabel."
+  },
+  "hrRosterDraftTitle": "Roster draft",
+  "@hrRosterDraftTitle": {
+    "description": "Human resources workspace text for hrRosterDraftTitle."
+  },
+  "hrRosterReportLabel": "Roster report",
+  "@hrRosterReportLabel": {
+    "description": "Human resources workspace text for hrRosterReportLabel."
+  },
+  "hrRunPayrollAction": "Run payroll",
+  "@hrRunPayrollAction": {
+    "description": "Human resources workspace text for hrRunPayrollAction."
+  },
+  "hrSaturdayLabel": "Saturday",
+  "@hrSaturdayLabel": {
+    "description": "Human resources workspace text for hrSaturdayLabel."
+  },
+  "hrSavedMessage": "HR changes saved.",
+  "@hrSavedMessage": {
+    "description": "Human resources workspace text for hrSavedMessage."
+  },
+  "hrSaveStaffAction": "Save staff",
+  "@hrSaveStaffAction": {
+    "description": "Human resources workspace text for hrSaveStaffAction."
+  },
+  "hrSavingStatus": "Saving",
+  "@hrSavingStatus": {
+    "description": "Human resources workspace text for hrSavingStatus."
+  },
+  "hrSearchHint": "Search staff, department, role, shift, or status",
+  "@hrSearchHint": {
+    "description": "Human resources workspace text for hrSearchHint."
+  },
+  "hrSearchLabel": "Search HR records",
+  "@hrSearchLabel": {
+    "description": "Human resources workspace text for hrSearchLabel."
+  },
+  "hrShiftIdLabel": "Shift ID",
+  "@hrShiftIdLabel": {
+    "description": "Human resources workspace text for hrShiftIdLabel."
+  },
+  "hrShiftLabel": "Shift",
+  "@hrShiftLabel": {
+    "description": "Human resources workspace text for hrShiftLabel."
+  },
+  "hrShiftQueueTitle": "Shift queue item",
+  "@hrShiftQueueTitle": {
+    "description": "Human resources workspace text for hrShiftQueueTitle."
+  },
+  "hrShiftsSectionTitle": "Shifts",
+  "@hrShiftsSectionTitle": {
+    "description": "Human resources workspace text for hrShiftsSectionTitle."
+  },
+  "hrStaffActionsTitle": "Staff actions",
+  "@hrStaffActionsTitle": {
+    "description": "Human resources workspace text for hrStaffActionsTitle."
+  },
+  "hrStaffColumnLabel": "Staff",
+  "@hrStaffColumnLabel": {
+    "description": "Human resources workspace text for hrStaffColumnLabel."
+  },
+  "hrStaffDetailTitle": "Staff detail",
+  "@hrStaffDetailTitle": {
+    "description": "Human resources workspace text for hrStaffDetailTitle."
+  },
+  "hrStaffDirectoryDescription": "Search staff by name, department, position, role, and status.",
+  "@hrStaffDirectoryDescription": {
+    "description": "Human resources workspace text for hrStaffDirectoryDescription."
+  },
+  "hrStaffDirectoryTitle": "Staff directory",
+  "@hrStaffDirectoryTitle": {
+    "description": "Human resources workspace text for hrStaffDirectoryTitle."
+  },
+  "hrStaffLabel": "Staff",
+  "@hrStaffLabel": {
+    "description": "Human resources workspace text for hrStaffLabel."
+  },
+  "hrStaffListReportLabel": "Staff list",
+  "@hrStaffListReportLabel": {
+    "description": "Human resources workspace text for hrStaffListReportLabel."
+  },
+  "hrStaffNameLabel": "Staff name",
+  "@hrStaffNameLabel": {
+    "description": "Human resources workspace text for hrStaffNameLabel."
+  },
+  "hrStaffNumberLabel": "Staff number",
+  "@hrStaffNumberLabel": {
+    "description": "Human resources workspace text for hrStaffNumberLabel."
+  },
+  "hrStaffProfileReportTitle": "Staff profile",
+  "@hrStaffProfileReportTitle": {
+    "description": "Human resources workspace text for hrStaffProfileReportTitle."
+  },
+  "hrStartDateLabel": "Start date",
+  "@hrStartDateLabel": {
+    "description": "Human resources workspace text for hrStartDateLabel."
+  },
+  "hrStartTimeLabel": "Start time",
+  "@hrStartTimeLabel": {
+    "description": "Human resources workspace text for hrStartTimeLabel."
+  },
+  "hrStatusColumnLabel": "Status",
+  "@hrStatusColumnLabel": {
+    "description": "Human resources workspace text for hrStatusColumnLabel."
+  },
+  "hrSundayLabel": "Sunday",
+  "@hrSundayLabel": {
+    "description": "Human resources workspace text for hrSundayLabel."
+  },
+  "hrSwapRequestTitle": "Shift swap request",
+  "@hrSwapRequestTitle": {
+    "description": "Human resources workspace text for hrSwapRequestTitle."
+  },
+  "hrSwapShiftAction": "Swap shift",
+  "@hrSwapShiftAction": {
+    "description": "Human resources workspace text for hrSwapShiftAction."
+  },
+  "hrSwapShiftDialogTitle": "Request shift swap",
+  "@hrSwapShiftDialogTitle": {
+    "description": "Human resources workspace text for hrSwapShiftDialogTitle."
+  },
+  "hrTargetStaffLabel": "Target staff",
+  "@hrTargetStaffLabel": {
+    "description": "Human resources workspace text for hrTargetStaffLabel."
+  },
+  "hrTenantIdLabel": "Tenant ID",
+  "@hrTenantIdLabel": {
+    "description": "Human resources workspace text for hrTenantIdLabel."
+  },
+  "hrThursdayLabel": "Thursday",
+  "@hrThursdayLabel": {
+    "description": "Human resources workspace text for hrThursdayLabel."
+  },
+  "hrTimeHint": "HH:MM",
+  "@hrTimeHint": {
+    "description": "Human resources workspace text for hrTimeHint."
+  },
+  "hrTotalStaffSummaryLabel": "Total staff",
+  "@hrTotalStaffSummaryLabel": {
+    "description": "Human resources workspace text for hrTotalStaffSummaryLabel."
+  },
+  "hrTuesdayLabel": "Tuesday",
+  "@hrTuesdayLabel": {
+    "description": "Human resources workspace text for hrTuesdayLabel."
+  },
+  "hrUnassignedShiftsSummaryLabel": "Unassigned shifts",
+  "@hrUnassignedShiftsSummaryLabel": {
+    "description": "Human resources workspace text for hrUnassignedShiftsSummaryLabel."
+  },
+  "hrUnitIdLabel": "Unit ID",
+  "@hrUnitIdLabel": {
+    "description": "Human resources workspace text for hrUnitIdLabel."
+  },
+  "hrUserIdLabel": "User ID",
+  "@hrUserIdLabel": {
+    "description": "Human resources workspace text for hrUserIdLabel."
+  },
+  "hrWednesdayLabel": "Wednesday",
+  "@hrWednesdayLabel": {
+    "description": "Human resources workspace text for hrWednesdayLabel."
+  },
+  "hrWorkQueuesTitle": "Work queues",
+  "@hrWorkQueuesTitle": {
+    "description": "Human resources workspace text for hrWorkQueuesTitle."
   }
 }

@@ -141,7 +141,7 @@ final class MortuaryWorkspaceController
         current.query.resource.ifNotEmpty ??
         mortuaryDefaultResourceByPanel[effectivePanel] ??
         mortuaryResourceCases;
-    final String? effectivePanelForQueue = queue == null
+    final String effectivePanelForQueue = queue == null
         ? effectivePanel
         : _queuePanelById[queue] ?? effectivePanel;
 

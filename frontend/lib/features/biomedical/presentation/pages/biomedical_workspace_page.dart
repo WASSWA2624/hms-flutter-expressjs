@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -21,6 +22,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class BiomedicalWorkspacePage extends ConsumerWidget {
   const BiomedicalWorkspacePage({super.key});
@@ -67,6 +69,16 @@ class _BiomedicalWorkspaceContentState
     ],
     activeModules: <String>['biomedical-engineering-suite'],
   );
+  static const AccessRequirement _printRequirement = AccessRequirement(
+    allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+    anyPermissions: <AppPermission>[
+      AppPermissions.biomedRead,
+      AppPermissions.biomedWrite,
+      AppPermissions.operationsRead,
+      AppPermissions.operationsWrite,
+    ],
+    activeModules: <String>['biomedical-engineering-suite'],
+  );
 
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<BiomedicalAsset>
@@ -105,6 +117,7 @@ class _BiomedicalWorkspaceContentState
     );
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = _writeRequirement.isAllowed(accessPolicy);
+    final bool canPrint = _printRequirement.isAllowed(accessPolicy);
 
     return AppWorkspace(
       title: l10n.biomedicalTitle,
@@ -219,7 +232,7 @@ class _BiomedicalWorkspaceContentState
       detail: _BiomedicalDetailPanel(
         state: state,
         canWrite: canWrite,
-        writeRequirement: _writeRequirement,
+        canPrint: canPrint,
       ),
     );
   }
@@ -468,12 +481,12 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
   const _BiomedicalDetailPanel({
     required this.state,
     required this.canWrite,
-    required this.writeRequirement,
+    required this.canPrint,
   });
 
   final BiomedicalWorkspaceState state;
   final bool canWrite;
-  final AccessRequirement writeRequirement;
+  final bool canPrint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -516,15 +529,15 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
                 ),
                 AppWorkspacePatientContextField(
                   label: l10n.biomedicalFacilityLabel,
-                  value: asset.facilityLabel,
+                  value: _dash(asset.facilityLabel, l10n),
                 ),
                 AppWorkspacePatientContextField(
                   label: l10n.biomedicalCategoryLabel,
-                  value: asset.categoryLabel,
+                  value: _dash(asset.categoryLabel, l10n),
                 ),
                 AppWorkspacePatientContextField(
                   label: l10n.biomedicalOwnerLabel,
-                  value: asset.engineerLabel,
+                  value: _dash(asset.engineerLabel, l10n),
                 ),
               ],
             ),
@@ -533,7 +546,7 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
               state: state,
               asset: asset,
               canWrite: canWrite,
-              writeRequirement: writeRequirement,
+              canPrint: canPrint,
             ),
             SizedBox(height: Theme.of(context).spacing.md),
             AppSectionPanel(
@@ -658,13 +671,13 @@ class _DetailActions extends ConsumerWidget {
     required this.state,
     required this.asset,
     required this.canWrite,
-    required this.writeRequirement,
+    required this.canPrint,
   });
 
   final BiomedicalWorkspaceState state;
   final BiomedicalAsset asset;
   final bool canWrite;
-  final AccessRequirement writeRequirement;
+  final bool canPrint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -883,9 +896,125 @@ class _DetailActions extends ConsumerWidget {
             ),
           ),
         ),
+        AppReportActionButton.print(
+          label: l10n.reportsPrintAction,
+          enabled: canPrint,
+          onPressed: canPrint
+              ? () => unawaited(_printBiomedicalReport(context, ref, asset))
+              : null,
+        ),
       ],
     );
   }
+}
+
+Future<void> _printBiomedicalReport(
+  BuildContext context,
+  WidgetRef ref,
+  BiomedicalAsset asset,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  await printFormTemplateDocument(
+    ref: ref,
+    context: context,
+    title: '${l10n.biomedicalPrintReportDialogTitle} - ${asset.displayId}',
+    subtitle: asset.displayTitle,
+    bodyHtml: _biomedicalReportHtml(context, asset),
+    metadata: <PrintFormMetadataItem>[
+      PrintFormMetadataItem(
+        label: l10n.biomedicalAssetTagLabel,
+        value: asset.displayId,
+      ),
+      PrintFormMetadataItem(
+        label: l10n.biomedicalResourceLabel,
+        value: _labelForResource(l10n, asset.resource),
+      ),
+      PrintFormMetadataItem(
+        label: l10n.reportsGeneratedByLabel,
+        value: l10n.appTitle,
+      ),
+    ],
+    footerNote: l10n.biomedicalPrintReportBody,
+  );
+}
+
+String _biomedicalReportHtml(BuildContext context, BiomedicalAsset asset) {
+  final AppLocalizations l10n = context.l10n;
+  final String registryHtml =
+      PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
+        PrintFormMetadataItem(
+          label: l10n.biomedicalAssetTagLabel,
+          value: asset.displayId,
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalEquipmentLabel,
+          value: asset.displayTitle,
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalCategoryLabel,
+          value: _dash(asset.categoryLabel, l10n),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalStatusLabel,
+          value: _labelForCode(
+            asset.status,
+            fallback: l10n.biomedicalNotAvailableLabel,
+          ),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalPriorityLabel,
+          value: _labelForCode(
+            asset.priority,
+            fallback: l10n.biomedicalNotAvailableLabel,
+          ),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalFacilityLabel,
+          value: _dash(asset.facilityLabel, l10n),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalOwnerLabel,
+          value: _dash(asset.engineerLabel, l10n),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalNextDueLabel,
+          value:
+              _formatDate(context, asset.nextDueAt) ??
+              l10n.biomedicalNotAvailableLabel,
+        ),
+      ]);
+  final String lifecycleHtml =
+      PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
+        PrintFormMetadataItem(
+          label: l10n.biomedicalResourceLabel,
+          value: _labelForResource(l10n, asset.resource),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalNextActionColumnLabel,
+          value: _nextActionLabel(l10n, asset),
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalLastUpdatedLabel,
+          value:
+              _formatDateTime(context, asset.timelineAt) ??
+              l10n.biomedicalNotAvailableLabel,
+        ),
+        PrintFormMetadataItem(
+          label: l10n.biomedicalTargetPathLabel,
+          value: _dash(asset.targetPath, l10n),
+        ),
+      ]);
+
+  return <String>[
+    PrintFormTemplate.section(
+      title: l10n.biomedicalRegistrySectionTitle,
+      bodyHtml: registryHtml,
+    ),
+    PrintFormTemplate.section(
+      title: l10n.biomedicalLifecycleSectionTitle,
+      bodyHtml: lifecycleHtml,
+    ),
+  ].join();
 }
 
 class _RelatedSection extends StatelessWidget {
@@ -1134,7 +1263,6 @@ class _BiomedicalActionDialogState
     final BiomedicalLookupData lookups = widget.state.workbench.lookups;
     return AppFormShell(
       formKey: _formKey,
-      scrollable: false,
       children: <Widget>[
         if (_usesEquipmentPicker)
           AppSelectField<String>.searchable(
@@ -1444,7 +1572,7 @@ class _BiomedicalActionDialogState
     final String? tenantId = widget.tenantId;
     final String? equipmentId = _selectedEquipmentId;
     return <String, Object?>{
-      if (tenantId != null) 'tenant_id': tenantId,
+      'tenant_id': ?tenantId,
       if (_showsAssetFields) ...<String, Object?>{
         'equipment_name': _nameController.text.trim(),
         'equipment_code': _codeController.text.trim(),

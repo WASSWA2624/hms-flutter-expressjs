@@ -61,8 +61,7 @@ import 'app_localizations_en.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -70,8 +69,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -83,16 +81,17 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('en')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en')
+  ];
 
   /// Application title shown in app bars and platform task lists.
   ///
@@ -364,7 +363,13 @@ abstract class AppLocalizations {
   /// **'Communications'**
   String get navigationCommunicationsLabel;
 
-  /// Localized text for navigationIntegrationsLabel.
+  /// Human resources workspace text for hrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Human resources'**
+  String get hrTitle;
+
+  /// Navigation label for the integrations workspace.
   ///
   /// In en, this message translates to:
   /// **'Integrations'**
@@ -13082,12 +13087,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{total} requests: {open} open, {inProgress} in progress, {completed} completed.'**
-  String operationsReportSummaryLine(
-    int total,
-    int open,
-    int inProgress,
-    int completed,
-  );
+  String operationsReportSummaryLine(int total, int open, int inProgress, int completed);
 
   /// Navigation label for the biomedical workspace.
   ///
@@ -16335,6 +16335,798 @@ abstract class AppLocalizations {
   /// **'Inactive'**
   String get communicationsInactiveStatus;
 
+  /// Localized text for housekeepingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping'**
+  String get housekeepingTitle;
+
+  /// Localized text for housekeepingLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading housekeeping'**
+  String get housekeepingLoadingTitle;
+
+  /// Localized text for housekeepingLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing cleaning tasks, schedules, bed turnover, and readiness.'**
+  String get housekeepingLoadingBody;
+
+  /// Localized text for housekeepingLiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Live sync'**
+  String get housekeepingLiveStatus;
+
+  /// Localized text for housekeepingSavingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get housekeepingSavingStatus;
+
+  /// Localized text for housekeepingSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping changes saved.'**
+  String get housekeepingSavedMessage;
+
+  /// Localized text for housekeepingCreateTaskAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create task'**
+  String get housekeepingCreateTaskAction;
+
+  /// Localized text for housekeepingCreateScheduleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create schedule'**
+  String get housekeepingCreateScheduleAction;
+
+  /// Localized text for housekeepingRequestMaintenanceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request maintenance'**
+  String get housekeepingRequestMaintenanceAction;
+
+  /// Localized text for housekeepingReportSummaryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get housekeepingReportSummaryAction;
+
+  /// Localized text for housekeepingPendingTasksSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending tasks'**
+  String get housekeepingPendingTasksSummaryLabel;
+
+  /// Localized text for housekeepingCompletedTodaySummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed today'**
+  String get housekeepingCompletedTodaySummaryLabel;
+
+  /// Localized text for housekeepingOpenRequestsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open requests'**
+  String get housekeepingOpenRequestsSummaryLabel;
+
+  /// Localized text for housekeepingOverdueRequestsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue requests'**
+  String get housekeepingOverdueRequestsSummaryLabel;
+
+  /// Localized text for housekeepingAssetsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assets'**
+  String get housekeepingAssetsSummaryLabel;
+
+  /// Localized text for housekeepingWorklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Track cleaning tasks, schedules, bed turnover, and maintenance handoffs.'**
+  String get housekeepingWorklistDescription;
+
+  /// Localized text for housekeepingSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search housekeeping'**
+  String get housekeepingSearchLabel;
+
+  /// Localized text for housekeepingSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search location, room, bed, assignee, status, priority, or date'**
+  String get housekeepingSearchHint;
+
+  /// Localized text for housekeepingClearSearchAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get housekeepingClearSearchAction;
+
+  /// Localized text for housekeepingFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get housekeepingFiltersAction;
+
+  /// Localized text for housekeepingFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping filters'**
+  String get housekeepingFiltersTitle;
+
+  /// Localized text for housekeepingApplyFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get housekeepingApplyFiltersAction;
+
+  /// Localized text for housekeepingClearFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get housekeepingClearFiltersAction;
+
+  /// Localized text for housekeepingPreviousPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get housekeepingPreviousPageLabel;
+
+  /// Localized text for housekeepingNextPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get housekeepingNextPageLabel;
+
+  /// Pagination label for housekeeping items.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} - {last} of {total} items'**
+  String housekeepingPageLabel(int first, int last, int total);
+
+  /// Localized text for housekeepingEmptyQueueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No housekeeping items'**
+  String get housekeepingEmptyQueueTitle;
+
+  /// Localized text for housekeepingEmptyQueueBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks, schedules, or maintenance handoffs match the current filters.'**
+  String get housekeepingEmptyQueueBody;
+
+  /// Localized text for housekeepingTaskColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get housekeepingTaskColumnLabel;
+
+  /// Localized text for housekeepingLocationColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get housekeepingLocationColumnLabel;
+
+  /// Localized text for housekeepingAssigneeColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee'**
+  String get housekeepingAssigneeColumnLabel;
+
+  /// Localized text for housekeepingDueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due time'**
+  String get housekeepingDueColumnLabel;
+
+  /// Localized text for housekeepingStatusColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get housekeepingStatusColumnLabel;
+
+  /// Localized text for housekeepingNextActionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get housekeepingNextActionColumnLabel;
+
+  /// Localized text for housekeepingNoSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a housekeeping item'**
+  String get housekeepingNoSelectionTitle;
+
+  /// Localized text for housekeepingNoSelectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a task, schedule, or maintenance handoff to review readiness and available actions.'**
+  String get housekeepingNoSelectionBody;
+
+  /// Localized text for housekeepingDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping detail'**
+  String get housekeepingDetailTitle;
+
+  /// Localized text for housekeepingReferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get housekeepingReferenceLabel;
+
+  /// Localized text for housekeepingLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get housekeepingLocationLabel;
+
+  /// Localized text for housekeepingAssigneeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee'**
+  String get housekeepingAssigneeLabel;
+
+  /// Localized text for housekeepingDueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get housekeepingDueLabel;
+
+  /// Localized text for housekeepingReadinessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness'**
+  String get housekeepingReadinessTitle;
+
+  /// Localized text for housekeepingAssignAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign'**
+  String get housekeepingAssignAction;
+
+  /// Localized text for housekeepingStartAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get housekeepingStartAction;
+
+  /// Localized text for housekeepingStartDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start cleaning'**
+  String get housekeepingStartDialogTitle;
+
+  /// Localized text for housekeepingStartDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this housekeeping task as in progress.'**
+  String get housekeepingStartDialogBody;
+
+  /// Localized text for housekeepingCompleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get housekeepingCompleteAction;
+
+  /// Localized text for housekeepingCompleteDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete cleaning'**
+  String get housekeepingCompleteDialogTitle;
+
+  /// Localized text for housekeepingCompleteDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this cleaning task as completed and refresh readiness from the backend.'**
+  String get housekeepingCompleteDialogBody;
+
+  /// Localized text for housekeepingCancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get housekeepingCancelAction;
+
+  /// Localized text for housekeepingCancelDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel task'**
+  String get housekeepingCancelDialogTitle;
+
+  /// Localized text for housekeepingCancelDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this housekeeping task.'**
+  String get housekeepingCancelDialogBody;
+
+  /// Localized text for housekeepingMarkReadyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark ready'**
+  String get housekeepingMarkReadyAction;
+
+  /// Localized text for housekeepingBackendGapTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend support is not available yet.'**
+  String get housekeepingBackendGapTooltip;
+
+  /// Localized text for housekeepingTriageAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage'**
+  String get housekeepingTriageAction;
+
+  /// Localized text for housekeepingCompleteRequestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete request'**
+  String get housekeepingCompleteRequestAction;
+
+  /// Localized text for housekeepingCompleteRequestDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete maintenance request'**
+  String get housekeepingCompleteRequestDialogTitle;
+
+  /// Localized text for housekeepingCompleteRequestDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this maintenance handoff as completed.'**
+  String get housekeepingCompleteRequestDialogBody;
+
+  /// Localized text for housekeepingCancelRequestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get housekeepingCancelRequestAction;
+
+  /// Localized text for housekeepingCancelRequestDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel maintenance request'**
+  String get housekeepingCancelRequestDialogTitle;
+
+  /// Localized text for housekeepingCancelRequestDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this maintenance handoff.'**
+  String get housekeepingCancelRequestDialogBody;
+
+  /// Localized text for housekeepingTaskReadinessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning progress and readiness are refreshed from the housekeeping task record.'**
+  String get housekeepingTaskReadinessBody;
+
+  /// Localized text for housekeepingScheduleReadinessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled cleaning keeps this location on a recurring readiness plan.'**
+  String get housekeepingScheduleReadinessBody;
+
+  /// Localized text for housekeepingMaintenanceReadinessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance handoffs keep cleaning issues visible without losing location context.'**
+  String get housekeepingMaintenanceReadinessBody;
+
+  /// Localized text for housekeepingBackendGapsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend gaps'**
+  String get housekeepingBackendGapsTitle;
+
+  /// Localized text for housekeepingBackendGapsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The workspace only exposes actions backed by confirmed API routes.'**
+  String get housekeepingBackendGapsBody;
+
+  /// Localized text for housekeepingFacilityFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get housekeepingFacilityFieldLabel;
+
+  /// Localized text for housekeepingFacilityFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a facility'**
+  String get housekeepingFacilityFieldHint;
+
+  /// Localized text for housekeepingRoomFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Room or bed'**
+  String get housekeepingRoomFieldLabel;
+
+  /// Localized text for housekeepingRoomFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a room or bed'**
+  String get housekeepingRoomFieldHint;
+
+  /// Localized text for housekeepingAssigneeFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee or team'**
+  String get housekeepingAssigneeFieldLabel;
+
+  /// Localized text for housekeepingAssigneeFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select staff or team'**
+  String get housekeepingAssigneeFieldHint;
+
+  /// Localized text for housekeepingStatusFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get housekeepingStatusFieldLabel;
+
+  /// Localized text for housekeepingStatusRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a status.'**
+  String get housekeepingStatusRequiredMessage;
+
+  /// Localized text for housekeepingScheduledDateFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled date'**
+  String get housekeepingScheduledDateFieldLabel;
+
+  /// Localized text for housekeepingCreateTaskSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create task'**
+  String get housekeepingCreateTaskSubmitAction;
+
+  /// Localized text for housekeepingFrequencyFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get housekeepingFrequencyFieldLabel;
+
+  /// Localized text for housekeepingFrequencyFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily, weekly, terminal clean, or custom'**
+  String get housekeepingFrequencyFieldHint;
+
+  /// Localized text for housekeepingFrequencyRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a cleaning frequency.'**
+  String get housekeepingFrequencyRequiredMessage;
+
+  /// Localized text for housekeepingStartDateFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get housekeepingStartDateFieldLabel;
+
+  /// Localized text for housekeepingEndDateFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get housekeepingEndDateFieldLabel;
+
+  /// Localized text for housekeepingCreateScheduleSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create schedule'**
+  String get housekeepingCreateScheduleSubmitAction;
+
+  /// Localized text for housekeepingAssetFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset'**
+  String get housekeepingAssetFieldLabel;
+
+  /// Localized text for housekeepingAssetFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select asset or fixture'**
+  String get housekeepingAssetFieldHint;
+
+  /// Localized text for housekeepingDescriptionFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get housekeepingDescriptionFieldLabel;
+
+  /// Localized text for housekeepingDescriptionFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the issue or cleaning concern'**
+  String get housekeepingDescriptionFieldHint;
+
+  /// Localized text for housekeepingDescriptionRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a description.'**
+  String get housekeepingDescriptionRequiredMessage;
+
+  /// Localized text for housekeepingRequestMaintenanceSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create request'**
+  String get housekeepingRequestMaintenanceSubmitAction;
+
+  /// Localized text for housekeepingAssignSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save assignment'**
+  String get housekeepingAssignSubmitAction;
+
+  /// Localized text for housekeepingTriageSummaryFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage note'**
+  String get housekeepingTriageSummaryFieldLabel;
+
+  /// Localized text for housekeepingSlaHoursFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SLA hours'**
+  String get housekeepingSlaHoursFieldLabel;
+
+  /// Localized text for housekeepingTriageSubmitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save triage'**
+  String get housekeepingTriageSubmitAction;
+
+  /// Localized text for housekeepingPickDateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get housekeepingPickDateAction;
+
+  /// Localized text for housekeepingCreateTaskDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create housekeeping task'**
+  String get housekeepingCreateTaskDialogTitle;
+
+  /// Localized text for housekeepingCreateScheduleDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create cleaning schedule'**
+  String get housekeepingCreateScheduleDialogTitle;
+
+  /// Localized text for housekeepingRequestMaintenanceDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request maintenance'**
+  String get housekeepingRequestMaintenanceDialogTitle;
+
+  /// Localized text for housekeepingAssignDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign housekeeping task'**
+  String get housekeepingAssignDialogTitle;
+
+  /// Localized text for housekeepingTriageDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage maintenance handoff'**
+  String get housekeepingTriageDialogTitle;
+
+  /// Localized text for housekeepingReportSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Housekeeping report'**
+  String get housekeepingReportSummaryTitle;
+
+  /// Localized text for housekeepingReportPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report preview'**
+  String get housekeepingReportPreviewTitle;
+
+  /// Localized text for housekeepingReportPreviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated housekeeping report templates are pending backend report-run support.'**
+  String get housekeepingReportPreviewBody;
+
+  /// Localized text for housekeepingResourceFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource'**
+  String get housekeepingResourceFilterLabel;
+
+  /// Localized text for housekeepingResourceTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get housekeepingResourceTasks;
+
+  /// Localized text for housekeepingResourceSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules'**
+  String get housekeepingResourceSchedules;
+
+  /// Localized text for housekeepingResourceMaintenanceRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance requests'**
+  String get housekeepingResourceMaintenanceRequests;
+
+  /// Localized text for housekeepingQueueFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get housekeepingQueueFilterLabel;
+
+  /// Localized text for housekeepingQueueAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get housekeepingQueueAll;
+
+  /// Localized text for housekeepingQueueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get housekeepingQueueToday;
+
+  /// Localized text for housekeepingQueueOverdueTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue tasks'**
+  String get housekeepingQueueOverdueTasks;
+
+  /// Localized text for housekeepingQueueOpenRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Open requests'**
+  String get housekeepingQueueOpenRequests;
+
+  /// Localized text for housekeepingQueueOverdueRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue requests'**
+  String get housekeepingQueueOverdueRequests;
+
+  /// Localized text for housekeepingStatusFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get housekeepingStatusFilterLabel;
+
+  /// Localized text for housekeepingStatusAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All statuses'**
+  String get housekeepingStatusAll;
+
+  /// Localized text for housekeepingAllFacilities.
+  ///
+  /// In en, this message translates to:
+  /// **'All facilities'**
+  String get housekeepingAllFacilities;
+
+  /// Localized text for housekeepingFacilityFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get housekeepingFacilityFilterLabel;
+
+  /// Localized text for housekeepingRoomFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Room or bed'**
+  String get housekeepingRoomFilterLabel;
+
+  /// Localized text for housekeepingAllRooms.
+  ///
+  /// In en, this message translates to:
+  /// **'All rooms and beds'**
+  String get housekeepingAllRooms;
+
+  /// Localized text for housekeepingAssigneeFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignee'**
+  String get housekeepingAssigneeFilterLabel;
+
+  /// Localized text for housekeepingAllAssignees.
+  ///
+  /// In en, this message translates to:
+  /// **'All assignees'**
+  String get housekeepingAllAssignees;
+
+  /// Localized text for housekeepingDateFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get housekeepingDateFilterLabel;
+
+  /// Localized text for housekeepingDateAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Any date'**
+  String get housekeepingDateAll;
+
+  /// Localized text for housekeepingDateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get housekeepingDateToday;
+
+  /// Localized text for housekeepingDateNextSevenDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Next 7 days'**
+  String get housekeepingDateNextSevenDays;
+
+  /// Localized text for housekeepingDateOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get housekeepingDateOverdue;
+
+  /// Localized text for housekeepingDateThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get housekeepingDateThisMonth;
+
+  /// Localized text for housekeepingStatusScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get housekeepingStatusScheduled;
+
+  /// Localized text for housekeepingStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get housekeepingStatusPending;
+
+  /// Localized text for housekeepingStatusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get housekeepingStatusInProgress;
+
+  /// Localized text for housekeepingStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get housekeepingStatusCompleted;
+
+  /// Localized text for housekeepingStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get housekeepingStatusCancelled;
+
+  /// Localized text for housekeepingStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get housekeepingStatusUnknown;
+
+  /// Localized text for housekeepingStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get housekeepingStatusOpen;
+
   /// Status option label for an open housekeeping task.
   ///
   /// In en, this message translates to:
@@ -16346,6 +17138,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In progress'**
   String get housekeepingStatusInProgressLabel;
+
+  /// Localized text for housekeepingNextActionAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign staff or team'**
+  String get housekeepingNextActionAssign;
+
+  /// Localized text for housekeepingNextActionStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start cleaning'**
+  String get housekeepingNextActionStart;
+
+  /// Localized text for housekeepingNextActionComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete cleaning'**
+  String get housekeepingNextActionComplete;
+
+  /// Localized text for housekeepingNextActionTriage.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage handoff'**
+  String get housekeepingNextActionTriage;
+
+  /// Localized text for housekeepingNextActionReviewSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Review schedule'**
+  String get housekeepingNextActionReviewSchedule;
+
+  /// Localized text for housekeepingNextActionNoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'No action needed'**
+  String get housekeepingNextActionNoAction;
+
+  /// Localized text for housekeepingNextActionView.
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get housekeepingNextActionView;
+
+  /// Localized text for housekeepingLocationNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Location not set'**
+  String get housekeepingLocationNotSet;
+
+  /// Localized text for housekeepingNotRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get housekeepingNotRecorded;
+
+  /// Localized text for housekeepingUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get housekeepingUnassigned;
 
   /// Localized text for physiotherapyTitle.
   ///
@@ -17204,10 +18056,2175 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generated from confirmed shared clinical workflow data.'**
   String get physiotherapyReportFooterNote;
+
+  /// Title for the mortuary workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary'**
+  String get mortuaryTitle;
+
+  /// Title shown when the mortuary workspace cannot load.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary workspace unavailable'**
+  String get mortuaryLoadErrorTitle;
+
+  /// Body shown when the mortuary workspace cannot load.
+  ///
+  /// In en, this message translates to:
+  /// **'The mortuary workspace could not be loaded. Try again or contact an administrator if the issue continues.'**
+  String get mortuaryLoadErrorBody;
+
+  /// Title shown while loading the mortuary workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading mortuary workspace'**
+  String get mortuaryLoadingTitle;
+
+  /// Body shown while loading the mortuary workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrieving cases, storage, custody, release, and billing information.'**
+  String get mortuaryLoadingBody;
+
+  /// Operational status label for the mortuary workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational'**
+  String get mortuaryOperationalStatusLabel;
+
+  /// Attention status label for the mortuary workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get mortuaryAttentionStatusLabel;
+
+  /// Action label for printing mortuary documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Print documents'**
+  String get mortuaryPrintDocumentsAction;
+
+  /// Action label for receiving a mortuary case.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive case'**
+  String get mortuaryReceiveCaseAction;
+
+  /// Action label for assigning mortuary storage.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign storage'**
+  String get mortuaryAssignStorageAction;
+
+  /// Action label for recording a custody event.
+  ///
+  /// In en, this message translates to:
+  /// **'Record custody'**
+  String get mortuaryRecordCustodyAction;
+
+  /// Action label for scheduling a viewing.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule viewing'**
+  String get mortuaryScheduleViewingAction;
+
+  /// Action label for post-mortem workflow steps.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-mortem step'**
+  String get mortuaryPostMortemAction;
+
+  /// Action label for requesting mortuary billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Request billing'**
+  String get mortuaryRequestBillingAction;
+
+  /// Action label for approving release.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve release'**
+  String get mortuaryApproveReleaseAction;
+
+  /// Action label for confirming release.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm release'**
+  String get mortuaryConfirmReleaseAction;
+
+  /// Tooltip for mortuary actions that are not supported by the current backend.
+  ///
+  /// In en, this message translates to:
+  /// **'This action is waiting for a backend action endpoint.'**
+  String get mortuaryActionsUnavailableTooltip;
+
+  /// Title for the mortuary worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary worklist'**
+  String get mortuaryWorklistTitle;
+
+  /// Empty state title for the mortuary worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'No mortuary records found'**
+  String get mortuaryWorklistEmptyTitle;
+
+  /// Empty state body for the mortuary worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the filters or search terms to view matching mortuary records.'**
+  String get mortuaryWorklistEmptyBody;
+
+  /// Column label for mortuary case reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Case'**
+  String get mortuaryReferenceColumnLabel;
+
+  /// Column label for deceased person context.
+  ///
+  /// In en, this message translates to:
+  /// **'Deceased'**
+  String get mortuaryDeceasedColumnLabel;
+
+  /// Column label for source context.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get mortuarySourceColumnLabel;
+
+  /// Column label for storage context.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get mortuaryStorageColumnLabel;
+
+  /// Column label for mortuary status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get mortuaryStatusColumnLabel;
+
+  /// Column label for mortuary dates.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get mortuaryDateColumnLabel;
+
+  /// Column label for the next mortuary action.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get mortuaryNextActionColumnLabel;
+
+  /// Label for previous page action in mortuary tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get mortuaryPreviousPageLabel;
+
+  /// Label for next page action in mortuary tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get mortuaryNextPageLabel;
+
+  /// Pagination label for the mortuary worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {from}-{to} of {total}'**
+  String mortuaryPageLabel(int from, int to, int total);
+
+  /// Semantic label for mortuary search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search mortuary records'**
+  String get mortuarySearchLabel;
+
+  /// Hint text for mortuary search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search case, name, source, storage, or status'**
+  String get mortuarySearchHint;
+
+  /// Search field label for mortuary filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get mortuarySearchFieldLabel;
+
+  /// Label for mortuary filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get mortuaryFiltersLabel;
+
+  /// Action label for applying mortuary filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get mortuaryApplyFiltersAction;
+
+  /// Action label for resetting mortuary filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get mortuaryResetFiltersAction;
+
+  /// All option label for mortuary filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get mortuaryAllFieldsLabel;
+
+  /// Date filter label for mortuary search.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get mortuaryDateFilterLabel;
+
+  /// Start date label for mortuary filters.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get mortuaryDateFromLabel;
+
+  /// End date label for mortuary filters.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get mortuaryDateToLabel;
+
+  /// Date picker button label for mortuary filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose date'**
+  String get mortuaryDatePickerButtonLabel;
+
+  /// Validation message for invalid mortuary filter dates.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid date.'**
+  String get mortuaryInvalidDateMessage;
+
+  /// Filter label for mortuary panels.
+  ///
+  /// In en, this message translates to:
+  /// **'Panel'**
+  String get mortuaryPanelFilterLabel;
+
+  /// Filter label for mortuary resources.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource'**
+  String get mortuaryResourceFilterLabel;
+
+  /// Filter label for mortuary queues.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get mortuaryQueueFilterLabel;
+
+  /// Filter label for mortuary status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get mortuaryStatusFilterLabel;
+
+  /// Filter label for mortuary identification status.
+  ///
+  /// In en, this message translates to:
+  /// **'Identification'**
+  String get mortuaryIdentificationFilterLabel;
+
+  /// Filter label for mortuary facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get mortuaryFacilityFilterLabel;
+
+  /// Filter label for mortuary storage units.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage unit'**
+  String get mortuaryStorageUnitFilterLabel;
+
+  /// Filter label for mortuary storage slots.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage slot'**
+  String get mortuaryStorageSlotFilterLabel;
+
+  /// Filter label for mortuary date presets.
+  ///
+  /// In en, this message translates to:
+  /// **'Date preset'**
+  String get mortuaryDatePresetFilterLabel;
+
+  /// Mortuary date preset label for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get mortuaryDatePresetTodayLabel;
+
+  /// Mortuary date preset label for the next 7 days.
+  ///
+  /// In en, this message translates to:
+  /// **'Next 7 days'**
+  String get mortuaryDatePresetNext7DaysLabel;
+
+  /// Mortuary date preset label for overdue items.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get mortuaryDatePresetOverdueLabel;
+
+  /// Mortuary date preset label for this month.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get mortuaryDatePresetThisMonthLabel;
+
+  /// Summary label for total mortuary cases.
+  ///
+  /// In en, this message translates to:
+  /// **'Total cases'**
+  String get mortuaryTotalCasesSummaryLabel;
+
+  /// Summary label for cases pending identification.
+  ///
+  /// In en, this message translates to:
+  /// **'Identification pending'**
+  String get mortuaryIdentificationPendingSummaryLabel;
+
+  /// Summary label for cases in storage.
+  ///
+  /// In en, this message translates to:
+  /// **'In storage'**
+  String get mortuaryInStorageSummaryLabel;
+
+  /// Summary label for release-ready mortuary cases.
+  ///
+  /// In en, this message translates to:
+  /// **'Release ready'**
+  String get mortuaryReleaseReadySummaryLabel;
+
+  /// Summary label for unsettled mortuary billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsettled billing'**
+  String get mortuaryUnsettledBillingSummaryLabel;
+
+  /// Mortuary overview panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get mortuaryPanelOverviewLabel;
+
+  /// Mortuary intake panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Intake'**
+  String get mortuaryPanelIntakeLabel;
+
+  /// Mortuary storage panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get mortuaryPanelStorageLabel;
+
+  /// Mortuary custody panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Custody'**
+  String get mortuaryPanelCustodyLabel;
+
+  /// Mortuary release panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Release'**
+  String get mortuaryPanelReleaseLabel;
+
+  /// Mortuary reports panel label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get mortuaryPanelReportingLabel;
+
+  /// Mortuary cases resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cases'**
+  String get mortuaryResourceCasesLabel;
+
+  /// Mortuary storage units resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage units'**
+  String get mortuaryResourceStorageUnitsLabel;
+
+  /// Mortuary storage slots resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage slots'**
+  String get mortuaryResourceStorageSlotsLabel;
+
+  /// Mortuary storage assignments resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage assignments'**
+  String get mortuaryResourceStorageAssignmentsLabel;
+
+  /// Mortuary custody events resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Custody events'**
+  String get mortuaryResourceCustodyEventsLabel;
+
+  /// Mortuary viewings resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewings'**
+  String get mortuaryResourceViewingsLabel;
+
+  /// Mortuary post-mortem requests resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-mortem requests'**
+  String get mortuaryResourcePostMortemRequestsLabel;
+
+  /// Mortuary release authorisations resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Release authorisations'**
+  String get mortuaryResourceReleaseAuthorisationsLabel;
+
+  /// Mortuary billable events resource label.
+  ///
+  /// In en, this message translates to:
+  /// **'Billable events'**
+  String get mortuaryResourceBillableEventsLabel;
+
+  /// Mortuary identification pending queue label.
+  ///
+  /// In en, this message translates to:
+  /// **'Identification pending'**
+  String get mortuaryQueueIdentificationPendingLabel;
+
+  /// Mortuary storage exceptions queue label.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage exceptions'**
+  String get mortuaryQueueStorageExceptionsLabel;
+
+  /// Mortuary release ready queue label.
+  ///
+  /// In en, this message translates to:
+  /// **'Release ready'**
+  String get mortuaryQueueReleaseReadyLabel;
+
+  /// Mortuary unsettled billing queue label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsettled billing'**
+  String get mortuaryQueueUnsettledBillingLabel;
+
+  /// Mortuary post-mortem pending queue label.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-mortem pending'**
+  String get mortuaryQueuePostMortemPendingLabel;
+
+  /// Title for the mortuary case detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Case detail'**
+  String get mortuaryDetailTitle;
+
+  /// Empty state title when no mortuary case is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a case'**
+  String get mortuaryNoSelectionTitle;
+
+  /// Empty state body when no mortuary case is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a record from the worklist to review identity, storage, custody, release, billing, and documents.'**
+  String get mortuaryNoSelectionBody;
+
+  /// Fallback label when deceased name is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Name not recorded'**
+  String get mortuaryUnknownDeceasedLabel;
+
+  /// Fallback label when mortuary field data is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get mortuaryUnknownValueLabel;
+
+  /// Label for mortuary case number.
+  ///
+  /// In en, this message translates to:
+  /// **'Case number'**
+  String get mortuaryCaseNumberLabel;
+
+  /// Semantic label for deceased person context.
+  ///
+  /// In en, this message translates to:
+  /// **'Deceased person context'**
+  String get mortuaryDeceasedContextLabel;
+
+  /// Field label for identification status.
+  ///
+  /// In en, this message translates to:
+  /// **'Identification'**
+  String get mortuaryIdentificationFieldLabel;
+
+  /// Field label for billing status.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get mortuaryBillingFieldLabel;
+
+  /// Field label for storage slot.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage slot'**
+  String get mortuaryStorageSlotFieldLabel;
+
+  /// Field label for facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get mortuaryFacilityFieldLabel;
+
+  /// Title for unsupported mortuary action notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend actions pending'**
+  String get mortuaryActionGapTitle;
+
+  /// Body for unsupported mortuary action notice.
+  ///
+  /// In en, this message translates to:
+  /// **'The current backend exposes mortuary workspace and lookup data only. Action buttons are shown for permissions and audit planning, but remain disabled until backend action endpoints are mounted.'**
+  String get mortuaryActionGapBody;
+
+  /// Section title for mortuary identity and source details.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity and source'**
+  String get mortuaryIdentitySectionTitle;
+
+  /// Section title for mortuary storage details.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get mortuaryStorageSectionTitle;
+
+  /// Section title for mortuary custody log.
+  ///
+  /// In en, this message translates to:
+  /// **'Custody log'**
+  String get mortuaryCustodySectionTitle;
+
+  /// Section title for mortuary viewing details.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing'**
+  String get mortuaryViewingSectionTitle;
+
+  /// Section title for mortuary post-mortem details.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-mortem'**
+  String get mortuaryPostMortemSectionTitle;
+
+  /// Section title for mortuary release details.
+  ///
+  /// In en, this message translates to:
+  /// **'Release'**
+  String get mortuaryReleaseSectionTitle;
+
+  /// Section title for mortuary billing details.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get mortuaryBillingSectionTitle;
+
+  /// Section title for mortuary documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get mortuaryDocumentsSectionTitle;
+
+  /// Field label for mortuary case.
+  ///
+  /// In en, this message translates to:
+  /// **'Case'**
+  String get mortuaryCaseFieldLabel;
+
+  /// Field label for deceased person.
+  ///
+  /// In en, this message translates to:
+  /// **'Deceased'**
+  String get mortuaryDeceasedFieldLabel;
+
+  /// Field label for linked patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get mortuaryPatientFieldLabel;
+
+  /// Field label for status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get mortuaryStatusFieldLabel;
+
+  /// Field label for received date.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get mortuaryReceivedAtFieldLabel;
+
+  /// Field label for source workflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Source workflow'**
+  String get mortuarySourceWorkflowFieldLabel;
+
+  /// Field label for source department.
+  ///
+  /// In en, this message translates to:
+  /// **'Source department'**
+  String get mortuarySourceDepartmentFieldLabel;
+
+  /// Field label for source reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Source reference'**
+  String get mortuarySourceReferenceFieldLabel;
+
+  /// Field label for received-from context.
+  ///
+  /// In en, this message translates to:
+  /// **'Received from'**
+  String get mortuaryReceivedFromFieldLabel;
+
+  /// Field label for storage unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage unit'**
+  String get mortuaryStorageUnitFieldLabel;
+
+  /// Field label for storage status.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage status'**
+  String get mortuaryStorageStatusFieldLabel;
+
+  /// Field label for storage assignment date.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get mortuaryAssignedAtFieldLabel;
+
+  /// Field label for custody actor.
+  ///
+  /// In en, this message translates to:
+  /// **'Actor'**
+  String get mortuaryActorFieldLabel;
+
+  /// Field label for custody location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get mortuaryLocationFieldLabel;
+
+  /// Field label for notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get mortuaryNotesFieldLabel;
+
+  /// Field label for release.
+  ///
+  /// In en, this message translates to:
+  /// **'Release'**
+  String get mortuaryReleaseFieldLabel;
+
+  /// Field label for released date.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get mortuaryReleasedAtFieldLabel;
+
+  /// Empty label for custody events.
+  ///
+  /// In en, this message translates to:
+  /// **'No custody events recorded'**
+  String get mortuaryNoCustodyEventsLabel;
+
+  /// Empty body for custody events.
+  ///
+  /// In en, this message translates to:
+  /// **'Custody movements and handovers will appear here when recorded by the backend.'**
+  String get mortuaryNoCustodyEventsBody;
+
+  /// Empty label for mortuary viewings.
+  ///
+  /// In en, this message translates to:
+  /// **'No viewings scheduled'**
+  String get mortuaryNoViewingsLabel;
+
+  /// Empty body for mortuary viewings.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing appointments will appear here when scheduled.'**
+  String get mortuaryNoViewingsBody;
+
+  /// Empty label for post-mortem requests.
+  ///
+  /// In en, this message translates to:
+  /// **'No post-mortem request recorded'**
+  String get mortuaryNoPostMortemLabel;
+
+  /// Empty body for post-mortem requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Post-mortem requests and reports will appear here when available.'**
+  String get mortuaryNoPostMortemBody;
+
+  /// Empty label for release authorisations.
+  ///
+  /// In en, this message translates to:
+  /// **'No release recorded'**
+  String get mortuaryNoReleaseLabel;
+
+  /// Empty body for release authorisations.
+  ///
+  /// In en, this message translates to:
+  /// **'Release authorisations and handover details will appear here when available.'**
+  String get mortuaryNoReleaseBody;
+
+  /// Empty label for mortuary billing events.
+  ///
+  /// In en, this message translates to:
+  /// **'No billing events recorded'**
+  String get mortuaryNoBillingLabel;
+
+  /// Empty body for mortuary billing events.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage, post-mortem, and release billing events will appear here when available.'**
+  String get mortuaryNoBillingBody;
+
+  /// Body text for the mortuary documents section.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated intake, custody, release, and billing documents are available from the print action when case data is selected.'**
+  String get mortuaryNoDocumentsBody;
+
+  /// Document label for mortuary intake form.
+  ///
+  /// In en, this message translates to:
+  /// **'Intake form'**
+  String get mortuaryIntakeDocumentLabel;
+
+  /// Document label for mortuary custody log.
+  ///
+  /// In en, this message translates to:
+  /// **'Custody log'**
+  String get mortuaryCustodyLogDocumentLabel;
+
+  /// Document label for mortuary release authorisation.
+  ///
+  /// In en, this message translates to:
+  /// **'Release authorisation'**
+  String get mortuaryReleaseDocumentLabel;
+
+  /// Next action label for identity verification.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify identity'**
+  String get mortuaryNextActionVerifyIdentity;
+
+  /// Next action label for storage assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign storage'**
+  String get mortuaryNextActionAssignStorage;
+
+  /// Next action label for post-mortem review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review post-mortem'**
+  String get mortuaryNextActionPostMortem;
+
+  /// Next action label for billing clearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear billing'**
+  String get mortuaryNextActionClearBilling;
+
+  /// Next action label for release approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve release'**
+  String get mortuaryNextActionApproveRelease;
+
+  /// Next action label for released cases.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get mortuaryNextActionReleased;
+
+  /// Default next action label for mortuary cases.
+  ///
+  /// In en, this message translates to:
+  /// **'Review case'**
+  String get mortuaryNextActionReview;
+
+  /// Title for generated mortuary case reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary case record'**
+  String get mortuaryReportTitle;
+
+  /// Footer text for generated mortuary documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from confirmed mortuary workspace data.'**
+  String get mortuaryReportFooter;
+
+  /// Snackbar message after generating a mortuary document.
+  ///
+  /// In en, this message translates to:
+  /// **'Mortuary document generated.'**
+  String get mortuaryReportGeneratedMessage;
+
+  /// Title for the rooms and beds workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms and beds'**
+  String get roomsBedsTitle;
+
+  /// Title shown while loading the rooms and beds workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading rooms and beds'**
+  String get roomsBedsLoadingTitle;
+
+  /// Body shown while loading the rooms and beds workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrieving wards, rooms, beds, assignments, and facility context.'**
+  String get roomsBedsLoadingBody;
+
+  /// Workspace status label while a rooms and beds mutation is saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get roomsBedsSavingStatus;
+
+  /// Workspace status label when the rooms and beds board is loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Live board'**
+  String get roomsBedsLiveStatus;
+
+  /// Summary card label for total beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Total beds'**
+  String get roomsBedsTotalSummaryLabel;
+
+  /// Title for the rooms and beds backend gap notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend status gaps'**
+  String get roomsBedsBackendGapsTitle;
+
+  /// Body for the rooms and beds backend gap notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning, maintenance, block, isolation, and detailed readiness states depend on backend support. Current actions use mounted ward, room, bed, bed assignment, and IPD flow endpoints only.'**
+  String get roomsBedsBackendGapsBody;
+
+  /// Title for the rooms and beds board panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed board'**
+  String get roomsBedsBoardTitle;
+
+  /// Description for the rooms and beds board panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Track availability, occupancy, reservations, and bed readiness by facility location.'**
+  String get roomsBedsBoardDescription;
+
+  /// Semantic label for rooms and beds search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search rooms and beds'**
+  String get roomsBedsSearchLabel;
+
+  /// Hint text for rooms and beds search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search bed, ward, room, patient admission, status, or facility'**
+  String get roomsBedsSearchHint;
+
+  /// Label for rooms and beds filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get roomsBedsFiltersLabel;
+
+  /// All-fields label for rooms and beds filtering.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get roomsBedsAllFilterLabel;
+
+  /// Filter label for facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get roomsBedsFacilityFilterLabel;
+
+  /// All option label for facilities.
+  ///
+  /// In en, this message translates to:
+  /// **'All facilities'**
+  String get roomsBedsAllFacilitiesLabel;
+
+  /// Filter label for ward.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get roomsBedsWardFilterLabel;
+
+  /// All option label for wards.
+  ///
+  /// In en, this message translates to:
+  /// **'All wards'**
+  String get roomsBedsAllWardsLabel;
+
+  /// Filter label for room.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get roomsBedsRoomFilterLabel;
+
+  /// All option label for rooms.
+  ///
+  /// In en, this message translates to:
+  /// **'All rooms'**
+  String get roomsBedsAllRoomsLabel;
+
+  /// Filter label for bed status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get roomsBedsStatusFilterLabel;
+
+  /// All option label for bed statuses.
+  ///
+  /// In en, this message translates to:
+  /// **'All statuses'**
+  String get roomsBedsAllStatusesLabel;
+
+  /// Label for the previous page action in the rooms and beds table.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get roomsBedsPreviousPageLabel;
+
+  /// Label for the next page action in the rooms and beds table.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get roomsBedsNextPageLabel;
+
+  /// Pagination label for rooms and beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {from}-{to} of {total}'**
+  String roomsBedsPageLabel(int from, int to, int total);
+
+  /// Empty state title for rooms and beds.
+  ///
+  /// In en, this message translates to:
+  /// **'No beds found'**
+  String get roomsBedsEmptyTitle;
+
+  /// Empty state body for rooms and beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the filters or add beds from facility setup to start using the operational board.'**
+  String get roomsBedsEmptyBody;
+
+  /// Column label for bed identity.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed'**
+  String get roomsBedsBedColumnLabel;
+
+  /// Column label for bed location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get roomsBedsLocationColumnLabel;
+
+  /// Column label for bed status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get roomsBedsStatusColumnLabel;
+
+  /// Column label for bed assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment'**
+  String get roomsBedsAssignmentColumnLabel;
+
+  /// Column label for the next rooms and beds action.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get roomsBedsNextActionColumnLabel;
+
+  /// Title for the bed detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed detail'**
+  String get roomsBedsDetailTitle;
+
+  /// Field label for the active admission assigned to a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Current admission'**
+  String get roomsBedsCurrentAdmissionLabel;
+
+  /// Field label for bed readiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness'**
+  String get roomsBedsReadinessLabel;
+
+  /// Action label for reserving a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserve'**
+  String get roomsBedsReserveAction;
+
+  /// Action label for marking a bed available.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark available'**
+  String get roomsBedsMarkAvailableAction;
+
+  /// Action label for marking a bed out of service.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark out of service'**
+  String get roomsBedsMarkOutOfServiceAction;
+
+  /// Action label for assigning a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign bed'**
+  String get roomsBedsAssignAction;
+
+  /// Action label for releasing a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Release bed'**
+  String get roomsBedsReleaseAction;
+
+  /// Action label for requesting an inpatient transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Request transfer'**
+  String get roomsBedsRequestTransferAction;
+
+  /// Section title for bed assignment history.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment history'**
+  String get roomsBedsAssignmentHistoryTitle;
+
+  /// Empty label for bed assignment history.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignment history recorded'**
+  String get roomsBedsNoAssignmentsLabel;
+
+  /// Status label for a current bed assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get roomsBedsCurrentAssignmentLabel;
+
+  /// Status label for a released bed assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Released'**
+  String get roomsBedsReleasedAssignmentLabel;
+
+  /// Field label for admission ID in bed action dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission ID'**
+  String get roomsBedsAdmissionFieldLabel;
+
+  /// Hint text for admission ID in bed action dialogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the admission ID'**
+  String get roomsBedsAdmissionFieldHint;
+
+  /// Field label for transfer destination ward.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination ward'**
+  String get roomsBedsDestinationWardLabel;
+
+  /// Dialog title for assigning a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign bed'**
+  String get roomsBedsAssignDialogTitle;
+
+  /// Dialog title for releasing a bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Release bed'**
+  String get roomsBedsReleaseDialogTitle;
+
+  /// Body text for the release bed dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Releasing the bed sends the admission through the backend bed release flow.'**
+  String get roomsBedsReleaseDialogBody;
+
+  /// Dialog title for requesting a bed transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Request transfer'**
+  String get roomsBedsTransferDialogTitle;
+
+  /// Body text for the transfer request dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the destination ward. Bed selection is completed by the IPD transfer workflow when the backend approves and starts the transfer.'**
+  String get roomsBedsTransferDialogBody;
+
+  /// Display label for a bed assignment linked to an admission.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission {admissionId}'**
+  String roomsBedsAdmissionAssignment(String admissionId);
+
+  /// Fallback label when a bed status implies assignment but no active assignment is returned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment not linked'**
+  String get roomsBedsAssignmentNotLinked;
+
+  /// Next action label for available beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign next admission'**
+  String get roomsBedsNextActionAssign;
+
+  /// Next action label for occupied beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Release or transfer'**
+  String get roomsBedsNextActionReleaseOrTransfer;
+
+  /// Next action label for reserved beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign or release hold'**
+  String get roomsBedsNextActionAssignOrReleaseHold;
+
+  /// Next action label for out-of-service beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve block'**
+  String get roomsBedsNextActionResolveBlock;
+
+  /// Readiness label for available beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get roomsBedsReadyLabel;
+
+  /// Readiness label for unavailable beds.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get roomsBedsUnavailableLabel;
+
+  /// Readiness fallback when the backend does not expose detailed readiness status.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness pending backend status'**
+  String get roomsBedsReadinessBackendGapLabel;
+
+  /// Snackbar message after rooms and beds changes are saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms and beds updated.'**
+  String get roomsBedsSavedMessage;
+
+  /// Validation message for required rooms and beds fields.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} is required.'**
+  String roomsBedsRequiredMessage(String field);
+
+  /// Human resources workspace text for hrActivityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent HR updates, approvals, and roster changes.'**
+  String get hrActivityDescription;
+
+  /// Human resources workspace text for hrActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'HR activity'**
+  String get hrActivityTitle;
+
+  /// Human resources workspace text for hrAddStaffAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add staff'**
+  String get hrAddStaffAction;
+
+  /// Human resources workspace text for hrAddStaffDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add staff profile'**
+  String get hrAddStaffDialogTitle;
+
+  /// Human resources workspace text for hrAllowPartialPublishLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow partial publish'**
+  String get hrAllowPartialPublishLabel;
+
+  /// Human resources workspace text for hrApproveLeaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve leave'**
+  String get hrApproveLeaveAction;
+
+  /// Human resources workspace text for hrApproveLeaveDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve leave'**
+  String get hrApproveLeaveDialogTitle;
+
+  /// Human resources workspace text for hrApproveSwapAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve swap'**
+  String get hrApproveSwapAction;
+
+  /// Human resources workspace text for hrApproveSwapDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve shift swap'**
+  String get hrApproveSwapDialogTitle;
+
+  /// Human resources workspace text for hrAssignDepartmentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign department'**
+  String get hrAssignDepartmentAction;
+
+  /// Human resources workspace text for hrAssignDepartmentDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign department'**
+  String get hrAssignDepartmentDialogTitle;
+
+  /// Human resources workspace text for hrAssignmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment'**
+  String get hrAssignmentLabel;
+
+  /// Human resources workspace text for hrAssignmentsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignments'**
+  String get hrAssignmentsSectionTitle;
+
+  /// Human resources workspace text for hrAssignPositionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign position'**
+  String get hrAssignPositionAction;
+
+  /// Human resources workspace text for hrAssignPositionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign position'**
+  String get hrAssignPositionDialogTitle;
+
+  /// Human resources workspace text for hrAssignShiftAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign shift'**
+  String get hrAssignShiftAction;
+
+  /// Human resources workspace text for hrAssignShiftDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign shift'**
+  String get hrAssignShiftDialogTitle;
+
+  /// Human resources workspace text for hrAvailabilityAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get hrAvailabilityAvailable;
+
+  /// Human resources workspace text for hrAvailabilityDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record availability'**
+  String get hrAvailabilityDialogTitle;
+
+  /// Human resources workspace text for hrAvailabilityPreferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability'**
+  String get hrAvailabilityPreferenceLabel;
+
+  /// Human resources workspace text for hrAvailabilityPreferred.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred'**
+  String get hrAvailabilityPreferred;
+
+  /// Human resources workspace text for hrAvailabilitySectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability'**
+  String get hrAvailabilitySectionTitle;
+
+  /// Human resources workspace text for hrAvailabilityUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get hrAvailabilityUnavailable;
+
+  /// Human resources workspace text for hrClearFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get hrClearFiltersAction;
+
+  /// Human resources workspace text for hrConsultationCurrencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation currency'**
+  String get hrConsultationCurrencyLabel;
+
+  /// Human resources workspace text for hrConsultationFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation fee'**
+  String get hrConsultationFeeLabel;
+
+  /// Human resources workspace text for hrCreateStaffAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create staff'**
+  String get hrCreateStaffAction;
+
+  /// Human resources workspace text for hrDayOfWeekLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day of week'**
+  String get hrDayOfWeekLabel;
+
+  /// Human resources workspace text for hrDepartmentColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get hrDepartmentColumnLabel;
+
+  /// Human resources workspace text for hrDepartmentFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get hrDepartmentFilterLabel;
+
+  /// Human resources workspace text for hrDepartmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get hrDepartmentLabel;
+
+  /// Human resources workspace text for hrEditStaffAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit staff'**
+  String get hrEditStaffAction;
+
+  /// Human resources workspace text for hrEditStaffDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit staff profile'**
+  String get hrEditStaffDialogTitle;
+
+  /// Human resources workspace text for hrEffectiveFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective from'**
+  String get hrEffectiveFromLabel;
+
+  /// Human resources workspace text for hrEffectiveToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective to'**
+  String get hrEffectiveToLabel;
+
+  /// Human resources workspace text for hrEndDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get hrEndDateLabel;
+
+  /// Human resources workspace text for hrEndTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get hrEndTimeLabel;
+
+  /// Human resources workspace text for hrFieldRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} is required.'**
+  String hrFieldRequiredLabel(String label);
+
+  /// Human resources workspace text for hrFiltersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get hrFiltersLabel;
+
+  /// Human resources workspace text for hrFridayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get hrFridayLabel;
+
+  /// Human resources workspace text for hrGenerateRosterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate roster'**
+  String get hrGenerateRosterAction;
+
+  /// Human resources workspace text for hrHireDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hire date'**
+  String get hrHireDateLabel;
+
+  /// Human resources workspace text for hrLeaveDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request leave'**
+  String get hrLeaveDialogTitle;
+
+  /// Human resources workspace text for hrLeaveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get hrLeaveLabel;
+
+  /// Human resources workspace text for hrLeaveReportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave summary'**
+  String get hrLeaveReportLabel;
+
+  /// Human resources workspace text for hrLeaveRequestsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave requests'**
+  String get hrLeaveRequestsSummaryLabel;
+
+  /// Human resources workspace text for hrLeaveRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave request'**
+  String get hrLeaveRequestTitle;
+
+  /// Human resources workspace text for hrLeaveSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get hrLeaveSectionTitle;
+
+  /// Human resources workspace text for hrLiveStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get hrLiveStatus;
+
+  /// Human resources workspace text for hrLoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading staff records and rosters.'**
+  String get hrLoadingBody;
+
+  /// Human resources workspace text for hrLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading HR workspace'**
+  String get hrLoadingTitle;
+
+  /// Human resources workspace text for hrMondayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get hrMondayLabel;
+
+  /// Human resources workspace text for hrNextActionAssignDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign department'**
+  String get hrNextActionAssignDepartment;
+
+  /// Human resources workspace text for hrNextActionAssignPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign position'**
+  String get hrNextActionAssignPosition;
+
+  /// Human resources workspace text for hrNextActionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get hrNextActionColumnLabel;
+
+  /// Human resources workspace text for hrNextActionReviewProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Review profile'**
+  String get hrNextActionReviewProfile;
+
+  /// Human resources workspace text for hrNextPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next staff page'**
+  String get hrNextPageLabel;
+
+  /// Human resources workspace text for hrNextQueuePageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next queue page'**
+  String get hrNextQueuePageLabel;
+
+  /// Human resources workspace text for hrNoActivityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'HR activity will appear here.'**
+  String get hrNoActivityBody;
+
+  /// Human resources workspace text for hrNoActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get hrNoActivityTitle;
+
+  /// Human resources workspace text for hrNoAssignmentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignments recorded.'**
+  String get hrNoAssignmentsLabel;
+
+  /// Human resources workspace text for hrNoAvailabilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No availability recorded.'**
+  String get hrNoAvailabilityLabel;
+
+  /// Human resources workspace text for hrNoLeaveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No leave recorded.'**
+  String get hrNoLeaveLabel;
+
+  /// Human resources workspace text for hrNoQueueItemsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No HR queue items match the current filter.'**
+  String get hrNoQueueItemsBody;
+
+  /// Human resources workspace text for hrNoQueueItemsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No queue items'**
+  String get hrNoQueueItemsTitle;
+
+  /// Human resources workspace text for hrNoShiftsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts assigned.'**
+  String get hrNoShiftsLabel;
+
+  /// Human resources workspace text for hrNoStaffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff profiles match the current filters.'**
+  String get hrNoStaffBody;
+
+  /// Human resources workspace text for hrNoStaffSelectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a staff member to review assignments, availability, leave, shifts, and payroll links.'**
+  String get hrNoStaffSelectedBody;
+
+  /// Human resources workspace text for hrNoStaffSelectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff selected'**
+  String get hrNoStaffSelectedTitle;
+
+  /// Human resources workspace text for hrNoStaffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff found'**
+  String get hrNoStaffTitle;
+
+  /// Human resources workspace text for hrNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get hrNotesLabel;
+
+  /// Human resources workspace text for hrNotifyStaffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify staff'**
+  String get hrNotifyStaffLabel;
+
+  /// Human resources workspace text for hrOverrideShiftAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Override shift'**
+  String get hrOverrideShiftAction;
+
+  /// Human resources workspace text for hrOverrideShiftDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Override shift'**
+  String get hrOverrideShiftDialogTitle;
+
+  /// Human resources workspace text for hrPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String hrPageLabel(int from, int to, int total);
+
+  /// Human resources workspace text for hrPayrollDraftsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll drafts'**
+  String get hrPayrollDraftsSummaryLabel;
+
+  /// Human resources workspace text for hrPayrollDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll draft'**
+  String get hrPayrollDraftTitle;
+
+  /// Human resources workspace text for hrPayrollReportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll summary'**
+  String get hrPayrollReportLabel;
+
+  /// Human resources workspace text for hrPayrollRunDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run payroll'**
+  String get hrPayrollRunDialogTitle;
+
+  /// Human resources workspace text for hrPeriodColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get hrPeriodColumnLabel;
+
+  /// Human resources workspace text for hrPeriodEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Period end'**
+  String get hrPeriodEndLabel;
+
+  /// Human resources workspace text for hrPeriodStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Period start'**
+  String get hrPeriodStartLabel;
+
+  /// Human resources workspace text for hrPickDateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date'**
+  String get hrPickDateAction;
+
+  /// Human resources workspace text for hrPositionFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Position'**
+  String get hrPositionFilterLabel;
+
+  /// Human resources workspace text for hrPositionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Position'**
+  String get hrPositionLabel;
+
+  /// Human resources workspace text for hrPractitionerTypeFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Practitioner type'**
+  String get hrPractitionerTypeFilterLabel;
+
+  /// Human resources workspace text for hrPractitionerTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Practitioner type'**
+  String get hrPractitionerTypeLabel;
+
+  /// Human resources workspace text for hrPreviewStaffProfileReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview staff profile'**
+  String get hrPreviewStaffProfileReportAction;
+
+  /// Human resources workspace text for hrPreviousPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous staff page'**
+  String get hrPreviousPageLabel;
+
+  /// Human resources workspace text for hrPreviousQueuePageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous queue page'**
+  String get hrPreviousQueuePageLabel;
+
+  /// Human resources workspace text for hrProcessPayrollAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Process payroll'**
+  String get hrProcessPayrollAction;
+
+  /// Human resources workspace text for hrProcessPayrollDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Process payroll'**
+  String get hrProcessPayrollDialogTitle;
+
+  /// Human resources workspace text for hrPublishNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish note'**
+  String get hrPublishNoteLabel;
+
+  /// Human resources workspace text for hrPublishRosterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish roster'**
+  String get hrPublishRosterAction;
+
+  /// Human resources workspace text for hrPublishRosterDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish roster'**
+  String get hrPublishRosterDialogTitle;
+
+  /// Human resources workspace text for hrQueueColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get hrQueueColumnLabel;
+
+  /// Human resources workspace text for hrQueueItemColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get hrQueueItemColumnLabel;
+
+  /// Human resources workspace text for hrQueueLeaveRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave requests'**
+  String get hrQueueLeaveRequests;
+
+  /// Human resources workspace text for hrQueueOverdueShifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue shifts'**
+  String get hrQueueOverdueShifts;
+
+  /// Human resources workspace text for hrQueuePayrollDrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll drafts'**
+  String get hrQueuePayrollDrafts;
+
+  /// Human resources workspace text for hrQueueRosterDrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster drafts'**
+  String get hrQueueRosterDrafts;
+
+  /// Human resources workspace text for hrQueueSwapRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap requests'**
+  String get hrQueueSwapRequests;
+
+  /// Human resources workspace text for hrQueueUnassignedShifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned shifts'**
+  String get hrQueueUnassignedShifts;
+
+  /// Human resources workspace text for hrReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get hrReasonLabel;
+
+  /// Human resources workspace text for hrRecordAvailabilityAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Record availability'**
+  String get hrRecordAvailabilityAction;
+
+  /// Human resources workspace text for hrRejectLeaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject leave'**
+  String get hrRejectLeaveAction;
+
+  /// Human resources workspace text for hrRejectLeaveDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject leave'**
+  String get hrRejectLeaveDialogTitle;
+
+  /// Human resources workspace text for hrRejectSwapAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject swap'**
+  String get hrRejectSwapAction;
+
+  /// Human resources workspace text for hrRejectSwapDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject shift swap'**
+  String get hrRejectSwapDialogTitle;
+
+  /// Human resources workspace text for hrReplacePayrollItemsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace existing payroll items'**
+  String get hrReplacePayrollItemsLabel;
+
+  /// Human resources workspace text for hrReportsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get hrReportsSectionTitle;
+
+  /// Human resources workspace text for hrRequestLeaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request leave'**
+  String get hrRequestLeaveAction;
+
+  /// Human resources workspace text for hrRolePositionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Role / position'**
+  String get hrRolePositionColumnLabel;
+
+  /// Human resources workspace text for hrRosterDraftsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster drafts'**
+  String get hrRosterDraftsSummaryLabel;
+
+  /// Human resources workspace text for hrRosterDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster draft'**
+  String get hrRosterDraftTitle;
+
+  /// Human resources workspace text for hrRosterReportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Roster report'**
+  String get hrRosterReportLabel;
+
+  /// Human resources workspace text for hrRunPayrollAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Run payroll'**
+  String get hrRunPayrollAction;
+
+  /// Human resources workspace text for hrSaturdayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday'**
+  String get hrSaturdayLabel;
+
+  /// Human resources workspace text for hrSavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'HR changes saved.'**
+  String get hrSavedMessage;
+
+  /// Human resources workspace text for hrSaveStaffAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save staff'**
+  String get hrSaveStaffAction;
+
+  /// Human resources workspace text for hrSavingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get hrSavingStatus;
+
+  /// Human resources workspace text for hrSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search staff, department, role, shift, or status'**
+  String get hrSearchHint;
+
+  /// Human resources workspace text for hrSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search HR records'**
+  String get hrSearchLabel;
+
+  /// Human resources workspace text for hrShiftIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift ID'**
+  String get hrShiftIdLabel;
+
+  /// Human resources workspace text for hrShiftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get hrShiftLabel;
+
+  /// Human resources workspace text for hrShiftQueueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift queue item'**
+  String get hrShiftQueueTitle;
+
+  /// Human resources workspace text for hrShiftsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts'**
+  String get hrShiftsSectionTitle;
+
+  /// Human resources workspace text for hrStaffActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff actions'**
+  String get hrStaffActionsTitle;
+
+  /// Human resources workspace text for hrStaffColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get hrStaffColumnLabel;
+
+  /// Human resources workspace text for hrStaffDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff detail'**
+  String get hrStaffDetailTitle;
+
+  /// Human resources workspace text for hrStaffDirectoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Search staff by name, department, position, role, and status.'**
+  String get hrStaffDirectoryDescription;
+
+  /// Human resources workspace text for hrStaffDirectoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff directory'**
+  String get hrStaffDirectoryTitle;
+
+  /// Human resources workspace text for hrStaffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get hrStaffLabel;
+
+  /// Human resources workspace text for hrStaffListReportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff list'**
+  String get hrStaffListReportLabel;
+
+  /// Human resources workspace text for hrStaffNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff name'**
+  String get hrStaffNameLabel;
+
+  /// Human resources workspace text for hrStaffNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff number'**
+  String get hrStaffNumberLabel;
+
+  /// Human resources workspace text for hrStaffProfileReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff profile'**
+  String get hrStaffProfileReportTitle;
+
+  /// Human resources workspace text for hrStartDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get hrStartDateLabel;
+
+  /// Human resources workspace text for hrStartTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get hrStartTimeLabel;
+
+  /// Human resources workspace text for hrStatusColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get hrStatusColumnLabel;
+
+  /// Human resources workspace text for hrSundayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get hrSundayLabel;
+
+  /// Human resources workspace text for hrSwapRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift swap request'**
+  String get hrSwapRequestTitle;
+
+  /// Human resources workspace text for hrSwapShiftAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap shift'**
+  String get hrSwapShiftAction;
+
+  /// Human resources workspace text for hrSwapShiftDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request shift swap'**
+  String get hrSwapShiftDialogTitle;
+
+  /// Human resources workspace text for hrTargetStaffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target staff'**
+  String get hrTargetStaffLabel;
+
+  /// Human resources workspace text for hrTenantIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant ID'**
+  String get hrTenantIdLabel;
+
+  /// Human resources workspace text for hrThursdayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get hrThursdayLabel;
+
+  /// Human resources workspace text for hrTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'HH:MM'**
+  String get hrTimeHint;
+
+  /// Human resources workspace text for hrTotalStaffSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total staff'**
+  String get hrTotalStaffSummaryLabel;
+
+  /// Human resources workspace text for hrTuesdayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get hrTuesdayLabel;
+
+  /// Human resources workspace text for hrUnassignedShiftsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned shifts'**
+  String get hrUnassignedShiftsSummaryLabel;
+
+  /// Human resources workspace text for hrUnitIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit ID'**
+  String get hrUnitIdLabel;
+
+  /// Human resources workspace text for hrUserIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID'**
+  String get hrUserIdLabel;
+
+  /// Human resources workspace text for hrWednesdayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get hrWednesdayLabel;
+
+  /// Human resources workspace text for hrWorkQueuesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Work queues'**
+  String get hrWorkQueuesTitle;
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -17216,24 +20233,24 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
+    case 'en': return AppLocalizationsEn();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
+    'that was used.'
   );
 }

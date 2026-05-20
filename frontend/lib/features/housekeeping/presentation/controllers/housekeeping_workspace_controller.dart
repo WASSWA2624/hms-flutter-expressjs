@@ -86,15 +86,13 @@ final class HousekeepingWorkspaceController
     }
     _emit(
       current.copyWith(
-        query: current.query
-            .copyWith(
-              resource: resource,
-              queue: _queueForResource(resource, current.query.queue),
-              pageRequest: current.query.pageRequest.first(),
-              clearStatus: true,
-              clearAssignee: resource != HousekeepingResource.tasks,
-            )
-            .copyWith(clearRoom: false),
+        query: current.query.copyWith(
+          resource: resource,
+          queue: _queueForResource(resource, current.query.queue),
+          pageRequest: current.query.pageRequest.first(),
+          clearStatus: true,
+          clearAssignee: resource != HousekeepingResource.tasks,
+        ),
         isRefreshing: true,
         clearSelectedItem: true,
         clearLastFailure: true,
@@ -411,13 +409,11 @@ HousekeepingQueue _queueForResource(
   HousekeepingQueue currentQueue,
 ) {
   return switch (resource) {
-    HousekeepingResource.tasks => currentQueue.isRequestQueue
-        ? HousekeepingQueue.all
-        : currentQueue,
+    HousekeepingResource.tasks =>
+      currentQueue.isRequestQueue ? HousekeepingQueue.all : currentQueue,
     HousekeepingResource.schedules => HousekeepingQueue.all,
-    HousekeepingResource.maintenanceRequests => currentQueue.isTaskQueue
-        ? HousekeepingQueue.all
-        : currentQueue,
+    HousekeepingResource.maintenanceRequests =>
+      currentQueue.isTaskQueue ? HousekeepingQueue.all : currentQueue,
   };
 }
 

@@ -166,7 +166,6 @@ final class HrWorkspaceController
       current.copyWith(
         workItemsQuery: current.workItemsQuery.copyWith(
           queue: queue,
-          status: null,
           clearStatus: true,
           pageRequest: current.workItemsQuery.pageRequest.first(),
         ),
@@ -271,36 +270,33 @@ final class HrWorkspaceController
 
   Future<AppFailure?> createAssignment(Map<String, Object?> payload) {
     return _mutateSelected(
-      (HrStaffDetail selected) => _repository.createStaffAssignment(
-        <String, Object?>{
-          'staff_profile_id': selected.profile.effectiveId,
-          ...payload,
-        },
-      ),
+      (HrStaffDetail selected) =>
+          _repository.createStaffAssignment(<String, Object?>{
+            'staff_profile_id': selected.profile.effectiveId,
+            ...payload,
+          }),
       refreshReferencesAfter: true,
     );
   }
 
   Future<AppFailure?> createAvailability(Map<String, Object?> payload) {
     return _mutateSelected(
-      (HrStaffDetail selected) => _repository.createStaffAvailability(
-        <String, Object?>{
-          'staff_profile_id': selected.profile.effectiveId,
-          ...payload,
-        },
-      ),
+      (HrStaffDetail selected) =>
+          _repository.createStaffAvailability(<String, Object?>{
+            'staff_profile_id': selected.profile.effectiveId,
+            ...payload,
+          }),
     );
   }
 
   Future<AppFailure?> createLeave(Map<String, Object?> payload) {
     return _mutateSelected(
-      (HrStaffDetail selected) => _repository.createStaffLeave(
-        <String, Object?>{
-          'staff_profile_id': selected.profile.effectiveId,
-          'status': 'REQUESTED',
-          ...payload,
-        },
-      ),
+      (HrStaffDetail selected) =>
+          _repository.createStaffLeave(<String, Object?>{
+            'staff_profile_id': selected.profile.effectiveId,
+            'status': 'REQUESTED',
+            ...payload,
+          }),
       refreshOverviewAfter: true,
       refreshWorkItemsAfter: true,
     );
@@ -308,12 +304,11 @@ final class HrWorkspaceController
 
   Future<AppFailure?> createShiftAssignment(Map<String, Object?> payload) {
     return _mutateSelected(
-      (HrStaffDetail selected) => _repository.createShiftAssignment(
-        <String, Object?>{
-          'staff_profile_id': selected.profile.effectiveId,
-          ...payload,
-        },
-      ),
+      (HrStaffDetail selected) =>
+          _repository.createShiftAssignment(<String, Object?>{
+            'staff_profile_id': selected.profile.effectiveId,
+            ...payload,
+          }),
       refreshOverviewAfter: true,
       refreshWorkItemsAfter: true,
     );
@@ -321,13 +316,12 @@ final class HrWorkspaceController
 
   Future<AppFailure?> createShiftSwapRequest(Map<String, Object?> payload) {
     return _mutateSelected(
-      (HrStaffDetail selected) => _repository.createShiftSwapRequest(
-        <String, Object?>{
-          'requester_staff_id': selected.profile.effectiveId,
-          'status': 'SCHEDULED',
-          ...payload,
-        },
-      ),
+      (HrStaffDetail selected) =>
+          _repository.createShiftSwapRequest(<String, Object?>{
+            'requester_staff_id': selected.profile.effectiveId,
+            'status': 'SCHEDULED',
+            ...payload,
+          }),
       refreshOverviewAfter: true,
       refreshWorkItemsAfter: true,
     );
@@ -646,10 +640,7 @@ final class HrWorkspaceController
         final HrWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
-            latest.copyWith(
-              isRefreshingWorkItems: false,
-              lastFailure: failure,
-            ),
+            latest.copyWith(isRefreshingWorkItems: false, lastFailure: failure),
           );
         }
         return failure;
@@ -766,7 +757,8 @@ final class HrWorkspaceController
   }
 
   Future<HrReferenceData> _loadReferenceDataOrEmpty() async {
-    final Result<HrReferenceData> result = await _repository.loadReferenceData();
+    final Result<HrReferenceData> result = await _repository
+        .loadReferenceData();
     return result.when(
       success: (HrReferenceData value) => value,
       failure: (_) => const HrReferenceData(),

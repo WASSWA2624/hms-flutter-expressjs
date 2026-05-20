@@ -569,8 +569,12 @@ final class MortuaryWorkspaceItem {
   }
 
   String? get storageLabel {
-    final String? slot = storageSlotLabel.ifNotEmpty;
-    final String? unit = storageUnitLabel.ifNotEmpty;
+    final String? slot =
+        storageSlotLabel.ifNotEmpty ??
+        storageAssignment?.storageSlotLabel.ifNotEmpty;
+    final String? unit =
+        storageUnitLabel.ifNotEmpty ??
+        storageAssignment?.storageUnitLabel.ifNotEmpty;
     if (slot != null && unit != null) {
       return '$unit / $slot';
     }

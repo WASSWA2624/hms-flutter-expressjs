@@ -59,7 +59,7 @@ void main() {
       );
       when(() => repository.getNotificationMetrics()).thenAnswer(
         (_) async => const Result<NotificationMetrics>.success(
-          NotificationMetrics(total: 1, unread: 0, read: 1),
+          NotificationMetrics(read: 1),
         ),
       );
 

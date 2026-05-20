@@ -82,7 +82,9 @@ final class MortuaryRepositoryImpl implements MortuaryRepository {
       success: (MortuaryWorkspacePayload payload) {
         final MortuaryWorkspaceItem? item = payload.items.items.firstOrNull;
         if (item == null) {
-          return Result<MortuaryWorkspaceItem>.failure(AppFailure.notFound());
+          return const Result<MortuaryWorkspaceItem>.failure(
+            AppFailure.notFound(),
+          );
         }
         return Result<MortuaryWorkspaceItem>.success(item);
       },

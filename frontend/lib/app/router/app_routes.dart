@@ -102,6 +102,17 @@ abstract final class AppRoutes {
     ],
     requiredActiveModules: <String>['billing-insurance'],
   );
+  static const AppRouteData subscriptions = AppRouteData(
+    name: 'subscriptions',
+    path: '/subscriptions',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.subscriptionsRead,
+      AppPermissions.subscriptionsWrite,
+      AppPermissions.tenantAdmin,
+      AppPermissions.systemAdmin,
+    ],
+  );
   static const AppRouteData opd = AppRouteData(
     name: 'opd',
     path: '/opd',
@@ -131,6 +142,19 @@ abstract final class AppRoutes {
     path: '/ipd',
     access: AppRouteAccess.authenticated,
     requiredAnyPermissions: <AppPermission>[AppPermissions.clinicalRead],
+    requiredActiveModules: <String>['inpatient-bed-management'],
+  );
+  static const AppRouteData roomsBeds = AppRouteData(
+    name: 'roomsBeds',
+    path: '/rooms-beds',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.operationsRead,
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.systemAdmin,
+    ],
     requiredActiveModules: <String>['inpatient-bed-management'],
   );
   static const AppRouteData icu = AppRouteData(
@@ -222,6 +246,34 @@ abstract final class AppRoutes {
     ],
     requiredActiveModules: <String>['facilities-maintenance'],
     requiresFacilityContext: true,
+  );
+  static const AppRouteData housekeeping = AppRouteData(
+    name: 'housekeeping',
+    path: '/housekeeping',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.operationsRead,
+      AppPermissions.operationsWrite,
+    ],
+    requiredActiveModules: <String>['facilities-maintenance'],
+    requiresFacilityContext: true,
+  );
+  static const AppRouteData hr = AppRouteData(
+    name: 'hr',
+    path: '/hr',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.hrRead,
+      AppPermissions.hrWrite,
+      AppPermissions.unitRead,
+      AppPermissions.unitManage,
+      AppPermissions.rosterRead,
+      AppPermissions.rosterWrite,
+      AppPermissions.rosterApprove,
+      AppPermissions.rosterPublish,
+    ],
+    requiredActiveModules: <String>['hr-rosters'],
+    requiresTenantContext: true,
   );
   static const AppRouteData biomedical = AppRouteData(
     name: 'biomedical',
@@ -362,9 +414,11 @@ abstract final class AppRoutes {
     patients,
     billing,
     claims,
+    subscriptions,
     opd,
     emergency,
     ipd,
+    roomsBeds,
     icu,
     nursing,
     clinical,
@@ -373,6 +427,8 @@ abstract final class AppRoutes {
     radiology,
     pharmacy,
     operations,
+    housekeeping,
+    hr,
     biomedical,
     communications,
     integrations,
@@ -396,9 +452,11 @@ abstract final class AppRoutes {
     patients,
     billing,
     claims,
+    subscriptions,
     opd,
     emergency,
     ipd,
+    roomsBeds,
     icu,
     nursing,
     clinical,
@@ -407,6 +465,8 @@ abstract final class AppRoutes {
     radiology,
     pharmacy,
     operations,
+    housekeeping,
+    hr,
     biomedical,
     communications,
     integrations,

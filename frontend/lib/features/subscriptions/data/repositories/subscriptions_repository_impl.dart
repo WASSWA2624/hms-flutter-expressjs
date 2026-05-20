@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/features/subscriptions/data/dtos/subscription_dtos.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/repositories/subscriptions_repository.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 final subscriptionsRepositoryProvider = Provider<SubscriptionsRepository>((
   ref,
@@ -19,7 +21,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   final ApiClient _apiClient;
 
   @override
-  Future<ApiResult<SubscriptionsWorkspaceData>> getWorkspace(
+  Future<Result<SubscriptionsWorkspaceData>> getWorkspace(
     SubscriptionsWorkspaceQuery query,
   ) {
     final AppPageRequest request = query.pageRequest;
@@ -58,7 +60,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> createPlan(SubscriptionPlanDraft draft) {
+  Future<Result<void>> createPlan(SubscriptionPlanDraft draft) {
     return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.subscriptionPlans),
       data: _planPayload(draft, includeTenant: true),
@@ -67,7 +69,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> updatePlan(String planId, SubscriptionPlanDraft draft) {
+  Future<Result<void>> updatePlan(String planId, SubscriptionPlanDraft draft) {
     return _apiClient.put<void>(
       ApiEndpoints.byId(HmsApiResource.subscriptionPlans, planId),
       data: _planPayload(draft),
@@ -76,7 +78,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> createSubscription(SubscriptionDraft draft) {
+  Future<Result<void>> createSubscription(SubscriptionDraft draft) {
     return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.subscriptions),
       data: _withoutEmpty(<String, Object?>{
@@ -91,7 +93,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> activateSubscription(String subscriptionId) {
+  Future<Result<void>> activateSubscription(String subscriptionId) {
     return _apiClient.put<void>(
       ApiEndpoints.byId(HmsApiResource.subscriptions, subscriptionId),
       data: const <String, Object?>{'status': 'ACTIVE'},
@@ -100,7 +102,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> cancelSubscription(String subscriptionId) {
+  Future<Result<void>> cancelSubscription(String subscriptionId) {
     return _apiClient.put<void>(
       ApiEndpoints.byId(HmsApiResource.subscriptions, subscriptionId),
       data: const <String, Object?>{'status': 'CANCELLED'},
@@ -109,7 +111,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> renewSubscription(
+  Future<Result<void>> renewSubscription(
     String subscriptionId,
     SubscriptionRenewalDraft draft,
   ) {
@@ -128,7 +130,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> changeSubscriptionPlan(
+  Future<Result<void>> changeSubscriptionPlan(
     String subscriptionId,
     SubscriptionPlanChangeDraft draft,
   ) {
@@ -151,9 +153,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> createModuleSubscription(
-    ModuleSubscriptionDraft draft,
-  ) {
+  Future<Result<void>> createModuleSubscription(ModuleSubscriptionDraft draft) {
     return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.moduleSubscriptions),
       data: _withoutEmpty(<String, Object?>{
@@ -166,7 +166,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> setModuleSubscriptionActive(
+  Future<Result<void>> setModuleSubscriptionActive(
     String moduleSubscriptionId, {
     required bool isActive,
     String? reason,
@@ -183,7 +183,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> createLicense(LicenseDraft draft) {
+  Future<Result<void>> createLicense(LicenseDraft draft) {
     return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.licenses),
       data: _licensePayload(draft, includeTenant: true),
@@ -192,7 +192,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> updateLicense(String licenseId, LicenseDraft draft) {
+  Future<Result<void>> updateLicense(String licenseId, LicenseDraft draft) {
     return _apiClient.put<void>(
       ApiEndpoints.byId(HmsApiResource.licenses, licenseId),
       data: _licensePayload(draft, includeTenant: true),
@@ -201,7 +201,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> collectInvoice(
+  Future<Result<void>> collectInvoice(
     String subscriptionInvoiceId,
     SubscriptionActionDraft draft,
   ) {
@@ -220,7 +220,7 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
-  Future<ApiResult<void>> retryInvoice(
+  Future<Result<void>> retryInvoice(
     String subscriptionInvoiceId,
     SubscriptionActionDraft draft,
   ) {
