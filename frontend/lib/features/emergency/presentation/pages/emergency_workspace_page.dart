@@ -248,7 +248,7 @@ class _EmergencyBoardPanel extends ConsumerWidget {
           onSubmitted: controller.applySearch,
           onClear: () => controller.applySearch(''),
           showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: 'Board scope',
+          advancedFilterButtonLabel: _EmergencyText.boardScope,
           advancedFilterTitle: 'Emergency board filters',
           advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: context.l10n.opdClearFiltersAction,
@@ -258,7 +258,7 @@ class _EmergencyBoardPanel extends ConsumerWidget {
           filterGroups: <AppSearchBarFilterGroup>[
             AppSearchBarFilterGroup(
               key: _emergencyScopeFilterKey,
-              label: 'Board scope',
+              label: _EmergencyText.boardScope,
               allLabel: _EmergencyText.active,
               choices: _emergencyScopeFilterChoices(),
             ),
@@ -1790,6 +1790,7 @@ abstract final class _EmergencyText {
   static const String ambulance = 'Ambulance';
   static const String arrival = 'Arrival';
   static const String available = 'Available';
+  static const String boardScope = 'Board scope';
   static const String cancel = 'Cancel';
   static const String careBeforeBilling = 'Care before billing';
   static const String caseLabel = 'Case';

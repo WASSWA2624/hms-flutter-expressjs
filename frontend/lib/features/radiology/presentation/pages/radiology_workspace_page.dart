@@ -297,17 +297,6 @@ class _RadiologyOrderBoard extends ConsumerWidget {
               _showFailureIfNeeded(context, failure);
             }
           },
-          trailingActions: <AppSearchBarAction>[
-            AppSearchBarAction(
-              icon: Icons.clear,
-              label: l10n.radiologyClearFiltersAction,
-              tooltip: l10n.radiologyClearFiltersAction,
-              active: _hasRadiologyFilters(state.query),
-              onPressed: () {
-                unawaited(controller.clearFilters());
-              },
-            ),
-          ],
         ),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),

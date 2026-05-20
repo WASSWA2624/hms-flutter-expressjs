@@ -211,7 +211,7 @@ class _IcuBoardPanel extends ConsumerWidget {
           matcher: (_, _) => true,
           onSubmitted: controller.applySearch,
           showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: 'Board scope',
+          advancedFilterButtonLabel: _IcuText.boardScope,
           advancedFilterTitle: 'ICU board filters',
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
@@ -221,7 +221,7 @@ class _IcuBoardPanel extends ConsumerWidget {
           filterGroups: <AppSearchBarFilterGroup>[
             AppSearchBarFilterGroup(
               key: _icuScopeFilterKey,
-              label: 'Board scope',
+              label: _IcuText.boardScope,
               allLabel: _IcuText.activeIcu,
               choices: _icuScopeFilterChoices(),
             ),
@@ -1689,6 +1689,7 @@ abstract final class _IcuText {
   static const String alert = 'Alert';
   static const String allIcu = 'All ICU';
   static const String bed = 'Bed';
+  static const String boardScope = 'Board scope';
   static const String changesSaved = 'ICU changes saved.';
   static const String criticalAlerts = 'Critical alerts';
   static const String dischargeReady = 'Discharge ready';

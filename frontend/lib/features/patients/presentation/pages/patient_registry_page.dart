@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
@@ -88,7 +87,6 @@ class _PatientRegistryContent extends ConsumerStatefulWidget {
 class _PatientRegistryContentState
     extends ConsumerState<_PatientRegistryContent> {
   late final TextEditingController _tableSearchController;
-  late final ValueNotifier<String> _tableSearchNotifier;
   late final AppListTableColumnVisibilityController<Patient>
   _tableColumnController;
   Timer? _tableSearchDebounce;
@@ -99,7 +97,6 @@ class _PatientRegistryContentState
     _tableSearchController = TextEditingController(
       text: widget.state.query.search,
     );
-    _tableSearchNotifier = ValueNotifier<String>(widget.state.query.search);
     _tableColumnController = AppListTableColumnVisibilityController<Patient>();
     _tableSearchController.addListener(_handleTableSearchChanged);
   }
@@ -111,7 +108,6 @@ class _PatientRegistryContentState
     if (oldWidget.state.query.search != nextSearch &&
         _tableSearchController.text != nextSearch) {
       _tableSearchController.text = nextSearch;
-      _tableSearchNotifier.value = nextSearch;
     }
   }
 
@@ -121,7 +117,6 @@ class _PatientRegistryContentState
     _tableSearchController
       ..removeListener(_handleTableSearchChanged)
       ..dispose();
-    _tableSearchNotifier.dispose();
     _tableColumnController.dispose();
     super.dispose();
   }
@@ -232,14 +227,9 @@ class _PatientRegistryContentState
             },
           ),
       ],
-      filters: _PatientFilters(
-        query: widget.state.query,
-        searchController: _tableSearchController,
-        columnVisibilityController: _tableColumnController,
-      ),
       body: _PatientList(
         state: widget.state,
-        searchListenable: _tableSearchNotifier,
+        searchController: _tableSearchController,
         columnVisibilityController: _tableColumnController,
       ),
     );
@@ -247,11 +237,6 @@ class _PatientRegistryContentState
 
   void _handleTableSearchChanged() {
     final String query = _tableSearchController.text;
-    if (_tableSearchNotifier.value == query) {
-      return;
-    }
-
-    _tableSearchNotifier.value = query;
     _tableSearchDebounce?.cancel();
     _tableSearchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (mounted) {
@@ -341,243 +326,6 @@ class _PatientRegistryContentState
 
 abstract final class _PatientSummaryText {
   static const String allPatients = 'All patients';
-}
-
-class _PatientFilters extends ConsumerStatefulWidget {
-  const _PatientFilters({
-    required this.query,
-    required this.searchController,
-    required this.columnVisibilityController,
-  });
-
-  final PatientListQuery query;
-  final TextEditingController searchController;
-  final AppListTableColumnVisibilityController<Patient>
-  columnVisibilityController;
-
-  @override
-  ConsumerState<_PatientFilters> createState() => _PatientFiltersState();
-}
-
-class _PatientFiltersState extends ConsumerState<_PatientFilters> {
-  late final TextEditingController _patientIdController;
-  late final TextEditingController _contactController;
-  String? _facilityId;
-  String? _gender;
-  String? _status;
-  String? _consentState;
-  String? _appointmentStatus;
-  DateTime? _visitDate;
-  DateTime? _visitFrom;
-  DateTime? _visitTo;
-  DateTime? _createdFrom;
-  DateTime? _createdTo;
-  DateTime? _dateOfBirthFrom;
-  DateTime? _dateOfBirthTo;
-  bool? _hasActiveAdmission;
-  bool? _hasOutstandingBalance;
-
-  @override
-  void initState() {
-    super.initState();
-    _patientIdController = TextEditingController(text: widget.query.patientId);
-    _contactController = TextEditingController(text: widget.query.contact);
-    _facilityId = widget.query.facilityId;
-    _gender = widget.query.gender;
-    _status = _statusValue(widget.query.isActive);
-    _consentState = widget.query.consentState;
-    _appointmentStatus = widget.query.appointmentStatus;
-    _visitDate = widget.query.visitDate;
-    _visitFrom = widget.query.visitFrom;
-    _visitTo = widget.query.visitTo;
-    _createdFrom = widget.query.createdFrom;
-    _createdTo = widget.query.createdTo;
-    _dateOfBirthFrom = widget.query.dateOfBirthFrom;
-    _dateOfBirthTo = widget.query.dateOfBirthTo;
-    _hasActiveAdmission = widget.query.hasActiveAdmission;
-    _hasOutstandingBalance = widget.query.hasOutstandingBalance;
-  }
-
-  @override
-  void didUpdateWidget(covariant _PatientFilters oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.query != widget.query) {
-      _patientIdController.text = widget.query.patientId;
-      _contactController.text = widget.query.contact;
-      _facilityId = widget.query.facilityId;
-      _gender = widget.query.gender;
-      _status = _statusValue(widget.query.isActive);
-      _consentState = widget.query.consentState;
-      _appointmentStatus = widget.query.appointmentStatus;
-      _visitDate = widget.query.visitDate;
-      _visitFrom = widget.query.visitFrom;
-      _visitTo = widget.query.visitTo;
-      _createdFrom = widget.query.createdFrom;
-      _createdTo = widget.query.createdTo;
-      _dateOfBirthFrom = widget.query.dateOfBirthFrom;
-      _dateOfBirthTo = widget.query.dateOfBirthTo;
-      _hasActiveAdmission = widget.query.hasActiveAdmission;
-      _hasOutstandingBalance = widget.query.hasOutstandingBalance;
-    }
-  }
-
-  @override
-  void dispose() {
-    _patientIdController.dispose();
-    _contactController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-
-    return AppWorkspaceFilterBar(
-      semanticLabel: l10n.patientsFiltersLabel,
-      expandSearch: true,
-      search: _buildSearchField(context),
-    );
-  }
-
-  Widget _buildSearchField(BuildContext context) {
-    final l10n = context.l10n;
-
-    return AppSearchBar(
-      controller: widget.searchController,
-      semanticLabel: l10n.patientsSearchLabel,
-      hintText: l10n.patientsSearchHint,
-      clearLabel: l10n.patientsClearFiltersAction,
-      onClear: () {
-        unawaited(_apply());
-      },
-      showAdvancedFilterButton: true,
-      advancedFilterButtonLabel: l10n.patientsAdvancedFiltersAction,
-      hasActiveFilters: _hasAdvancedFilters,
-      trailingActions: <AppSearchBarAction>[
-        widget.columnVisibilityController.settingsAction(
-          context,
-          label: l10n.commonTableSettingsActionLabel,
-        ),
-      ],
-      onAdvancedFilterPressed: () {
-        _openAdvancedFilters(context);
-      },
-    );
-  }
-
-  bool get _hasAdvancedFilters {
-    return _patientIdController.text.trim().isNotEmpty ||
-        _contactController.text.trim().isNotEmpty ||
-        _facilityId != null ||
-        _gender != null ||
-        _status != null ||
-        _consentState != null ||
-        _appointmentStatus != null ||
-        _visitDate != null ||
-        _visitFrom != null ||
-        _visitTo != null ||
-        _createdFrom != null ||
-        _createdTo != null ||
-        _dateOfBirthFrom != null ||
-        _dateOfBirthTo != null ||
-        _hasActiveAdmission != null ||
-        _hasOutstandingBalance != null;
-  }
-
-  Future<void> _openAdvancedFilters(BuildContext context) async {
-    final PatientRegistryState? state = _readCurrentState(ref);
-    final _PatientFilterDraft? draft = await showAppDialog<_PatientFilterDraft>(
-      context: context,
-      builder: (_) => _PatientAdvancedFiltersDialog(
-        patientId: _patientIdController.text,
-        contact: _contactController.text,
-        facilityId: _facilityId,
-        gender: _gender,
-        status: _status,
-        consentState: _consentState,
-        appointmentStatus: _appointmentStatus,
-        visitDate: _visitDate,
-        visitFrom: _visitFrom,
-        visitTo: _visitTo,
-        createdFrom: _createdFrom,
-        createdTo: _createdTo,
-        dateOfBirthFrom: _dateOfBirthFrom,
-        dateOfBirthTo: _dateOfBirthTo,
-        hasActiveAdmission: _hasActiveAdmission,
-        hasOutstandingBalance: _hasOutstandingBalance,
-        facilities: state?.referenceData.facilities ?? const [],
-        appointmentStatuses:
-            state?.referenceData.appointmentStatuses ?? const [],
-        consentStatuses: _filterConsentStatuses(state),
-      ),
-    );
-    if (draft == null || !mounted) {
-      return;
-    }
-
-    _patientIdController.text = draft.patientId;
-    _contactController.text = draft.contact;
-    setState(() {
-      _facilityId = draft.facilityId;
-      _gender = draft.gender;
-      _status = draft.status;
-      _consentState = draft.consentState;
-      _appointmentStatus = draft.appointmentStatus;
-      _visitDate = draft.visitDate;
-      _visitFrom = draft.visitFrom;
-      _visitTo = draft.visitTo;
-      _createdFrom = draft.createdFrom;
-      _createdTo = draft.createdTo;
-      _dateOfBirthFrom = draft.dateOfBirthFrom;
-      _dateOfBirthTo = draft.dateOfBirthTo;
-      _hasActiveAdmission = draft.hasActiveAdmission;
-      _hasOutstandingBalance = draft.hasOutstandingBalance;
-    });
-    await _apply();
-  }
-
-  Future<void> _apply() async {
-    final PatientListQuery nextQuery = widget.query.copyWith(
-      search: widget.searchController.text.trim(),
-      patientId: _patientIdController.text.trim(),
-      contact: _contactController.text.trim(),
-      facilityId: _facilityId,
-      gender: _gender,
-      isActive: _activeValue(_status),
-      consentState: _consentState,
-      appointmentStatus: _appointmentStatus,
-      visitDate: _visitDate,
-      visitFrom: _visitFrom,
-      visitTo: _visitTo,
-      createdFrom: _createdFrom,
-      createdTo: _createdTo,
-      dateOfBirthFrom: _dateOfBirthFrom,
-      dateOfBirthTo: _dateOfBirthTo,
-      hasActiveAdmission: _hasActiveAdmission,
-      hasOutstandingBalance: _hasOutstandingBalance,
-      pageRequest: widget.query.pageRequest.first(),
-      clearFacilityId: _facilityId == null,
-      clearGender: _gender == null,
-      clearIsActive: _status == null,
-      clearConsentState: _consentState == null,
-      clearAppointmentStatus: _appointmentStatus == null,
-      clearVisitDate: _visitDate == null,
-      clearVisitFrom: _visitFrom == null,
-      clearVisitTo: _visitTo == null,
-      clearCreatedFrom: _createdFrom == null,
-      clearCreatedTo: _createdTo == null,
-      clearDateOfBirthFrom: _dateOfBirthFrom == null,
-      clearDateOfBirthTo: _dateOfBirthTo == null,
-      clearHasActiveAdmission: _hasActiveAdmission == null,
-      clearHasOutstandingBalance: _hasOutstandingBalance == null,
-    );
-    final AppFailure? failure = await ref
-        .read(patientRegistryControllerProvider.notifier)
-        .applyQuery(nextQuery);
-    if (mounted) {
-      await _showFailureIfNeeded(context, failure);
-    }
-  }
 }
 
 @immutable
@@ -961,15 +709,149 @@ class _PatientAdvancedFiltersDialogState
   }
 }
 
+bool _hasPatientAdvancedFilters(PatientListQuery query) {
+  return query.patientId.trim().isNotEmpty ||
+      query.contact.trim().isNotEmpty ||
+      query.facilityId != null ||
+      query.gender != null ||
+      query.isActive != null ||
+      query.consentState != null ||
+      query.appointmentStatus != null ||
+      query.visitDate != null ||
+      query.visitFrom != null ||
+      query.visitTo != null ||
+      query.createdFrom != null ||
+      query.createdTo != null ||
+      query.dateOfBirthFrom != null ||
+      query.dateOfBirthTo != null ||
+      query.hasActiveAdmission != null ||
+      query.hasOutstandingBalance != null;
+}
+
+_PatientFilterDraft _patientFilterDraftFromQuery(PatientListQuery query) {
+  return _PatientFilterDraft(
+    patientId: query.patientId,
+    contact: query.contact,
+    facilityId: query.facilityId,
+    gender: query.gender,
+    status: _statusValue(query.isActive),
+    consentState: query.consentState,
+    appointmentStatus: query.appointmentStatus,
+    visitDate: query.visitDate,
+    visitFrom: query.visitFrom,
+    visitTo: query.visitTo,
+    createdFrom: query.createdFrom,
+    createdTo: query.createdTo,
+    dateOfBirthFrom: query.dateOfBirthFrom,
+    dateOfBirthTo: query.dateOfBirthTo,
+    hasActiveAdmission: query.hasActiveAdmission,
+    hasOutstandingBalance: query.hasOutstandingBalance,
+  );
+}
+
+Future<void> _openPatientAdvancedFilters(
+  BuildContext context,
+  WidgetRef ref,
+  PatientRegistryState state,
+  TextEditingController searchController,
+) async {
+  final PatientRegistryState currentState = _readCurrentState(ref) ?? state;
+  final PatientListQuery query = currentState.query;
+  final _PatientFilterDraft? draft = await showAppDialog<_PatientFilterDraft>(
+    context: context,
+    builder: (_) => _PatientAdvancedFiltersDialog(
+      patientId: query.patientId,
+      contact: query.contact,
+      facilityId: query.facilityId,
+      gender: query.gender,
+      status: _statusValue(query.isActive),
+      consentState: query.consentState,
+      appointmentStatus: query.appointmentStatus,
+      visitDate: query.visitDate,
+      visitFrom: query.visitFrom,
+      visitTo: query.visitTo,
+      createdFrom: query.createdFrom,
+      createdTo: query.createdTo,
+      dateOfBirthFrom: query.dateOfBirthFrom,
+      dateOfBirthTo: query.dateOfBirthTo,
+      hasActiveAdmission: query.hasActiveAdmission,
+      hasOutstandingBalance: query.hasOutstandingBalance,
+      facilities: currentState.referenceData.facilities,
+      appointmentStatuses: currentState.referenceData.appointmentStatuses,
+      consentStatuses: _filterConsentStatuses(currentState),
+    ),
+  );
+  if (draft == null || !context.mounted) {
+    return;
+  }
+
+  await _applyPatientFilterDraft(
+    context,
+    ref,
+    currentState,
+    searchController,
+    draft,
+  );
+}
+
+Future<void> _applyPatientFilterDraft(
+  BuildContext context,
+  WidgetRef ref,
+  PatientRegistryState state,
+  TextEditingController searchController,
+  _PatientFilterDraft draft,
+) async {
+  final PatientListQuery nextQuery = state.query.copyWith(
+    search: searchController.text.trim(),
+    patientId: draft.patientId.trim(),
+    contact: draft.contact.trim(),
+    facilityId: draft.facilityId,
+    gender: draft.gender,
+    isActive: _activeValue(draft.status),
+    consentState: draft.consentState,
+    appointmentStatus: draft.appointmentStatus,
+    visitDate: draft.visitDate,
+    visitFrom: draft.visitFrom,
+    visitTo: draft.visitTo,
+    createdFrom: draft.createdFrom,
+    createdTo: draft.createdTo,
+    dateOfBirthFrom: draft.dateOfBirthFrom,
+    dateOfBirthTo: draft.dateOfBirthTo,
+    hasActiveAdmission: draft.hasActiveAdmission,
+    hasOutstandingBalance: draft.hasOutstandingBalance,
+    pageRequest: state.query.pageRequest.first(),
+    clearFacilityId: draft.facilityId == null,
+    clearGender: draft.gender == null,
+    clearIsActive: draft.status == null,
+    clearConsentState: draft.consentState == null,
+    clearAppointmentStatus: draft.appointmentStatus == null,
+    clearVisitDate: draft.visitDate == null,
+    clearVisitFrom: draft.visitFrom == null,
+    clearVisitTo: draft.visitTo == null,
+    clearCreatedFrom: draft.createdFrom == null,
+    clearCreatedTo: draft.createdTo == null,
+    clearDateOfBirthFrom: draft.dateOfBirthFrom == null,
+    clearDateOfBirthTo: draft.dateOfBirthTo == null,
+    clearHasActiveAdmission: draft.hasActiveAdmission == null,
+    clearHasOutstandingBalance: draft.hasOutstandingBalance == null,
+  );
+  final AppFailure? failure = await ref
+      .read(patientRegistryControllerProvider.notifier)
+      .applyQuery(nextQuery);
+  if (context.mounted) {
+    await _showFailureIfNeeded(context, failure);
+  }
+}
+
 class _PatientList extends ConsumerWidget {
   const _PatientList({
     required this.state,
-    required this.searchListenable,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final PatientRegistryState state;
-  final ValueListenable<String> searchListenable;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<Patient>
   columnVisibilityController;
 
@@ -981,11 +863,36 @@ class _PatientList extends ConsumerWidget {
       page: state.page,
       title: l10n.patientsTableTitle,
       description: l10n.patientsTableDescription,
-      searchListenable: searchListenable,
-      searchMatcher: (Patient patient, String query) {
-        return _matchesPatientTableSearch(context, patient, query);
-      },
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<Patient>(
+        controller: searchController,
+        semanticLabel: l10n.patientsSearchLabel,
+        hintText: l10n.patientsSearchHint,
+        clearLabel: l10n.patientsClearFiltersAction,
+        matcher: (Patient patient, String query) {
+          return _matchesPatientTableSearch(context, patient, query);
+        },
+        onClear: () {
+          unawaited(
+            _applyPatientFilterDraft(
+              context,
+              ref,
+              state,
+              searchController,
+              _patientFilterDraftFromQuery(state.query),
+            ),
+          );
+        },
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.patientsAdvancedFiltersAction,
+        hasActiveFilters: _hasPatientAdvancedFilters(state.query),
+        onAdvancedFilterPressed: () {
+          unawaited(
+            _openPatientAdvancedFilters(context, ref, state, searchController),
+          );
+        },
+      ),
       isLoading: state.isRefreshingList,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),

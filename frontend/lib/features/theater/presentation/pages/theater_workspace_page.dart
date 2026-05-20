@@ -236,6 +236,26 @@ class _TheaterCaseBoard extends ConsumerWidget {
           lastDate: DateTime(2100),
           currentDate: DateTime.now(),
           allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+          textFilters: <AppSearchBarTextFilter>[
+            AppSearchBarTextFilter(
+              key: _theaterRoomFilterKey,
+              label: l10n.theaterRoomIdLabel,
+              icon: Icons.meeting_room_outlined,
+              textInputAction: TextInputAction.next,
+            ),
+            AppSearchBarTextFilter(
+              key: _theaterSurgeonFilterKey,
+              label: l10n.theaterSurgeonIdLabel,
+              icon: Icons.medical_services_outlined,
+              textInputAction: TextInputAction.next,
+            ),
+            AppSearchBarTextFilter(
+              key: _theaterAnesthetistFilterKey,
+              label: l10n.theaterAnesthetistIdLabel,
+              icon: Icons.masks_outlined,
+              textInputAction: TextInputAction.done,
+            ),
+          ],
           filterGroups: <AppSearchBarFilterGroup>[
             AppSearchBarFilterGroup(
               key: _theaterStatusFilterKey,
@@ -256,6 +276,13 @@ class _TheaterCaseBoard extends ConsumerWidget {
             final String? nextStatus = value.option(_theaterStatusFilterKey);
             final String? nextStage = value.option(_theaterStageFilterKey);
             final DateTime? nextDate = value.dateFrom;
+            final String? nextRoomId = value.text(_theaterRoomFilterKey);
+            final String? nextSurgeonUserId = value.text(
+              _theaterSurgeonFilterKey,
+            );
+            final String? nextAnesthetistUserId = value.text(
+              _theaterAnesthetistFilterKey,
+            );
             AppFailure? failure;
             if (nextStatus != state.query.status) {
               failure = await controller.applyStatus(nextStatus);
@@ -269,31 +296,19 @@ class _TheaterCaseBoard extends ConsumerWidget {
             )) {
               failure ??= await controller.applyScheduledDate(nextDate);
             }
+            if (nextRoomId != state.query.roomId ||
+                nextSurgeonUserId != state.query.surgeonUserId ||
+                nextAnesthetistUserId != state.query.anesthetistUserId) {
+              failure ??= await controller.applyResourceFilters(
+                roomId: nextRoomId,
+                surgeonUserId: nextSurgeonUserId,
+                anesthetistUserId: nextAnesthetistUserId,
+              );
+            }
             if (context.mounted) {
               _showFailureIfNeeded(context, failure);
             }
           },
-          trailingActions: <AppSearchBarAction>[
-            AppSearchBarAction(
-              icon: Icons.tune,
-              label: l10n.theaterResourceFiltersAction,
-              tooltip: l10n.theaterResourceFiltersAction,
-              active:
-                  state.query.roomId != null ||
-                  state.query.surgeonUserId != null ||
-                  state.query.anesthetistUserId != null,
-              onPressed: () => _showResourceFilterDialog(context, ref),
-            ),
-            AppSearchBarAction(
-              icon: Icons.clear,
-              label: l10n.theaterClearFiltersAction,
-              tooltip: l10n.theaterClearFiltersAction,
-              active: _hasTheaterFilters(state.query),
-              onPressed: () {
-                unawaited(controller.clearFilters());
-              },
-            ),
-          ],
         ),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -1306,37 +1321,6 @@ Future<void> _showFinalizeDialog(BuildContext context, WidgetRef ref) async {
   _showMutationResult(context, failure);
 }
 
-Future<void> _showResourceFilterDialog(
-  BuildContext context,
-  WidgetRef ref,
-) async {
-  final TheaterWorkspaceState? state = ref
-      .read(theaterWorkspaceControllerProvider)
-      .asData
-      ?.value
-      .when(
-        success: (TheaterWorkspaceState value) => value,
-        failure: (_) => null,
-      );
-  final Map<String, Object?>? payload =
-      await showAppWorkspaceActionDialog<Map<String, Object?>>(
-        context: context,
-        title: Text(context.l10n.theaterResourceFiltersDialogTitle),
-        icon: const Icon(Icons.tune),
-        content: _ResourceFilterForm(query: state?.query),
-      );
-  if (payload == null) {
-    return;
-  }
-  await ref
-      .read(theaterWorkspaceControllerProvider.notifier)
-      .applyResourceFilters(
-        roomId: payload['room_id'] as String?,
-        surgeonUserId: payload['surgeon_user_id'] as String?,
-        anesthetistUserId: payload['anesthetist_user_id'] as String?,
-      );
-}
-
 class _ScheduleCaseForm extends StatefulWidget {
   const _ScheduleCaseForm({this.theaterCase, this.rescheduleOnly = false});
 
@@ -2015,77 +1999,6 @@ class _NotesOnlyFormState extends State<_NotesOnlyForm> {
   }
 }
 
-class _ResourceFilterForm extends StatefulWidget {
-  const _ResourceFilterForm({this.query});
-
-  final TheaterCaseQuery? query;
-
-  @override
-  State<_ResourceFilterForm> createState() => _ResourceFilterFormState();
-}
-
-class _ResourceFilterFormState extends State<_ResourceFilterForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _roomController;
-  late final TextEditingController _surgeonController;
-  late final TextEditingController _anesthetistController;
-
-  @override
-  void initState() {
-    super.initState();
-    final TheaterCaseQuery? query = widget.query;
-    _roomController = TextEditingController(text: query?.roomId);
-    _surgeonController = TextEditingController(text: query?.surgeonUserId);
-    _anesthetistController = TextEditingController(
-      text: query?.anesthetistUserId,
-    );
-  }
-
-  @override
-  void dispose() {
-    _roomController.dispose();
-    _surgeonController.dispose();
-    _anesthetistController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppFormShell(
-      formKey: _formKey,
-      children: <Widget>[
-        AppTextField(
-          controller: _roomController,
-          labelText: l10n.theaterRoomIdLabel,
-        ),
-        AppTextField(
-          controller: _surgeonController,
-          labelText: l10n.theaterSurgeonIdLabel,
-        ),
-        AppTextField(
-          controller: _anesthetistController,
-          labelText: l10n.theaterAnesthetistIdLabel,
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.theaterApplyFiltersAction,
-          submitIcon: Icons.tune,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            Navigator.of(context).pop(<String, Object?>{
-              'room_id': _emptyToNull(_roomController.text),
-              'surgeon_user_id': _emptyToNull(_surgeonController.text),
-              'anesthetist_user_id': _emptyToNull(_anesthetistController.text),
-            });
-          },
-        ),
-      ],
-    );
-  }
-}
-
 void _showMutationResult(BuildContext context, AppFailure? failure) {
   if (!context.mounted) {
     return;
@@ -2113,10 +2026,20 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
 
 const String _theaterStatusFilterKey = 'status';
 const String _theaterStageFilterKey = 'stage';
+const String _theaterRoomFilterKey = 'room';
+const String _theaterSurgeonFilterKey = 'surgeon';
+const String _theaterAnesthetistFilterKey = 'anesthetist';
 
 AppSearchBarFilterValue _theaterFilterValue(TheaterCaseQuery query) {
   return AppSearchBarFilterValue(
     dateFrom: query.scheduledDate,
+    texts: <String, String>{
+      if (query.roomId != null) _theaterRoomFilterKey: query.roomId!,
+      if (query.surgeonUserId != null)
+        _theaterSurgeonFilterKey: query.surgeonUserId!,
+      if (query.anesthetistUserId != null)
+        _theaterAnesthetistFilterKey: query.anesthetistUserId!,
+    },
     options: <String, String>{
       if (query.status != null) _theaterStatusFilterKey: query.status!,
       if (query.stage != null) _theaterStageFilterKey: query.stage!,
@@ -2292,11 +2215,6 @@ String _joinDisplay(Iterable<String?> values) {
       .map((String? value) => value?.trim() ?? '')
       .where((String value) => value.isNotEmpty)
       .join(' | ');
-}
-
-String? _emptyToNull(String value) {
-  final String normalized = value.trim();
-  return normalized.isEmpty ? null : normalized;
 }
 
 extension on String {

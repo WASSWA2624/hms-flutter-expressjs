@@ -260,7 +260,7 @@ class _BillingQueuePanel extends ConsumerWidget {
           filterGroups: <AppSearchBarFilterGroup>[
             AppSearchBarFilterGroup(
               key: _billingQueueFilterKey,
-              label: 'Queue',
+              label: _BillingText.queue,
               allLabel: _queueLabel(BillingQueueType.all),
               choices: _billingQueueFilterChoices(),
             ),
@@ -1568,6 +1568,7 @@ abstract final class _BillingText {
   static const String payerHint = 'Patient, sponsor, insurer, or contact';
   static const String paymentReferenceHint =
       'Mobile money, card, or bank reference';
+  static const String queue = 'Queue';
   static const String receivePayment = 'Receive payment';
   static const String refund = 'Refund';
   static const String requestAdjustment = 'Request adjustment';

@@ -933,97 +933,109 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyDrugPanelTitle,
       description: l10n.pharmacyDrugPanelDescription,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppWorkspaceFilterBar(
-            semanticLabel: l10n.pharmacyDrugFiltersSemanticLabel,
-            expandSearch: true,
-            search: AppSearchBar(
-              controller: _searchController,
-              semanticLabel: l10n.pharmacyDrugSearchLabel,
-              hintText: l10n.pharmacyDrugSearchHint,
-              onSubmitted: controller.applyDrugSearch,
+      child: AppListTable<PharmacyDrug>(
+        page: state.drugs,
+        isLoading: state.isRefreshingDrugs,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<PharmacyDrug>(
+          controller: _searchController,
+          semanticLabel: l10n.pharmacyDrugSearchLabel,
+          hintText: l10n.pharmacyDrugSearchHint,
+          matcher: (_, _) => true,
+          onSubmitted: controller.applyDrugSearch,
+          onClear: () {
+            unawaited(controller.applyDrugSearch(''));
+          },
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.pharmacyDrugFiltersSemanticLabel,
+          advancedFilterTitle: l10n.pharmacyDrugFiltersSemanticLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _pharmacyDrugStockStatusFilterKey,
+              label: l10n.pharmacyStockStatusFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _stockStatusFilterChoices(l10n),
             ),
-            filters: <Widget>[
-              AppSelectField<String>(
-                value: state.drugQuery.stockStatus,
-                labelText: l10n.pharmacyStockStatusFilterLabel,
-                options: _stockStatusOptions(l10n),
-                onChanged: controller.applyDrugStockStatus,
+          ],
+          filterValue: _pharmacyDrugFilterValue(state.drugQuery),
+          hasActiveFilters: state.drugQuery.stockStatus != null,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            unawaited(
+              controller.applyDrugStockStatus(
+                value.option(_pharmacyDrugStockStatusFilterKey),
               ),
-            ],
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppListTable<PharmacyDrug>(
-            page: state.drugs,
-            isLoading: state.isRefreshingDrugs,
-            previousPageLabel: l10n.opdPreviousPageLabel,
-            nextPageLabel: l10n.opdNextPageLabel,
-            pageLabelBuilder: (AppPage<PharmacyDrug> page) {
-              return _pageLabel(context, page);
+            );
+          },
+        ),
+        previousPageLabel: l10n.opdPreviousPageLabel,
+        nextPageLabel: l10n.opdNextPageLabel,
+        pageLabelBuilder: (AppPage<PharmacyDrug> page) {
+          return _pageLabel(context, page);
+        },
+        onPageChanged: controller.changeDrugPage,
+        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+          variant: AppStateViewVariant.empty,
+          title: l10n.pharmacyNoDrugsTitle,
+          body: l10n.pharmacyNoDrugsBody,
+          icon: Icons.inventory_2_outlined,
+          minHeight: 180,
+        ),
+        columns: <AppListTableColumn<PharmacyDrug>>[
+          AppListTableColumn<PharmacyDrug>(
+            label: l10n.pharmacyDrugColumnLabel,
+            cellBuilder: (BuildContext context, PharmacyDrug item) {
+              return _DrugCell(drug: item);
             },
-            onPageChanged: controller.changeDrugPage,
-            emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-              variant: AppStateViewVariant.empty,
-              title: l10n.pharmacyNoDrugsTitle,
-              body: l10n.pharmacyNoDrugsBody,
-              icon: Icons.inventory_2_outlined,
-              minHeight: 180,
-            ),
-            columns: <AppListTableColumn<PharmacyDrug>>[
-              AppListTableColumn<PharmacyDrug>(
-                label: l10n.pharmacyDrugColumnLabel,
-                cellBuilder: (BuildContext context, PharmacyDrug item) {
-                  return _DrugCell(drug: item);
-                },
-              ),
-              AppListTableColumn<PharmacyDrug>(
-                label: l10n.pharmacyAvailableColumnLabel,
-                numeric: true,
-                cellBuilder: (BuildContext context, PharmacyDrug item) {
-                  return Text(_numberLabel(item.availableQuantity));
-                },
-              ),
-              AppListTableColumn<PharmacyDrug>(
-                label: l10n.pharmacyStockStatusColumnLabel,
-                cellBuilder: (BuildContext context, PharmacyDrug item) {
-                  return AppWorkspaceStatusBadge(
-                    status: _stockStatus(context, item.stockStatus),
-                  );
-                },
-              ),
-            ],
-            mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
-              final ThemeData theme = Theme.of(context);
-              return Padding(
-                padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    _DrugCell(drug: item),
-                    SizedBox(height: theme.spacing.sm),
-                    Wrap(
-                      spacing: theme.spacing.xs,
-                      runSpacing: theme.spacing.xs,
-                      children: <Widget>[
-                        AppWorkspaceStatusBadge(
-                          status: _stockStatus(context, item.stockStatus),
-                        ),
-                        Text(
-                          l10n.pharmacyAvailableQuantityLabel(
-                            _numberLabel(item.availableQuantity),
-                          ),
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+          ),
+          AppListTableColumn<PharmacyDrug>(
+            label: l10n.pharmacyAvailableColumnLabel,
+            numeric: true,
+            cellBuilder: (BuildContext context, PharmacyDrug item) {
+              return Text(_numberLabel(item.availableQuantity));
+            },
+          ),
+          AppListTableColumn<PharmacyDrug>(
+            label: l10n.pharmacyStockStatusColumnLabel,
+            cellBuilder: (BuildContext context, PharmacyDrug item) {
+              return AppWorkspaceStatusBadge(
+                status: _stockStatus(context, item.stockStatus),
               );
             },
           ),
         ],
+        mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
+          final ThemeData theme = Theme.of(context);
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _DrugCell(drug: item),
+                SizedBox(height: theme.spacing.sm),
+                Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    AppWorkspaceStatusBadge(
+                      status: _stockStatus(context, item.stockStatus),
+                    ),
+                    Text(
+                      l10n.pharmacyAvailableQuantityLabel(
+                        _numberLabel(item.availableQuantity),
+                      ),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -1853,20 +1865,41 @@ String _pharmacyOrderFilterLabel(
   return l10n.pharmacyFilterReady;
 }
 
-List<AppSelectOption<String>> _stockStatusOptions(AppLocalizations l10n) {
-  return <AppSelectOption<String>>[
-    AppSelectOption<String>(
+const String _pharmacyDrugStockStatusFilterKey = 'stock_status';
+
+AppSearchBarFilterValue _pharmacyDrugFilterValue(PharmacyDrugQuery query) {
+  final String? stockStatus = query.stockStatus;
+  if (stockStatus == null) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(
+    options: <String, String>{_pharmacyDrugStockStatusFilterKey: stockStatus},
+  );
+}
+
+List<AppSearchBarFilterChoice> _stockStatusFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    AppSearchBarFilterChoice(
       value: 'IN_STOCK',
       label: l10n.pharmacyStockInStock,
+      icon: Icons.check_circle_outline,
     ),
-    AppSelectOption<String>(
+    AppSearchBarFilterChoice(
       value: 'ALMOST_OUT_OF_STOCK',
       label: l10n.pharmacyStockAlmostOut,
+      icon: Icons.inventory_outlined,
     ),
-    AppSelectOption<String>(value: 'LOW_STOCK', label: l10n.pharmacyStockLow),
-    AppSelectOption<String>(
+    AppSearchBarFilterChoice(
+      value: 'LOW_STOCK',
+      label: l10n.pharmacyStockLow,
+      icon: Icons.warning_amber_outlined,
+    ),
+    AppSearchBarFilterChoice(
       value: 'OUT_OF_STOCK',
       label: l10n.pharmacyStockOut,
+      icon: Icons.remove_circle_outline,
     ),
   ];
 }
