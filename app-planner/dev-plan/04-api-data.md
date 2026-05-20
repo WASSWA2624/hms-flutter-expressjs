@@ -10,6 +10,12 @@ Prepare the Flutter frontend to consume the existing backend safely, consistentl
 - `opd-flow.md` and `ipd-flow.md` define encounter/admission movement that API state must support.
 - Frontend app-rules define repository, DTO, state, error, reusable component, and network implementation mechanics.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/core/network/api_endpoints.dart` centralizes `HmsApiResource` and `ApiEndpoints`; implemented modules use DTOs, entities, repositories, Riverpod controllers, and shared async states instead of direct widget HTTP calls.
+- Required adjustment: add or correct central API resources before repository wiring; never scatter raw endpoint strings in widgets, dialogs, or table rows.
+- UI similarity rule: repositories must feed existing `AsyncStateScaffold`, `AppStateView`, `AppWorkspace`, `AppListTable`, and action-dialog refresh patterns so data loading and mutation feedback look the same across modules.
+
 ## Current State
 - Backend APIs are mounted under `/api/v1`, with public health/readiness endpoints outside versioned routes.
 - The backend router currently exposes broad route families for auth, tenant/facility setup, access control, patient flow, OPD/IPD, clinical care, diagnostics, pharmacy, billing, claims, HR/operations, subscriptions, communications, reports, audit, and integrations.

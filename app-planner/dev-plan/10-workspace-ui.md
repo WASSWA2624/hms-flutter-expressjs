@@ -12,6 +12,20 @@ Define one reusable UI pattern for all HOSSPI HMS module workspaces so the app l
 - Use `opd-flow.md` and `ipd-flow.md` for patient movement and status context.
 - Use `01-policy.md` for modal-first actions, role access, print/report rules, and targeted state updates.
 
+## Current Workspace Baseline From Attached Frontend
+The implemented modules already define the UI pattern to reuse:
+
+| Current pattern | Required reuse |
+| --- | --- |
+| Workspace pages | Patients, OPD, emergency, clinical, nursing, IPD, ICU, theater, discharge, lab, radiology, pharmacy, billing, claims, and tenant/facility pages use `AppWorkspace` or the same responsive shell/state pattern. Pending modules must match that pattern. |
+| Lists | Existing workspaces use `AppListTable` with adaptive table/card rendering, stable row keys, sorting, optional column visibility, `items` or `page: AppPage<T>`, and `onPageChanged` for paginated data. |
+| Search/filter | Existing workspaces attach `AppListTableSearch`/`AppSearchBar` with advanced filters instead of local one-off search fields. |
+| Actions | Existing routine actions use `AppDialog`, `showAppDialog`, `showAppWorkspaceActionDialog`, shared action dialogs, or shared action panels. |
+| Detail | Existing detail views use workspace panels, patient detail dialogs, or workspace drawers rather than pushing users through unrelated routes for quick review. |
+| Reports | Existing report/print flows use `AppReportActionButton`, preview panels, summary grids, and generated `PrintFormTemplate` output. |
+
+This baseline is now mandatory for all pending work. A module may add feature-local composition widgets, but it must not create duplicate shared shells, tables, search bars, dialogs, fields, patient headers, status badges, permission wrappers, or print templates.
+
 ## Standard Workspace Structure
 
 Each module should use this layout:
@@ -64,13 +78,13 @@ Use the existing shared components exactly as the default implementation path:
 | --- | --- |
 | Workspace shell | `AppWorkspace`, `AppWorkspaceHeader`, `AppWorkspaceSummaryCard`, `AppWorkspaceDetailPanel`, `AppWorkspaceSplitContent` |
 | Responsive page | `ResponsivePage`, `PageMaxWidth`, `ResponsiveSpacing`, `AppBreakpoints` |
-| List/table | `AppListTable`, `AppPaginatedListTable`, `AppSearchablePaginatedListTable`, `AppListTableColumn`, stable row keys |
+| List/table | `AppListTable` with `items` or `page: AppPage<T>`, `AppListTableColumn`, stable row keys, optional column choices, and `AppListTableColumnVisibilityController` |
 | List search | `AppSearchBar` directly or `AppListTableSearch` attached to `AppListTable`; use advanced filters for field/date/status filters where needed |
 | Modal | `AppDialog` with shared actions, close handling, max width, scroll behavior, semantic label, and duplicate-submit protection |
 | Forms | `AppFormShell`, `AppFormSection`, `AppTextField`, `AppSelectField`, `AppDateField`, `AppCurrencyAmountField`, `AppPhoneField`, `AppEmailField`, `AppGenderField`, switches/radio/checkbox fields, and `AppValidators` |
-| Buttons/actions | `AppButton`, `AppIconButton`, `AppReportActions`, shared confirmation pattern |
+| Buttons/actions | `AppButton`, `AppIconButton`, `AppActionPanel`, `AppPermissionActionList`, `AppReportActionButton`, and shared confirmation/action dialogs |
 | State | `AppStateView`, `AppStateScaffold`, existing async-state wrappers |
-| Access | `AppAccessGate`, `AppAccessActionGate`, `AccessRequirement`, `AppAccessPolicy` |
+| Access | `AppAccessGate`, `AppAccessActionGate`, `AppPermissionActionButton`, `AccessRequirement`, and `AppAccessPolicy` |
 
 A module may create feature-specific row cells, cards, DTO mappers, controllers, repositories, and small composition widgets, but it must not create another app-wide table, search bar, dialog, form field family, permission wrapper, or workspace shell.
 
@@ -146,7 +160,7 @@ Searchable selects should be fast, debounced, and not push unrelated content dow
 - Preserve filters, pagination, selected row, and scroll position after modal actions.
 
 ## List/Search/Dialog Completion Rules
-- Any screen displaying list data must use `AppListTable`, `AppPaginatedListTable`, or `AppSearchablePaginatedListTable`.
+- Any screen displaying list data must use `AppListTable`; pass `items` for local/in-memory lists or `page: AppPage<T>` plus `onPageChanged` for backend-paginated data.
 - Any search field attached to list data must use `AppSearchBar` or `AppListTableSearch`.
 - Any CRUD, status, approval, confirmation, payment, print/export, or short detailed-display action must use `AppDialog`.
 - Details should appear as a side/detail panel on tablet/desktop and as a focused `AppDialog` or route only when the screen size or workflow requires it.

@@ -9,6 +9,12 @@ Manage cleaning tasks, schedules, bed turnover, ward cleaning, sanitation readin
 - Use `ipd-flow.md` for discharge-triggered bed cleaning, bed release, and room readiness.
 - Use `01-policy.md` for simple modal actions, role access, responsive UI, and partial state refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: no dedicated `housekeeping` feature folder or route exists, but backend exposes `/api/v1/housekeeping`, housekeeping task/schedule routes, and room/bed/ward context.
+- Required adjustment: create one housekeeping workspace following the existing feature pattern; do not duplicate room/bed components or create a custom task table.
+- UI similarity rule: cleaning tasks, schedules, bed turnover, assignments, completions, exceptions, and reports must use shared workspace/list/search/dialog/form/status/action components and targeted task/bed refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -60,13 +66,13 @@ Cleaning schedules, completed task summaries, bed turnover reports, inspection n
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<HousekeepingTask>` with task/reference, location, room/bed, trigger/source, priority, assignee, due time, status, and next action. Use `AppSearchBar` for location, room/bed, assignee, status, priority, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<HousekeepingTask>` with task/reference, location, room/bed, trigger/source, priority, assignee, due time, status, and next action. Use `AppSearchBar` for location, room/bed, assignee, status, priority, and date filters. |
 | Detail/display | Use task detail with cleaning checklist, bed/room readiness, source admission/discharge/maintenance link, notes, and activity history. |
 | CRUD/UI actions | Use `AppDialog` for create task, assign, start, complete, fail/return, mark room/bed ready, add note, and print housekeeping summary. |
 | RBAC/ABAC | Gate with operations/housekeeping roles, ward/location scope, bed-management links, and backend authorization. |
 | Partial refresh | After housekeeping mutation update only task row, room/bed readiness badge, IPD/discharge bed-release state, ward count, and notification badge. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

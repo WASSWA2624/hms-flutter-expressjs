@@ -10,6 +10,12 @@ Manage ICU admission, ICU bed assignment, intensive observations, alerts, ICU ro
 - Use `opd-flow.md` when emergency/OPD triage routes a patient directly toward ICU through approved admission flow.
 - Use `01-policy.md` for role access, responsive UI, and partial state updates.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/icu/` already has DTOs, repository, entities, controller, and `icu_workspace_page.dart` using `AppWorkspace`, `AppListTable`, detail panels, report actions, print templates, and async states.
+- Required adjustment: extend the existing ICU workspace and panels; do not create a second critical-care dashboard or custom ICU action shell.
+- UI similarity rule: use the same workspace/list/detail/action/report pattern as IPD/clinical, with targeted ICU stay, observation, alert, and transfer-state refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -63,13 +69,13 @@ ICU observation summaries, ICU stay summaries, transfer notes, and discharge rea
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<IcuStay>` with patient, ICU bed, acuity, alerts, observation status, consultant, ventilation/support status where available, and next action. Use `AppSearchBar` for patient, bed, acuity, alert status, provider, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<IcuStay>` with patient, ICU bed, acuity, alerts, observation status, consultant, ventilation/support status where available, and next action. Use `AppSearchBar` for patient, bed, acuity, alert status, provider, and date filters. |
 | Detail/display | Use shared patient context with ICU observations, critical alerts, rounds, interventions, transfer/discharge readiness, and related orders. |
 | CRUD/UI actions | Use `AppDialog` for ICU admission/transfer acceptance, observation entry, alert acknowledgement, round note, transfer readiness, ICU discharge handover, and print ICU summary. |
 | RBAC/ABAC | Gate with clinical/emergency/operations permissions, ICU module entitlement, ICU/ward scope, and backend authorization. |
 | Partial refresh | After ICU actions update only ICU row, alert badge, observation chart/section, bed status, transfer queue, source IPD row, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

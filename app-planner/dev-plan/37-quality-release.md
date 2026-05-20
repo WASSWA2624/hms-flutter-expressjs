@@ -10,6 +10,12 @@ Confirm HOSSPI HMS is safe, usable, consistent, responsive, permission-aware, wo
 - Use `ipd-flow.md` to validate admission, bed allocation, nursing handover, inpatient care, orders, transfer, billing, discharge, bed release, and encounter closure.
 - Use `01-policy.md` to validate modal-first actions, simple UI, responsive behavior, role access, targeted UI refresh, and generated reporting.
 
+
+## Current Implementation Baseline To Validate
+- Existing workspaces must be validated as the UI baseline: patients, OPD, emergency, clinical, nursing, IPD, ICU, theater, discharge, lab, radiology, pharmacy, billing, claims, tenant/facility, auth, settings, profile, and home.
+- Pending workspaces must match that baseline: access control, HR, rooms/beds, biomedical, operations, housekeeping, subscriptions, notifications/communications, reports/audit, integrations, physiotherapy, and mortuary.
+- Validation must fail any feature that introduces a duplicate shell, table, search bar, modal family, form field family, patient context view, report/print template, permission system, or direct widget-level API call when an existing shared implementation fits.
+
 ## Validation Areas
 1. App identity: HOSSPI HMS branding, logo, titles, shell labels, and facility identity.
 2. Auth: login, logout, registration policy, change password, session restoration, and route guards.
@@ -45,7 +51,7 @@ Before declaring the app complete, audit every route and module against this tab
 
 | Audit area | Must pass |
 | --- | --- |
-| Shared UI reuse | List data uses `AppListTable`/`AppPaginatedListTable`; list search uses `AppSearchBar`/`AppListTableSearch`; dialogs use `AppDialog`; forms use shared fields and form shell; pages use `AppWorkspace`/responsive layout. |
+| Shared UI reuse | List data uses `AppListTable`; list search uses `AppSearchBar`/`AppListTableSearch`; dialogs use `AppDialog`; forms use shared fields and form shell; pages use `AppWorkspace`/responsive layout. |
 | App coverage | Existing feature folders are completed and missing modules are added with the same `data/domain/presentation` architecture. |
 | No congestion | Dashboards use a small number of summary cards and route to focused worklists; details are in panels/modals/sections, not one crowded screen. |
 | Real-time behavior | Mutations update affected rows, detail panels, badges, queues, notifications, and report previews only; no whole-app reload or unnecessary full page reset. |

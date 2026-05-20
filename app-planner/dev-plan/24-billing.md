@@ -10,6 +10,12 @@ Manage invoices, invoice items, cashier payments, receipts, refunds, billing adj
 - Use `ipd-flow.md` for admission deposits, rolling inpatient charges, insurance authorization, final clearance, refunds, and discharge billing.
 - Use `01-policy.md` for modal-based payments, role access, generated receipts, and targeted state refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/billing/` already has DTOs, repository, entities, controller, and `billing_workspace_page.dart` using `AppWorkspace`, `AppListTable`, `showAppWorkspaceActionDialog`, shared form shell, report actions, and async states.
+- Required adjustment: extend this billing workspace and action dialogs; do not create another invoice/payment/refund UI shell or receipt pattern.
+- UI similarity rule: invoices, payments, refunds, adjustments, deposits, closeout, and receipts must use shared action dialogs, report actions, and targeted invoice/payment/encounter clearance refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -67,13 +73,13 @@ Invoices, receipts, refund notes, deposit slips, statement of account, shift clo
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<BillingItem>` with invoice number, patient/payer, source encounter/admission/order, amount due, status, cashier/shift, date, and next action. Attach `AppSearchBar`; replace ad hoc search fields during completion. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<BillingItem>` with invoice number, patient/payer, source encounter/admission/order, amount due, status, cashier/shift, date, and next action. Attach `AppSearchBar`; replace ad hoc search fields during completion. |
 | Detail/display | Use invoice/payment detail with line items, charges, deposits, refunds, receipts, payer/coverage, shift/day-close links, and audit-safe activity. |
 | CRUD/UI actions | Use `AppDialog` for payment, deposit, refund request/approval where short, invoice adjustment, receipt print, coverage check, void/cancel confirmation, and shift close confirmation. |
 | RBAC/ABAC | Gate with billing read/write, financial approve, evidence export, tenant/facility/cashier scope, and backend authorization. |
 | Partial refresh | After billing mutation update only invoice/payment/refund row, OPD/IPD/order billing gate, cashier totals, receipt/report preview, claim state, and notification count. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

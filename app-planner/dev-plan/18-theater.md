@@ -10,6 +10,12 @@ Manage theater/theatre bookings, case readiness, room allocation, procedure flow
 - Use `opd-flow.md` when OPD patients are sent for OPD procedures or theater-related services.
 - Use `01-policy.md` for modal actions, permissions, responsive UI, reports, and partial refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/theater/` already has DTOs, repository, entities, controller, and `theater_workspace_page.dart` using `AppWorkspace`, `AppListTable`, `showAppWorkspaceActionDialog`, shared form shell, and async states.
+- Required adjustment: extend this theater workspace; do not introduce separate surgery, anesthesia, or post-op UI shells when shared action dialogs and panels can compose the workflow.
+- UI similarity rule: theater actions must stay modal-first where short, generated-report based where printed, and update only affected case rows, team/schedule badges, and detail sections.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -62,13 +68,13 @@ Theater schedule, procedure note, anesthesia record, post-op note, and handover 
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<TheaterCase>` with case number, patient, procedure, urgency, surgeon/team, theater room, scheduled time, anesthesia/post-op status, billing/clearance, and next action. Use `AppSearchBar` for patient, case, procedure, room, status, date, and team filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<TheaterCase>` with case number, patient, procedure, urgency, surgeon/team, theater room, scheduled time, anesthesia/post-op status, billing/clearance, and next action. Use `AppSearchBar` for patient, case, procedure, room, status, date, and team filters. |
 | Detail/display | Use shared patient context with surgical request, checklist, anesthesia record, intra/post-op notes, handover, billing, and reports. Use full page only for long anesthesia/theater record authoring. |
 | CRUD/UI actions | Use `AppDialog` for schedule/reschedule, checklist update, status transition, team assignment, post-op handover, cancellation, and print operation/anesthesia/handover documents. |
 | RBAC/ABAC | Gate with clinical permissions, theater manager roles/modules, billing read where needed, facility/theater scope, and backend authorization. |
 | Partial refresh | After mutation update only theater row, schedule slot, checklist/status badge, patient detail, IPD/OPD source state, billing badge, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

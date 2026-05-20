@@ -9,6 +9,12 @@ Ensure every route, menu, button, modal action, report, export, print action, no
 - Align frontend route/action visibility with backend role, permission, ABAC, module-subscription, and license contracts.
 - Use frontend permission rules only to present allowed UI and prevent accidental access.
 
+
+## Current Implementation Baseline
+- Current frontend status: core access utilities already exist in `frontend/lib/core/permissions/` with `AppAccessPolicy`, `AccessRequirement`, `AppAccessGate`, `AppAccessActionGate`, roles, permissions, and module-entitlement checks.
+- Required adjustment: build missing access-control admin screens by reusing those core utilities and central `AppRoutes`; do not add raw role checks inside widgets or create a new permission system.
+- UI similarity rule: access-control lists must use `AppWorkspace`, `AppListTable`, `AppListTableSearch`, `AppDialog`, `AppPermissionActionList`, and shared forbidden/empty/error states.
+
 ## Backend Routes and Files
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.

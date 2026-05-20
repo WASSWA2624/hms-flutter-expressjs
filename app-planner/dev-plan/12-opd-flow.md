@@ -10,6 +10,12 @@ Manage appointments, arrivals, queues, OPD encounters, flexible billing gates, s
 - Use `13-triage.md`, `14-clinical.md`, `21-lab.md`, `22-radiology.md`, `23-pharmacy.md`, `24-billing.md`, and `16-inpatient.md` for connected module implementation.
 - Use `01-policy.md` and `10-workspace-ui.md` for modal-first actions, simple UI, role access, and targeted UI refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/opd/` already has DTOs, repository, entities, controller, and `opd_workspace_page.dart` using `AppWorkspace`, `AppListTable`, shared dialogs/forms/actions, report actions, and permission-aware workflow panels.
+- Required adjustment: complete and normalize the existing OPD workspace rather than creating another outpatient board or route.
+- UI similarity rule: use the existing OPD table/detail/action layout, shared patient context, shared modal actions, `AppPermissionActionList`, and targeted OPD row/detail/queue refresh after mutations.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -73,13 +79,13 @@ Use these route families only after confirming they exist in the current backend
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<OpdEncounter>` for active OPD queues with columns for encounter/arrival time, patient, visit type, provider/department, queue/status, payer/billing state, waiting time, and next role action. Use `AppSearchBar` for patient, encounter, provider, status, payer, date, and queue filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<OpdEncounter>` for active OPD queues with columns for encounter/arrival time, patient, visit type, provider/department, queue/status, payer/billing state, waiting time, and next role action. Use `AppSearchBar` for patient, encounter, provider, status, payer, date, and queue filters. |
 | Detail/display | Use a patient/encounter detail panel showing arrival path, triage status, consultation state, orders, billing gates, result-review needs, pharmacy status, referral/admission/completion state, and audit activity. |
 | CRUD/UI actions | Use `AppDialog` for check-in, quick registration handoff, assign provider, move queue, skip/require triage, payment gate check, reschedule, cancel, refer, admission request, and OPD summary print. |
 | RBAC/ABAC | Gate route/actions by patient, clinical, billing, emergency, and operations permissions plus active scheduling/queue entitlements and facility scope. |
 | Partial refresh | After OPD mutations update only affected encounter row, queue counts, billing badge, order badges, selected detail panel, destination module queues, and notification count. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

@@ -10,6 +10,12 @@ Support nursing observations, vital signs, medication administration, care tasks
 - Use `ipd-flow.md` for nursing admission, ward handover, inpatient care loop, transfers, discharge readiness, and bed release coordination.
 - Use `01-policy.md` for simple modal actions, role access, responsive UI, and partial state updates.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/nursing/` already has DTOs, repository, entities, controller, and `nursing_workspace_page.dart` using `AppWorkspace`, `AppListTable`, `AppPatientDetailDialog`, shared nursing medication forms, report actions, and async states.
+- Required adjustment: extend existing nursing workspace/widgets; do not build a second nursing task board, medication administration form, or patient detail dialog.
+- UI similarity rule: use `AppMedicationAdministrationForm`, `AppPatientDetailDialog`, shared action dialogs, shared state views, and targeted task/admission/detail refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -64,13 +70,13 @@ Nursing notes, handover summaries, observation charts, medication administration
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<NursingWorkItem>` with patient, ward/bed, admission, task type, priority, due time, responsible nurse, and status. Use `AppSearchBar` for patient, ward, bed, task, status, priority, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<NursingWorkItem>` with patient, ward/bed, admission, task type, priority, due time, responsible nurse, and status. Use `AppSearchBar` for patient, ward, bed, task, status, priority, and date filters. |
 | Detail/display | Use shared inpatient patient context with observations, medication administration, nursing notes, care tasks, handover notes, and ward activity. |
 | CRUD/UI actions | Use `AppDialog` for observation, medication administration, task update, nursing note, handover, escalation, and print handover/task summary. |
 | RBAC/ABAC | Gate with clinical permissions, nursing/ward manager roles where represented, ward/unit scope, and active inpatient module entitlement. |
 | Partial refresh | After nursing mutation update only affected task row, medication/observation section, ward board badge, handover/activity entry, and notification count. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

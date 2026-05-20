@@ -12,7 +12,7 @@ Understand what already exists before planning or implementing new HOSSPI HMS fe
 - Use this file only as the current codebase map and reuse checklist.
 
 ## Frontend Foundation Already Present
-The Flutter frontend planner describes these reusable foundations. Confirm the actual files before implementation and extend them instead of replacing them.
+The attached Flutter frontend already contains these reusable foundations. Confirm the actual files before implementation and extend them instead of replacing them.
 
 | Area | Existing path |
 | --- | --- |
@@ -31,6 +31,20 @@ The Flutter frontend planner describes these reusable foundations. Confirm the a
 | Settings page | `frontend/lib/features/settings/presentation/pages/settings_page.dart` |
 | Home starter feature | `frontend/lib/features/home/` |
 
+## Current Shared UI Baseline From Attached Frontend
+Use these implemented files as the visual and behavioral baseline for all pending modules:
+
+| Area | Current implementation to reuse |
+| --- | --- |
+| Workspace layout | `frontend/lib/shared/layout/app_workspace.dart`: `AppWorkspace`, header, status badges, summary cards, filter bar, split content, detail panel, patient context header, activity list, action dialog, and detail drawer helpers |
+| Lists and search | `frontend/lib/shared/components/app_list_table.dart` and `app_search_bar.dart`: `AppListTable` with `items` or `page: AppPage<T>`, `AppListTableSearch`, column visibility, advanced filters, date filters, and trailing search actions |
+| Forms/dialogs | `frontend/lib/shared/forms/` and `frontend/lib/shared/components/app_dialog.dart`: shared form shell/sections/fields, `showAppDialog`, and common action dialogs from `frontend/lib/shared/actions/` |
+| Actions/access | `frontend/lib/shared/actions/`, `frontend/lib/shared/components/app_permission_action.dart`, and `frontend/lib/core/permissions/`: declarative action rows, permission-gated buttons, route guards, role/permission/module-entitlement checks |
+| Patient/clinical reuse | `AppPatientDetailDialog`, `AppTriageActionDialog`, `AppVitalsForm`, `AppRecordVitalsDialog`, `AppMedicationAdministrationForm`, `ClinicalActionsPanel`, and shared clinical action/order dialogs |
+| Reports/printing | `frontend/lib/shared/components/app_report_actions.dart` and `frontend/lib/shared/printing/print_form_template.dart`: report buttons, summary grid, preview panel, and generated print HTML template |
+
+Do not add another app-wide table, search bar, modal shell, form field family, patient header, clinical order dialog family, report action component, print template, or permission wrapper unless this baseline cannot support a repeated need.
+
 ## Frontend Implementation Inventory
 The current frontend already contains several HMS feature folders and routes. Treat these as partial app implementations to complete and normalize, not as disposable starter code.
 
@@ -40,10 +54,26 @@ The current frontend already contains several HMS feature folders and routes. Tr
 | Still missing or needing new feature folders | `access_control`, `hr`, `rooms_beds`, `biomedical`, `operations`, `housekeeping`, `subscriptions`, `notifications`/`communications`, `reports_audit`, `integrations`, `physiotherapy`, and `mortuary` |
 | Needs normalization while completing modules | Any list search still built with ad hoc `AppTextField`, any local modal/dialog variant, any duplicated list/table pattern, any hard-coded user-facing label, and any action not routed through `AppAccessGate`/`AppAccessActionGate` |
 
+
+## Current Implemented Feature Shape
+Implemented HMS workspace features generally use this compact six-file pattern:
+
+```text
+frontend/lib/features/<feature>/
+  data/dtos/<feature>_dtos.dart
+  data/repositories/<feature>_repository_impl.dart
+  domain/entities/<feature>_entities.dart
+  domain/repositories/<feature>_repository.dart
+  presentation/controllers/<feature>_workspace_controller.dart
+  presentation/pages/<feature>_workspace_page.dart
+```
+
+Pending modules should copy this structure unless their existing feature already has a more specific page/controller name. Widgets may be feature-local only for feature-specific composition, row cells, or panels; repeated UI behavior must move to shared components.
+
 ## Frontend Gaps To Address
 - Complete and polish existing feature folders instead of replacing them.
 - Add missing module feature folders only where absent, using the same `data/domain/presentation` shape.
-- Normalize all list data to `AppListTable`/`AppPaginatedListTable`/`AppSearchablePaginatedListTable` and `AppSearchBar`/`AppListTableSearch`.
+- Normalize all list data to `AppListTable`; use `items` for local data or `page: AppPage<T>`/`onPageChanged` for backend pagination, and use `AppSearchBar`/`AppListTableSearch` for list search and filters.
 - Normalize CRUD, UI actions, approvals, payments, status changes, print/export options, and short detailed display to `AppDialog`.
 - Ensure all app routes, menus, badges, row actions, modals, reports, and exports are permission/entitlement aware.
 - Ensure module state changes update only affected providers/state slices and preserve filters, pagination, selected rows, and scroll position.

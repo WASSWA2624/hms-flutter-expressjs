@@ -9,6 +9,12 @@ Implement HMS authentication screens and account actions using the existing Flut
 - Use `app-write-up.md` and `08-access-control.md` for role and module access expectations.
 - Use frontend auth, session, security, forms, navigation, and permissions rules for implementation.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/auth/` already contains login, register, verify-email, change-password dialog, session controller integration, DTOs, repository, and route guards.
+- Required adjustment: extend the existing auth controller/repository/pages only; do not create a parallel auth flow or alternate session storage.
+- UI similarity rule: keep auth forms on shared fields/buttons/state messaging, route through existing guards, and use `AppDialog` for password/session actions.
+
 ## Current State
 - Frontend session management and route guards should be reused where present under `frontend/lib/core/security/` and `frontend/lib/app/router/`.
 - Backend auth routes exist under `/api/v1/auth` and session routes under `/api/v1/user-sessions`.

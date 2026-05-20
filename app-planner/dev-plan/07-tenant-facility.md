@@ -10,6 +10,12 @@ Allow admins to configure the organization and facility before daily hospital op
 - Use `35-reports-audit.md` for facility identity on generated print/report templates.
 - Use backend routes and rules for storage, validation, tenancy, and authorization.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/tenant_facility/` already has DTOs, repository, entity, controller, and `tenant_facility_setup_page.dart` using the shared workspace/dialog/state foundation.
+- Required adjustment: extend the existing setup workflow for organization, facility, branch, department, unit, room, ward, bed, and setup actions; do not create a duplicate admin setup feature.
+- UI similarity rule: use `AppWorkspace`, summary cards, shared dialogs, shared form fields, `AsyncStateScaffold`, and targeted section refresh for all setup additions.
+
 ## Backend Routes
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -63,7 +69,7 @@ After account creation or first admin login:
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Setup lists | Tenants, facilities, branches, departments, units, rooms, wards, and beds must render through `AppListTable`/`AppPaginatedListTable` and `AppSearchBar`. |
+| Setup lists | Tenants, facilities, branches, departments, units, rooms, wards, and beds must render through `AppListTable` and `AppSearchBar`. |
 | Setup forms | Create/edit actions must use `AppDialog`, shared form fields, and catalog-backed selects; avoid separate form styling per entity. |
 | Catalog sync | Facility structure changes must invalidate only affected setup catalogs, dropdowns, room/ward/bed rows, and dependent module filters. |
 | Access | Gate setup routes/actions with tenant/facility/system admin permissions and backend authorization. |

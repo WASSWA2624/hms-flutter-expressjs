@@ -10,6 +10,12 @@ Manage coverage plans, eligibility/coverage visibility, pre-authorizations, clai
 - Use `ipd-flow.md` for admission authorization, inpatient billing, discharge clearance, deposit adjustment, and final claim handling.
 - Use `01-policy.md` for simple modal actions, role access, reports, and partial state refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/claims/` already has DTOs, repository, entities, controller, and `claims_workspace_page.dart` using `AppWorkspace`, `AppListTable`, `showAppWorkspaceActionDialog`, shared panels, report actions, print templates, and async states.
+- Required adjustment: extend this claims workspace; do not create separate preauthorization, claim review, document checklist, or billing-impact components when existing patterns can compose them.
+- UI similarity rule: claims/preauth status changes, document checks, submission, rejection, resubmission, and reports must use shared dialogs/panels/templates and targeted claim/invoice/admission refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -63,13 +69,13 @@ Claim forms, pre-authorization letters, claim statements, rejection/resubmission
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<Claim>` with claim/preauth number, patient, payer, coverage plan, invoice/admission, claim amount, status, age, and next action. Use `AppSearchBar` for patient, claim, payer, status, date, and invoice filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<Claim>` with claim/preauth number, patient, payer, coverage plan, invoice/admission, claim amount, status, age, and next action. Use `AppSearchBar` for patient, claim, payer, status, date, and invoice filters. |
 | Detail/display | Use claim detail with coverage, pre-authorization, invoice links, documents, approvals/rejections, resubmission notes, and financial/audit history. |
 | CRUD/UI actions | Use `AppDialog` for coverage check, preauth request/update, claim submit, attach document note, approval/rejection response, resubmission, and claim document print/export. |
 | RBAC/ABAC | Gate with billing permissions, financial approve, evidence export, payer/tenant/facility scope, and backend authorization. |
 | Partial refresh | After claim action update only claim row, invoice/coverage badge, patient billing detail, dashboard counts, report/export status, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

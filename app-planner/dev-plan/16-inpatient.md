@@ -10,6 +10,12 @@ Manage admitted patients, admission approval, bed allocation, ward location, inp
 - Use `opd-flow.md` when admissions originate from OPD consultation or emergency OPD handling.
 - Use `01-policy.md` for modal-first actions, permissions, responsive UI, and targeted state refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/ipd/` already has DTOs, repository, entities, controller, and `ipd_workspace_page.dart` using `AppWorkspace`, `AppListTable`, shared dialogs/actions, and async states.
+- Required adjustment: extend the existing IPD board and admission detail logic; do not create a replacement inpatient board or duplicate bed/admission components.
+- UI similarity rule: keep admission, bed, transfer, nursing handover, billing, and discharge actions in shared dialogs/detail panels with targeted admission row, bed badge, and detail refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -70,13 +76,13 @@ Admission slip, bed assignment note, transfer note, inpatient summary, ward-roun
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<IpdAdmission>` for active IPD board with admission number, patient, ward/bed, consultant, payer/deposit, nursing status, order status, discharge readiness, and next action. Use `AppSearchBar` for patient, admission, ward, bed, status, payer, provider, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<IpdAdmission>` for active IPD board with admission number, patient, ward/bed, consultant, payer/deposit, nursing status, order status, discharge readiness, and next action. Use `AppSearchBar` for patient, admission, ward, bed, status, payer, provider, and date filters. |
 | Detail/display | Use shared inpatient patient context with admission request, bed allocation, ward handover, rounds, orders, transfers, billing/deposit/insurance, discharge planning, and bed-release state. |
 | CRUD/UI actions | Use `AppDialog` for admission approval, bed request/allocation, ward handover, deposit/coverage check, transfer request/approval, round note, discharge request, and IPD document print. |
 | RBAC/ABAC | Gate with clinical, billing, operations/bed-management permissions, ward/unit scope, active inpatient-bed-management entitlement, and backend authorization. |
 | Partial refresh | After mutation update only admission row, bed status, ward board, billing/deposit badge, nursing handover, transfer/discharge badges, reports, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

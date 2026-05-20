@@ -10,6 +10,12 @@ Manage lab test catalog, panels, orders, samples, results, quality control, bill
 - Use `ipd-flow.md` for inpatient lab orders, service routing, result review, and billing/authorization timing.
 - Use `01-policy.md` for catalog-driven requests, modal actions, role access, and partial UI refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/lab/` already has DTOs, repository, entities, controller, and `lab_workspace_page.dart` using `AppWorkspace`, `AppListTable`, shared dialogs/actions, report actions, and async states.
+- Required adjustment: extend this lab workspace and catalog/order/result actions; do not create separate sample/result table or status components if `AppListTable` and shared badges can represent them.
+- UI similarity rule: lab requests, sample collection, result entry, release, QC, and print actions must use shared list/search/dialog/report patterns and targeted order/item/result refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -66,13 +72,13 @@ Lab result reports must use the shared multi-page template from `35-reports-audi
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<LabOrder>` with order number, patient, source encounter/admission, tests/panel, billing/sample/result status, priority, requested time, and next action. Use `AppSearchBar` for patient, order, test, source, status, priority, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<LabOrder>` with order number, patient, source encounter/admission, tests/panel, billing/sample/result status, priority, requested time, and next action. Use `AppSearchBar` for patient, order, test, source, status, priority, and date filters. |
 | Detail/display | Use patient/order detail with sample list, test items, results, verification, QC context, billing gate, source doctor review status, and result history. |
 | CRUD/UI actions | Use `AppDialog` for sample collection, sample rejection, result entry, verification/release, QC note, billing gate check, cancellation, and lab report print. |
 | RBAC/ABAC | Gate with lab permissions; allow clinical read-only result visibility where permitted; enforce facility/lab scope and backend authorization. |
 | Partial refresh | After lab action update only lab order row, sample/result item, doctor review queue, OPD/IPD/clinical detail, billing badge, report preview, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

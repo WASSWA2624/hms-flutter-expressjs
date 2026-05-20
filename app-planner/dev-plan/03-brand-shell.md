@@ -9,6 +9,12 @@ Convert the Flutter starter identity into **HOSSPI HMS** without rebuilding the 
 - Use `10-workspace-ui.md` for module workspace consistency.
 - Use frontend app-rules for assets, theming, localization, navigation, responsiveness, and accessibility.
 
+
+## Current Implementation Baseline
+- Current frontend status: the app shell, `HosspiHmsApp`, startup flow, responsive shell scaffold, theme palettes, `AppLogo`, route guards, route icons, and generated localization already exist.
+- Required adjustment: update remaining starter or hard-coded labels by extending the existing shell, route, theme, logo, and localization files; do not rebuild the app scaffold or introduce a second navigation pattern.
+- UI similarity rule: every added navigation item must use `AppRoutes`, `AppRouteIcons`, the existing responsive shell destination model, localized labels, permission/module gating, and the same badge/count behavior used by current workspaces.
+
 ## Current State
 - The frontend shell, responsive scaffold, router, theme, app logo component, and settings page should be reused where present.
 - Starter app naming may still exist in `pubspec.yaml`, localization labels, and starter home copy.

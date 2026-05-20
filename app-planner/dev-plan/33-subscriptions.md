@@ -9,6 +9,12 @@ Manage subscription plans, active subscriptions, module subscriptions, licenses,
 - Use `01-policy.md` for access control, simple UI, report generation, responsive behavior, and partial state refresh.
 - Use earlier access-control/dev-plan work for role/permission/entitlement guards instead of redefining them.
 
+
+## Current Implementation Baseline
+- Current frontend status: no dedicated `subscriptions` feature folder or route exists, but backend exposes `/api/v1/subscriptions-workspace`, plans, subscriptions, module subscriptions, licenses, and subscription invoices.
+- Required adjustment: create one subscription-management workspace using existing route guards, module-entitlement checks, and the same six-file feature pattern used by implemented modules.
+- UI similarity rule: plans, licenses, module subscriptions, invoices, upgrades, renewals, suspensions, and entitlement visibility must use shared workspace/list/search/dialog/form/report patterns and targeted entitlement/badge refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -61,13 +67,13 @@ Subscription invoice, license summary, module entitlement summary, renewal notic
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<SubscriptionItem>` with tenant/facility, plan, module, license, invoice, status, renewal/expiry, and next action. Use `AppSearchBar` for tenant, plan, module, status, invoice, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<SubscriptionItem>` with tenant/facility, plan, module, license, invoice, status, renewal/expiry, and next action. Use `AppSearchBar` for tenant, plan, module, status, invoice, and date filters. |
 | Detail/display | Use subscription detail with plan limits, module subscriptions, licenses, invoices, entitlement impact, audit changes, and affected features. |
 | CRUD/UI actions | Use `AppDialog` for plan create/edit, subscribe, renew, cancel, assign module, update license, invoice action, and entitlement confirmation. |
 | RBAC/ABAC | Gate with subscription/admin/system permissions, tenant scope, billing visibility where needed, and backend authorization. |
 | Partial refresh | After subscription mutation update only subscription row, active module entitlement map, route/menu visibility, invoice badge, license count, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

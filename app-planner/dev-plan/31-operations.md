@@ -9,6 +9,12 @@ Manage non-clinical facility operations such as maintenance requests, electrical
 - Use `ipd-flow.md` indirectly where operations affects bed/room/ward readiness and patient movement.
 - Use `01-policy.md` for simple modals, permissions, responsive UI, and partial refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: no dedicated `operations` feature folder or route exists, but frontend permissions include operations/last-office access and backend exposes maintenance, asset, housekeeping, handover, shift-close/day-close, and closeout route families.
+- Required adjustment: build operations by composing those existing backend contracts and shared UI patterns; do not invent a generic unmounted `/operations` endpoint or a custom dashboard shell.
+- UI similarity rule: maintenance, closeout, handover, asset-service, and readiness screens must use `AppWorkspace`, `AppListTable`, shared dialogs/forms, permission-gated action lists, and targeted row/badge/detail refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -63,13 +69,13 @@ Maintenance request summaries, service logs, asset service history, readiness re
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<OperationsWorkItem>` with request/reference, area/system, priority, location, assignee/team, status, due time, and next action. Use `AppSearchBar` for request, location, system, priority, status, assignee, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<OperationsWorkItem>` with request/reference, area/system, priority, location, assignee/team, status, due time, and next action. Use `AppSearchBar` for request, location, system, priority, status, assignee, and date filters. |
 | Detail/display | Use operational detail with maintenance request, assets/rooms affected, safety notes, handover/closeout links, evidence, audit activity, and report history. |
 | CRUD/UI actions | Use `AppDialog` for create request, assign, status update, safety note, closeout, handover, evidence attach note, and print/export operational report. |
 | RBAC/ABAC | Gate with operations read/write, last-office/compliance/evidence permissions where relevant, facility/location scope, and backend authorization. |
 | Partial refresh | After operations mutation update only work item row, affected room/asset status, closeout pack, dashboard count, report preview, and notification badge. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

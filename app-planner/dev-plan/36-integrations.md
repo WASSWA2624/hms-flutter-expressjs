@@ -9,6 +9,12 @@ Manage API keys, integration configuration, integration logs, webhook subscripti
 - Use `01-policy.md` for permissions, simple UI, reports, generated exports, and partial refresh.
 - Use frontend/backend security and network/API rules for sensitive values, logs, and error handling.
 
+
+## Current Implementation Baseline
+- Current frontend status: no dedicated `integrations` feature folder or route exists, but backend exposes API keys, key permissions, integrations, logs, webhook subscriptions, and interop routes.
+- Required adjustment: create one integrations workspace following the existing feature pattern; do not expose raw secrets, raw payload dumps, or a custom technical admin shell.
+- UI similarity rule: integration status, API keys, permissions, webhooks, logs, tests, and failure states must use shared workspace/list/search/dialog/form/status/action components with permission-gated actions and targeted row/log refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -60,13 +66,13 @@ Integration status reports, API key permission summaries, webhook delivery summa
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<IntegrationItem>` with integration/API key/webhook name, status, owner, scope, last run/event, error state, and next action. Use `AppSearchBar` for integration name, type, status, owner, event, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<IntegrationItem>` with integration/API key/webhook name, status, owner, scope, last run/event, error state, and next action. Use `AppSearchBar` for integration name, type, status, owner, event, and date filters. |
 | Detail/display | Use integration detail with configuration summary, API keys, webhook subscriptions, logs, interop mapping, error history, and audit events; hide secrets. |
 | CRUD/UI actions | Use `AppDialog` for create/edit integration, rotate/revoke API key, configure webhook, retry/suspend, view sanitized log detail, and export permitted logs. |
 | RBAC/ABAC | Gate with system/admin/integration permissions, API-key permissions, tenant/facility scope, and backend authorization; never expose secrets after creation. |
 | Partial refresh | After integration action update only integration row, API key status, webhook/log row, error badge, audit event indicator, and notification count. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

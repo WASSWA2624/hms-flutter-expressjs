@@ -10,6 +10,12 @@ Capture triage information before consultation when needed and route patients sa
 - Use `14-clinical.md` for doctor handoff and triage summary visibility.
 - Use `01-policy.md` and `10-workspace-ui.md` for simple modal-first triage capture and targeted UI refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: triage is not a standalone feature folder; reusable triage/vitals components already exist in `AppTriageActionDialog`, `AppVitalsForm`, `AppRecordVitalsDialog`, and are used from patient, emergency, and OPD-related workflows.
+- Required adjustment: implement pending triage work by extending the OPD/emergency/patient workflows and shared triage components; create a standalone triage route only if the backend/product flow explicitly requires it.
+- UI similarity rule: vitals, acuity, priority, risk flags, route decisions, and notes must use the shared triage/vitals dialogs and update only affected OPD/emergency rows, badges, and patient context panels.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -63,13 +69,13 @@ Use these route families only after confirming they exist in the current backend
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<TriageQueueItem>` with patient, encounter, arrival time, waiting time, urgency, vitals summary, risk flags, and next destination. Use `AppSearchBar` for patient, encounter, urgency, status, provider, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<TriageQueueItem>` with patient, encounter, arrival time, waiting time, urgency, vitals summary, risk flags, and next destination. Use `AppSearchBar` for patient, encounter, urgency, status, provider, and date filters. |
 | Detail/display | Use the shared patient context plus vitals/risk detail sections; show only the clinical context needed by triage staff. |
 | CRUD/UI actions | Use `AppDialog` + shared fields for vitals capture, urgency assignment, risk flag, triage note, route to doctor/emergency, and correction where permitted. |
 | RBAC/ABAC | Gate triage read/write through clinical/emergency permissions, facility scope, and allowed OPD encounter state. |
 | Partial refresh | After triage save update only vitals summary, urgency badge, OPD queue row, doctor/emergency queue, patient risk flag, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

@@ -10,6 +10,12 @@ Register and manage patients as the shared foundation for clinical and administr
 - Use `ipd-flow.md` for admission and transfer-in patient verification.
 - Use `01-policy.md` and `10-workspace-ui.md` for modal-first actions, role access, and simple UI.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/patients/` already has DTOs, repository, entities, controller, patient form widgets/panels, and `patient_registry_page.dart` using `AppWorkspace`, `AppListTable`, shared dialogs, access gates, triage/vitals actions, and report actions.
+- Required adjustment: extend that registry and its widgets only; do not create a second patient registry, patient table, patient modal family, or patient report pattern.
+- UI similarity rule: keep patient registration/detail/report actions on shared fields, `AppPatientDetailDialog`, patient context panels, `AppTriageActionDialog`/`AppVitalsForm` where relevant, `AppReportActionButton`, and targeted registry/detail refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -59,13 +65,13 @@ Use these route families only after confirming they exist in the current backend
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<Patient>` with columns for patient number, name, age/sex, phone/identifier, alert/allergy flag, last/current visit, status, and next permitted action. Attach `AppSearchBar`/`AppListTableSearch` for name, patient number, phone, identifier, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<Patient>` with columns for patient number, name, age/sex, phone/identifier, alert/allergy flag, last/current visit, status, and next permitted action. Attach `AppSearchBar`/`AppListTableSearch` for name, patient number, phone, identifier, and date filters. |
 | Detail/display | Use one shared patient context/detail pattern for demographics, identifiers, contacts, guardians, allergies, documents, consents, OPD/IPD links, billing links, and audit-safe patient summary. Use side panel on desktop and `AppDialog` for short detail on compact layouts. |
 | CRUD/UI actions | Use `AppDialog` + shared forms for quick registration, emergency registration, edit demographics, add contact/guardian/allergy/document/consent, OPD check-in, admission request, and patient report options. |
 | RBAC/ABAC | Gate read with `patient:read`, write with `patient:write`, delete/merge with `patient:delete` where supported, plus tenant/facility scope and PHI/document restrictions. |
 | Partial refresh | After mutation update only patient row, patient header/detail section, duplicate warning, related encounter/admission context, queue badge, and report preview. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

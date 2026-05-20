@@ -42,19 +42,33 @@ Create a new shared component only when the pattern is used in multiple places o
 
 Patient-related screens must use a shared patient context display for patient name, MRN/number, age/sex where available, alerts/allergies, current encounter/admission, status, ward/bed/location, payer/coverage where relevant, and responsible department/provider.
 
+## Current Shared UI Baseline
+The attached frontend already contains the reusable UI baseline for the remaining work:
+
+| Baseline area | Existing shared implementation to reuse |
+| --- | --- |
+| Workspace shell | `AppWorkspace`, `AppWorkspaceHeader`, `AppWorkspaceSummaryCard`, `AppWorkspaceFilterBar`, `AppWorkspaceDetailPanel`, `AppWorkspacePatientContextHeader`, `AppWorkspaceActivityList`, `showAppWorkspaceActionDialog`, and `showAppWorkspaceDetailDrawer` |
+| Lists and filters | `AppListTable`, `AppListTableSearch`, `AppListTableColumnVisibilityController`, `AppSearchBar`, `AppSearchBarFilterValue`, `AppSearchBarFilterGroup`, and `AppSearchBarAction` |
+| Forms and dialogs | `AppDialog`, `showAppDialog`, `AppFormShell`, `AppFormSection`, shared fields, `AppConfirmActionDialog`, `AppTextActionDialog`, `AppSelectActionDialog`, and `AppTextInputActionDialog` |
+| Actions and permissions | `AppActionPanel`, `AppActionList`, `AppPermissionActionList`, `AppPermissionActionItem`, `AppPermissionActionButton`, `AppAccessGate`, and `AppAccessActionGate` |
+| Patient/clinical reuse | `AppPatientDetailDialog`, `AppTriageActionDialog`, `AppVitalsForm`, `AppRecordVitalsDialog`, `AppMedicationAdministrationForm`, `ClinicalActionsPanel`, and shared clinical order/action dialogs |
+| Reports/printing | `AppReportActionButton`, `AppReportPreviewPanel`, `AppReportSummaryGrid`, and `PrintFormTemplate` |
+
+Future work must use these names as the default implementation path. Create a new shared widget only after confirming none of these can cover the repeated behavior.
+
 ## Mandatory Shared Component Usage Standard
 All feature implementation must use the current shared Flutter components before creating local UI. Local widgets are allowed only for feature-specific cells, summaries, or composition that cannot reasonably live in `frontend/lib/shared/`.
 
 | UI need | Required shared anchor |
 | --- | --- |
 | Module page shell | `AppWorkspace`, `AppWorkspaceHeader`, summary cards, detail panels, and responsive layout helpers from `frontend/lib/shared/layout/` |
-| List, table, queue, catalog, registry, report list, audit log | `AppListTable`, `AppPaginatedListTable`, or `AppSearchablePaginatedListTable` from `frontend/lib/shared/components/app_list_table.dart` |
+| List, table, queue, catalog, registry, report list, audit log | `AppListTable` from `frontend/lib/shared/components/app_list_table.dart`; use `items` for local data or `page: AppPage<T>` with `onPageChanged` for backend pagination |
 | Search/filter attached to list data | `AppSearchBar` or `AppListTableSearch`; do not use an ad hoc `AppTextField` as a list search field when the reusable search component fits |
 | CRUD, status update, approval, payment, confirmation, print/export options, and short detailed display | `AppDialog` from `frontend/lib/shared/components/app_dialog.dart` |
 | Forms | `AppFormShell`, `AppFormSection`, shared field components, and `AppValidators` from `frontend/lib/shared/forms/` and `frontend/lib/shared/components/` |
 | Loading, empty, error, forbidden, offline, success | `AppStateView`, `AppStateScaffold`, and existing async-state patterns |
 | Route/action visibility | `AppAccessGate`, `AppAccessActionGate`, `AccessRequirement`, and `AppAccessPolicy` |
-| Report/print actions | Shared report/action components and generated report templates, never visible-screen printing |
+| Report/print actions | `AppReportActionButton`, `AppReportPreviewPanel`, `AppReportSummaryGrid`, and `PrintFormTemplate`; never visible-screen printing |
 
 Existing pages that use local search fields, local dialog shells, duplicated list/table widgets, or raw permission checks must be normalized during that module's completion step.
 

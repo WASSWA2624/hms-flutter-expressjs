@@ -10,6 +10,12 @@ Manage physiotherapy referrals, assessments, therapy plans, treatment sessions, 
 - Use `ipd-flow.md` for inpatient therapy orders, ward coordination, discharge planning, and billing.
 - Use `01-policy.md` for modal actions, role access, simple UI, and partial state refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: no dedicated `physiotherapy` feature folder or route exists in the current frontend, and the current backend route map has no dedicated physiotherapy route family.
+- Required adjustment: start by reusing supported clinical endpoints (`appointments`, `encounters`, `procedures`, `care-plans`, `clinical-notes`, `follow-ups`) only where the backend contract supports the workflow; record a backend gap before requesting a dedicated physiotherapy module.
+- UI similarity rule: when added, the feature must follow the existing workspace six-file pattern and reuse `AppWorkspace`, `AppListTable`, `AppListTableSearch`, shared patient context, shared forms/dialogs, clinical action/report components, and targeted source-care-plan refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -62,13 +68,13 @@ Therapy assessment, treatment plan, session summary, progress report, exercise i
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<TherapyWorkItem>` with patient, referral/source, session date, plan/status, attendance, billing/authorization, therapist, and next action. Use `AppSearchBar` for patient, referral, therapist, status, date, and source filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<TherapyWorkItem>` with patient, referral/source, session date, plan/status, attendance, billing/authorization, therapist, and next action. Use `AppSearchBar` for patient, referral, therapist, status, date, and source filters. |
 | Detail/display | Use shared patient context with referral, assessment, goals, therapy plan, session history, progress notes, instructions, billing state, and follow-up. |
 | CRUD/UI actions | Use `AppDialog` for accept referral, schedule session, record assessment, record session, attendance, plan update, progress note, close episode, and instruction/report print. |
 | RBAC/ABAC | Until dedicated permissions exist, gate through relevant clinical/procedure/care-plan permissions and facility/department scope; document any backend permission gap. |
 | Partial refresh | After therapy action update only therapy row, source care plan/procedure, appointment slot, billing badge, patient timeline, report preview, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

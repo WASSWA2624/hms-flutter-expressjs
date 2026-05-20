@@ -9,6 +9,12 @@ Provide role-aware dashboards, report definitions, report runs, scheduled report
 - Use `opd-flow.md` and `ipd-flow.md` for patient-flow reports, encounter/admission summaries, service movement, billing, discharge, and queue turnaround metrics.
 - Use `01-policy.md` for generated printing, permission-gated reports, simple UI, and partial state refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: shared report/print utilities already exist (`AppReportActionButton`, `AppReportSummaryGrid`, `AppReportPreviewPanel`, `PrintFormTemplate`), but no dedicated reports/audit workspace feature exists.
+- Required adjustment: create one reports/audit workspace using those shared print/report utilities; do not print visible screens or create module-specific print templates that bypass `PrintFormTemplate`.
+- UI similarity rule: dashboards, report catalogs, report runs, schedules, audit logs, PHI logs, exports, and previews must use `AppWorkspace`, `AppListTable`, shared report components, shared dialogs, access gates, and targeted report-run/audit refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -88,13 +94,13 @@ Printed output must be generated from data, not from the visible UI.
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<ReportOrAuditItem>` for report catalog, report runs, schedules, audit logs, PHI logs, and dashboards. Use `AppSearchBar` for report name, module, user, action, record, status, date range, facility, and patient context where permitted. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<ReportOrAuditItem>` for report catalog, report runs, schedules, audit logs, PHI logs, and dashboards. Use `AppSearchBar` for report name, module, user, action, record, status, date range, facility, and patient context where permitted. |
 | Detail/display | Use preview/detail panels for generated report output, run history, audit event details, PHI access records, compliance evidence, and KPI context. |
 | CRUD/UI actions | Use `AppDialog` for run report filters, schedule report, export/print options, audit detail review, evidence export confirmation, and dashboard widget configuration. |
 | RBAC/ABAC | Gate reports, dashboards, audit, PHI logs, exports, print/download, and schedules with reports/compliance/evidence permissions plus tenant/facility/patient scope and backend authorization. |
 | Partial refresh | After report/audit action update only report run row, schedule list, export status, preview panel, dashboard widget, audit indicator, and notification badge. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

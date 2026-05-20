@@ -10,6 +10,12 @@ Support emergency arrival, rapid triage, emergency response, ambulance dispatch/
 - Use `ipd-flow.md` for emergency admission, bed request, billing deferral, ward/ICU transfer, and inpatient handover.
 - Use `01-policy.md` for rapid modal actions, permissions, and partial refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/emergency/` already has DTOs, repository, entities, controller, and `emergency_workspace_page.dart` using `AppWorkspace`, `AppListTable`, shared dialogs/forms, `AppTriageActionDialog`, report actions, print templates, and async states.
+- Required adjustment: extend this emergency workspace for pending ambulance/response actions; do not create a separate emergency triage or ambulance UI shell.
+- UI similarity rule: emergency arrival, acuity, dispatch, handoff, and disposition actions must use shared dialogs/triage components and update only affected case, ambulance, queue, and notification state.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -63,13 +69,13 @@ Emergency case summary, ambulance trip note, referral/transfer note, and emergen
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<EmergencyCase>` with patient/temporary ID, arrival time, triage category, stabilization status, provider/team, deferred billing flag, disposition, and next action. Use `AppSearchBar` for patient, case, urgency, team, status, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<EmergencyCase>` with patient/temporary ID, arrival time, triage category, stabilization status, provider/team, deferred billing flag, disposition, and next action. Use `AppSearchBar` for patient, case, urgency, team, status, and date filters. |
 | Detail/display | Use emergency patient context with registration completeness, triage/stabilization, orders, treatments, billing deferral, admission/referral/discharge decision, and handover activity. |
 | CRUD/UI actions | Use `AppDialog` for quick registration, triage update, stabilization note, assign team, request order, defer billing, admit, refer, discharge, handover, and emergency summary print. |
 | RBAC/ABAC | Gate with `emergency:read`/`emergency:write`, patient/clinical/billing actions as needed, facility scope, and backend authorization. |
 | Partial refresh | After emergency mutation update only emergency row, urgency badge, OPD/IPD source/destination queue, billing flag, order queues, reports, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

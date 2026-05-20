@@ -10,6 +10,12 @@ Prepare, coordinate, print, and complete safe discharge using clinical summary, 
 - Use `opd-flow.md` for OPD completion, referral, prescription, and follow-up summaries.
 - Use `01-policy.md` and `35-reports-audit.md` for modal actions, permissions, partial refresh, and generated print templates.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/discharge/` already has DTOs, repository, entities, controller, and `discharge_workspace_page.dart` using `AppWorkspace`, `AppListTable`, shared action dialogs, clearance panels, report actions, print templates, and async states.
+- Required adjustment: extend this discharge workspace; do not build a separate discharge board, clearance checklist family, or print template.
+- UI similarity rule: use shared clearance/detail panels, `showAppWorkspaceActionDialog`, `AppReportActionButton`, `PrintFormTemplate`, and targeted admission/discharge/clearance refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -70,13 +76,13 @@ Discharge summary, prescription, follow-up note, billing clearance, patient repo
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<DischargeCase>` with patient, admission, ward/bed, discharge stage, pharmacy/nursing/billing/claims clearance, summary status, and next action. Use `AppSearchBar` for patient, admission, ward, status, clearance, provider, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<DischargeCase>` with patient, admission, ward/bed, discharge stage, pharmacy/nursing/billing/claims clearance, summary status, and next action. Use `AppSearchBar` for patient, admission, ward, status, clearance, provider, and date filters. |
 | Detail/display | Use shared inpatient patient context with discharge plan, clinical summary, medicines, instructions, nursing clearance, billing/insurance clearance, documents, exit, and bed cleaning state. |
 | CRUD/UI actions | Use `AppDialog` for clearance updates, discharge instruction edits, medicine handoff, billing clearance check, final exit confirmation, print package options, and bed release request. Use full page for complex discharge summary authoring. |
 | RBAC/ABAC | Gate with clinical, pharmacy, billing, operations, and ward permissions plus active inpatient entitlement and backend authorization. |
 | Partial refresh | After action update only discharge row, clearance badges, source IPD admission, bed cleaning queue, pharmacy/billing queues, report preview, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

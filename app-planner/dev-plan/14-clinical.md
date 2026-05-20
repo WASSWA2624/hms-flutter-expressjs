@@ -10,6 +10,12 @@ Support provider consultation, documentation, diagnosis, orders, procedures, car
 - Use `ipd-flow.md` for admission handoff, inpatient doctor notes, ward rounds, inpatient orders, transfers, and discharge decisions.
 - Use `01-policy.md` for modal-first actions, role access, report/print rules, responsive UI, and partial UI updates.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/clinical/` already has DTOs, repository, entities, controller, and `clinical_workspace_page.dart` using `AppWorkspace`, `AppListTable`, `ClinicalActionsPanel`, shared clinical order dialogs, shared print templates, and async states.
+- Required adjustment: extend existing clinical workspace/actions; do not create separate diagnosis, lab-order, radiology-order, prescription, referral, or admission modal families when shared clinical action dialogs already cover them.
+- UI similarity rule: keep clinical actions inside `ClinicalActionsPanel` and shared clinical dialogs, with generated `PrintFormTemplate` output and targeted worklist/detail refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -69,13 +75,13 @@ Clinical print actions must use the shared report template from `35-reports-audi
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<ClinicalWorklistEntry>` with patient, source queue, reason, triage/urgency, results status, consultation status, provider, and next action. Use `AppSearchBar` for patient, encounter, source, status, date, and provider filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<ClinicalWorklistEntry>` with patient, source queue, reason, triage/urgency, results status, consultation status, provider, and next action. Use `AppSearchBar` for patient, encounter, source, status, date, and provider filters. |
 | Detail/display | Use shared patient context plus clinical timeline, notes, diagnoses, orders, prescriptions, results, referral/admission decision, and billing/coverage warnings. Use a full page only for long consultation authoring that cannot safely fit in a modal. |
 | CRUD/UI actions | Use `AppDialog` for add diagnosis, quick note, order lab/radiology/procedure, prescribe, review result, refer, request admission, close visit, and print consultation/prescription/referral. |
 | RBAC/ABAC | Gate with `clinical:read`/`clinical:write`, break-glass where applicable, module entitlements, and patient/encounter scope. |
 | Partial refresh | After action update only clinical row, selected patient detail, source OPD/IPD queue, service order queues, billing gate, pharmacy queue, reports, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

@@ -10,6 +10,12 @@ Manage formulary, drugs, batches, stock visibility, prescriptions, pharmacy orde
 - Use `ipd-flow.md` for inpatient medication orders, discharge medicines, billing, and pharmacy clearance.
 - Use `01-policy.md` for simple modal actions, catalog-driven selection, role access, and partial UI updates.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/pharmacy/` already has DTOs, repository, entities, controller, and `pharmacy_workspace_page.dart` using `AppWorkspace`, `AppListTable`, shared dialogs/forms, report actions, print templates, and async states.
+- Required adjustment: extend this pharmacy workspace and inventory/order/dispense flows; do not create duplicate drug catalog, dispense, or print components when shared tables/dialogs/templates can be reused.
+- UI similarity rule: pharmacy orders, batches, stock, dispensing, adverse events, and generated documents must use shared list/search/dialog/report patterns and targeted order/stock/dispense refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -67,13 +73,13 @@ Medication labels, prescription printouts, dispense receipts, return notes, and 
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<PharmacyOrder>` with order/prescription number, patient, source encounter/admission, medicine count, stock/billing/dispense status, priority, and next action. Use `AppSearchBar` for patient, order, drug, source, status, date, and priority filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<PharmacyOrder>` with order/prescription number, patient, source encounter/admission, medicine count, stock/billing/dispense status, priority, and next action. Use `AppSearchBar` for patient, order, drug, source, status, date, and priority filters. |
 | Detail/display | Use patient/order detail with prescription items, formulary/stock availability, batches, substitutions, billing gate, dispense log, returns, and medication handoff. |
 | CRUD/UI actions | Use `AppDialog` for dispense, partial dispense, substitution, return, stock warning acknowledgement, billing gate check, counseling note, cancellation, and prescription/receipt print. |
 | RBAC/ABAC | Gate with pharmacy permissions, operations stock visibility where needed, clinical read where permitted, facility/pharmacy scope, and backend authorization. |
 | Partial refresh | After pharmacy action update only pharmacy row, stock batch quantities, source encounter/admission/pharmacy status, billing badge, medication handoff, receipt/report preview, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

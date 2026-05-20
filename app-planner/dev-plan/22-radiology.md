@@ -10,6 +10,12 @@ Manage radiology/imaging catalog, orders, scheduling, performance, reports, imag
 - Use `ipd-flow.md` for inpatient imaging orders, service routing, and result review.
 - Use `01-policy.md` for catalog-driven ordering, simple UI, role access, generated reports, and partial refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/radiology/` already has DTOs, repository, entities, controller, and `radiology_workspace_page.dart` using `AppWorkspace`, `AppListTable`, `showAppWorkspaceActionDialog`, shared form shell, and async states.
+- Required adjustment: extend this radiology workspace; do not create separate imaging order/result/PACS UI shells unless shared components cannot represent the repeated pattern.
+- UI similarity rule: protocol, schedule, imaging, reporting, result-release, and PACS actions must use shared dialogs, list/search components, and targeted order/result/detail refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -64,13 +70,13 @@ Radiology reports must use the generated template from `35-reports-audit.md` wit
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<RadiologyOrder>` with order number, patient, source encounter/admission, study/test, modality, billing/study/report status, priority, scheduled time, and next action. Use `AppSearchBar` for patient, order, modality, status, priority, provider, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<RadiologyOrder>` with order number, patient, source encounter/admission, study/test, modality, billing/study/report status, priority, scheduled time, and next action. Use `AppSearchBar` for patient, order, modality, status, priority, provider, and date filters. |
 | Detail/display | Use patient/order detail with imaging study, assets/references, report draft/final, billing gate, source doctor review state, and audit history. |
 | CRUD/UI actions | Use `AppDialog` for schedule, mark arrived, start/complete study, attach asset/reference, enter/release report, billing check, cancellation, and radiology report print. |
 | RBAC/ABAC | Gate with radiology permissions; allow clinical read where permitted; enforce modality/facility scope and backend authorization. |
 | Partial refresh | After radiology mutation update only order row, study/report status, asset list, doctor review queue, source encounter/admission detail, billing badge, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

@@ -10,6 +10,12 @@ Complete general settings and app bar indicators for HOSSPI HMS without mixing p
 - Use `07-tenant-facility.md` for organization/facility setup.
 - Use `08-access-control.md` for permission-aware settings visibility.
 
+
+## Current Implementation Baseline
+- Current frontend status: `frontend/lib/features/settings/presentation/pages/settings_page.dart` already exists and opens settings actions through shared dialog patterns.
+- Required adjustment: extend this page and existing app preference/theme/locale controllers instead of creating separate settings screens per module.
+- UI similarity rule: use shared panels, `AppDialog`, shared form fields, localized labels, and targeted preference/controller refresh for every settings action.
+
 ## Current State
 - The frontend settings page already supports theme mode and English language selection.
 - Theme and locale controllers already exist.

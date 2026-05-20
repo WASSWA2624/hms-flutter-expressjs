@@ -9,6 +9,12 @@ Manage in-app notifications, delivery state, unread indicators, conversations, m
 - Use `opd-flow.md` and `ipd-flow.md` for patient-flow notifications such as triage ready, doctor review, lab/radiology results, pharmacy ready, admission, transfer, discharge, billing, housekeeping, and bed readiness.
 - Use `01-policy.md` for simple UI, role access, partial badge refresh, and responsive behavior.
 
+
+## Current Implementation Baseline
+- Current frontend status: no dedicated notifications/communications feature folder or route exists, but backend exposes notifications, deliveries, conversations, messages, and `/api/v1/communications-workspace`.
+- Required adjustment: create communications screens using the existing workspace and permission pattern; do not build a separate chat/list/dialog UI system outside shared components.
+- UI similarity rule: notification inbox, delivery state, conversations, templates, messages, unread badges, and workflow actions must use shared list/search/detail/dialog/action/state components and targeted unread/count refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -59,13 +65,13 @@ Notification delivery summaries, message audit extracts, and communication logs 
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<NotificationItem>` with type, patient/source context where allowed, sender, recipient/group, priority, read/delivery status, time, and action. Use `AppSearchBar` for type, patient/source, sender, status, priority, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<NotificationItem>` with type, patient/source context where allowed, sender, recipient/group, priority, read/delivery status, time, and action. Use `AppSearchBar` for type, patient/source, sender, status, priority, and date filters. |
 | Detail/display | Use notification/conversation detail with safe preview, linked record, delivery history, message thread, and permitted quick action. |
 | CRUD/UI actions | Use `AppDialog` for mark read/unread, archive, send message, route to linked record, template selection, and delivery retry/confirmation. |
 | RBAC/ABAC | Gate with communications permissions, PHI/source-record permissions, tenant/facility/user scope, and backend authorization. |
 | Partial refresh | Use WebSocket events where available; after action update only notification row, unread badge, conversation thread, linked module badge, and delivery status. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

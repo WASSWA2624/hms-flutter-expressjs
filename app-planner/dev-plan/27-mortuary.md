@@ -9,6 +9,12 @@ Manage deceased profiles, mortuary cases, storage units/slots, custody events, v
 - Use `ipd-flow.md` where a mortuary case originates from an inpatient outcome or facility handover.
 - Use `01-policy.md` for respectful simple UI, permissions, generated reports, and partial state refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: no dedicated `mortuary` feature folder or route exists, but frontend permissions include mortuary roles/actions and the backend exposes the mounted `/api/v1/mortuary` workspace route.
+- Required adjustment: create one mortuary workspace feature following the implemented six-file pattern; call the mounted workspace contract instead of inventing unmounted entity endpoints.
+- UI similarity rule: mortuary queues, storage, custody, viewing, post-mortem, release, billing, and reports must use `AppWorkspace`, `AppListTable`, shared patient/person context, shared dialogs/forms, permission-gated actions, and generated templates.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -58,13 +64,13 @@ Mortuary intake form, custody log, viewing note, post-mortem request/summary whe
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<MortuaryWorkspaceItem>` sourced from `/api/v1/mortuary` with resource/queue filters. Columns should show case/reference, deceased/person context, source encounter/admission, storage/release/billing status, date, and next action. Use `AppSearchBar` for case, name, resource, queue, status, facility, and date filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<MortuaryWorkspaceItem>` sourced from `/api/v1/mortuary` with resource/queue filters. Columns should show case/reference, deceased/person context, source encounter/admission, storage/release/billing status, date, and next action. Use `AppSearchBar` for case, name, resource, queue, status, facility, and date filters. |
 | Detail/display | Use respectful detail sections for identity, source context, storage, custody, viewing, post-mortem, release, billing, documents, and audit activity; use `AppDialog` for short detailed display on compact screens. |
 | CRUD/UI actions | Use `AppDialog` for receive case, assign storage, record custody, schedule viewing, request/record post-mortem step, request billing, approve/confirm release, and print documents where backend action support exists. |
 | RBAC/ABAC | Gate with mortuary read/write/release/manage-storage/post-mortem/approve/billing/export/audit permissions and facility scope. Backend authorization remains final. |
 | Partial refresh | After mortuary action update only affected workspace row/resource list, storage slot, custody log, release/billing badge, source record where supported, report preview, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

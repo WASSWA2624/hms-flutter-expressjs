@@ -9,6 +9,12 @@ Manage medical equipment registry, categories, assignments, maintenance plans, w
 - Use `ipd-flow.md` indirectly for equipment readiness in ICU, wards, beds, theater, and patient care areas.
 - Use `01-policy.md` for simple workflow UI, role access, reports, and partial state refresh.
 
+
+## Current Implementation Baseline
+- Current frontend status: no dedicated `biomedical` feature folder or route exists, but frontend permissions include biomed roles/actions and backend exposes `/api/v1/biomedical` plus equipment route families.
+- Required adjustment: create one biomedical workspace using the existing six-file feature pattern; do not create separate UI systems for equipment, work orders, calibration, downtime, recalls, and incidents.
+- UI similarity rule: biomedical assets, schedules, work orders, logs, providers, incidents, recalls, and reports must use shared workspace/list/search/dialog/form/action/report components and targeted asset/work-order refresh.
+
 ## Backend Routes To Align With
 
 Use these route families only after confirming they exist in the current backend router/API contract. If a listed route is absent, record it as a backend gap and do not create a frontend-only endpoint, fake status, or local-only workflow.
@@ -69,13 +75,13 @@ Equipment register, maintenance schedule, calibration certificate/log, safety te
 ## Concrete Implementation Contract
 | Slice | Required implementation |
 | --- | --- |
-| Worklist/list data | Use `AppWorkspace` + `AppPaginatedListTable<BiomedicalAsset>` with asset tag, equipment, category, location, risk/criticality, maintenance/calibration/downtime status, owner, and next action. Use `AppSearchBar` for asset tag, equipment, category, location, status, date, and provider filters. |
+| Worklist/list data | Use `AppWorkspace` + `AppListTable<BiomedicalAsset>` with asset tag, equipment, category, location, risk/criticality, maintenance/calibration/downtime status, owner, and next action. Use `AppSearchBar` for asset tag, equipment, category, location, status, date, and provider filters. |
 | Detail/display | Use asset detail with registry, location history, maintenance plans/work orders, calibration/safety logs, downtime, spare parts, warranty/provider, incidents, recalls, utilization, and disposal/transfer. |
 | CRUD/UI actions | Use `AppDialog` for register/edit asset, schedule maintenance, create/update work order, record calibration/safety test, report downtime/incident, acknowledge recall, transfer/dispose, and print asset/service report. |
 | RBAC/ABAC | Gate with biomed read/write, evidence export, operations, facility/location scope, and backend authorization. |
 | Partial refresh | After biomedical mutation update only asset row, location/status badge, maintenance due count, downtime list, recall badge, reports, and notifications. |
 
-Implementation must reuse `AppWorkspace`, `AppListTable`/`AppPaginatedListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
+Implementation must reuse `AppWorkspace`, `AppListTable`, `AppSearchBar`/`AppListTableSearch`, `AppDialog`, shared form fields, `AppStateView`/`AsyncStateScaffold`, and access gates before adding feature-local UI. Do not reload the full workspace after modal actions.
 
 
 ## Done Criteria

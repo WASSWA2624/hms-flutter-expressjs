@@ -10,6 +10,12 @@ Plan safe default/demo data so HOSSPI HMS can be tested, demonstrated, and initi
 - Use `ipd-flow.md` for sample IPD journeys.
 - Align seed/demo expectations with current backend seed scripts and seed catalog support.
 
+
+## Current Implementation Baseline
+- Current backend status: seed, clear, verification, catalog, and demo-data scripts already exist under backend scripts/tests; frontend demo work must consume backend-backed records only.
+- Required adjustment: do not create local fake demo records in Flutter widgets. When data is missing, document the seed/backend gap and keep UI actions disabled or empty-state driven until backend data exists.
+- UI similarity rule: demo visibility, sample counts, and verification results must render through the same workspace, table, state-view, dialog, report, and permission patterns as production data.
+
 ## Current Backend Seed Support
 The current backend already includes:
 - `backend/scripts/setup-default-accounts.js`
