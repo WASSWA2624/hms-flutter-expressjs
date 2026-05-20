@@ -1,84 +1,107 @@
-Improve the current HMS frontend table and workspace UI polish while keeping the existing implementation structure.
+You are working on the HOSSPI Hospital Management System codebase.
 
-Current implementation context:
-- Shared table component: `frontend/lib/shared/components/app_list_table.dart`
-- Shared search component: `frontend/lib/shared/components/app_search_bar.dart`
-- Workspace layout/header/cards: `frontend/lib/shared/layout/app_workspace.dart`
-- Shell/menu icons are defined in `frontend/lib/app/router/app_router.dart`
-- The current `AppListTable` implementation already supports search, responsive table/list display, numbering, column visibility, and sorting state.
-- The current workspace header still shows the app logo as the default title leading widget on many screens.
-- Header status badges such as `Live`, `Live sync`, `Saving`, `Posting`, and similar labels are still shown beside some page titles.
+Before implementing, review the current app-planner, backend, frontend, and screenshots. Align the changes with the existing implementation and UI patterns. The frontend currently uses shared workspace, search, table, dialog, button, and status components. Reuse or extend shared components where possible instead of duplicating page-specific logic.
 
-Tasks:
+Goal:
+Standardize the listed workspace pages by adding missing table settings controls, enabling requested ascending/descending table-header sorting, expanding selected worklists to the full page width, moving selected-record detail panels into modal dialogs, and removing the specified extra sections.
 
-1. Update the `AppListTable` column settings control
-- Move the table column settings button into the search bar.
-- Place it on the right side of the advanced filters button.
-- Change the column settings icon to a cog/settings icon.
-- Keep the column settings behavior the same: users should still be able to choose which columns are shown or hidden.
-- Do not place the column settings button as a separate control outside the search bar.
+General instructions:
+- Keep existing behavior unless a change is explicitly listed below.
+- Use existing shared components such as AppWorkspace, AppWorkspaceFilterBar, AppSearchBar, AppListTable, AppListTableColumn, AppDialog/showAppDialog, AppButton, AppIconButton, and existing status/detail widgets where applicable.
+- Move reusable changes into shared components when the same behavior is needed across multiple pages.
+- Do not change the Clinical workspace.
+- Do not change the Setup workspace except for the one specified section removal.
 
-2. Improve table headers and sorting
-- Keep the current simple text-style table headers.
-- Make the headers look cleaner and more polished.
-- Ensure each sortable table header shows a visible sort affordance.
-- Clicking a sortable header must toggle sorting between ascending and descending.
-- Ensure the active sorted column visually indicates its current direction.
-- Do not reintroduce select/dropdown-style column headers.
+Page-specific changes:
 
-3. Improve responsive table behavior
-- Keep desktop/tablet layouts as tables.
-- Keep small-screen layouts as compact readable lists.
-- Preserve the numbering column/list numbering behavior.
-- Ensure numbering updates correctly after search, filtering, sorting, or data refresh.
-- Keep the search field stable while table data updates.
+1. Patients page
+- Add the table settings button beside the existing advanced filter control in the search bar.
+- Add ascending/descending sorting on the table column headers.
 
-4. Improve workspace summary/activity cards on small screens
-- In `AppWorkspace` summary/activity items below the page header, keep the current full card layout on desktop.
-- On small screens, show only the icon and the badge/count value.
-- Move the badge/count value so it overlaps the icon halfway at the top-right corner.
-- Keep the small-screen layout compact and easy to tap.
+2. Billing page
+- Add the table settings button beside the advanced filter control in the search bar.
+- Make the billing worklist/table span the full available page width.
+- Remove the right-side Invoice detail panel.
+- Show invoice/billing item details in a modal dialog when a billing row is selected.
+- Remove the Cashier close section from the main body.
+- Move the Close shift and Close day actions into the page header.
+- When Close shift or Close day is clicked, open the existing relevant modal/dialog for that action.
 
-5. Replace title logo with screen-specific title icons
-- Stop using the HMS app logo as the default title icon for module pages.
-- Use the appropriate module icon beside each page title.
-- Match the title icon to the corresponding sidebar/menu icon from `app_router.dart`.
-- Apply this to screens such as:
-  - Patients
-  - Billing
-  - Claims
-  - OPD
-  - Emergency
-  - IPD
-  - ICU
-  - Nursing
-  - Clinical
-  - Lab
-  - Radiology
-  - Pharmacy
-  - Discharge
-  - Theater
-  - Setup
+3. Claims page
+- Add the table settings button beside the advanced filter control in the search bar.
+- Make the Claims worklist span the full available page width.
+- Remove the right-side Claim detail panel.
+- Show claim details in a modal dialog when a claim row is selected.
+- Remove the backend gaps section from the page.
 
-6. Standardize workspace header action buttons
-- Review all module screens and ensure header action buttons display consistently.
-- On desktop and larger screens, action buttons should show both icon and label where the action has a label.
-- On smaller screens, action buttons should display as icon-only buttons with proper tooltip/semantic labels.
-- Fix screens where a header action currently shows only an icon on larger screens when it should show a label.
-- Check examples such as Emergency registration and other module actions.
+4. OPD page
+- Add ascending/descending sorting on the OPD table column headers.
 
-7. Remove page title status badges
-- Remove header-level status badges beside page titles, including labels such as:
-  - `Live`
-  - `Live sync`
-  - `Saving`
-  - `Posting`
-  - similar page-level status labels
-- Apply this cleanup across screens such as Billing, Claims/Insurance, Emergency, and other modules where these badges appear beside the title.
+5. Emergency page
+- Add the table settings button beside the advanced filter control in the search bar.
+- Make the Emergency board table span the full available page width.
+- Remove the right-side selected-case/no-case panel.
+- Show selected emergency case details in a modal dialog.
+- Add ascending/descending sorting on the table column headers.
 
-Implementation expectations:
-- Keep the existing HMS theme, spacing system, icons, and responsive breakpoint system.
-- Make changes through shared components where possible instead of duplicating fixes in every screen.
-- Update affected screens only as needed to use the improved shared behavior.
-- Do not redesign unrelated parts of the app.
-- Do not add new features beyond the requested table, search bar, workspace header, summary card, title icon, action button, and status badge improvements.
+6. IPD page
+- Add the table settings button beside the advanced filter control in the search bar.
+- Make the Inpatient board table span the full available page width.
+- Move the admission detail/selected admission view into a modal dialog opened from row selection.
+
+7. ICU page
+- Make the ICU board table span the full available page width.
+- Move the selected ICU patient/stay detail view into a modal dialog opened from row selection.
+
+8. Nursing page
+- Keep the current layout.
+- Add ascending/descending sorting on the table column headers.
+
+9. Clinical page
+- Leave the Clinical workspace unchanged.
+
+10. Lab page
+- Make the Lab queue table span the full available page width.
+- Move Lab detail into a modal dialog opened from row selection.
+- Add the table settings button beside the filter control in the search bar.
+- Remove the Catalog and QC section from the page.
+
+11. Radiology page
+- Add the table settings button beside the filter control in the search bar.
+- Make the Imaging worklist span the full available page width.
+- Move the Radiology workflow/detail view into a modal dialog opened from row selection.
+- Remove the backend gaps section from the page.
+- Deduplicate the Refresh catalog and Refresh buttons so only one refresh action remains.
+
+12. Pharmacy page
+- Add the table settings button beside the filter control in the search bar.
+- Make the Order queue span the full available page width.
+- Add ascending/descending sorting on the order queue table column headers.
+- Move the prescription/detail section into a modal dialog opened from row selection.
+- Remove the Formulary and Stock section from the main page.
+- Move Formulary/Stock access to a simple header button that opens it in a nested screen/view.
+
+13. Discharge page
+- Add the table settings button beside the filter control in the search bar.
+- Make the Discharge worklist span the full available page width.
+- Move the discharge detail view into a modal dialog opened from row selection.
+- Remove the backend gaps section from the page.
+
+14. Theater page
+- Add the table settings button to the search bar.
+- Make the Daily cases section span the full available page width.
+- Move case detail into a modal dialog opened from row selection.
+
+15. Settings page
+- Add the settings icon beside the Settings page title on the left.
+- Add a Refresh button in the page header.
+
+16. Tenant and facility setup page
+- Leave the page unchanged except for removing the section that says:
+  “Prepare the organization and facility before daily hospital operations begin.”
+
+Shared-component work:
+- Use the existing table/search components for table settings instead of building separate page-specific settings buttons.
+- Use the existing AppListTable sorting capability by adding sort comparators to the requested sortable columns.
+- Reuse existing detail panel/body widgets inside dialogs where possible.
+- Remove backend gaps sections wherever they are rendered by the affected workspace pages.
