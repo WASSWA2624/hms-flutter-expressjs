@@ -60,6 +60,21 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.ambulanceArrivalUpdated,
   };
 
+  static const Set<String> operations = <String>{
+    RealtimeEvents.housekeepingWorkspaceUpdated,
+    RealtimeEvents.housekeepingTaskUpdated,
+    RealtimeEvents.maintenanceRequestTriaged,
+    RealtimeEvents.maintenanceRequestConverted,
+  };
+
+  static const Set<String> communications = <String>{
+    RealtimeEvents.notificationCreated,
+    RealtimeEvents.notificationDeliveryUpdated,
+    RealtimeEvents.conversationMessageCreated,
+    RealtimeEvents.conversationThreadUpdated,
+    RealtimeEvents.conversationReadStateUpdated,
+  };
+
   static const Set<String> patientRegistry = <String>{
     ...appointments,
     ...opdFlow,
@@ -154,6 +169,8 @@ abstract final class RealtimeEventGroups {
     ...pharmacy,
     ...billing,
   };
+
+  static const Set<String> mortuary = <String>{...admissions, ...billing};
 
   static const Set<String> theater = <String>{...admissions, ...criticalAlerts};
 }

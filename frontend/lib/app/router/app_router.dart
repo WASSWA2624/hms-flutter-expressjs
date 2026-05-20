@@ -25,6 +25,9 @@ import 'package:hosspi_hms/features/claims/presentation/pages/claims_workspace_p
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
+import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
+import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
+import 'package:hosspi_hms/features/communications/presentation/pages/communications_workspace_page.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
 import 'package:hosspi_hms/features/discharge/presentation/pages/discharge_workspace_page.dart';
@@ -41,12 +44,18 @@ import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.da
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_workspace_page.dart';
+import 'package:hosspi_hms/features/mortuary/domain/entities/mortuary_entities.dart';
+import 'package:hosspi_hms/features/mortuary/presentation/controllers/mortuary_workspace_controller.dart';
+import 'package:hosspi_hms/features/mortuary/presentation/pages/mortuary_workspace_page.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
+import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
+import 'package:hosspi_hms/features/operations/presentation/controllers/operations_workspace_controller.dart';
+import 'package:hosspi_hms/features/operations/presentation/pages/operations_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
@@ -163,9 +172,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const PharmacyWorkspacePage(),
           ),
           GoRoute(
+            path: AppRoutes.operations.path,
+            name: AppRoutes.operations.name,
+            builder: (_, _) => const OperationsWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.communications.path,
+            name: AppRoutes.communications.name,
+            builder: (_, GoRouterState state) {
+              return CommunicationsWorkspacePage(
+                initialQuery: CommunicationsWorkspaceQuery.fromUri(state.uri),
+              );
+            },
+          ),
+          GoRoute(
             path: AppRoutes.discharge.path,
             name: AppRoutes.discharge.name,
             builder: (_, _) => const DischargeWorkspacePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.mortuary.path,
+            name: AppRoutes.mortuary.name,
+            builder: (_, _) => const MortuaryWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.theater.path,
@@ -257,7 +285,10 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   int? labWorkloadCount,
   int? radiologyWorkloadCount,
   int? pharmacyWorkloadCount,
+  int? operationsWorkloadCount,
+  int? communicationsWorkloadCount,
   int? dischargeWorkloadCount,
+  int? mortuaryWorkloadCount,
   int? theaterWorkloadCount,
 }) {
   return <_ShellDestinationRoute>[
@@ -377,12 +408,39 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
       ),
     ),
     _ShellDestinationRoute(
+      route: AppRoutes.operations,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationOperationsLabel,
+        icon: AppRouteIcons.operations,
+        selectedIcon: AppRouteIcons.operationsSelected,
+        badgeCount: operationsWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.communications,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationCommunicationsLabel,
+        icon: AppRouteIcons.communications,
+        selectedIcon: AppRouteIcons.communicationsSelected,
+        badgeCount: communicationsWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
       route: AppRoutes.discharge,
       destination: ResponsiveShellDestination(
         label: 'Discharge',
         icon: AppRouteIcons.discharge,
         selectedIcon: AppRouteIcons.dischargeSelected,
         badgeCount: dischargeWorkloadCount,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.mortuary,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationMortuaryLabel,
+        icon: AppRouteIcons.mortuary,
+        selectedIcon: AppRouteIcons.mortuarySelected,
+        badgeCount: mortuaryWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(
@@ -455,8 +513,20 @@ class _AppShell extends ConsumerWidget {
       AppRoutes.pharmacy,
       accessPolicy,
     );
+    final bool canAccessOperations = _canAccessShellRoute(
+      AppRoutes.operations,
+      accessPolicy,
+    );
+    final bool canAccessCommunications = _canAccessShellRoute(
+      AppRoutes.communications,
+      accessPolicy,
+    );
     final bool canAccessDischarge = _canAccessShellRoute(
       AppRoutes.discharge,
+      accessPolicy,
+    );
+    final bool canAccessMortuary = _canAccessShellRoute(
+      AppRoutes.mortuary,
       accessPolicy,
     );
     final bool canAccessTheater = _canAccessShellRoute(
@@ -597,6 +667,44 @@ class _AppShell extends ConsumerWidget {
                 failure: (_) => null,
               )
         : null;
+    final int? operationsWorkloadCount = canAccessOperations
+        ? ref
+              .watch(operationsWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (OperationsWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? communicationsWorkloadCount = canAccessCommunications
+        ? ref
+              .watch(communicationsWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (CommunicationsWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? notificationUnreadCount = canAccessCommunications
+        ? ref
+              .watch(communicationsWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (CommunicationsWorkspaceState state) {
+                  return state.unreadBadgeCount > 0
+                      ? state.unreadBadgeCount
+                      : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
     final int? dischargeWorkloadCount = canAccessDischarge
         ? ref
               .watch(dischargeWorkspaceControllerProvider)
@@ -604,6 +712,18 @@ class _AppShell extends ConsumerWidget {
               ?.value
               .when(
                 success: (DischargeWorkspaceState state) {
+                  return state.workloadCount > 0 ? state.workloadCount : null;
+                },
+                failure: (_) => null,
+              )
+        : null;
+    final int? mortuaryWorkloadCount = canAccessMortuary
+        ? ref
+              .watch(mortuaryWorkspaceControllerProvider)
+              .asData
+              ?.value
+              .when(
+                success: (MortuaryWorkspaceState state) {
                   return state.workloadCount > 0 ? state.workloadCount : null;
                 },
                 failure: (_) => null,
@@ -635,7 +755,10 @@ class _AppShell extends ConsumerWidget {
               labWorkloadCount: labWorkloadCount,
               radiologyWorkloadCount: radiologyWorkloadCount,
               pharmacyWorkloadCount: pharmacyWorkloadCount,
+              operationsWorkloadCount: operationsWorkloadCount,
+              communicationsWorkloadCount: communicationsWorkloadCount,
               dischargeWorkloadCount: dischargeWorkloadCount,
+              mortuaryWorkloadCount: mortuaryWorkloadCount,
               theaterWorkloadCount: theaterWorkloadCount,
             )
             .where((_ShellDestinationRoute destination) {
@@ -668,7 +791,23 @@ class _AppShell extends ConsumerWidget {
       toggleSidebarTooltip: l10n.appToggleSidebarTooltip,
       accountTooltip: l10n.appAccountTooltip,
       notificationsTooltip: l10n.appNotificationsTooltip,
-      notificationsUnreadLabel: l10n.appNotificationsUnreadLabel(0),
+      unreadNotificationCount: notificationUnreadCount ?? 0,
+      notificationsUnreadLabel: l10n.appNotificationsUnreadLabel(
+        notificationUnreadCount ?? 0,
+      ),
+      onNotificationsSelected: canAccessCommunications
+          ? () {
+              if (!AppRoutes.communications.matchesPath(location.path)) {
+                context.go(
+                  AppRoutes.communications.location(
+                    queryParameters: <String, String>{
+                      'panel': CommunicationsPanel.notifications.serverValue,
+                    },
+                  ),
+                );
+              }
+            }
+          : null,
       profileLabel: l10n.appUserMenuProfileLabel,
       settingsLabel: l10n.appUserMenuSettingsLabel,
       changePasswordLabel: l10n.appUserMenuChangePasswordLabel,

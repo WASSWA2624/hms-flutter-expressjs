@@ -50,4 +50,22 @@ abstract final class RealtimeEvents {
   static const String ambulanceDispatched = 'emergency.ambulance_dispatched';
   static const String ambulanceArrivalUpdated =
       'emergency.ambulance_arrival_updated';
+
+  static const String housekeepingWorkspaceUpdated =
+      'housekeeping.workspace_updated';
+  static const String housekeepingTaskUpdated = 'housekeeping.task_updated';
+  static const String maintenanceRequestTriaged =
+      'housekeeping.maintenance_request_triaged';
+  static const String maintenanceRequestConverted =
+      'housekeeping.maintenance_request_converted';
+
+  static const String notificationCreated = 'notification.created';
+  static const String notificationDeliveryUpdated =
+      'notification.delivery_updated';
+  static const String conversationMessageCreated =
+      'conversation.message_created';
+  static const String conversationThreadUpdated =
+      'conversation.thread_updated';
+  static const String conversationReadStateUpdated =
+      'conversation.read_state_updated';
 }

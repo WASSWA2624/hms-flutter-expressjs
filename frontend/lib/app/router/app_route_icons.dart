@@ -27,8 +27,14 @@ abstract final class AppRouteIcons {
   static const IconData radiologySelected = Icons.image_search;
   static const IconData pharmacy = Icons.medication_liquid_outlined;
   static const IconData pharmacySelected = Icons.medication_liquid;
+  static const IconData communications = Icons.notifications_active_outlined;
+  static const IconData communicationsSelected = Icons.notifications_active;
+  static const IconData operations = Icons.engineering_outlined;
+  static const IconData operationsSelected = Icons.engineering;
   static const IconData discharge = Icons.exit_to_app_outlined;
   static const IconData dischargeSelected = Icons.exit_to_app;
+  static const IconData mortuary = Icons.spa_outlined;
+  static const IconData mortuarySelected = Icons.spa;
   static const IconData theater = Icons.event_seat_outlined;
   static const IconData theaterSelected = Icons.event_seat;
   static const IconData settings = Icons.settings_outlined;

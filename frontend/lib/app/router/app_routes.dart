@@ -200,6 +200,26 @@ abstract final class AppRoutes {
     ],
     requiredActiveModules: <String>['pharmacy-dispensing'],
   );
+  static const AppRouteData operations = AppRouteData(
+    name: 'operations',
+    path: '/operations',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.operationsRead,
+      AppPermissions.operationsWrite,
+    ],
+    requiredActiveModules: <String>['facilities-maintenance'],
+    requiresFacilityContext: true,
+  );
+  static const AppRouteData communications = AppRouteData(
+    name: 'communications',
+    path: '/communications',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.communicationsRead,
+      AppPermissions.communicationsWrite,
+    ],
+  );
   static const AppRouteData discharge = AppRouteData(
     name: 'discharge',
     path: '/discharge',
@@ -224,6 +244,19 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
     ],
     requiredActiveModules: <String>['theatre-anesthesia'],
+  );
+  static const AppRouteData mortuary = AppRouteData(
+    name: 'mortuary',
+    path: '/mortuary',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.mortuaryRead,
+      AppPermissions.mortuaryWrite,
+      AppPermissions.mortuaryApprove,
+      AppPermissions.mortuaryRelease,
+      AppPermissions.mortuaryAudit,
+    ],
+    requiresFacilityContext: true,
   );
   static const AppRouteData tenantFacilitySetup = AppRouteData(
     name: 'tenantFacilitySetup',
@@ -287,7 +320,10 @@ abstract final class AppRoutes {
     lab,
     radiology,
     pharmacy,
+    operations,
+    communications,
     discharge,
+    mortuary,
     theater,
     settings,
     tenantFacilitySetup,
@@ -314,7 +350,10 @@ abstract final class AppRoutes {
     lab,
     radiology,
     pharmacy,
+    operations,
+    communications,
     discharge,
+    mortuary,
     theater,
     settings,
     tenantFacilitySetup,
