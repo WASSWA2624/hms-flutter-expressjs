@@ -322,6 +322,7 @@ class _NursingWorklistPanel extends ConsumerWidget {
       child: AppListTable<NursingWorkItem>(
         page: state.worklist,
         isLoading: state.isRefreshing,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<NursingWorkItem> page) {

@@ -229,6 +229,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
         page: state.worklist,
         title: l10n.clinicalWorklistTitle,
         description: l10n.clinicalWorklistDescription,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),

@@ -1723,6 +1723,7 @@ class _OpdMainTable extends ConsumerWidget {
         page: page,
         title: l10n.opdFlowsTitle,
         description: l10n.opdTableDescription,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         isLoading: isLoading,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
