@@ -15,11 +15,15 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
+import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -2245,8 +2249,6 @@ class StartWalkInDialog extends ConsumerStatefulWidget {
 
 class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _firstNameController;
-  late final TextEditingController _lastNameController;
   late final TextEditingController _feeController;
   late final TextEditingController _notesController;
   List<Patient> _patientOptions = const <Patient>[];
@@ -2263,7 +2265,6 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   String _arrivalMode = 'WALK_IN';
   String _emergencySeverity = 'HIGH';
   String? _triageLevel;
-  String? _gender;
   bool _requireConsultationPayment = true;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -2271,8 +2272,6 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   @override
   void initState() {
     super.initState();
-    _firstNameController = TextEditingController();
-    _lastNameController = TextEditingController();
     _feeController = TextEditingController();
     _notesController = TextEditingController();
     _appointmentOptions = _eligibleAppointmentOptions(widget.appointments);
@@ -2283,8 +2282,6 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
     _feeController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -2477,6 +2474,11 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
+    if (_patientMode == _WalkInPatientMode.newPatient &&
+        !_isNonEmpty(_patientId)) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -2563,46 +2565,78 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       _WalkInPatientMode.newPatient => AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          AppResponsiveFieldRow(
-            gap: AppResponsiveFieldRowGap.form,
-            children: <Widget>[
-              AppTextField(
-                controller: _firstNameController,
-                labelText: _opdRequiredFieldLabel(l10n, l10n.opdFirstNameLabel),
-                enabled: !_isSaving,
-                textCapitalization: TextCapitalization.words,
-                validator: (String? value) =>
-                    _patientMode != _WalkInPatientMode.newPatient ||
-                        _isNonEmpty(value)
-                    ? null
-                    : l10n.validationRequired,
-              ),
-              AppTextField(
-                controller: _lastNameController,
-                labelText: _opdRequiredFieldLabel(l10n, l10n.opdLastNameLabel),
-                enabled: !_isSaving,
-                textCapitalization: TextCapitalization.words,
-                validator: (String? value) =>
-                    _patientMode != _WalkInPatientMode.newPatient ||
-                        _isNonEmpty(value)
-                    ? null
-                    : l10n.validationRequired,
-              ),
-            ],
-          ),
-          AppGenderField(
-            value: _gender,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdGenderLabel),
-            maleLabel: l10n.patientsGenderMale,
-            femaleLabel: l10n.patientsGenderFemale,
-            otherLabel: l10n.patientsGenderOther,
-            unknownLabel: l10n.patientsGenderUnknown,
-            enabled: !_isSaving,
-            onChanged: (String? value) => setState(() => _gender = value),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AppButton.secondary(
+              label: l10n.opdRegisterNewPatientLabel,
+              leadingIcon: Icons.person_add_alt_1_outlined,
+              enabled: !_isSaving,
+              onPressed: _openNewPatientDialog,
+            ),
           ),
         ],
       ),
     };
+  }
+
+  Future<void> _openNewPatientDialog() async {
+    final PatientRepository patientRepository = ref.read(
+      patientRepositoryProvider,
+    );
+    final Result<PatientReferenceData> referenceResult = await patientRepository
+        .loadReferenceData();
+    if (!mounted) {
+      return;
+    }
+
+    final PatientReferenceData? referenceData = referenceResult.when(
+      success: (PatientReferenceData value) => value,
+      failure: (AppFailure failure) {
+        setState(() => _failure = failure);
+        return null;
+      },
+    );
+    if (referenceData == null) {
+      return;
+    }
+
+    Patient? createdPatient;
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PatientFormDialog(
+        referenceData: referenceData,
+        onLookupDuplicates: (PatientDuplicateQuery query) {
+          return patientRepository.listDuplicateCandidates(query);
+        },
+        onSubmit: (Map<String, Object?> payload) async {
+          final Result<Patient> result = await patientRepository.createPatient(
+            payload,
+          );
+          return result.when(
+            success: (Patient patient) {
+              createdPatient = patient;
+              return null;
+            },
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (!mounted || saved != true || createdPatient == null) {
+      return;
+    }
+
+    setState(() {
+      _patientMode = _WalkInPatientMode.existing;
+      _patientId = createdPatient!.id;
+      _patientOptions = <Patient>[
+        createdPatient!,
+        ..._patientOptions.where(
+          (Patient patient) => patient.id != createdPatient!.id,
+        ),
+      ];
+    });
   }
 
   Future<void> _loadPatientOptions() async {
@@ -2721,13 +2755,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     final bool hasConsultationFee = consultationFee.isNotEmpty;
 
     return <String, Object?>{
-      if (_patientMode == _WalkInPatientMode.newPatient)
-        'patient_registration': <String, Object?>{
-          'first_name': _firstNameController.text.trim(),
-          'last_name': _lastNameController.text.trim(),
-          'gender': _gender,
-        }
-      else if (_patientMode == _WalkInPatientMode.appointment)
+      if (_patientMode == _WalkInPatientMode.appointment)
         'appointment_id': _appointmentId
       else
         'patient_id': _patientId,
@@ -3629,6 +3657,51 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           hideWhenDenied: true,
           onPressed: () => _openNested(context, DoctorReviewDialog(flow: flow)),
         ),
+      if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
+        AppPermissionActionItem(
+          requirement: _opdDoctorRequirement,
+          label: l10n.clinicalAddDiagnosisAction,
+          icon: Icons.rule_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
+          onPressed: () => _openDiagnosisDialog(context, flow),
+        ),
+      if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
+        AppPermissionActionItem(
+          requirement: _opdDoctorRequirement,
+          label: l10n.clinicalRequestLabAction,
+          icon: Icons.science_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
+          onPressed: () => _openLabOrderDialog(context, flow),
+        ),
+      if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
+        AppPermissionActionItem(
+          requirement: _opdDoctorRequirement,
+          label: l10n.clinicalRequestRadiologyAction,
+          icon: Icons.biotech_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
+          onPressed: () => _openRadiologyOrderDialog(context, flow),
+        ),
+      if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
+        AppPermissionActionItem(
+          requirement: _opdDoctorRequirement,
+          label: l10n.clinicalPrescribeAction,
+          icon: Icons.medication_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
+          onPressed: () => _openPrescriptionDialog(context, flow),
+        ),
+      if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
+        AppPermissionActionItem(
+          requirement: _opdDoctorRequirement,
+          label: l10n.clinicalRequestProcedureAction,
+          icon: Icons.healing_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
+          onPressed: () => _openProcedureDialog(context, flow),
+        ),
       if (!terminal && _canDispose(stage))
         AppPermissionActionItem(
           requirement: _opdDoctorRequirement,
@@ -3705,6 +3778,225 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     if (changed == true && closeParentOnChange && context.mounted) {
       Navigator.of(context).pop(true);
     }
+  }
+
+  Future<ClinicalActionReferenceData?> _loadClinicalReferenceData(
+    BuildContext context,
+  ) async {
+    final Result<ClinicalActionReferenceData> result = await ref
+        .read(clinicalRepositoryProvider)
+        .loadReferenceData();
+    if (!mounted) {
+      return null;
+    }
+    return result.when(
+      success: (ClinicalActionReferenceData value) => value,
+      failure: (AppFailure failure) {
+        _showFailureIfNeeded(context, failure);
+        return null;
+      },
+    );
+  }
+
+  Future<void> _openDiagnosisDialog(
+    BuildContext context,
+    OpdFlowSummary flow,
+  ) async {
+    final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
+    await _openNested(
+      context,
+      ClinicalDiagnosisActionDialog(
+        onSearchClinicalTerms:
+            ({int? limit, String? query, required String termType}) {
+              return repository.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 20,
+              );
+            },
+        onSubmit:
+            ({
+              required String diagnosisType,
+              required String description,
+              String? code,
+            }) {
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .doctorReview(flow, <String, Object?>{
+                    'note': description,
+                    'diagnoses': <Map<String, Object?>>[
+                      <String, Object?>{
+                        'diagnosis_type': diagnosisType,
+                        'code': code,
+                        'description': description,
+                      },
+                    ],
+                  });
+            },
+      ),
+    );
+  }
+
+  Future<void> _openProcedureDialog(
+    BuildContext context,
+    OpdFlowSummary flow,
+  ) async {
+    final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
+    await _openNested(
+      context,
+      ClinicalProcedureActionDialog(
+        onSearchClinicalTerms:
+            ({int? limit, String? query, required String termType}) {
+              return repository.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 20,
+              );
+            },
+        onSubmit:
+            ({
+              required List<ClinicalActionCatalogOption> procedures,
+              DateTime? performedAt,
+            }) {
+              final String performedAtIso = (performedAt ?? DateTime.now())
+                  .toUtc()
+                  .toIso8601String();
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .doctorReview(flow, <String, Object?>{
+                    'note': context.l10n.clinicalRequestProcedureAction,
+                    'procedures': <Map<String, Object?>>[
+                      for (final ClinicalActionCatalogOption procedure
+                          in procedures)
+                        <String, Object?>{
+                          'code': procedure.code,
+                          'description':
+                              procedure.name ?? procedure.displayTitle,
+                          'performed_at': performedAtIso,
+                        },
+                    ],
+                  });
+            },
+      ),
+    );
+  }
+
+  Future<void> _openLabOrderDialog(
+    BuildContext context,
+    OpdFlowSummary flow,
+  ) async {
+    final String actionLabel = context.l10n.clinicalRequestLabAction;
+    final ClinicalActionReferenceData? referenceData =
+        await _loadClinicalReferenceData(context);
+    if (!mounted || !context.mounted || referenceData == null) {
+      return;
+    }
+    await _openNested(
+      context,
+      ClinicalLabOrderActionDialog(
+        referenceData: referenceData,
+        onRequest:
+            ({
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+            }) {
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .doctorReview(flow, <String, Object?>{
+                    'note': actionLabel,
+                    'lab_requests': <Map<String, Object?>>[
+                      for (final String id in labTestIds)
+                        <String, Object?>{
+                          'lab_test_id': id,
+                          'status': 'ORDERED',
+                        },
+                      for (final String id in labPanelIds)
+                        <String, Object?>{
+                          'lab_panel_id': id,
+                          'status': 'ORDERED',
+                        },
+                    ],
+                  });
+            },
+        onUpdate:
+            ({
+              required String labOrderId,
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+            }) {
+              return Future<AppFailure?>.value(AppFailure.validation());
+            },
+      ),
+    );
+  }
+
+  Future<void> _openRadiologyOrderDialog(
+    BuildContext context,
+    OpdFlowSummary flow,
+  ) async {
+    final String actionLabel = context.l10n.clinicalRequestRadiologyAction;
+    final ClinicalActionReferenceData? referenceData =
+        await _loadClinicalReferenceData(context);
+    if (!mounted || !context.mounted || referenceData == null) {
+      return;
+    }
+    await _openNested(
+      context,
+      ClinicalRadiologyOrderActionDialog(
+        referenceData: referenceData,
+        onSubmit: ({required List<ClinicalActionRadiologyRequest> requests}) {
+          return ref.read(opdWorkspaceControllerProvider.notifier).doctorReview(
+            flow,
+            <String, Object?>{
+              'note': actionLabel,
+              'radiology_requests': <Map<String, Object?>>[
+                for (final ClinicalActionRadiologyRequest request in requests)
+                  <String, Object?>{
+                    'radiology_test_id': request.radiologyTestId,
+                    'clinical_note': request.clinicalNote,
+                    'status': 'ORDERED',
+                    'request_details': <String, Object?>{
+                      'body_region': request.bodyRegion,
+                      'laterality': request.laterality,
+                      'priority': request.priority,
+                    },
+                  },
+              ],
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _openPrescriptionDialog(
+    BuildContext context,
+    OpdFlowSummary flow,
+  ) async {
+    final String actionLabel = context.l10n.clinicalPrescribeAction;
+    final ClinicalActionReferenceData? referenceData =
+        await _loadClinicalReferenceData(context);
+    if (!mounted || !context.mounted || referenceData == null) {
+      return;
+    }
+    await _openNested(
+      context,
+      ClinicalPrescriptionActionDialog(
+        referenceData: referenceData,
+        onSubmit: ({required List<Map<String, Object?>> items}) {
+          return ref.read(opdWorkspaceControllerProvider.notifier).doctorReview(
+            flow,
+            <String, Object?>{
+              'note': actionLabel,
+              'medications': <Map<String, Object?>>[
+                for (final Map<String, Object?> item in items)
+                  <String, Object?>{...item, 'status': 'ACTIVE'},
+              ],
+            },
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -4701,22 +4993,6 @@ class DoctorReviewDialog extends ConsumerStatefulWidget {
 
 class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
   late final TextEditingController _noteController;
-  late final TextEditingController _diagnosisCodeController;
-  late final TextEditingController _diagnosisController;
-  late final TextEditingController _procedureCodeController;
-  late final TextEditingController _procedureController;
-  late final TextEditingController _labTestIdsController;
-  late final TextEditingController _labPanelIdsController;
-  late final TextEditingController _radiologyIdsController;
-  late final TextEditingController _quantityController;
-  late final TextEditingController _dosageController;
-  late final TextEditingController _prescriptionNotesController;
-  List<OpdDrugOption> _drugOptions = const <OpdDrugOption>[];
-  bool _isLoadingDrugs = false;
-  String _diagnosisType = 'PRIMARY';
-  String? _drugId;
-  String? _frequency;
-  String? _route;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -4724,32 +5000,11 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
   void initState() {
     super.initState();
     _noteController = TextEditingController();
-    _diagnosisCodeController = TextEditingController();
-    _diagnosisController = TextEditingController();
-    _procedureCodeController = TextEditingController();
-    _procedureController = TextEditingController();
-    _labTestIdsController = TextEditingController();
-    _labPanelIdsController = TextEditingController();
-    _radiologyIdsController = TextEditingController();
-    _quantityController = TextEditingController(text: '1');
-    _dosageController = TextEditingController();
-    _prescriptionNotesController = TextEditingController();
-    unawaited(_loadDrugs());
   }
 
   @override
   void dispose() {
     _noteController.dispose();
-    _diagnosisCodeController.dispose();
-    _diagnosisController.dispose();
-    _procedureCodeController.dispose();
-    _procedureController.dispose();
-    _labTestIdsController.dispose();
-    _labPanelIdsController.dispose();
-    _radiologyIdsController.dispose();
-    _quantityController.dispose();
-    _dosageController.dispose();
-    _prescriptionNotesController.dispose();
     super.dispose();
   }
 
@@ -4793,122 +5048,6 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
             maxLines: 4,
             validator: AppValidators.requiredText(l10n.validationRequired),
           ),
-          AppSelectField<String>.searchable(
-            value: _diagnosisType,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdDiagnosisTypeLabel),
-            semanticLabel: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdDiagnosisTypeLabel,
-            ),
-            enabled: !_isSaving,
-            onChanged: (String? value) {
-              setState(() => _diagnosisType = value ?? _diagnosisType);
-            },
-            options: _statusOptions(_diagnosisTypes),
-          ),
-          AppTextField(
-            controller: _diagnosisController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdDiagnosisLabel),
-            enabled: !_isSaving,
-            maxLines: 2,
-          ),
-          AppTextField(
-            controller: _diagnosisCodeController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdDiagnosisCodeLabel),
-            enabled: !_isSaving,
-          ),
-          AppTextField(
-            controller: _procedureController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdProcedureLabel),
-            enabled: !_isSaving,
-            maxLines: 2,
-          ),
-          AppTextField(
-            controller: _procedureCodeController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdProcedureCodeLabel),
-            enabled: !_isSaving,
-          ),
-          AppTextField(
-            controller: _labTestIdsController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdLabTestIdsLabel),
-            enabled: !_isSaving,
-            maxLines: 2,
-          ),
-          AppTextField(
-            controller: _labPanelIdsController,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdLabPanelIdsLabel),
-            enabled: !_isSaving,
-            maxLines: 2,
-          ),
-          AppTextField(
-            controller: _radiologyIdsController,
-            labelText: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdRadiologyTestIdsLabel,
-            ),
-            enabled: !_isSaving,
-            maxLines: 2,
-          ),
-          AppSelectField<String>.searchable(
-            value: _drugId,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdDrugLabel),
-            semanticLabel: _opdOptionalFieldLabel(l10n, l10n.opdDrugLabel),
-            enabled: !_isSaving,
-            isLoading: _isLoadingDrugs,
-            onChanged: (String? value) => setState(() => _drugId = value),
-            options: _drugOptions.map(_drugOption).toList(growable: false),
-          ),
-          AppResponsiveFieldRow(
-            gap: AppResponsiveFieldRowGap.form,
-            children: <Widget>[
-              AppTextField(
-                controller: _quantityController,
-                labelText: _opdOptionalFieldLabel(
-                  l10n,
-                  l10n.opdDrugQuantityLabel,
-                ),
-                enabled: !_isSaving,
-                keyboardType: TextInputType.number,
-                inputFormatters: _integerInputFormatters,
-              ),
-              AppTextField(
-                controller: _dosageController,
-                labelText: _opdOptionalFieldLabel(l10n, l10n.opdDosageLabel),
-                enabled: !_isSaving,
-              ),
-            ],
-          ),
-          AppSelectField<String>.searchable(
-            value: _frequency,
-            labelText: _opdOptionalFieldLabel(l10n, l10n.opdFrequencyLabel),
-            semanticLabel: _opdOptionalFieldLabel(l10n, l10n.opdFrequencyLabel),
-            enabled: !_isSaving,
-            onChanged: (String? value) => setState(() => _frequency = value),
-            options: _statusOptions(_medicationFrequencies),
-          ),
-          AppSelectField<String>.searchable(
-            value: _route,
-            labelText: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdMedicationRouteLabel,
-            ),
-            semanticLabel: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdMedicationRouteLabel,
-            ),
-            enabled: !_isSaving,
-            onChanged: (String? value) => setState(() => _route = value),
-            options: _statusOptions(_medicationRoutes),
-          ),
-          AppTextField(
-            controller: _prescriptionNotesController,
-            labelText: _opdOptionalFieldLabel(
-              l10n,
-              l10n.opdPrescriptionNotesLabel,
-            ),
-            enabled: !_isSaving,
-            maxLines: 3,
-          ),
         ],
       ),
       actions: <Widget>[
@@ -4927,44 +5066,21 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
     );
   }
 
-  Future<void> _loadDrugs() async {
-    setState(() => _isLoadingDrugs = true);
-    final Result<List<OpdDrugOption>> result = await ref
-        .read(opdRepositoryProvider)
-        .listAvailableDrugs();
-    if (!mounted) {
-      return;
-    }
-    result.when(
-      success: (List<OpdDrugOption> drugs) {
-        setState(() {
-          _drugOptions = drugs;
-          _isLoadingDrugs = false;
-        });
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isLoadingDrugs = false;
-        });
-      },
-    );
-  }
-
   Future<void> _submit() async {
     if (!_isNonEmpty(_noteController.text)) {
       setState(() => _failure = AppFailure.validation());
       return;
     }
 
-    final Map<String, Object?> payload = _payload();
     setState(() {
       _isSaving = true;
       _failure = null;
     });
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
-        .doctorReview(widget.flow, payload);
+        .doctorReview(widget.flow, <String, Object?>{
+          'note': _noteController.text.trim(),
+        });
     if (!mounted) {
       return;
     }
@@ -4976,55 +5092,6 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
       _failure = failure;
       _isSaving = false;
     });
-  }
-
-  Map<String, Object?> _payload() {
-    final List<Map<String, Object?>> labRequests = <Map<String, Object?>>[
-      for (final String id in _splitTokens(_labTestIdsController.text))
-        <String, Object?>{'lab_test_id': id, 'status': 'ORDERED'},
-      for (final String id in _splitTokens(_labPanelIdsController.text))
-        <String, Object?>{'lab_panel_id': id, 'status': 'ORDERED'},
-    ];
-    final List<Map<String, Object?>> radiologyRequests = <Map<String, Object?>>[
-      for (final String id in _splitTokens(_radiologyIdsController.text))
-        <String, Object?>{'radiology_test_id': id, 'status': 'ORDERED'},
-    ];
-    final String? drugId = _drugId;
-    final int quantity = int.tryParse(_quantityController.text.trim()) ?? 1;
-
-    return <String, Object?>{
-      'note': _noteController.text.trim(),
-      if (_isNonEmpty(_diagnosisController.text))
-        'diagnoses': <Map<String, Object?>>[
-          <String, Object?>{
-            'diagnosis_type': _diagnosisType,
-            'code': _diagnosisCodeController.text.trim(),
-            'description': _diagnosisController.text.trim(),
-          },
-        ],
-      if (_isNonEmpty(_procedureController.text))
-        'procedures': <Map<String, Object?>>[
-          <String, Object?>{
-            'code': _procedureCodeController.text.trim(),
-            'description': _procedureController.text.trim(),
-            'performed_at': DateTime.now().toUtc().toIso8601String(),
-          },
-        ],
-      if (labRequests.isNotEmpty) 'lab_requests': labRequests,
-      if (radiologyRequests.isNotEmpty) 'radiology_requests': radiologyRequests,
-      if (_isNonEmpty(drugId))
-        'medications': <Map<String, Object?>>[
-          <String, Object?>{
-            'drug_id': drugId,
-            'quantity': quantity,
-            'dosage': _dosageController.text.trim(),
-            'frequency': _frequency,
-            'route': _route,
-            'status': 'ACTIVE',
-          },
-        ],
-      'notes': _prescriptionNotesController.text.trim(),
-    };
   }
 }
 
@@ -5761,18 +5828,6 @@ List<AppSelectOption<String>> _flowStageOptions() {
   ];
 }
 
-AppSelectOption<String> _drugOption(OpdDrugOption drug) {
-  return AppSelectOption<String>(
-    value: drug.apiId,
-    label: _joinDisplay(<String?>[
-      drug.displayTitle,
-      drug.form,
-      drug.strength,
-      drug.availableQuantity?.toString(),
-    ]),
-  );
-}
-
 AppSelectOption<String>? _patientSelectOption(Patient patient) {
   final String? value = patient.publicId;
   if (!_isNonEmpty(value)) {
@@ -5929,14 +5984,6 @@ String _opdRelatedRecordSubtitle(
     record.subtitle,
     _formatOptionalDateTime(context, record.occurredAt),
   ]);
-}
-
-List<String> _splitTokens(String value) {
-  return value
-      .split(RegExp(r'[,;\n]+'))
-      .map((String token) => token.trim())
-      .where((String token) => token.isNotEmpty)
-      .toList(growable: false);
 }
 
 AppWorkspaceStatusTone _stageTone(String? value) {
@@ -6124,32 +6171,3 @@ List<String> _opdDispositionOptions({required bool hasPharmacyOrder}) {
     'ADMIT',
   ];
 }
-
-const List<String> _diagnosisTypes = <String>[
-  'PRIMARY',
-  'SECONDARY',
-  'DIFFERENTIAL',
-];
-
-const List<String> _medicationFrequencies = <String>[
-  'ONCE',
-  'BID',
-  'TID',
-  'QID',
-  'PRN',
-  'STAT',
-  'CUSTOM',
-];
-
-const List<String> _medicationRoutes = <String>[
-  'ORAL',
-  'IV',
-  'IM',
-  'TOPICAL',
-  'INHALATION',
-  'OTHER',
-];
-
-final List<TextInputFormatter> _integerInputFormatters = <TextInputFormatter>[
-  FilteringTextInputFormatter.digitsOnly,
-];

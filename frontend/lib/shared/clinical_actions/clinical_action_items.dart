@@ -8,7 +8,6 @@ enum ClinicalActionKind {
   requestRadiology,
   prescribe,
   addProcedure,
-  carePlan,
   refer,
   requestAdmission,
   followUp,

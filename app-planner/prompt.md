@@ -1,208 +1,163 @@
 You are working on the HOSSPI Hospital Management System codebase.
 
-Before implementing, review the current app-planner, backend, frontend, and attached latest screenshots. Align the work with the existing Flutter/Riverpod implementation, `AppWorkspace`, `AppListTable`, `AppListTableSearch`, `AppSearchBar`, and the current workspace UI patterns.
+Before implementing, review the current app-planner, backend, frontend, and latest screenshots. Align the work with the existing Flutter/Riverpod frontend, Express backend, current shared action/dialog patterns, and current patient/clinical workflow behavior.
 
 ## Goal
 
-Unify the table layout, table search bar, advanced filters, and table settings controls across the workspace screens.
+Standardize reusable patient, appointment, OPD, triage, admission, clinical order, referral, follow-up, disposition, and report/print dialogs across the app.
 
-Every workspace table should follow this order:
+Do not create duplicate local dialogs when an equivalent dialog already exists.
 
-1. Table title
-2. Short table description
-3. The table’s built-in search bar
-4. Table content
-5. Pagination/footer where applicable
+## Main reuse sources
 
-The search bar must be the table’s built-in search bar, not a separate search bar above or outside the table.
+Use these existing implementations as the source of truth before creating anything new:
 
-## Screens to update
+- Patient creation: `PatientFormDialog`
+- Emergency registration: `EmergencyPatientFormDialog`
+- Appointment creation: `_PatientAppointmentQuickDialog`
+- OPD check-in: patient quick-action OPD check-in flow
+- Triage: existing patient/emergency/triage form patterns
+- Admission request/admit patient: existing clinical admission dialog and patient admission flow
+- Diagnosis: `ClinicalDiagnosisActionDialog`
+- Lab request: `ClinicalLabOrderActionDialog`
+- Radiology request: `ClinicalRadiologyOrderActionDialog`
+- Prescription: `ClinicalPrescriptionActionDialog`
+- Procedure: `ClinicalProcedureActionDialog`
+- Referral: `ClinicalReferralActionDialog`
+- Follow-up: `ClinicalFollowUpActionDialog`
+- Disposition: `ClinicalDispositionActionDialog`
+- Report/print: existing shared printing/report components
 
-Update these workspace screens:
+## Required updates
 
-- Patients: `lib/features/patients/presentation/pages/patient_registry_page.dart`
-- Billing: `lib/features/billing/presentation/pages/billing_workspace_page.dart`
-- Claims: `lib/features/claims/presentation/pages/claims_workspace_page.dart`
-- OPD: `lib/features/opd/presentation/pages/opd_workspace_page.dart`
-- Emergency: `lib/features/emergency/presentation/pages/emergency_workspace_page.dart`
-- IPD: `lib/features/ipd/presentation/pages/ipd_workspace_page.dart`
-- ICU: `lib/features/icu/presentation/pages/icu_workspace_page.dart`
-- Nursing: `lib/features/nursing/presentation/pages/nursing_workspace_page.dart`
-- Clinical: `lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
-- Lab: `lib/features/lab/presentation/pages/lab_workspace_page.dart`
-- Radiology: `lib/features/radiology/presentation/pages/radiology_workspace_page.dart`
-- Pharmacy: `lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart`
-- Discharge: `lib/features/discharge/presentation/pages/discharge_workspace_page.dart`
-- Theater/Theatre: `lib/features/theater/presentation/pages/theater_workspace_page.dart`
+### 1. Patient creation
 
-Do not update Settings, Setup, or Tenant Facility setup screens.
+Use the Patient screen’s `PatientFormDialog` as the reusable patient creation dialog everywhere a new patient is created.
 
-## Shared component anchors
+- First name is required.
+- Last name must be optional.
+- Update frontend validation.
+- If backend validation currently requires last name, update backend validation so last name is optional.
+- Preserve existing patient payload shape as much as possible.
+- Do not add new patient fields.
 
-Use the existing shared table/search components:
+### 2. Emergency registration
 
-- `lib/shared/components/app_list_table.dart`
-- `AppListTable`
-- `AppListTableSearch`
-- `AppListTableColumnVisibilityController`
-- `lib/shared/components/app_search_bar.dart`
-- `AppSearchBar`
-- `AppSearchBarFilterGroup`
-- `AppSearchBarTextFilter`
-- `AppSearchBarFilterValue`
-- `lib/shared/layout/app_workspace.dart`
-- `AppWorkspace`
-- `AppWorkspaceDetailPanel`
+Fix emergency registration so the existing emergency registration form works.
 
-Do not create a new table, search bar, filter bar, or table settings component.
+- Keep the current emergency registration action.
+- Preserve the intended submit flow through patient creation.
+- Do not add a new emergency workflow.
 
-## Required table layout
+### 3. Appointment scheduling
 
-For each listed screen, the main table/worklist must visually appear as:
+Reuse the existing patient appointment dialog everywhere appointments are created or scheduled.
 
-```text
-Table title
-Short description
-Built-in table search bar: [search input] [advanced filters icon] [table settings icon]
-Table rows / empty state
-Pagination/footer
-````
+Do not redefine separate appointment dialogs for equivalent scheduling behavior.
 
-Use either:
+### 4. OPD check-in
 
-* `AppListTable(title: ..., description: ..., search: AppListTableSearch(...))`, or
-* `AppWorkspaceDetailPanel(title: ..., description: ..., child: AppListTable(search: AppListTableSearch(...)))`
+Reuse the existing OPD check-in dialog/flow everywhere an OPD patient is checked in.
 
-The final visible order must still be title, description, built-in table search bar, then table content.
+Do not duplicate OPD check-in forms.
 
-## Built-in table search requirement
+### 5. Triage
 
-Use `AppListTableSearch` through the `search:` parameter of `AppListTable`.
+Reuse one shared triage form/dialog everywhere triage is performed.
 
-Do not use a separate `AppWorkspaceFilterBar` or standalone `AppSearchBar` for the main table search/filter controls.
+Preserve existing triage fields, validation, submit behavior, and controller calls.
 
-Where a screen currently has a separate search/filter bar above the table, move that search/filter behavior into the table’s `AppListTableSearch`.
+### 6. Clinical visit
 
-## Search bar controls
+Remove the Clinical visit quick-action/dialog from the Patient details quick actions.
 
-Each table search bar should contain only:
+Do not remove unrelated clinical workspace functionality.
 
-* Search text input
-* One advanced filters button/icon
-* One table settings button/icon
+### 7. Billing
 
-Keep the existing advanced filter icon behavior from `AppSearchBar`.
+Keep consultation billing behavior as currently implemented.
 
-Keep the table settings button tied to the existing `AppListTable` column visibility behavior.
+Do not replace it unless the same consultation billing dialog is duplicated elsewhere.
 
-Do not add extra standalone toolbar buttons beside the search bar for:
+### 8. Admission
 
-* clear filters
-* resource filters
-* secondary filters
-* subfilters
+Standardize admission request/admit patient dialogs.
 
-Those controls must be inside the advanced filters dialog.
+- Reuse the existing clinical admission/request admission dialog where admission is requested.
+- Preserve current admission behavior.
+- When a patient is admitted/requested for admission, they must appear in the inpatient/IPD workflow as pending admission for the relevant ward/room/bed context.
+- Do not add new admission fields unless already required by the existing dialog/API.
 
-The text-input clear icon may remain when the search text field has text. The separate “clear filters” toolbar action must not remain.
+### 9. Reports and printing
 
-## Advanced filters
+When reports/print is clicked, open the print preview flow directly.
 
-All filters for a table must be accessed from one advanced filters button.
+Use the same shared report/print flow globally.
 
-Move any separate table subfilters into that advanced filter dialog.
+The print preview must allow choosing what to print and what not to print if that behavior already exists.
 
-If needed, section the dialog contents, but keep them inside one filter dialog.
+### 10. OPD actions
 
-Examples:
+Review OPD actions and replace duplicated dialogs with shared ones where equivalent:
 
-* Radiology: remove the separate clear-filters button from the search bar. Keep clear/reset behavior inside the advanced filters dialog.
-* Theater: merge theater filters and resource filters into one advanced filters dialog. Remove the separate resource-filters toolbar button and the separate clear-filters toolbar button.
-* Pharmacy drug/stock table: move the separate stock-status filter into the table’s advanced filters dialog.
-* Patients: move the current patient registry search/filter controls into the patient table’s built-in `AppListTableSearch` flow.
+- Consultation/payment: reuse existing consultation billing behavior.
+- Assign doctor/provider: preserve current behavior.
+- Doctor review: replace duplicated diagnosis/order/prescription/procedure behavior with the existing shared clinical dialogs where equivalent.
+- Print summary: use the shared print/report flow.
 
-Preserve the current filter behavior, values, labels, controller calls, and query updates.
+### 11. Clinical actions
 
-## Current implementation cleanup anchors
+Reuse existing shared clinical dialogs globally:
 
-### Patients
+- Add diagnosis
+- Request lab
+- Request radiology
+- Prescribe
+- Add procedure
+- Refer
+- Request admission
+- Follow up
+- Complete disposition
+- Print summary
 
-Current patient registry search/filter controls are outside the table through `_PatientFilters`, `AppWorkspaceFilterBar`, and a standalone `AppSearchBar`.
+Remove the Care plan action/component where it appears as a clinical action.
 
-Update the patient registry so:
+### 12. Lab requests
 
-* `Patient records` appears above the description.
-* The search bar appears below the description.
-* The search bar is provided by `AppListTableSearch` on `AppListTable<Patient>`.
-* The existing advanced patient filter dialog behavior is preserved.
-* The table settings button is provided through the table/search pattern.
-* The search/filter bar no longer appears above the table title.
+Remove standalone “Request lab” entry points that create lab requests without first selecting a patient.
 
-### Radiology
+Lab requests should be initiated from a selected patient/encounter context and must reuse the shared clinical lab request dialog.
 
-Current radiology search bar includes a separate clear-filters action.
+### 13. Radiology
 
-Update it so:
+Review radiology actions, but only standardize actions already clearly duplicated elsewhere.
 
-* The search bar has only the search input, advanced filters button, and table settings button.
-* The clear/reset filters action is available inside the advanced filters dialog.
-* Existing radiology stage, status, modality, and date filtering behavior is preserved.
-
-### Theater/Theatre
-
-Current theater search bar includes separate theater filters, resource filters, and clear filters.
-
-Update it so:
-
-* There is one advanced filters button.
-* Theater status, stage, scheduled date, room, surgeon, and anesthetist filters are available from that one advanced filters dialog.
-* The separate resource filters toolbar button is removed.
-* The separate clear-filters toolbar button is removed.
-* Existing theater query/controller behavior is preserved.
-
-### Pharmacy
-
-Current pharmacy drug/stock table uses a separate `AppWorkspaceFilterBar`.
-
-Update that table so:
-
-* Search is provided through `AppListTableSearch`.
-* Stock-status filtering is moved into the advanced filters dialog.
-* The table settings button appears through the table’s built-in controls.
-* Existing drug search, stock-status filtering, and pagination behavior is preserved.
-
-### Other listed screens
-
-Audit the remaining listed screens and ensure they follow the same layout and control pattern.
-
-If a screen already has the correct order and uses `AppListTableSearch`, preserve it.
+Do not redesign unclear radiology-specific flows such as assign, start imaging, or perform study in this task.
 
 ## Implementation rules
 
-* Do not change backend behavior.
-* Do not add backend routes.
-* Do not add new API calls.
-* Do not change payload shapes.
-* Do not change table columns unless required only to keep existing column settings behavior.
-* Do not change row selection behavior.
-* Do not change row actions.
-* Do not change detail dialogs or workflow dialogs.
-* Do not change summary-card behavior from the previous update.
-* Do not change permissions.
-* Do not change search/filter semantics; only move controls into the unified table search/filter pattern.
-* Preserve existing labels, icons, localization keys, validation, loading states, success handling, error handling, refresh behavior, and pagination behavior.
+- Do not add new workflows.
+- Do not add new fields unless needed only to preserve an existing dialog/API.
+- Do not add new permissions.
+- Do not change unrelated backend behavior.
+- Do not duplicate dialogs.
+- Keep feature-specific submit callbacks and controller/repository calls in feature code.
+- Move only reusable dialog/action UI into shared components.
+- Preserve existing labels, icons, validation, loading states, success/error handling, refresh behavior, and payload mapping.
+- Preserve current table, search, filter, summary-card, and workspace layout behavior.
 
 ## Acceptance criteria
 
-* All listed workspace tables follow the same visual order: title, description, built-in search bar, table content.
-* Main table search uses `AppListTableSearch`, not a separate search bar.
-* The search bar shows only search input, advanced filters, and table settings.
-* Advanced filters are accessed through one button per table.
-* Separate clear-filter toolbar buttons are removed.
-* Separate resource/subfilter toolbar buttons are moved into the advanced filter dialog.
-* Patient registry no longer shows the search bar above the table title.
-* Radiology no longer shows a separate clear-filters button beside the search bar.
-* Theater no longer shows separate resource-filter or clear-filter buttons beside the search bar.
-* Pharmacy drug/stock table no longer uses a separate filter bar.
-* Existing table data, filters, pagination, row actions, dialogs, controller calls, and backend behavior remain unchanged.
-
+- Patient creation uses one reusable patient dialog.
+- Last name is optional in frontend and backend validation.
+- Emergency registration works.
+- Appointment scheduling uses one reusable appointment dialog.
+- OPD check-in uses one reusable OPD check-in flow.
+- Triage uses one reusable triage dialog.
+- Clinical visit quick action is removed from Patient details.
+- Care plan action is removed.
+- Shared clinical dialogs are reused for diagnosis, lab, radiology, prescription, procedure, referral, admission, follow-up, and disposition.
+- Lab requests require selected patient/encounter context.
+- Print/report actions open the shared print preview flow directly.
+- No duplicate equivalent dialogs remain where a shared dialog exists.
+- Existing business behavior is preserved.

@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_info_tile.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
+import 'package:hosspi_hms/shared/components/app_state_view.dart';
+import 'package:hosspi_hms/shared/components/app_text_field.dart';
+import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 @immutable
@@ -56,6 +62,448 @@ final class AppClinicalAlertSummary {
 
   final AppWorkspaceStatus status;
   final String? description;
+}
+
+@immutable
+final class AppTriageActionInput {
+  const AppTriageActionInput({
+    this.severity,
+    this.triageLevel,
+    this.chiefComplaint,
+    this.notes,
+    this.vitals,
+  });
+
+  final String? severity;
+  final String? triageLevel;
+  final String? chiefComplaint;
+  final String? notes;
+  final AppTriageVitalsInput? vitals;
+}
+
+@immutable
+final class AppTriageVitalsInput {
+  const AppTriageVitalsInput({
+    required this.temperature,
+    required this.systolic,
+    required this.diastolic,
+    required this.heartRate,
+    required this.respiratoryRate,
+    required this.oxygenSaturation,
+    required this.weight,
+    required this.height,
+    required this.bloodPressureUnit,
+    required this.temperatureUnit,
+    required this.weightUnit,
+    required this.heightUnit,
+  });
+
+  final String temperature;
+  final String systolic;
+  final String diastolic;
+  final String heartRate;
+  final String respiratoryRate;
+  final String oxygenSaturation;
+  final String weight;
+  final String height;
+  final String bloodPressureUnit;
+  final String temperatureUnit;
+  final String weightUnit;
+  final String heightUnit;
+
+  bool get hasAnyValue {
+    return <String>[
+      temperature,
+      systolic,
+      diastolic,
+      heartRate,
+      respiratoryRate,
+      oxygenSaturation,
+      weight,
+      height,
+    ].any((String value) => value.trim().isNotEmpty);
+  }
+}
+
+typedef AppTriageSubmitCallback =
+    Future<AppFailure?> Function(AppTriageActionInput input);
+
+class AppTriageActionDialog extends StatefulWidget {
+  const AppTriageActionDialog({
+    required this.title,
+    required this.submitLabel,
+    required this.cancelLabel,
+    required this.requiredMessage,
+    required this.triageLevelLabel,
+    required this.triageLevelOptions,
+    required this.onSubmit,
+    this.icon = const Icon(Icons.monitor_heart_outlined),
+    this.initialTriageLevel,
+    this.triageLevelRequired = true,
+    this.severityLabel,
+    this.severityOptions = const <AppTriageOption>[],
+    this.initialSeverity,
+    this.prioritySectionTitle,
+    this.chiefComplaintLabel,
+    this.chiefComplaintRequired = false,
+    this.initialChiefComplaint,
+    this.notesSectionTitle,
+    this.notesLabel,
+    this.initialNotes,
+    this.vitalsSectionTitle,
+    this.vitalsReference = const AppVitalsReference.adult(),
+    this.requireVitals = false,
+    this.vitalsRequiredMessage,
+    this.bloodPressureLabel,
+    this.temperatureLabel,
+    this.systolicLabel,
+    this.diastolicLabel,
+    this.heartRateLabel,
+    this.respiratoryRateLabel,
+    this.oxygenSaturationLabel,
+    this.weightLabel,
+    this.heightLabel,
+    this.unitLabel,
+    this.leadingSectionsBuilder,
+    this.failureBodyBuilder,
+    this.maxWidth = 780,
+    super.key,
+  });
+
+  final String title;
+  final Widget icon;
+  final String submitLabel;
+  final String cancelLabel;
+  final String requiredMessage;
+  final String triageLevelLabel;
+  final List<AppTriageOption> triageLevelOptions;
+  final String? initialTriageLevel;
+  final bool triageLevelRequired;
+  final String? severityLabel;
+  final List<AppTriageOption> severityOptions;
+  final String? initialSeverity;
+  final String? prioritySectionTitle;
+  final String? chiefComplaintLabel;
+  final bool chiefComplaintRequired;
+  final String? initialChiefComplaint;
+  final String? notesSectionTitle;
+  final String? notesLabel;
+  final String? initialNotes;
+  final String? vitalsSectionTitle;
+  final AppVitalsReference vitalsReference;
+  final bool requireVitals;
+  final String? vitalsRequiredMessage;
+  final String? bloodPressureLabel;
+  final String? temperatureLabel;
+  final String? systolicLabel;
+  final String? diastolicLabel;
+  final String? heartRateLabel;
+  final String? respiratoryRateLabel;
+  final String? oxygenSaturationLabel;
+  final String? weightLabel;
+  final String? heightLabel;
+  final String? unitLabel;
+  final List<Widget> Function(BuildContext context, bool enabled)?
+  leadingSectionsBuilder;
+  final String? Function(BuildContext context, AppFailure failure)?
+  failureBodyBuilder;
+  final AppTriageSubmitCallback onSubmit;
+  final double maxWidth;
+
+  @override
+  State<AppTriageActionDialog> createState() => _AppTriageActionDialogState();
+}
+
+class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _chiefComplaintController =
+      TextEditingController(text: widget.initialChiefComplaint ?? '');
+  late final TextEditingController _notesController = TextEditingController(
+    text: widget.initialNotes ?? '',
+  );
+  final TextEditingController _temperatureController = TextEditingController();
+  final TextEditingController _systolicController = TextEditingController();
+  final TextEditingController _diastolicController = TextEditingController();
+  final TextEditingController _heartRateController = TextEditingController();
+  final TextEditingController _respiratoryRateController =
+      TextEditingController();
+  final TextEditingController _oxygenSaturationController =
+      TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  late String? _triageLevel = _initialOption(
+    widget.initialTriageLevel,
+    widget.triageLevelOptions,
+    fallbackToFirst: widget.triageLevelRequired,
+  );
+  String? _severity;
+  String _bloodPressureUnit = AppVitalsUnits.bloodPressureMmHg;
+  String _temperatureUnit = AppVitalsUnits.temperatureCelsius;
+  String _weightUnit = AppVitalsUnits.weightKilograms;
+  String _heightUnit = AppVitalsUnits.heightCentimeters;
+  bool _isSaving = false;
+  AppFailure? _failure;
+  String? _formErrorText;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.severityOptions.isNotEmpty) {
+      _severity = _initialOption(
+        widget.initialSeverity,
+        widget.severityOptions,
+        fallbackToFirst: true,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _chiefComplaintController.dispose();
+    _notesController.dispose();
+    _temperatureController.dispose();
+    _systolicController.dispose();
+    _diastolicController.dispose();
+    _heartRateController.dispose();
+    _respiratoryRateController.dispose();
+    _oxygenSaturationController.dispose();
+    _weightController.dispose();
+    _heightController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool enabled = !_isSaving;
+    return AppDialog(
+      title: Text(widget.title),
+      icon: widget.icon,
+      scrollable: true,
+      closeEnabled: enabled,
+      maxWidth: widget.maxWidth,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: enabled,
+        density: AppFormSectionDensity.compact,
+        formStatus: _failure == null
+            ? null
+            : AppFailureStateView(
+                failure: _failure!,
+                body: widget.failureBodyBuilder?.call(context, _failure!),
+              ),
+        children: <Widget>[
+          if (_formErrorText != null)
+            AppMessagePanel(
+              message: _formErrorText!,
+              tone: AppWorkspaceStatusTone.error,
+              density: AppContentPanelDensity.compact,
+            ),
+          ...?widget.leadingSectionsBuilder?.call(context, enabled),
+          AppFormSection(
+            title: widget.prioritySectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              if (widget.severityOptions.isNotEmpty)
+                AppResponsiveFieldRow.two(
+                  left: AppTriageUrgencyField(
+                    value: _severity,
+                    labelText: widget.severityLabel,
+                    enabled: enabled,
+                    isRequired: true,
+                    onChanged: (String? value) => setState(() {
+                      _severity = value ?? _severity;
+                    }),
+                    options: widget.severityOptions,
+                  ),
+                  right: _triageLevelField(enabled),
+                )
+              else
+                _triageLevelField(enabled),
+              if (widget.chiefComplaintLabel != null)
+                AppTextField(
+                  controller: _chiefComplaintController,
+                  labelText: widget.chiefComplaintLabel!,
+                  enabled: enabled,
+                  isRequired: widget.chiefComplaintRequired,
+                  maxLines: 3,
+                  validator: widget.chiefComplaintRequired
+                      ? AppValidators.requiredText(widget.requiredMessage)
+                      : null,
+                ),
+            ],
+          ),
+          if (widget.vitalsSectionTitle != null) _vitalsSection(enabled),
+          if (widget.notesLabel != null)
+            AppFormSection(
+              title: widget.notesSectionTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                AppTextField(
+                  controller: _notesController,
+                  labelText: widget.notesLabel!,
+                  enabled: enabled,
+                  minLines: 3,
+                  maxLines: 5,
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+              ],
+            ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: widget.cancelLabel,
+          enabled: enabled,
+          onPressed: () => Navigator.of(context).maybePop(false),
+        ),
+        AppButton.primary(
+          label: widget.submitLabel,
+          leadingIcon: Icons.save_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Widget _triageLevelField(bool enabled) {
+    return AppTriageUrgencyField(
+      value: _triageLevel,
+      labelText: widget.triageLevelLabel,
+      enabled: enabled,
+      isRequired: widget.triageLevelRequired,
+      onChanged: (String? value) => setState(() {
+        _triageLevel = value;
+      }),
+      options: widget.triageLevelOptions,
+    );
+  }
+
+  Widget _vitalsSection(bool enabled) {
+    return AppFormSection(
+      title: widget.vitalsSectionTitle,
+      density: AppFormSectionDensity.compact,
+      children: <Widget>[
+        AppVitalsForm(
+          reference: widget.vitalsReference,
+          temperatureController: _temperatureController,
+          systolicController: _systolicController,
+          diastolicController: _diastolicController,
+          heartRateController: _heartRateController,
+          respiratoryRateController: _respiratoryRateController,
+          oxygenSaturationController: _oxygenSaturationController,
+          weightController: _weightController,
+          heightController: _heightController,
+          bloodPressureLabel: widget.bloodPressureLabel,
+          temperatureLabel: widget.temperatureLabel ?? 'Temperature',
+          systolicLabel: widget.systolicLabel ?? 'Systolic',
+          diastolicLabel: widget.diastolicLabel ?? 'Diastolic',
+          heartRateLabel: widget.heartRateLabel ?? 'Heart rate',
+          respiratoryRateLabel:
+              widget.respiratoryRateLabel ?? 'Respiratory rate',
+          oxygenSaturationLabel:
+              widget.oxygenSaturationLabel ?? 'Oxygen saturation',
+          weightLabel: widget.weightLabel,
+          heightLabel: widget.heightLabel,
+          unitLabel: widget.unitLabel,
+          bloodPressureUnit: _bloodPressureUnit,
+          temperatureUnit: _temperatureUnit,
+          weightUnit: _weightUnit,
+          heightUnit: _heightUnit,
+          enabled: enabled,
+          onBloodPressureUnitChanged: (String? value) {
+            setState(() {
+              _bloodPressureUnit = value ?? AppVitalsUnits.bloodPressureMmHg;
+            });
+          },
+          onTemperatureUnitChanged: (String? value) {
+            setState(() {
+              _temperatureUnit = value ?? AppVitalsUnits.temperatureCelsius;
+            });
+          },
+          onWeightUnitChanged: (String? value) {
+            setState(() {
+              _weightUnit = value ?? AppVitalsUnits.weightKilograms;
+            });
+          },
+          onHeightUnitChanged: (String? value) {
+            setState(() {
+              _heightUnit = value ?? AppVitalsUnits.heightCentimeters;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+
+    final AppTriageActionInput input = _input();
+    if (widget.triageLevelRequired && _normalized(input.triageLevel) == null) {
+      setState(() {
+        _failure = AppFailure.validation(
+          validationFields: const <String>{'triage_level'},
+        );
+        _formErrorText = widget.requiredMessage;
+      });
+      return;
+    }
+    if (widget.requireVitals && input.vitals?.hasAnyValue != true) {
+      setState(() {
+        _failure = AppFailure.validation(
+          validationFields: const <String>{'vitals'},
+        );
+        _formErrorText = widget.vitalsRequiredMessage ?? widget.requiredMessage;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+      _formErrorText = null;
+    });
+    final AppFailure? failure = await widget.onSubmit(input);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _isSaving = false;
+      _failure = failure;
+    });
+  }
+
+  AppTriageActionInput _input() {
+    return AppTriageActionInput(
+      triageLevel: _triageLevel,
+      severity: _severity,
+      chiefComplaint: _normalized(_chiefComplaintController.text),
+      notes: _normalized(_notesController.text),
+      vitals: widget.vitalsSectionTitle == null
+          ? null
+          : AppTriageVitalsInput(
+              temperature: _temperatureController.text.trim(),
+              systolic: _systolicController.text.trim(),
+              diastolic: _diastolicController.text.trim(),
+              heartRate: _heartRateController.text.trim(),
+              respiratoryRate: _respiratoryRateController.text.trim(),
+              oxygenSaturation: _oxygenSaturationController.text.trim(),
+              weight: _weightController.text.trim(),
+              height: _heightController.text.trim(),
+              bloodPressureUnit: _bloodPressureUnit,
+              temperatureUnit: _temperatureUnit,
+              weightUnit: _weightUnit,
+              heightUnit: _heightUnit,
+            ),
+    );
+  }
 }
 
 class AppTriagePriorityBadge extends StatelessWidget {
@@ -526,6 +974,24 @@ List<AppSelectOption<String>> _triageSelectOptions(
         ),
       ),
   ];
+}
+
+String? _initialOption(
+  String? value,
+  List<AppTriageOption> options, {
+  required bool fallbackToFirst,
+}) {
+  final String normalized = value?.trim().toUpperCase() ?? '';
+  if (normalized.isNotEmpty &&
+      options.any((AppTriageOption option) => option.value == normalized)) {
+    return normalized;
+  }
+  return fallbackToFirst && options.isNotEmpty ? options.first.value : null;
+}
+
+String? _normalized(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }
 
 AppWorkspaceStatusTone appTriageToneForValue(String? value) {

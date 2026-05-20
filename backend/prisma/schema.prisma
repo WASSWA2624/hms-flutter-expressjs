@@ -1716,7 +1716,7 @@ model patient {
   tenant_id                String    @db.VarChar(36)
   facility_id              String?   @db.VarChar(36)
   first_name               String    @db.VarChar(120)
-  last_name                String    @db.VarChar(120)
+  last_name                String?   @db.VarChar(120)
   date_of_birth            DateTime?
   gender                   Gender?
   is_active                Boolean   @default(true)

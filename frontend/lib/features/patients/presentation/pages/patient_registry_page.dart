@@ -25,6 +25,7 @@ import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widget
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -1910,19 +1911,6 @@ class _QuickActions extends ConsumerWidget {
               ),
             ),
             AppPermissionActionItem(
-              label: l10n.patientsQuickClinicalAction,
-              icon: Icons.medical_services_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.clinicalVisit,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-              ),
-            ),
-            AppPermissionActionItem(
               label: l10n.patientsQuickBillingAction,
               icon: Icons.receipt_long_outlined,
               onPressed: () => _openQuickAction(
@@ -1972,7 +1960,6 @@ enum _PatientQuickAction {
   appointment,
   opdCheckIn,
   triage,
-  clinicalVisit,
   billing,
   admission,
   report,
@@ -1996,11 +1983,19 @@ Future<void> _openQuickAction(
     barrierDismissible: false,
     builder: (_) {
       return switch (action) {
-        _PatientQuickAction.appointment => _PatientAppointmentQuickDialog(
+        _PatientQuickAction.appointment => PatientAppointmentQuickDialog(
           patient: patient,
           referenceData: referenceData,
         ),
-        _PatientQuickAction.report => _PatientReportDialog(
+        _PatientQuickAction.triage => _PatientTriageQuickDialog(
+          patient: patient,
+          referenceData: referenceData,
+        ),
+        _PatientQuickAction.admission => _PatientAdmissionQuickDialog(
+          patient: patient,
+          referenceData: referenceData,
+        ),
+        _PatientQuickAction.report => _PatientReportPrintPreviewDialog(
           detail: detail,
           patient: patient,
         ),
@@ -2025,22 +2020,23 @@ Future<void> _openQuickAction(
   }
 }
 
-class _PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
-  const _PatientAppointmentQuickDialog({
+class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
+  const PatientAppointmentQuickDialog({
     required this.patient,
     required this.referenceData,
+    super.key,
   });
 
   final Patient patient;
   final PatientReferenceData referenceData;
 
   @override
-  ConsumerState<_PatientAppointmentQuickDialog> createState() =>
+  ConsumerState<PatientAppointmentQuickDialog> createState() =>
       _PatientAppointmentQuickDialogState();
 }
 
 class _PatientAppointmentQuickDialogState
-    extends ConsumerState<_PatientAppointmentQuickDialog> {
+    extends ConsumerState<PatientAppointmentQuickDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _timeController = TextEditingController(
     text: '09:00',
@@ -2322,6 +2318,485 @@ class _PatientAppointmentQuickDialogState
   }
 }
 
+class _PatientTriageQuickDialog extends ConsumerStatefulWidget {
+  const _PatientTriageQuickDialog({
+    required this.patient,
+    required this.referenceData,
+  });
+
+  final Patient patient;
+  final PatientReferenceData referenceData;
+
+  @override
+  ConsumerState<_PatientTriageQuickDialog> createState() =>
+      _PatientTriageQuickDialogState();
+}
+
+class _PatientTriageQuickDialogState
+    extends ConsumerState<_PatientTriageQuickDialog> {
+  String? _facilityId;
+  String? _providerId;
+  List<OpdProviderOption> _providers = const <OpdProviderOption>[];
+  bool _isLoadingProviders = false;
+  AppFailure? _providerFailure;
+
+  @override
+  void initState() {
+    super.initState();
+    _facilityId = widget.patient.facilityId;
+    unawaited(_loadProviders());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AppTriageActionDialog(
+      title: l10n.patientsTriageDialogTitle,
+      submitLabel: l10n.patientsQuickTriageAction,
+      cancelLabel: l10n.commonCancelActionLabel,
+      requiredMessage: l10n.validationRequired,
+      prioritySectionTitle: l10n.patientsTriagePrioritySectionTitle,
+      severityLabel: l10n.patientsEmergencySeverityLabel,
+      severityOptions: _statusTriageOptions(_emergencySeverityOptions),
+      initialSeverity: 'HIGH',
+      triageLevelLabel: l10n.patientsTriageLevelLabel,
+      triageLevelRequired: false,
+      triageLevelOptions: _statusTriageOptions(_triageLevelOptions),
+      chiefComplaintLabel: l10n.patientsChiefComplaintLabel,
+      chiefComplaintRequired: true,
+      notesSectionTitle: l10n.patientsNotesSectionTitle,
+      notesLabel: l10n.patientsNotesLabel,
+      vitalsSectionTitle: l10n.patientsVitalsSectionTitle,
+      vitalsReference: AppVitalsReference.fromPatientData(
+        dateOfBirth: widget.patient.dateOfBirth,
+        gender: widget.patient.gender,
+      ),
+      requireVitals: true,
+      vitalsRequiredMessage: l10n.patientsVitalsRequiredMessage,
+      bloodPressureLabel: l10n.patientsBloodPressureLabel,
+      temperatureLabel: l10n.patientsTemperatureLabel,
+      systolicLabel: l10n.patientsSystolicLabel,
+      diastolicLabel: l10n.patientsDiastolicLabel,
+      heartRateLabel: l10n.patientsHeartRateLabel,
+      respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
+      oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
+      weightLabel: l10n.patientsWeightLabel,
+      heightLabel: l10n.patientsHeightLabel,
+      unitLabel: l10n.patientsVitalUnitLabel,
+      failureBodyBuilder: _workflowFailureMessage,
+      leadingSectionsBuilder: _workflowFields,
+      onSubmit: _submitTriage,
+    );
+  }
+
+  List<Widget> _workflowFields(BuildContext context, bool enabled) {
+    final l10n = context.l10n;
+    return <Widget>[
+      if (_providerFailure != null)
+        AppFailureStateView(
+          failure: _providerFailure!,
+          body: _workflowFailureMessage(context, _providerFailure!),
+        ),
+      AppFormSection(
+        title: l10n.patientsWorkflowSectionTitle,
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          if (widget.referenceData.facilities.length > 1)
+            _facilitySelect(context, enabled),
+          _providerSelect(context, enabled),
+        ],
+      ),
+    ];
+  }
+
+  Widget _facilitySelect(BuildContext context, bool enabled) {
+    return PatientFacilitySelectField(
+      facilities: widget.referenceData.facilities,
+      value: _facilityId,
+      labelText: context.l10n.patientsFacilityLabel,
+      enabled: enabled,
+      onChanged: (String? value) => setState(() => _facilityId = value),
+    );
+  }
+
+  Widget _providerSelect(BuildContext context, bool enabled) {
+    return AppSelectField<String>.searchable(
+      value: _providerId,
+      labelText: context.l10n.patientsProviderLabel,
+      helperText: context.l10n.patientsProviderOptionalHelper,
+      enabled: enabled,
+      isLoading: _isLoadingProviders,
+      onChanged: (String? value) => setState(() => _providerId = value),
+      options: _providerSelectOptions(_providers),
+    );
+  }
+
+  Future<void> _loadProviders() async {
+    setState(() => _isLoadingProviders = true);
+    final Result<List<OpdProviderOption>> result = await ref
+        .read(opdRepositoryProvider)
+        .listProviders();
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (List<OpdProviderOption> providers) {
+        setState(() {
+          _providers = providers;
+          _providerFailure = null;
+          _isLoadingProviders = false;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _providerFailure = failure;
+          _isLoadingProviders = false;
+        });
+      },
+    );
+  }
+
+  Future<AppFailure?> _submitTriage(AppTriageActionInput input) async {
+    final List<Map<String, Object?>> vitals = _vitalPayload(input.vitals);
+    if (vitals.isEmpty) {
+      return AppFailure.validation(validationFields: const <String>{'vitals'});
+    }
+
+    final Result<OpdFlowDetail> flowResult = await ref
+        .read(opdRepositoryProvider)
+        .startOpdFlow(
+          _baseFlowPayload(input, <String, Object?>{
+            'arrival_mode': 'EMERGENCY',
+            'emergency': _emergencyPayload(input),
+            'initial_stage': 'WAITING_VITALS',
+            'notes': input.chiefComplaint,
+            'require_consultation_payment': false,
+            'create_consultation_invoice': false,
+          }),
+        );
+    final OpdFlowDetail? flow = _successOrNull(flowResult);
+    if (flow == null) {
+      return _failureOrNull(flowResult);
+    }
+
+    final Result<OpdFlowDetail> vitalsResult = await ref
+        .read(opdRepositoryProvider)
+        .recordVitals(
+          flow.summary.apiId,
+          _withoutEmptyPayload(<String, Object?>{
+            'vitals': vitals,
+            'triage_level': input.triageLevel,
+            'triage_priority': input.triageLevel,
+            'chief_complaint': input.chiefComplaint,
+            'emergency': true,
+            'triage_notes': input.notes,
+          }),
+        );
+    final OpdFlowDetail? triaged = _successOrNull(vitalsResult);
+    if (triaged == null) {
+      return _failureOrNull(vitalsResult);
+    }
+
+    if (_providerId == null) {
+      return null;
+    }
+
+    final Result<OpdFlowDetail> assignResult = await ref
+        .read(opdRepositoryProvider)
+        .assignDoctor(triaged.summary.apiId, <String, Object?>{
+          'provider_user_id': _providerId,
+        });
+    return _failureOrNull(assignResult);
+  }
+
+  Map<String, Object?> _baseFlowPayload(
+    AppTriageActionInput input,
+    Map<String, Object?> extra,
+  ) {
+    return _withoutEmptyPayload(<String, Object?>{
+      'tenant_id': widget.patient.tenantId,
+      'facility_id': _facilityId,
+      'patient_id': widget.patient.id,
+      'provider_user_id': _providerId,
+      'queued_at': DateTime.now().toUtc().toIso8601String(),
+      'notes': input.notes,
+      ...extra,
+    });
+  }
+
+  Map<String, Object?> _emergencyPayload(AppTriageActionInput input) {
+    return _withoutEmptyPayload(<String, Object?>{
+      'severity': input.severity,
+      'triage_level': input.triageLevel,
+      'notes': input.notes,
+    });
+  }
+
+  List<Map<String, Object?>> _vitalPayload(AppTriageVitalsInput? input) {
+    if (input == null) {
+      return const <Map<String, Object?>>[];
+    }
+    final List<Map<String, Object?>> vitals = <Map<String, Object?>>[];
+    final String now = DateTime.now().toUtc().toIso8601String();
+    final String systolic = _bloodPressurePayloadValue(
+      input.systolic,
+      input.bloodPressureUnit,
+    );
+    final String diastolic = _bloodPressurePayloadValue(
+      input.diastolic,
+      input.bloodPressureUnit,
+    );
+    if (systolic.isNotEmpty && diastolic.isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'BLOOD_PRESSURE',
+        'systolic_value': systolic,
+        'diastolic_value': diastolic,
+        'unit': AppVitalsUnits.bloodPressureMmHg,
+        'recorded_at': now,
+      });
+    }
+    if (input.temperature.trim().isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'TEMPERATURE',
+        'value': normalizeCurrencyAmount(input.temperature),
+        'unit': input.temperatureUnit,
+        'recorded_at': now,
+      });
+    }
+    if (input.heartRate.trim().isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'HEART_RATE',
+        'value': input.heartRate.trim(),
+        'unit': 'BPM',
+        'recorded_at': now,
+      });
+    }
+    if (input.respiratoryRate.trim().isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'RESPIRATORY_RATE',
+        'value': input.respiratoryRate.trim(),
+        'unit': 'BREATHS_PER_MIN',
+        'recorded_at': now,
+      });
+    }
+    if (input.oxygenSaturation.trim().isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'OXYGEN_SATURATION',
+        'value': input.oxygenSaturation.trim(),
+        'unit': 'PERCENT',
+        'recorded_at': now,
+      });
+    }
+    if (input.weight.trim().isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'WEIGHT',
+        'value': normalizeCurrencyAmount(input.weight),
+        'unit': input.weightUnit,
+        'recorded_at': now,
+      });
+    }
+    if (input.height.trim().isNotEmpty) {
+      vitals.add(<String, Object?>{
+        'vital_type': 'HEIGHT',
+        'value': normalizeCurrencyAmount(input.height),
+        'unit': input.heightUnit,
+        'recorded_at': now,
+      });
+    }
+    return vitals;
+  }
+
+  String _bloodPressurePayloadValue(String value, String unit) {
+    final double? parsed = parseAppVitalInput(value);
+    if (parsed == null) {
+      return '';
+    }
+
+    final double mmHg = unit == AppVitalsUnits.bloodPressureKpa
+        ? parsed / AppVitalsUnits.bloodPressureKpaFactor
+        : parsed;
+    return formatAppVitalNumber(mmHg, decimals: 2);
+  }
+}
+
+class _PatientAdmissionQuickDialog extends ConsumerStatefulWidget {
+  const _PatientAdmissionQuickDialog({
+    required this.patient,
+    required this.referenceData,
+  });
+
+  final Patient patient;
+  final PatientReferenceData referenceData;
+
+  @override
+  ConsumerState<_PatientAdmissionQuickDialog> createState() =>
+      _PatientAdmissionQuickDialogState();
+}
+
+class _PatientAdmissionQuickDialogState
+    extends ConsumerState<_PatientAdmissionQuickDialog> {
+  String? _facilityId;
+
+  @override
+  void initState() {
+    super.initState();
+    _facilityId = widget.patient.facilityId;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ClinicalAdmissionActionDialog(
+      referenceData: _clinicalAdmissionReferenceData(),
+      reasonLabel: l10n.patientsAdmissionReasonLabel,
+      reasonRequired: true,
+      notesLabel: l10n.patientsNotesLabel,
+      leadingSectionsBuilder: _workflowFields,
+      onSubmit: _submitAdmission,
+    );
+  }
+
+  List<Widget> _workflowFields(BuildContext context, bool enabled) {
+    if (widget.referenceData.facilities.length <= 1) {
+      return const <Widget>[];
+    }
+    return <Widget>[
+      AppFormSection(
+        title: context.l10n.patientsWorkflowSectionTitle,
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          PatientFacilitySelectField(
+            facilities: widget.referenceData.facilities,
+            value: _facilityId,
+            labelText: context.l10n.patientsFacilityLabel,
+            enabled: enabled,
+            onChanged: (String? value) => setState(() => _facilityId = value),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  ClinicalActionReferenceData _clinicalAdmissionReferenceData() {
+    return ClinicalActionReferenceData(
+      wards: <ClinicalActionCatalogOption>[
+        for (final PatientReferenceOption option in _facilityFiltered(
+          widget.referenceData.wards,
+        ))
+          ClinicalActionCatalogOption(
+            id: option.id,
+            name: option.label,
+            status: option.status,
+            parentId: option.facilityId,
+          ),
+      ],
+      rooms: <ClinicalActionCatalogOption>[
+        for (final PatientReferenceOption option in _facilityFiltered(
+          widget.referenceData.rooms,
+        ))
+          ClinicalActionCatalogOption(
+            id: option.id,
+            name: option.label,
+            status: option.status,
+            parentId: option.wardId,
+            secondaryId: option.facilityId,
+          ),
+      ],
+      availableBeds: <ClinicalActionCatalogOption>[
+        for (final PatientReferenceOption option in _facilityFiltered(
+          widget.referenceData.beds,
+        ))
+          ClinicalActionCatalogOption(
+            id: option.id,
+            name: option.label,
+            category: option.type,
+            status: option.status,
+            parentId: option.wardId,
+            secondaryId: option.roomId,
+          ),
+      ],
+    );
+  }
+
+  List<PatientReferenceOption> _facilityFiltered(
+    List<PatientReferenceOption> options,
+  ) {
+    if (_facilityId == null) {
+      return options;
+    }
+    return options
+        .where(
+          (PatientReferenceOption option) =>
+              option.facilityId == null || option.facilityId == _facilityId,
+        )
+        .toList(growable: false);
+  }
+
+  Future<AppFailure?> _submitAdmission(
+    ClinicalActionAdmissionInput input,
+  ) async {
+    final Result<OpdFlowDetail> flowResult = await ref
+        .read(opdRepositoryProvider)
+        .startOpdFlow(
+          _withoutEmptyPayload(<String, Object?>{
+            'tenant_id': widget.patient.tenantId,
+            'facility_id': _facilityId,
+            'patient_id': widget.patient.id,
+            'queued_at': DateTime.now().toUtc().toIso8601String(),
+            'arrival_mode': 'WALK_IN',
+            'initial_stage': 'WAITING_DOCTOR_REVIEW',
+            'require_consultation_payment': false,
+            'create_consultation_invoice': false,
+            'notes': input.notes,
+          }),
+        );
+    final OpdFlowDetail? flow = _successOrNull(flowResult);
+    if (flow == null) {
+      return _failureOrNull(flowResult);
+    }
+
+    final Result<OpdFlowDetail> reviewResult = await ref
+        .read(opdRepositoryProvider)
+        .doctorReview(flow.summary.apiId, <String, Object?>{
+          'note': input.reason ?? '',
+        });
+    final OpdFlowDetail? reviewed = _successOrNull(reviewResult);
+    if (reviewed == null) {
+      return _failureOrNull(reviewResult);
+    }
+
+    final Result<OpdFlowDetail> dispositionResult = await ref
+        .read(opdRepositoryProvider)
+        .disposition(
+          reviewed.summary.apiId,
+          _withoutEmptyPayload(<String, Object?>{
+            'decision': 'ADMIT',
+            'admission_facility_id': _facilityId,
+            'notes': input.notes,
+          }),
+        );
+    final OpdFlowDetail? admitted = _successOrNull(dispositionResult);
+    if (admitted == null) {
+      return _failureOrNull(dispositionResult);
+    }
+
+    final String? admissionId = admitted.admissions.isEmpty
+        ? null
+        : admitted.admissions.first.id;
+    if (admissionId == null) {
+      return null;
+    }
+
+    final Result<void> bedResult = await ref
+        .read(ipdRepositoryProvider)
+        .assignBed(admissionId, <String, Object?>{
+          'bed_id': input.bed.apiId,
+          'assigned_at': DateTime.now().toUtc().toIso8601String(),
+        });
+    return _failureOrNull(bedResult);
+  }
+}
+
 class _PatientFlowQuickDialog extends ConsumerStatefulWidget {
   const _PatientFlowQuickDialog({
     required this.patient,
@@ -2342,32 +2817,11 @@ class _PatientFlowQuickDialogState
     extends ConsumerState<_PatientFlowQuickDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _notesController = TextEditingController();
-  final TextEditingController _chiefComplaintController =
-      TextEditingController();
-  final TextEditingController _clinicalNoteController = TextEditingController();
-  final TextEditingController _diagnosisController = TextEditingController();
   final TextEditingController _feeController = TextEditingController();
   final TextEditingController _transactionRefController =
       TextEditingController();
-  final TextEditingController _temperatureController = TextEditingController();
-  final TextEditingController _systolicController = TextEditingController();
-  final TextEditingController _diastolicController = TextEditingController();
-  final TextEditingController _heartRateController = TextEditingController();
-  final TextEditingController _respiratoryRateController =
-      TextEditingController();
-  final TextEditingController _oxygenSaturationController =
-      TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _heightController = TextEditingController();
-  String _bloodPressureUnit = AppVitalsUnits.bloodPressureMmHg;
-  String _selectedTemperatureUnit = AppVitalsUnits.temperatureCelsius;
-  String _selectedWeightUnit = AppVitalsUnits.weightKilograms;
-  String _selectedHeightUnit = AppVitalsUnits.heightCentimeters;
   String? _facilityId;
   String? _providerId;
-  String? _wardId;
-  String? _roomId;
-  String? _bedId;
   String _arrivalMode = 'WALK_IN';
   String _emergencySeverity = 'HIGH';
   String? _triageLevel;
@@ -2378,34 +2832,19 @@ class _PatientFlowQuickDialogState
   bool _isLoadingProviders = false;
   bool _isSaving = false;
   AppFailure? _failure;
-  String? _formErrorText;
 
   @override
   void initState() {
     super.initState();
     _facilityId = widget.patient.facilityId;
-    if (widget.action == _PatientQuickAction.triage) {
-      _arrivalMode = 'EMERGENCY';
-    }
     unawaited(_loadProviders());
   }
 
   @override
   void dispose() {
     _notesController.dispose();
-    _chiefComplaintController.dispose();
-    _clinicalNoteController.dispose();
-    _diagnosisController.dispose();
     _feeController.dispose();
     _transactionRefController.dispose();
-    _temperatureController.dispose();
-    _systolicController.dispose();
-    _diastolicController.dispose();
-    _heartRateController.dispose();
-    _respiratoryRateController.dispose();
-    _oxygenSaturationController.dispose();
-    _weightController.dispose();
-    _heightController.dispose();
     super.dispose();
   }
 
@@ -2429,12 +2868,6 @@ class _PatientFlowQuickDialogState
                 body: _workflowFailureMessage(context, _failure!),
               ),
         children: <Widget>[
-          if (_formErrorText != null)
-            AppMessagePanel(
-              message: _formErrorText!,
-              tone: AppWorkspaceStatusTone.error,
-              density: AppContentPanelDensity.compact,
-            ),
           AppFormSection(
             title: l10n.patientsWorkflowSectionTitle,
             density: AppFormSectionDensity.compact,
@@ -2481,7 +2914,6 @@ class _PatientFlowQuickDialogState
     return switch (widget.action) {
       _PatientQuickAction.opdCheckIn => Icons.login_outlined,
       _PatientQuickAction.triage => Icons.monitor_heart_outlined,
-      _PatientQuickAction.clinicalVisit => Icons.medical_services_outlined,
       _PatientQuickAction.billing => Icons.receipt_long_outlined,
       _PatientQuickAction.admission => Icons.local_hospital_outlined,
       _ => Icons.play_arrow_outlined,
@@ -2492,7 +2924,6 @@ class _PatientFlowQuickDialogState
     return switch (widget.action) {
       _PatientQuickAction.opdCheckIn => l10n.patientsOpdCheckInDialogTitle,
       _PatientQuickAction.triage => l10n.patientsTriageDialogTitle,
-      _PatientQuickAction.clinicalVisit => l10n.patientsClinicalDialogTitle,
       _PatientQuickAction.billing => l10n.patientsBillingDialogTitle,
       _PatientQuickAction.admission => l10n.patientsAdmissionDialogTitle,
       _ => l10n.patientsQuickActionsTitle,
@@ -2503,7 +2934,6 @@ class _PatientFlowQuickDialogState
     return switch (widget.action) {
       _PatientQuickAction.opdCheckIn => l10n.patientsQuickOpdCheckInAction,
       _PatientQuickAction.triage => l10n.patientsQuickTriageAction,
-      _PatientQuickAction.clinicalVisit => l10n.patientsQuickClinicalAction,
       _PatientQuickAction.billing => l10n.patientsQuickBillingAction,
       _PatientQuickAction.admission => l10n.patientsQuickAdmissionAction,
       _ => l10n.patientsSaveAction,
@@ -2512,11 +2942,6 @@ class _PatientFlowQuickDialogState
 
   List<Widget> _modeFields(BuildContext context) {
     final l10n = context.l10n;
-    final AppVitalsReference vitalsReference =
-        AppVitalsReference.fromPatientData(
-          dateOfBirth: widget.patient.dateOfBirth,
-          gender: widget.patient.gender,
-        );
     return switch (widget.action) {
       _PatientQuickAction.opdCheckIn => <Widget>[
         AppFormSection(
@@ -2536,100 +2961,6 @@ class _PatientFlowQuickDialogState
             ),
             if (_arrivalMode == 'EMERGENCY') _emergencyFields(context),
             _consultationFeeField(context, required: false),
-          ],
-        ),
-      ],
-      _PatientQuickAction.triage => <Widget>[
-        AppFormSection(
-          title: l10n.patientsTriagePrioritySectionTitle,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            _emergencyFields(context),
-            AppTextField(
-              controller: _chiefComplaintController,
-              labelText: l10n.patientsChiefComplaintLabel,
-              enabled: !_isSaving,
-              isRequired: true,
-              maxLines: 3,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-          ],
-        ),
-        AppFormSection(
-          title: l10n.patientsVitalsSectionTitle,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            AppVitalsForm(
-              reference: vitalsReference,
-              temperatureController: _temperatureController,
-              systolicController: _systolicController,
-              diastolicController: _diastolicController,
-              heartRateController: _heartRateController,
-              respiratoryRateController: _respiratoryRateController,
-              oxygenSaturationController: _oxygenSaturationController,
-              weightController: _weightController,
-              heightController: _heightController,
-              bloodPressureLabel: l10n.patientsBloodPressureLabel,
-              temperatureLabel: l10n.patientsTemperatureLabel,
-              systolicLabel: l10n.patientsSystolicLabel,
-              diastolicLabel: l10n.patientsDiastolicLabel,
-              heartRateLabel: l10n.patientsHeartRateLabel,
-              respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
-              oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
-              weightLabel: l10n.patientsWeightLabel,
-              heightLabel: l10n.patientsHeightLabel,
-              unitLabel: l10n.patientsVitalUnitLabel,
-              bloodPressureUnit: _bloodPressureUnit,
-              temperatureUnit: _selectedTemperatureUnit,
-              weightUnit: _selectedWeightUnit,
-              heightUnit: _selectedHeightUnit,
-              enabled: !_isSaving,
-              onBloodPressureUnitChanged: (String? value) {
-                setState(() {
-                  _bloodPressureUnit =
-                      value ?? AppVitalsUnits.bloodPressureMmHg;
-                });
-              },
-              onTemperatureUnitChanged: (String? value) {
-                setState(() {
-                  _selectedTemperatureUnit =
-                      value ?? AppVitalsUnits.temperatureCelsius;
-                });
-              },
-              onWeightUnitChanged: (String? value) {
-                setState(() {
-                  _selectedWeightUnit = value ?? AppVitalsUnits.weightKilograms;
-                });
-              },
-              onHeightUnitChanged: (String? value) {
-                setState(() {
-                  _selectedHeightUnit =
-                      value ?? AppVitalsUnits.heightCentimeters;
-                });
-              },
-            ),
-          ],
-        ),
-      ],
-      _PatientQuickAction.clinicalVisit => <Widget>[
-        AppFormSection(
-          title: l10n.patientsClinicalAssessmentSectionTitle,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            AppTextField(
-              controller: _clinicalNoteController,
-              labelText: l10n.patientsClinicalNoteLabel,
-              enabled: !_isSaving,
-              isRequired: true,
-              maxLines: 4,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppTextField(
-              controller: _diagnosisController,
-              labelText: l10n.patientsDiagnosisLabel,
-              enabled: !_isSaving,
-              maxLines: 2,
-            ),
           ],
         ),
       ],
@@ -2661,33 +2992,6 @@ class _PatientFlowQuickDialogState
                   enabled: !_isSaving,
                 ),
               ),
-          ],
-        ),
-      ],
-      _PatientQuickAction.admission => <Widget>[
-        AppFormSection(
-          title: l10n.patientsAdmissionClinicalSectionTitle,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            AppTextField(
-              controller: _clinicalNoteController,
-              labelText: l10n.patientsAdmissionReasonLabel,
-              enabled: !_isSaving,
-              isRequired: true,
-              maxLines: 4,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-          ],
-        ),
-        AppFormSection(
-          title: l10n.patientsAdmissionLocationSectionTitle,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            _wardSelect(context),
-            AppResponsiveFieldRow.two(
-              left: _roomSelect(context),
-              right: _bedSelect(context),
-            ),
           ],
         ),
       ],
@@ -2743,12 +3047,7 @@ class _PatientFlowQuickDialogState
       labelText: context.l10n.patientsFacilityLabel,
       enabled: !_isSaving,
       onChanged: (String? value) {
-        setState(() {
-          _facilityId = value;
-          _wardId = null;
-          _roomId = null;
-          _bedId = null;
-        });
+        setState(() => _facilityId = value);
       },
     );
   }
@@ -2763,93 +3062,6 @@ class _PatientFlowQuickDialogState
       onChanged: (String? value) => setState(() => _providerId = value),
       options: _providerSelectOptions(_providers),
     );
-  }
-
-  Widget _wardSelect(BuildContext context) {
-    final List<PatientReferenceOption> wards = _facilityFiltered(
-      widget.referenceData.wards,
-    );
-    return PatientReferenceSelectField(
-      options: wards,
-      value: _wardId,
-      labelText: context.l10n.patientsWardLabel,
-      enabled: !_isSaving && wards.isNotEmpty,
-      onChanged: (String? value) {
-        setState(() {
-          _wardId = value;
-          _roomId = null;
-          _bedId = null;
-        });
-      },
-      leadingIconBuilder: (_) => const Icon(Icons.domain_outlined),
-    );
-  }
-
-  Widget _roomSelect(BuildContext context) {
-    final List<PatientReferenceOption> rooms =
-        _facilityFiltered(widget.referenceData.rooms)
-            .where((PatientReferenceOption option) {
-              return _wardId == null ||
-                  option.wardId == null ||
-                  option.wardId == _wardId;
-            })
-            .toList(growable: false);
-    return PatientReferenceSelectField(
-      options: rooms,
-      value: _roomId,
-      labelText: context.l10n.patientsRoomLabel,
-      enabled: !_isSaving && rooms.isNotEmpty,
-      onChanged: (String? value) {
-        setState(() {
-          _roomId = value;
-          _bedId = null;
-        });
-      },
-      leadingIconBuilder: (_) => const Icon(Icons.meeting_room_outlined),
-    );
-  }
-
-  Widget _bedSelect(BuildContext context) {
-    final List<PatientReferenceOption> beds =
-        _facilityFiltered(widget.referenceData.beds)
-            .where((PatientReferenceOption option) {
-              final bool matchesWard =
-                  _wardId == null ||
-                  option.wardId == null ||
-                  option.wardId == _wardId;
-              final bool matchesRoom =
-                  _roomId == null ||
-                  option.roomId == null ||
-                  option.roomId == _roomId;
-              final bool isAvailable =
-                  option.status == null ||
-                  option.status!.toUpperCase() == 'AVAILABLE';
-              return matchesWard && matchesRoom && isAvailable;
-            })
-            .toList(growable: false);
-    return PatientReferenceSelectField(
-      options: beds,
-      value: _bedId,
-      labelText: context.l10n.patientsBedLabel,
-      enabled: !_isSaving && beds.isNotEmpty,
-      onChanged: (String? value) => setState(() => _bedId = value),
-      leadingIconBuilder: (PatientReferenceOption option) =>
-          Icon(_bedStatusIcon(option.status)),
-    );
-  }
-
-  List<PatientReferenceOption> _facilityFiltered(
-    List<PatientReferenceOption> options,
-  ) {
-    if (_facilityId == null) {
-      return options;
-    }
-    return options
-        .where(
-          (PatientReferenceOption option) =>
-              option.facilityId == null || option.facilityId == _facilityId,
-        )
-        .toList(growable: false);
   }
 
   Future<void> _loadProviders() async {
@@ -2883,15 +3095,11 @@ class _PatientFlowQuickDialogState
     setState(() {
       _isSaving = true;
       _failure = null;
-      _formErrorText = null;
     });
 
     final AppFailure? failure = await (switch (widget.action) {
       _PatientQuickAction.opdCheckIn => _submitOpdCheckIn(),
-      _PatientQuickAction.triage => _submitTriage(),
-      _PatientQuickAction.clinicalVisit => _submitClinicalVisit(),
       _PatientQuickAction.billing => _submitBilling(),
-      _PatientQuickAction.admission => _submitAdmission(),
       _ => Future<AppFailure?>.value(),
     });
 
@@ -2920,97 +3128,6 @@ class _PatientFlowQuickDialogState
     });
   }
 
-  Future<AppFailure?> _submitTriage() async {
-    final List<Map<String, Object?>> vitals = _vitalPayload();
-    if (vitals.isEmpty) {
-      setState(() {
-        _formErrorText = context.l10n.patientsVitalsRequiredMessage;
-      });
-      return AppFailure.validation(validationFields: const <String>{'vitals'});
-    }
-
-    final Result<OpdFlowDetail> flowResult = await ref
-        .read(opdRepositoryProvider)
-        .startOpdFlow(
-          _baseFlowPayload(<String, Object?>{
-            'arrival_mode': 'EMERGENCY',
-            'emergency': _emergencyPayload(),
-            'initial_stage': 'WAITING_VITALS',
-            'notes': _chiefComplaintController.text.trim(),
-            'require_consultation_payment': false,
-            'create_consultation_invoice': false,
-          }),
-        );
-    final OpdFlowDetail? flow = _successOrNull(flowResult);
-    if (flow == null) {
-      return _failureOrNull(flowResult);
-    }
-
-    final Result<OpdFlowDetail> vitalsResult = await ref
-        .read(opdRepositoryProvider)
-        .recordVitals(
-          flow.summary.apiId,
-          _withoutEmptyPayload(<String, Object?>{
-            'vitals': vitals,
-            'triage_level': _triageLevel,
-            'triage_priority': _triageLevel,
-            'chief_complaint': _chiefComplaintController.text.trim(),
-            'emergency': true,
-            'triage_notes': _notesController.text.trim(),
-          }),
-        );
-    final OpdFlowDetail? triaged = _successOrNull(vitalsResult);
-    if (triaged == null) {
-      return _failureOrNull(vitalsResult);
-    }
-
-    if (_providerId == null) {
-      return null;
-    }
-
-    final Result<OpdFlowDetail> assignResult = await ref
-        .read(opdRepositoryProvider)
-        .assignDoctor(triaged.summary.apiId, <String, Object?>{
-          'provider_user_id': _providerId,
-        });
-    return _failureOrNull(assignResult);
-  }
-
-  Future<AppFailure?> _submitClinicalVisit() async {
-    final Result<OpdFlowDetail> flowResult = await ref
-        .read(opdRepositoryProvider)
-        .startOpdFlow(
-          _baseFlowPayload(<String, Object?>{
-            'arrival_mode': 'WALK_IN',
-            'initial_stage': 'WAITING_DOCTOR_REVIEW',
-            'require_consultation_payment': false,
-            'create_consultation_invoice': false,
-          }),
-        );
-    final OpdFlowDetail? flow = _successOrNull(flowResult);
-    if (flow == null) {
-      return _failureOrNull(flowResult);
-    }
-
-    final Result<OpdFlowDetail> reviewResult = await ref
-        .read(opdRepositoryProvider)
-        .doctorReview(
-          flow.summary.apiId,
-          _withoutEmptyPayload(<String, Object?>{
-            'note': _clinicalNoteController.text.trim(),
-            if (_diagnosisController.text.trim().isNotEmpty)
-              'diagnoses': <Map<String, Object?>>[
-                <String, Object?>{
-                  'diagnosis_type': 'PRIMARY',
-                  'description': _diagnosisController.text.trim(),
-                },
-              ],
-            'notes': _notesController.text.trim(),
-          }),
-        );
-    return _failureOrNull(reviewResult);
-  }
-
   Future<AppFailure?> _submitBilling() {
     final String amount = normalizeCurrencyAmount(_feeController.text);
     return _startFlow(<String, Object?>{
@@ -3028,63 +3145,6 @@ class _PatientFlowQuickDialogState
           'paid_at': DateTime.now().toUtc().toIso8601String(),
         }),
     });
-  }
-
-  Future<AppFailure?> _submitAdmission() async {
-    final Result<OpdFlowDetail> flowResult = await ref
-        .read(opdRepositoryProvider)
-        .startOpdFlow(
-          _baseFlowPayload(<String, Object?>{
-            'arrival_mode': 'WALK_IN',
-            'initial_stage': 'WAITING_DOCTOR_REVIEW',
-            'require_consultation_payment': false,
-            'create_consultation_invoice': false,
-          }),
-        );
-    final OpdFlowDetail? flow = _successOrNull(flowResult);
-    if (flow == null) {
-      return _failureOrNull(flowResult);
-    }
-
-    final Result<OpdFlowDetail> reviewResult = await ref
-        .read(opdRepositoryProvider)
-        .doctorReview(flow.summary.apiId, <String, Object?>{
-          'note': _clinicalNoteController.text.trim(),
-        });
-    final OpdFlowDetail? reviewed = _successOrNull(reviewResult);
-    if (reviewed == null) {
-      return _failureOrNull(reviewResult);
-    }
-
-    final Result<OpdFlowDetail> dispositionResult = await ref
-        .read(opdRepositoryProvider)
-        .disposition(
-          reviewed.summary.apiId,
-          _withoutEmptyPayload(<String, Object?>{
-            'decision': 'ADMIT',
-            'admission_facility_id': _facilityId,
-            'notes': _notesController.text.trim(),
-          }),
-        );
-    final OpdFlowDetail? admitted = _successOrNull(dispositionResult);
-    if (admitted == null) {
-      return _failureOrNull(dispositionResult);
-    }
-
-    final String? admissionId = admitted.admissions.isEmpty
-        ? null
-        : admitted.admissions.first.id;
-    if (admissionId == null || _bedId == null) {
-      return null;
-    }
-
-    final Result<void> bedResult = await ref
-        .read(ipdRepositoryProvider)
-        .assignBed(admissionId, <String, Object?>{
-          'bed_id': _bedId,
-          'assigned_at': DateTime.now().toUtc().toIso8601String(),
-        });
-    return _failureOrNull(bedResult);
   }
 
   Future<AppFailure?> _startFlow(Map<String, Object?> payload) async {
@@ -3112,317 +3172,6 @@ class _PatientFlowQuickDialogState
       'triage_level': _triageLevel,
       'notes': _notesController.text.trim(),
     });
-  }
-
-  List<Map<String, Object?>> _vitalPayload() {
-    final List<Map<String, Object?>> vitals = <Map<String, Object?>>[];
-    final String now = DateTime.now().toUtc().toIso8601String();
-    final String systolic = _bloodPressurePayloadValue(
-      _systolicController,
-      _bloodPressureUnit,
-    );
-    final String diastolic = _bloodPressurePayloadValue(
-      _diastolicController,
-      _bloodPressureUnit,
-    );
-    if (systolic.isNotEmpty && diastolic.isNotEmpty) {
-      vitals.add(<String, Object?>{
-        'vital_type': 'BLOOD_PRESSURE',
-        'systolic_value': systolic,
-        'diastolic_value': diastolic,
-        'unit': AppVitalsUnits.bloodPressureMmHg,
-        'recorded_at': now,
-      });
-    }
-    void addScalar(
-      TextEditingController controller,
-      String vitalType,
-      String unit,
-    ) {
-      final String value = normalizeCurrencyAmount(controller.text);
-      if (value.isEmpty) {
-        return;
-      }
-      vitals.add(<String, Object?>{
-        'vital_type': vitalType,
-        'value': value,
-        'unit': unit,
-        'recorded_at': now,
-      });
-    }
-
-    addScalar(_temperatureController, 'TEMPERATURE', _selectedTemperatureUnit);
-    addScalar(_heartRateController, 'HEART_RATE', AppVitalsUnits.heartRate);
-    addScalar(
-      _respiratoryRateController,
-      'RESPIRATORY_RATE',
-      AppVitalsUnits.respiratoryRate,
-    );
-    addScalar(
-      _oxygenSaturationController,
-      'OXYGEN_SATURATION',
-      AppVitalsUnits.oxygenSaturation,
-    );
-    addScalar(_weightController, 'WEIGHT', _selectedWeightUnit);
-    addScalar(_heightController, 'HEIGHT', _selectedHeightUnit);
-    return vitals;
-  }
-
-  String _bloodPressurePayloadValue(
-    TextEditingController controller,
-    String unit,
-  ) {
-    final double? value = parseAppVitalInput(controller.text);
-    if (value == null) {
-      return '';
-    }
-
-    final double mmHg = unit == AppVitalsUnits.bloodPressureKpa
-        ? value / AppVitalsUnits.bloodPressureKpaFactor
-        : value;
-    return formatAppVitalNumber(mmHg, decimals: 2);
-  }
-}
-
-class _PatientReportDialog extends StatelessWidget {
-  const _PatientReportDialog({required this.patient, this.detail});
-
-  final Patient patient;
-  final PatientDetail? detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-    final PatientDetail effectiveDetail = _effectivePatientDetail(
-      patient,
-      detail,
-    );
-    final PatientWorkspaceSnapshot workspace = effectiveDetail.workspace;
-
-    return AppDialog(
-      title: Text(l10n.patientsReportDialogTitle),
-      icon: const Icon(Icons.summarize_outlined),
-      scrollable: true,
-      maxWidth: 820,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _PatientReportIdentityPanel(detail: effectiveDetail),
-          SizedBox(height: theme.spacing.md),
-          AppReportSummaryGrid(
-            records: <AppReportSummaryItem>[
-              AppReportSummaryItem(
-                label: l10n.patientsAppointmentsSectionTitle,
-                value: workspace.appointments.length.toString(),
-                icon: Icons.event_available_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.patientsEncountersSectionTitle,
-                value: workspace.encounters.length.toString(),
-                icon: Icons.medical_services_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.patientsAdmissionsSectionTitle,
-                value: workspace.admissions.length.toString(),
-                icon: Icons.local_hospital_outlined,
-              ),
-              AppReportSummaryItem(
-                label: l10n.patientsInvoicesSectionTitle,
-                value: workspace.invoices.length.toString(),
-                icon: Icons.receipt_long_outlined,
-              ),
-            ],
-            minTileWidth: 120,
-          ),
-          SizedBox(height: theme.spacing.md),
-          Text(
-            l10n.patientsTimelineSectionTitle,
-            style: theme.textTheme.titleSmall,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          if (effectiveDetail.timeline.isEmpty)
-            Text(l10n.patientsNoTimeline)
-          else
-            for (final PatientTimelineItem item
-                in effectiveDetail.timeline.take(6))
-              AppInfoTile(
-                label: _apiLabel(item.resource),
-                value: _joinDisplay(<String?>[
-                  item.title,
-                  _formatOptionalDateTime(context, item.occurredAt),
-                ]),
-                emptyValue: l10n.profileUnknownValue,
-                bordered: false,
-              ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(false),
-        ),
-        AppReportActionButton.print(
-          label: l10n.patientsPrintReportAction,
-          onPressed: () {
-            unawaited(
-              showAppDialog<void>(
-                context: context,
-                builder: (_) => _PatientReportPrintPreviewDialog(
-                  patient: patient,
-                  detail: detail,
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _PatientReportIdentityPanel extends StatelessWidget {
-  const _PatientReportIdentityPanel({required this.detail});
-
-  final PatientDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-    final Patient patient = detail.patient;
-    final List<_PatientReportFact> facts = <_PatientReportFact>[
-      _PatientReportFact(
-        label: l10n.patientsDobLabel,
-        value: _formatOptionalDate(context, patient.dateOfBirth),
-      ),
-      _PatientReportFact(
-        label: l10n.patientsGenderLabel,
-        value: patient.gender == null
-            ? l10n.profileUnknownValue
-            : _genderLabel(l10n, patient.gender!),
-      ),
-      _PatientReportFact(
-        label: l10n.patientsPhoneLabel,
-        value: patient.primaryPhone ?? l10n.profileUnknownValue,
-      ),
-      _PatientReportFact(
-        label: l10n.patientsEmailLabel,
-        value: patient.primaryEmail ?? l10n.profileUnknownValue,
-      ),
-      _PatientReportFact(
-        label: l10n.patientsFacilityLabel,
-        value: patient.facilityLabel ?? l10n.profileUnknownValue,
-      ),
-      _PatientReportFact(
-        label: l10n.profileTenantLabel,
-        value: patient.tenantLabel ?? l10n.profileUnknownValue,
-      ),
-    ];
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Icon(
-                  Icons.assignment_ind_outlined,
-                  color: theme.colorScheme.primary,
-                  size: theme.appTokens.listIconSize,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        patient.effectiveDisplayName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      Text(
-                        patient.effectiveIdentifier ?? patient.id,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: theme.spacing.sm),
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final int columns = constraints.maxWidth >= 640
-                    ? 3
-                    : constraints.maxWidth >= 420
-                    ? 2
-                    : 1;
-                final double gap = theme.spacing.sm;
-                final double width =
-                    (constraints.maxWidth - (gap * (columns - 1))) / columns;
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: theme.spacing.xs,
-                  children: <Widget>[
-                    for (final _PatientReportFact fact in facts)
-                      SizedBox(
-                        width: math.max(width, 0),
-                        child: _PatientReportCompactFact(fact: fact),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PatientReportCompactFact extends StatelessWidget {
-  const _PatientReportCompactFact({required this.fact});
-
-  final _PatientReportFact fact;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          fact.label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          fact.value,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -4232,14 +3981,6 @@ final class _PatientReportSelection {
   final DateTime? startDate;
   final DateTime? endDate;
   final Set<_PatientReportSection> sections;
-}
-
-@immutable
-final class _PatientReportFact {
-  const _PatientReportFact({required this.label, required this.value});
-
-  final String label;
-  final String value;
 }
 
 @immutable
@@ -5478,10 +5219,8 @@ class _PatientFormDialogState extends State<PatientFormDialog> {
               right: AppTextField(
                 controller: _lastNameController,
                 labelText: l10n.patientsLastNameLabel,
-                isRequired: true,
                 textCapitalization: TextCapitalization.words,
                 enabled: !_isSaving,
-                validator: AppValidators.requiredText(l10n.validationRequired),
               ),
             ),
             AppResponsiveFieldRow.two(
@@ -5856,12 +5595,9 @@ class _EmergencyPatientFormDialogState
 
     final DateTime registeredAt = DateTime.now().toUtc();
     final String firstName = _firstNameController.text.trim();
-    final String lastName = _lastNameController.text.trim();
     final AppFailure? failure = await widget.onSubmit(<String, Object?>{
       'first_name': firstName.isEmpty ? 'Emergency' : firstName,
-      'last_name': lastName.isEmpty
-          ? 'Patient ${registeredAt.millisecondsSinceEpoch}'
-          : lastName,
+      'last_name': _lastNameController.text.trim(),
       'gender': 'UNKNOWN',
       'primary_phone': _phoneController.text.trim(),
       'is_active': true,
@@ -6670,6 +6406,18 @@ List<AppSelectOption<String>> _simpleStatusOptions(Iterable<String> values) {
   ];
 }
 
+List<AppTriageOption> _statusTriageOptions(Iterable<String> values) {
+  return <AppTriageOption>[
+    for (final String value in values)
+      AppTriageOption(
+        value: value,
+        label: _apiLabel(value),
+        tone: appTriageToneForValue(value),
+        icon: appTriageIconForValue(value),
+      ),
+  ];
+}
+
 List<AppSelectOption<String>> _providerSelectOptions(
   List<OpdProviderOption> providers,
 ) {
@@ -6970,16 +6718,6 @@ IconData _paymentMethodIcon(String value) {
     'INSURANCE' => Icons.health_and_safety_outlined,
     'VOUCHER' || 'GIFT_CARD' => Icons.confirmation_number_outlined,
     _ => Icons.receipt_long_outlined,
-  };
-}
-
-IconData _bedStatusIcon(String? value) {
-  return switch (value?.toUpperCase()) {
-    'AVAILABLE' => Icons.bed_outlined,
-    'RESERVED' => Icons.lock_clock_outlined,
-    'OCCUPIED' => Icons.hotel_outlined,
-    'OUT_OF_SERVICE' => Icons.build_outlined,
-    _ => Icons.bed_outlined,
   };
 }
 

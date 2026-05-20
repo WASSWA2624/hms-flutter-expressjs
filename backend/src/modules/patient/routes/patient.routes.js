@@ -445,7 +445,7 @@ router.get(
  * @bodyParams {string} [tenant_id] - Tenant ID (required for global users, inferred from auth scope otherwise)
  * @bodyParams {string} [facility_id] - Facility ID (optional, inferred from auth scope for facility-scoped users)
  * @bodyParams {string} first_name - Patient first name (required, max 120 chars)
- * @bodyParams {string} last_name - Patient last name (required, max 120 chars)
+ * @bodyParams {string} [last_name] - Patient last name (max 120 chars)
  * @bodyParams {string} [date_of_birth] - Date of birth (ISO 8601 datetime)
  * @bodyParams {string} [gender] - Gender (MALE/FEMALE/OTHER/UNKNOWN)
  * @bodyParams {boolean} [is_active=true] - Active status

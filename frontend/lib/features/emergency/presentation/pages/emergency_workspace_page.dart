@@ -736,21 +736,35 @@ class _EmergencyActionPanel extends ConsumerWidget {
   }
 
   Future<void> _openTriageDialog(BuildContext context) async {
-    final _TriageInput? input = await showAppDialog<_TriageInput>(
+    final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _TriageDialog(latestTriage: detail.latestTriage),
+      builder: (_) => AppTriageActionDialog(
+        title: _EmergencyText.recordTriage,
+        submitLabel: _EmergencyText.saveTriage,
+        cancelLabel: _EmergencyText.cancel,
+        requiredMessage: _EmergencyText.required,
+        triageLevelLabel: 'Triage level',
+        triageLevelOptions: _triageActionOptions(_triageOptions()),
+        initialTriageLevel: _normalizedOption(
+          detail.latestTriage?.triageLevel,
+          fallback: 'LEVEL_2',
+        ),
+        notesLabel: 'Triage notes',
+        initialNotes: detail.latestTriage?.notes,
+        onSubmit: (AppTriageActionInput input) {
+          return _controller(context).recordTriage(
+            triageLevel: input.triageLevel ?? 'LEVEL_2',
+            notes: input.notes,
+          );
+        },
+      ),
     );
-    if (input == null || !context.mounted) {
+    if (changed != true || !context.mounted) {
       return;
     }
 
-    final AppFailure? failure = await _controller(
-      context,
-    ).recordTriage(triageLevel: input.triageLevel, notes: input.notes);
-    if (context.mounted) {
-      _showFailureIfNeeded(context, failure, successMessage: 'Triage recorded');
-    }
+    _showFailureIfNeeded(context, null, successMessage: 'Triage recorded');
   }
 
   Future<void> _openResponseDialog(BuildContext context) async {
@@ -1318,90 +1332,6 @@ class _QuickArrivalDialogState extends State<_QuickArrivalDialog> {
   }
 }
 
-class _TriageDialog extends StatefulWidget {
-  const _TriageDialog({required this.latestTriage});
-
-  final EmergencyTriageAssessment? latestTriage;
-
-  @override
-  State<_TriageDialog> createState() => _TriageDialogState();
-}
-
-class _TriageDialogState extends State<_TriageDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late String _triageLevel = _normalizedOption(
-    widget.latestTriage?.triageLevel,
-    fallback: 'LEVEL_2',
-  );
-  late final TextEditingController _notesController = TextEditingController(
-    text: widget.latestTriage?.notes ?? '',
-  );
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: const Text(_EmergencyText.recordTriage),
-      icon: const Icon(Icons.monitor_heart_outlined),
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppSelectField<String>(
-            value: _triageLevel,
-            labelText: 'Triage level',
-            isRequired: true,
-            options: _triageOptions(),
-            validator: _requiredSelect,
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() {
-                  _triageLevel = value;
-                });
-              }
-            },
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: 'Triage notes',
-            minLines: 3,
-            maxLines: 5,
-            textCapitalization: TextCapitalization.sentences,
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: _EmergencyText.cancel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        AppButton.primary(
-          label: _EmergencyText.saveTriage,
-          leadingIcon: Icons.save_outlined,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(
-      _TriageInput(
-        triageLevel: _triageLevel,
-        notes: _nonEmpty(_notesController.text),
-      ),
-    );
-  }
-}
-
 class _DispatchDialog extends StatefulWidget {
   const _DispatchDialog({
     required this.referenceData,
@@ -1619,14 +1549,6 @@ class _HandoffDialogState extends State<_HandoffDialog> {
 }
 
 @immutable
-final class _TriageInput {
-  const _TriageInput({required this.triageLevel, this.notes});
-
-  final String triageLevel;
-  final String? notes;
-}
-
-@immutable
 final class _DispatchInput {
   const _DispatchInput({required this.ambulanceId, required this.status});
 
@@ -1743,6 +1665,15 @@ List<AppSelectOption<String>> _triageOptions() {
     AppSelectOption<String>(value: 'LEVEL_3', label: _EmergencyText.level3),
     AppSelectOption<String>(value: 'LEVEL_4', label: _EmergencyText.level4),
     AppSelectOption<String>(value: 'LEVEL_5', label: _EmergencyText.level5),
+  ];
+}
+
+List<AppTriageOption> _triageActionOptions(
+  Iterable<AppSelectOption<String>> options,
+) {
+  return <AppTriageOption>[
+    for (final AppSelectOption<String> option in options)
+      AppTriageOption(value: option.value, label: option.label),
   ];
 }
 

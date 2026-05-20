@@ -44,11 +44,20 @@ describe('Patient Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should require last_name', () => {
+    it('should allow last_name to be omitted', () => {
       const data = { ...validData };
       delete data.last_name;
       const result = createPatientSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+    });
+
+    it('should normalize blank last_name to null', () => {
+      const data = { ...validData, last_name: '   ' };
+      const result = createPatientSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.last_name).toBeNull();
+      }
     });
 
     it('should accept optional facility_id', () => {

@@ -59,14 +59,6 @@ class _LabWorkspaceContent extends ConsumerStatefulWidget {
 }
 
 class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
-  static const AccessRequirement _requestRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.labRead,
-      AppPermissions.clinicalRead,
-      AppPermissions.clinicalWrite,
-    ],
-    activeModules: <String>['lab-workflows'],
-  );
   static const AccessRequirement _mutationRequirement = AccessRequirement(
     anyPermissions: <AppPermission>[AppPermissions.labWrite],
     activeModules: <String>['lab-workflows'],
@@ -108,7 +100,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       labWorkspaceControllerProvider.notifier,
     );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canRequest = _requestRequirement.isAllowed(policy);
     final bool canMutate = _mutationRequirement.isAllowed(policy);
 
     return AppWorkspace(
@@ -121,13 +112,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.success,
       ),
-      primaryAction: canRequest
-          ? AppButton.primary(
-              label: l10n.labRequestOrderAction,
-              leadingIcon: Icons.science_outlined,
-              onPressed: () => _openOrderDialog(context, state),
-            )
-          : null,
       secondaryActions: <Widget>[
         if (canMutate)
           AppButton.secondary(
@@ -986,234 +970,6 @@ class _ReportLine extends StatelessWidget {
   }
 }
 
-class _RequestOrderDialog extends ConsumerStatefulWidget {
-  const _RequestOrderDialog({required this.state});
-
-  final LabWorkspaceState state;
-
-  @override
-  ConsumerState<_RequestOrderDialog> createState() =>
-      _RequestOrderDialogState();
-}
-
-class _RequestOrderDialogState extends ConsumerState<_RequestOrderDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _patientController;
-  late final TextEditingController _encounterController;
-  late final TextEditingController _searchController;
-  final Set<String> _selectedTestIds = <String>{};
-  final Set<String> _selectedPanelIds = <String>{};
-  AppFailure? _failure;
-  bool _isSaving = false;
-  String _search = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _patientController = TextEditingController();
-    _encounterController = TextEditingController();
-    _searchController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _patientController.dispose();
-    _encounterController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<LabCatalogItem> tests = _filterCatalog(
-      widget.state.catalogTests,
-    );
-    final List<LabCatalogItem> panels = _filterCatalog(
-      widget.state.catalogPanels,
-    );
-
-    return AppDialog(
-      title: Text(l10n.labRequestOrderDialogTitle),
-      icon: const Icon(Icons.science_outlined),
-      scrollable: true,
-      maxWidth: 720,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _patientController,
-              labelText: l10n.labPatientIdLabel,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppTextField(
-              controller: _encounterController,
-              labelText: l10n.labEncounterIdLabel,
-              enabled: !_isSaving,
-            ),
-            AppSearchBar(
-              controller: _searchController,
-              semanticLabel: l10n.labCatalogSearchLabel,
-              hintText: l10n.labCatalogSearchHint,
-              onChanged: (String value) {
-                setState(() => _search = value);
-              },
-              onClear: () {
-                setState(() => _search = '');
-              },
-            ),
-            SizedBox(
-              height: 360,
-              child: DefaultTabController(
-                length: 2,
-                child: Column(
-                  children: <Widget>[
-                    TabBar(
-                      tabs: <Widget>[
-                        Tab(text: l10n.labTestsTabLabel),
-                        Tab(text: l10n.labPanelsTabLabel),
-                      ],
-                    ),
-                    Expanded(
-                      child: TabBarView(
-                        children: <Widget>[
-                          _CatalogSelectionList(
-                            items: tests,
-                            selectedIds: _selectedTestIds,
-                            emptyText: l10n.labNoCatalogItemsLabel,
-                            onChanged: _setTestSelected,
-                          ),
-                          _CatalogSelectionList(
-                            items: panels,
-                            selectedIds: _selectedPanelIds,
-                            emptyText: l10n.labNoCatalogItemsLabel,
-                            onChanged: _setPanelSelected,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: _dialogActions(
-        context,
-        submitLabel: l10n.labCreateOrderSubmitAction,
-        isSaving: _isSaving,
-        onSubmit: _submit,
-      ),
-    );
-  }
-
-  List<LabCatalogItem> _filterCatalog(List<LabCatalogItem> items) {
-    return items
-        .where((LabCatalogItem item) => item.matchesSearch(_search))
-        .toList(growable: false);
-  }
-
-  void _setTestSelected(LabCatalogItem item, bool value) {
-    setState(() {
-      if (value) {
-        _selectedTestIds.add(item.apiId);
-      } else {
-        _selectedTestIds.remove(item.apiId);
-      }
-    });
-  }
-
-  void _setPanelSelected(LabCatalogItem item, bool value) {
-    setState(() {
-      if (value) {
-        _selectedPanelIds.add(item.apiId);
-      } else {
-        _selectedPanelIds.remove(item.apiId);
-      }
-    });
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    if (_selectedTestIds.isEmpty && _selectedPanelIds.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-
-    final AppFailure? failure = await ref
-        .read(labWorkspaceControllerProvider.notifier)
-        .createOrder(<String, Object?>{
-          'patient_id': _patientController.text.trim(),
-          'encounter_id': _encounterController.text.trim(),
-          'requested_tests': <Map<String, Object?>>[
-            for (final String id in _selectedTestIds)
-              <String, Object?>{'lab_test_id': id},
-          ],
-          'requested_panels': <Map<String, Object?>>[
-            for (final String id in _selectedPanelIds)
-              <String, Object?>{'lab_panel_id': id},
-          ],
-        });
-    if (failure == null) {
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-      return;
-    }
-
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
-class _CatalogSelectionList extends StatelessWidget {
-  const _CatalogSelectionList({
-    required this.items,
-    required this.selectedIds,
-    required this.emptyText,
-    required this.onChanged,
-  });
-
-  final List<LabCatalogItem> items;
-  final Set<String> selectedIds;
-  final String emptyText;
-  final void Function(LabCatalogItem item, bool selected) onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Center(child: _EmptyInlineText(text: emptyText));
-    }
-
-    return ListView.separated(
-      itemCount: items.length,
-      itemBuilder: (BuildContext context, int index) {
-        final LabCatalogItem item = items[index];
-        return AppCheckboxField(
-          title: item.displayTitle,
-          subtitle: item.displaySubtitle,
-          value: selectedIds.contains(item.apiId),
-          onChanged: (bool value) => onChanged(item, value),
-        );
-      },
-      separatorBuilder: (_, _) => const Divider(height: 1),
-    );
-  }
-}
-
 class _CollectDialog extends ConsumerStatefulWidget {
   const _CollectDialog({required this.workflow});
 
@@ -1975,20 +1731,6 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
       _isSaving = false;
     });
   }
-}
-
-Future<void> _openOrderDialog(
-  BuildContext context,
-  LabWorkspaceState state,
-) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _RequestOrderDialog(state: state),
-    ),
-  );
 }
 
 Future<void> _openQcDialog(

@@ -390,15 +390,38 @@ class _ClinicalFollowUpActionDialogState
   }
 }
 
+@immutable
+final class ClinicalActionAdmissionInput {
+  const ClinicalActionAdmissionInput({
+    required this.bed,
+    this.reason,
+    this.notes,
+  });
+
+  final ClinicalActionCatalogOption bed;
+  final String? reason;
+  final String? notes;
+}
+
 class ClinicalAdmissionActionDialog extends StatefulWidget {
   const ClinicalAdmissionActionDialog({
     required this.referenceData,
     required this.onSubmit,
+    this.reasonLabel,
+    this.reasonRequired = false,
+    this.notesLabel,
+    this.leadingSectionsBuilder,
     super.key,
   });
 
   final ClinicalActionReferenceData referenceData;
-  final Future<AppFailure?> Function(ClinicalActionCatalogOption bed) onSubmit;
+  final Future<AppFailure?> Function(ClinicalActionAdmissionInput input)
+  onSubmit;
+  final String? reasonLabel;
+  final bool reasonRequired;
+  final String? notesLabel;
+  final List<Widget> Function(BuildContext context, bool enabled)?
+  leadingSectionsBuilder;
 
   @override
   State<ClinicalAdmissionActionDialog> createState() =>
@@ -408,11 +431,34 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
 class _ClinicalAdmissionActionDialogState
     extends State<ClinicalAdmissionActionDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _reasonController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
   String? _wardId;
   String? _roomId;
   String? _bedId;
   bool _isSaving = false;
   AppFailure? _failure;
+
+  @override
+  void didUpdateWidget(covariant ClinicalAdmissionActionDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_selectedAdmissionBed(
+          _availableAdmissionBeds(widget.referenceData),
+          _bedId,
+        ) ==
+        null) {
+      _wardId = null;
+      _roomId = null;
+      _bedId = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -446,67 +492,93 @@ class _ClinicalAdmissionActionDialogState
       content: Form(
         key: _formKey,
         child: AppFormSection(
-          title: l10n.clinicalAdmissionDetailsTitle,
           children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            if (availableBeds.isEmpty)
-              AppStateView(
-                title: l10n.clinicalAdmissionNoBedsTitle,
-                body: l10n.clinicalAdmissionNoBedsMessage,
-                icon: Icons.bed_outlined,
-                variant: AppStateViewVariant.empty,
-              )
-            else ...<Widget>[
-              AppResponsiveFieldRow.two(
-                gap: AppResponsiveFieldRowGap.form,
-                left: AppSelectField<String>.searchable(
-                  value: _wardId,
-                  labelText: l10n.clinicalAdmissionWardLabel,
-                  enabled: !_isSaving && wardOptions.isNotEmpty,
-                  isRequired: true,
-                  menuHeight: 280,
-                  options: wardOptions,
-                  validator: AppValidators.requiredValue<String>(
-                    l10n.validationRequired,
+            ...?widget.leadingSectionsBuilder?.call(context, !_isSaving),
+            AppFormSection(
+              title: l10n.clinicalAdmissionDetailsTitle,
+              children: <Widget>[
+                if (_failure != null) AppFailureStateView(failure: _failure!),
+                if (availableBeds.isEmpty)
+                  AppStateView(
+                    title: l10n.clinicalAdmissionNoBedsTitle,
+                    body: l10n.clinicalAdmissionNoBedsMessage,
+                    icon: Icons.bed_outlined,
+                    variant: AppStateViewVariant.empty,
+                  )
+                else ...<Widget>[
+                  AppResponsiveFieldRow.two(
+                    gap: AppResponsiveFieldRowGap.form,
+                    left: AppSelectField<String>.searchable(
+                      value: _wardId,
+                      labelText: l10n.clinicalAdmissionWardLabel,
+                      enabled: !_isSaving && wardOptions.isNotEmpty,
+                      isRequired: true,
+                      menuHeight: 280,
+                      options: wardOptions,
+                      validator: AppValidators.requiredValue<String>(
+                        l10n.validationRequired,
+                      ),
+                      onChanged: _handleWardChanged,
+                    ),
+                    right: AppSelectField<String>.searchable(
+                      value: _roomId,
+                      labelText: l10n.clinicalAdmissionRoomLabel,
+                      enabled:
+                          !_isSaving &&
+                          _wardId != null &&
+                          roomOptions.isNotEmpty,
+                      isRequired: true,
+                      menuHeight: 280,
+                      options: roomOptions,
+                      validator: AppValidators.requiredValue<String>(
+                        l10n.validationRequired,
+                      ),
+                      onChanged: _handleRoomChanged,
+                    ),
                   ),
-                  onChanged: _handleWardChanged,
-                ),
-                right: AppSelectField<String>.searchable(
-                  value: _roomId,
-                  labelText: l10n.clinicalAdmissionRoomLabel,
-                  enabled:
-                      !_isSaving && _wardId != null && roomOptions.isNotEmpty,
-                  isRequired: true,
-                  menuHeight: 280,
-                  options: roomOptions,
-                  validator: AppValidators.requiredValue<String>(
-                    l10n.validationRequired,
+                  AppSelectField<String>.searchable(
+                    value: _bedId,
+                    labelText: l10n.clinicalAdmissionBedLabel,
+                    enabled:
+                        !_isSaving && _roomId != null && bedOptions.isNotEmpty,
+                    isRequired: true,
+                    menuHeight: 320,
+                    options: bedOptions,
+                    validator: AppValidators.requiredValue<String>(
+                      l10n.validationRequired,
+                    ),
+                    onChanged: (String? value) =>
+                        _handleBedChanged(value, availableBeds),
                   ),
-                  onChanged: _handleRoomChanged,
-                ),
-              ),
-              AppSelectField<String>.searchable(
-                value: _bedId,
-                labelText: l10n.clinicalAdmissionBedLabel,
-                enabled: !_isSaving && _roomId != null && bedOptions.isNotEmpty,
-                isRequired: true,
-                menuHeight: 320,
-                options: bedOptions,
-                validator: AppValidators.requiredValue<String>(
-                  l10n.validationRequired,
-                ),
-                onChanged: (String? value) =>
-                    _handleBedChanged(value, availableBeds),
-              ),
-              AppInfoTileGrid(
-                items: _admissionDetailTiles(
-                  context,
-                  widget.referenceData,
-                  selectedBed,
-                ),
-                maxColumns: 2,
-              ),
-            ],
+                  AppInfoTileGrid(
+                    items: _admissionDetailTiles(
+                      context,
+                      widget.referenceData,
+                      selectedBed,
+                    ),
+                    maxColumns: 2,
+                  ),
+                  if (widget.reasonLabel != null)
+                    AppTextField(
+                      controller: _reasonController,
+                      labelText: widget.reasonLabel!,
+                      enabled: !_isSaving,
+                      isRequired: widget.reasonRequired,
+                      maxLines: 4,
+                      validator: widget.reasonRequired
+                          ? AppValidators.requiredText(l10n.validationRequired)
+                          : null,
+                    ),
+                  if (widget.notesLabel != null)
+                    AppTextField(
+                      controller: _notesController,
+                      labelText: widget.notesLabel!,
+                      enabled: !_isSaving,
+                      maxLines: 3,
+                    ),
+                ],
+              ],
+            ),
           ],
         ),
       ),
@@ -568,7 +640,13 @@ class _ClinicalAdmissionActionDialogState
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget.onSubmit(bed);
+    final AppFailure? failure = await widget.onSubmit(
+      ClinicalActionAdmissionInput(
+        bed: bed,
+        reason: _nonEmpty(_reasonController.text),
+        notes: _nonEmpty(_notesController.text),
+      ),
+    );
     _finishSubmit(failure);
   }
 
@@ -1005,6 +1083,11 @@ String _apiLabel(String value) {
         return '${lower[0].toUpperCase()}${lower.substring(1)}';
       })
       .join(' ');
+}
+
+String? _nonEmpty(String value) {
+  final String normalized = value.trim();
+  return normalized.isEmpty ? null : normalized;
 }
 
 String _joinDisplay(Iterable<String?> values) {

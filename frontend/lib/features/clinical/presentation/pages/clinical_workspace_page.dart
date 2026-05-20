@@ -857,13 +857,6 @@ class _ClinicalActionBar extends ConsumerWidget {
               onPressed: () => _openProcedureDialog(context, controller),
             ),
             ClinicalActionItem(
-              kind: ClinicalActionKind.carePlan,
-              label: l10n.clinicalCarePlanAction,
-              icon: Icons.playlist_add_check_outlined,
-              enabled: isAllowed,
-              onPressed: () => _openCarePlanDialog(context, controller),
-            ),
-            ClinicalActionItem(
               kind: ClinicalActionKind.refer,
               label: l10n.opdReferAction,
               icon: Icons.alt_route_outlined,
@@ -1636,28 +1629,6 @@ Future<void> _openProcedureDialog(
   );
 }
 
-Future<void> _openCarePlanDialog(
-  BuildContext context,
-  ClinicalWorkspaceController controller,
-) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ClinicalFreeTextActionDialog(
-        title: context.l10n.clinicalCarePlanAction,
-        label: context.l10n.clinicalCarePlanLabel,
-        submitLabel: context.l10n.clinicalCarePlanAction,
-        icon: const Icon(Icons.playlist_add_check_outlined),
-        onSubmit: (String value) {
-          return controller.addCarePlan(plan: value, startDate: DateTime.now());
-        },
-      ),
-    ),
-  );
-}
-
 Future<void> _openLabDialog(
   BuildContext context,
   ClinicalWorkspaceController controller,
@@ -1809,7 +1780,8 @@ Future<void> _openAdmissionDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalAdmissionActionDialog(
         referenceData: referenceData,
-        onSubmit: controller.requestAdmission,
+        onSubmit: (ClinicalActionAdmissionInput input) =>
+            controller.requestAdmission(input.bed),
       ),
     ),
   );

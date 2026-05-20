@@ -79,6 +79,17 @@ const dateLikeBodySchema = z
   .optional()
   .nullable()
   .transform((value) => (value ? value : null));
+const requiredNameBodySchema = z.string().trim().min(1).max(120);
+const optionalNameBodySchema = z
+  .string()
+  .trim()
+  .max(120)
+  .optional()
+  .nullable()
+  .transform((value) => {
+    if (value === undefined) return undefined;
+    return value ? value : null;
+  });
 
 const jsonValueSchema = z.lazy(() =>
   z.union([
@@ -104,8 +115,8 @@ const optionalJsonObjectSchema = z
 const createPatientSchema = z.object({
   tenant_id: optionalFriendlyOrUuidSchema,
   facility_id: optionalFriendlyOrUuidSchema,
-  first_name: z.string().trim().min(1).max(120),
-  last_name: z.string().trim().min(1).max(120),
+  first_name: requiredNameBodySchema,
+  last_name: optionalNameBodySchema,
   date_of_birth: dateLikeBodySchema,
   gender: z.enum(GENDER_VALUES).optional().nullable(),
   is_active: z.boolean().optional(),
@@ -123,8 +134,8 @@ const createPatientSchema = z.object({
  */
 const updatePatientSchema = z.object({
   facility_id: optionalFriendlyOrUuidSchema,
-  first_name: z.string().trim().min(1).max(120).optional(),
-  last_name: z.string().trim().min(1).max(120).optional(),
+  first_name: requiredNameBodySchema.optional(),
+  last_name: optionalNameBodySchema,
   date_of_birth: dateLikeBodySchema,
   gender: z.enum(GENDER_VALUES).optional().nullable(),
   is_active: z.boolean().optional(),
