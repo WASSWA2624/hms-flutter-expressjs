@@ -1,252 +1,204 @@
 You are working on the HOSSPI Hospital Management System codebase.
 
-Before implementing, review the current app-planner, backend, frontend, and any attached latest screenshots. Align the refactor with the existing Flutter/Riverpod frontend implementation, current shared UI patterns, and the current backend/API behavior.
+Before implementing, review the current app-planner, backend, frontend, and any attached latest screenshots. Align the work with the existing Flutter/Riverpod implementation, current `AppWorkspace` layout pattern, shared components, and existing table/search/filter behavior.
 
 ## Goal
 
-Standardize repeated action buttons, action panels, and modal dialogs across the app by converting duplicated local action UI into reusable shared components.
+Audit and complete the workspace summary-card behavior across the listed module screens.
 
-Use the existing OPD, Clinical, and Patient action implementations as the starting point. Reuse the action components and dialogs already defined there first. For similar actions already implemented in other modules, replace duplicated local UI with the shared version. If a repeated action/dialog pattern does not already exist in OPD, Clinical, or Patient code, create the missing reusable component under the shared frontend folders and use it consistently.
+Summary cards must behave consistently:
+
+- Summary cards must update/filter the table or list on the current main screen.
+- Summary cards must not open modal dialogs.
+- Each listed screen must have an “All” summary card for the full table/list on that screen.
+- Zero-value summary cards must not be displayed.
+- Every visible summary card must be clickable.
+- Informational-only summary cards that cannot update the table/list must be removed.
+- Summary values must display as plain text without a filled badge background.
+- On small screens, compact summary cards must show only the icon and value text, without the full card/badge background.
+
+If a listed screen already satisfies a requirement, preserve the existing implementation.
+
+## Screens to update
+
+Update these screens only:
+
+- Patients: `lib/features/patients/presentation/pages/patient_registry_page.dart`
+- Billing: `lib/features/billing/presentation/pages/billing_workspace_page.dart`
+- Claims: `lib/features/claims/presentation/pages/claims_workspace_page.dart`
+- OPD: `lib/features/opd/presentation/pages/opd_workspace_page.dart`
+- Emergency: `lib/features/emergency/presentation/pages/emergency_workspace_page.dart`
+- IPD: `lib/features/ipd/presentation/pages/ipd_workspace_page.dart`
+- ICU: `lib/features/icu/presentation/pages/icu_workspace_page.dart`
+- Nursing: `lib/features/nursing/presentation/pages/nursing_workspace_page.dart`
+- Clinical: `lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
+- Lab: `lib/features/lab/presentation/pages/lab_workspace_page.dart`
+- Radiology: `lib/features/radiology/presentation/pages/radiology_workspace_page.dart`
+- Pharmacy: `lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart`
+- Discharge: `lib/features/discharge/presentation/pages/discharge_workspace_page.dart`
+- Theatre/Theater: `lib/features/theater/presentation/pages/theater_workspace_page.dart`
+
+Do not update Settings, Setup, or Tenant Facility setup screens.
+
+Do not edit:
+
+- `lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
+
+## Shared component anchors
+
+Use the existing shared summary-card implementation:
+
+- `lib/shared/layout/app_workspace.dart`
+- `AppWorkspace`
+- `AppWorkspaceSummaryGrid`
+- `AppWorkspaceSummaryCard`
+- `_SummaryCardBody`
+- `_SummaryIconTile`
+- `_SummaryValueBadge`
+
+Use the shared component for styling and layout consistency.
+
+Do not create a new summary-card component.
+
+Do not implement zero-value hiding inside `AppWorkspaceSummaryCard`, because that would affect screens outside this task. Hide zero-value cards in each listed screen’s `summaryCards` construction by checking the raw numeric value before formatting.
 
 ## Current implementation anchors
 
-Start from these existing shared frontend files:
+Use the existing filter/update methods already present in each module.
 
-- `lib/shared/actions/actions.dart`
-- `lib/shared/actions/app_action_item.dart`
-- `lib/shared/actions/app_action_panel.dart`
-- `lib/shared/actions/app_action_dialogs.dart`
-- `lib/shared/clinical_actions/clinical_actions.dart`
-- `lib/shared/clinical_actions/clinical_action_items.dart`
-- `lib/shared/clinical_actions/clinical_actions_panel.dart`
-- `lib/shared/clinical_actions/clinical_action_dialogs.dart`
-- `lib/shared/clinical_actions/clinical_order_action_dialogs.dart`
-- `lib/shared/components/app_dialog.dart`
-- `lib/shared/components/app_patient_detail_dialog.dart`
-- `lib/shared/components/app_permission_action.dart`
-- `lib/shared/components/app_record_vitals_dialog.dart`
-- `lib/shared/components/app_report_actions.dart`
-- `lib/shared/components/app_triage_components.dart`
-- `lib/shared/components/app_vitals_form.dart`
-- `lib/shared/layout/app_workspace.dart`
+Examples:
 
-Use these existing APIs before creating new ones:
+- Patients: use `_applySummaryQuery(...)` and `PatientListQuery(...)`
+- Billing: use `_summaryCards(...)` and `controller.applyQueue(...)`
+- Claims: use `_applySummaryFilter(...)` and `ClaimsQueueFilter`
+- OPD: use `_applySummaryFilter(...)` and `_OpdTableFilter`
+- Emergency: use `controller.applyScope(EmergencyBoardScope...)`
+- IPD: use `controller.applyScope(IpdQueueScope...)`
+- ICU: use `controller.applyScope(IcuBoardScope...)`
+- Nursing: use `_summaryCard(...)` and `controller.applyScope(NursingQueueScope...)`
+- Clinical: use `controller.applyScope(ClinicalQueueScope...)`
+- Lab: use `_summaryCard(...)` and `controller.applyScope(LabQueueScope...)`
+- Radiology: use `controller.clearFilters` and `controller.applyStage(...)`
+- Pharmacy: use `controller.applyFilter(PharmacyOrderFilter...)`
+- Discharge: use `controller.applyStatus(DischargeStatusFilter...)`
+- Theater: use `controller.clearFilters` and `controller.applyStatus(...)`
 
-- `AppActionItem`
-- `AppActionList`
-- `AppActionPanel`
-- `ClinicalActionItem`
-- `ClinicalActionsPanel`
-- `AppDialog`
-- `showAppDialog`
-- `showAppWorkspaceActionDialog`
-- `AppConfirmActionDialog`
-- `AppTextActionDialog`
-- `AppPermissionActionButton`
-- `AppRecordVitalsDialog`
-- `AppVitalsForm`
-- `AppTriage...` components
-- `AppReportActionButton`
+Preserve existing controller calls, failure handling, loading behavior, refresh behavior, pagination behavior, search behavior, and table components.
 
-## Hard constraints
+## Required behavior
 
-Do not add, remove, rename, or change:
+### 1. Card clicks must update the main table/list
 
-- workflows
-- actions
-- fields
-- labels
-- icons
-- modal titles
-- modal contents
-- enabled/disabled states
-- loading states
-- permission gates
-- validation behavior
-- API calls
-- backend behavior
-- controller/repository calls
-- payload shape
-- success/error handling
-- refresh behavior
+When a user clicks a summary card, update the current screen’s table/list filter.
 
-Do not introduce new backend routes, frontend-only workflow states, new permissions, new feature behavior, or new business rules.
+Do not open a modal from a summary-card click.
 
-Do not undo the current workspace, table, search, filter, or layout improvements.
+Do not use modal-opening methods as summary-card `onPressed` handlers.
 
-Treat app-planner and backend as alignment references for existing behavior only. This task is a frontend UI refactor, not a backend behavior change.
+Row actions, detail dialogs, create/edit dialogs, and workflow action dialogs are not part of this change and must continue working as before.
 
-## Refactor rules
+### 2. Each screen must have an “All” summary card
 
-1. Keep feature-specific business logic in the existing feature pages, controllers, and repositories.
-2. Move only reusable UI/action/dialog structure into shared components.
-3. Prefer a declarative action list model over repeated button markup.
-4. Use shared action panels for groups of actions.
-5. Use shared dialogs for repeated modal patterns.
-6. Keep unique module-specific forms local when they are not reusable.
-7. If a dialog pattern is reused or equivalent across modules, extract the reusable structure into `lib/shared/...` and keep only module-specific submit callbacks, payload mapping, and controller calls in the feature code.
-8. Preserve existing nested dialog behavior, including OPD nested action dialogs and patient quick-action dialogs opened from patient detail flows.
-9. Preserve generated report/print behavior. Do not print visible UI screens.
-10. Preserve the same localization keys or existing string constants already used by each module.
+Each listed screen must include one summary card representing the full table/list for that screen.
 
-## Starting points to normalize
+Examples:
 
-### 1. Patient detail quick actions
+- Patients: all patients
+- Billing: all billing work items
+- Claims: all claims/authorization work items
+- OPD: all OPD records/patients shown by the workspace table
+- Emergency: all emergency board records
+- IPD: all admissions/patients
+- ICU: all ICU records/patients
+- Nursing: all nursing worklist records/patients
+- Clinical: all clinical worklist records
+- Lab: all lab orders
+- Radiology: all radiology orders
+- Pharmacy: all pharmacy orders
+- Discharge: all discharge records
+- Theater: all theater cases
 
-Review and refactor the Patient quick-action implementation in:
+Clicking the “All” card must clear the card-applied category/status/scope filter and show the full table/list for that screen.
 
-- `lib/features/patients/presentation/pages/patient_registry_page.dart`
+### 3. Hide zero-value cards
 
-Use or extract shared components for the existing patient detail actions:
+Do not render a summary card when its represented raw numeric value is zero.
 
-- Schedule appointment
-- OPD check-in
-- Triage
-- Clinical visit
-- Billing
-- Admission
-- Patient report
+Examples:
 
-Relevant current local implementation includes:
+- Count `0` → hide the card.
+- Amount `0` → hide the card.
+- “All” total `0` → hide the card.
 
-- `_QuickActions`
-- `_openQuickAction`
-- `_PatientAppointmentQuickDialog`
-- `_PatientFlowQuickDialog`
-- `_PatientReportDialog`
+Do not display zero-value cards just to preserve spacing.
 
-### 2. OPD workflow actions
+### 4. Every visible summary card must be clickable
 
-Review and refactor OPD workflow action patterns in:
+Every visible summary card must have an `onPressed` action.
 
-- `lib/features/opd/presentation/pages/opd_workspace_page.dart`
+That action must update/filter the current table/list.
 
-Normalize repeated action buttons, sections, and dialogs for:
+If a card is informational only and has no matching table/list filter behavior, remove it from the summary-card list.
 
-- Pay consultation
-- Assign doctor
-- Record vitals
-- Routing decision
-- Doctor review
-- Refer
-- Follow up
-- Correct stage
-- Print summary
+Do not leave visible summary cards with `onPressed: null`.
 
-Relevant current local implementation includes:
+Do not make a card clickable by opening a dialog.
 
-- `FlowActionsDialog`
-- `_OpdWorkflowSection`
-- `_OpdWorkflowAction`
-- `ConsultationPaymentDialog`
-- `AssignDoctorDialog`
-- `RecordVitalsDialog`
-- `RoutingDecisionDialog`
-- `DoctorReviewDialog`
-- `ReferralDialog`
-- `FollowUpDialog`
-- `CorrectStageDialog`
-- `PrintOpdSummaryDialog`
+### 5. Summary values must be plain text
 
-Reuse existing shared clinical dialogs where already used, such as referral and follow-up dialogs.
+Ensure `_SummaryValueBadge` displays the value as plain text only.
 
-### 3. Clinical workspace actions
+Do not show a filled background, border, pill, or badge container behind the value.
 
-Review and preserve the existing shared clinical action implementation in:
+Keep the value readable, themed, accessible, and aligned with the existing summary-card design.
 
-- `lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
-- `lib/shared/clinical_actions/`
+### 6. Small-screen compact behavior
 
-Reuse the existing shared clinical action components and dialogs for:
+For compact summary cards on small screens, show only:
 
-- Add note
-- Add diagnosis
-- Request lab
-- Request radiology
-- Prescribe
-- Add procedure
-- Care plan
-- Refer
-- Request admission
-- Follow up
-- Complete disposition
-- Print summary
+- the icon
+- the value text
 
-Relevant current implementation includes:
+Do not show:
 
-- `_ClinicalActionBar`
-- `ClinicalActionsPanel`
-- `ClinicalActionItem`
-- `ClinicalFreeTextActionDialog`
-- `ClinicalDiagnosisActionDialog`
-- `ClinicalProcedureActionDialog`
-- `ClinicalLabOrderActionDialog`
-- `ClinicalRadiologyOrderActionDialog`
-- `ClinicalPrescriptionActionDialog`
-- `ClinicalReferralActionDialog`
-- `ClinicalFollowUpActionDialog`
-- `ClinicalAdmissionActionDialog`
-- `ClinicalDispositionActionDialog`
+- card label
+- description
+- status line
+- chevron
+- filled card background
+- card border
+- card shadow
+- filled value badge background
 
-### 4. Emergency actions
+Keep tooltip/semantic labeling so the card remains understandable and accessible.
 
-Review and refactor Emergency action patterns in:
+## Implementation rules
 
-- `lib/features/emergency/presentation/pages/emergency_workspace_page.dart`
-
-Convert emergency action buttons/dialogs to shared reusable patterns where they match existing action/dialog behavior:
-
-- Priority
-- Triage
-- Response
-- Dispatch
-- Dispatch status
-- Start trip
-- Complete trip
-- Handoff
-- Print summary
-
-Relevant current local implementation includes:
-
-- `_EmergencyActionPanel`
-- `_PriorityDialog`
-- `_TriageDialog`
-- `_ResponseDialog`
-- `_DispatchDialog`
-- `_DispatchStatusDialog`
-- `_HandoffDialog`
-
-Preserve all current controller calls, success messages, confirmation behavior, and report printing behavior.
-
-### 5. Other modules
-
-Review these modules for equivalent repeated action bars, action buttons, confirmation dialogs, text-entry dialogs, status-update dialogs, report/print actions, and patient-context action panels:
-
-- Patients
-- Billing
-- Claims
-- OPD
-- Emergency
-- IPD
-- ICU
-- Nursing
-- Clinical
-- Lab
-- Radiology
-- Pharmacy
-- Discharge
-- Theater
-- Settings
-- Setup / Tenant Facility
-
-Where equivalent behavior exists, replace duplicated local UI with the shared reusable components. Do not refactor unique module-specific forms unless the same UI/dialog/action structure is clearly reused elsewhere.
+- Reuse `AppWorkspaceSummaryCard`.
+- Reuse existing screen-level filter/query/scope/status methods.
+- Keep existing labels, icons, tones, formatting, permissions, and localization keys unless a change is required by this task.
+- Preserve existing search, filter, pagination, table, row action, detail dialog, and workflow dialog behavior.
+- Preserve existing backend/API behavior.
+- Do not add backend routes.
+- Do not add new workflows.
+- Do not add new permissions.
+- Do not add new fields.
+- Do not add new API calls.
+- Do not replace current tables with new table components.
+- Do not introduce new dashboards or extra summary sections.
+- Do not edit Settings, Setup, or Tenant Facility setup screens.
 
 ## Acceptance criteria
 
-- Repeated action button groups use shared action components.
-- Repeated modal dialog patterns use shared dialog components.
-- OPD, Clinical, Patient, and Emergency actions remain visually and behaviorally consistent with the current implementation and screenshots.
-- Other modules use the same shared action/dialog patterns where equivalent actions exist.
-- Existing labels, icons, permissions, validation, modal behavior, submit behavior, success/error handling, and refresh behavior are preserved.
-- Feature-specific business logic remains in feature pages/controllers/repositories.
-- No new functionality, workflow, backend behavior, permission, field, API call, or payload change is introduced.
+- Only the listed screens are updated.
+- Settings, Setup, and Tenant Facility setup are untouched.
+- Every visible summary card is clickable.
+- No summary card opens a modal dialog.
+- Clicking a summary card updates the current screen’s main table/list.
+- Each listed screen has an “All” card when the all-count is non-zero.
+- Zero-count and zero-amount cards are hidden.
+- Informational-only summary cards are removed.
+- Summary values show plain text without a filled badge background.
+- On small screens, compact cards show only icon and value text without full card/badge background.
+- Existing row/detail/workflow modals still work as before.
+- No backend behavior, workflow behavior, permission behavior, API call, payload shape, or table behavior is changed.
