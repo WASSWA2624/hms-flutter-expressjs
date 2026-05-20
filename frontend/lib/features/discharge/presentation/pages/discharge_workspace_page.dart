@@ -176,53 +176,9 @@ class _DischargeWorkspaceContentState
           tone: AppWorkspaceStatusTone.neutral,
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.dischargeQueueSearchLabel,
-          hintText: l10n.dischargeQueueSearchHint,
-          isLoading: state.isRefreshing,
-          onSubmitted: (String value) async {
-            final AppFailure? failure = await controller.applySearch(value);
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-          onClear: () async {
-            final AppFailure? failure = await controller.applySearch('');
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-          trailingActions: <AppSearchBarAction>[
-            _tableColumnController.settingsAction(
-              context,
-              label: l10n.commonTableSettingsActionLabel,
-            ),
-          ],
-        ),
-        filters: <Widget>[
-          SizedBox(
-            width: 240,
-            child: AppSelectField<DischargeStatusFilter>(
-              labelText: l10n.dischargeStatusFilterLabel,
-              value: state.query.status,
-              options: _statusFilterOptions(l10n),
-              onChanged: (DischargeStatusFilter? value) async {
-                final AppFailure? failure = await controller.applyStatus(
-                  value ?? DischargeStatusFilter.all,
-                );
-                if (context.mounted) {
-                  _showFailureIfNeeded(context, failure);
-                }
-              },
-            ),
-          ),
-        ],
-      ),
       body: _DischargeQueuePanel(
         state: state,
+        searchController: _searchController,
         columnVisibilityController: _tableColumnController,
       ),
     );
@@ -232,10 +188,12 @@ class _DischargeWorkspaceContentState
 class _DischargeQueuePanel extends ConsumerWidget {
   const _DischargeQueuePanel({
     required this.state,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final DischargeWorkspaceState state;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   columnVisibilityController;
 
@@ -255,6 +213,54 @@ class _DischargeQueuePanel extends ConsumerWidget {
           page: state.queue,
           isLoading: state.isRefreshing,
           columnVisibilityController: columnVisibilityController,
+          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+          search: AppListTableSearch<IpdAdmissionSummary>(
+            controller: searchController,
+            semanticLabel: l10n.dischargeQueueSearchLabel,
+            hintText: l10n.dischargeQueueSearchHint,
+            isLoading: state.isRefreshing,
+            matcher: (_, _) => true,
+            onSubmitted: (String value) async {
+              final AppFailure? failure = await controller.applySearch(value);
+              if (context.mounted) {
+                _showFailureIfNeeded(context, failure);
+              }
+            },
+            onClear: () async {
+              final AppFailure? failure = await controller.applySearch('');
+              if (context.mounted) {
+                _showFailureIfNeeded(context, failure);
+              }
+            },
+            showAdvancedFilterButton: true,
+            advancedFilterButtonLabel: l10n.dischargeStatusFilterLabel,
+            advancedFilterTitle: l10n.dischargeStatusFilterLabel,
+            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+            advancedFilterResetLabel: l10n.opdClearFiltersAction,
+            advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+            enableDateFilter: false,
+            allFieldsLabel: l10n.dischargeStatusAll,
+            filterGroups: <AppSearchBarFilterGroup>[
+              AppSearchBarFilterGroup(
+                key: _dischargeStatusFilterKey,
+                label: l10n.dischargeStatusFilterLabel,
+                allLabel: l10n.dischargeStatusAll,
+                choices: _dischargeStatusFilterChoices(l10n),
+              ),
+            ],
+            filterValue: _dischargeFilterValue(state.query),
+            hasActiveFilters: state.query.status != DischargeStatusFilter.all,
+            onFilterChanged: (AppSearchBarFilterValue value) async {
+              final AppFailure? failure = await controller.applyStatus(
+                _dischargeStatusFromFilter(
+                  value.option(_dischargeStatusFilterKey),
+                ),
+              );
+              if (context.mounted) {
+                _showFailureIfNeeded(context, failure);
+              }
+            },
+          ),
           previousPageLabel: l10n.dischargePreviousPageLabel,
           nextPageLabel: l10n.dischargeNextPageLabel,
           pageLabelBuilder: (AppPage<IpdAdmissionSummary> page) {
@@ -274,18 +280,36 @@ class _DischargeQueuePanel extends ConsumerWidget {
           columns: <AppListTableColumn<IpdAdmissionSummary>>[
             AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargePatientColumnLabel,
+              sortComparator:
+                  (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                      appListTableCompareText(
+                        left.displayTitle,
+                        right.displayTitle,
+                      ),
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return _QueuePatientCell(item: item);
               },
             ),
             AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargeLocationColumnLabel,
+              sortComparator:
+                  (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                      appListTableCompareText(
+                        _locationLabel(context, left),
+                        _locationLabel(context, right),
+                      ),
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return Text(_locationLabel(context, item));
               },
             ),
             AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargeStatusColumnLabel,
+              sortComparator:
+                  (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                      appListTableCompareText(
+                        left.dischargeStatus ?? left.stage,
+                        right.dischargeStatus ?? right.stage,
+                      ),
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return AppWorkspaceStatusBadge(
                   status: _statusFor(context, item),
@@ -294,12 +318,24 @@ class _DischargeQueuePanel extends ConsumerWidget {
             ),
             AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargeNextActionColumnLabel,
+              sortComparator:
+                  (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                      appListTableCompareText(
+                        _nextActionLabel(context, left),
+                        _nextActionLabel(context, right),
+                      ),
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return Text(_nextActionLabel(context, item));
               },
             ),
             AppListTableColumn<IpdAdmissionSummary>(
               label: l10n.dischargeTargetColumnLabel,
+              sortComparator:
+                  (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                      appListTableCompareDateTime(
+                        left.dischargedAt,
+                        right.dischargedAt,
+                      ),
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
                 return Text(_dateLabel(context, item.dischargedAt));
               },
@@ -1329,6 +1365,41 @@ List<AppSelectOption<DischargeStatusFilter>> _statusFilterOptions(
       value: DischargeStatusFilter.completed,
       label: l10n.dischargeStatusCompleted,
     ),
+  ];
+}
+
+const String _dischargeStatusFilterKey = 'status';
+
+AppSearchBarFilterValue _dischargeFilterValue(DischargeWorklistQuery query) {
+  if (query.status == DischargeStatusFilter.all) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(
+    options: <String, String>{_dischargeStatusFilterKey: query.status.name},
+  );
+}
+
+DischargeStatusFilter _dischargeStatusFromFilter(String? value) {
+  for (final DischargeStatusFilter status in DischargeStatusFilter.values) {
+    if (status.name == value) {
+      return status;
+    }
+  }
+  return DischargeStatusFilter.all;
+}
+
+List<AppSearchBarFilterChoice> _dischargeStatusFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final AppSelectOption<DischargeStatusFilter> option
+        in _statusFilterOptions(l10n))
+      if (option.value != DischargeStatusFilter.all)
+        AppSearchBarFilterChoice(
+          value: option.value.name,
+          label: option.label,
+          icon: Icons.filter_list,
+        ),
   ];
 }
 

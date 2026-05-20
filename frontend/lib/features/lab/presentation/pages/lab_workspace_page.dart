@@ -198,38 +198,10 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           onPressed: () => controller.applyScope(LabQueueScope.completed),
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        semanticLabel: l10n.labFiltersLabel,
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.labSearchLabel,
-          hintText: l10n.labSearchHint,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          trailingActions: <AppSearchBarAction>[
-            _tableColumnController.settingsAction(
-              context,
-              label: l10n.commonTableSettingsActionLabel,
-            ),
-          ],
-        ),
-        filters: <Widget>[
-          AppSelectField<LabQueueScope>(
-            value: state.query.scope,
-            labelText: l10n.labScopeFilterLabel,
-            options: _scopeOptions(l10n),
-            onChanged: (LabQueueScope? value) {
-              if (value != null) {
-                controller.applyScope(value);
-              }
-            },
-          ),
-        ],
-      ),
       body: _LabWorklistPanel(
         state: state,
         canMutate: canMutate,
+        searchController: _searchController,
         columnVisibilityController: _tableColumnController,
       ),
     );
@@ -261,11 +233,13 @@ class _LabWorklistPanel extends ConsumerWidget {
   const _LabWorklistPanel({
     required this.state,
     required this.canMutate,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final LabWorkspaceState state;
   final bool canMutate;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<LabOrderSummary>
   columnVisibilityController;
 
@@ -283,6 +257,38 @@ class _LabWorklistPanel extends ConsumerWidget {
         page: state.worklist,
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<LabOrderSummary>(
+          controller: searchController,
+          semanticLabel: l10n.labSearchLabel,
+          hintText: l10n.labSearchHint,
+          matcher: (_, _) => true,
+          onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.labFiltersLabel,
+          advancedFilterTitle: l10n.labFiltersLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          allFieldsLabel: l10n.labScopeAll,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _labScopeFilterKey,
+              label: l10n.labScopeFilterLabel,
+              allLabel: l10n.labScopeAll,
+              choices: _labScopeFilterChoices(l10n),
+            ),
+          ],
+          filterValue: _labFilterValue(state.query),
+          hasActiveFilters: state.query.scope != LabQueueScope.all,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            controller.applyScope(
+              _labScopeFromFilter(value.option(_labScopeFilterKey)),
+            );
+          },
+        ),
         previousPageLabel: l10n.labPreviousPageLabel,
         nextPageLabel: l10n.labNextPageLabel,
         pageLabelBuilder: (AppPage<LabOrderSummary> page) {
@@ -302,24 +308,32 @@ class _LabWorklistPanel extends ConsumerWidget {
         columns: <AppListTableColumn<LabOrderSummary>>[
           AppListTableColumn<LabOrderSummary>(
             label: l10n.labPatientColumnLabel,
+            sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+                appListTableCompareText(left.displayTitle, right.displayTitle),
             cellBuilder: (_, LabOrderSummary item) {
               return _LabOrderIdentity(order: item);
             },
           ),
           AppListTableColumn<LabOrderSummary>(
             label: l10n.labOrderColumnLabel,
+            sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+                appListTableCompareText(left.apiId, right.apiId),
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return Text(item.displayId ?? item.id);
             },
           ),
           AppListTableColumn<LabOrderSummary>(
             label: l10n.labTestsColumnLabel,
+            sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+                appListTableCompareText(left.testsLabel, right.testsLabel),
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return Text(item.testsLabel ?? l10n.profileUnknownValue);
             },
           ),
           AppListTableColumn<LabOrderSummary>(
             label: l10n.labSampleColumnLabel,
+            sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+                appListTableCompareNumber(left.sampleCount, right.sampleCount),
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return AppWorkspaceStatusBadge(
                 status: _sampleStatus(context, item),
@@ -328,6 +342,11 @@ class _LabWorklistPanel extends ConsumerWidget {
           ),
           AppListTableColumn<LabOrderSummary>(
             label: l10n.labResultColumnLabel,
+            sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+                appListTableCompareNumber(
+                  left.completedItemCount,
+                  right.completedItemCount,
+                ),
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return AppWorkspaceStatusBadge(
                 status: _resultStatus(context, item),
@@ -336,6 +355,11 @@ class _LabWorklistPanel extends ConsumerWidget {
           ),
           AppListTableColumn<LabOrderSummary>(
             label: l10n.labNextActionColumnLabel,
+            sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+                appListTableCompareText(
+                  _nextActionLabel(context, left),
+                  _nextActionLabel(context, right),
+                ),
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return Text(_nextActionLabel(context, item));
             },
@@ -2115,6 +2139,38 @@ List<AppSelectOption<LabQueueScope>> _scopeOptions(AppLocalizations l10n) {
       value: LabQueueScope.cancelled,
       label: l10n.labScopeCancelled,
     ),
+  ];
+}
+
+const String _labScopeFilterKey = 'scope';
+
+AppSearchBarFilterValue _labFilterValue(LabWorkbenchQuery query) {
+  if (query.scope == LabQueueScope.all) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(
+    options: <String, String>{_labScopeFilterKey: query.scope.name},
+  );
+}
+
+LabQueueScope _labScopeFromFilter(String? value) {
+  for (final LabQueueScope scope in LabQueueScope.values) {
+    if (scope.name == value) {
+      return scope;
+    }
+  }
+  return LabQueueScope.all;
+}
+
+List<AppSearchBarFilterChoice> _labScopeFilterChoices(AppLocalizations l10n) {
+  return <AppSearchBarFilterChoice>[
+    for (final AppSelectOption<LabQueueScope> option in _scopeOptions(l10n))
+      if (option.value != LabQueueScope.all)
+        AppSearchBarFilterChoice(
+          value: option.value.name,
+          label: option.label,
+          icon: Icons.filter_list,
+        ),
   ];
 }
 

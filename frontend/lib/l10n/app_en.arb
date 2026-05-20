@@ -717,6 +717,7 @@
   "opdArrivalsTitle": "Arrivals",
   "opdQueueBoardTitle": "Queue board",
   "opdFlowsTitle": "OPD encounters",
+  "opdTableDescription": "Track arrivals, queue status, billing state, provider ownership, and next steps.",
   "opdProviderReadinessTitle": "Provider readiness",
   "opdActivityTitle": "Recent OPD activity",
   "opdActivityDescription": "Latest visible outpatient flow changes.",
@@ -1116,6 +1117,9 @@
   },
   "@opdFlowsTitle": {
     "description": "OPD encounters panel title."
+  },
+  "@opdTableDescription": {
+    "description": "OPD main table description."
   },
   "@opdProviderReadinessTitle": {
     "description": "OPD provider readiness panel title."
@@ -1553,6 +1557,14 @@
   "patientsBody": "Find, register, and maintain patient records across front desk and care workflows.",
   "@patientsBody": {
     "description": "Patient registry screen body."
+  },
+  "patientsTableTitle": "Patient records",
+  "@patientsTableTitle": {
+    "description": "Patient registry table title."
+  },
+  "patientsTableDescription": "Browse registered patients, visit context, alerts, status, and available next actions.",
+  "@patientsTableDescription": {
+    "description": "Patient registry table description."
   },
   "patientsLoadingTitle": "Loading patients",
   "@patientsLoadingTitle": {

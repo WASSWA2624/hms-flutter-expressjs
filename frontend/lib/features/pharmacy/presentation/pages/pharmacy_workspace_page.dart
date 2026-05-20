@@ -176,39 +176,10 @@ class _PharmacyWorkspaceContentState
               controller.applyFilter(PharmacyOrderFilter.completed),
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        semanticLabel: l10n.pharmacyFiltersSemanticLabel,
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.pharmacySearchLabel,
-          hintText: l10n.pharmacySearchHint,
-          onSubmitted: (String value) {
-            controller.applySearch(value);
-          },
-          trailingActions: <AppSearchBarAction>[
-            _tableColumnController.settingsAction(
-              context,
-              label: l10n.commonTableSettingsActionLabel,
-            ),
-          ],
-        ),
-        filters: <Widget>[
-          AppSelectField<PharmacyOrderFilter>(
-            value: state.query.filter,
-            labelText: l10n.pharmacyQueueFilterLabel,
-            options: _orderFilterOptions(l10n),
-            onChanged: (PharmacyOrderFilter? value) {
-              if (value != null) {
-                controller.applyFilter(value);
-              }
-            },
-          ),
-        ],
-      ),
       body: _PharmacyQueuePanel(
         state: state,
         writeRequirement: _writeRequirement,
+        searchController: _searchController,
         columnVisibilityController: _tableColumnController,
       ),
     );
@@ -219,11 +190,13 @@ class _PharmacyQueuePanel extends ConsumerWidget {
   const _PharmacyQueuePanel({
     required this.state,
     required this.writeRequirement,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final PharmacyWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<PharmacyOrder>
   columnVisibilityController;
 
@@ -241,6 +214,43 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         page: state.workbench.orders,
         isLoading: state.isRefreshingOrders,
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<PharmacyOrder>(
+          controller: searchController,
+          semanticLabel: l10n.pharmacySearchLabel,
+          hintText: l10n.pharmacySearchHint,
+          matcher: (_, _) => true,
+          onSubmitted: controller.applySearch,
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+          advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          allFieldsLabel: _pharmacyOrderFilterLabel(
+            l10n,
+            PharmacyOrderFilter.ready,
+          ),
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _pharmacyOrderFilterKey,
+              label: l10n.pharmacyQueueFilterLabel,
+              allLabel: _pharmacyOrderFilterLabel(
+                l10n,
+                PharmacyOrderFilter.ready,
+              ),
+              choices: _pharmacyOrderFilterChoices(l10n),
+            ),
+          ],
+          filterValue: _pharmacyFilterValue(state.query),
+          hasActiveFilters: state.query.filter != PharmacyOrderFilter.ready,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            controller.applyFilter(
+              _pharmacyFilterFromValue(value.option(_pharmacyOrderFilterKey)),
+            );
+          },
+        ),
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<PharmacyOrder> page) {
@@ -1791,6 +1801,55 @@ List<AppSelectOption<PharmacyOrderFilter>> _orderFilterOptions(
       enabled: false,
     ),
   ];
+}
+
+const String _pharmacyOrderFilterKey = 'filter';
+
+AppSearchBarFilterValue _pharmacyFilterValue(PharmacyWorkbenchQuery query) {
+  if (query.filter == PharmacyOrderFilter.ready) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(
+    options: <String, String>{_pharmacyOrderFilterKey: query.filter.name},
+  );
+}
+
+PharmacyOrderFilter _pharmacyFilterFromValue(String? value) {
+  for (final PharmacyOrderFilter filter in PharmacyOrderFilter.values) {
+    if (filter.name == value) {
+      return filter;
+    }
+  }
+  return PharmacyOrderFilter.ready;
+}
+
+List<AppSearchBarFilterChoice> _pharmacyOrderFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final AppSelectOption<PharmacyOrderFilter> option
+        in _orderFilterOptions(l10n))
+      if (option.enabled && option.value != PharmacyOrderFilter.ready)
+        AppSearchBarFilterChoice(
+          value: option.value.name,
+          label: option.label,
+          icon: Icons.filter_list,
+        ),
+  ];
+}
+
+String _pharmacyOrderFilterLabel(
+  AppLocalizations l10n,
+  PharmacyOrderFilter filter,
+) {
+  for (final AppSelectOption<PharmacyOrderFilter> option in _orderFilterOptions(
+    l10n,
+  )) {
+    if (option.value == filter) {
+      return option.label;
+    }
+  }
+  return l10n.pharmacyFilterReady;
 }
 
 List<AppSelectOption<String>> _stockStatusOptions(AppLocalizations l10n) {

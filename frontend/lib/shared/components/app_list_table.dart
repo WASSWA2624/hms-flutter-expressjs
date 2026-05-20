@@ -257,6 +257,7 @@ final class AppListTableSearch<T> {
     this.filterValue = AppSearchBarFilterValue.empty,
     this.onFilterChanged,
     this.hasActiveFilters = false,
+    this.trailingActions = const <AppSearchBarAction>[],
   });
 
   final TextEditingController controller;
@@ -296,6 +297,7 @@ final class AppListTableSearch<T> {
   final AppSearchBarFilterValue filterValue;
   final ValueChanged<AppSearchBarFilterValue>? onFilterChanged;
   final bool hasActiveFilters;
+  final List<AppSearchBarAction> trailingActions;
 
   Widget buildSearchBar(
     BuildContext context, {
@@ -338,7 +340,10 @@ final class AppListTableSearch<T> {
       filterValue: filterValue,
       onFilterChanged: onFilterChanged,
       hasActiveFilters: hasActiveFilters,
-      trailingActions: trailingActions,
+      trailingActions: <AppSearchBarAction>[
+        ...this.trailingActions,
+        ...trailingActions,
+      ],
     );
   }
 }

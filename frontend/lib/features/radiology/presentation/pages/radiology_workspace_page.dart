@@ -64,18 +64,30 @@ class _RadiologyWorkspaceContent extends ConsumerStatefulWidget {
 
 class _RadiologyWorkspaceContentState
     extends ConsumerState<_RadiologyWorkspaceContent> {
+  late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<RadiologyOrder>
   _tableColumnController;
 
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<RadiologyOrder>();
   }
 
   @override
+  void didUpdateWidget(covariant _RadiologyWorkspaceContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final String search = widget.state.query.search;
+    if (_searchController.text != search) {
+      _searchController.value = TextEditingValue(text: search);
+    }
+  }
+
+  @override
   void dispose() {
+    _searchController.dispose();
     _tableColumnController.dispose();
     super.dispose();
   }
@@ -160,10 +172,6 @@ class _RadiologyWorkspaceContentState
           compact: true,
         ),
       ],
-      filters: _RadiologyFilterBar(
-        state: state,
-        columnVisibilityController: _tableColumnController,
-      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -178,143 +186,11 @@ class _RadiologyWorkspaceContentState
             state: state,
             canWork: canWork,
             canRequest: canRequest,
+            searchController: _searchController,
             columnVisibilityController: _tableColumnController,
           ),
         ],
       ),
-    );
-  }
-}
-
-class _RadiologyFilterBar extends ConsumerStatefulWidget {
-  const _RadiologyFilterBar({
-    required this.state,
-    required this.columnVisibilityController,
-  });
-
-  final RadiologyWorkspaceState state;
-  final AppListTableColumnVisibilityController<RadiologyOrder>
-  columnVisibilityController;
-
-  @override
-  ConsumerState<_RadiologyFilterBar> createState() =>
-      _RadiologyFilterBarState();
-}
-
-class _RadiologyFilterBarState extends ConsumerState<_RadiologyFilterBar> {
-  late final TextEditingController _searchController;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController(text: widget.state.query.search);
-  }
-
-  @override
-  void didUpdateWidget(covariant _RadiologyFilterBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final String search = widget.state.query.search;
-    if (_searchController.text != search) {
-      _searchController.value = TextEditingValue(text: search);
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
-    final RadiologyWorkspaceQuery query = widget.state.query;
-
-    return AppWorkspaceFilterBar(
-      semanticLabel: l10n.radiologyFiltersLabel,
-      expandSearch: true,
-      search: AppSearchBar(
-        controller: _searchController,
-        semanticLabel: l10n.radiologySearchLabel,
-        hintText: l10n.radiologySearchHint,
-        isLoading: widget.state.isRefreshing,
-        onSubmitted: (String value) {
-          unawaited(controller.applySearch(value));
-        },
-        onClear: () {
-          unawaited(controller.applySearch(''));
-        },
-        trailingActions: <AppSearchBarAction>[
-          widget.columnVisibilityController.settingsAction(
-            context,
-            label: l10n.commonTableSettingsActionLabel,
-          ),
-        ],
-      ),
-      filters: <Widget>[
-        AppDateField(
-          value: query.from,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          labelText: l10n.radiologyOrderDateFilterLabel,
-          pickerButtonLabel: l10n.radiologyPickOrderDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          hintText: l10n.appDateFormatHint,
-          onChanged: (DateTime? value) {
-            unawaited(controller.applyOrderedDate(value));
-          },
-        ),
-        AppSelectField<String>(
-          value: query.stage,
-          labelText: l10n.radiologyStageFilterLabel,
-          options: <AppSelectOption<String>>[
-            for (final String stage in radiologyStageFilters)
-              AppSelectOption<String>(
-                value: stage,
-                label: _stageFilterLabel(l10n, stage),
-              ),
-          ],
-          onChanged: (String? value) {
-            unawaited(controller.applyStage(value ?? 'ALL'));
-          },
-        ),
-        AppSelectField<String>(
-          value: query.status,
-          labelText: l10n.radiologyStatusFilterLabel,
-          options: <AppSelectOption<String>>[
-            for (final String status in radiologyOrderStatuses)
-              AppSelectOption<String>(
-                value: status,
-                label: _orderStatusLabel(l10n, status),
-              ),
-          ],
-          onChanged: (String? value) {
-            unawaited(controller.applyStatus(value));
-          },
-        ),
-        AppSelectField<String>(
-          value: query.modality,
-          labelText: l10n.radiologyModalityFilterLabel,
-          options: <AppSelectOption<String>>[
-            for (final String modality in radiologyModalities)
-              AppSelectOption<String>(
-                value: modality,
-                label: _modalityLabel(l10n, modality),
-              ),
-          ],
-          onChanged: (String? value) {
-            unawaited(controller.applyModality(value));
-          },
-        ),
-      ],
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.radiologyClearFiltersAction,
-          leadingIcon: Icons.clear,
-          onPressed: controller.clearFilters,
-        ),
-      ],
     );
   }
 }
@@ -324,12 +200,14 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     required this.state,
     required this.canWork,
     required this.canRequest,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final RadiologyWorkspaceState state;
   final bool canWork;
   final bool canRequest;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<RadiologyOrder>
   columnVisibilityController;
 
@@ -345,6 +223,93 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         page: state.orders,
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<RadiologyOrder>(
+          controller: searchController,
+          semanticLabel: l10n.radiologySearchLabel,
+          hintText: l10n.radiologySearchHint,
+          isLoading: state.isRefreshing,
+          matcher: (_, _) => true,
+          onSubmitted: (String value) {
+            unawaited(controller.applySearch(value));
+          },
+          onClear: () {
+            unawaited(controller.applySearch(''));
+          },
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
+          advancedFilterTitle: l10n.radiologyFiltersLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          dateFilterLabel: l10n.radiologyOrderDateFilterLabel,
+          dateFromLabel: l10n.radiologyOrderDateFilterLabel,
+          dateToLabel: l10n.opdDateToLabel,
+          datePickerButtonLabel: l10n.radiologyPickOrderDateAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+          currentDate: DateTime.now(),
+          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _radiologyStageFilterKey,
+              label: l10n.radiologyStageFilterLabel,
+              allLabel: _stageFilterLabel(l10n, 'ALL'),
+              choices: _radiologyStageFilterChoices(l10n),
+            ),
+            AppSearchBarFilterGroup(
+              key: _radiologyStatusFilterKey,
+              label: l10n.radiologyStatusFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _radiologyStatusFilterChoices(l10n),
+            ),
+            AppSearchBarFilterGroup(
+              key: _radiologyModalityFilterKey,
+              label: l10n.radiologyModalityFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _radiologyModalityFilterChoices(l10n),
+            ),
+          ],
+          filterValue: _radiologyFilterValue(state.query),
+          hasActiveFilters: _hasRadiologyFilters(state.query),
+          onFilterChanged: (AppSearchBarFilterValue value) async {
+            final String nextStage =
+                value.option(_radiologyStageFilterKey) ?? 'ALL';
+            final String? nextStatus = value.option(_radiologyStatusFilterKey);
+            final String? nextModality = value.option(
+              _radiologyModalityFilterKey,
+            );
+            final DateTime? nextDate = value.dateFrom;
+            AppFailure? failure;
+            if (nextStage != state.query.stage) {
+              failure = await controller.applyStage(nextStage);
+            }
+            if (nextStatus != state.query.status) {
+              failure ??= await controller.applyStatus(nextStatus);
+            }
+            if (nextModality != state.query.modality) {
+              failure ??= await controller.applyModality(nextModality);
+            }
+            if (!_isSameFilterDate(nextDate, state.query.from)) {
+              failure ??= await controller.applyOrderedDate(nextDate);
+            }
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
+          },
+          trailingActions: <AppSearchBarAction>[
+            AppSearchBarAction(
+              icon: Icons.clear,
+              label: l10n.radiologyClearFiltersAction,
+              tooltip: l10n.radiologyClearFiltersAction,
+              active: _hasRadiologyFilters(state.query),
+              onPressed: () {
+                unawaited(controller.clearFilters());
+              },
+            ),
+          ],
+        ),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemKeyBuilder: (RadiologyOrder item) => ValueKey<String>(item.id),
@@ -382,6 +347,11 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         columns: <AppListTableColumn<RadiologyOrder>>[
           AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyPatientColumnLabel,
+            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+                appListTableCompareText(
+                  left.patientDisplayName ?? left.patientId,
+                  right.patientDisplayName ?? right.patientId,
+                ),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return _TwoLineCell(
                 title: item.patientDisplayName ?? l10n.profileUnknownValue,
@@ -394,12 +364,22 @@ class _RadiologyOrderBoard extends ConsumerWidget {
           ),
           AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyOrderColumnLabel,
+            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+                appListTableCompareText(
+                  left.effectiveDisplayId,
+                  right.effectiveDisplayId,
+                ),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return Text(item.effectiveDisplayId);
             },
           ),
           AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyStudyColumnLabel,
+            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+                appListTableCompareText(
+                  left.testDisplayName ?? left.radiologyTestId,
+                  right.testDisplayName ?? right.radiologyTestId,
+                ),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return _TwoLineCell(
                 title: item.testDisplayName ?? l10n.profileUnknownValue,
@@ -413,18 +393,27 @@ class _RadiologyOrderBoard extends ConsumerWidget {
           ),
           AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyPriorityColumnLabel,
+            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+                appListTableCompareText(left.priority, right.priority),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return Text(_valueOrUnknown(context, item.priority));
             },
           ),
           AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyPaymentAuthColumnLabel,
+            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+                appListTableCompareText(
+                  _billingGateLabel(context, left),
+                  _billingGateLabel(context, right),
+                ),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return Text(_billingGateLabel(context, item));
             },
           ),
           AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyStatusColumnLabel,
+            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+                appListTableCompareText(left.status, right.status),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return AppWorkspaceStatusBadge(
                 status: _orderStatus(context, item),
@@ -433,6 +422,11 @@ class _RadiologyOrderBoard extends ConsumerWidget {
           ),
           AppListTableColumn<RadiologyOrder>(
             label: l10n.radiologyNextActionColumnLabel,
+            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+                appListTableCompareText(
+                  _nextActionLabel(context, left),
+                  _nextActionLabel(context, right),
+                ),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return Text(_nextActionLabel(context, item));
             },
@@ -2186,6 +2180,15 @@ void _showMutationResult(BuildContext context, AppFailure? failure) {
   );
 }
 
+void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
+  if (failure == null || !context.mounted) {
+    return;
+  }
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+}
+
 AppWorkspaceStatus _orderStatus(BuildContext context, RadiologyOrder order) {
   final AppLocalizations l10n = context.l10n;
   return AppWorkspaceStatus(
@@ -2256,6 +2259,77 @@ String _modalityLabel(AppLocalizations l10n, String? modality) {
 String? _modalityLabelOrNull(AppLocalizations l10n, String? modality) {
   final String normalized = modality?.trim() ?? '';
   return normalized.isEmpty ? null : _modalityLabel(l10n, normalized);
+}
+
+const String _radiologyStageFilterKey = 'stage';
+const String _radiologyStatusFilterKey = 'status';
+const String _radiologyModalityFilterKey = 'modality';
+
+AppSearchBarFilterValue _radiologyFilterValue(RadiologyWorkspaceQuery query) {
+  return AppSearchBarFilterValue(
+    dateFrom: query.from,
+    options: <String, String>{
+      if (query.stage != 'ALL') _radiologyStageFilterKey: query.stage,
+      if (query.status != null) _radiologyStatusFilterKey: query.status!,
+      if (query.modality != null) _radiologyModalityFilterKey: query.modality!,
+    },
+  );
+}
+
+bool _hasRadiologyFilters(RadiologyWorkspaceQuery query) {
+  return query.stage != 'ALL' ||
+      query.status != null ||
+      query.modality != null ||
+      query.from != null;
+}
+
+List<AppSearchBarFilterChoice> _radiologyStageFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final String stage in radiologyStageFilters)
+      if (stage != 'ALL')
+        AppSearchBarFilterChoice(
+          value: stage,
+          label: _stageFilterLabel(l10n, stage),
+          icon: Icons.timeline_outlined,
+        ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _radiologyStatusFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final String status in radiologyOrderStatuses)
+      AppSearchBarFilterChoice(
+        value: status,
+        label: _orderStatusLabel(l10n, status),
+        icon: Icons.task_alt_outlined,
+      ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _radiologyModalityFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final String modality in radiologyModalities)
+      AppSearchBarFilterChoice(
+        value: modality,
+        label: _modalityLabel(l10n, modality),
+        icon: Icons.biotech_outlined,
+      ),
+  ];
+}
+
+bool _isSameFilterDate(DateTime? left, DateTime? right) {
+  if (left == null || right == null) {
+    return left == null && right == null;
+  }
+  return left.year == right.year &&
+      left.month == right.month &&
+      left.day == right.day;
 }
 
 String _nextActionLabel(BuildContext context, RadiologyOrder order) {

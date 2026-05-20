@@ -2211,6 +2211,8 @@ class _OpdMainTable extends ConsumerWidget {
       width: double.infinity,
       child: AppListTable<_OpdTableItem>(
         page: page,
+        title: l10n.opdFlowsTitle,
+        description: l10n.opdTableDescription,
         isLoading: isLoading,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),

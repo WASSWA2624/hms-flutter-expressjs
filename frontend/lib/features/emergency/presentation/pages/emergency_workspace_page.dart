@@ -169,38 +169,10 @@ class _EmergencyWorkspaceContentState
           onPressed: () => controller.applyScope(EmergencyBoardScope.handoff),
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        semanticLabel: 'Emergency board filters',
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: 'Search emergency cases',
-          hintText: _EmergencyText.searchHint,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          trailingActions: <AppSearchBarAction>[
-            _tableColumnController.settingsAction(
-              context,
-              label: context.l10n.commonTableSettingsActionLabel,
-            ),
-          ],
-        ),
-        filters: <Widget>[
-          AppSelectField<EmergencyBoardScope>(
-            value: state.query.scope,
-            labelText: 'Board scope',
-            options: _scopeOptions(),
-            onChanged: (EmergencyBoardScope? value) {
-              if (value != null) {
-                controller.applyScope(value);
-              }
-            },
-          ),
-        ],
-      ),
       body: _EmergencyBoardPanel(
         state: state,
         writeRequirement: _writeRequirement,
+        searchController: _searchController,
         columnVisibilityController: _tableColumnController,
       ),
     );
@@ -230,11 +202,13 @@ class _EmergencyBoardPanel extends ConsumerWidget {
   const _EmergencyBoardPanel({
     required this.state,
     required this.writeRequirement,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final EmergencyWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<EmergencyCaseSummary>
   columnVisibilityController;
 
@@ -251,6 +225,38 @@ class _EmergencyBoardPanel extends ConsumerWidget {
         page: state.board,
         isLoading: state.isRefreshingBoard,
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<EmergencyCaseSummary>(
+          controller: searchController,
+          semanticLabel: 'Search emergency cases',
+          hintText: _EmergencyText.searchHint,
+          matcher: (_, _) => true,
+          onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: 'Board scope',
+          advancedFilterTitle: 'Emergency board filters',
+          advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: context.l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: context.l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          allFieldsLabel: _EmergencyText.active,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _emergencyScopeFilterKey,
+              label: 'Board scope',
+              allLabel: _EmergencyText.active,
+              choices: _emergencyScopeFilterChoices(),
+            ),
+          ],
+          filterValue: _emergencyFilterValue(state.query),
+          hasActiveFilters: state.query.scope != EmergencyBoardScope.active,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            controller.applyScope(
+              _emergencyScopeFromFilter(value.option(_emergencyScopeFilterKey)),
+            );
+          },
+        ),
         previousPageLabel: 'Previous emergency cases',
         nextPageLabel: 'Next emergency cases',
         pageLabelBuilder: (AppPage<EmergencyCaseSummary> page) {
@@ -1822,6 +1828,38 @@ List<AppSelectOption<EmergencyBoardScope>> _scopeOptions() {
       value: EmergencyBoardScope.all,
       label: _EmergencyText.all,
     ),
+  ];
+}
+
+const String _emergencyScopeFilterKey = 'scope';
+
+AppSearchBarFilterValue _emergencyFilterValue(EmergencyBoardQuery query) {
+  if (query.scope == EmergencyBoardScope.active) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(
+    options: <String, String>{_emergencyScopeFilterKey: query.scope.name},
+  );
+}
+
+EmergencyBoardScope _emergencyScopeFromFilter(String? value) {
+  for (final EmergencyBoardScope scope in EmergencyBoardScope.values) {
+    if (scope.name == value) {
+      return scope;
+    }
+  }
+  return EmergencyBoardScope.active;
+}
+
+List<AppSearchBarFilterChoice> _emergencyScopeFilterChoices() {
+  return <AppSearchBarFilterChoice>[
+    for (final AppSelectOption<EmergencyBoardScope> option in _scopeOptions())
+      if (option.value != EmergencyBoardScope.active)
+        AppSearchBarFilterChoice(
+          value: option.value.name,
+          label: option.label,
+          icon: Icons.filter_list,
+        ),
   ];
 }
 

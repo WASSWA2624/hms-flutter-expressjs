@@ -169,51 +169,10 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
           onPressed: () => controller.applyScope(IpdQueueScope.all),
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        semanticLabel: l10n.ipdFiltersLabel,
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.ipdSearchLabel,
-          hintText: l10n.ipdSearchHint,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          trailingActions: <AppSearchBarAction>[
-            _tableColumnController.settingsAction(
-              context,
-              label: context.l10n.commonTableSettingsActionLabel,
-            ),
-          ],
-        ),
-        filters: <Widget>[
-          AppSelectField<IpdQueueScope>(
-            value: state.query.scope,
-            labelText: l10n.ipdScopeFilterLabel,
-            options: _scopeOptions(l10n),
-            onChanged: (IpdQueueScope? value) {
-              if (value != null) {
-                controller.applyScope(value);
-              }
-            },
-          ),
-          AppSelectField<String>(
-            value: state.query.wardId,
-            labelText: l10n.ipdWardFilterLabel,
-            hintText: l10n.ipdAllWardsOption,
-            options: <AppSelectOption<String>>[
-              for (final IpdWardOption ward in state.referenceData.wards)
-                AppSelectOption<String>(
-                  value: ward.id,
-                  label: ward.displayTitle,
-                ),
-            ],
-            onChanged: controller.applyWard,
-          ),
-        ],
-      ),
       body: _IpdBoardPanel(
         state: state,
         writeRequirement: _writeRequirement,
+        searchController: _searchController,
         columnVisibilityController: _tableColumnController,
       ),
     );
@@ -224,11 +183,13 @@ class _IpdBoardPanel extends ConsumerWidget {
   const _IpdBoardPanel({
     required this.state,
     required this.writeRequirement,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final IpdWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   columnVisibilityController;
 
@@ -246,6 +207,57 @@ class _IpdBoardPanel extends ConsumerWidget {
         page: state.admissions,
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<IpdAdmissionSummary>(
+          controller: searchController,
+          semanticLabel: l10n.ipdSearchLabel,
+          hintText: l10n.ipdSearchHint,
+          matcher: (_, _) => true,
+          onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.ipdFiltersLabel,
+          advancedFilterTitle: l10n.ipdFiltersLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          allFieldsLabel: l10n.ipdAllWardsOption,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _ipdScopeFilterKey,
+              label: l10n.ipdScopeFilterLabel,
+              allLabel: _ipdScopeLabel(l10n, IpdQueueScope.admissionQueue),
+              choices: _ipdScopeFilterChoices(l10n),
+            ),
+            AppSearchBarFilterGroup(
+              key: _ipdWardFilterKey,
+              label: l10n.ipdWardFilterLabel,
+              allLabel: l10n.ipdAllWardsOption,
+              choices: _ipdWardFilterChoices(state.referenceData.wards),
+            ),
+          ],
+          filterValue: _ipdFilterValue(state.query),
+          hasActiveFilters:
+              state.query.scope != IpdQueueScope.admissionQueue ||
+              state.query.wardId != null,
+          onFilterChanged: (AppSearchBarFilterValue value) async {
+            final IpdQueueScope nextScope = _ipdScopeFromFilter(
+              value.option(_ipdScopeFilterKey),
+            );
+            final String? nextWardId = value.option(_ipdWardFilterKey);
+            AppFailure? failure;
+            if (nextScope != state.query.scope) {
+              failure = await controller.applyScope(nextScope);
+            }
+            if (nextWardId != state.query.wardId) {
+              failure ??= await controller.applyWard(nextWardId);
+            }
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
+          },
+        ),
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<IpdAdmissionSummary> page) {
@@ -271,12 +283,21 @@ class _IpdBoardPanel extends ConsumerWidget {
         columns: <AppListTableColumn<IpdAdmissionSummary>>[
           AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.opdPatientColumnLabel,
+            sortComparator:
+                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                    appListTableCompareText(
+                      left.displayTitle,
+                      right.displayTitle,
+                    ),
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return _IpdPatientCell(admission: item);
             },
           ),
           AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.opdStatusColumnLabel,
+            sortComparator:
+                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                    appListTableCompareText(left.stage, right.stage),
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return AppWorkspaceStatusBadge(
                 status: _stageStatus(context, item.stage),
@@ -285,18 +306,30 @@ class _IpdBoardPanel extends ConsumerWidget {
           ),
           AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.ipdLocationColumnLabel,
+            sortComparator:
+                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                    appListTableCompareText(left.location, right.location),
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return Text(item.location ?? context.l10n.profileUnknownValue);
             },
           ),
           AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.ipdPendingActionColumnLabel,
+            sortComparator:
+                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                    appListTableCompareText(left.nextStep, right.nextStep),
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return Text(_nextStepLabel(context, item.nextStep));
             },
           ),
           AppListTableColumn<IpdAdmissionSummary>(
             label: l10n.ipdAdmittedAtColumnLabel,
+            sortComparator:
+                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                    appListTableCompareDateTime(
+                      left.admittedAt,
+                      right.admittedAt,
+                    ),
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return Text(_dateTimeLabel(context, item.admittedAt));
             },
@@ -1810,6 +1843,62 @@ List<AppSelectOption<IpdQueueScope>> _scopeOptions(AppLocalizations l10n) {
       label: l10n.ipdScopeAll,
     ),
   ];
+}
+
+const String _ipdScopeFilterKey = 'scope';
+const String _ipdWardFilterKey = 'ward';
+
+AppSearchBarFilterValue _ipdFilterValue(IpdAdmissionQuery query) {
+  return AppSearchBarFilterValue(
+    options: <String, String>{
+      if (query.scope != IpdQueueScope.admissionQueue)
+        _ipdScopeFilterKey: query.scope.name,
+      if (query.wardId != null) _ipdWardFilterKey: query.wardId!,
+    },
+  );
+}
+
+IpdQueueScope _ipdScopeFromFilter(String? value) {
+  for (final IpdQueueScope scope in IpdQueueScope.values) {
+    if (scope.name == value) {
+      return scope;
+    }
+  }
+  return IpdQueueScope.admissionQueue;
+}
+
+List<AppSearchBarFilterChoice> _ipdScopeFilterChoices(AppLocalizations l10n) {
+  return <AppSearchBarFilterChoice>[
+    for (final AppSelectOption<IpdQueueScope> option in _scopeOptions(l10n))
+      if (option.value != IpdQueueScope.admissionQueue)
+        AppSearchBarFilterChoice(
+          value: option.value.name,
+          label: option.label,
+          icon: Icons.filter_list,
+        ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _ipdWardFilterChoices(
+  List<IpdWardOption> wards,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final IpdWardOption ward in wards)
+      AppSearchBarFilterChoice(
+        value: ward.id,
+        label: ward.displayTitle,
+        icon: Icons.local_hospital_outlined,
+      ),
+  ];
+}
+
+String _ipdScopeLabel(AppLocalizations l10n, IpdQueueScope scope) {
+  for (final AppSelectOption<IpdQueueScope> option in _scopeOptions(l10n)) {
+    if (option.value == scope) {
+      return option.label;
+    }
+  }
+  return l10n.ipdScopeAdmissionQueue;
 }
 
 List<AppSelectOption<String>> _routeOptions(AppLocalizations l10n) {

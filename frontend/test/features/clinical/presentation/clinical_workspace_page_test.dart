@@ -87,13 +87,13 @@ void main() {
     await tester.pump();
 
     expect(find.text('Clinical workspace'), findsOneWidget);
-    expect(find.text('Provider worklist'), findsNothing);
+    expect(find.text('Provider worklist'), findsOneWidget);
     expect(
       find.text(
         'Open consultations, admissions, triage handoffs, and '
         'result-review queues.',
       ),
-      findsNothing,
+      findsOneWidget,
     );
     expect(find.text('Queue scope'), findsNothing);
     expect(find.text('Sarah Clinical'), findsOneWidget);

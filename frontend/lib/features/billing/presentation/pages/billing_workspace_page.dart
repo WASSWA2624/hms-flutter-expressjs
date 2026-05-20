@@ -54,18 +54,30 @@ class _BillingWorkspaceContent extends ConsumerStatefulWidget {
 
 class _BillingWorkspaceContentState
     extends ConsumerState<_BillingWorkspaceContent> {
+  late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<BillingWorkItem>
   _tableColumnController;
 
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<BillingWorkItem>();
   }
 
   @override
+  void didUpdateWidget(covariant _BillingWorkspaceContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.query.search != widget.state.query.search &&
+        _searchController.text != widget.state.query.search) {
+      _searchController.text = widget.state.query.search;
+    }
+  }
+
+  @override
   void dispose() {
+    _searchController.dispose();
     _tableColumnController.dispose();
     super.dispose();
   }
@@ -112,10 +124,6 @@ class _BillingWorkspaceContentState
       ],
       summaryCards: _summaryCards(context, ref, state),
       compactSummaryCards: true,
-      filters: _BillingFilterBar(
-        state: state,
-        columnVisibilityController: _tableColumnController,
-      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -129,6 +137,7 @@ class _BillingWorkspaceContentState
           _BillingQueuePanel(
             state: state,
             canWrite: canWrite,
+            searchController: _searchController,
             columnVisibilityController: _tableColumnController,
           ),
         ],
@@ -218,102 +227,17 @@ class _BillingWorkspaceContentState
   }
 }
 
-class _BillingFilterBar extends ConsumerStatefulWidget {
-  const _BillingFilterBar({
-    required this.state,
-    required this.columnVisibilityController,
-  });
-
-  final BillingWorkspaceState state;
-  final AppListTableColumnVisibilityController<BillingWorkItem>
-  columnVisibilityController;
-
-  @override
-  ConsumerState<_BillingFilterBar> createState() => _BillingFilterBarState();
-}
-
-class _BillingFilterBarState extends ConsumerState<_BillingFilterBar> {
-  late final TextEditingController _searchController;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController(text: widget.state.query.search);
-  }
-
-  @override
-  void didUpdateWidget(covariant _BillingFilterBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_searchController.text != widget.state.query.search) {
-      _searchController.text = widget.state.query.search;
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = ref.read(billingWorkspaceControllerProvider.notifier);
-
-    return AppWorkspaceFilterBar(
-      semanticLabel: 'Billing filters',
-      expandSearch: true,
-      search: AppSearchBar(
-        controller: _searchController,
-        semanticLabel: 'Search billing worklist',
-        hintText: _BillingText.searchHint,
-        clearLabel: 'Clear billing search',
-        onSubmitted: controller.applySearch,
-        onClear: () => controller.applySearch(''),
-        trailingActions: <AppSearchBarAction>[
-          widget.columnVisibilityController.settingsAction(
-            context,
-            label: context.l10n.commonTableSettingsActionLabel,
-          ),
-        ],
-      ),
-      filters: <Widget>[
-        AppSelectField<BillingQueueType>(
-          value: widget.state.query.queue,
-          labelText: 'Queue',
-          options: <AppSelectOption<BillingQueueType>>[
-            for (final BillingQueueType queue in BillingQueueType.values)
-              AppSelectOption<BillingQueueType>(
-                value: queue,
-                label: _queueLabel(queue),
-              ),
-          ],
-          onChanged: (BillingQueueType? value) {
-            if (value != null) {
-              controller.applyQueue(value);
-            }
-          },
-        ),
-      ],
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: _BillingText.clear,
-          leadingIcon: Icons.clear,
-          onPressed: () => controller.applySearch(''),
-        ),
-      ],
-    );
-  }
-}
-
 class _BillingQueuePanel extends ConsumerWidget {
   const _BillingQueuePanel({
     required this.state,
     required this.canWrite,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final BillingWorkspaceState state;
   final bool canWrite;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<BillingWorkItem>
   columnVisibilityController;
 
@@ -330,6 +254,40 @@ class _BillingQueuePanel extends ConsumerWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<BillingWorkItem>(
+          controller: searchController,
+          semanticLabel: 'Search billing worklist',
+          hintText: _BillingText.searchHint,
+          clearLabel: 'Clear billing search',
+          matcher: (_, _) => true,
+          onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: 'Billing filters',
+          advancedFilterTitle: 'Billing filters',
+          advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: _BillingText.clear,
+          advancedFilterCancelLabel: context.l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          allFieldsLabel: _queueLabel(BillingQueueType.pendingPayment),
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _billingQueueFilterKey,
+              label: 'Queue',
+              allLabel: _queueLabel(BillingQueueType.pendingPayment),
+              choices: _billingQueueFilterChoices(),
+            ),
+          ],
+          filterValue: _billingFilterValue(state.query),
+          hasActiveFilters:
+              state.query.queue != BillingQueueType.pendingPayment,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            controller.applyQueue(
+              _billingQueueFromFilter(value.option(_billingQueueFilterKey)),
+            );
+          },
+        ),
         itemKeyBuilder: (BillingWorkItem item) => ValueKey<String>(item.id),
         onRowSelected: (BillingWorkItem item) {
           controller.selectItem(item);
@@ -357,6 +315,11 @@ class _BillingQueuePanel extends ConsumerWidget {
         columns: <AppListTableColumn<BillingWorkItem>>[
           AppListTableColumn<BillingWorkItem>(
             label: _BillingText.patient,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareText(
+                  left.effectivePatientName,
+                  right.effectivePatientName,
+                ),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return _TwoLineCell(
                 title: item.effectivePatientName,
@@ -369,6 +332,11 @@ class _BillingQueuePanel extends ConsumerWidget {
           ),
           AppListTableColumn<BillingWorkItem>(
             label: _BillingText.status,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareText(
+                  left.clearanceState.name,
+                  right.clearanceState.name,
+                ),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return BillingGateBadge(state: item.clearanceState);
             },
@@ -376,6 +344,11 @@ class _BillingQueuePanel extends ConsumerWidget {
           AppListTableColumn<BillingWorkItem>(
             label: _BillingText.amount,
             numeric: true,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareNumber(
+                  left.effectiveTotal,
+                  right.effectiveTotal,
+                ),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.effectiveTotal, item.currency));
             },
@@ -383,6 +356,8 @@ class _BillingQueuePanel extends ConsumerWidget {
           AppListTableColumn<BillingWorkItem>(
             label: _BillingText.paid,
             numeric: true,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareNumber(left.paidAmount, right.paidAmount),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.paidAmount, item.currency));
             },
@@ -390,12 +365,16 @@ class _BillingQueuePanel extends ConsumerWidget {
           AppListTableColumn<BillingWorkItem>(
             label: _BillingText.balance,
             numeric: true,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareNumber(left.balanceDue, right.balanceDue),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.balanceDue, item.currency));
             },
           ),
           AppListTableColumn<BillingWorkItem>(
             label: _BillingText.updated,
+            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+                appListTableCompareDateTime(left.timelineAt, right.timelineAt),
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_dateTime(context, item.timelineAt));
             },
@@ -1542,6 +1521,38 @@ String _queueLabel(BillingQueueType queue) {
     BillingQueueType.approvalRequired => 'Approval required',
     BillingQueueType.overdue => 'Overdue',
   };
+}
+
+const String _billingQueueFilterKey = 'queue';
+
+AppSearchBarFilterValue _billingFilterValue(BillingWorkspaceQuery query) {
+  if (query.queue == BillingQueueType.pendingPayment) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(
+    options: <String, String>{_billingQueueFilterKey: query.queue.name},
+  );
+}
+
+BillingQueueType _billingQueueFromFilter(String? value) {
+  for (final BillingQueueType queue in BillingQueueType.values) {
+    if (queue.name == value) {
+      return queue;
+    }
+  }
+  return BillingQueueType.pendingPayment;
+}
+
+List<AppSearchBarFilterChoice> _billingQueueFilterChoices() {
+  return <AppSearchBarFilterChoice>[
+    for (final BillingQueueType queue in BillingQueueType.values)
+      if (queue != BillingQueueType.pendingPayment)
+        AppSearchBarFilterChoice(
+          value: queue.name,
+          label: _queueLabel(queue),
+          icon: Icons.receipt_long_outlined,
+        ),
+  ];
 }
 
 abstract final class _BillingText {

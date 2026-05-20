@@ -236,6 +236,8 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
     return _ClinicalWorklistSurface(
       child: AppListTable<ClinicalWorklistEntry>(
         page: state.worklist,
+        title: l10n.clinicalWorklistTitle,
+        description: l10n.clinicalWorklistDescription,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -363,30 +365,54 @@ List<AppListTableColumn<ClinicalWorklistEntry>> _clinicalWorklistColumns(
   return <AppListTableColumn<ClinicalWorklistEntry>>[
     AppListTableColumn<ClinicalWorklistEntry>(
       label: l10n.opdPatientColumnLabel,
+      sortComparator:
+          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
+              appListTableCompareText(left.displayTitle, right.displayTitle),
       cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
         return _ClinicalPatientCell(item: item);
       },
     ),
     AppListTableColumn<ClinicalWorklistEntry>(
       label: l10n.clinicalSourceQueueLabel,
+      sortComparator:
+          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
+              appListTableCompareText(left.sourceQueue, right.sourceQueue),
       cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
         return _ClinicalQueueCell(item: item);
       },
     ),
     AppListTableColumn<ClinicalWorklistEntry>(
       label: l10n.opdStatusColumnLabel,
+      sortComparator:
+          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
+              appListTableCompareText(
+                left.stage ?? left.status ?? left.nextStep,
+                right.stage ?? right.status ?? right.nextStep,
+              ),
       cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
         return _ClinicalStatusCell(item: item);
       },
     ),
     AppListTableColumn<ClinicalWorklistEntry>(
       label: l10n.opdProviderColumnLabel,
+      sortComparator:
+          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
+              appListTableCompareText(
+                left.providerDisplayName,
+                right.providerDisplayName,
+              ),
       cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
         return Text(item.providerDisplayName ?? l10n.profileUnknownValue);
       },
     ),
     AppListTableColumn<ClinicalWorklistEntry>(
       label: l10n.clinicalLastUpdatedLabel,
+      sortComparator:
+          (ClinicalWorklistEntry left, ClinicalWorklistEntry right) =>
+              appListTableCompareDateTime(
+                left.updatedAt ?? left.startedAt,
+                right.updatedAt ?? right.startedAt,
+              ),
       cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
         return Text(_dateTimeLabel(context, item.updatedAt ?? item.startedAt));
       },

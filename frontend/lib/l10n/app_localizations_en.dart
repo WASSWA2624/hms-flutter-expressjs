@@ -666,6 +666,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdFlowsTitle => 'OPD encounters';
 
   @override
+  String get opdTableDescription =>
+      'Track arrivals, queue status, billing state, provider ownership, and next steps.';
+
+  @override
   String get opdProviderReadinessTitle => 'Provider readiness';
 
   @override
@@ -1184,6 +1188,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get patientsBody =>
       'Find, register, and maintain patient records across front desk and care workflows.';
+
+  @override
+  String get patientsTableTitle => 'Patient records';
+
+  @override
+  String get patientsTableDescription =>
+      'Browse registered patients, visit context, alerts, status, and available next actions.';
 
   @override
   String get patientsLoadingTitle => 'Loading patients';

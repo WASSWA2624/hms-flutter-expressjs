@@ -1360,6 +1360,12 @@ abstract class AppLocalizations {
   /// **'OPD encounters'**
   String get opdFlowsTitle;
 
+  /// OPD main table description.
+  ///
+  /// In en, this message translates to:
+  /// **'Track arrivals, queue status, billing state, provider ownership, and next steps.'**
+  String get opdTableDescription;
+
   /// OPD provider readiness panel title.
   ///
   /// In en, this message translates to:
@@ -2349,6 +2355,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Find, register, and maintain patient records across front desk and care workflows.'**
   String get patientsBody;
+
+  /// Patient registry table title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient records'**
+  String get patientsTableTitle;
+
+  /// Patient registry table description.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse registered patients, visit context, alerts, status, and available next actions.'**
+  String get patientsTableDescription;
 
   /// Title while the patient registry loads.
   ///

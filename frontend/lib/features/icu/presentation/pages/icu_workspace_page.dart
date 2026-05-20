@@ -158,40 +158,25 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
           onPressed: () => controller.applyScope(IcuBoardScope.discharge),
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        semanticLabel: 'ICU board filters',
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: 'Search ICU',
-          hintText: _IcuText.searchHint,
-          onSubmitted: (String value) {
-            controller.applySearch(value);
-          },
-        ),
-        filters: <Widget>[
-          AppSelectField<IcuBoardScope>(
-            value: state.query.scope,
-            labelText: 'Board scope',
-            options: _scopeOptions(),
-            onChanged: (IcuBoardScope? value) {
-              if (value != null) {
-                controller.applyScope(value);
-              }
-            },
-          ),
-        ],
+      body: _IcuBoardPanel(
+        state: state,
+        writeRequirement: _writeRequirement,
+        searchController: _searchController,
       ),
-      body: _IcuBoardPanel(state: state, writeRequirement: _writeRequirement),
     );
   }
 }
 
 class _IcuBoardPanel extends ConsumerWidget {
-  const _IcuBoardPanel({required this.state, required this.writeRequirement});
+  const _IcuBoardPanel({
+    required this.state,
+    required this.writeRequirement,
+    required this.searchController,
+  });
 
   final IcuWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final TextEditingController searchController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -206,6 +191,37 @@ class _IcuBoardPanel extends ConsumerWidget {
       child: AppListTable<IcuPatientSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<IcuPatientSummary>(
+          controller: searchController,
+          semanticLabel: 'Search ICU',
+          hintText: _IcuText.searchHint,
+          matcher: (_, _) => true,
+          onSubmitted: controller.applySearch,
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: 'Board scope',
+          advancedFilterTitle: 'ICU board filters',
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          allFieldsLabel: _IcuText.activeIcu,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _icuScopeFilterKey,
+              label: 'Board scope',
+              allLabel: _IcuText.activeIcu,
+              choices: _icuScopeFilterChoices(),
+            ),
+          ],
+          filterValue: _icuFilterValue(state.query),
+          hasActiveFilters: state.query.scope != IcuBoardScope.active,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            controller.applyScope(
+              _icuScopeFromFilter(value.option(_icuScopeFilterKey)),
+            );
+          },
+        ),
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<IcuPatientSummary> page) {
@@ -236,30 +252,49 @@ class _IcuBoardPanel extends ConsumerWidget {
         columns: <AppListTableColumn<IcuPatientSummary>>[
           AppListTableColumn<IcuPatientSummary>(
             label: l10n.opdPatientColumnLabel,
+            sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
+                appListTableCompareText(left.displayTitle, right.displayTitle),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return _IcuPatientCell(item: item);
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
             label: _IcuText.bed,
+            sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
+                appListTableCompareText(
+                  left.locationLabel,
+                  right.locationLabel,
+                ),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return Text(item.locationLabel);
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
             label: _IcuText.alert,
+            sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
+                appListTableCompareText(
+                  left.criticalSeverity,
+                  right.criticalSeverity,
+                ),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return AppWorkspaceStatusBadge(status: _alertStatus(item));
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
             label: l10n.opdStatusColumnLabel,
+            sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
+                appListTableCompareText(left.icuStatus, right.icuStatus),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return AppWorkspaceStatusBadge(status: _icuStatus(item));
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
             label: _IcuText.transfer,
+            sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
+                appListTableCompareText(
+                  left.transferStatus ?? left.nextStep,
+                  right.transferStatus ?? right.nextStep,
+                ),
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return Text(
                 _apiLabel(item.transferStatus ?? item.nextStep ?? ''),
@@ -1603,6 +1638,38 @@ List<AppSelectOption<IcuBoardScope>> _scopeOptions() {
       value: IcuBoardScope.all,
       label: _IcuText.allIcu,
     ),
+  ];
+}
+
+const String _icuScopeFilterKey = 'scope';
+
+AppSearchBarFilterValue _icuFilterValue(IcuBoardQuery query) {
+  if (query.scope == IcuBoardScope.active) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(
+    options: <String, String>{_icuScopeFilterKey: query.scope.name},
+  );
+}
+
+IcuBoardScope _icuScopeFromFilter(String? value) {
+  for (final IcuBoardScope scope in IcuBoardScope.values) {
+    if (scope.name == value) {
+      return scope;
+    }
+  }
+  return IcuBoardScope.active;
+}
+
+List<AppSearchBarFilterChoice> _icuScopeFilterChoices() {
+  return <AppSearchBarFilterChoice>[
+    for (final AppSelectOption<IcuBoardScope> option in _scopeOptions())
+      if (option.value != IcuBoardScope.active)
+        AppSearchBarFilterChoice(
+          value: option.value.name,
+          label: option.label,
+          icon: Icons.filter_list,
+        ),
   ];
 }
 

@@ -1020,6 +1020,8 @@ class _PatientList extends ConsumerWidget {
 
     return AppListTable<Patient>(
       page: state.page,
+      title: l10n.patientsTableTitle,
+      description: l10n.patientsTableDescription,
       searchListenable: searchListenable,
       searchMatcher: (Patient patient, String query) {
         return _matchesPatientTableSearch(context, patient, query);

@@ -211,53 +211,9 @@ class _ClaimsWorkspaceContentState
           tone: AppWorkspaceStatusTone.neutral,
         ),
       ],
-      filters: AppWorkspaceFilterBar(
-        expandSearch: true,
-        search: AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.claimsSearchSemanticLabel,
-          hintText: l10n.claimsSearchHint,
-          isLoading: state.isRefreshing,
-          onSubmitted: (String value) async {
-            final AppFailure? failure = await controller.applySearch(value);
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-          onClear: () async {
-            final AppFailure? failure = await controller.applySearch('');
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-          trailingActions: <AppSearchBarAction>[
-            _tableColumnController.settingsAction(
-              context,
-              label: l10n.commonTableSettingsActionLabel,
-            ),
-          ],
-        ),
-        filters: <Widget>[
-          SizedBox(
-            width: 250,
-            child: AppSelectField<ClaimsQueueFilter>(
-              labelText: l10n.claimsQueueFilterLabel,
-              value: state.query.filter,
-              options: _filterOptions(l10n),
-              onChanged: (ClaimsQueueFilter? value) async {
-                final AppFailure? failure = await controller.applyFilter(
-                  value ?? ClaimsQueueFilter.all,
-                );
-                if (context.mounted) {
-                  _showFailureIfNeeded(context, failure);
-                }
-              },
-            ),
-          ),
-        ],
-      ),
       body: _ClaimsQueuePanel(
         state: state,
+        searchController: _searchController,
         columnVisibilityController: _tableColumnController,
       ),
     );
@@ -267,10 +223,12 @@ class _ClaimsWorkspaceContentState
 class _ClaimsQueuePanel extends ConsumerWidget {
   const _ClaimsQueuePanel({
     required this.state,
+    required this.searchController,
     required this.columnVisibilityController,
   });
 
   final ClaimsWorkspaceState state;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<ClaimsQueueItem>
   columnVisibilityController;
 
@@ -290,6 +248,51 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           page: state.queue,
           isLoading: state.isRefreshing,
           columnVisibilityController: columnVisibilityController,
+          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+          search: AppListTableSearch<ClaimsQueueItem>(
+            controller: searchController,
+            semanticLabel: l10n.claimsSearchSemanticLabel,
+            hintText: l10n.claimsSearchHint,
+            matcher: (_, _) => true,
+            onSubmitted: (String value) async {
+              final AppFailure? failure = await controller.applySearch(value);
+              if (context.mounted) {
+                _showFailureIfNeeded(context, failure);
+              }
+            },
+            onClear: () async {
+              final AppFailure? failure = await controller.applySearch('');
+              if (context.mounted) {
+                _showFailureIfNeeded(context, failure);
+              }
+            },
+            showAdvancedFilterButton: true,
+            advancedFilterButtonLabel: l10n.claimsQueueFilterLabel,
+            advancedFilterTitle: l10n.claimsQueueFilterLabel,
+            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+            advancedFilterResetLabel: l10n.opdClearFiltersAction,
+            advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+            enableDateFilter: false,
+            allFieldsLabel: l10n.claimsFilterAll,
+            filterGroups: <AppSearchBarFilterGroup>[
+              AppSearchBarFilterGroup(
+                key: _claimsQueueFilterKey,
+                label: l10n.claimsQueueFilterLabel,
+                allLabel: l10n.claimsFilterAll,
+                choices: _claimsQueueFilterChoices(l10n),
+              ),
+            ],
+            filterValue: _claimsFilterValue(state.query),
+            hasActiveFilters: state.query.filter != ClaimsQueueFilter.all,
+            onFilterChanged: (AppSearchBarFilterValue value) async {
+              final AppFailure? failure = await controller.applyFilter(
+                _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
+              );
+              if (context.mounted) {
+                _showFailureIfNeeded(context, failure);
+              }
+            },
+          ),
           previousPageLabel: l10n.claimsPreviousPageLabel,
           nextPageLabel: l10n.claimsNextPageLabel,
           pageLabelBuilder: (AppPage<ClaimsQueueItem> page) {
@@ -313,30 +316,46 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           columns: <AppListTableColumn<ClaimsQueueItem>>[
             AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsTypeColumnLabel,
+              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                  appListTableCompareText(left.kind.name, right.kind.name),
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(_kindLabel(context, item.kind));
               },
             ),
             AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsReferenceColumnLabel,
+              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                  appListTableCompareText(left.displayId, right.displayId),
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(item.displayId);
               },
             ),
             AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsCoverageColumnLabel,
+              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                  appListTableCompareText(
+                    left.coveragePlanDisplayId,
+                    right.coveragePlanDisplayId,
+                  ),
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(_fallback(context, item.coveragePlanDisplayId));
               },
             ),
             AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsInvoiceColumnLabel,
+              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                  appListTableCompareText(
+                    left.invoiceDisplayId,
+                    right.invoiceDisplayId,
+                  ),
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(_fallback(context, item.invoiceDisplayId));
               },
             ),
             AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsStatusColumnLabel,
+              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                  appListTableCompareText(left.status, right.status),
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return AppWorkspaceStatusBadge(
                   status: _statusFor(context, item),
@@ -345,6 +364,11 @@ class _ClaimsQueuePanel extends ConsumerWidget {
             ),
             AppListTableColumn<ClaimsQueueItem>(
               label: l10n.claimsTimelineColumnLabel,
+              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                  appListTableCompareDateTime(
+                    left.timelineAt,
+                    right.timelineAt,
+                  ),
               cellBuilder: (BuildContext context, ClaimsQueueItem item) {
                 return Text(_dateTimeLabel(context, item.timelineAt));
               },
@@ -1395,49 +1419,57 @@ List<Widget> _detailActions(
   ];
 }
 
-List<AppSelectOption<ClaimsQueueFilter>> _filterOptions(AppLocalizations l10n) {
-  return <AppSelectOption<ClaimsQueueFilter>>[
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.all,
-      label: l10n.claimsFilterAll,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.authorizationPending,
-      label: l10n.claimsFilterAuthorizationPending,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.authorizationApproved,
-      label: l10n.claimsFilterAuthorizationApproved,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.authorizationDenied,
-      label: l10n.claimsFilterAuthorizationDenied,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.authorizationExpired,
-      label: l10n.claimsFilterAuthorizationExpired,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.claimSubmitted,
-      label: l10n.claimsFilterClaimSubmitted,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.claimApproved,
-      label: l10n.claimsFilterClaimApproved,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.claimRejected,
-      label: l10n.claimsFilterClaimRejected,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.claimPaid,
-      label: l10n.claimsFilterClaimPaid,
-    ),
-    AppSelectOption<ClaimsQueueFilter>(
-      value: ClaimsQueueFilter.claimCancelled,
-      label: l10n.claimsFilterClaimCancelled,
-    ),
+const String _claimsQueueFilterKey = 'queue';
+
+AppSearchBarFilterValue _claimsFilterValue(ClaimsQueueQuery query) {
+  if (query.filter == ClaimsQueueFilter.all) {
+    return AppSearchBarFilterValue.empty;
+  }
+  return AppSearchBarFilterValue(
+    options: <String, String>{_claimsQueueFilterKey: query.filter.name},
+  );
+}
+
+ClaimsQueueFilter _claimsFilterFromValue(String? value) {
+  for (final ClaimsQueueFilter filter in ClaimsQueueFilter.values) {
+    if (filter.name == value) {
+      return filter;
+    }
+  }
+  return ClaimsQueueFilter.all;
+}
+
+List<AppSearchBarFilterChoice> _claimsQueueFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final ClaimsQueueFilter filter in ClaimsQueueFilter.values)
+      if (filter != ClaimsQueueFilter.all)
+        AppSearchBarFilterChoice(
+          value: filter.name,
+          label: _claimsFilterLabel(l10n, filter),
+          icon: Icons.filter_list,
+        ),
   ];
+}
+
+String _claimsFilterLabel(AppLocalizations l10n, ClaimsQueueFilter filter) {
+  return switch (filter) {
+    ClaimsQueueFilter.all => l10n.claimsFilterAll,
+    ClaimsQueueFilter.authorizationPending =>
+      l10n.claimsFilterAuthorizationPending,
+    ClaimsQueueFilter.authorizationApproved =>
+      l10n.claimsFilterAuthorizationApproved,
+    ClaimsQueueFilter.authorizationDenied =>
+      l10n.claimsFilterAuthorizationDenied,
+    ClaimsQueueFilter.authorizationExpired =>
+      l10n.claimsFilterAuthorizationExpired,
+    ClaimsQueueFilter.claimSubmitted => l10n.claimsFilterClaimSubmitted,
+    ClaimsQueueFilter.claimApproved => l10n.claimsFilterClaimApproved,
+    ClaimsQueueFilter.claimRejected => l10n.claimsFilterClaimRejected,
+    ClaimsQueueFilter.claimPaid => l10n.claimsFilterClaimPaid,
+    ClaimsQueueFilter.claimCancelled => l10n.claimsFilterClaimCancelled,
+  };
 }
 
 List<AppSelectOption<String>> _authorizationStatusOptions(

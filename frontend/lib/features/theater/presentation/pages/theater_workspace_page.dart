@@ -58,18 +58,30 @@ class _TheaterWorkspaceContent extends ConsumerStatefulWidget {
 
 class _TheaterWorkspaceContentState
     extends ConsumerState<_TheaterWorkspaceContent> {
+  late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<TheaterCase>
   _tableColumnController;
 
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<TheaterCase>();
   }
 
   @override
+  void didUpdateWidget(covariant _TheaterWorkspaceContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final String search = widget.state.query.search;
+    if (_searchController.text != search) {
+      _searchController.text = search;
+    }
+  }
+
+  @override
   void dispose() {
+    _searchController.dispose();
     _tableColumnController.dispose();
     super.dispose();
   }
@@ -140,10 +152,6 @@ class _TheaterWorkspaceContentState
           compact: true,
         ),
       ],
-      filters: _TheaterFilterBar(
-        state: state,
-        columnVisibilityController: _tableColumnController,
-      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -157,6 +165,7 @@ class _TheaterWorkspaceContentState
           _TheaterCaseBoard(
             state: state,
             canWrite: canWrite,
+            searchController: _searchController,
             columnVisibilityController: _tableColumnController,
             onPageChanged: controller.changePage,
           ),
@@ -166,148 +175,18 @@ class _TheaterWorkspaceContentState
   }
 }
 
-class _TheaterFilterBar extends ConsumerStatefulWidget {
-  const _TheaterFilterBar({
-    required this.state,
-    required this.columnVisibilityController,
-  });
-
-  final TheaterWorkspaceState state;
-  final AppListTableColumnVisibilityController<TheaterCase>
-  columnVisibilityController;
-
-  @override
-  ConsumerState<_TheaterFilterBar> createState() => _TheaterFilterBarState();
-}
-
-class _TheaterFilterBarState extends ConsumerState<_TheaterFilterBar> {
-  late final TextEditingController _searchController;
-  late final TextEditingController _roomController;
-  late final TextEditingController _surgeonController;
-  late final TextEditingController _anesthetistController;
-
-  @override
-  void initState() {
-    super.initState();
-    final TheaterCaseQuery query = widget.state.query;
-    _searchController = TextEditingController(text: query.search);
-    _roomController = TextEditingController(text: query.roomId);
-    _surgeonController = TextEditingController(text: query.surgeonUserId);
-    _anesthetistController = TextEditingController(
-      text: query.anesthetistUserId,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant _TheaterFilterBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final TheaterCaseQuery query = widget.state.query;
-    _syncController(_searchController, query.search);
-    _syncController(_roomController, query.roomId ?? '');
-    _syncController(_surgeonController, query.surgeonUserId ?? '');
-    _syncController(_anesthetistController, query.anesthetistUserId ?? '');
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _roomController.dispose();
-    _surgeonController.dispose();
-    _anesthetistController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final controller = ref.read(theaterWorkspaceControllerProvider.notifier);
-    final TheaterCaseQuery query = widget.state.query;
-
-    return AppWorkspaceFilterBar(
-      semanticLabel: l10n.theaterFiltersLabel,
-      expandSearch: true,
-      search: AppSearchBar(
-        controller: _searchController,
-        semanticLabel: l10n.theaterSearchLabel,
-        hintText: l10n.theaterSearchHint,
-        clearLabel: l10n.theaterClearFiltersAction,
-        onSubmitted: controller.applySearch,
-        onClear: () => controller.applySearch(''),
-        trailingActions: <AppSearchBarAction>[
-          widget.columnVisibilityController.settingsAction(
-            context,
-            label: l10n.commonTableSettingsActionLabel,
-          ),
-        ],
-      ),
-      filters: <Widget>[
-        AppDateField(
-          value: query.scheduledDate,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          labelText: l10n.theaterScheduleDateFilterLabel,
-          pickerButtonLabel: l10n.theaterPickScheduleDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          hintText: l10n.appDateFormatHint,
-          onChanged: controller.applyScheduledDate,
-        ),
-        AppSelectField<String>(
-          value: query.status,
-          labelText: l10n.theaterStatusFilterLabel,
-          options: <AppSelectOption<String>>[
-            for (final String status in theaterCaseStatuses)
-              AppSelectOption<String>(
-                value: status,
-                label: _caseStatusLabel(l10n, status),
-              ),
-          ],
-          onChanged: controller.applyStatus,
-        ),
-        AppSelectField<String>(
-          value: query.stage,
-          labelText: l10n.theaterStageFilterLabel,
-          options: <AppSelectOption<String>>[
-            for (final String stage in theaterWorkflowStages)
-              AppSelectOption<String>(
-                value: stage,
-                label: _stageLabel(l10n, stage),
-              ),
-          ],
-          onChanged: controller.applyStage,
-        ),
-      ],
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.theaterResourceFiltersAction,
-          leadingIcon: Icons.tune,
-          onPressed: () => _showResourceFilterDialog(context, ref),
-        ),
-        AppButton.tertiary(
-          label: l10n.theaterClearFiltersAction,
-          leadingIcon: Icons.clear,
-          onPressed: controller.clearFilters,
-        ),
-      ],
-    );
-  }
-
-  void _syncController(TextEditingController controller, String value) {
-    if (controller.text != value) {
-      controller.text = value;
-    }
-  }
-}
-
 class _TheaterCaseBoard extends ConsumerWidget {
   const _TheaterCaseBoard({
     required this.state,
     required this.canWrite,
+    required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
   });
 
   final TheaterWorkspaceState state;
   final bool canWrite;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<TheaterCase>
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
@@ -315,6 +194,9 @@ class _TheaterCaseBoard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final TheaterWorkspaceController controller = ref.read(
+      theaterWorkspaceControllerProvider.notifier,
+    );
 
     return AppWorkspaceDetailPanel(
       title: l10n.theaterCasesTitle,
@@ -323,6 +205,89 @@ class _TheaterCaseBoard extends ConsumerWidget {
         page: state.cases,
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<TheaterCase>(
+          controller: searchController,
+          semanticLabel: l10n.theaterSearchLabel,
+          hintText: l10n.theaterSearchHint,
+          clearLabel: l10n.theaterClearFiltersAction,
+          matcher: (_, _) => true,
+          onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.theaterFiltersLabel,
+          advancedFilterTitle: l10n.theaterFiltersLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.theaterClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          dateFilterLabel: l10n.theaterScheduleDateFilterLabel,
+          dateFromLabel: l10n.theaterScheduleDateFilterLabel,
+          dateToLabel: l10n.opdDateToLabel,
+          datePickerButtonLabel: l10n.theaterPickScheduleDateAction,
+          invalidDateMessage: l10n.appDateInvalidMessage,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+          currentDate: DateTime.now(),
+          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _theaterStatusFilterKey,
+              label: l10n.theaterStatusFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _theaterStatusFilterChoices(l10n),
+            ),
+            AppSearchBarFilterGroup(
+              key: _theaterStageFilterKey,
+              label: l10n.theaterStageFilterLabel,
+              allLabel: l10n.opdAllFieldsFilterLabel,
+              choices: _theaterStageFilterChoices(l10n),
+            ),
+          ],
+          filterValue: _theaterFilterValue(state.query),
+          hasActiveFilters: _hasTheaterFilters(state.query),
+          onFilterChanged: (AppSearchBarFilterValue value) async {
+            final String? nextStatus = value.option(_theaterStatusFilterKey);
+            final String? nextStage = value.option(_theaterStageFilterKey);
+            final DateTime? nextDate = value.dateFrom;
+            AppFailure? failure;
+            if (nextStatus != state.query.status) {
+              failure = await controller.applyStatus(nextStatus);
+            }
+            if (nextStage != state.query.stage) {
+              failure ??= await controller.applyStage(nextStage);
+            }
+            if (!_isSameTheaterFilterDate(
+              nextDate,
+              state.query.scheduledDate,
+            )) {
+              failure ??= await controller.applyScheduledDate(nextDate);
+            }
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
+          },
+          trailingActions: <AppSearchBarAction>[
+            AppSearchBarAction(
+              icon: Icons.tune,
+              label: l10n.theaterResourceFiltersAction,
+              tooltip: l10n.theaterResourceFiltersAction,
+              active:
+                  state.query.roomId != null ||
+                  state.query.surgeonUserId != null ||
+                  state.query.anesthetistUserId != null,
+              onPressed: () => _showResourceFilterDialog(context, ref),
+            ),
+            AppSearchBarAction(
+              icon: Icons.clear,
+              label: l10n.theaterClearFiltersAction,
+              tooltip: l10n.theaterClearFiltersAction,
+              active: _hasTheaterFilters(state.query),
+              onPressed: () {
+                unawaited(controller.clearFilters());
+              },
+            ),
+          ],
+        ),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemKeyBuilder: (TheaterCase item) => ValueKey<String>(item.id),
@@ -351,6 +316,11 @@ class _TheaterCaseBoard extends ConsumerWidget {
         columns: <AppListTableColumn<TheaterCase>>[
           AppListTableColumn<TheaterCase>(
             label: l10n.theaterPatientColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareText(
+                  left.patientDisplayName ?? left.patientDisplayId,
+                  right.patientDisplayName ?? right.patientDisplayId,
+                ),
             cellBuilder: (BuildContext context, TheaterCase item) {
               return _TwoLineCell(
                 title: item.patientDisplayName ?? l10n.profileUnknownValue,
@@ -363,30 +333,52 @@ class _TheaterCaseBoard extends ConsumerWidget {
           ),
           AppListTableColumn<TheaterCase>(
             label: l10n.theaterTimeColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareDateTime(
+                  left.scheduledAt,
+                  right.scheduledAt,
+                ),
             cellBuilder: (BuildContext context, TheaterCase item) {
               return Text(_formatDateTime(context, item.scheduledAt));
             },
           ),
           AppListTableColumn<TheaterCase>(
             label: l10n.theaterRoomColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareText(
+                  _roomLabel(context, left),
+                  _roomLabel(context, right),
+                ),
             cellBuilder: (BuildContext context, TheaterCase item) {
               return Text(_roomLabel(context, item));
             },
           ),
           AppListTableColumn<TheaterCase>(
             label: l10n.theaterStatusColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareText(left.status, right.status),
             cellBuilder: (BuildContext context, TheaterCase item) {
               return _TheaterStatusBadge(status: item.status);
             },
           ),
           AppListTableColumn<TheaterCase>(
             label: l10n.theaterReadinessColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareNumber(
+                  left.checklistCompleted,
+                  right.checklistCompleted,
+                ),
             cellBuilder: (BuildContext context, TheaterCase item) {
               return Text(_readinessLabel(context, item));
             },
           ),
           AppListTableColumn<TheaterCase>(
             label: l10n.theaterNextActionColumnLabel,
+            sortComparator: (TheaterCase left, TheaterCase right) =>
+                appListTableCompareText(
+                  _nextActionLabel(context, left),
+                  _nextActionLabel(context, right),
+                ),
             cellBuilder: (BuildContext context, TheaterCase item) {
               return Text(_nextActionLabel(context, item));
             },
@@ -2101,6 +2093,72 @@ void _showMutationResult(BuildContext context, AppFailure? failure) {
       ),
     ),
   );
+}
+
+void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
+  if (failure == null || !context.mounted) {
+    return;
+  }
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+}
+
+const String _theaterStatusFilterKey = 'status';
+const String _theaterStageFilterKey = 'stage';
+
+AppSearchBarFilterValue _theaterFilterValue(TheaterCaseQuery query) {
+  return AppSearchBarFilterValue(
+    dateFrom: query.scheduledDate,
+    options: <String, String>{
+      if (query.status != null) _theaterStatusFilterKey: query.status!,
+      if (query.stage != null) _theaterStageFilterKey: query.stage!,
+    },
+  );
+}
+
+bool _hasTheaterFilters(TheaterCaseQuery query) {
+  return query.status != null ||
+      query.stage != null ||
+      query.scheduledDate != null ||
+      query.roomId != null ||
+      query.surgeonUserId != null ||
+      query.anesthetistUserId != null;
+}
+
+List<AppSearchBarFilterChoice> _theaterStatusFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final String status in theaterCaseStatuses)
+      AppSearchBarFilterChoice(
+        value: status,
+        label: _caseStatusLabel(l10n, status),
+        icon: Icons.task_alt_outlined,
+      ),
+  ];
+}
+
+List<AppSearchBarFilterChoice> _theaterStageFilterChoices(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final String stage in theaterWorkflowStages)
+      AppSearchBarFilterChoice(
+        value: stage,
+        label: _stageLabel(l10n, stage),
+        icon: Icons.timeline_outlined,
+      ),
+  ];
+}
+
+bool _isSameTheaterFilterDate(DateTime? left, DateTime? right) {
+  if (left == null || right == null) {
+    return left == null && right == null;
+  }
+  return left.year == right.year &&
+      left.month == right.month &&
+      left.day == right.day;
 }
 
 String _caseStatusLabel(AppLocalizations l10n, String? status) {
