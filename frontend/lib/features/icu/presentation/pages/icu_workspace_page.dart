@@ -122,7 +122,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       ],
       summaryCards: <Widget>[
         AppWorkspaceSummaryCard(
-          label: 'Active ICU',
+          label: _IcuText.activeIcu,
           value: _countLabel(context, state.activeCount),
           icon: Icons.bed_outlined,
           tone: AppWorkspaceStatusTone.info,
@@ -130,7 +130,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
           onPressed: () => controller.applyScope(IcuBoardScope.active),
         ),
         AppWorkspaceSummaryCard(
-          label: 'Critical alerts',
+          label: _IcuText.criticalAlerts,
           value: _countLabel(context, state.criticalCount),
           icon: Icons.priority_high_outlined,
           tone: AppWorkspaceStatusTone.error,
@@ -138,7 +138,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
           onPressed: () => controller.applyScope(IcuBoardScope.critical),
         ),
         AppWorkspaceSummaryCard(
-          label: 'Transfers',
+          label: _IcuText.transfers,
           value: _countLabel(context, state.transferCount),
           icon: Icons.compare_arrows_outlined,
           tone: AppWorkspaceStatusTone.warning,
@@ -146,7 +146,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
           onPressed: () => controller.applyScope(IcuBoardScope.transfer),
         ),
         AppWorkspaceSummaryCard(
-          label: 'Discharge ready',
+          label: _IcuText.dischargeReady,
           value: _countLabel(context, state.dischargeReadyCount),
           icon: Icons.fact_check_outlined,
           tone: AppWorkspaceStatusTone.success,
@@ -160,7 +160,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
         search: AppSearchBar(
           controller: _searchController,
           semanticLabel: 'Search ICU',
-          hintText: 'Search patient, admission, bed, or alert',
+          hintText: _IcuText.searchHint,
           onSubmitted: (String value) {
             controller.applySearch(value);
           },
@@ -232,13 +232,13 @@ class _IcuBoardPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
-            label: 'Bed',
+            label: _IcuText.bed,
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return Text(item.locationLabel);
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
-            label: 'Alert',
+            label: _IcuText.alert,
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return AppWorkspaceStatusBadge(status: _alertStatus(item));
             },
@@ -250,7 +250,7 @@ class _IcuBoardPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<IcuPatientSummary>(
-            label: 'Transfer',
+            label: _IcuText.transfer,
             cellBuilder: (BuildContext context, IcuPatientSummary item) {
               return Text(
                 _apiLabel(item.transferStatus ?? item.nextStep ?? ''),
@@ -381,33 +381,33 @@ class _IcuDetailPanel extends ConsumerWidget {
             if (summary.hasCriticalAlert) _alertStatus(summary),
             if (summary.hasOpenTransfer)
               const AppWorkspaceStatus(
-                label: 'Transfer pending',
+                label: _IcuText.transferPending,
                 tone: AppWorkspaceStatusTone.warning,
               ),
             if (summary.isDischargePlanned)
               const AppWorkspaceStatus(
-                label: 'Discharge ready',
+                label: _IcuText.dischargeReady,
                 tone: AppWorkspaceStatusTone.success,
               ),
           ],
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
-              label: 'Admission',
+              label: _IcuText.admission,
               value: summary.displayId ?? summary.admissionId,
               icon: Icons.tag_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: 'Location',
+              label: _IcuText.location,
               value: summary.locationLabel,
               icon: Icons.bed_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: 'Facility',
+              label: _IcuText.facility,
               value: detail.facilityName ?? '',
               icon: Icons.domain_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: 'Admitted',
+              label: _IcuText.admitted,
               value: _dateTimeLabel(context, summary.admittedAt),
               icon: Icons.event_available_outlined,
             ),
@@ -461,25 +461,25 @@ class _IcuActionPanel extends ConsumerWidget {
           return AppActionList(
             actions: <AppActionItem>[
               AppActionItem(
-                label: 'Observation',
+                label: _IcuText.observation,
                 leadingIcon: Icons.note_add_outlined,
                 enabled: isAllowed && hasActiveStay,
                 onPressed: () => _openObservationDialog(context),
               ),
               AppActionItem(
-                label: 'Vitals',
+                label: _IcuText.vitals,
                 leadingIcon: Icons.monitor_heart_outlined,
                 enabled: isAllowed && detail.summary.encounterId != null,
                 onPressed: () => _openVitalsDialog(context),
               ),
               AppActionItem(
-                label: 'Alert',
+                label: _IcuText.alert,
                 leadingIcon: Icons.notification_important_outlined,
                 enabled: isAllowed && hasActiveStay,
                 onPressed: () => _openAlertDialog(context),
               ),
               AppActionItem(
-                label: 'Acknowledge',
+                label: _IcuText.acknowledge,
                 leadingIcon: Icons.done_all_outlined,
                 enabled: isAllowed && hasAlert,
                 onPressed: () => _confirmAction(
@@ -487,30 +487,30 @@ class _IcuActionPanel extends ConsumerWidget {
                   title: 'Acknowledge alert',
                   body:
                       'This clears the selected critical alert from the active ICU board.',
-                  actionLabel: 'Acknowledge',
+                  actionLabel: _IcuText.acknowledge,
                   onConfirmed: controller.acknowledgeLatestAlert,
                 ),
               ),
               AppActionItem(
-                label: 'Round',
+                label: _IcuText.round,
                 leadingIcon: Icons.rate_review_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openRoundDialog(context),
               ),
               AppActionItem(
-                label: 'Transfer',
+                label: _IcuText.transfer,
                 leadingIcon: Icons.compare_arrows_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openTransferDialog(context, referenceData),
               ),
               AppActionItem(
-                label: 'Readiness',
+                label: _IcuText.readiness,
                 leadingIcon: Icons.fact_check_outlined,
                 enabled: isAllowed,
                 onPressed: () => _openReadinessDialog(context),
               ),
               AppActionItem(
-                label: 'Transfer out',
+                label: _IcuText.transferOut,
                 leadingIcon: Icons.output_outlined,
                 enabled: isAllowed && hasActiveStay,
                 onPressed: () => _confirmAction(
@@ -518,14 +518,14 @@ class _IcuActionPanel extends ConsumerWidget {
                   title: 'Transfer out of ICU',
                   body:
                       'This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.',
-                  actionLabel: 'Transfer out',
+                  actionLabel: _IcuText.transferOut,
                   onConfirmed: controller.transferOut,
                 ),
               ),
             ],
             extraActions: <Widget>[
               AppReportActionButton.print(
-                label: 'Print summary',
+                label: _IcuText.printSummary,
                 onPressed: () async {
                   await printFormTemplateDocument(
                     ref: ref,
@@ -534,13 +534,13 @@ class _IcuActionPanel extends ConsumerWidget {
                     subtitle: detail.summary.displayTitle,
                     metadata: <PrintFormMetadataItem>[
                       PrintFormMetadataItem(
-                        label: 'Admission',
+                        label: _IcuText.admission,
                         value:
                             detail.summary.displayId ??
                             detail.summary.admissionId,
                       ),
                       PrintFormMetadataItem(
-                        label: 'Location',
+                        label: _IcuText.location,
                         value: detail.summary.locationLabel,
                       ),
                     ],
@@ -917,7 +917,7 @@ class _ObservationDialogState extends ConsumerState<_ObservationDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Record ICU observation'),
+      title: const Text(_IcuText.recordIcuObservation),
       icon: const Icon(Icons.note_add_outlined),
       scrollable: true,
       content: Form(
@@ -927,7 +927,7 @@ class _ObservationDialogState extends ConsumerState<_ObservationDialog> {
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppTextField(
               controller: _observationController,
-              labelText: 'Observation',
+              labelText: _IcuText.observation,
               enabled: !_isSaving,
               maxLines: 5,
               isRequired: true,
@@ -1013,7 +1013,7 @@ class _VitalsDialogState extends ConsumerState<_VitalsDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Update vitals'),
+      title: const Text(_IcuText.updateVitals),
       icon: const Icon(Icons.monitor_heart_outlined),
       scrollable: true,
       closeEnabled: !_isSaving,
@@ -1121,7 +1121,7 @@ class _CriticalAlertDialogState extends ConsumerState<_CriticalAlertDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Add critical alert'),
+      title: const Text(_IcuText.addCriticalAlert),
       icon: const Icon(Icons.notification_important_outlined),
       content: Form(
         key: _formKey,
@@ -1225,7 +1225,7 @@ class _TransferRequestDialogState
   Widget build(BuildContext context) {
     final List<IcuWardOption> wards = widget.referenceData.wards;
     return AppDialog(
-      title: const Text('Request transfer'),
+      title: const Text(_IcuText.requestTransfer),
       icon: const Icon(Icons.compare_arrows_outlined),
       content: Form(
         key: _formKey,
@@ -1330,7 +1330,7 @@ class _ReadinessDialogState extends ConsumerState<_ReadinessDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Mark discharge readiness'),
+      title: const Text(_IcuText.markDischargeReadiness),
       icon: const Icon(Icons.fact_check_outlined),
       scrollable: true,
       content: Form(
@@ -1448,7 +1448,7 @@ Future<void> _openRoundDialog(BuildContext context) {
       barrierDismissible: false,
       builder: (_) => ClinicalFreeTextActionDialog(
         title: 'Add ICU round note',
-        label: 'Round note',
+        label: _IcuText.roundNote,
         submitLabel: 'Add note',
         icon: const Icon(Icons.rate_review_outlined),
         maxLines: 4,
@@ -1518,7 +1518,7 @@ Future<void> _showActionResult(
   if (saved == true && context.mounted) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('ICU changes saved.')));
+    ).showSnackBar(const SnackBar(content: Text(_IcuText.changesSaved)));
   }
 }
 
@@ -1526,26 +1526,61 @@ List<AppSelectOption<IcuBoardScope>> _scopeOptions() {
   return const <AppSelectOption<IcuBoardScope>>[
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.active,
-      label: 'Active ICU',
+      label: _IcuText.activeIcu,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.critical,
-      label: 'Critical alerts',
+      label: _IcuText.criticalAlerts,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.transfer,
-      label: 'Transfer pending',
+      label: _IcuText.transferPending,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.discharge,
-      label: 'Discharge ready',
+      label: _IcuText.dischargeReady,
     ),
     AppSelectOption<IcuBoardScope>(
       value: IcuBoardScope.ended,
-      label: 'Ended stays',
+      label: _IcuText.endedStays,
     ),
-    AppSelectOption<IcuBoardScope>(value: IcuBoardScope.all, label: 'All ICU'),
+    AppSelectOption<IcuBoardScope>(
+      value: IcuBoardScope.all,
+      label: _IcuText.allIcu,
+    ),
   ];
+}
+
+abstract final class _IcuText {
+  static const String acknowledge = 'Acknowledge';
+  static const String activeIcu = 'Active ICU';
+  static const String addCriticalAlert = 'Add critical alert';
+  static const String admitted = 'Admitted';
+  static const String admission = 'Admission';
+  static const String alert = 'Alert';
+  static const String allIcu = 'All ICU';
+  static const String bed = 'Bed';
+  static const String changesSaved = 'ICU changes saved.';
+  static const String criticalAlerts = 'Critical alerts';
+  static const String dischargeReady = 'Discharge ready';
+  static const String endedStays = 'Ended stays';
+  static const String facility = 'Facility';
+  static const String location = 'Location';
+  static const String markDischargeReadiness = 'Mark discharge readiness';
+  static const String observation = 'Observation';
+  static const String printSummary = 'Print summary';
+  static const String readiness = 'Readiness';
+  static const String recordIcuObservation = 'Record ICU observation';
+  static const String requestTransfer = 'Request transfer';
+  static const String round = 'Round';
+  static const String roundNote = 'Round note';
+  static const String searchHint = 'Search patient, admission, bed, or alert';
+  static const String transfer = 'Transfer';
+  static const String transferOut = 'Transfer out';
+  static const String transferPending = 'Transfer pending';
+  static const String transfers = 'Transfers';
+  static const String updateVitals = 'Update vitals';
+  static const String vitals = 'Vitals';
 }
 
 List<AppSelectOption<String>> _statusOptions(List<String> values) {

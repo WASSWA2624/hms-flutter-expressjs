@@ -217,7 +217,7 @@ final class DioApiClient implements ApiClient {
   ) {
     final mergedQueryParameters = <String, Object?>{
       if (endpoint.hasQuery) ...endpoint.queryParameters,
-      if (queryParameters != null) ...queryParameters,
+      ...?queryParameters,
     };
 
     if (mergedQueryParameters.isEmpty) {

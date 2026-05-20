@@ -283,7 +283,8 @@ class _NursingWorkspaceContentState
   void _openShiftContextDialog(BuildContext context) {
     showAppDialog<void>(
       context: context,
-      builder: (BuildContext dialogContext) => const _NursingShiftContextDialog(),
+      builder: (BuildContext dialogContext) =>
+          const _NursingShiftContextDialog(),
     );
   }
 
@@ -330,7 +331,8 @@ class _NursingWorklistPanel extends ConsumerWidget {
     );
 
     return AppWorkspaceDetailPanel(
-      title: l10n.patientsTitle,
+      title: l10n.nursingWorklistTitle,
+      description: l10n.nursingWorklistDescription,
       child: AppPaginatedListTable<NursingWorkItem>(
         page: state.worklist,
         isLoading: state.isRefreshing,
@@ -399,7 +401,9 @@ class _NursingWorklistPanel extends ConsumerWidget {
                   runSpacing: theme.spacing.xs,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: <Widget>[
-                    AppWorkspaceStatusBadge(status: _priorityStatus(context, item)),
+                    AppWorkspaceStatusBadge(
+                      status: _priorityStatus(context, item),
+                    ),
                     AppWorkspaceStatusBadge(status: _summaryStatus(item)),
                     Text(
                       _joinDisplay(<String?>[
@@ -419,7 +423,6 @@ class _NursingWorklistPanel extends ConsumerWidget {
     );
   }
 }
-
 
 List<AppListTableColumn<NursingWorkItem>> _nursingWorklistDefaultColumns(
   AppLocalizations l10n,
@@ -552,60 +555,64 @@ class _NursingSummaryPatientsDialog extends StatelessWidget {
           SizedBox(height: Theme.of(context).spacing.md),
           FutureBuilder<Result<AppPage<NursingWorkItem>>>(
             future: future,
-            builder: (
-              BuildContext context,
-              AsyncSnapshot<Result<AppPage<NursingWorkItem>>> snapshot,
-            ) {
-              final Result<AppPage<NursingWorkItem>>? result = snapshot.data;
-              if (result == null) {
-                return AppWorkspaceStatePanel.loading(
-                  title: l10n.nursingLoadingTitle,
-                  body: l10n.nursingLoadingBody,
-                );
-              }
-              return result.when(
-                success: (AppPage<NursingWorkItem> page) => AppListTable<NursingWorkItem>(
-                  items: page.items,
-                  shrinkWrap: true,
-                  columns: _nursingWorklistDefaultColumns(l10n),
-                  columnChoices: _nursingWorklistColumnChoices(l10n),
-                  onRowSelected: onPatientSelected,
-                  emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-                    variant: AppStateViewVariant.empty,
-                    title: l10n.nursingNoWorklistTitle,
-                    body: l10n.nursingNoWorklistBody,
-                    icon: Icons.assignment_outlined,
-                  ),
-                  mobileItemBuilder: (BuildContext context, NursingWorkItem item) {
-                    final ThemeData theme = Theme.of(context);
-                    return Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: theme.spacing.sm,
-                        vertical: theme.spacing.sm,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          _NursingPatientCell(item: item),
-                          SizedBox(height: theme.spacing.xs),
-                          Text(
-                            _joinDisplay(<String?>[
-                              item.locationLabel,
-                              _taskTypeLabel(context, item),
-                              _dueTimeLabel(context, item),
-                            ]),
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
+            builder:
+                (
+                  BuildContext context,
+                  AsyncSnapshot<Result<AppPage<NursingWorkItem>>> snapshot,
+                ) {
+                  final Result<AppPage<NursingWorkItem>>? result =
+                      snapshot.data;
+                  if (result == null) {
+                    return AppWorkspaceStatePanel.loading(
+                      title: l10n.nursingLoadingTitle,
+                      body: l10n.nursingLoadingBody,
                     );
-                  },
-                ),
-                failure: (AppFailure failure) => AppFailureStateView(
-                  failure: failure,
-                ),
-              );
-            },
+                  }
+                  return result.when(
+                    success: (AppPage<NursingWorkItem> page) =>
+                        AppListTable<NursingWorkItem>(
+                          items: page.items,
+                          shrinkWrap: true,
+                          columns: _nursingWorklistDefaultColumns(l10n),
+                          columnChoices: _nursingWorklistColumnChoices(l10n),
+                          onRowSelected: onPatientSelected,
+                          emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+                            variant: AppStateViewVariant.empty,
+                            title: l10n.nursingNoWorklistTitle,
+                            body: l10n.nursingNoWorklistBody,
+                            icon: Icons.assignment_outlined,
+                          ),
+                          mobileItemBuilder:
+                              (BuildContext context, NursingWorkItem item) {
+                                final ThemeData theme = Theme.of(context);
+                                return Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: theme.spacing.sm,
+                                    vertical: theme.spacing.sm,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      _NursingPatientCell(item: item),
+                                      SizedBox(height: theme.spacing.xs),
+                                      Text(
+                                        _joinDisplay(<String?>[
+                                          item.locationLabel,
+                                          _taskTypeLabel(context, item),
+                                          _dueTimeLabel(context, item),
+                                        ]),
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                        ),
+                    failure: (AppFailure failure) =>
+                        AppFailureStateView(failure: failure),
+                  );
+                },
           ),
         ],
       ),
@@ -637,7 +644,8 @@ Future<void> _openPatientDetailDialog(
   }
   await showAppDialog<void>(
     context: context,
-    builder: (BuildContext dialogContext) => const _NursingPatientDetailDialog(),
+    builder: (BuildContext dialogContext) =>
+        const _NursingPatientDetailDialog(),
   );
 }
 
@@ -688,7 +696,9 @@ class _NursingPatientDetailContent extends StatelessWidget {
           patientName: summary.displayTitle,
           patientNumber: summary.patientDisplayId ?? summary.admissionId,
           demographics: _joinDisplay(<String?>[
-            detail.patientGender == null ? null : _apiLabel(detail.patientGender!),
+            detail.patientGender == null
+                ? null
+                : _apiLabel(detail.patientGender!),
             detail.patientDateOfBirth == null
                 ? null
                 : AppFormatters.mediumDate(
@@ -738,7 +748,9 @@ class _NursingPatientDetailContent extends StatelessWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.nursingIcuLabel,
-              value: summary.icuStatus == null ? '' : _apiLabel(summary.icuStatus!),
+              value: summary.icuStatus == null
+                  ? ''
+                  : _apiLabel(summary.icuStatus!),
               icon: Icons.monitor_heart_outlined,
               tone: summary.hasCriticalAlert
                   ? AppWorkspaceStatusTone.error
@@ -996,7 +1008,10 @@ class _NursingShiftContextPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(l10n.nursingRosterTitle, style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            l10n.nursingRosterTitle,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           SizedBox(height: Theme.of(context).spacing.sm),
           AppRosterAssignmentList(
             items: _rosterViews(context, state.rosters),
@@ -1206,7 +1221,9 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
     }
     return _joinDisplay(<String?>[
       suggestion.frequency,
-      suggestion.orderStatus == null ? null : _apiLabel(suggestion.orderStatus!),
+      suggestion.orderStatus == null
+          ? null
+          : _apiLabel(suggestion.orderStatus!),
       suggestion.itemStatus == null ? null : _apiLabel(suggestion.itemStatus!),
       suggestion.route == null ? null : _apiLabel(suggestion.route!),
     ]);
@@ -1214,7 +1231,8 @@ class _MedicationDialogState extends ConsumerState<_MedicationDialog> {
 
   void _selectMedication(String? value) {
     MedicationSuggestion? suggestion;
-    for (final MedicationSuggestion item in widget.detail.medicationSuggestions) {
+    for (final MedicationSuggestion item
+        in widget.detail.medicationSuggestions) {
       if (item.id == value) {
         suggestion = item;
         break;
@@ -1358,14 +1376,13 @@ class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
   void initState() {
     super.initState();
     _notesController = TextEditingController();
-    ref
-        .read(nursingWorkspaceControllerProvider.notifier)
-        .searchUsers('')
-        .then((List<NursingUserOption> users) {
-          if (mounted) {
-            setState(() => _userOptions = users);
-          }
-        });
+    ref.read(nursingWorkspaceControllerProvider.notifier).searchUsers('').then((
+      List<NursingUserOption> users,
+    ) {
+      if (mounted) {
+        setState(() => _userOptions = users);
+      }
+    });
   }
 
   @override
@@ -1434,7 +1451,9 @@ class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
               attachmentFileNames: _attachments
                   .map((XFile file) => file.name)
                   .toList(growable: false),
-              onChooseAttachments: widget.escalation ? null : _chooseAttachments,
+              onChooseAttachments: widget.escalation
+                  ? null
+                  : _chooseAttachments,
               onClearAttachments: widget.escalation
                   ? null
                   : () => setState(() => _attachments = const <XFile>[]),
@@ -1472,7 +1491,7 @@ class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
     final List<XFile> files = await openFiles(
       acceptedTypeGroups: const <XTypeGroup>[
         XTypeGroup(
-          label: 'Documents',
+          label: _nursingDocumentsTypeGroupLabel,
           extensions: <String>['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
         ),
       ],
@@ -1776,8 +1795,8 @@ Future<void> _openPrescriptionDialog(
   BuildContext context,
   NursingWorkspaceController controller,
 ) async {
-  final ClinicalReferenceData referenceData =
-      await controller.prescriptionReferenceData();
+  final ClinicalReferenceData referenceData = await controller
+      .prescriptionReferenceData();
   if (!context.mounted) {
     return;
   }
@@ -1829,7 +1848,6 @@ Future<void> _openTransferDialog(
     ),
   );
 }
-
 
 Future<void> _openPrintSummaryDialog(
   BuildContext context,
@@ -1926,8 +1944,10 @@ String _nursingSummaryText(BuildContext context, NursingPatientDetail detail) {
     ..._recordsAsLines(context, _handoverRecords(context, detail)),
     '',
     l10n.nursingWardAdmissionChecklistTitle,
-    for (final AppCareTaskChecklistItem item
-        in _admissionChecklistItems(context, detail))
+    for (final AppCareTaskChecklistItem item in _admissionChecklistItems(
+      context,
+      detail,
+    ))
       '- ${item.title}: ${item.isComplete ? l10n.nursingChecklistCompleteStatus : l10n.nursingChecklistPendingStatus}',
   ];
   return lines.join('\n');
@@ -1947,12 +1967,8 @@ List<String> _recordsAsLines(
   }
   return records
       .map(
-        (AppNursingRecordEntry record) => '- ${_joinDisplay(<String?>[
-          record.title,
-          record.subtitle,
-          record.body,
-          record.status?.label,
-        ])}',
+        (AppNursingRecordEntry record) =>
+            '- ${_joinDisplay(<String?>[record.title, record.subtitle, record.body, record.status?.label])}',
       )
       .toList(growable: false);
 }
@@ -2043,7 +2059,8 @@ String _medicationAdministrationTitle(
 ) {
   final String? prescriptionId = medication.prescriptionId?.trim();
   if (prescriptionId != null && prescriptionId.isNotEmpty) {
-    for (final MedicationSuggestion suggestion in detail.medicationSuggestions) {
+    for (final MedicationSuggestion suggestion
+        in detail.medicationSuggestions) {
       if (suggestion.id == prescriptionId) {
         return suggestion.displayTitle;
       }
@@ -2115,7 +2132,8 @@ List<AppCareTaskChecklistItem> _admissionChecklistItems(
     );
   }
 
-  final bool locationReady = summary.locationLabel != null || summary.hasActiveBed;
+  final bool locationReady =
+      summary.locationLabel != null || summary.hasActiveBed;
   final bool handoverReady = detail.handovers.any(
     (NursingHandover item) => item.admissionId == summary.admissionId,
   );
@@ -2241,16 +2259,34 @@ List<AppWardActivityEntry> _activityEntries(
 
 List<AppSearchBarFieldChoice> _worklistSearchFields(AppLocalizations l10n) {
   return <AppSearchBarFieldChoice>[
-    AppSearchBarFieldChoice(field: 'patient', label: l10n.opdPatientColumnLabel),
-    AppSearchBarFieldChoice(field: 'admission', label: l10n.nursingAdmissionColumnLabel),
-    AppSearchBarFieldChoice(field: 'encounter', label: l10n.nursingEncounterLabel),
+    AppSearchBarFieldChoice(
+      field: 'patient',
+      label: l10n.opdPatientColumnLabel,
+    ),
+    AppSearchBarFieldChoice(
+      field: 'admission',
+      label: l10n.nursingAdmissionColumnLabel,
+    ),
+    AppSearchBarFieldChoice(
+      field: 'encounter',
+      label: l10n.nursingEncounterLabel,
+    ),
     AppSearchBarFieldChoice(field: 'ward', label: l10n.patientsWardLabel),
     AppSearchBarFieldChoice(field: 'room', label: l10n.patientsRoomLabel),
     AppSearchBarFieldChoice(field: 'bed', label: l10n.nursingBedLabel),
-    AppSearchBarFieldChoice(field: 'observation', label: l10n.nursingObservationsTitle),
-    AppSearchBarFieldChoice(field: 'task_type', label: l10n.nursingTaskTypeColumnLabel),
+    AppSearchBarFieldChoice(
+      field: 'observation',
+      label: l10n.nursingObservationsTitle,
+    ),
+    AppSearchBarFieldChoice(
+      field: 'task_type',
+      label: l10n.nursingTaskTypeColumnLabel,
+    ),
     AppSearchBarFieldChoice(field: 'status', label: l10n.opdStatusColumnLabel),
-    AppSearchBarFieldChoice(field: 'priority', label: l10n.nursingPriorityColumnLabel),
+    AppSearchBarFieldChoice(
+      field: 'priority',
+      label: l10n.nursingPriorityColumnLabel,
+    ),
   ];
 }
 
@@ -2530,6 +2566,8 @@ String _scopeCode(NursingQueueScope scope) {
   };
 }
 
+const String _nursingDocumentsTypeGroupLabel = 'Documents';
+
 List<AppSelectOption<String>> _statusOptions(List<String> values) {
   return <AppSelectOption<String>>[
     for (final String value in values)
@@ -2594,13 +2632,15 @@ IconData _timelineIcon(String type) {
 
 String _admissionLabel(BuildContext context, NursingPatientSummary item) {
   return _joinDisplay(<String?>[
-    item.admissionId,
-    item.admissionStatus == null ? null : _apiLabel(item.admissionStatus!),
-  ]).trim().isEmpty
+        item.admissionId,
+        item.admissionStatus == null ? null : _apiLabel(item.admissionStatus!),
+      ]).trim().isEmpty
       ? context.l10n.profileUnknownValue
       : _joinDisplay(<String?>[
           item.admissionId,
-          item.admissionStatus == null ? null : _apiLabel(item.admissionStatus!),
+          item.admissionStatus == null
+              ? null
+              : _apiLabel(item.admissionStatus!),
         ]);
 }
 
@@ -2629,9 +2669,7 @@ AppWorkspaceStatus _priorityStatus(
       label: l10n.nursingPriorityMediumLabel,
       tone: AppWorkspaceStatusTone.warning,
     ),
-    _ => AppWorkspaceStatus(
-      label: l10n.nursingPriorityRoutineLabel,
-    ),
+    _ => AppWorkspaceStatus(label: l10n.nursingPriorityRoutineLabel),
   };
 }
 
@@ -2744,4 +2782,3 @@ const List<String> _transferActions = <String>[
   'COMPLETE',
   'CANCEL',
 ];
-

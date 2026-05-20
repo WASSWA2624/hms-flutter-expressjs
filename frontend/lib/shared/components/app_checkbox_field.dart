@@ -48,23 +48,26 @@ class AppCheckboxField extends StatelessWidget {
         Widget content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            CheckboxListTile(
-              value: field.value ?? false,
-              onChanged: canChange
-                  ? (bool? newValue) {
-                      final bool resolvedValue = newValue ?? false;
-                      field.didChange(resolvedValue);
-                      onChanged?.call(resolvedValue);
-                    }
-                  : null,
-              title: Text(title),
-              subtitle: subtitle == null ? null : Text(subtitle!),
-              secondary: secondary,
-              enabled: canChange,
-              dense: true,
-              visualDensity: VisualDensity.compact,
-              contentPadding: contentPadding ?? EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
+            Material(
+              type: MaterialType.transparency,
+              child: CheckboxListTile(
+                value: field.value ?? false,
+                onChanged: canChange
+                    ? (bool? newValue) {
+                        final bool resolvedValue = newValue ?? false;
+                        field.didChange(resolvedValue);
+                        onChanged?.call(resolvedValue);
+                      }
+                    : null,
+                title: Text(title),
+                subtitle: subtitle == null ? null : Text(subtitle!),
+                secondary: secondary,
+                enabled: canChange,
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                contentPadding: contentPadding ?? EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
             ),
             if (field.errorText != null) ...<Widget>[
               SizedBox(height: theme.spacing.xs),

@@ -109,7 +109,7 @@ class _BillingWorkspaceContent extends ConsumerWidget {
 
     return <Widget>[
       AppWorkspaceSummaryCard(
-        label: 'Awaiting payment',
+        label: _BillingText.awaitingPayment,
         value: summary.pendingPayment.toString(),
         icon: Icons.payments_outlined,
         tone: AppWorkspaceStatusTone.warning,
@@ -117,21 +117,21 @@ class _BillingWorkspaceContent extends ConsumerWidget {
         onPressed: () => controller.applyQueue(BillingQueueType.pendingPayment),
       ),
       AppWorkspaceSummaryCard(
-        label: 'Partially paid',
+        label: _BillingText.partiallyPaid,
         value: state.partialPaidVisibleCount.toString(),
         icon: Icons.pie_chart_outline,
         tone: AppWorkspaceStatusTone.info,
         compact: true,
       ),
       AppWorkspaceSummaryCard(
-        label: 'Cleared visible',
+        label: _BillingText.clearedVisible,
         value: state.clearedVisibleCount.toString(),
         icon: Icons.verified_outlined,
         tone: AppWorkspaceStatusTone.success,
         compact: true,
       ),
       AppWorkspaceSummaryCard(
-        label: 'Refunds today',
+        label: _BillingText.refundsToday,
         value: AppFormatters.currency(
           summary.refundsTodayTotal,
           locale,
@@ -142,14 +142,14 @@ class _BillingWorkspaceContent extends ConsumerWidget {
         compact: true,
       ),
       AppWorkspaceSummaryCard(
-        label: 'Issue queue',
+        label: _BillingText.issueQueue,
         value: summary.needsIssue.toString(),
         icon: Icons.receipt_long_outlined,
         compact: true,
         onPressed: () => controller.applyQueue(BillingQueueType.needsIssue),
       ),
       AppWorkspaceSummaryCard(
-        label: 'Approvals',
+        label: _BillingText.approvals,
         value: summary.approvalRequired.toString(),
         icon: Icons.rule_outlined,
         compact: true,
@@ -157,7 +157,7 @@ class _BillingWorkspaceContent extends ConsumerWidget {
             controller.applyQueue(BillingQueueType.approvalRequired),
       ),
       AppWorkspaceSummaryCard(
-        label: 'Overdue',
+        label: _BillingText.overdue,
         value: summary.overdue.toString(),
         icon: Icons.warning_amber_outlined,
         tone: AppWorkspaceStatusTone.error,
@@ -165,7 +165,7 @@ class _BillingWorkspaceContent extends ConsumerWidget {
         onPressed: () => controller.applyQueue(BillingQueueType.overdue),
       ),
       AppWorkspaceSummaryCard(
-        label: 'Payments today',
+        label: _BillingText.paymentsToday,
         value: AppFormatters.currency(
           summary.paymentsTodayTotal,
           locale,
@@ -219,13 +219,13 @@ class _BillingFilterBarState extends ConsumerState<_BillingFilterBar> {
     return AppWorkspaceFilterBar(
       semanticLabel: 'Billing filters',
       expandSearch: true,
-      search: AppTextField(
+      search: AppSearchBar(
         controller: _searchController,
-        labelText: 'Search',
-        hintText: 'Invoice, patient, or reference',
-        prefixIcon: const Icon(Icons.search),
-        textInputAction: TextInputAction.search,
-        onFieldSubmitted: controller.applySearch,
+        semanticLabel: 'Search billing worklist',
+        hintText: _BillingText.searchHint,
+        clearLabel: 'Clear billing search',
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
       ),
       filters: <Widget>[
         AppSelectField<BillingQueueType>(
@@ -247,7 +247,7 @@ class _BillingFilterBarState extends ConsumerState<_BillingFilterBar> {
       ],
       actions: <Widget>[
         AppButton.tertiary(
-          label: 'Clear',
+          label: _BillingText.clear,
           leadingIcon: Icons.clear,
           onPressed: () => controller.applySearch(''),
         ),
@@ -291,7 +291,7 @@ class _BillingQueuePanel extends ConsumerWidget {
         },
         columns: <AppListTableColumn<BillingWorkItem>>[
           AppListTableColumn<BillingWorkItem>(
-            label: 'Patient',
+            label: _BillingText.patient,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return _TwoLineCell(
                 title: item.effectivePatientName,
@@ -303,34 +303,34 @@ class _BillingQueuePanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<BillingWorkItem>(
-            label: 'Status',
+            label: _BillingText.status,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return BillingGateBadge(state: item.clearanceState);
             },
           ),
           AppListTableColumn<BillingWorkItem>(
-            label: 'Amount',
+            label: _BillingText.amount,
             numeric: true,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.effectiveTotal, item.currency));
             },
           ),
           AppListTableColumn<BillingWorkItem>(
-            label: 'Paid',
+            label: _BillingText.paid,
             numeric: true,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.paidAmount, item.currency));
             },
           ),
           AppListTableColumn<BillingWorkItem>(
-            label: 'Balance',
+            label: _BillingText.balance,
             numeric: true,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_money(context, item.balanceDue, item.currency));
             },
           ),
           AppListTableColumn<BillingWorkItem>(
-            label: 'Updated',
+            label: _BillingText.updated,
             cellBuilder: (BuildContext context, BillingWorkItem item) {
               return Text(_dateTime(context, item.timelineAt));
             },
@@ -373,7 +373,7 @@ class _BillingDetailPanel extends ConsumerWidget {
       description: selected.effectiveDisplayId,
       actions: <Widget>[
         AppReportActionButton.download(
-          label: 'Invoice',
+          label: _BillingText.invoice,
           enabled: selected.isInvoice,
           tooltip: selected.isInvoice
               ? 'Generated invoice document is available from the backend.'
@@ -427,23 +427,23 @@ class _BillingDetailBody extends ConsumerWidget {
           ),
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
-              label: 'Invoice',
+              label: _BillingText.invoice,
               value: item.effectiveDisplayId,
               icon: Icons.receipt_long_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: 'Status',
+              label: _BillingText.status,
               value: _apiLabel(item.billingStatus ?? item.status),
               icon: Icons.flag_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: 'Paid',
+              label: _BillingText.paid,
               value: _money(context, item.paidAmount, item.currency),
               icon: Icons.payments_outlined,
               tone: AppWorkspaceStatusTone.success,
             ),
             AppWorkspacePatientContextField(
-              label: 'Balance',
+              label: _BillingText.balance,
               value: _money(context, item.balanceDue, item.currency),
               icon: Icons.account_balance_wallet_outlined,
               tone: item.balanceDue <= 0
@@ -479,38 +479,38 @@ class _BillingActionBar extends ConsumerWidget {
     return AppActionList(
       actions: <AppActionItem>[
         AppActionItem(
-          label: 'Receive payment',
+          label: _BillingText.receivePayment,
           leadingIcon: Icons.point_of_sale,
           enabled: item.canReceivePayment && !isSaving,
           variant: AppActionVariant.primary,
           onPressed: () => _showPaymentDialog(context, ref, item),
         ),
         AppActionItem(
-          label: 'Issue',
+          label: _BillingText.issue,
           leadingIcon: Icons.outbox_outlined,
           enabled: item.canIssue && !isSaving,
           onPressed: () => _showIssueDialog(context, ref),
         ),
         AppActionItem(
-          label: 'Refund',
+          label: _BillingText.refund,
           leadingIcon: Icons.assignment_return_outlined,
           enabled: item.canRequestRefund && !isSaving,
           onPressed: () => _showRefundDialog(context, ref, item),
         ),
         AppActionItem(
-          label: 'Adjust',
+          label: _BillingText.adjust,
           leadingIcon: Icons.tune,
           enabled: item.canRequestAdjustment && !isSaving,
           onPressed: () => _showAdjustmentDialog(context, ref, item),
         ),
         AppActionItem(
-          label: 'Void',
+          label: _BillingText.voidAction,
           leadingIcon: Icons.block_outlined,
           enabled: item.canRequestVoid && !isSaving,
           onPressed: () => _showVoidDialog(context, ref),
         ),
         AppActionItem(
-          label: 'Send',
+          label: _BillingText.send,
           leadingIcon: Icons.send_outlined,
           enabled: !isSaving,
           onPressed: () => _showSendDialog(context, ref),
@@ -537,13 +537,13 @@ class _CashierClosePanel extends ConsumerWidget {
         runSpacing: Theme.of(context).spacing.sm,
         actions: <AppActionItem>[
           AppActionItem(
-            label: 'Close shift',
+            label: _BillingText.closeShift,
             leadingIcon: Icons.schedule_send_outlined,
             enabled: canWrite && !isSaving,
             onPressed: () => _showShiftCloseDialog(context, ref),
           ),
           AppActionItem(
-            label: 'Close day',
+            label: _BillingText.closeDay,
             leadingIcon: Icons.today_outlined,
             enabled: canWrite && !isSaving,
             onPressed: () => _showDayCloseDialog(context, ref),
@@ -584,7 +584,7 @@ class _InvoiceLineItemsSection extends StatelessWidget {
     if (item.items.isEmpty) {
       return const _DetailSection(
         title: 'Line items',
-        child: Text('No line items returned for this invoice.'),
+        child: Text(_BillingText.noLineItems),
       );
     }
 
@@ -614,7 +614,7 @@ class _PaymentsSection extends StatelessWidget {
     if (item.payments.isEmpty) {
       return const _DetailSection(
         title: 'Payments',
-        child: Text('No payments recorded for this invoice.'),
+        child: Text(_BillingText.noPayments),
       );
     }
 
@@ -651,7 +651,7 @@ class _AdjustmentsSection extends StatelessWidget {
     if (item.adjustments.isEmpty) {
       return const _DetailSection(
         title: 'Adjustments',
-        child: Text('No billing adjustments recorded.'),
+        child: Text(_BillingText.noAdjustments),
       );
     }
 
@@ -867,12 +867,12 @@ class _PaymentFormState extends State<_PaymentForm> {
         AppReportSummaryGrid(
           records: <AppReportSummaryItem>[
             AppReportSummaryItem(
-              label: 'Invoice',
+              label: _BillingText.invoice,
               value: widget.item.effectiveDisplayId,
               icon: Icons.receipt_long_outlined,
             ),
             AppReportSummaryItem(
-              label: 'Due',
+              label: _BillingText.due,
               value: _money(
                 context,
                 widget.item.balanceDue,
@@ -908,12 +908,12 @@ class _PaymentFormState extends State<_PaymentForm> {
         AppTextField(
           controller: _referenceController,
           labelText: 'Reference',
-          hintText: 'Mobile money, card, or bank reference',
+          hintText: _BillingText.paymentReferenceHint,
         ),
         AppTextField(
           controller: _payerController,
           labelText: 'Payer',
-          hintText: 'Patient, sponsor, insurer, or contact',
+          hintText: _BillingText.payerHint,
         ),
         AppCheckboxField(
           title: 'Generate receipt after payment',
@@ -1094,10 +1094,16 @@ class _AdjustmentFormState extends State<_AdjustmentForm> {
           value: _status,
           labelText: 'Applied status',
           options: const <AppSelectOption<String>>[
-            AppSelectOption<String>(value: 'ISSUED', label: 'Issued'),
-            AppSelectOption<String>(value: 'PARTIAL', label: 'Partial'),
-            AppSelectOption<String>(value: 'PAID', label: 'Paid'),
-            AppSelectOption<String>(value: 'DRAFT', label: 'Draft'),
+            AppSelectOption<String>(
+              value: 'ISSUED',
+              label: _BillingText.issued,
+            ),
+            AppSelectOption<String>(
+              value: 'PARTIAL',
+              label: _BillingText.partial,
+            ),
+            AppSelectOption<String>(value: 'PAID', label: _BillingText.paid),
+            AppSelectOption<String>(value: 'DRAFT', label: _BillingText.draft),
           ],
           onChanged: (String? value) {
             if (value != null) {
@@ -1333,7 +1339,7 @@ Future<void> _showPaymentDialog(
 ) async {
   final BillingPaymentDraft? draft = await showAppWorkspaceActionDialog(
     context: context,
-    title: const Text('Receive payment'),
+    title: const Text(_BillingText.receivePayment),
     icon: const Icon(Icons.point_of_sale),
     content: _PaymentForm(item: item),
   );
@@ -1356,7 +1362,7 @@ Future<void> _showRefundDialog(
 ) async {
   final BillingRefundDraft? draft = await showAppWorkspaceActionDialog(
     context: context,
-    title: const Text('Request refund'),
+    title: const Text(_BillingText.requestRefund),
     icon: const Icon(Icons.assignment_return_outlined),
     content: _RefundForm(item: item),
   );
@@ -1379,7 +1385,7 @@ Future<void> _showAdjustmentDialog(
 ) async {
   final BillingAdjustmentDraft? draft = await showAppWorkspaceActionDialog(
     context: context,
-    title: const Text('Request adjustment'),
+    title: const Text(_BillingText.requestAdjustment),
     icon: const Icon(Icons.tune),
     content: _AdjustmentForm(item: item),
   );
@@ -1398,7 +1404,7 @@ Future<void> _showAdjustmentDialog(
 Future<void> _showVoidDialog(BuildContext context, WidgetRef ref) async {
   final Map<String, String?>? payload = await showAppWorkspaceActionDialog(
     context: context,
-    title: const Text('Void invoice'),
+    title: const Text(_BillingText.voidInvoice),
     icon: const Icon(Icons.block_outlined),
     content: const _ReasonForm(
       submitLabel: 'Request void',
@@ -1423,7 +1429,7 @@ Future<void> _showVoidDialog(BuildContext context, WidgetRef ref) async {
 Future<void> _showIssueDialog(BuildContext context, WidgetRef ref) async {
   final String? notes = await showAppWorkspaceActionDialog(
     context: context,
-    title: const Text('Issue invoice'),
+    title: const Text(_BillingText.issueInvoice),
     icon: const Icon(Icons.outbox_outlined),
     content: const _NotesForm(submitLabel: 'Issue'),
   );
@@ -1442,7 +1448,7 @@ Future<void> _showIssueDialog(BuildContext context, WidgetRef ref) async {
 Future<void> _showSendDialog(BuildContext context, WidgetRef ref) async {
   final String? recipientEmail = await showAppWorkspaceActionDialog(
     context: context,
-    title: const Text('Send invoice'),
+    title: const Text(_BillingText.sendInvoice),
     icon: const Icon(Icons.send_outlined),
     content: const _NotesForm(submitLabel: 'Send', email: true),
   );
@@ -1461,7 +1467,7 @@ Future<void> _showSendDialog(BuildContext context, WidgetRef ref) async {
 Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {
   final BillingCloseDraft? draft = await showAppWorkspaceActionDialog(
     context: context,
-    title: const Text('Close shift'),
+    title: const Text(_BillingText.closeShift),
     icon: const Icon(Icons.schedule_send_outlined),
     content: const _CloseForm(title: 'Close shift', shiftClose: true),
   );
@@ -1480,7 +1486,7 @@ Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {
 Future<void> _showDayCloseDialog(BuildContext context, WidgetRef ref) async {
   final BillingCloseDraft? draft = await showAppWorkspaceActionDialog(
     context: context,
-    title: const Text('Close day'),
+    title: const Text(_BillingText.closeDay),
     icon: const Icon(Icons.today_outlined),
     content: const _CloseForm(title: 'Close day', shiftClose: false),
   );
@@ -1519,6 +1525,49 @@ String _queueLabel(BillingQueueType queue) {
     BillingQueueType.approvalRequired => 'Approval required',
     BillingQueueType.overdue => 'Overdue',
   };
+}
+
+abstract final class _BillingText {
+  static const String adjust = 'Adjust';
+  static const String amount = 'Amount';
+  static const String approvals = 'Approvals';
+  static const String awaitingPayment = 'Awaiting payment';
+  static const String balance = 'Balance';
+  static const String clear = 'Clear';
+  static const String clearedVisible = 'Cleared visible';
+  static const String closeDay = 'Close day';
+  static const String closeShift = 'Close shift';
+  static const String draft = 'Draft';
+  static const String due = 'Due';
+  static const String invoice = 'Invoice';
+  static const String issue = 'Issue';
+  static const String issued = 'Issued';
+  static const String issueInvoice = 'Issue invoice';
+  static const String issueQueue = 'Issue queue';
+  static const String noAdjustments = 'No billing adjustments recorded.';
+  static const String noLineItems = 'No line items returned for this invoice.';
+  static const String noPayments = 'No payments recorded for this invoice.';
+  static const String overdue = 'Overdue';
+  static const String paid = 'Paid';
+  static const String partiallyPaid = 'Partially paid';
+  static const String partial = 'Partial';
+  static const String patient = 'Patient';
+  static const String payerHint = 'Patient, sponsor, insurer, or contact';
+  static const String paymentReferenceHint =
+      'Mobile money, card, or bank reference';
+  static const String paymentsToday = 'Payments today';
+  static const String receivePayment = 'Receive payment';
+  static const String refund = 'Refund';
+  static const String refundsToday = 'Refunds today';
+  static const String requestAdjustment = 'Request adjustment';
+  static const String requestRefund = 'Request refund';
+  static const String searchHint = 'Invoice, patient, or reference';
+  static const String send = 'Send';
+  static const String sendInvoice = 'Send invoice';
+  static const String status = 'Status';
+  static const String updated = 'Updated';
+  static const String voidAction = 'Void';
+  static const String voidInvoice = 'Void invoice';
 }
 
 String _clearanceLabel(BillingClearanceState state) {

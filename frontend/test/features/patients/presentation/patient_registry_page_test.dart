@@ -197,13 +197,13 @@ void main() {
     expect(find.text('Age / sex'), findsOneWidget);
     expect(find.text('Phone / ID'), findsOneWidget);
     expect(find.text('Alerts'), findsOneWidget);
-    expect(find.text('Visit'), findsOneWidget);
-    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Visit'), findsNothing);
+    expect(find.text('Next action'), findsNothing);
     expect(find.text('PAT-1001'), findsOneWidget);
     expect(find.textContaining('Female'), findsOneWidget);
     expect(find.text('Penicillin - Severe'), findsOneWidget);
-    expect(find.text('OPD - In Progress'), findsOneWidget);
-    expect(find.text('Open record'), findsOneWidget);
+    expect(find.text('OPD - In Progress'), findsNothing);
+    expect(find.text('Open record'), findsNothing);
   });
 
   testWidgets('EmergencyPatientFormDialog surfaces submit failures', (

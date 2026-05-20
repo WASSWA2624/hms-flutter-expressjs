@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
+import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 typedef AppListTableCellBuilder<T> =
@@ -21,6 +22,8 @@ typedef AppListTableHeaderBuilder = Widget Function(BuildContext context);
 typedef AppListTableSearchMatcher<T> = bool Function(T item, String query);
 
 enum AppListTableDisplayMode { adaptive, table, list }
+
+const int _maxVisibleTableColumns = 5;
 
 @immutable
 final class AppListTableSearch<T> {
@@ -313,7 +316,11 @@ class AppListTable<T> extends StatelessWidget {
 
     final bool compact = _usesCompactTableLayout(constraints);
     final double minColumnWidth = compact ? 128 : 148;
-    return math.max(constraints.maxWidth, columns.length * minColumnWidth);
+    final int visibleColumnCount = math.min(
+      columns.length,
+      _maxVisibleTableColumns,
+    );
+    return math.max(constraints.maxWidth, visibleColumnCount * minColumnWidth);
   }
 
   List<T> _filteredItems(
@@ -737,7 +744,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   void initState() {
     super.initState();
     _horizontalController = ScrollController();
-    _visibleColumns = List<AppListTableColumn<T>>.from(widget.columns);
+    _visibleColumns = <AppListTableColumn<T>>[];
+    _syncVisibleColumns();
   }
 
   @override
@@ -768,13 +776,15 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final double rowMinHeight = widget.compact ? 38 : 40;
     final double rowMaxHeight = widget.compact ? 56 : 64;
     final List<AppListTableColumn<T>> visibleColumns = _effectiveColumns;
-    final List<AppListTableColumn<T>> columnChoices = _columnChoices;
+    final List<AppListTableColumn<T>> columnChoices = _canSwapColumns
+        ? _columnChoices
+        : <AppListTableColumn<T>>[];
 
     final Widget table = DataTable(
       showCheckboxColumn: false,
       horizontalMargin: horizontalMargin,
       columnSpacing: columnSpacing,
-      headingRowHeight: widget.compact ? 38 : 42,
+      headingRowHeight: widget.compact ? 52 : 56,
       dataRowMinHeight: rowMinHeight,
       dataRowMaxHeight: rowMaxHeight,
       headingTextStyle: theme.textTheme.labelMedium?.copyWith(
@@ -796,10 +806,11 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               choices: columnChoices,
               onSelected: (AppListTableColumn<T> replacement) {
                 setState(() {
-                  _visibleColumns = List<AppListTableColumn<T>>.from(
+                  _visibleColumns = _replaceVisibleColumn(
                     visibleColumns,
+                    index,
+                    replacement,
                   );
-                  _visibleColumns[index] = replacement;
                 });
               },
             ),
@@ -841,8 +852,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   }
 
   List<AppListTableColumn<T>> get _effectiveColumns {
-    if (_visibleColumns.length == widget.columns.length &&
-        _visibleColumns.isNotEmpty) {
+    if (_visibleColumns.isNotEmpty) {
       return _visibleColumns;
     }
     if (widget.columns.isEmpty) {
@@ -865,18 +875,37 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     return choices.isEmpty ? widget.columns : choices;
   }
 
+  bool get _canSwapColumns {
+    return widget.columnChoices != null ||
+        widget.columns.length > _maxVisibleTableColumns;
+  }
+
   void _syncVisibleColumns() {
     final List<AppListTableColumn<T>> choices = _columnChoices;
     final List<AppListTableColumn<T>> next = <AppListTableColumn<T>>[];
-    for (var index = 0; index < widget.columns.length; index += 1) {
+    for (
+      var index = 0;
+      index < widget.columns.length && next.length < _maxVisibleTableColumns;
+      index += 1
+    ) {
       final String? previousLabel = index < _visibleColumns.length
           ? _visibleColumns[index].label
           : null;
-      next.add(
-        _columnByLabel(choices, previousLabel) ??
-            _columnByLabel(choices, widget.columns[index].label) ??
-            widget.columns[index],
-      );
+      final AppListTableColumn<T> candidate =
+          _columnByLabel(choices, previousLabel) ??
+          _columnByLabel(choices, widget.columns[index].label) ??
+          widget.columns[index];
+      if (!_containsColumnLabel(next, candidate.label)) {
+        next.add(candidate);
+      }
+    }
+    for (final AppListTableColumn<T> column in choices) {
+      if (next.length >= _maxVisibleTableColumns) {
+        break;
+      }
+      if (!_containsColumnLabel(next, column.label)) {
+        next.add(column);
+      }
     }
     _visibleColumns = next;
   }
@@ -894,6 +923,32 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       }
     }
     return null;
+  }
+
+  bool _containsColumnLabel(List<AppListTableColumn<T>> columns, String label) {
+    return columns.any((AppListTableColumn<T> column) => column.label == label);
+  }
+
+  List<AppListTableColumn<T>> _replaceVisibleColumn(
+    List<AppListTableColumn<T>> visibleColumns,
+    int index,
+    AppListTableColumn<T> replacement,
+  ) {
+    final List<AppListTableColumn<T>> next = List<AppListTableColumn<T>>.from(
+      visibleColumns,
+    );
+    if (index < 0 ||
+        index >= next.length ||
+        next[index].label == replacement.label) {
+      return next;
+    }
+
+    if (_containsColumnLabel(next, replacement.label)) {
+      return next;
+    }
+
+    next[index] = replacement;
+    return next;
   }
 
   WidgetStateProperty<Color?>? _rowColor(BuildContext context, T item) {
@@ -934,54 +989,48 @@ class _ColumnSwapHeader<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Widget label =
-        column.headerBuilder?.call(context) ?? Text(column.label);
     if (choices.length <= 1) {
-      return label;
+      return column.headerBuilder?.call(context) ?? Text(column.label);
     }
 
     final Set<String> visibleLabels = visibleColumns
         .where((AppListTableColumn<T> item) => item.label != column.label)
         .map((AppListTableColumn<T> item) => item.label)
         .toSet();
+    final double width = AppBreakpoints.of(context) == AppBreakpoint.md
+        ? 152
+        : 176;
 
-    return PopupMenuButton<AppListTableColumn<T>>(
-      tooltip: column.tooltip ?? column.label,
-      onSelected: onSelected,
-      itemBuilder: (BuildContext context) =>
-          <PopupMenuEntry<AppListTableColumn<T>>>[
-        for (final AppListTableColumn<T> choice in choices)
-          PopupMenuItem<AppListTableColumn<T>>(
-            value: choice,
-            enabled:
-                choice.label == column.label ||
-                !visibleLabels.contains(choice.label),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(
-                  choice.label == column.label
-                      ? Icons.check_circle_outline
-                      : Icons.view_column_outlined,
-                  size: theme.appTokens.listIconSize,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Flexible(child: Text(choice.label)),
-              ],
+    return SizedBox(
+      width: width,
+      child: AppSelectField<AppListTableColumn<T>>.searchable(
+        value: column,
+        semanticLabel: column.tooltip ?? column.label,
+        menuHeight: 320,
+        allowClear: false,
+        options: <AppSelectOption<AppListTableColumn<T>>>[
+          for (final AppListTableColumn<T> choice in choices)
+            AppSelectOption<AppListTableColumn<T>>(
+              value: choice,
+              label: choice.label,
+              enabled:
+                  choice.label == column.label ||
+                  !visibleLabels.contains(choice.label),
+              leadingIcon: Icon(
+                choice.label == column.label
+                    ? Icons.check_circle_outline
+                    : Icons.view_column_outlined,
+                size: theme.appTokens.listIconSize,
+              ),
             ),
-          ),
-      ],
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          label,
-          SizedBox(width: theme.spacing.xs),
-          Icon(
-            Icons.arrow_drop_down,
-            size: theme.appTokens.listIconSize,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
         ],
+        onChanged: (AppListTableColumn<T>? replacement) {
+          if (replacement != null &&
+              replacement.label != column.label &&
+              !visibleLabels.contains(replacement.label)) {
+            onSelected(replacement);
+          }
+        },
       ),
     );
   }

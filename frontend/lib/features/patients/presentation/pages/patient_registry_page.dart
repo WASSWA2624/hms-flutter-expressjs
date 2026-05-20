@@ -463,26 +463,6 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
       semanticLabel: l10n.patientsFiltersLabel,
       expandSearch: true,
       search: _buildSearchField(context),
-      actions: <Widget>[
-        AppIconButton(
-          icon: Icons.tune,
-          semanticLabel: l10n.patientsAdvancedFiltersAction,
-          tooltip: l10n.patientsAdvancedFiltersAction,
-          color: _hasAdvancedFilters
-              ? Theme.of(context).colorScheme.primary
-              : null,
-          onPressed: () {
-            _openAdvancedFilters(context);
-          },
-        ),
-        if (_hasAdvancedFilters)
-          AppIconButton(
-            icon: Icons.filter_alt_off_outlined,
-            semanticLabel: l10n.patientsClearFiltersAction,
-            tooltip: l10n.patientsClearFiltersAction,
-            onPressed: _clear,
-          ),
-      ],
     );
   }
 
@@ -494,6 +474,15 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
       semanticLabel: l10n.patientsSearchLabel,
       hintText: l10n.patientsSearchHint,
       clearLabel: l10n.patientsClearFiltersAction,
+      onClear: () {
+        unawaited(_apply());
+      },
+      showAdvancedFilterButton: true,
+      advancedFilterButtonLabel: l10n.patientsAdvancedFiltersAction,
+      hasActiveFilters: _hasAdvancedFilters,
+      onAdvancedFilterPressed: () {
+        _openAdvancedFilters(context);
+      },
     );
   }
 
@@ -606,34 +595,6 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
     final AppFailure? failure = await ref
         .read(patientRegistryControllerProvider.notifier)
         .applyQuery(nextQuery);
-    if (mounted) {
-      await _showFailureIfNeeded(context, failure);
-    }
-  }
-
-  Future<void> _clear() async {
-    widget.searchController.clear();
-    _patientIdController.clear();
-    _contactController.clear();
-    setState(() {
-      _facilityId = null;
-      _gender = null;
-      _status = null;
-      _consentState = null;
-      _appointmentStatus = null;
-      _visitDate = null;
-      _visitFrom = null;
-      _visitTo = null;
-      _createdFrom = null;
-      _createdTo = null;
-      _dateOfBirthFrom = null;
-      _dateOfBirthTo = null;
-      _hasActiveAdmission = null;
-      _hasOutstandingBalance = null;
-    });
-    final AppFailure? failure = await ref
-        .read(patientRegistryControllerProvider.notifier)
-        .applyQuery(const PatientListQuery());
     if (mounted) {
       await _showFailureIfNeeded(context, failure);
     }
@@ -1461,9 +1422,15 @@ class _AgeSexText extends StatelessWidget {
         ? l10n.profileUnknownValue
         : _genderLabel(l10n, patient.gender!);
 
-    return Text('$age / $sex', maxLines: 1, overflow: TextOverflow.ellipsis);
+    return Text(
+      _ageSexLabel(age, sex),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
   }
 }
+
+String _ageSexLabel(String age, String sex) => '$age / $sex';
 
 class _PatientContactIdentifierCell extends StatelessWidget {
   const _PatientContactIdentifierCell({required this.patient});

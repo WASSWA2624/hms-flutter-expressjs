@@ -195,13 +195,13 @@ class _TheaterFilterBarState extends ConsumerState<_TheaterFilterBar> {
     return AppWorkspaceFilterBar(
       semanticLabel: l10n.theaterFiltersLabel,
       expandSearch: true,
-      search: AppTextField(
+      search: AppSearchBar(
         controller: _searchController,
-        labelText: l10n.theaterSearchLabel,
+        semanticLabel: l10n.theaterSearchLabel,
         hintText: l10n.theaterSearchHint,
-        prefixIcon: const Icon(Icons.search),
-        textInputAction: TextInputAction.search,
-        onFieldSubmitted: controller.applySearch,
+        clearLabel: l10n.theaterClearFiltersAction,
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
       ),
       filters: <Widget>[
         AppDateField(
@@ -845,7 +845,11 @@ class _StatusLine extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           AppWorkspaceStatusBadge(
-            status: AppWorkspaceStatus(label: '', tone: tone, icon: icon),
+            status: AppWorkspaceStatus(
+              label: _emptyTheaterStatusLabel,
+              tone: tone,
+              icon: icon,
+            ),
           ),
           SizedBox(width: theme.spacing.sm),
           Expanded(
@@ -2014,6 +2018,8 @@ String _caseStatusLabel(AppLocalizations l10n, String? status) {
     _ => l10n.profileUnknownValue,
   };
 }
+
+const String _emptyTheaterStatusLabel = '';
 
 String _stageLabel(AppLocalizations l10n, String? stage) {
   return switch ((stage ?? '').trim().toUpperCase()) {

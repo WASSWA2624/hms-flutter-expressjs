@@ -36,6 +36,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.enabled = true,
     this.isRequired = false,
     this.isLoading = false,
+    this.allowClear = true,
     this.searchable = false,
     this.filterCallback,
     this.searchCallback,
@@ -61,6 +62,7 @@ class AppSelectField<T> extends StatefulWidget {
     this.enabled = true,
     this.isRequired = false,
     this.isLoading = false,
+    this.allowClear = true,
     this.filterCallback,
     this.searchCallback,
     this.onSearchTextChanged,
@@ -84,6 +86,7 @@ class AppSelectField<T> extends StatefulWidget {
   final bool enabled;
   final bool isRequired;
   final bool isLoading;
+  final bool allowClear;
   final bool searchable;
   final FilterCallback<T>? filterCallback;
   final SearchCallback<T>? searchCallback;
@@ -150,6 +153,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 360.0);
         final bool canClear =
             canSelect &&
+            widget.allowClear &&
             widget.onChanged != null &&
             (widget.value != null || _hasControllerText);
         final Widget trailingIcon = widget.isLoading

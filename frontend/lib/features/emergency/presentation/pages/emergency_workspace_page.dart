@@ -104,7 +104,7 @@ class _EmergencyWorkspaceContentState
         requirement: _writeRequirement,
         builder: (BuildContext context, bool isAllowed) {
           return AppButton.primary(
-            label: 'Quick arrival',
+            label: _EmergencyText.quickArrival,
             leadingIcon: Icons.add_circle_outline,
             enabled: isAllowed,
             onPressed: () => _openQuickArrivalDialog(context),
@@ -115,7 +115,7 @@ class _EmergencyWorkspaceContentState
         AppIconButton(
           icon: Icons.refresh,
           semanticLabel: 'Refresh emergency board',
-          tooltip: 'Refresh',
+          tooltip: _EmergencyText.refresh,
           isLoading: state.isRefreshingBoard,
           onPressed: () async {
             final AppFailure? failure = await controller.refresh();
@@ -127,7 +127,7 @@ class _EmergencyWorkspaceContentState
       ],
       summaryCards: <Widget>[
         AppWorkspaceSummaryCard(
-          label: 'Active',
+          label: _EmergencyText.active,
           value: _countLabel(context, state.activeCount),
           icon: Icons.emergency_outlined,
           tone: AppWorkspaceStatusTone.info,
@@ -135,7 +135,7 @@ class _EmergencyWorkspaceContentState
           onPressed: () => controller.applyScope(EmergencyBoardScope.active),
         ),
         AppWorkspaceSummaryCard(
-          label: 'Critical',
+          label: _EmergencyText.critical,
           value: _countLabel(context, state.criticalCount),
           icon: Icons.priority_high_outlined,
           tone: AppWorkspaceStatusTone.error,
@@ -143,7 +143,7 @@ class _EmergencyWorkspaceContentState
           onPressed: () => controller.applyScope(EmergencyBoardScope.critical),
         ),
         AppWorkspaceSummaryCard(
-          label: 'Ambulance',
+          label: _EmergencyText.ambulance,
           value: _countLabel(context, state.ambulanceCount),
           icon: Icons.airport_shuttle_outlined,
           tone: AppWorkspaceStatusTone.warning,
@@ -151,7 +151,7 @@ class _EmergencyWorkspaceContentState
           onPressed: () => controller.applyScope(EmergencyBoardScope.ambulance),
         ),
         AppWorkspaceSummaryCard(
-          label: 'Handoff',
+          label: _EmergencyText.handoff,
           value: _countLabel(context, state.handoffCount),
           icon: Icons.output_outlined,
           tone: AppWorkspaceStatusTone.success,
@@ -165,7 +165,7 @@ class _EmergencyWorkspaceContentState
         search: AppSearchBar(
           controller: _searchController,
           semanticLabel: 'Search emergency cases',
-          hintText: 'Search patient, case, ambulance, or status',
+          hintText: _EmergencyText.searchHint,
           onSubmitted: controller.applySearch,
           onClear: () => controller.applySearch(''),
         ),
@@ -243,37 +243,37 @@ class _EmergencyBoardPanel extends ConsumerWidget {
         ),
         columns: <AppListTableColumn<EmergencyCaseSummary>>[
           AppListTableColumn<EmergencyCaseSummary>(
-            label: 'Patient',
+            label: _EmergencyText.patient,
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return _EmergencyCaseCell(item: item);
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
-            label: 'Priority',
+            label: _EmergencyText.priority,
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return AppWorkspaceStatusBadge(status: _severityStatus(item));
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
-            label: 'Arrival',
+            label: _EmergencyText.arrival,
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(_dateTimeLabel(context, item.createdAt));
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
-            label: 'Response',
+            label: _EmergencyText.response,
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return AppWorkspaceStatusBadge(status: _responseStatus(item));
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
-            label: 'Location',
+            label: _EmergencyText.location,
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(item.currentLocation);
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
-            label: 'Next',
+            label: _EmergencyText.next,
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(item.nextAction);
             },
@@ -404,29 +404,29 @@ class _EmergencyDetailPanel extends ConsumerWidget {
               _triageStatus(detail.latestTriage!.triageLevel),
             if (summary.isOpen)
               const AppWorkspaceStatus(
-                label: 'Care before billing',
+                label: _EmergencyText.careBeforeBilling,
                 tone: AppWorkspaceStatusTone.info,
                 icon: Icons.bolt_outlined,
               ),
           ],
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
-              label: 'Case',
+              label: _EmergencyText.caseLabel,
               value: summary.caseLabel,
               icon: Icons.tag_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: 'Arrival',
+              label: _EmergencyText.arrival,
               value: _dateTimeLabel(context, summary.createdAt),
               icon: Icons.event_available_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: 'Facility',
+              label: _EmergencyText.facility,
               value: summary.facilityLabel ?? '',
               icon: Icons.domain_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: 'Location',
+              label: _EmergencyText.location,
               value: summary.currentLocation,
               icon: Icons.place_outlined,
             ),
@@ -478,43 +478,43 @@ class _EmergencyActionPanel extends ConsumerWidget {
           return AppActionList(
             actions: <AppActionItem>[
               AppActionItem(
-                label: 'Priority',
+                label: _EmergencyText.priority,
                 leadingIcon: Icons.priority_high_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openPriorityDialog(context),
               ),
               AppActionItem(
-                label: 'Triage',
+                label: _EmergencyText.triage,
                 leadingIcon: Icons.monitor_heart_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openTriageDialog(context),
               ),
               AppActionItem(
-                label: 'Response',
+                label: _EmergencyText.response,
                 leadingIcon: Icons.medical_services_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openResponseDialog(context),
               ),
               AppActionItem(
-                label: 'Dispatch',
+                label: _EmergencyText.dispatch,
                 leadingIcon: Icons.airport_shuttle_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openDispatchDialog(context, referenceData),
               ),
               AppActionItem(
-                label: 'Dispatch status',
+                label: _EmergencyText.dispatchStatus,
                 leadingIcon: Icons.route_outlined,
                 enabled: isAllowed && detail.summary.isOpen && hasDispatch,
                 onPressed: () => _openDispatchStatusDialog(context),
               ),
               AppActionItem(
-                label: 'Start trip',
+                label: _EmergencyText.startTrip,
                 leadingIcon: Icons.play_arrow_outlined,
                 enabled: isAllowed && detail.summary.isOpen && canStartTrip,
                 onPressed: () => _startTrip(context, referenceData),
               ),
               AppActionItem(
-                label: 'Complete trip',
+                label: _EmergencyText.completeTrip,
                 leadingIcon: Icons.flag_outlined,
                 enabled: isAllowed && hasTrip,
                 onPressed: () => _confirmAction(
@@ -527,7 +527,7 @@ class _EmergencyActionPanel extends ConsumerWidget {
                 ),
               ),
               AppActionItem(
-                label: 'Handoff',
+                label: _EmergencyText.handoff,
                 leadingIcon: Icons.output_outlined,
                 enabled: isAllowed && detail.summary.isOpen,
                 onPressed: () => _openHandoffDialog(context),
@@ -535,7 +535,7 @@ class _EmergencyActionPanel extends ConsumerWidget {
             ],
             extraActions: <Widget>[
               AppReportActionButton.print(
-                label: 'Print summary',
+                label: _EmergencyText.printSummary,
                 onPressed: () async {
                   await printFormTemplateDocument(
                     ref: ref,
@@ -544,19 +544,19 @@ class _EmergencyActionPanel extends ConsumerWidget {
                     subtitle: detail.summary.displayTitle,
                     metadata: <PrintFormMetadataItem>[
                       PrintFormMetadataItem(
-                        label: 'Case',
+                        label: _EmergencyText.caseLabel,
                         value: detail.summary.caseLabel,
                       ),
                       PrintFormMetadataItem(
-                        label: 'Severity',
+                        label: _EmergencyText.severity,
                         value: _apiLabel(detail.summary.severity ?? ''),
                       ),
                       PrintFormMetadataItem(
-                        label: 'Status',
+                        label: _EmergencyText.status,
                         value: _apiLabel(detail.summary.status ?? ''),
                       ),
                       PrintFormMetadataItem(
-                        label: 'Arrival',
+                        label: _EmergencyText.arrival,
                         value: _dateTimeLabel(
                           context,
                           detail.summary.createdAt,
@@ -816,7 +816,7 @@ class _EmergencyTimelinePanel extends StatelessWidget {
                   item.createdAt ??
                   DateTime.fromMillisecondsSinceEpoch(0),
               status: const AppWorkspaceStatus(
-                label: 'Responded',
+                label: _EmergencyText.responded,
                 tone: AppWorkspaceStatusTone.success,
               ),
             ),
@@ -1069,7 +1069,7 @@ class _QuickArrivalDialogState extends State<_QuickArrivalDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Quick emergency arrival'),
+      title: const Text(_EmergencyText.quickEmergencyArrival),
       icon: const Icon(Icons.emergency_outlined),
       scrollable: true,
       content: AppFormShell(
@@ -1131,11 +1131,11 @@ class _QuickArrivalDialogState extends State<_QuickArrivalDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: 'Cancel',
+          label: _EmergencyText.cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: 'Open case',
+          label: _EmergencyText.openCase,
           leadingIcon: Icons.add_circle_outline,
           onPressed: _submit,
         ),
@@ -1180,7 +1180,7 @@ class _PriorityDialogState extends State<_PriorityDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Update priority'),
+      title: const Text(_EmergencyText.updatePriority),
       icon: const Icon(Icons.priority_high_outlined),
       content: AppFormShell(
         formKey: _formKey,
@@ -1203,11 +1203,11 @@ class _PriorityDialogState extends State<_PriorityDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: 'Cancel',
+          label: _EmergencyText.cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: 'Update',
+          label: _EmergencyText.update,
           leadingIcon: Icons.save_outlined,
           onPressed: () {
             if (validateAndSaveAppForm(_formKey)) {
@@ -1248,7 +1248,7 @@ class _TriageDialogState extends State<_TriageDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Record triage'),
+      title: const Text(_EmergencyText.recordTriage),
       icon: const Icon(Icons.monitor_heart_outlined),
       scrollable: true,
       content: AppFormShell(
@@ -1279,11 +1279,11 @@ class _TriageDialogState extends State<_TriageDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: 'Cancel',
+          label: _EmergencyText.cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: 'Save triage',
+          label: _EmergencyText.saveTriage,
           leadingIcon: Icons.save_outlined,
           onPressed: _submit,
         ),
@@ -1324,7 +1324,7 @@ class _ResponseDialogState extends State<_ResponseDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Mark response'),
+      title: const Text(_EmergencyText.markResponse),
       icon: const Icon(Icons.medical_services_outlined),
       content: AppFormShell(
         formKey: _formKey,
@@ -1342,11 +1342,11 @@ class _ResponseDialogState extends State<_ResponseDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: 'Cancel',
+          label: _EmergencyText.cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: 'Mark response',
+          label: _EmergencyText.markResponse,
           leadingIcon: Icons.check_circle_outline,
           onPressed: () {
             if (validateAndSaveAppForm(_formKey)) {
@@ -1458,7 +1458,7 @@ class _DispatchDialogState extends State<_DispatchDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: 'Cancel',
+          label: _EmergencyText.cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
@@ -1504,7 +1504,7 @@ class _DispatchStatusDialogState extends State<_DispatchStatusDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Update dispatch status'),
+      title: const Text(_EmergencyText.updateDispatchStatus),
       icon: const Icon(Icons.route_outlined),
       content: AppFormShell(
         formKey: _formKey,
@@ -1527,11 +1527,11 @@ class _DispatchStatusDialogState extends State<_DispatchStatusDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: 'Cancel',
+          label: _EmergencyText.cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: 'Update',
+          label: _EmergencyText.update,
           leadingIcon: Icons.save_outlined,
           onPressed: () {
             if (validateAndSaveAppForm(_formKey)) {
@@ -1566,7 +1566,7 @@ class _HandoffDialogState extends State<_HandoffDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: const Text('Record handoff'),
+      title: const Text(_EmergencyText.recordHandoff),
       icon: const Icon(Icons.output_outlined),
       scrollable: true,
       content: AppFormShell(
@@ -1608,11 +1608,11 @@ class _HandoffDialogState extends State<_HandoffDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: 'Cancel',
+          label: _EmergencyText.cancel,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
-          label: 'Record handoff',
+          label: _EmergencyText.recordHandoff,
           leadingIcon: Icons.output_outlined,
           onPressed: _submit,
         ),
@@ -1686,70 +1686,146 @@ List<AppSelectOption<EmergencyBoardScope>> _scopeOptions() {
   return const <AppSelectOption<EmergencyBoardScope>>[
     AppSelectOption<EmergencyBoardScope>(
       value: EmergencyBoardScope.active,
-      label: 'Active',
+      label: _EmergencyText.active,
     ),
     AppSelectOption<EmergencyBoardScope>(
       value: EmergencyBoardScope.critical,
-      label: 'Critical',
+      label: _EmergencyText.critical,
     ),
     AppSelectOption<EmergencyBoardScope>(
       value: EmergencyBoardScope.ambulance,
-      label: 'Ambulance',
+      label: _EmergencyText.ambulance,
     ),
     AppSelectOption<EmergencyBoardScope>(
       value: EmergencyBoardScope.handoff,
-      label: 'Handoff',
+      label: _EmergencyText.handoff,
     ),
     AppSelectOption<EmergencyBoardScope>(
       value: EmergencyBoardScope.closed,
-      label: 'Closed',
+      label: _EmergencyText.closed,
     ),
     AppSelectOption<EmergencyBoardScope>(
       value: EmergencyBoardScope.all,
-      label: 'All',
+      label: _EmergencyText.all,
     ),
   ];
 }
 
 List<AppSelectOption<String>> _severityOptions() {
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: 'CRITICAL', label: 'Critical'),
-    AppSelectOption<String>(value: 'HIGH', label: 'High'),
-    AppSelectOption<String>(value: 'MEDIUM', label: 'Medium'),
-    AppSelectOption<String>(value: 'LOW', label: 'Low'),
+    AppSelectOption<String>(value: 'CRITICAL', label: _EmergencyText.critical),
+    AppSelectOption<String>(value: 'HIGH', label: _EmergencyText.high),
+    AppSelectOption<String>(value: 'MEDIUM', label: _EmergencyText.medium),
+    AppSelectOption<String>(value: 'LOW', label: _EmergencyText.low),
   ];
 }
 
 List<AppSelectOption<String>> _triageOptions() {
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: 'LEVEL_1', label: 'Level 1'),
-    AppSelectOption<String>(value: 'LEVEL_2', label: 'Level 2'),
-    AppSelectOption<String>(value: 'LEVEL_3', label: 'Level 3'),
-    AppSelectOption<String>(value: 'LEVEL_4', label: 'Level 4'),
-    AppSelectOption<String>(value: 'LEVEL_5', label: 'Level 5'),
+    AppSelectOption<String>(value: 'LEVEL_1', label: _EmergencyText.level1),
+    AppSelectOption<String>(value: 'LEVEL_2', label: _EmergencyText.level2),
+    AppSelectOption<String>(value: 'LEVEL_3', label: _EmergencyText.level3),
+    AppSelectOption<String>(value: 'LEVEL_4', label: _EmergencyText.level4),
+    AppSelectOption<String>(value: 'LEVEL_5', label: _EmergencyText.level5),
   ];
 }
 
 List<AppSelectOption<String>> _ambulanceStatusOptions() {
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: 'DISPATCHED', label: 'Dispatched'),
-    AppSelectOption<String>(value: 'EN_ROUTE', label: 'En route'),
-    AppSelectOption<String>(value: 'ON_SCENE', label: 'On scene'),
-    AppSelectOption<String>(value: 'TRANSPORTING', label: 'Transporting'),
-    AppSelectOption<String>(value: 'AVAILABLE', label: 'Available'),
-    AppSelectOption<String>(value: 'OUT_OF_SERVICE', label: 'Out of service'),
+    AppSelectOption<String>(
+      value: 'DISPATCHED',
+      label: _EmergencyText.dispatched,
+    ),
+    AppSelectOption<String>(value: 'EN_ROUTE', label: _EmergencyText.enRoute),
+    AppSelectOption<String>(value: 'ON_SCENE', label: _EmergencyText.onScene),
+    AppSelectOption<String>(
+      value: 'TRANSPORTING',
+      label: _EmergencyText.transporting,
+    ),
+    AppSelectOption<String>(
+      value: 'AVAILABLE',
+      label: _EmergencyText.available,
+    ),
+    AppSelectOption<String>(
+      value: 'OUT_OF_SERVICE',
+      label: _EmergencyText.outOfService,
+    ),
   ];
 }
 
 List<AppSelectOption<String>> _handoffOptions() {
   return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: 'OPD', label: 'OPD'),
-    AppSelectOption<String>(value: 'IPD', label: 'IPD'),
-    AppSelectOption<String>(value: 'ICU', label: 'ICU'),
-    AppSelectOption<String>(value: 'THEATER', label: 'Theater'),
-    AppSelectOption<String>(value: 'REFERRAL', label: 'Referral'),
-    AppSelectOption<String>(value: 'DISCHARGE', label: 'Discharge'),
+    AppSelectOption<String>(value: 'OPD', label: _EmergencyText.opd),
+    AppSelectOption<String>(value: 'IPD', label: _EmergencyText.ipd),
+    AppSelectOption<String>(value: 'ICU', label: _EmergencyText.icu),
+    AppSelectOption<String>(value: 'THEATER', label: _EmergencyText.theater),
+    AppSelectOption<String>(value: 'REFERRAL', label: _EmergencyText.referral),
+    AppSelectOption<String>(
+      value: 'DISCHARGE',
+      label: _EmergencyText.discharge,
+    ),
   ];
+}
+
+abstract final class _EmergencyText {
+  static const String active = 'Active';
+  static const String all = 'All';
+  static const String ambulance = 'Ambulance';
+  static const String arrival = 'Arrival';
+  static const String available = 'Available';
+  static const String cancel = 'Cancel';
+  static const String careBeforeBilling = 'Care before billing';
+  static const String caseLabel = 'Case';
+  static const String closed = 'Closed';
+  static const String completeTrip = 'Complete trip';
+  static const String critical = 'Critical';
+  static const String discharge = 'Discharge';
+  static const String dispatch = 'Dispatch';
+  static const String dispatched = 'Dispatched';
+  static const String dispatchStatus = 'Dispatch status';
+  static const String enRoute = 'En route';
+  static const String facility = 'Facility';
+  static const String handoff = 'Handoff';
+  static const String high = 'High';
+  static const String icu = 'ICU';
+  static const String ipd = 'IPD';
+  static const String level1 = 'Level 1';
+  static const String level2 = 'Level 2';
+  static const String level3 = 'Level 3';
+  static const String level4 = 'Level 4';
+  static const String level5 = 'Level 5';
+  static const String location = 'Location';
+  static const String low = 'Low';
+  static const String markResponse = 'Mark response';
+  static const String medium = 'Medium';
+  static const String next = 'Next';
+  static const String onScene = 'On scene';
+  static const String opd = 'OPD';
+  static const String openCase = 'Open case';
+  static const String outOfService = 'Out of service';
+  static const String patient = 'Patient';
+  static const String patientNumber = 'Patient no.';
+  static const String printSummary = 'Print summary';
+  static const String priority = 'Priority';
+  static const String quickArrival = 'Quick arrival';
+  static const String quickEmergencyArrival = 'Quick emergency arrival';
+  static const String recordHandoff = 'Record handoff';
+  static const String recordTriage = 'Record triage';
+  static const String referral = 'Referral';
+  static const String refresh = 'Refresh';
+  static const String responded = 'Responded';
+  static const String response = 'Response';
+  static const String saveTriage = 'Save triage';
+  static const String searchHint = 'Search patient, case, ambulance, or status';
+  static const String severity = 'Severity';
+  static const String startTrip = 'Start trip';
+  static const String status = 'Status';
+  static const String theater = 'Theater';
+  static const String transporting = 'Transporting';
+  static const String triage = 'Triage';
+  static const String update = 'Update';
+  static const String updateDispatchStatus = 'Update dispatch status';
+  static const String updatePriority = 'Update priority';
 }
 
 AppWorkspaceStatus _caseStatus(EmergencyCaseSummary item) {
@@ -1890,22 +1966,28 @@ String _emergencySummaryHtml(BuildContext context, EmergencyCaseDetail detail) {
   final StringBuffer buffer = StringBuffer()
     ..writeln(
       PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
-        PrintFormMetadataItem(label: 'Case', value: summary.caseLabel),
-        PrintFormMetadataItem(label: 'Patient', value: summary.displayTitle),
         PrintFormMetadataItem(
-          label: 'Patient no.',
+          label: _EmergencyText.caseLabel,
+          value: summary.caseLabel,
+        ),
+        PrintFormMetadataItem(
+          label: _EmergencyText.patient,
+          value: summary.displayTitle,
+        ),
+        PrintFormMetadataItem(
+          label: _EmergencyText.patientNumber,
           value: summary.patientDisplayId ?? summary.patientId ?? '',
         ),
         PrintFormMetadataItem(
-          label: 'Facility',
+          label: _EmergencyText.facility,
           value: summary.facilityLabel ?? '',
         ),
         PrintFormMetadataItem(
-          label: 'Arrival',
+          label: _EmergencyText.arrival,
           value: _dateTimeLabel(context, summary.createdAt),
         ),
         PrintFormMetadataItem(
-          label: 'Location',
+          label: _EmergencyText.location,
           value: summary.currentLocation,
         ),
       ]),

@@ -75,19 +75,22 @@ class AppRadioGroup<T> extends StatelessWidget {
                 SizedBox(height: theme.spacing.xs),
               ],
               for (final AppRadioOption<T> option in options)
-                RadioListTile<T>(
-                  value: option.value,
-                  enabled: canChange && option.enabled,
-                  title: Text(option.label),
-                  subtitle: option.description == null
-                      ? null
-                      : Text(option.description!),
-                  secondary: option.secondary,
-                  selected: field.value == option.value,
-                  dense: true,
-                  visualDensity: VisualDensity.compact,
-                  contentPadding: contentPadding ?? EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
+                Material(
+                  type: MaterialType.transparency,
+                  child: RadioListTile<T>(
+                    value: option.value,
+                    enabled: canChange && option.enabled,
+                    title: Text(option.label),
+                    subtitle: option.description == null
+                        ? null
+                        : Text(option.description!),
+                    secondary: option.secondary,
+                    selected: field.value == option.value,
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
+                    contentPadding: contentPadding ?? EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
                 ),
               if (field.errorText != null) ...<Widget>[
                 SizedBox(height: theme.spacing.xs),

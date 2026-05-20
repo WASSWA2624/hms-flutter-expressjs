@@ -3,7 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_icon_button.dart';
+import 'package:hosspi_hms/shared/components/app_logo.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/layout/responsive_spacing.dart';
@@ -62,6 +65,7 @@ class AppWorkspace extends StatelessWidget {
     required this.title,
     required this.body,
     this.status,
+    this.leading = const AppLogo(size: 36),
     this.primaryAction,
     this.secondaryActions = const <Widget>[],
     this.summaryCards = const <Widget>[],
@@ -77,6 +81,7 @@ class AppWorkspace extends StatelessWidget {
 
   final String title;
   final AppWorkspaceStatus? status;
+  final Widget? leading;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
   final List<Widget> summaryCards;
@@ -101,6 +106,7 @@ class AppWorkspace extends StatelessWidget {
       AppWorkspaceHeader(
         title: title,
         status: status,
+        leading: leading,
         primaryAction: primaryAction,
         secondaryActions: secondaryActions,
       ),
@@ -156,6 +162,7 @@ class AppWorkspaceHeader extends StatelessWidget {
   const AppWorkspaceHeader({
     required this.title,
     this.status,
+    this.leading,
     this.primaryAction,
     this.secondaryActions = const <Widget>[],
     super.key,
@@ -163,6 +170,7 @@ class AppWorkspaceHeader extends StatelessWidget {
 
   final String title;
   final AppWorkspaceStatus? status;
+  final Widget? leading;
   final Widget? primaryAction;
   final List<Widget> secondaryActions;
 
@@ -172,11 +180,15 @@ class AppWorkspaceHeader extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final List<Widget> actions = <Widget>[...secondaryActions, ?primaryAction];
-    final Widget titleBlock = _WorkspaceHeaderText(
+    final Widget titleBlock = _WorkspaceHeaderTitle(
+      leading: leading,
       title: title,
       status: status,
     );
-    final Widget actionBar = _WorkspaceHeaderActions(actions: actions);
+    final Widget actionBar = _WorkspaceHeaderActions(
+      actions: actions,
+      expandIconButtons: true,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -197,7 +209,8 @@ class AppWorkspaceHeader extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: <Widget>[
                   SizedBox(width: constraints.maxWidth, child: titleBlock),
-                  if (actions.isNotEmpty) actionBar,
+                  if (actions.isNotEmpty)
+                    SizedBox(width: constraints.maxWidth, child: actionBar),
                 ],
               );
             }
@@ -874,6 +887,8 @@ class AppWorkspaceFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final bool hasSupplementalControls =
+        filters.isNotEmpty || actions.isNotEmpty;
 
     return SizedBox(
       width: double.infinity,
@@ -889,6 +904,15 @@ class AppWorkspaceFilterBar extends StatelessWidget {
             padding: EdgeInsets.all(theme.spacing.xs),
             child: LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
+                if (hasSupplementalControls) {
+                  return _CleanFilterBar(
+                    search: search,
+                    filters: filters,
+                    actions: actions,
+                    title: semanticLabel,
+                  );
+                }
+
                 if (constraints.maxWidth < 480) {
                   return _MobileFilterBar(
                     search: search,
@@ -1979,11 +2003,16 @@ class _WorkspaceDrawerActions extends StatelessWidget {
   }
 }
 
-class _WorkspaceHeaderText extends StatelessWidget {
-  const _WorkspaceHeaderText({required this.title, required this.status});
+class _WorkspaceHeaderTitle extends StatelessWidget {
+  const _WorkspaceHeaderTitle({
+    required this.title,
+    required this.status,
+    required this.leading,
+  });
 
   final String title;
   final AppWorkspaceStatus? status;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -1997,6 +2026,44 @@ class _WorkspaceHeaderText extends StatelessWidget {
       AppBreakpoint.md => textTheme.titleLarge,
       _ => textTheme.headlineSmall,
     };
+    final Widget text = _WorkspaceHeaderText(
+      title: title,
+      status: status,
+      titleStyle: titleStyle,
+      colorScheme: colorScheme,
+    );
+
+    if (leading == null) {
+      return text;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        leading!,
+        SizedBox(width: theme.spacing.sm),
+        Expanded(child: text),
+      ],
+    );
+  }
+}
+
+class _WorkspaceHeaderText extends StatelessWidget {
+  const _WorkspaceHeaderText({
+    required this.title,
+    required this.status,
+    required this.titleStyle,
+    required this.colorScheme,
+  });
+
+  final String title;
+  final AppWorkspaceStatus? status;
+  final TextStyle? titleStyle;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -2046,19 +2113,151 @@ class _WorkspaceHeaderText extends StatelessWidget {
 }
 
 class _WorkspaceHeaderActions extends StatelessWidget {
-  const _WorkspaceHeaderActions({required this.actions});
+  const _WorkspaceHeaderActions({
+    required this.actions,
+    this.expandIconButtons = false,
+  });
 
+  final List<Widget> actions;
+  final bool expandIconButtons;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool showIconLabels =
+        expandIconButtons &&
+        switch (breakpoint) {
+          AppBreakpoint.xs || AppBreakpoint.sm || AppBreakpoint.md => false,
+          _ => true,
+        };
+
+    return Wrap(
+      spacing: theme.spacing.xs,
+      runSpacing: theme.spacing.xs,
+      alignment: WrapAlignment.end,
+      children: <Widget>[
+        for (final Widget action in actions)
+          _WorkspaceHeaderAction(action: action, showIconLabel: showIconLabels),
+      ],
+    );
+  }
+}
+
+class _WorkspaceHeaderAction extends StatelessWidget {
+  const _WorkspaceHeaderAction({
+    required this.action,
+    required this.showIconLabel,
+  });
+
+  final Widget action;
+  final bool showIconLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget item = action;
+    if (!showIconLabel || item is! AppIconButton) {
+      return item;
+    }
+
+    return AppButton.secondary(
+      label: item.semanticLabel,
+      leadingIcon: item.icon,
+      enabled: item.enabled,
+      isLoading: item.isLoading,
+      tooltip: item.tooltip,
+      autofocus: item.autofocus,
+      onPressed: item.onPressed,
+    );
+  }
+}
+
+class _CleanFilterBar extends StatelessWidget {
+  const _CleanFilterBar({
+    required this.search,
+    required this.filters,
+    required this.actions,
+    required this.title,
+  });
+
+  final Widget? search;
+  final List<Widget> filters;
+  final List<Widget> actions;
+  final String? title;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String dialogTitle = title == null || title!.trim().isEmpty
+        ? 'Filters'
+        : title!;
+    final Widget filterButton = AppIconButton(
+      icon: Icons.tune,
+      semanticLabel: dialogTitle,
+      tooltip: dialogTitle,
+      onPressed: () {
+        showAppDialog<void>(
+          context: context,
+          builder: (_) => _WorkspaceFilterDialog(
+            title: dialogTitle,
+            filters: filters,
+            actions: actions,
+          ),
+        );
+      },
+    );
+
+    if (search == null) {
+      return Align(alignment: Alignment.centerRight, child: filterButton);
+    }
+
+    return Row(
+      children: <Widget>[
+        Expanded(child: search!),
+        SizedBox(width: theme.spacing.xs),
+        filterButton,
+      ],
+    );
+  }
+}
+
+class _WorkspaceFilterDialog extends StatelessWidget {
+  const _WorkspaceFilterDialog({
+    required this.title,
+    required this.filters,
+    required this.actions,
+  });
+
+  final String title;
+  final List<Widget> filters;
   final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Wrap(
-      spacing: theme.spacing.xs,
-      runSpacing: theme.spacing.xs,
-      alignment: WrapAlignment.end,
-      children: actions,
+    return AppDialog(
+      title: Text(title),
+      icon: const Icon(Icons.tune),
+      scrollable: true,
+      maxWidth: 640,
+      content: filters.isEmpty
+          ? const SizedBox.shrink()
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (
+                  var index = 0;
+                  index < filters.length;
+                  index += 1
+                ) ...<Widget>[
+                  if (index > 0) SizedBox(height: theme.spacing.md),
+                  filters[index],
+                ],
+              ],
+            ),
+      actions: actions,
     );
   }
 }

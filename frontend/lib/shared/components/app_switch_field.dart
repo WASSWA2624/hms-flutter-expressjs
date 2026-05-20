@@ -48,20 +48,23 @@ class AppSwitchField extends StatelessWidget {
         Widget content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            SwitchListTile(
-              value: field.value ?? false,
-              onChanged: canChange
-                  ? (bool newValue) {
-                      field.didChange(newValue);
-                      onChanged?.call(newValue);
-                    }
-                  : null,
-              title: Text(title),
-              subtitle: subtitle == null ? null : Text(subtitle!),
-              secondary: secondary,
-              dense: true,
-              visualDensity: VisualDensity.compact,
-              contentPadding: contentPadding ?? EdgeInsets.zero,
+            Material(
+              type: MaterialType.transparency,
+              child: SwitchListTile(
+                value: field.value ?? false,
+                onChanged: canChange
+                    ? (bool newValue) {
+                        field.didChange(newValue);
+                        onChanged?.call(newValue);
+                      }
+                    : null,
+                title: Text(title),
+                subtitle: subtitle == null ? null : Text(subtitle!),
+                secondary: secondary,
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                contentPadding: contentPadding ?? EdgeInsets.zero,
+              ),
             ),
             if (field.errorText != null) ...<Widget>[
               SizedBox(height: theme.spacing.xs),

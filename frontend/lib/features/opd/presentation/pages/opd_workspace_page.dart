@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,10 +80,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   final ValueNotifier<_OpdTableFilter> _filterNotifier =
       ValueNotifier<_OpdTableFilter>(const _OpdTableFilter());
   late final TextEditingController _searchController;
-  final ValueNotifier<List<_OpdTableColumnId>> _columnNotifier =
-      ValueNotifier<List<_OpdTableColumnId>>(
-        List<_OpdTableColumnId>.unmodifiable(_defaultOpdTableColumns),
-      );
   final ValueNotifier<AppPageRequest> _tablePageNotifier =
       ValueNotifier<AppPageRequest>(const AppPageRequest(pageSize: 12));
 
@@ -101,7 +96,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       ..removeListener(_resetTablePage)
       ..dispose();
     _filterNotifier.dispose();
-    _columnNotifier.dispose();
     _tablePageNotifier.dispose();
     super.dispose();
   }
@@ -266,29 +260,17 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       body: ValueListenableBuilder<_OpdTableFilter>(
         valueListenable: _filterNotifier,
         builder: (BuildContext context, _OpdTableFilter filter, _) {
-          return ValueListenableBuilder<List<_OpdTableColumnId>>(
-            valueListenable: _columnNotifier,
+          return ValueListenableBuilder<AppPageRequest>(
+            valueListenable: _tablePageNotifier,
             builder:
-                (BuildContext context, List<_OpdTableColumnId> columns, _) {
-                  return ValueListenableBuilder<AppPageRequest>(
-                    valueListenable: _tablePageNotifier,
-                    builder:
-                        (
-                          BuildContext context,
-                          AppPageRequest tablePageRequest,
-                          _,
-                        ) {
-                          return _OpdWorkspaceBody(
-                            state: state,
-                            filter: filter,
-                            searchController: _searchController,
-                            columns: columns,
-                            pageRequest: tablePageRequest,
-                            onColumnsChanged: _setColumns,
-                            onPageChanged: _setTablePage,
-                            onFilterChanged: _setFilter,
-                          );
-                        },
+                (BuildContext context, AppPageRequest tablePageRequest, _) {
+                  return _OpdWorkspaceBody(
+                    state: state,
+                    filter: filter,
+                    searchController: _searchController,
+                    pageRequest: tablePageRequest,
+                    onPageChanged: _setTablePage,
+                    onFilterChanged: _setFilter,
                   );
                 },
           );
@@ -303,14 +285,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     }
     _filterNotifier.value = filter;
     _tablePageNotifier.value = _tablePageNotifier.value.first();
-  }
-
-  void _setColumns(List<_OpdTableColumnId> columns) {
-    final List<_OpdTableColumnId> normalized = _normalizeTableColumns(columns);
-    if (listEquals(_columnNotifier.value, normalized)) {
-      return;
-    }
-    _columnNotifier.value = List<_OpdTableColumnId>.unmodifiable(normalized);
   }
 
   void _setTablePage(AppPageRequest request) {
@@ -827,9 +801,7 @@ class _OpdWorkspaceBody extends StatelessWidget {
     required this.state,
     required this.filter,
     required this.searchController,
-    required this.columns,
     required this.pageRequest,
-    required this.onColumnsChanged,
     required this.onPageChanged,
     required this.onFilterChanged,
   });
@@ -837,9 +809,7 @@ class _OpdWorkspaceBody extends StatelessWidget {
   final OpdWorkspaceState state;
   final _OpdTableFilter filter;
   final TextEditingController searchController;
-  final List<_OpdTableColumnId> columns;
   final AppPageRequest pageRequest;
-  final ValueChanged<List<_OpdTableColumnId>> onColumnsChanged;
   final ValueChanged<AppPageRequest> onPageChanged;
   final ValueChanged<_OpdTableFilter> onFilterChanged;
 
@@ -856,8 +826,6 @@ class _OpdWorkspaceBody extends StatelessWidget {
       filter: filter,
       filterItems: allItems,
       statuses: _tableStatuses(allItems),
-      columns: columns,
-      onColumnsChanged: onColumnsChanged,
       onPageChanged: onPageChanged,
       onFilterChanged: onFilterChanged,
       isLoading:
@@ -2029,26 +1997,6 @@ List<_OpdTableColumnId> _normalizeTableColumns(
   return normalized;
 }
 
-List<_OpdTableColumnId> _replaceTableColumn(
-  List<_OpdTableColumnId> columns,
-  int index,
-  _OpdTableColumnId column,
-) {
-  final List<_OpdTableColumnId> next = _normalizeTableColumns(
-    columns,
-  ).toList(growable: true);
-  if (index < 0 || index >= next.length || next[index] == column) {
-    return next;
-  }
-
-  final int existingIndex = next.indexOf(column);
-  if (existingIndex >= 0) {
-    next[existingIndex] = next[index];
-  }
-  next[index] = column;
-  return _normalizeTableColumns(next);
-}
-
 String _opdTableColumnLabel(BuildContext context, _OpdTableColumnId column) {
   final l10n = context.l10n;
   return switch (column) {
@@ -2065,22 +2013,12 @@ String _opdTableColumnLabel(BuildContext context, _OpdTableColumnId column) {
 
 AppListTableColumn<_OpdTableItem> _opdDataColumn(
   BuildContext context,
-  List<_OpdTableColumnId> selectedColumns,
-  int index,
-  ValueChanged<List<_OpdTableColumnId>> onColumnsChanged,
+  _OpdTableColumnId column,
 ) {
-  final _OpdTableColumnId column = selectedColumns[index];
   final String label = _opdTableColumnLabel(context, column);
 
   return AppListTableColumn<_OpdTableItem>(
     label: label,
-    headerBuilder: (BuildContext context) => _OpdColumnHeader(
-      column: column,
-      selectedColumns: selectedColumns,
-      onChanged: (_OpdTableColumnId value) {
-        onColumnsChanged(_replaceTableColumn(selectedColumns, index, value));
-      },
-    ),
     cellBuilder: (BuildContext context, _OpdTableItem item) {
       return switch (column) {
         _OpdTableColumnId.patient => AppListItemText(
@@ -2134,7 +2072,7 @@ enum _OpdTableColumnId {
   nextStep,
 }
 
-const int _maxOpdTableColumns = 8;
+const int _maxOpdTableColumns = 5;
 const int _defaultUrgencyRank = 99;
 final DateTime _unknownArrivalTime = DateTime(9999);
 
@@ -2142,9 +2080,9 @@ const List<_OpdTableColumnId> _defaultOpdTableColumns = <_OpdTableColumnId>[
   _OpdTableColumnId.patient,
   _OpdTableColumnId.visitType,
   _OpdTableColumnId.queueStatus,
-  _OpdTableColumnId.provider,
   _OpdTableColumnId.payerBilling,
   _OpdTableColumnId.waitingTime,
+  _OpdTableColumnId.provider,
   _OpdTableColumnId.arrivalTime,
   _OpdTableColumnId.nextStep,
 ];
@@ -2159,51 +2097,6 @@ const List<_OpdTableColumnId> _availableOpdTableColumns = <_OpdTableColumnId>[
   _OpdTableColumnId.arrivalTime,
   _OpdTableColumnId.nextStep,
 ];
-
-class _OpdColumnHeader extends StatelessWidget {
-  const _OpdColumnHeader({
-    required this.column,
-    required this.selectedColumns,
-    required this.onChanged,
-  });
-
-  final _OpdTableColumnId column;
-  final List<_OpdTableColumnId> selectedColumns;
-  final ValueChanged<_OpdTableColumnId> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final String label = _opdTableColumnLabel(context, column);
-
-    return PopupMenuButton<_OpdTableColumnId>(
-      tooltip: label,
-      padding: EdgeInsets.zero,
-      onSelected: onChanged,
-      itemBuilder: (BuildContext context) {
-        return <PopupMenuEntry<_OpdTableColumnId>>[
-          for (final _OpdTableColumnId option in _availableOpdTableColumns)
-            if (option == column || !selectedColumns.contains(option))
-              CheckedPopupMenuItem<_OpdTableColumnId>(
-                value: option,
-                checked: option == column,
-                child: Text(_opdTableColumnLabel(context, option)),
-              ),
-        ];
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Flexible(
-            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-          SizedBox(width: theme.spacing.xs),
-          Icon(Icons.arrow_drop_down, size: theme.appTokens.listIconSize),
-        ],
-      ),
-    );
-  }
-}
 
 int _categorySort(String category) {
   return switch (category) {
@@ -2250,8 +2143,6 @@ class _OpdMainTable extends ConsumerWidget {
     required this.filter,
     required this.filterItems,
     required this.statuses,
-    required this.columns,
-    required this.onColumnsChanged,
     required this.onPageChanged,
     required this.onFilterChanged,
     required this.isLoading,
@@ -2262,8 +2153,6 @@ class _OpdMainTable extends ConsumerWidget {
   final _OpdTableFilter filter;
   final List<_OpdTableItem> filterItems;
   final List<String> statuses;
-  final List<_OpdTableColumnId> columns;
-  final ValueChanged<List<_OpdTableColumnId>> onColumnsChanged;
   final ValueChanged<AppPageRequest> onPageChanged;
   final ValueChanged<_OpdTableFilter> onFilterChanged;
   final bool isLoading;
@@ -2272,7 +2161,7 @@ class _OpdMainTable extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final List<_OpdTableColumnId> visibleColumns = _normalizeTableColumns(
-      columns,
+      _defaultOpdTableColumns,
     );
 
     return SizedBox(
@@ -2289,8 +2178,12 @@ class _OpdMainTable extends ConsumerWidget {
           minHeight: 260,
         ),
         columns: <AppListTableColumn<_OpdTableItem>>[
-          for (int index = 0; index < visibleColumns.length; index += 1)
-            _opdDataColumn(context, visibleColumns, index, onColumnsChanged),
+          for (final _OpdTableColumnId column in visibleColumns)
+            _opdDataColumn(context, column),
+        ],
+        columnChoices: <AppListTableColumn<_OpdTableItem>>[
+          for (final _OpdTableColumnId column in _availableOpdTableColumns)
+            _opdDataColumn(context, column),
         ],
         onRowSelected: (_OpdTableItem item) =>
             _openTableItemActions(context, item),
@@ -6127,18 +6020,21 @@ class ReferralDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ClinicalReferralActionDialog(
-      onSubmit: ({
-        required String externalFacilityName,
-        required String reason,
-        required String notes,
-      }) {
-        return ref.read(opdWorkspaceControllerProvider.notifier).createReferral(
-              flow: flow,
-              externalFacilityName: externalFacilityName,
-              reason: reason,
-              notes: notes,
-            );
-      },
+      onSubmit:
+          ({
+            required String externalFacilityName,
+            required String reason,
+            required String notes,
+          }) {
+            return ref
+                .read(opdWorkspaceControllerProvider.notifier)
+                .createReferral(
+                  flow: flow,
+                  externalFacilityName: externalFacilityName,
+                  reason: reason,
+                  notes: notes,
+                );
+          },
     );
   }
 }
