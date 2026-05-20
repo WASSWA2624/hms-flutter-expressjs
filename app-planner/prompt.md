@@ -1,107 +1,101 @@
 You are working on the HOSSPI Hospital Management System codebase.
 
-Before implementing, review the current app-planner, backend, frontend, and screenshots. Align the changes with the existing implementation and UI patterns. The frontend currently uses shared workspace, search, table, dialog, button, and status components. Reuse or extend shared components where possible instead of duplicating page-specific logic.
+Before implementing, review the current app-planner, backend, frontend, and latest screenshots. Align the changes with the existing implementation and UI patterns.
 
 Goal:
-Standardize the listed workspace pages by adding missing table settings controls, enabling requested ascending/descending table-header sorting, expanding selected worklists to the full page width, moving selected-record detail panels into modal dialogs, and removing the specified extra sections.
+Make the table areas more uniform by using the table’s built-in search toolbar where requested, and by adding missing table titles/descriptions where requested also ensure the ascending/descending functionalities exist on the column headers.
 
 General instructions:
-- Keep existing behavior unless a change is explicitly listed below.
-- Use existing shared components such as AppWorkspace, AppWorkspaceFilterBar, AppSearchBar, AppListTable, AppListTableColumn, AppDialog/showAppDialog, AppButton, AppIconButton, and existing status/detail widgets where applicable.
-- Move reusable changes into shared components when the same behavior is needed across multiple pages.
-- Do not change the Clinical workspace.
-- Do not change the Setup workspace except for the one specified section removal.
+- Preserve existing behavior unless a change is explicitly listed below.
+- Reuse existing shared table/search components instead of creating page-specific duplicate search bars.
+- Where a page is changed to use the table’s built-in search bar, remove the separate standalone search bar above the table and pass the existing search configuration into the table component.
+- Keep the existing search placeholder text, filter behavior, settings behavior, row selection behavior, dialogs, sorting, columns, summary cards, and header actions unless explicitly changed below.
+- The built-in table search bar should appear inside the table/list section, directly above the table headers, matching the current Nursing and Clinical table pattern.
+- Use the existing table title/description pattern for pages where a table title and description are requested.
+- Do not change the Nursing page.
 
 Page-specific changes:
 
 1. Patients page
-- Add the table settings button beside the existing advanced filter control in the search bar.
-- Add ascending/descending sorting on the table column headers.
+- Keep the current patient screen layout.
+- Add a table title and brief table description above the patient table.
+- Do not change the current patient search bar, advanced filter, table settings button, sorting, columns, or row behavior.
 
 2. Billing page
-- Add the table settings button beside the advanced filter control in the search bar.
-- Make the billing worklist/table span the full available page width.
-- Remove the right-side Invoice detail panel.
-- Show invoice/billing item details in a modal dialog when a billing row is selected.
-- Remove the Cashier close section from the main body.
-- Move the Close shift and Close day actions into the page header.
-- When Close shift or Close day is clicked, open the existing relevant modal/dialog for that action.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Billing worklist/table section.
+- Keep the existing advanced filter and table settings controls as part of the table search area.
+- Keep the existing Billing worklist title and description.
+- Do not change the current header actions, summary cards, columns, row behavior, or detail dialog behavior.
 
 3. Claims page
-- Add the table settings button beside the advanced filter control in the search bar.
-- Make the Claims worklist span the full available page width.
-- Remove the right-side Claim detail panel.
-- Show claim details in a modal dialog when a claim row is selected.
-- Remove the backend gaps section from the page.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Claims worklist section.
+- The built-in table search bar must include the existing filter control and table settings button.
+- Keep the existing Claims worklist title and description.
+- Do not change the current header actions, summary cards, columns, row behavior, or detail dialog behavior.
 
 4. OPD page
-- Add ascending/descending sorting on the OPD table column headers.
+- Keep the current table search behavior.
+- Add a table title and brief table description above the OPD table.
+- Do not change the current search controls, sorting, columns, or row behavior.
 
 5. Emergency page
-- Add the table settings button beside the advanced filter control in the search bar.
-- Make the Emergency board table span the full available page width.
-- Remove the right-side selected-case/no-case panel.
-- Show selected emergency case details in a modal dialog.
-- Add ascending/descending sorting on the table column headers.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Emergency board section.
+- Keep the existing search controls currently used on the page.
+- Keep the existing Emergency board title and description.
+- Do not change the current summary cards, columns, sorting, row behavior, or detail dialog behavior.
 
 6. IPD page
-- Add the table settings button beside the advanced filter control in the search bar.
-- Make the Inpatient board table span the full available page width.
-- Move the admission detail/selected admission view into a modal dialog opened from row selection.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Inpatient board section.
+- Keep the existing search controls currently used on the page.
+- Keep the existing Inpatient board title and description.
+- Do not change the current summary cards, columns, row behavior, empty state, or detail dialog behavior.
 
 7. ICU page
-- Make the ICU board table span the full available page width.
-- Move the selected ICU patient/stay detail view into a modal dialog opened from row selection.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the ICU board section.
+- Keep the existing search controls currently used on the page.
+- Keep the existing ICU board title and description.
+- Do not change the current summary cards, columns, row behavior, empty state, or detail dialog behavior.
 
 8. Nursing page
-- Keep the current layout.
-- Add ascending/descending sorting on the table column headers.
+- Leave the Nursing page unchanged.
 
 9. Clinical page
-- Leave the Clinical workspace unchanged.
+- Keep the current Clinical layout and table search behavior.
+- Add a table title and brief table description above the Clinical table.
+- Do not change the current search controls, columns, row selection, sorting, or row highlighting behavior.
 
 10. Lab page
-- Make the Lab queue table span the full available page width.
-- Move Lab detail into a modal dialog opened from row selection.
-- Add the table settings button beside the filter control in the search bar.
-- Remove the Catalog and QC section from the page.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Lab queue section.
+- Keep the existing search controls currently used on the page.
+- Keep the existing Lab queue title and description.
+- Do not change the current header actions, summary cards, columns, row behavior, or detail dialog behavior.
 
 11. Radiology page
-- Add the table settings button beside the filter control in the search bar.
-- Make the Imaging worklist span the full available page width.
-- Move the Radiology workflow/detail view into a modal dialog opened from row selection.
-- Remove the backend gaps section from the page.
-- Deduplicate the Refresh catalog and Refresh buttons so only one refresh action remains.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Imaging worklist section.
+- Keep the existing search controls currently used on the page.
+- Keep the existing Imaging worklist title and description.
+- Do not change the current header actions, summary cards, columns, row behavior, or detail dialog behavior.
 
 12. Pharmacy page
-- Add the table settings button beside the filter control in the search bar.
-- Make the Order queue span the full available page width.
-- Add ascending/descending sorting on the order queue table column headers.
-- Move the prescription/detail section into a modal dialog opened from row selection.
-- Remove the Formulary and Stock section from the main page.
-- Move Formulary/Stock access to a simple header button that opens it in a nested screen/view.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Order queue section.
+- Keep the existing search controls currently used on the page.
+- Keep the existing Order queue title and description.
+- Do not change the current header actions, summary cards, columns, sorting, row behavior, or detail dialog behavior.
 
 13. Discharge page
-- Add the table settings button beside the filter control in the search bar.
-- Make the Discharge worklist span the full available page width.
-- Move the discharge detail view into a modal dialog opened from row selection.
-- Remove the backend gaps section from the page.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Discharge worklist section.
+- Keep the existing search controls currently used on the page.
+- Keep the existing Discharge worklist title and description.
+- Do not change the current header actions, summary cards, columns, row behavior, or detail dialog behavior.
 
 14. Theater page
-- Add the table settings button to the search bar.
-- Make the Daily cases section span the full available page width.
-- Move case detail into a modal dialog opened from row selection.
+- Replace the separate standalone search bar with the table’s built-in search bar inside the Daily cases section.
+- Keep the existing search controls currently used on the page.
+- Keep the existing Daily cases title and description.
+- Do not change the current header actions, summary cards, columns, row behavior, empty state, or detail dialog behavior.
 
-15. Settings page
-- Add the settings icon beside the Settings page title on the left.
-- Add a Refresh button in the page header.
-
-16. Tenant and facility setup page
-- Leave the page unchanged except for removing the section that says:
-  “Prepare the organization and facility before daily hospital operations begin.”
-
-Shared-component work:
-- Use the existing table/search components for table settings instead of building separate page-specific settings buttons.
-- Use the existing AppListTable sorting capability by adding sort comparators to the requested sortable columns.
-- Reuse existing detail panel/body widgets inside dialogs where possible.
-- Remove backend gaps sections wherever they are rendered by the affected workspace pages.
+Shared-component guidance:
+- Prefer configuring the existing table component with its built-in search, title, and description props instead of wrapping each table with separate search UI.
+- Avoid duplicate search bars on any page changed in this prompt.
+- Avoid duplicate filter/settings buttons after moving search into the table.
+- Keep visual spacing and alignment consistent with the current Nursing and Clinical table sections.
