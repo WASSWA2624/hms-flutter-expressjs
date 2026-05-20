@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
@@ -63,11 +65,15 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   );
 
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
+  _tableColumnController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
+    _tableColumnController =
+        AppListTableColumnVisibilityController<IpdAdmissionSummary>();
   }
 
   @override
@@ -82,6 +88,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   @override
   void dispose() {
     _searchController.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -171,6 +178,12 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
           hintText: l10n.ipdSearchHint,
           onSubmitted: controller.applySearch,
           onClear: () => controller.applySearch(''),
+          trailingActions: <AppSearchBarAction>[
+            _tableColumnController.settingsAction(
+              context,
+              label: 'Table settings',
+            ),
+          ],
         ),
         filters: <Widget>[
           AppSelectField<IpdQueueScope>(
@@ -198,19 +211,26 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
           ),
         ],
       ),
-      body: _IpdBoardPanel(state: state),
-      detail: _IpdDetailPanel(
+      body: _IpdBoardPanel(
         state: state,
         writeRequirement: _writeRequirement,
+        columnVisibilityController: _tableColumnController,
       ),
     );
   }
 }
 
 class _IpdBoardPanel extends ConsumerWidget {
-  const _IpdBoardPanel({required this.state});
+  const _IpdBoardPanel({
+    required this.state,
+    required this.writeRequirement,
+    required this.columnVisibilityController,
+  });
 
   final IpdWorkspaceState state;
+  final AccessRequirement writeRequirement;
+  final AppListTableColumnVisibilityController<IpdAdmissionSummary>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -225,6 +245,7 @@ class _IpdBoardPanel extends ConsumerWidget {
       child: AppListTable<IpdAdmissionSummary>(
         page: state.admissions,
         isLoading: state.isRefreshing,
+        columnVisibilityController: columnVisibilityController,
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<IpdAdmissionSummary> page) {
@@ -232,7 +253,15 @@ class _IpdBoardPanel extends ConsumerWidget {
         },
         onPageChanged: controller.changePage,
         onRowSelected: (IpdAdmissionSummary admission) {
-          controller.selectAdmission(admission);
+          unawaited(
+            _openIpdDetailDialog(
+              context,
+              ref,
+              state,
+              admission,
+              writeRequirement,
+            ),
+          );
         },
         emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
           title: l10n.ipdNoAdmissionsTitle,
@@ -510,6 +539,52 @@ class _IpdDetailPanel extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _openIpdDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  IpdWorkspaceState fallbackState,
+  IpdAdmissionSummary admission,
+  AccessRequirement writeRequirement,
+) async {
+  final IpdWorkspaceController controller = ref.read(
+    ipdWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectAdmission(admission);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final IpdWorkspaceState state = _readIpdState(ref) ?? fallbackState;
+  if (state.selectedAdmission == null) {
+    return;
+  }
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.ipdAdmissionDetailTitle),
+      icon: const Icon(Icons.bed_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _IpdDetailPanel(
+        state: state,
+        writeRequirement: writeRequirement,
+      ),
+    ),
+  );
+}
+
+IpdWorkspaceState? _readIpdState(WidgetRef ref) {
+  return ref
+      .read(ipdWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(success: (IpdWorkspaceState state) => state, failure: (_) => null);
 }
 
 class _IpdDetailActions extends ConsumerWidget {

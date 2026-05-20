@@ -89,11 +89,15 @@ class _ClaimsWorkspaceContent extends ConsumerStatefulWidget {
 class _ClaimsWorkspaceContentState
     extends ConsumerState<_ClaimsWorkspaceContent> {
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<ClaimsQueueItem>
+  _tableColumnController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
+    _tableColumnController =
+        AppListTableColumnVisibilityController<ClaimsQueueItem>();
   }
 
   @override
@@ -108,6 +112,7 @@ class _ClaimsWorkspaceContentState
   @override
   void dispose() {
     _searchController.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -225,6 +230,12 @@ class _ClaimsWorkspaceContentState
               _showFailureIfNeeded(context, failure);
             }
           },
+          trailingActions: <AppSearchBarAction>[
+            _tableColumnController.settingsAction(
+              context,
+              label: 'Table settings',
+            ),
+          ],
         ),
         filters: <Widget>[
           SizedBox(
@@ -245,17 +256,23 @@ class _ClaimsWorkspaceContentState
           ),
         ],
       ),
-      body: _ClaimsQueuePanel(state: state),
-      detail: _ClaimsDetailPanel(state: state),
-      activity: const _ClaimsBackendGapPanel(),
+      body: _ClaimsQueuePanel(
+        state: state,
+        columnVisibilityController: _tableColumnController,
+      ),
     );
   }
 }
 
 class _ClaimsQueuePanel extends ConsumerWidget {
-  const _ClaimsQueuePanel({required this.state});
+  const _ClaimsQueuePanel({
+    required this.state,
+    required this.columnVisibilityController,
+  });
 
   final ClaimsWorkspaceState state;
+  final AppListTableColumnVisibilityController<ClaimsQueueItem>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -272,6 +289,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
         child: AppListTable<ClaimsQueueItem>(
           page: state.queue,
           isLoading: state.isRefreshing,
+          columnVisibilityController: columnVisibilityController,
           previousPageLabel: l10n.claimsPreviousPageLabel,
           nextPageLabel: l10n.claimsNextPageLabel,
           pageLabelBuilder: (AppPage<ClaimsQueueItem> page) {
@@ -285,7 +303,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
             unawaited(controller.changePage(request));
           },
           onRowSelected: (ClaimsQueueItem item) {
-            unawaited(controller.selectItem(item));
+            unawaited(_openClaimsDetailDialog(context, ref, state, item));
           },
           emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
             title: l10n.claimsEmptyQueueTitle,
@@ -399,42 +417,38 @@ class _MobileQueueItem extends StatelessWidget {
   }
 }
 
-class _ClaimsDetailPanel extends ConsumerWidget {
-  const _ClaimsDetailPanel({required this.state});
+Future<void> _openClaimsDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  ClaimsWorkspaceState fallbackState,
+  ClaimsQueueItem item,
+) async {
+  final ClaimsWorkspaceController controller = ref.read(
+    claimsWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectItem(item);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
 
-  final ClaimsWorkspaceState state;
+  final ClaimsWorkspaceState state = _readClaimsState(ref) ?? fallbackState;
+  final ClaimsQueueDetail? detail = state.selectedDetail;
+  if (detail == null) {
+    return;
+  }
+  final AppLocalizations l10n = context.l10n;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final ClaimsQueueDetail? detail = state.selectedDetail;
-
-    if (state.isRefreshingDetail && detail == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.claimsDetailTitle,
-        child: AppWorkspaceStatePanel.loading(
-          title: l10n.claimsDetailLoadingTitle,
-          body: l10n.claimsDetailLoadingBody,
-          minHeight: 360,
-        ),
-      );
-    }
-
-    if (detail == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.claimsDetailTitle,
-        child: AppWorkspaceStatePanel.empty(
-          title: l10n.claimsNoSelectionTitle,
-          body: l10n.claimsNoSelectionBody,
-          icon: Icons.touch_app_outlined,
-          minHeight: 360,
-        ),
-      );
-    }
-
-    return AppWorkspaceDetailPanel(
-      title: l10n.claimsDetailTitle,
-      description: detail.item.displayId,
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(l10n.claimsDetailTitle),
+      icon: const Icon(Icons.fact_check_outlined),
+      scrollable: true,
+      maxWidth: 960,
+      content: _ClaimsDetailContent(state: state, detail: detail),
       actions: <Widget>[
         AppReportActionButton.print(
           label: l10n.claimsPrintStatementAction,
@@ -453,9 +467,19 @@ class _ClaimsDetailPanel extends ConsumerWidget {
           },
         ),
       ],
-      child: _ClaimsDetailContent(state: state, detail: detail),
-    );
-  }
+    ),
+  );
+}
+
+ClaimsWorkspaceState? _readClaimsState(WidgetRef ref) {
+  return ref
+      .read(claimsWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (ClaimsWorkspaceState state) => state,
+        failure: (_) => null,
+      );
 }
 
 class _ClaimsDetailContent extends ConsumerWidget {
@@ -714,40 +738,6 @@ class _InfoTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ClaimsBackendGapPanel extends StatelessWidget {
-  const _ClaimsBackendGapPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppWorkspaceActivityList(
-      title: l10n.claimsBackendGapTitle,
-      description: l10n.claimsBackendGapDescription,
-      items: <AppWorkspaceActivityItem>[
-        AppWorkspaceActivityItem(
-          title: l10n.claimsBackendGapDraftTitle,
-          subtitle: l10n.claimsBackendGapDraftBody,
-          icon: Icons.api_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-        AppWorkspaceActivityItem(
-          title: l10n.claimsBackendGapDocumentsTitle,
-          subtitle: l10n.claimsBackendGapDocumentsBody,
-          icon: Icons.description_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-        AppWorkspaceActivityItem(
-          title: l10n.claimsBackendGapReportsTitle,
-          subtitle: l10n.claimsBackendGapReportsBody,
-          icon: Icons.print_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-      ],
     );
   }
 }

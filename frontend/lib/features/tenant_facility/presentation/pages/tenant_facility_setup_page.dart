@@ -690,14 +690,9 @@ class _SetupBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _SetupDescriptionPanel(body: l10n.tenantFacilitySetupBody),
-        SizedBox(height: theme.spacing.md),
         _SetupGrid(
           children: <Widget>[
             _SetupChecklist(snapshot: snapshot),
@@ -708,47 +703,6 @@ class _SetupBody extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _SetupDescriptionPanel extends StatelessWidget {
-  const _SetupDescriptionPanel({required this.body});
-
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(
-              Icons.tune_outlined,
-              color: colorScheme.primary,
-              size: theme.appTokens.listIconSize,
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Text(
-                body,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

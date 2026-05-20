@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,11 +65,15 @@ class _EmergencyWorkspaceContentState
   );
 
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<EmergencyCaseSummary>
+  _tableColumnController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
+    _tableColumnController =
+        AppListTableColumnVisibilityController<EmergencyCaseSummary>();
   }
 
   @override
@@ -82,6 +88,7 @@ class _EmergencyWorkspaceContentState
   @override
   void dispose() {
     _searchController.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -170,6 +177,12 @@ class _EmergencyWorkspaceContentState
           hintText: _EmergencyText.searchHint,
           onSubmitted: controller.applySearch,
           onClear: () => controller.applySearch(''),
+          trailingActions: <AppSearchBarAction>[
+            _tableColumnController.settingsAction(
+              context,
+              label: 'Table settings',
+            ),
+          ],
         ),
         filters: <Widget>[
           AppSelectField<EmergencyBoardScope>(
@@ -184,10 +197,10 @@ class _EmergencyWorkspaceContentState
           ),
         ],
       ),
-      body: _EmergencyBoardPanel(state: state),
-      detail: _EmergencyDetailPanel(
+      body: _EmergencyBoardPanel(
         state: state,
         writeRequirement: _writeRequirement,
+        columnVisibilityController: _tableColumnController,
       ),
     );
   }
@@ -213,9 +226,16 @@ class _EmergencyWorkspaceContentState
 }
 
 class _EmergencyBoardPanel extends ConsumerWidget {
-  const _EmergencyBoardPanel({required this.state});
+  const _EmergencyBoardPanel({
+    required this.state,
+    required this.writeRequirement,
+    required this.columnVisibilityController,
+  });
 
   final EmergencyWorkspaceState state;
+  final AccessRequirement writeRequirement;
+  final AppListTableColumnVisibilityController<EmergencyCaseSummary>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -229,13 +249,24 @@ class _EmergencyBoardPanel extends ConsumerWidget {
       child: AppListTable<EmergencyCaseSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
+        columnVisibilityController: columnVisibilityController,
         previousPageLabel: 'Previous emergency cases',
         nextPageLabel: 'Next emergency cases',
         pageLabelBuilder: (AppPage<EmergencyCaseSummary> page) {
           return _pageLabel(context, page);
         },
         onPageChanged: controller.changePage,
-        onRowSelected: controller.selectCase,
+        onRowSelected: (EmergencyCaseSummary summary) {
+          unawaited(
+            _openEmergencyDetailDialog(
+              context,
+              ref,
+              state,
+              summary,
+              writeRequirement,
+            ),
+          );
+        },
         rowColorBuilder: _rowColor,
         emptyBuilder: (_) => const AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
@@ -246,36 +277,66 @@ class _EmergencyBoardPanel extends ConsumerWidget {
         columns: <AppListTableColumn<EmergencyCaseSummary>>[
           AppListTableColumn<EmergencyCaseSummary>(
             label: _EmergencyText.patient,
+            sortComparator:
+                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+                    appListTableCompareText(
+                      left.displayTitle,
+                      right.displayTitle,
+                    ),
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return _EmergencyCaseCell(item: item);
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
             label: _EmergencyText.priority,
+            sortComparator:
+                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+                    appListTableCompareText(left.severity, right.severity),
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return AppWorkspaceStatusBadge(status: _severityStatus(item));
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
             label: _EmergencyText.arrival,
+            sortComparator:
+                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+                    appListTableCompareDateTime(
+                      left.createdAt,
+                      right.createdAt,
+                    ),
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(_dateTimeLabel(context, item.createdAt));
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
             label: _EmergencyText.response,
+            sortComparator:
+                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+                    appListTableCompareText(
+                      left.responseStatus,
+                      right.responseStatus,
+                    ),
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return AppWorkspaceStatusBadge(status: _responseStatus(item));
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
             label: _EmergencyText.location,
+            sortComparator:
+                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+                    appListTableCompareText(
+                      left.currentLocation,
+                      right.currentLocation,
+                    ),
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(item.currentLocation);
             },
           ),
           AppListTableColumn<EmergencyCaseSummary>(
             label: _EmergencyText.next,
+            sortComparator:
+                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+                    appListTableCompareText(left.nextAction, right.nextAction),
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
               return Text(item.nextAction);
             },
@@ -447,6 +508,56 @@ class _EmergencyDetailPanel extends ConsumerWidget {
       ],
     );
   }
+}
+
+Future<void> _openEmergencyDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  EmergencyWorkspaceState fallbackState,
+  EmergencyCaseSummary summary,
+  AccessRequirement writeRequirement,
+) async {
+  final EmergencyWorkspaceController controller = ref.read(
+    emergencyWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectCase(summary);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final EmergencyWorkspaceState state =
+      _readEmergencyState(ref) ?? fallbackState;
+  if (state.selectedDetail == null) {
+    return;
+  }
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: const Text('Emergency case'),
+      icon: const Icon(Icons.emergency_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _EmergencyDetailPanel(
+        state: state,
+        writeRequirement: writeRequirement,
+      ),
+    ),
+  );
+}
+
+EmergencyWorkspaceState? _readEmergencyState(WidgetRef ref) {
+  return ref
+      .read(emergencyWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (EmergencyWorkspaceState state) => state,
+        failure: (_) => null,
+      );
 }
 
 class _EmergencyActionPanel extends ConsumerWidget {

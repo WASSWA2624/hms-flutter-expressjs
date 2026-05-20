@@ -89,6 +89,8 @@ class _PatientRegistryContentState
     extends ConsumerState<_PatientRegistryContent> {
   late final TextEditingController _tableSearchController;
   late final ValueNotifier<String> _tableSearchNotifier;
+  late final AppListTableColumnVisibilityController<Patient>
+  _tableColumnController;
   Timer? _tableSearchDebounce;
 
   @override
@@ -98,6 +100,7 @@ class _PatientRegistryContentState
       text: widget.state.query.search,
     );
     _tableSearchNotifier = ValueNotifier<String>(widget.state.query.search);
+    _tableColumnController = AppListTableColumnVisibilityController<Patient>();
     _tableSearchController.addListener(_handleTableSearchChanged);
   }
 
@@ -119,6 +122,7 @@ class _PatientRegistryContentState
       ..removeListener(_handleTableSearchChanged)
       ..dispose();
     _tableSearchNotifier.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -260,10 +264,12 @@ class _PatientRegistryContentState
       filters: _PatientFilters(
         query: widget.state.query,
         searchController: _tableSearchController,
+        columnVisibilityController: _tableColumnController,
       ),
       body: _PatientList(
         state: widget.state,
         searchListenable: _tableSearchNotifier,
+        columnVisibilityController: _tableColumnController,
       ),
     );
   }
@@ -379,10 +385,16 @@ class _PatientRegistryContentState
 }
 
 class _PatientFilters extends ConsumerStatefulWidget {
-  const _PatientFilters({required this.query, required this.searchController});
+  const _PatientFilters({
+    required this.query,
+    required this.searchController,
+    required this.columnVisibilityController,
+  });
 
   final PatientListQuery query;
   final TextEditingController searchController;
+  final AppListTableColumnVisibilityController<Patient>
+  columnVisibilityController;
 
   @override
   ConsumerState<_PatientFilters> createState() => _PatientFiltersState();
@@ -482,6 +494,12 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
       showAdvancedFilterButton: true,
       advancedFilterButtonLabel: l10n.patientsAdvancedFiltersAction,
       hasActiveFilters: _hasAdvancedFilters,
+      trailingActions: <AppSearchBarAction>[
+        widget.columnVisibilityController.settingsAction(
+          context,
+          label: 'Table settings',
+        ),
+      ],
       onAdvancedFilterPressed: () {
         _openAdvancedFilters(context);
       },
@@ -985,10 +1003,16 @@ class _PatientAdvancedFiltersDialogState
 }
 
 class _PatientList extends ConsumerWidget {
-  const _PatientList({required this.state, required this.searchListenable});
+  const _PatientList({
+    required this.state,
+    required this.searchListenable,
+    required this.columnVisibilityController,
+  });
 
   final PatientRegistryState state;
   final ValueListenable<String> searchListenable;
+  final AppListTableColumnVisibilityController<Patient>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1000,41 +1024,78 @@ class _PatientList extends ConsumerWidget {
       searchMatcher: (Patient patient, String query) {
         return _matchesPatientTableSearch(context, patient, query);
       },
+      columnVisibilityController: columnVisibilityController,
       isLoading: state.isRefreshingList,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       columns: <AppListTableColumn<Patient>>[
         AppListTableColumn<Patient>(
           label: l10n.patientsPatientNumberColumnLabel,
+          sortComparator: (Patient left, Patient right) =>
+              appListTableCompareText(
+                left.publicId ?? left.id,
+                right.publicId ?? right.id,
+              ),
           cellBuilder: (_, Patient patient) =>
               _PatientNumberCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsPatientColumnLabel,
+          sortComparator: (Patient left, Patient right) =>
+              appListTableCompareText(
+                left.effectiveDisplayName,
+                right.effectiveDisplayName,
+              ),
           cellBuilder: (_, Patient patient) =>
               _PatientNameCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsAgeSexColumnLabel,
+          sortComparator: (Patient left, Patient right) =>
+              appListTableCompareDateTime(left.dateOfBirth, right.dateOfBirth),
           cellBuilder: (_, Patient patient) => _AgeSexText(patient: patient),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsPhoneIdentifierColumnLabel,
+          sortComparator: (Patient left, Patient right) =>
+              appListTableCompareText(
+                left.primaryPhone ??
+                    left.primaryEmail ??
+                    left.effectiveIdentifier,
+                right.primaryPhone ??
+                    right.primaryEmail ??
+                    right.effectiveIdentifier,
+              ),
           cellBuilder: (_, Patient patient) =>
               _PatientContactIdentifierCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsAlertColumnLabel,
+          sortComparator: (Patient left, Patient right) =>
+              appListTableCompareText(
+                _patientAlertSortValue(left),
+                _patientAlertSortValue(right),
+              ),
           cellBuilder: (_, Patient patient) =>
               _PatientAlertCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsVisitColumnLabel,
+          sortComparator: (Patient left, Patient right) =>
+              appListTableCompareDateTime(
+                left.currentVisit?.occurredAt,
+                right.currentVisit?.occurredAt,
+              ),
           cellBuilder: (_, Patient patient) =>
               _VisitContextCell(patient: patient),
         ),
         AppListTableColumn<Patient>(
           label: l10n.patientsStatusColumnLabel,
+          sortComparator: (Patient left, Patient right) =>
+              appListTableCompareText(
+                left.isActive ? 'active' : 'inactive',
+                right.isActive ? 'active' : 'inactive',
+              ),
           cellBuilder: (BuildContext context, Patient patient) =>
               _patientActiveStatusText(context, patient.isActive),
         ),
@@ -1510,6 +1571,13 @@ class _PatientAlertCell extends StatelessWidget {
       children: alerts,
     );
   }
+}
+
+String _patientAlertSortValue(Patient patient) {
+  return _joinDisplay(<String?>[
+    patient.hasAllergyAlert ? patient.allergyAlertLabel ?? 'allergy' : null,
+    patient.requiresCompletion ? 'incomplete' : null,
+  ]);
 }
 
 class _VisitContextCell extends StatelessWidget {

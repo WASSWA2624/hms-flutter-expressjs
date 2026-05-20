@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,11 +73,15 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   );
 
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<LabOrderSummary>
+  _tableColumnController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
+    _tableColumnController =
+        AppListTableColumnVisibilityController<LabOrderSummary>();
   }
 
   @override
@@ -90,6 +96,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   @override
   void dispose() {
     _searchController.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -200,6 +207,12 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           hintText: l10n.labSearchHint,
           onSubmitted: controller.applySearch,
           onClear: () => controller.applySearch(''),
+          trailingActions: <AppSearchBarAction>[
+            _tableColumnController.settingsAction(
+              context,
+              label: 'Table settings',
+            ),
+          ],
         ),
         filters: <Widget>[
           AppSelectField<LabQueueScope>(
@@ -214,9 +227,11 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           ),
         ],
       ),
-      body: _LabWorklistPanel(state: state),
-      detail: _LabDetailPanel(state: state, canMutate: canMutate),
-      activity: _LabCatalogQcPanel(state: state),
+      body: _LabWorklistPanel(
+        state: state,
+        canMutate: canMutate,
+        columnVisibilityController: _tableColumnController,
+      ),
     );
   }
 
@@ -243,9 +258,16 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
 }
 
 class _LabWorklistPanel extends ConsumerWidget {
-  const _LabWorklistPanel({required this.state});
+  const _LabWorklistPanel({
+    required this.state,
+    required this.canMutate,
+    required this.columnVisibilityController,
+  });
 
   final LabWorkspaceState state;
+  final bool canMutate;
+  final AppListTableColumnVisibilityController<LabOrderSummary>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -260,13 +282,18 @@ class _LabWorklistPanel extends ConsumerWidget {
       child: AppListTable<LabOrderSummary>(
         page: state.worklist,
         isLoading: state.isRefreshing,
+        columnVisibilityController: columnVisibilityController,
         previousPageLabel: l10n.labPreviousPageLabel,
         nextPageLabel: l10n.labNextPageLabel,
         pageLabelBuilder: (AppPage<LabOrderSummary> page) {
           return _pageLabel(context, page);
         },
         onPageChanged: controller.changePage,
-        onRowSelected: controller.selectOrder,
+        onRowSelected: (LabOrderSummary order) {
+          unawaited(
+            _openLabDetailDialog(context, ref, state, order, canMutate),
+          );
+        },
         emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
           title: l10n.labNoOrdersTitle,
           body: l10n.labNoOrdersBody,
@@ -550,6 +577,49 @@ class _LabDetailPanel extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _openLabDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  LabWorkspaceState fallbackState,
+  LabOrderSummary order,
+  bool canMutate,
+) async {
+  final LabWorkspaceController controller = ref.read(
+    labWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectOrder(order);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final LabWorkspaceState state = _readLabState(ref) ?? fallbackState;
+  if (state.selectedWorkflow == null) {
+    return;
+  }
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.labDetailTitle),
+      icon: const Icon(Icons.science_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _LabDetailPanel(state: state, canMutate: canMutate),
+    ),
+  );
+}
+
+LabWorkspaceState? _readLabState(WidgetRef ref) {
+  return ref
+      .read(labWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(success: (LabWorkspaceState state) => state, failure: (_) => null);
 }
 
 class _LabDetailSection extends StatelessWidget {
@@ -882,186 +952,6 @@ class _ReportLine extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _LabCatalogQcPanel extends StatelessWidget {
-  const _LabCatalogQcPanel({required this.state});
-
-  final LabWorkspaceState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppWorkspaceDetailPanel(
-      title: l10n.labCatalogQcTitle,
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.labViewCatalogAction,
-          leadingIcon: Icons.menu_book_outlined,
-          onPressed: () => _openCatalogDialog(context, state),
-        ),
-      ],
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool wide = constraints.maxWidth >= 860;
-          final List<Widget> panels = <Widget>[
-            _CatalogPreview(
-              title: l10n.labCatalogTitle,
-              tests: state.catalogTests,
-              panels: state.catalogPanels,
-            ),
-            _QcPreview(logs: state.qcLogs),
-            const _LabBackendGaps(),
-          ];
-          if (!wide) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: _withGaps(context, panels),
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(child: panels[0]),
-              SizedBox(width: Theme.of(context).spacing.lg),
-              Expanded(child: panels[1]),
-              SizedBox(width: Theme.of(context).spacing.lg),
-              Expanded(child: panels[2]),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  List<Widget> _withGaps(BuildContext context, List<Widget> widgets) {
-    final List<Widget> children = <Widget>[];
-    for (var index = 0; index < widgets.length; index += 1) {
-      if (index > 0) {
-        children.add(SizedBox(height: Theme.of(context).spacing.lg));
-      }
-      children.add(widgets[index]);
-    }
-    return children;
-  }
-}
-
-class _CatalogPreview extends StatelessWidget {
-  const _CatalogPreview({
-    required this.title,
-    required this.tests,
-    required this.panels,
-  });
-
-  final String title;
-  final List<LabCatalogItem> tests;
-  final List<LabCatalogItem> panels;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<LabCatalogItem> items = <LabCatalogItem>[
-      ...tests,
-      ...panels,
-    ].take(6).toList(growable: false);
-    return _PreviewGroup(
-      title: title,
-      emptyText: l10n.labNoCatalogItemsLabel,
-      children: <Widget>[
-        for (final LabCatalogItem item in items)
-          _CompactRecordRow(
-            title: item.displayTitle,
-            subtitle: item.displaySubtitle,
-            leading: item.isPanel
-                ? Icons.account_tree_outlined
-                : Icons.science_outlined,
-          ),
-      ],
-    );
-  }
-}
-
-class _QcPreview extends StatelessWidget {
-  const _QcPreview({required this.logs});
-
-  final List<LabQcLog> logs;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return _PreviewGroup(
-      title: l10n.labQcTitle,
-      emptyText: l10n.labNoQcLogsLabel,
-      children: <Widget>[
-        for (final LabQcLog log in logs.take(6))
-          _CompactRecordRow(
-            title: log.displayTitle,
-            subtitle: _joinDisplay(<String?>[
-              _statusLabel(context, log.status),
-              _dateTimeLabel(context, log.loggedAt),
-              log.notes,
-            ]),
-            leading: Icons.fact_check_outlined,
-          ),
-      ],
-    );
-  }
-}
-
-class _LabBackendGaps extends StatelessWidget {
-  const _LabBackendGaps();
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return _PreviewGroup(
-      title: l10n.labBackendGapsTitle,
-      emptyText: l10n.labBackendGapsBody,
-      children: <Widget>[
-        _CompactRecordRow(
-          title: l10n.labGapBillingTitle,
-          subtitle: l10n.labGapBillingBody,
-          leading: Icons.payments_outlined,
-        ),
-        _CompactRecordRow(
-          title: l10n.labGapVerificationTitle,
-          subtitle: l10n.labGapVerificationBody,
-          leading: Icons.verified_user_outlined,
-        ),
-        _CompactRecordRow(
-          title: l10n.labGapReportGenerationTitle,
-          subtitle: l10n.labGapReportGenerationBody,
-          leading: Icons.picture_as_pdf_outlined,
-        ),
-      ],
-    );
-  }
-}
-
-class _PreviewGroup extends StatelessWidget {
-  const _PreviewGroup({
-    required this.title,
-    required this.emptyText,
-    required this.children,
-  });
-
-  final String title;
-  final String emptyText;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(title, style: theme.textTheme.titleSmall),
-        SizedBox(height: theme.spacing.sm),
-        if (children.isEmpty) _EmptyInlineText(text: emptyText),
-        ...children,
-      ],
     );
   }
 }
@@ -2057,132 +1947,6 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
   }
 }
 
-class _CatalogDialog extends StatefulWidget {
-  const _CatalogDialog({required this.state});
-
-  final LabWorkspaceState state;
-
-  @override
-  State<_CatalogDialog> createState() => _CatalogDialogState();
-}
-
-class _CatalogDialogState extends State<_CatalogDialog> {
-  late final TextEditingController _searchController;
-  String _search = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.labCatalogTitle),
-      icon: const Icon(Icons.menu_book_outlined),
-      maxWidth: 760,
-      scrollable: true,
-      content: AppFormSection(
-        children: <Widget>[
-          AppSearchBar(
-            controller: _searchController,
-            semanticLabel: l10n.labCatalogSearchLabel,
-            hintText: l10n.labCatalogSearchHint,
-            onChanged: (String value) => setState(() => _search = value),
-            onClear: () => setState(() => _search = ''),
-          ),
-          SizedBox(
-            height: 420,
-            child: DefaultTabController(
-              length: 2,
-              child: Column(
-                children: <Widget>[
-                  TabBar(
-                    tabs: <Widget>[
-                      Tab(text: l10n.labTestsTabLabel),
-                      Tab(text: l10n.labPanelsTabLabel),
-                    ],
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      children: <Widget>[
-                        _CatalogReadOnlyList(
-                          items: _filtered(widget.state.catalogTests),
-                          emptyText: l10n.labNoCatalogItemsLabel,
-                        ),
-                        _CatalogReadOnlyList(
-                          items: _filtered(widget.state.catalogPanels),
-                          emptyText: l10n.labNoCatalogItemsLabel,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ],
-    );
-  }
-
-  List<LabCatalogItem> _filtered(List<LabCatalogItem> items) {
-    return items
-        .where((LabCatalogItem item) => item.matchesSearch(_search))
-        .toList(growable: false);
-  }
-}
-
-class _CatalogReadOnlyList extends StatelessWidget {
-  const _CatalogReadOnlyList({required this.items, required this.emptyText});
-
-  final List<LabCatalogItem> items;
-  final String emptyText;
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Center(child: _EmptyInlineText(text: emptyText));
-    }
-    return ListView.separated(
-      itemCount: items.length,
-      itemBuilder: (BuildContext context, int index) {
-        final LabCatalogItem item = items[index];
-        return _CompactRecordRow(
-          title: item.displayTitle,
-          subtitle: item.displaySubtitle,
-          leading: item.isPanel
-              ? Icons.account_tree_outlined
-              : Icons.science_outlined,
-          trailing: item.isPanel
-              ? Text(
-                  AppFormatters.compactNumber(
-                    item.testCount,
-                    Localizations.localeOf(context),
-                  ),
-                )
-              : null,
-        );
-      },
-      separatorBuilder: (_, _) => const Divider(height: 1),
-    );
-  }
-}
-
 Future<void> _openOrderDialog(
   BuildContext context,
   LabWorkspaceState state,
@@ -2275,16 +2039,6 @@ Future<void> _openReverseDialog(BuildContext context) async {
       barrierDismissible: false,
       builder: (_) => const _ReverseWorkflowDialog(),
     ),
-  );
-}
-
-Future<void> _openCatalogDialog(
-  BuildContext context,
-  LabWorkspaceState state,
-) async {
-  await showAppDialog<void>(
-    context: context,
-    builder: (_) => _CatalogDialog(state: state),
   );
 }
 

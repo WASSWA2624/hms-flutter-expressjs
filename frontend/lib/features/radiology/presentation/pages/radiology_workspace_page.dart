@@ -52,14 +52,38 @@ class RadiologyWorkspacePage extends ConsumerWidget {
   }
 }
 
-class _RadiologyWorkspaceContent extends ConsumerWidget {
+class _RadiologyWorkspaceContent extends ConsumerStatefulWidget {
   const _RadiologyWorkspaceContent({required this.state});
 
   final RadiologyWorkspaceState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RadiologyWorkspaceContent> createState() =>
+      _RadiologyWorkspaceContentState();
+}
+
+class _RadiologyWorkspaceContentState
+    extends ConsumerState<_RadiologyWorkspaceContent> {
+  late final AppListTableColumnVisibilityController<RadiologyOrder>
+  _tableColumnController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tableColumnController =
+        AppListTableColumnVisibilityController<RadiologyOrder>();
+  }
+
+  @override
+  void dispose() {
+    _tableColumnController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final RadiologyWorkspaceState state = widget.state;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canRequest = accessPolicy.grantsAny(const <AppPermission>[
@@ -90,16 +114,6 @@ class _RadiologyWorkspaceContent extends ConsumerWidget {
             )
           : null,
       secondaryActions: <Widget>[
-        AppButton.secondary(
-          label: l10n.radiologyRefreshCatalogAction,
-          leadingIcon: Icons.manage_search,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing
-              ? null
-              : () {
-                  unawaited(controller.searchReferences());
-                },
-        ),
         AppButton.secondary(
           label: l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
@@ -146,7 +160,10 @@ class _RadiologyWorkspaceContent extends ConsumerWidget {
           compact: true,
         ),
       ],
-      filters: _RadiologyFilterBar(state: state),
+      filters: _RadiologyFilterBar(
+        state: state,
+        columnVisibilityController: _tableColumnController,
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -157,23 +174,27 @@ class _RadiologyWorkspaceContent extends ConsumerWidget {
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          _RadiologyOrderBoard(state: state),
+          _RadiologyOrderBoard(
+            state: state,
+            canWork: canWork,
+            canRequest: canRequest,
+            columnVisibilityController: _tableColumnController,
+          ),
         ],
       ),
-      detail: _RadiologyOrderDetail(
-        state: state,
-        canWork: canWork,
-        canRequest: canRequest,
-      ),
-      activity: const _RadiologyBackendGapsPanel(),
     );
   }
 }
 
 class _RadiologyFilterBar extends ConsumerStatefulWidget {
-  const _RadiologyFilterBar({required this.state});
+  const _RadiologyFilterBar({
+    required this.state,
+    required this.columnVisibilityController,
+  });
 
   final RadiologyWorkspaceState state;
+  final AppListTableColumnVisibilityController<RadiologyOrder>
+  columnVisibilityController;
 
   @override
   ConsumerState<_RadiologyFilterBar> createState() =>
@@ -224,6 +245,12 @@ class _RadiologyFilterBarState extends ConsumerState<_RadiologyFilterBar> {
         onClear: () {
           unawaited(controller.applySearch(''));
         },
+        trailingActions: <AppSearchBarAction>[
+          widget.columnVisibilityController.settingsAction(
+            context,
+            label: 'Table settings',
+          ),
+        ],
       ),
       filters: <Widget>[
         AppDateField(
@@ -293,9 +320,18 @@ class _RadiologyFilterBarState extends ConsumerState<_RadiologyFilterBar> {
 }
 
 class _RadiologyOrderBoard extends ConsumerWidget {
-  const _RadiologyOrderBoard({required this.state});
+  const _RadiologyOrderBoard({
+    required this.state,
+    required this.canWork,
+    required this.canRequest,
+    required this.columnVisibilityController,
+  });
 
   final RadiologyWorkspaceState state;
+  final bool canWork;
+  final bool canRequest;
+  final AppListTableColumnVisibilityController<RadiologyOrder>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -308,11 +344,21 @@ class _RadiologyOrderBoard extends ConsumerWidget {
       child: AppListTable<RadiologyOrder>(
         page: state.orders,
         isLoading: state.isRefreshing,
+        columnVisibilityController: columnVisibilityController,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemKeyBuilder: (RadiologyOrder item) => ValueKey<String>(item.id),
         onRowSelected: (RadiologyOrder order) {
-          unawaited(controller.selectOrder(order));
+          unawaited(
+            _openRadiologyDetailDialog(
+              context,
+              ref,
+              state,
+              order,
+              canWork: canWork,
+              canRequest: canRequest,
+            ),
+          );
         },
         previousPageLabel: l10n.radiologyPreviousPageLabel,
         nextPageLabel: l10n.radiologyNextPageLabel,
@@ -503,6 +549,58 @@ class _RadiologyOrderDetail extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _openRadiologyDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  RadiologyWorkspaceState fallbackState,
+  RadiologyOrder order, {
+  required bool canWork,
+  required bool canRequest,
+}) async {
+  final RadiologyWorkspaceController controller = ref.read(
+    radiologyWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectOrder(order);
+  if (context.mounted && failure != null) {
+    _showMutationResult(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final RadiologyWorkspaceState state =
+      _readRadiologyState(ref) ?? fallbackState;
+  if (state.selectedWorkflow == null) {
+    return;
+  }
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.radiologyDetailTitle),
+      icon: const Icon(Icons.medical_information_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _RadiologyOrderDetail(
+        state: state,
+        canWork: canWork,
+        canRequest: canRequest,
+      ),
+    ),
+  );
+}
+
+RadiologyWorkspaceState? _readRadiologyState(WidgetRef ref) {
+  return ref
+      .read(radiologyWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (RadiologyWorkspaceState state) => state,
+        failure: (_) => null,
+      );
 }
 
 class _RadiologyDetailBody extends ConsumerWidget {
@@ -1002,38 +1100,6 @@ class _TimelineSection extends StatelessWidget {
                   ),
               ],
             ),
-    );
-  }
-}
-
-class _RadiologyBackendGapsPanel extends StatelessWidget {
-  const _RadiologyBackendGapsPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppWorkspaceActivityList(
-      title: l10n.radiologyBackendGapsTitle,
-      description: l10n.radiologyBackendGapsBody,
-      emptyTitle: l10n.radiologyBackendGapsTitle,
-      emptyBody: l10n.radiologyBackendGapsBody,
-      items: <AppWorkspaceActivityItem>[
-        AppWorkspaceActivityItem(
-          title: l10n.radiologyGapSchedulingTitle,
-          subtitle: l10n.radiologyGapBackendSubtitle,
-          description: l10n.radiologyGapSchedulingBody,
-          icon: Icons.event_busy_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
-        AppWorkspaceActivityItem(
-          title: l10n.radiologyGapBillingTitle,
-          subtitle: l10n.radiologyGapBackendSubtitle,
-          description: l10n.radiologyGapBillingBody,
-          icon: Icons.receipt_long_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
-      ],
     );
   }
 }

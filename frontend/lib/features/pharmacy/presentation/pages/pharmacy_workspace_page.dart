@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,11 +68,15 @@ class _PharmacyWorkspaceContentState
   );
 
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<PharmacyOrder>
+  _tableColumnController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
+    _tableColumnController =
+        AppListTableColumnVisibilityController<PharmacyOrder>();
   }
 
   @override
@@ -85,6 +91,7 @@ class _PharmacyWorkspaceContentState
   @override
   void dispose() {
     _searchController.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -109,6 +116,13 @@ class _PharmacyWorkspaceContentState
             : AppWorkspaceStatusTone.success,
       ),
       secondaryActions: <Widget>[
+        AppButton.secondary(
+          label: l10n.pharmacyDrugPanelTitle,
+          leadingIcon: Icons.inventory_2_outlined,
+          onPressed: () {
+            unawaited(_openFormularyStockDialog(context, state));
+          },
+        ),
         AppIconButton(
           icon: Icons.refresh,
           semanticLabel: l10n.commonRefreshActionLabel,
@@ -172,6 +186,12 @@ class _PharmacyWorkspaceContentState
           onSubmitted: (String value) {
             controller.applySearch(value);
           },
+          trailingActions: <AppSearchBarAction>[
+            _tableColumnController.settingsAction(
+              context,
+              label: 'Table settings',
+            ),
+          ],
         ),
         filters: <Widget>[
           AppSelectField<PharmacyOrderFilter>(
@@ -186,20 +206,26 @@ class _PharmacyWorkspaceContentState
           ),
         ],
       ),
-      body: _PharmacyQueuePanel(state: state),
-      detail: _PharmacyDetailPanel(
+      body: _PharmacyQueuePanel(
         state: state,
         writeRequirement: _writeRequirement,
+        columnVisibilityController: _tableColumnController,
       ),
-      activity: _DrugStockPanel(state: state),
     );
   }
 }
 
 class _PharmacyQueuePanel extends ConsumerWidget {
-  const _PharmacyQueuePanel({required this.state});
+  const _PharmacyQueuePanel({
+    required this.state,
+    required this.writeRequirement,
+    required this.columnVisibilityController,
+  });
 
   final PharmacyWorkspaceState state;
+  final AccessRequirement writeRequirement;
+  final AppListTableColumnVisibilityController<PharmacyOrder>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -214,13 +240,24 @@ class _PharmacyQueuePanel extends ConsumerWidget {
       child: AppListTable<PharmacyOrder>(
         page: state.workbench.orders,
         isLoading: state.isRefreshingOrders,
+        columnVisibilityController: columnVisibilityController,
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<PharmacyOrder> page) {
           return _pageLabel(context, page);
         },
         onPageChanged: controller.changePage,
-        onRowSelected: controller.selectOrder,
+        onRowSelected: (PharmacyOrder order) {
+          unawaited(
+            _openPharmacyDetailDialog(
+              context,
+              ref,
+              state,
+              order,
+              writeRequirement,
+            ),
+          );
+        },
         rowColorBuilder: _rowColor,
         emptyBuilder: (_) => AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
@@ -231,12 +268,19 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         columns: <AppListTableColumn<PharmacyOrder>>[
           AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyPatientColumnLabel,
+            sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+                appListTableCompareText(left.displayTitle, right.displayTitle),
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return _PharmacyOrderPatientCell(order: item);
             },
           ),
           AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyOrderColumnLabel,
+            sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+                appListTableCompareText(
+                  left.displayId ?? left.id,
+                  right.displayId ?? right.id,
+                ),
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return Text(item.displayId ?? item.id);
             },
@@ -244,18 +288,27 @@ class _PharmacyQueuePanel extends ConsumerWidget {
           AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyItemsColumnLabel,
             numeric: true,
+            sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+                appListTableCompareNumber(left.itemCount, right.itemCount),
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return Text(_numberLabel(item.itemCount));
             },
           ),
           AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyDispenseColumnLabel,
+            sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+                appListTableCompareNumber(
+                  left.quantityDispensedTotal,
+                  right.quantityDispensedTotal,
+                ),
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return Text(_dispenseProgressLabel(context, item));
             },
           ),
           AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyStatusColumnLabel,
+            sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+                appListTableCompareText(left.status, right.status),
             cellBuilder: (BuildContext context, PharmacyOrder item) {
               return AppWorkspaceStatusBadge(
                 status: _orderStatus(context, item),
@@ -437,6 +490,71 @@ class _PharmacyDetailPanel extends ConsumerWidget {
       ],
     );
   }
+}
+
+Future<void> _openPharmacyDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  PharmacyWorkspaceState fallbackState,
+  PharmacyOrder order,
+  AccessRequirement writeRequirement,
+) async {
+  final PharmacyWorkspaceController controller = ref.read(
+    pharmacyWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectOrder(order);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final PharmacyWorkspaceState state = _readPharmacyState(ref) ?? fallbackState;
+  if (state.selectedWorkflow == null) {
+    return;
+  }
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: const Text('Prescription detail'),
+      icon: const Icon(Icons.receipt_long_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _PharmacyDetailPanel(
+        state: state,
+        writeRequirement: writeRequirement,
+      ),
+    ),
+  );
+}
+
+Future<void> _openFormularyStockDialog(
+  BuildContext context,
+  PharmacyWorkspaceState state,
+) {
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.pharmacyDrugPanelTitle),
+      icon: const Icon(Icons.inventory_2_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _DrugStockPanel(state: state),
+    ),
+  );
+}
+
+PharmacyWorkspaceState? _readPharmacyState(WidgetRef ref) {
+  return ref
+      .read(pharmacyWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (PharmacyWorkspaceState state) => state,
+        failure: (_) => null,
+      );
 }
 
 class _PharmacyActionPanel extends ConsumerWidget {

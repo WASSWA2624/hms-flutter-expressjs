@@ -432,30 +432,40 @@ List<AppListTableColumn<NursingWorkItem>> _nursingWorklistDefaultColumns(
   return <AppListTableColumn<NursingWorkItem>>[
     AppListTableColumn<NursingWorkItem>(
       label: l10n.opdPatientColumnLabel,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareText(left.displayTitle, right.displayTitle),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return _NursingPatientCell(item: item);
       },
     ),
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingLocationColumnLabel,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareText(left.locationLabel, right.locationLabel),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(item.locationLabel ?? l10n.profileUnknownValue);
       },
     ),
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingTaskTypeColumnLabel,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareText(left.taskTypeCode, right.taskTypeCode),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(_taskTypeLabel(context, item));
       },
     ),
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingPriorityColumnLabel,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareText(left.priorityCode, right.priorityCode),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return AppWorkspaceStatusBadge(status: _priorityStatus(context, item));
       },
     ),
     AppListTableColumn<NursingWorkItem>(
       label: l10n.opdStatusColumnLabel,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareText(left.admissionStatus, right.admissionStatus),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return AppWorkspaceStatusBadge(status: _summaryStatus(item));
       },
@@ -470,24 +480,41 @@ List<AppListTableColumn<NursingWorkItem>> _nursingWorklistColumnChoices(
     ..._nursingWorklistDefaultColumns(l10n),
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingAdmissionColumnLabel,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareText(
+            left.displayId ?? left.admissionId,
+            right.displayId ?? right.admissionId,
+          ),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(_admissionLabel(context, item));
       },
     ),
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingDueTimeColumnLabel,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareDateTime(left.dueReferenceAt, right.dueReferenceAt),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(_dueTimeLabel(context, item));
       },
     ),
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingResponsibleNurseColumnLabel,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareText(
+            _responsibleNurseSortValue(left),
+            _responsibleNurseSortValue(right),
+          ),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(_responsibleNurseLabel(context, item));
       },
     ),
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingObservationsTitle,
+      sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+          appListTableCompareDateTime(
+            left.lastObservationAt,
+            right.lastObservationAt,
+          ),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(_lastObservationLabel(context, item));
       },
@@ -2695,6 +2722,10 @@ String _responsibleNurseLabel(
     return context.l10n.nursingHandoverPendingSummaryLabel;
   }
   return context.l10n.nursingAssignedShiftLabel;
+}
+
+String _responsibleNurseSortValue(NursingPatientSummary item) {
+  return item.pendingHandoverCount > 0 ? 'handover pending' : 'assigned shift';
 }
 
 String _pageLabel(BuildContext context, AppPage<NursingWorkItem> page) {

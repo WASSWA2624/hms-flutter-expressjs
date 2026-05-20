@@ -42,13 +42,37 @@ class BillingWorkspacePage extends ConsumerWidget {
   }
 }
 
-class _BillingWorkspaceContent extends ConsumerWidget {
+class _BillingWorkspaceContent extends ConsumerStatefulWidget {
   const _BillingWorkspaceContent({required this.state});
 
   final BillingWorkspaceState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BillingWorkspaceContent> createState() =>
+      _BillingWorkspaceContentState();
+}
+
+class _BillingWorkspaceContentState
+    extends ConsumerState<_BillingWorkspaceContent> {
+  late final AppListTableColumnVisibilityController<BillingWorkItem>
+  _tableColumnController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tableColumnController =
+        AppListTableColumnVisibilityController<BillingWorkItem>();
+  }
+
+  @override
+  void dispose() {
+    _tableColumnController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final BillingWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = accessPolicy.grants(AppPermissions.billingWrite);
     final controller = ref.read(billingWorkspaceControllerProvider.notifier);
@@ -68,6 +92,18 @@ class _BillingWorkspaceContent extends ConsumerWidget {
       ),
       secondaryActions: <Widget>[
         AppButton.secondary(
+          label: _BillingText.closeShift,
+          leadingIcon: Icons.schedule_send_outlined,
+          enabled: canWrite && !state.isSaving,
+          onPressed: () => _showShiftCloseDialog(context, ref),
+        ),
+        AppButton.secondary(
+          label: _BillingText.closeDay,
+          leadingIcon: Icons.today_outlined,
+          enabled: canWrite && !state.isSaving,
+          onPressed: () => _showDayCloseDialog(context, ref),
+        ),
+        AppButton.secondary(
           label: context.l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
           isLoading: state.isRefreshing,
@@ -76,7 +112,10 @@ class _BillingWorkspaceContent extends ConsumerWidget {
       ],
       summaryCards: _summaryCards(context, ref, state),
       compactSummaryCards: true,
-      filters: _BillingFilterBar(state: state),
+      filters: _BillingFilterBar(
+        state: state,
+        columnVisibilityController: _tableColumnController,
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -87,15 +126,12 @@ class _BillingWorkspaceContent extends ConsumerWidget {
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          _BillingQueuePanel(state: state),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _CashierClosePanel(canWrite: canWrite, isSaving: state.isSaving),
+          _BillingQueuePanel(
+            state: state,
+            canWrite: canWrite,
+            columnVisibilityController: _tableColumnController,
+          ),
         ],
-      ),
-      detail: _BillingDetailPanel(
-        item: state.selectedItem,
-        canWrite: canWrite,
-        isSaving: state.isSaving,
       ),
     );
   }
@@ -183,9 +219,14 @@ class _BillingWorkspaceContent extends ConsumerWidget {
 }
 
 class _BillingFilterBar extends ConsumerStatefulWidget {
-  const _BillingFilterBar({required this.state});
+  const _BillingFilterBar({
+    required this.state,
+    required this.columnVisibilityController,
+  });
 
   final BillingWorkspaceState state;
+  final AppListTableColumnVisibilityController<BillingWorkItem>
+  columnVisibilityController;
 
   @override
   ConsumerState<_BillingFilterBar> createState() => _BillingFilterBarState();
@@ -228,6 +269,12 @@ class _BillingFilterBarState extends ConsumerState<_BillingFilterBar> {
         clearLabel: 'Clear billing search',
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
+        trailingActions: <AppSearchBarAction>[
+          widget.columnVisibilityController.settingsAction(
+            context,
+            label: 'Table settings',
+          ),
+        ],
       ),
       filters: <Widget>[
         AppSelectField<BillingQueueType>(
@@ -259,9 +306,16 @@ class _BillingFilterBarState extends ConsumerState<_BillingFilterBar> {
 }
 
 class _BillingQueuePanel extends ConsumerWidget {
-  const _BillingQueuePanel({required this.state});
+  const _BillingQueuePanel({
+    required this.state,
+    required this.canWrite,
+    required this.columnVisibilityController,
+  });
 
   final BillingWorkspaceState state;
+  final bool canWrite;
+  final AppListTableColumnVisibilityController<BillingWorkItem>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -275,8 +329,17 @@ class _BillingQueuePanel extends ConsumerWidget {
         isLoading: state.isRefreshing,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        columnVisibilityController: columnVisibilityController,
         itemKeyBuilder: (BillingWorkItem item) => ValueKey<String>(item.id),
-        onRowSelected: controller.selectItem,
+        onRowSelected: (BillingWorkItem item) {
+          controller.selectItem(item);
+          _showBillingDetailDialog(
+            context,
+            item,
+            canWrite: canWrite,
+            isSaving: state.isSaving,
+          );
+        },
         previousPageLabel: 'Previous page',
         nextPageLabel: 'Next page',
         pageLabelBuilder: (AppPage<BillingWorkItem> page) {
@@ -346,41 +409,32 @@ class _BillingQueuePanel extends ConsumerWidget {
   }
 }
 
-class _BillingDetailPanel extends ConsumerWidget {
-  const _BillingDetailPanel({
-    required this.item,
-    required this.canWrite,
-    required this.isSaving,
-  });
-
-  final BillingWorkItem? item;
-  final bool canWrite;
-  final bool isSaving;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final BillingWorkItem? selected = item;
-    if (selected == null) {
-      return const AppWorkspaceDetailPanel(
-        title: 'Invoice detail',
-        child: AppStateView(
-          title: 'No invoice selected',
-          body: 'Select a billing row to review invoice and payment details.',
-        ),
-      );
-    }
-
-    return AppWorkspaceDetailPanel(
-      title: selected.isInvoice ? 'Invoice detail' : 'Billing item',
-      description: selected.effectiveDisplayId,
+Future<void> _showBillingDetailDialog(
+  BuildContext context,
+  BillingWorkItem item, {
+  required bool canWrite,
+  required bool isSaving,
+}) {
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(item.isInvoice ? 'Invoice detail' : 'Billing item'),
+      icon: const Icon(Icons.receipt_long_outlined),
+      scrollable: true,
+      maxWidth: 940,
+      content: _BillingDetailBody(
+        item: item,
+        canWrite: canWrite,
+        isSaving: isSaving,
+      ),
       actions: <Widget>[
         AppReportActionButton.download(
           label: _BillingText.invoice,
-          enabled: selected.isInvoice,
-          tooltip: selected.isInvoice
+          enabled: item.isInvoice,
+          tooltip: item.isInvoice
               ? 'Generated invoice document is available from the backend.'
               : 'Document output is only available for invoices.',
-          onPressed: selected.isInvoice
+          onPressed: item.isInvoice
               ? () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -393,13 +447,8 @@ class _BillingDetailPanel extends ConsumerWidget {
               : null,
         ),
       ],
-      child: _BillingDetailBody(
-        item: selected,
-        canWrite: canWrite,
-        isSaving: isSaving,
-      ),
-    );
-  }
+    ),
+  );
 }
 
 class _BillingDetailBody extends ConsumerWidget {
@@ -518,40 +567,6 @@ class _BillingActionBar extends ConsumerWidget {
           onPressed: () => _showSendDialog(context, ref),
         ),
       ],
-    );
-  }
-}
-
-class _CashierClosePanel extends ConsumerWidget {
-  const _CashierClosePanel({required this.canWrite, required this.isSaving});
-
-  final bool canWrite;
-  final bool isSaving;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return AppWorkspaceDetailPanel(
-      title: 'Cashier close',
-      description:
-          'Shift and day close are backend-backed and do not block care screens.',
-      child: AppActionList(
-        spacing: Theme.of(context).spacing.sm,
-        runSpacing: Theme.of(context).spacing.sm,
-        actions: <AppActionItem>[
-          AppActionItem(
-            label: _BillingText.closeShift,
-            leadingIcon: Icons.schedule_send_outlined,
-            enabled: canWrite && !isSaving,
-            onPressed: () => _showShiftCloseDialog(context, ref),
-          ),
-          AppActionItem(
-            label: _BillingText.closeDay,
-            leadingIcon: Icons.today_outlined,
-            enabled: canWrite && !isSaving,
-            onPressed: () => _showDayCloseDialog(context, ref),
-          ),
-        ],
-      ),
     );
   }
 }

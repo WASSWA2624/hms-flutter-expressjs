@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/locale/app_locale_controller.dart';
+import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_mode_controller.dart';
@@ -36,6 +37,22 @@ class SettingsPage extends ConsumerWidget {
     return AppScreen(
       title: l10n.settingsTitle,
       body: l10n.settingsBody,
+      leadingIcon: AppRouteIcons.settings,
+      headerActions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonRefreshActionLabel,
+          leadingIcon: Icons.refresh,
+          onPressed: () {
+            ref
+              ..invalidate(appLocaleProvider)
+              ..invalidate(appThemeModeProvider)
+              ..invalidate(appAccessPolicyProvider);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.commonRefreshActionLabel)),
+            );
+          },
+        ),
+      ],
       maxWidth: PageMaxWidth.dashboard,
       children: <Widget>[
         _SettingsSectionGrid(

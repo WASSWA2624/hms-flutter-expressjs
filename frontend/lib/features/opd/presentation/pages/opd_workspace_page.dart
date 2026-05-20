@@ -2021,6 +2021,7 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
 
   return AppListTableColumn<_OpdTableItem>(
     label: label,
+    sortComparator: _opdSortComparator(column),
     cellBuilder: (BuildContext context, _OpdTableItem item) {
       return switch (column) {
         _OpdTableColumnId.patient => AppListItemText(
@@ -2061,6 +2062,46 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
     },
     tooltip: label,
   );
+}
+
+AppListTableSortComparator<_OpdTableItem> _opdSortComparator(
+  _OpdTableColumnId column,
+) {
+  return (_OpdTableItem left, _OpdTableItem right) {
+    return switch (column) {
+      _OpdTableColumnId.patient => appListTableCompareText(
+        left.title,
+        right.title,
+      ),
+      _OpdTableColumnId.visitType => appListTableCompareText(
+        left.visitType,
+        right.visitType,
+      ),
+      _OpdTableColumnId.queueStatus => appListTableCompareText(
+        _joinDisplay(<String?>[left.queue, left.status]),
+        _joinDisplay(<String?>[right.queue, right.status]),
+      ),
+      _OpdTableColumnId.provider => appListTableCompareText(
+        left.provider,
+        right.provider,
+      ),
+      _OpdTableColumnId.payerBilling => appListTableCompareText(
+        left.billing,
+        right.billing,
+      ),
+      _OpdTableColumnId.waitingTime => left.urgencyRank.compareTo(
+        right.urgencyRank,
+      ),
+      _OpdTableColumnId.arrivalTime => appListTableCompareDateTime(
+        left.time,
+        right.time,
+      ),
+      _OpdTableColumnId.nextStep => appListTableCompareText(
+        left.nextStep,
+        right.nextStep,
+      ),
+    };
+  };
 }
 
 enum _OpdTableColumnId {

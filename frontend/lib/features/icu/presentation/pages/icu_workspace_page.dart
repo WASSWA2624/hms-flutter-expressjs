@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
@@ -180,19 +182,16 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
           ),
         ],
       ),
-      body: _IcuBoardPanel(state: state),
-      detail: _IcuDetailPanel(
-        state: state,
-        writeRequirement: _writeRequirement,
-      ),
+      body: _IcuBoardPanel(state: state, writeRequirement: _writeRequirement),
     );
   }
 }
 
 class _IcuBoardPanel extends ConsumerWidget {
-  const _IcuBoardPanel({required this.state});
+  const _IcuBoardPanel({required this.state, required this.writeRequirement});
 
   final IcuWorkspaceState state;
+  final AccessRequirement writeRequirement;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -216,7 +215,15 @@ class _IcuBoardPanel extends ConsumerWidget {
           controller.changePage(request);
         },
         onRowSelected: (IcuPatientSummary summary) {
-          controller.selectPatient(summary);
+          unawaited(
+            _openIcuDetailDialog(
+              context,
+              ref,
+              state,
+              summary,
+              writeRequirement,
+            ),
+          );
         },
         rowColorBuilder: _rowColor,
         emptyBuilder: (_) => const AppWorkspaceStatePanel.state(
@@ -434,6 +441,52 @@ class _IcuDetailPanel extends ConsumerWidget {
       ],
     );
   }
+}
+
+Future<void> _openIcuDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  IcuWorkspaceState fallbackState,
+  IcuPatientSummary summary,
+  AccessRequirement writeRequirement,
+) async {
+  final IcuWorkspaceController controller = ref.read(
+    icuWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectPatient(summary);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final IcuWorkspaceState state = _readIcuState(ref) ?? fallbackState;
+  if (state.selectedDetail == null) {
+    return;
+  }
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: const Text('ICU stay'),
+      icon: const Icon(Icons.monitor_heart_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _IcuDetailPanel(
+        state: state,
+        writeRequirement: writeRequirement,
+      ),
+    ),
+  );
+}
+
+IcuWorkspaceState? _readIcuState(WidgetRef ref) {
+  return ref
+      .read(icuWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(success: (IcuWorkspaceState state) => state, failure: (_) => null);
 }
 
 class _IcuActionPanel extends ConsumerWidget {

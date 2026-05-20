@@ -90,11 +90,15 @@ class _DischargeWorkspaceContent extends ConsumerStatefulWidget {
 class _DischargeWorkspaceContentState
     extends ConsumerState<_DischargeWorkspaceContent> {
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
+  _tableColumnController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
+    _tableColumnController =
+        AppListTableColumnVisibilityController<IpdAdmissionSummary>();
   }
 
   @override
@@ -109,6 +113,7 @@ class _DischargeWorkspaceContentState
   @override
   void dispose() {
     _searchController.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -190,6 +195,12 @@ class _DischargeWorkspaceContentState
               _showFailureIfNeeded(context, failure);
             }
           },
+          trailingActions: <AppSearchBarAction>[
+            _tableColumnController.settingsAction(
+              context,
+              label: 'Table settings',
+            ),
+          ],
         ),
         filters: <Widget>[
           SizedBox(
@@ -210,17 +221,23 @@ class _DischargeWorkspaceContentState
           ),
         ],
       ),
-      body: _DischargeQueuePanel(state: state),
-      detail: _DischargeDetailPanel(state: state),
-      activity: _DischargeBackendGapPanel(),
+      body: _DischargeQueuePanel(
+        state: state,
+        columnVisibilityController: _tableColumnController,
+      ),
     );
   }
 }
 
 class _DischargeQueuePanel extends ConsumerWidget {
-  const _DischargeQueuePanel({required this.state});
+  const _DischargeQueuePanel({
+    required this.state,
+    required this.columnVisibilityController,
+  });
 
   final DischargeWorkspaceState state;
+  final AppListTableColumnVisibilityController<IpdAdmissionSummary>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -237,6 +254,7 @@ class _DischargeQueuePanel extends ConsumerWidget {
         child: AppListTable<IpdAdmissionSummary>(
           page: state.queue,
           isLoading: state.isRefreshing,
+          columnVisibilityController: columnVisibilityController,
           previousPageLabel: l10n.dischargePreviousPageLabel,
           nextPageLabel: l10n.dischargeNextPageLabel,
           pageLabelBuilder: (AppPage<IpdAdmissionSummary> page) {
@@ -246,7 +264,7 @@ class _DischargeQueuePanel extends ConsumerWidget {
             unawaited(controller.changePage(request));
           },
           onRowSelected: (IpdAdmissionSummary item) {
-            unawaited(controller.selectAdmission(item));
+            unawaited(_openDischargeDetailDialog(context, ref, state, item));
           },
           emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
             title: l10n.dischargeEmptyQueueTitle,
@@ -296,42 +314,39 @@ class _DischargeQueuePanel extends ConsumerWidget {
   }
 }
 
-class _DischargeDetailPanel extends ConsumerWidget {
-  const _DischargeDetailPanel({required this.state});
+Future<void> _openDischargeDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  DischargeWorkspaceState fallbackState,
+  IpdAdmissionSummary admission,
+) async {
+  final DischargeWorkspaceController controller = ref.read(
+    dischargeWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectAdmission(admission);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
 
-  final DischargeWorkspaceState state;
+  final DischargeWorkspaceState state =
+      _readDischargeState(ref) ?? fallbackState;
+  final DischargeAdmissionDetail? detail = state.selectedDetail;
+  if (detail == null) {
+    return;
+  }
+  final AppLocalizations l10n = context.l10n;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final DischargeAdmissionDetail? detail = state.selectedDetail;
-
-    if (state.isRefreshingDetail && detail == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.dischargeDetailTitle,
-        child: AppWorkspaceStatePanel.loading(
-          title: l10n.dischargeDetailLoadingTitle,
-          body: l10n.dischargeDetailLoadingBody,
-          minHeight: 360,
-        ),
-      );
-    }
-
-    if (detail == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.dischargeDetailTitle,
-        child: AppWorkspaceStatePanel.empty(
-          title: l10n.dischargeNoSelectionTitle,
-          body: l10n.dischargeNoSelectionBody,
-          icon: Icons.touch_app_outlined,
-          minHeight: 360,
-        ),
-      );
-    }
-
-    return AppWorkspaceDetailPanel(
-      title: l10n.dischargeDetailTitle,
-      description: detail.summary.displayId ?? detail.summary.id,
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(l10n.dischargeDetailTitle),
+      icon: const Icon(Icons.assignment_turned_in_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _DischargeDetailContent(state: state, detail: detail),
       actions: <Widget>[
         AppReportActionButton.print(
           label: l10n.dischargePrintSummaryAction,
@@ -363,9 +378,19 @@ class _DischargeDetailPanel extends ConsumerWidget {
               : null,
         ),
       ],
-      child: _DischargeDetailContent(state: state, detail: detail),
-    );
-  }
+    ),
+  );
+}
+
+DischargeWorkspaceState? _readDischargeState(WidgetRef ref) {
+  return ref
+      .read(dischargeWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (DischargeWorkspaceState state) => state,
+        failure: (_) => null,
+      );
 }
 
 class _DischargeDetailContent extends ConsumerWidget {
@@ -658,49 +683,6 @@ class _TimelineSection extends StatelessWidget {
             subtitle: _dateLabel(context, item.occurredAt),
             icon: Icons.history_outlined,
           ),
-      ],
-    );
-  }
-}
-
-class _DischargeBackendGapPanel extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppWorkspaceActivityList(
-      title: l10n.dischargeBackendGapsTitle,
-      emptyTitle: l10n.dischargeBackendGapsTitle,
-      emptyBody: l10n.dischargeBackendGapsBody,
-      items: <AppWorkspaceActivityItem>[
-        AppWorkspaceActivityItem(
-          title: l10n.dischargeGapChecklistTitle,
-          subtitle: l10n.dischargeGapBackendSubtitle,
-          description: l10n.dischargeGapChecklistBody,
-          icon: Icons.fact_check_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
-        AppWorkspaceActivityItem(
-          title: l10n.dischargeGapInsuranceTitle,
-          subtitle: l10n.dischargeGapBackendSubtitle,
-          description: l10n.dischargeGapInsuranceBody,
-          icon: Icons.verified_user_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
-        AppWorkspaceActivityItem(
-          title: l10n.dischargeGapDocumentsTitle,
-          subtitle: l10n.dischargeGapBackendSubtitle,
-          description: l10n.dischargeGapDocumentsBody,
-          icon: Icons.description_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-        AppWorkspaceActivityItem(
-          title: l10n.dischargeGapHousekeepingTitle,
-          subtitle: l10n.dischargeGapBackendSubtitle,
-          description: l10n.dischargeGapHousekeepingBody,
-          icon: Icons.cleaning_services_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
       ],
     );
   }

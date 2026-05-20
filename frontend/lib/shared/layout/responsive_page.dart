@@ -128,6 +128,7 @@ class AppScreen extends StatelessWidget {
     required this.children,
     this.subtitle,
     this.body,
+    this.leadingIcon,
     this.headerActions,
     this.maxWidth = PageMaxWidth.reading,
     this.padding,
@@ -137,6 +138,7 @@ class AppScreen extends StatelessWidget {
   final String title;
   final String? subtitle;
   final String? body;
+  final IconData? leadingIcon;
   final List<Widget> children;
   final List<Widget>? headerActions;
   final PageMaxWidth maxWidth;
@@ -163,6 +165,7 @@ class AppScreen extends StatelessWidget {
               title: title,
               subtitle: subtitle,
               body: body,
+              leadingIcon: leadingIcon,
               actions: headerActions,
             ),
             if (children.isNotEmpty) ...<Widget>[
@@ -181,6 +184,7 @@ class AppScreenHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.body,
+    this.leadingIcon,
     this.actions,
     super.key,
   });
@@ -188,6 +192,7 @@ class AppScreenHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
   final String? body;
+  final IconData? leadingIcon;
   final List<Widget>? actions;
 
   @override
@@ -224,6 +229,7 @@ class AppScreenHeader extends StatelessWidget {
             title: title,
             subtitle: subtitle,
             body: body,
+            leadingIcon: leadingIcon,
             titleStyle: titleStyle,
             subtitleStyle: subtitleStyle,
             bodyStyle: bodyStyle,
@@ -237,6 +243,7 @@ class AppScreenHeader extends StatelessWidget {
                   title: title,
                   subtitle: subtitle,
                   body: body,
+                  leadingIcon: leadingIcon,
                   titleStyle: titleStyle,
                   subtitleStyle: subtitleStyle,
                   bodyStyle: bodyStyle,
@@ -269,11 +276,13 @@ class _HeaderText extends StatelessWidget {
     required this.bodyStyle,
     this.subtitle,
     this.body,
+    this.leadingIcon,
   });
 
   final String title;
   final String? subtitle;
   final String? body;
+  final IconData? leadingIcon;
   final TextStyle? titleStyle;
   final TextStyle? subtitleStyle;
   final TextStyle? bodyStyle;
@@ -285,7 +294,32 @@ class _HeaderText extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(title, style: titleStyle),
+        Row(
+          children: <Widget>[
+            if (leadingIcon != null) ...<Widget>[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(
+                    alpha: 0.62,
+                  ),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.28),
+                  ),
+                ),
+                child: SizedBox.square(
+                  dimension: 36,
+                  child: Icon(
+                    leadingIcon,
+                    color: theme.colorScheme.primary,
+                    size: theme.appTokens.listIconSize,
+                  ),
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+            ],
+            Expanded(child: Text(title, style: titleStyle)),
+          ],
+        ),
         if (subtitle != null && subtitle!.isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.sm),
           Text(subtitle!, style: subtitleStyle),

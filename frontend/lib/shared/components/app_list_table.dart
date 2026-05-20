@@ -27,6 +27,196 @@ enum AppListTableDisplayMode { adaptive, table, list }
 const int _maxVisibleTableColumns = 5;
 const double _rowNumberColumnWidth = 48;
 
+List<AppListTableColumn<T>> _availableColumnsFor<T>(
+  List<AppListTableColumn<T>> columns,
+  List<AppListTableColumn<T>>? columnChoices,
+) {
+  final List<AppListTableColumn<T>> availableColumns =
+      <AppListTableColumn<T>>[];
+  final Set<String> keys = <String>{};
+
+  void addColumns(Iterable<AppListTableColumn<T>> source) {
+    for (final AppListTableColumn<T> column in source) {
+      if (keys.add(column.key)) {
+        availableColumns.add(column);
+      }
+    }
+  }
+
+  addColumns(columns);
+  addColumns(columnChoices ?? <AppListTableColumn<T>>[]);
+  return availableColumns;
+}
+
+List<AppListTableColumn<T>> appListTableDefaultVisibleColumns<T>(
+  List<AppListTableColumn<T>> availableColumns, {
+  List<AppListTableColumn<T>>? defaultColumns,
+}) {
+  if (availableColumns.isEmpty) {
+    return <AppListTableColumn<T>>[];
+  }
+
+  final List<AppListTableColumn<T>>? configuredDefault = defaultColumns;
+  final List<AppListTableColumn<T>> defaultSource =
+      configuredDefault == null || configuredDefault.isEmpty
+      ? availableColumns
+      : configuredDefault;
+  return defaultSource
+      .take(math.min(defaultSource.length, _maxVisibleTableColumns))
+      .toList(growable: false);
+}
+
+int appListTableCompareText(String? left, String? right) {
+  return (left ?? '').trim().toLowerCase().compareTo(
+    (right ?? '').trim().toLowerCase(),
+  );
+}
+
+int appListTableCompareDateTime(DateTime? left, DateTime? right) {
+  if (left == null && right == null) {
+    return 0;
+  }
+  if (left == null) {
+    return 1;
+  }
+  if (right == null) {
+    return -1;
+  }
+  return left.compareTo(right);
+}
+
+int appListTableCompareNumber(num? left, num? right) {
+  if (left == null && right == null) {
+    return 0;
+  }
+  if (left == null) {
+    return 1;
+  }
+  if (right == null) {
+    return -1;
+  }
+  return left.compareTo(right);
+}
+
+class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
+  List<AppListTableColumn<T>> _availableColumns = <AppListTableColumn<T>>[];
+  Set<String> _visibleColumnKeys = <String>{};
+
+  void syncColumns({
+    required List<AppListTableColumn<T>> columns,
+    List<AppListTableColumn<T>>? columnChoices,
+  }) {
+    final List<AppListTableColumn<T>> nextColumns = _availableColumnsFor(
+      columns,
+      columnChoices,
+    );
+    final List<String> currentKeys = _availableColumns
+        .map((AppListTableColumn<T> column) => column.key)
+        .toList(growable: false);
+    final List<String> nextKeys = nextColumns
+        .map((AppListTableColumn<T> column) => column.key)
+        .toList(growable: false);
+
+    if (listEquals(currentKeys, nextKeys)) {
+      return;
+    }
+
+    _availableColumns = nextColumns;
+    _visibleColumnKeys = appListTableDefaultVisibleColumns(
+      nextColumns,
+      defaultColumns: columns,
+    ).map((AppListTableColumn<T> column) => column.key).toSet();
+    notifyListeners();
+  }
+
+  List<AppListTableColumn<T>> get visibleColumns {
+    final List<AppListTableColumn<T>> columns = _availableColumns
+        .where(
+          (AppListTableColumn<T> column) =>
+              _visibleColumnKeys.contains(column.key),
+        )
+        .toList(growable: false);
+    if (columns.isNotEmpty || _availableColumns.isEmpty) {
+      return columns;
+    }
+    return appListTableDefaultVisibleColumns(_availableColumns);
+  }
+
+  bool get canConfigure => _availableColumns.length > 1;
+
+  bool get hasCustomColumnVisibility {
+    return !setEquals(_visibleColumnKeys, _defaultColumnKeys);
+  }
+
+  bool isColumnVisible(String key) {
+    return _visibleColumnKeys.contains(key);
+  }
+
+  AppSearchBarAction settingsAction(
+    BuildContext context, {
+    String? label,
+    String? title,
+    String? applyLabel,
+    String? resetLabel,
+    String? cancelLabel,
+  }) {
+    final String resolvedLabel = label ?? 'Table column settings';
+    return AppSearchBarAction(
+      icon: Icons.settings_outlined,
+      label: resolvedLabel,
+      tooltip: resolvedLabel,
+      active: hasCustomColumnVisibility,
+      onPressed: () {
+        openColumnVisibilityDialog(
+          context,
+          title: title,
+          applyLabel: applyLabel,
+          resetLabel: resetLabel,
+          cancelLabel: cancelLabel,
+        );
+      },
+    );
+  }
+
+  Future<void> openColumnVisibilityDialog(
+    BuildContext context, {
+    String? title,
+    String? applyLabel,
+    String? resetLabel,
+    String? cancelLabel,
+  }) async {
+    if (!canConfigure) {
+      return;
+    }
+
+    final Set<String>? value = await showAppDialog<Set<String>>(
+      context: context,
+      builder: (_) => _ColumnVisibilityDialog<T>(
+        columns: _availableColumns,
+        visibleColumnKeys: _visibleColumnKeys,
+        defaultColumnKeys: _defaultColumnKeys,
+        title: title ?? 'Table columns',
+        applyLabel: applyLabel ?? 'Apply columns',
+        resetLabel: resetLabel ?? 'Reset columns',
+        cancelLabel:
+            cancelLabel ?? MaterialLocalizations.of(context).cancelButtonLabel,
+      ),
+    );
+    if (value == null) {
+      return;
+    }
+
+    _visibleColumnKeys = value;
+    notifyListeners();
+  }
+
+  Set<String> get _defaultColumnKeys {
+    return appListTableDefaultVisibleColumns(
+      _availableColumns,
+    ).map((AppListTableColumn<T> column) => column.key).toSet();
+  }
+}
+
 @immutable
 final class AppListTableSearch<T> {
   const AppListTableSearch({
@@ -208,6 +398,7 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityApplyLabel,
     this.columnVisibilityResetLabel,
     this.columnVisibilityCancelLabel,
+    this.columnVisibilityController,
     super.key,
   }) : assert(
          items != null || page != null,
@@ -249,6 +440,7 @@ class AppListTable<T> extends StatefulWidget {
   final String? columnVisibilityApplyLabel;
   final String? columnVisibilityResetLabel;
   final String? columnVisibilityCancelLabel;
+  final AppListTableColumnVisibilityController<T>? columnVisibilityController;
 
   @override
   State<AppListTable<T>> createState() => _AppListTableState<T>();
@@ -262,15 +454,50 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   @override
   void initState() {
     super.initState();
+    widget.columnVisibilityController?.addListener(
+      _handleColumnVisibilityChanged,
+    );
     _syncVisibleColumns();
   }
 
   @override
   void didUpdateWidget(covariant AppListTable<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.columnVisibilityController !=
+        widget.columnVisibilityController) {
+      oldWidget.columnVisibilityController?.removeListener(
+        _handleColumnVisibilityChanged,
+      );
+      widget.columnVisibilityController?.addListener(
+        _handleColumnVisibilityChanged,
+      );
+    }
     if (oldWidget.columns != widget.columns ||
-        oldWidget.columnChoices != widget.columnChoices) {
+        oldWidget.columnChoices != widget.columnChoices ||
+        oldWidget.columnVisibilityController !=
+            widget.columnVisibilityController) {
       _syncVisibleColumns();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.columnVisibilityController?.removeListener(
+      _handleColumnVisibilityChanged,
+    );
+    super.dispose();
+  }
+
+  void _handleColumnVisibilityChanged() {
+    final String? sortColumnKey = _sortColumnKey;
+    if (sortColumnKey != null &&
+        widget.columnVisibilityController?.isColumnVisible(sortColumnKey) ==
+            false) {
+      _sortColumnKey = null;
+      _sortAscending = true;
+    }
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -580,23 +807,16 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   List<AppListTableColumn<T>> get _availableColumns {
-    final List<AppListTableColumn<T>> columns = <AppListTableColumn<T>>[];
-    final Set<String> keys = <String>{};
-
-    void addColumns(Iterable<AppListTableColumn<T>> source) {
-      for (final AppListTableColumn<T> column in source) {
-        if (keys.add(column.key)) {
-          columns.add(column);
-        }
-      }
-    }
-
-    addColumns(widget.columns);
-    addColumns(widget.columnChoices ?? <AppListTableColumn<T>>[]);
-    return columns;
+    return _availableColumnsFor(widget.columns, widget.columnChoices);
   }
 
   List<AppListTableColumn<T>> get _visibleColumns {
+    final AppListTableColumnVisibilityController<T>? controller =
+        widget.columnVisibilityController;
+    if (controller != null) {
+      return controller.visibleColumns;
+    }
+
     final List<AppListTableColumn<T>> availableColumns = _availableColumns;
     final List<AppListTableColumn<T>> visibleColumns = availableColumns
         .where(
@@ -611,6 +831,11 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   bool get _hasCustomColumnVisibility {
+    final AppListTableColumnVisibilityController<T>? controller =
+        widget.columnVisibilityController;
+    if (controller != null) {
+      return controller.hasCustomColumnVisibility;
+    }
     return !setEquals(_visibleColumnKeys, _defaultColumnKeys);
   }
 
@@ -623,19 +848,23 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   List<AppListTableColumn<T>> _defaultVisibleColumns(
     List<AppListTableColumn<T>> availableColumns,
   ) {
-    if (availableColumns.isEmpty) {
-      return <AppListTableColumn<T>>[];
-    }
-
-    final List<AppListTableColumn<T>> defaultSource = widget.columns.isEmpty
-        ? availableColumns
-        : widget.columns;
-    return defaultSource
-        .take(math.min(defaultSource.length, _maxVisibleTableColumns))
-        .toList(growable: false);
+    return appListTableDefaultVisibleColumns(
+      availableColumns,
+      defaultColumns: widget.columns,
+    );
   }
 
   void _syncVisibleColumns() {
+    final AppListTableColumnVisibilityController<T>? controller =
+        widget.columnVisibilityController;
+    if (controller != null) {
+      controller.syncColumns(
+        columns: widget.columns,
+        columnChoices: widget.columnChoices,
+      );
+      return;
+    }
+
     final List<AppListTableColumn<T>> availableColumns = _availableColumns;
     final Set<String> availableKeys = availableColumns
         .map((AppListTableColumn<T> column) => column.key)
@@ -684,6 +913,19 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   Future<void> _openColumnVisibilityDialog() async {
+    final AppListTableColumnVisibilityController<T>? controller =
+        widget.columnVisibilityController;
+    if (controller != null) {
+      await controller.openColumnVisibilityDialog(
+        context,
+        title: widget.columnVisibilityTitle,
+        applyLabel: widget.columnVisibilityApplyLabel,
+        resetLabel: widget.columnVisibilityResetLabel,
+        cancelLabel: widget.columnVisibilityCancelLabel,
+      );
+      return;
+    }
+
     final Set<String>? value = await showAppDialog<Set<String>>(
       context: context,
       builder: (_) => _ColumnVisibilityDialog<T>(

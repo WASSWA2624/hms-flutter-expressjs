@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
@@ -44,14 +46,38 @@ class TheaterWorkspacePage extends ConsumerWidget {
   }
 }
 
-class _TheaterWorkspaceContent extends ConsumerWidget {
+class _TheaterWorkspaceContent extends ConsumerStatefulWidget {
   const _TheaterWorkspaceContent({required this.state});
 
   final TheaterWorkspaceState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TheaterWorkspaceContent> createState() =>
+      _TheaterWorkspaceContentState();
+}
+
+class _TheaterWorkspaceContentState
+    extends ConsumerState<_TheaterWorkspaceContent> {
+  late final AppListTableColumnVisibilityController<TheaterCase>
+  _tableColumnController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tableColumnController =
+        AppListTableColumnVisibilityController<TheaterCase>();
+  }
+
+  @override
+  void dispose() {
+    _tableColumnController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final TheaterWorkspaceState state = widget.state;
     final controller = ref.read(theaterWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = accessPolicy.grants(AppPermissions.clinicalWrite);
@@ -114,7 +140,10 @@ class _TheaterWorkspaceContent extends ConsumerWidget {
           compact: true,
         ),
       ],
-      filters: _TheaterFilterBar(state: state),
+      filters: _TheaterFilterBar(
+        state: state,
+        columnVisibilityController: _tableColumnController,
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -127,25 +156,25 @@ class _TheaterWorkspaceContent extends ConsumerWidget {
           ],
           _TheaterCaseBoard(
             state: state,
-            onSelected: controller.selectCase,
+            canWrite: canWrite,
+            columnVisibilityController: _tableColumnController,
             onPageChanged: controller.changePage,
           ),
         ],
-      ),
-      detail: _TheaterCaseDetail(
-        theaterCase: state.selectedCase,
-        isLoading: state.isRefreshingDetail,
-        isMutating: state.isMutating,
-        canWrite: canWrite,
       ),
     );
   }
 }
 
 class _TheaterFilterBar extends ConsumerStatefulWidget {
-  const _TheaterFilterBar({required this.state});
+  const _TheaterFilterBar({
+    required this.state,
+    required this.columnVisibilityController,
+  });
 
   final TheaterWorkspaceState state;
+  final AppListTableColumnVisibilityController<TheaterCase>
+  columnVisibilityController;
 
   @override
   ConsumerState<_TheaterFilterBar> createState() => _TheaterFilterBarState();
@@ -204,6 +233,12 @@ class _TheaterFilterBarState extends ConsumerState<_TheaterFilterBar> {
         clearLabel: l10n.theaterClearFiltersAction,
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
+        trailingActions: <AppSearchBarAction>[
+          widget.columnVisibilityController.settingsAction(
+            context,
+            label: 'Table settings',
+          ),
+        ],
       ),
       filters: <Widget>[
         AppDateField(
@@ -263,19 +298,22 @@ class _TheaterFilterBarState extends ConsumerState<_TheaterFilterBar> {
   }
 }
 
-class _TheaterCaseBoard extends StatelessWidget {
+class _TheaterCaseBoard extends ConsumerWidget {
   const _TheaterCaseBoard({
     required this.state,
-    required this.onSelected,
+    required this.canWrite,
+    required this.columnVisibilityController,
     required this.onPageChanged,
   });
 
   final TheaterWorkspaceState state;
-  final ValueChanged<TheaterCase> onSelected;
+  final bool canWrite;
+  final AppListTableColumnVisibilityController<TheaterCase>
+  columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
 
     return AppWorkspaceDetailPanel(
@@ -284,10 +322,15 @@ class _TheaterCaseBoard extends StatelessWidget {
       child: AppListTable<TheaterCase>(
         page: state.cases,
         isLoading: state.isRefreshing,
+        columnVisibilityController: columnVisibilityController,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemKeyBuilder: (TheaterCase item) => ValueKey<String>(item.id),
-        onRowSelected: onSelected,
+        onRowSelected: (TheaterCase item) {
+          unawaited(
+            _openTheaterCaseDialog(context, ref, state, item, canWrite),
+          );
+        },
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<TheaterCase> page) {
@@ -416,6 +459,55 @@ class _TheaterCaseDetail extends ConsumerWidget {
             ),
     );
   }
+}
+
+Future<void> _openTheaterCaseDialog(
+  BuildContext context,
+  WidgetRef ref,
+  TheaterWorkspaceState fallbackState,
+  TheaterCase theaterCase,
+  bool canWrite,
+) async {
+  final TheaterWorkspaceController controller = ref.read(
+    theaterWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectCase(theaterCase);
+  if (context.mounted && failure != null) {
+    _showMutationResult(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final TheaterWorkspaceState state = _readTheaterState(ref) ?? fallbackState;
+  final TheaterCase selected = state.selectedCase ?? theaterCase;
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.theaterCaseDetailTitle),
+      icon: const Icon(Icons.local_activity_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: _TheaterCaseDetail(
+        theaterCase: selected,
+        isLoading: state.isRefreshingDetail,
+        isMutating: state.isMutating,
+        canWrite: canWrite,
+      ),
+    ),
+  );
+}
+
+TheaterWorkspaceState? _readTheaterState(WidgetRef ref) {
+  return ref
+      .read(theaterWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (TheaterWorkspaceState state) => state,
+        failure: (_) => null,
+      );
 }
 
 class _TheaterCaseDetailBody extends ConsumerWidget {
