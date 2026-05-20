@@ -1536,9 +1536,20 @@ List<AppSearchBarFilterChoice> _billingQueueFilterChoices() {
         AppSearchBarFilterChoice(
           value: queue.name,
           label: _queueLabel(queue),
-          icon: Icons.receipt_long_outlined,
+          icon: _billingQueueIcon(queue),
         ),
   ];
+}
+
+IconData _billingQueueIcon(BillingQueueType queue) {
+  return switch (queue) {
+    BillingQueueType.all => Icons.inventory_2_outlined,
+    BillingQueueType.needsIssue => Icons.receipt_long_outlined,
+    BillingQueueType.pendingPayment => Icons.payments_outlined,
+    BillingQueueType.claimsPending => Icons.health_and_safety_outlined,
+    BillingQueueType.approvalRequired => Icons.rule_outlined,
+    BillingQueueType.overdue => Icons.warning_amber_outlined,
+  };
 }
 
 abstract final class _BillingText {

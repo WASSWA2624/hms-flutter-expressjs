@@ -2175,9 +2175,21 @@ List<AppSearchBarFilterChoice> _labScopeFilterChoices(AppLocalizations l10n) {
         AppSearchBarFilterChoice(
           value: option.value.name,
           label: option.label,
-          icon: Icons.filter_list,
+          icon: _labScopeIcon(option.value),
         ),
   ];
+}
+
+IconData _labScopeIcon(LabQueueScope scope) {
+  return switch (scope) {
+    LabQueueScope.all => Icons.assignment_outlined,
+    LabQueueScope.collection => Icons.biotech_outlined,
+    LabQueueScope.processing => Icons.sync_outlined,
+    LabQueueScope.results => Icons.pending_actions_outlined,
+    LabQueueScope.critical => Icons.priority_high_outlined,
+    LabQueueScope.completed => Icons.verified_outlined,
+    LabQueueScope.cancelled => Icons.block_outlined,
+  };
 }
 
 String _pageLabel(BuildContext context, AppPage<LabOrderSummary> page) {

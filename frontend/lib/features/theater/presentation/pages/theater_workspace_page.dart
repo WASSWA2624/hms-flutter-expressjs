@@ -2064,7 +2064,7 @@ List<AppSearchBarFilterChoice> _theaterStatusFilterChoices(
       AppSearchBarFilterChoice(
         value: status,
         label: _caseStatusLabel(l10n, status),
-        icon: Icons.task_alt_outlined,
+        icon: _caseStatusIcon(status),
       ),
   ];
 }
@@ -2077,9 +2077,33 @@ List<AppSearchBarFilterChoice> _theaterStageFilterChoices(
       AppSearchBarFilterChoice(
         value: stage,
         label: _stageLabel(l10n, stage),
-        icon: Icons.timeline_outlined,
+        icon: _stageIcon(stage),
       ),
   ];
+}
+
+IconData _caseStatusIcon(String? status) {
+  return switch ((status ?? '').trim().toUpperCase()) {
+    'SCHEDULED' => Icons.event_available_outlined,
+    'IN_PROGRESS' => Icons.meeting_room_outlined,
+    'COMPLETED' => Icons.task_alt_outlined,
+    'CANCELLED' => Icons.cancel_outlined,
+    _ => Icons.radio_button_unchecked,
+  };
+}
+
+IconData _stageIcon(String? stage) {
+  return switch ((stage ?? '').trim().toUpperCase()) {
+    'PRE_OP' => Icons.assignment_outlined,
+    'SIGN_IN' => Icons.login_outlined,
+    'TIME_OUT' => Icons.fact_check_outlined,
+    'INTRA_OP' => Icons.monitor_heart_outlined,
+    'SIGN_OUT' => Icons.output_outlined,
+    'POST_OP' => Icons.note_add_outlined,
+    'PACU_HANDOFF' => Icons.output_outlined,
+    'COMPLETED' => Icons.verified_outlined,
+    _ => Icons.timeline_outlined,
+  };
 }
 
 bool _isSameTheaterFilterDate(DateTime? left, DateTime? right) {
