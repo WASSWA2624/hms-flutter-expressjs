@@ -255,7 +255,7 @@ class _LabWorklistPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.labWorklistTitle,
       description: l10n.labWorklistDescription,
-      child: AppPaginatedListTable<LabOrderSummary>(
+      child: AppListTable<LabOrderSummary>(
         page: state.worklist,
         isLoading: state.isRefreshing,
         previousPageLabel: l10n.labPreviousPageLabel,

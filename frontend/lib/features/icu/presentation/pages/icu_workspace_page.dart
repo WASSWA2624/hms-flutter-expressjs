@@ -202,7 +202,7 @@ class _IcuBoardPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: 'ICU board',
       description: 'Grouped by bed state and alert level.',
-      child: AppPaginatedListTable<IcuPatientSummary>(
+      child: AppListTable<IcuPatientSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
         previousPageLabel: l10n.opdPreviousPageLabel,

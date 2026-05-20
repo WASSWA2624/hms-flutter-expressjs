@@ -992,7 +992,7 @@ class _PatientList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
 
-    return AppSearchablePaginatedListTable<Patient>(
+    return AppListTable<Patient>(
       page: state.page,
       searchListenable: searchListenable,
       searchMatcher: (Patient patient, String query) {
@@ -1314,7 +1314,7 @@ class _SummaryPatientList extends ConsumerWidget {
     final l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
 
-    return AppPaginatedListTable<Patient>(
+    return AppListTable<Patient>(
       page: page,
       isLoading: isLoading,
       shrinkWrap: true,

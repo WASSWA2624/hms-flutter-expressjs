@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_icon_button.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
-import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 typedef AppListTableCellBuilder<T> =
@@ -18,12 +19,13 @@ typedef AppListTableItemKeyBuilder<T> = LocalKey Function(T item);
 typedef AppListTablePageLabelBuilder<T> = String Function(AppPage<T> page);
 typedef AppListTableRowColorBuilder<T> =
     Color? Function(BuildContext context, T item);
-typedef AppListTableHeaderBuilder = Widget Function(BuildContext context);
 typedef AppListTableSearchMatcher<T> = bool Function(T item, String query);
+typedef AppListTableSortComparator<T> = int Function(T left, T right);
 
 enum AppListTableDisplayMode { adaptive, table, list }
 
 const int _maxVisibleTableColumns = 5;
+const double _rowNumberColumnWidth = 48;
 
 @immutable
 final class AppListTableSearch<T> {
@@ -151,26 +153,37 @@ class AppListTableColumn<T> {
   const AppListTableColumn({
     required this.label,
     required this.cellBuilder,
-    this.headerBuilder,
+    this.id,
     this.numeric = false,
     this.tooltip,
+    this.sortComparator,
   });
 
+  final String? id;
   final String label;
   final AppListTableCellBuilder<T> cellBuilder;
-  final AppListTableHeaderBuilder? headerBuilder;
   final bool numeric;
   final String? tooltip;
+  final AppListTableSortComparator<T>? sortComparator;
+
+  String get key => id ?? label;
+
+  bool get isSortable => sortComparator != null;
 }
 
-class AppListTable<T> extends StatelessWidget {
+class AppListTable<T> extends StatefulWidget {
   const AppListTable({
-    required this.items,
     required this.columns,
     required this.mobileItemBuilder,
+    this.items,
+    this.page,
     this.columnChoices,
     this.itemKeyBuilder,
     this.onRowSelected,
+    this.onPageChanged,
+    this.pageLabelBuilder,
+    this.previousPageLabel,
+    this.nextPageLabel,
     this.emptyBuilder,
     this.loadingBuilder,
     this.errorBuilder,
@@ -182,15 +195,36 @@ class AppListTable<T> extends StatelessWidget {
     this.physics,
     this.displayMode = AppListTableDisplayMode.adaptive,
     this.search,
+    this.searchListenable,
+    this.searchMatcher,
+    this.title,
+    this.description,
+    this.columnVisibilityLabel,
+    this.columnVisibilityTitle,
+    this.columnVisibilityApplyLabel,
+    this.columnVisibilityResetLabel,
+    this.columnVisibilityCancelLabel,
     super.key,
-  });
+  }) : assert(
+         items != null || page != null,
+         'Provide either items or page to AppListTable.',
+       ),
+       assert(
+         searchListenable == null || searchMatcher != null,
+         'Provide searchMatcher when searchListenable is used.',
+       );
 
-  final List<T> items;
+  final List<T>? items;
+  final AppPage<T>? page;
   final List<AppListTableColumn<T>> columns;
   final List<AppListTableColumn<T>>? columnChoices;
   final AppListTableMobileItemBuilder<T> mobileItemBuilder;
   final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
+  final ValueChanged<AppPageRequest>? onPageChanged;
+  final AppListTablePageLabelBuilder<T>? pageLabelBuilder;
+  final String? previousPageLabel;
+  final String? nextPageLabel;
   final WidgetBuilder? emptyBuilder;
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext context, Object error)? errorBuilder;
@@ -202,99 +236,243 @@ class AppListTable<T> extends StatelessWidget {
   final ScrollPhysics? physics;
   final AppListTableDisplayMode displayMode;
   final AppListTableSearch<T>? search;
+  final ValueListenable<String>? searchListenable;
+  final AppListTableSearchMatcher<T>? searchMatcher;
+  final String? title;
+  final String? description;
+  final String? columnVisibilityLabel;
+  final String? columnVisibilityTitle;
+  final String? columnVisibilityApplyLabel;
+  final String? columnVisibilityResetLabel;
+  final String? columnVisibilityCancelLabel;
+
+  @override
+  State<AppListTable<T>> createState() => _AppListTableState<T>();
+}
+
+class _AppListTableState<T> extends State<AppListTable<T>> {
+  Set<String> _visibleColumnKeys = <String>{};
+  String? _sortColumnKey;
+  bool _sortAscending = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncVisibleColumns();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppListTable<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.columns != widget.columns ||
+        oldWidget.columnChoices != widget.columnChoices) {
+      _syncVisibleColumns();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final AppListTableSearch<T>? resolvedSearch = search;
+    final AppListTableSearch<T>? resolvedSearch = widget.search;
     if (resolvedSearch == null) {
-      return _buildForItems(context, items);
-    }
+      final ValueListenable<String>? searchListenable = widget.searchListenable;
+      if (searchListenable == null) {
+        return _buildForQuery(context, query: '', searchBar: null);
+      }
 
-    return _ListTableSearchLayout(
-      searchBar: resolvedSearch.buildSearchBar(context),
-      shrinkWrap: shrinkWrap,
-      child: ValueListenableBuilder<TextEditingValue>(
-        valueListenable: resolvedSearch.controller,
-        builder: (BuildContext context, TextEditingValue value, _) {
-          return _buildForItems(
+      return ValueListenableBuilder<String>(
+        valueListenable: searchListenable,
+        builder: (BuildContext context, String query, _) {
+          return _buildForQuery(
             context,
-            _filteredItems(items, value.text, resolvedSearch.matcher),
+            query: query,
+            searchBar: null,
+            usesExternalSearchListenable: true,
           );
         },
-      ),
+      );
+    }
+
+    final Widget searchBar = resolvedSearch.buildSearchBar(context);
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: resolvedSearch.controller,
+      builder: (BuildContext context, TextEditingValue value, _) {
+        return _buildForQuery(context, query: value.text, searchBar: searchBar);
+      },
     );
   }
 
-  Widget _buildForItems(BuildContext context, List<T> visibleItems) {
-    final Object? resolvedError = error;
-    if (resolvedError != null && errorBuilder != null) {
-      return errorBuilder!(context, resolvedError);
-    }
-
-    if (isLoading) {
-      return loadingBuilder?.call(context) ?? const _DefaultListTableLoading();
-    }
-
-    if (visibleItems.isEmpty && emptyBuilder != null) {
-      return emptyBuilder!(context);
-    }
-
-    final Widget content = LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool hasBoundedHeight = constraints.hasBoundedHeight;
-        final bool effectiveShrinkWrap = shrinkWrap || !hasBoundedHeight;
-        final ScrollPhysics? effectivePhysics = hasBoundedHeight
-            ? physics
-            : physics ?? const NeverScrollableScrollPhysics();
-
-        if (_usesListLayout(constraints)) {
-          return _MobileListTable<T>(
-            items: visibleItems,
-            itemBuilder: mobileItemBuilder,
-            itemKeyBuilder: itemKeyBuilder,
-            onRowSelected: onRowSelected,
-            shrinkWrap: effectiveShrinkWrap,
-            physics: effectivePhysics,
-            rowColorBuilder: rowColorBuilder,
-          );
-        }
-
-        return _DesktopListTable<T>(
-          items: visibleItems,
-          columns: columns,
-          columnChoices: columnChoices,
-          itemKeyBuilder: itemKeyBuilder,
-          onRowSelected: onRowSelected,
-          minWidth: _tableMinWidth(constraints),
-          rowColorBuilder: rowColorBuilder,
-          compact: _usesCompactTableLayout(constraints),
+  Widget _buildForQuery(
+    BuildContext context, {
+    required String query,
+    required Widget? searchBar,
+    bool usesExternalSearchListenable = false,
+  }) {
+    final ({bool disablePagination, List<T> items, AppPage<T>? page}) data =
+        _visibleData(
+          query,
+          usesExternalSearchListenable: usesExternalSearchListenable,
         );
-      },
+    final Widget content = _buildForItems(context, data.items);
+    final Widget? footer = _footerForPage(
+      context,
+      data.page,
+      disablePagination: data.disablePagination,
     );
+    final Widget? toolbar = _buildToolbar(context, searchBar);
+    final Widget? title = _buildTitle(context);
+    final ThemeData theme = Theme.of(context);
 
-    final Widget? resolvedFooter = footer;
-    if (resolvedFooter == null) {
+    if (toolbar == null && title == null && footer == null) {
       return content;
     }
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool canExpand = !shrinkWrap && constraints.hasBoundedHeight;
+        final bool canExpand =
+            !widget.shrinkWrap && constraints.hasBoundedHeight;
 
         return Column(
           mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            if (title != null) ...<Widget>[
+              title,
+              SizedBox(height: theme.spacing.xs),
+            ],
+            if (toolbar != null) ...<Widget>[
+              toolbar,
+              SizedBox(height: theme.spacing.xs),
+            ],
             if (canExpand) Expanded(child: content) else content,
-            resolvedFooter,
+            ?footer,
           ],
         );
       },
     );
   }
 
+  ({bool disablePagination, List<T> items, AppPage<T>? page}) _visibleData(
+    String query, {
+    required bool usesExternalSearchListenable,
+  }) {
+    final AppPage<T>? page = widget.page;
+    final List<T> sourceItems = page?.items ?? widget.items ?? <T>[];
+    final String normalizedQuery = query.trim();
+    List<T> visibleItems = sourceItems;
+
+    if (normalizedQuery.isNotEmpty) {
+      final AppListTableSearchMatcher<T>? matcher = usesExternalSearchListenable
+          ? widget.searchMatcher
+          : widget.search?.matcher ?? widget.searchMatcher;
+      if (matcher != null) {
+        visibleItems = _filteredItems(sourceItems, normalizedQuery, matcher);
+      }
+    }
+
+    final List<T> sortedItems = _sortedItems(visibleItems);
+    if (usesExternalSearchListenable &&
+        normalizedQuery.isNotEmpty &&
+        page != null) {
+      return (
+        disablePagination: true,
+        items: sortedItems,
+        page: AppPage<T>(
+          items: sortedItems,
+          request: page.request.first(),
+          totalItemCount: sortedItems.length,
+        ),
+      );
+    }
+
+    return (disablePagination: false, items: sortedItems, page: page);
+  }
+
+  Widget _buildForItems(BuildContext context, List<T> visibleItems) {
+    final Object? resolvedError = widget.error;
+    if (resolvedError != null && widget.errorBuilder != null) {
+      return widget.errorBuilder!(context, resolvedError);
+    }
+
+    if (widget.isLoading) {
+      return widget.loadingBuilder?.call(context) ??
+          const _DefaultListTableLoading();
+    }
+
+    if (visibleItems.isEmpty && widget.emptyBuilder != null) {
+      return widget.emptyBuilder!(context);
+    }
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool hasBoundedHeight = constraints.hasBoundedHeight;
+        final bool effectiveShrinkWrap = widget.shrinkWrap || !hasBoundedHeight;
+        final ScrollPhysics? effectivePhysics = hasBoundedHeight
+            ? widget.physics
+            : widget.physics ?? const NeverScrollableScrollPhysics();
+        final List<AppListTableColumn<T>> visibleColumns = _visibleColumns;
+
+        if (_usesListLayout(constraints)) {
+          return _MobileListTable<T>(
+            items: visibleItems,
+            itemBuilder: widget.mobileItemBuilder,
+            itemKeyBuilder: widget.itemKeyBuilder,
+            onRowSelected: widget.onRowSelected,
+            shrinkWrap: effectiveShrinkWrap,
+            physics: effectivePhysics,
+            rowColorBuilder: widget.rowColorBuilder,
+          );
+        }
+
+        return _DesktopListTable<T>(
+          items: visibleItems,
+          columns: visibleColumns,
+          itemKeyBuilder: widget.itemKeyBuilder,
+          onRowSelected: widget.onRowSelected,
+          minWidth: _tableMinWidth(constraints, visibleColumns),
+          rowColorBuilder: widget.rowColorBuilder,
+          compact: _usesCompactTableLayout(constraints),
+          sortColumnKey: _sortColumnKey,
+          sortAscending: _sortAscending,
+          onSort: _sortByColumn,
+        );
+      },
+    );
+  }
+
+  Widget? _footerForPage(
+    BuildContext context,
+    AppPage<T>? visiblePage, {
+    required bool disablePagination,
+  }) {
+    final Widget? resolvedFooter = widget.footer;
+    if (resolvedFooter != null) {
+      return resolvedFooter;
+    }
+
+    final AppListTablePageLabelBuilder<T>? pageLabelBuilder =
+        widget.pageLabelBuilder;
+    final String? previousPageLabel = widget.previousPageLabel;
+    final String? nextPageLabel = widget.nextPageLabel;
+    if (visiblePage == null ||
+        pageLabelBuilder == null ||
+        previousPageLabel == null ||
+        nextPageLabel == null) {
+      return null;
+    }
+
+    return _AppPaginationControls(
+      pageRequest: visiblePage.request,
+      hasPreviousPage: visiblePage.hasPreviousPage,
+      hasNextPage: visiblePage.hasNextPage,
+      pageLabel: pageLabelBuilder(visiblePage),
+      previousPageLabel: previousPageLabel,
+      nextPageLabel: nextPageLabel,
+      onPageChanged: disablePagination ? null : widget.onPageChanged,
+    );
+  }
+
   bool _usesListLayout(BoxConstraints constraints) {
-    return switch (displayMode) {
+    return switch (widget.displayMode) {
       AppListTableDisplayMode.list => true,
       AppListTableDisplayMode.table => false,
       AppListTableDisplayMode.adaptive =>
@@ -309,18 +487,20 @@ class AppListTable<T> extends StatelessWidget {
     return AppBreakpoints.fromConstraints(constraints) == AppBreakpoint.md;
   }
 
-  double _tableMinWidth(BoxConstraints constraints) {
-    if (columns.isEmpty) {
+  double _tableMinWidth(
+    BoxConstraints constraints,
+    List<AppListTableColumn<T>> visibleColumns,
+  ) {
+    if (visibleColumns.isEmpty) {
       return constraints.maxWidth;
     }
 
     final bool compact = _usesCompactTableLayout(constraints);
     final double minColumnWidth = compact ? 128 : 148;
-    final int visibleColumnCount = math.min(
-      columns.length,
-      _maxVisibleTableColumns,
+    return math.max(
+      constraints.maxWidth,
+      _rowNumberColumnWidth + visibleColumns.length * minColumnWidth,
     );
-    return math.max(constraints.maxWidth, visibleColumnCount * minColumnWidth);
   }
 
   List<T> _filteredItems(
@@ -337,218 +517,383 @@ class AppListTable<T> extends StatelessWidget {
         .where((T item) => matcher(item, normalizedQuery))
         .toList(growable: false);
   }
-}
 
-class _ListTableSearchLayout extends StatelessWidget {
-  const _ListTableSearchLayout({
-    required this.searchBar,
-    required this.child,
-    required this.shrinkWrap,
-  });
+  List<T> _sortedItems(List<T> sourceItems) {
+    final String? sortColumnKey = _sortColumnKey;
+    if (sortColumnKey == null) {
+      return sourceItems;
+    }
 
-  final Widget searchBar;
-  final Widget child;
-  final bool shrinkWrap;
+    final AppListTableColumn<T>? column = _columnByKey(
+      _availableColumns,
+      sortColumnKey,
+    );
+    final AppListTableSortComparator<T>? comparator = column?.sortComparator;
+    if (comparator == null) {
+      return sourceItems;
+    }
 
-  @override
-  Widget build(BuildContext context) {
+    final List<T> sortedItems = List<T>.of(sourceItems);
+    sortedItems.sort((T left, T right) {
+      final int result = comparator(left, right);
+      return _sortAscending ? result : -result;
+    });
+    return sortedItems;
+  }
+
+  Widget? _buildTitle(BuildContext context) {
+    final String? title = widget.title;
+    final String? description = widget.description;
+    if ((title == null || title.trim().isEmpty) &&
+        (description == null || description.trim().isEmpty)) {
+      return null;
+    }
+
+    return _ListTableTitle(title: title, description: description);
+  }
+
+  Widget? _buildToolbar(BuildContext context, Widget? searchBar) {
+    final bool showColumnSettings = _availableColumns.length > 1;
+    if (searchBar == null && !showColumnSettings) {
+      return null;
+    }
+
     final ThemeData theme = Theme.of(context);
+    final Widget? settingsButton = showColumnSettings
+        ? AppIconButton(
+            icon: Icons.view_column_outlined,
+            semanticLabel: _columnVisibilityLabel,
+            tooltip: _columnVisibilityLabel,
+            color: _hasCustomColumnVisibility
+                ? theme.colorScheme.primary
+                : null,
+            onPressed: _openColumnVisibilityDialog,
+          )
+        : null;
+
+    if (searchBar == null) {
+      return Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: settingsButton,
+      );
+    }
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool canExpand = !shrinkWrap && constraints.hasBoundedHeight;
+        if (constraints.maxWidth < 560) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              searchBar,
+              if (settingsButton != null) ...<Widget>[
+                SizedBox(height: theme.spacing.xs),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: settingsButton,
+                ),
+              ],
+            ],
+          );
+        }
 
-        return Column(
-          mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Row(
           children: <Widget>[
-            searchBar,
-            SizedBox(height: theme.spacing.sm),
-            if (canExpand) Expanded(child: child) else child,
+            Expanded(child: searchBar),
+            if (settingsButton != null) ...<Widget>[
+              SizedBox(width: theme.spacing.xs),
+              settingsButton,
+            ],
           ],
         );
       },
     );
   }
-}
 
-class AppPaginatedListTable<T> extends StatelessWidget {
-  const AppPaginatedListTable({
-    required this.page,
-    required this.columns,
-    required this.mobileItemBuilder,
-    required this.pageLabelBuilder,
-    required this.previousPageLabel,
-    required this.nextPageLabel,
-    this.columnChoices,
-    this.itemKeyBuilder,
-    this.onRowSelected,
-    this.onPageChanged,
-    this.emptyBuilder,
-    this.loadingBuilder,
-    this.errorBuilder,
-    this.rowColorBuilder,
-    this.isLoading = false,
-    this.error,
-    this.shrinkWrap = false,
-    this.physics,
-    this.displayMode = AppListTableDisplayMode.adaptive,
-    this.search,
-    super.key,
-  });
+  List<AppListTableColumn<T>> get _availableColumns {
+    final List<AppListTableColumn<T>> columns = <AppListTableColumn<T>>[];
+    final Set<String> keys = <String>{};
 
-  final AppPage<T> page;
-  final List<AppListTableColumn<T>> columns;
-  final List<AppListTableColumn<T>>? columnChoices;
-  final AppListTableMobileItemBuilder<T> mobileItemBuilder;
-  final AppListTablePageLabelBuilder<T> pageLabelBuilder;
-  final String previousPageLabel;
-  final String nextPageLabel;
-  final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
-  final ValueChanged<T>? onRowSelected;
-  final ValueChanged<AppPageRequest>? onPageChanged;
-  final WidgetBuilder? emptyBuilder;
-  final WidgetBuilder? loadingBuilder;
-  final Widget Function(BuildContext context, Object error)? errorBuilder;
-  final AppListTableRowColorBuilder<T>? rowColorBuilder;
-  final bool isLoading;
-  final Object? error;
-  final bool shrinkWrap;
-  final ScrollPhysics? physics;
-  final AppListTableDisplayMode displayMode;
-  final AppListTableSearch<T>? search;
+    void addColumns(Iterable<AppListTableColumn<T>> source) {
+      for (final AppListTableColumn<T> column in source) {
+        if (keys.add(column.key)) {
+          columns.add(column);
+        }
+      }
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return AppListTable<T>(
-      items: page.items,
-      columns: columns,
-      columnChoices: columnChoices,
-      mobileItemBuilder: mobileItemBuilder,
-      itemKeyBuilder: itemKeyBuilder,
-      onRowSelected: onRowSelected,
-      emptyBuilder: emptyBuilder,
-      loadingBuilder: loadingBuilder,
-      errorBuilder: errorBuilder,
-      rowColorBuilder: rowColorBuilder,
-      isLoading: isLoading,
-      error: error,
-      shrinkWrap: shrinkWrap,
-      physics: physics,
-      displayMode: displayMode,
-      search: search,
-      footer: AppPaginationControls(
-        pageRequest: page.request,
-        hasPreviousPage: page.hasPreviousPage,
-        hasNextPage: page.hasNextPage,
-        pageLabel: pageLabelBuilder(page),
-        previousPageLabel: previousPageLabel,
-        nextPageLabel: nextPageLabel,
-        onPageChanged: onPageChanged,
+    addColumns(widget.columns);
+    addColumns(widget.columnChoices ?? <AppListTableColumn<T>>[]);
+    return columns;
+  }
+
+  List<AppListTableColumn<T>> get _visibleColumns {
+    final List<AppListTableColumn<T>> availableColumns = _availableColumns;
+    final List<AppListTableColumn<T>> visibleColumns = availableColumns
+        .where(
+          (AppListTableColumn<T> column) =>
+              _visibleColumnKeys.contains(column.key),
+        )
+        .toList(growable: false);
+    if (visibleColumns.isNotEmpty || availableColumns.isEmpty) {
+      return visibleColumns;
+    }
+    return _defaultVisibleColumns(availableColumns);
+  }
+
+  bool get _hasCustomColumnVisibility {
+    return !setEquals(_visibleColumnKeys, _defaultColumnKeys);
+  }
+
+  Set<String> get _defaultColumnKeys {
+    return _defaultVisibleColumns(
+      _availableColumns,
+    ).map((AppListTableColumn<T> column) => column.key).toSet();
+  }
+
+  List<AppListTableColumn<T>> _defaultVisibleColumns(
+    List<AppListTableColumn<T>> availableColumns,
+  ) {
+    if (availableColumns.isEmpty) {
+      return <AppListTableColumn<T>>[];
+    }
+
+    final List<AppListTableColumn<T>> defaultSource = widget.columns.isEmpty
+        ? availableColumns
+        : widget.columns;
+    return defaultSource
+        .take(math.min(defaultSource.length, _maxVisibleTableColumns))
+        .toList(growable: false);
+  }
+
+  void _syncVisibleColumns() {
+    final List<AppListTableColumn<T>> availableColumns = _availableColumns;
+    final Set<String> availableKeys = availableColumns
+        .map((AppListTableColumn<T> column) => column.key)
+        .toSet();
+    final Set<String> next = _visibleColumnKeys
+        .where(availableKeys.contains)
+        .toSet();
+
+    if (next.isEmpty) {
+      next.addAll(_defaultColumnKeys);
+    }
+
+    _visibleColumnKeys = next;
+    final String? sortColumnKey = _sortColumnKey;
+    if (sortColumnKey != null && !_visibleColumnKeys.contains(sortColumnKey)) {
+      _sortColumnKey = null;
+      _sortAscending = true;
+    }
+  }
+
+  AppListTableColumn<T>? _columnByKey(
+    List<AppListTableColumn<T>> columns,
+    String key,
+  ) {
+    for (final AppListTableColumn<T> column in columns) {
+      if (column.key == key) {
+        return column;
+      }
+    }
+    return null;
+  }
+
+  void _sortByColumn(AppListTableColumn<T> column) {
+    if (!column.isSortable) {
+      return;
+    }
+
+    setState(() {
+      if (_sortColumnKey == column.key) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortColumnKey = column.key;
+        _sortAscending = true;
+      }
+    });
+  }
+
+  Future<void> _openColumnVisibilityDialog() async {
+    final Set<String>? value = await showAppDialog<Set<String>>(
+      context: context,
+      builder: (_) => _ColumnVisibilityDialog<T>(
+        columns: _availableColumns,
+        visibleColumnKeys: _visibleColumnKeys,
+        defaultColumnKeys: _defaultColumnKeys,
+        title: widget.columnVisibilityTitle ?? 'Table columns',
+        applyLabel: widget.columnVisibilityApplyLabel ?? 'Apply columns',
+        resetLabel: widget.columnVisibilityResetLabel ?? 'Reset columns',
+        cancelLabel:
+            widget.columnVisibilityCancelLabel ??
+            MaterialLocalizations.of(context).cancelButtonLabel,
       ),
     );
+    if (!mounted || value == null) {
+      return;
+    }
+
+    setState(() {
+      _visibleColumnKeys = value;
+      final String? sortColumnKey = _sortColumnKey;
+      if (sortColumnKey != null && !value.contains(sortColumnKey)) {
+        _sortColumnKey = null;
+        _sortAscending = true;
+      }
+    });
+  }
+
+  String get _columnVisibilityLabel {
+    return widget.columnVisibilityLabel ?? 'Table column settings';
   }
 }
 
-class AppSearchablePaginatedListTable<T> extends StatelessWidget {
-  const AppSearchablePaginatedListTable({
-    required this.page,
-    required this.columns,
-    required this.mobileItemBuilder,
-    required this.pageLabelBuilder,
-    required this.previousPageLabel,
-    required this.nextPageLabel,
-    required this.searchListenable,
-    required this.searchMatcher,
-    this.columnChoices,
-    this.itemKeyBuilder,
-    this.onRowSelected,
-    this.onPageChanged,
-    this.emptyBuilder,
-    this.loadingBuilder,
-    this.errorBuilder,
-    this.rowColorBuilder,
-    this.isLoading = false,
-    this.error,
-    this.shrinkWrap = false,
-    this.physics,
-    this.displayMode = AppListTableDisplayMode.adaptive,
-    super.key,
-  });
+class _ListTableTitle extends StatelessWidget {
+  const _ListTableTitle({required this.title, required this.description});
 
-  final AppPage<T> page;
-  final List<AppListTableColumn<T>> columns;
-  final List<AppListTableColumn<T>>? columnChoices;
-  final AppListTableMobileItemBuilder<T> mobileItemBuilder;
-  final AppListTablePageLabelBuilder<T> pageLabelBuilder;
-  final String previousPageLabel;
-  final String nextPageLabel;
-  final ValueListenable<String> searchListenable;
-  final AppListTableSearchMatcher<T> searchMatcher;
-  final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
-  final ValueChanged<T>? onRowSelected;
-  final ValueChanged<AppPageRequest>? onPageChanged;
-  final WidgetBuilder? emptyBuilder;
-  final WidgetBuilder? loadingBuilder;
-  final Widget Function(BuildContext context, Object error)? errorBuilder;
-  final AppListTableRowColorBuilder<T>? rowColorBuilder;
-  final bool isLoading;
-  final Object? error;
-  final bool shrinkWrap;
-  final ScrollPhysics? physics;
-  final AppListTableDisplayMode displayMode;
+  final String? title;
+  final String? description;
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<String>(
-      valueListenable: searchListenable,
-      builder: (BuildContext context, String query, _) {
-        final String normalizedQuery = query.trim();
-        final bool isSearching = normalizedQuery.isNotEmpty;
-        final AppPage<T> visiblePage = isSearching
-            ? _filteredPage(normalizedQuery)
-            : page;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String? title = this.title?.trim();
+    final String? description = this.description?.trim();
 
-        return AppPaginatedListTable<T>(
-          page: visiblePage,
-          columns: columns,
-          columnChoices: columnChoices,
-          mobileItemBuilder: mobileItemBuilder,
-          pageLabelBuilder: pageLabelBuilder,
-          previousPageLabel: previousPageLabel,
-          nextPageLabel: nextPageLabel,
-          itemKeyBuilder: itemKeyBuilder,
-          onRowSelected: onRowSelected,
-          onPageChanged: isSearching ? null : onPageChanged,
-          emptyBuilder: emptyBuilder,
-          loadingBuilder: loadingBuilder,
-          errorBuilder: errorBuilder,
-          rowColorBuilder: rowColorBuilder,
-          isLoading: isLoading,
-          error: error,
-          shrinkWrap: shrinkWrap,
-          physics: physics,
-          displayMode: displayMode,
-        );
-      },
-    );
-  }
-
-  AppPage<T> _filteredPage(String query) {
-    final List<T> visibleItems = page.items
-        .where((T item) => searchMatcher(item, query))
-        .toList(growable: false);
-
-    return AppPage<T>(
-      items: visibleItems,
-      request: page.request.first(),
-      totalItemCount: visibleItems.length,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (title != null && title.isNotEmpty)
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        if (description != null && description.isNotEmpty)
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
     );
   }
 }
 
-class AppPaginationControls extends StatelessWidget {
-  const AppPaginationControls({
+class _ColumnVisibilityDialog<T> extends StatefulWidget {
+  const _ColumnVisibilityDialog({
+    required this.columns,
+    required this.visibleColumnKeys,
+    required this.defaultColumnKeys,
+    required this.title,
+    required this.applyLabel,
+    required this.resetLabel,
+    required this.cancelLabel,
+  });
+
+  final List<AppListTableColumn<T>> columns;
+  final Set<String> visibleColumnKeys;
+  final Set<String> defaultColumnKeys;
+  final String title;
+  final String applyLabel;
+  final String resetLabel;
+  final String cancelLabel;
+
+  @override
+  State<_ColumnVisibilityDialog<T>> createState() =>
+      _ColumnVisibilityDialogState<T>();
+}
+
+class _ColumnVisibilityDialogState<T>
+    extends State<_ColumnVisibilityDialog<T>> {
+  late Set<String> _visibleColumnKeys;
+
+  @override
+  void initState() {
+    super.initState();
+    _visibleColumnKeys = Set<String>.of(widget.visibleColumnKeys);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      title: Text(widget.title),
+      icon: const Icon(Icons.view_column_outlined),
+      maxWidth: 480,
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (final AppListTableColumn<T> column in widget.columns)
+            Builder(
+              builder: (BuildContext context) {
+                final bool isChecked = _visibleColumnKeys.contains(column.key);
+                final bool canChange =
+                    !isChecked || _visibleColumnKeys.length > 1;
+
+                return CheckboxListTile(
+                  value: isChecked,
+                  title: Text(column.label),
+                  subtitle: column.tooltip == null
+                      ? null
+                      : Text(column.tooltip!),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: canChange
+                      ? (bool? value) {
+                          setState(() {
+                            final Set<String> next = Set<String>.of(
+                              _visibleColumnKeys,
+                            );
+                            if (value ?? false) {
+                              next.add(column.key);
+                            } else {
+                              next.remove(column.key);
+                            }
+                            _visibleColumnKeys = next;
+                          });
+                        }
+                      : null,
+                );
+              },
+            ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: widget.resetLabel,
+          leadingIcon: Icons.restart_alt,
+          onPressed: () {
+            setState(() {
+              _visibleColumnKeys = Set<String>.of(widget.defaultColumnKeys);
+            });
+          },
+        ),
+        AppButton.secondary(
+          label: widget.cancelLabel,
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        AppButton.primary(
+          label: widget.applyLabel,
+          leadingIcon: Icons.check,
+          onPressed: () {
+            Navigator.of(context).pop(_visibleColumnKeys);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _AppPaginationControls extends StatelessWidget {
+  const _AppPaginationControls({
     required this.pageRequest,
     required this.hasPreviousPage,
     required this.hasNextPage,
@@ -556,7 +901,6 @@ class AppPaginationControls extends StatelessWidget {
     required this.previousPageLabel,
     required this.nextPageLabel,
     required this.onPageChanged,
-    super.key,
   });
 
   final AppPageRequest pageRequest;
@@ -637,7 +981,10 @@ class _MobileListTable<T> extends StatelessWidget {
         final T item = items[index];
         Widget row = KeyedSubtree(
           key: itemKeyBuilder?.call(item),
-          child: itemBuilder(context, item),
+          child: _NumberedMobileListItem(
+            number: index + 1,
+            child: itemBuilder(context, item),
+          ),
         );
 
         if (onRowSelected != null) {
@@ -658,6 +1005,44 @@ class _MobileListTable<T> extends StatelessWidget {
       separatorBuilder: (BuildContext context, int index) {
         return const Divider(height: 1);
       },
+    );
+  }
+}
+
+class _NumberedMobileListItem extends StatelessWidget {
+  const _NumberedMobileListItem({required this.number, required this.child});
+
+  final int number;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          width: _rowNumberColumnWidth,
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: theme.spacing.sm,
+              left: theme.spacing.xs,
+              right: theme.spacing.xs,
+            ),
+            child: Text(
+              number.toString(),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+        Expanded(child: child),
+      ],
     );
   }
 }
@@ -715,22 +1100,26 @@ class _DesktopListTable<T> extends StatefulWidget {
   const _DesktopListTable({
     required this.items,
     required this.columns,
-    required this.columnChoices,
     required this.itemKeyBuilder,
     required this.onRowSelected,
     required this.minWidth,
     required this.rowColorBuilder,
     required this.compact,
+    required this.sortColumnKey,
+    required this.sortAscending,
+    required this.onSort,
   });
 
   final List<T> items;
   final List<AppListTableColumn<T>> columns;
-  final List<AppListTableColumn<T>>? columnChoices;
   final AppListTableItemKeyBuilder<T>? itemKeyBuilder;
   final ValueChanged<T>? onRowSelected;
   final double minWidth;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
   final bool compact;
+  final String? sortColumnKey;
+  final bool sortAscending;
+  final ValueChanged<AppListTableColumn<T>> onSort;
 
   @override
   State<_DesktopListTable<T>> createState() => _DesktopListTableState<T>();
@@ -738,23 +1127,11 @@ class _DesktopListTable<T> extends StatefulWidget {
 
 class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   late final ScrollController _horizontalController;
-  late List<AppListTableColumn<T>> _visibleColumns;
 
   @override
   void initState() {
     super.initState();
     _horizontalController = ScrollController();
-    _visibleColumns = <AppListTableColumn<T>>[];
-    _syncVisibleColumns();
-  }
-
-  @override
-  void didUpdateWidget(covariant _DesktopListTable<T> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.columns != widget.columns ||
-        oldWidget.columnChoices != widget.columnChoices) {
-      _syncVisibleColumns();
-    }
   }
 
   @override
@@ -775,10 +1152,6 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         : theme.spacing.xl;
     final double rowMinHeight = widget.compact ? 38 : 40;
     final double rowMaxHeight = widget.compact ? 56 : 64;
-    final List<AppListTableColumn<T>> visibleColumns = _effectiveColumns;
-    final List<AppListTableColumn<T>> columnChoices = _canSwapColumns
-        ? _columnChoices
-        : <AppListTableColumn<T>>[];
 
     final Widget table = DataTable(
       showCheckboxColumn: false,
@@ -796,41 +1169,36 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         fontWeight: FontWeight.w500,
       ),
       columns: <DataColumn>[
-        for (var index = 0; index < visibleColumns.length; index += 1)
+        DataColumn(
+          numeric: true,
+          label: SizedBox(
+            width: _rowNumberColumnWidth,
+            child: Text(
+              '#',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+        for (final AppListTableColumn<T> column in widget.columns)
           DataColumn(
-            numeric: visibleColumns[index].numeric,
-            tooltip: visibleColumns[index].tooltip,
-            label: _ColumnSwapHeader<T>(
-              column: visibleColumns[index],
-              visibleColumns: visibleColumns,
-              choices: columnChoices,
-              onSelected: (AppListTableColumn<T> replacement) {
-                setState(() {
-                  _visibleColumns = _replaceVisibleColumn(
-                    visibleColumns,
-                    index,
-                    replacement,
-                  );
-                });
-              },
+            numeric: column.numeric,
+            tooltip: column.tooltip,
+            label: _DataColumnHeader<T>(
+              column: column,
+              compact: widget.compact,
+              isSorted: widget.sortColumnKey == column.key,
+              sortAscending: widget.sortAscending,
+              onSort: widget.onSort,
             ),
           ),
       ],
       rows: <DataRow>[
-        for (final T item in widget.items)
-          DataRow(
-            key: widget.itemKeyBuilder?.call(item),
-            color: _rowColor(context, item),
-            onSelectChanged: widget.onRowSelected == null
-                ? null
-                : (_) {
-                    widget.onRowSelected!(item);
-                  },
-            cells: <DataCell>[
-              for (final AppListTableColumn<T> column in visibleColumns)
-                DataCell(column.cellBuilder(context, item)),
-            ],
-          ),
+        for (var index = 0; index < widget.items.length; index += 1)
+          _dataRow(context, index),
       ],
     );
 
@@ -851,104 +1219,28 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
   }
 
-  List<AppListTableColumn<T>> get _effectiveColumns {
-    if (_visibleColumns.isNotEmpty) {
-      return _visibleColumns;
-    }
-    if (widget.columns.isEmpty) {
-      return <AppListTableColumn<T>>[];
-    }
-    _syncVisibleColumns();
-    return _visibleColumns;
-  }
+  DataRow _dataRow(BuildContext context, int index) {
+    final T item = widget.items[index];
 
-  List<AppListTableColumn<T>> get _columnChoices {
-    final List<AppListTableColumn<T>> source =
-        widget.columnChoices ?? widget.columns;
-    final Set<String> labels = <String>{};
-    final List<AppListTableColumn<T>> choices = <AppListTableColumn<T>>[];
-    for (final AppListTableColumn<T> column in source) {
-      if (labels.add(column.label)) {
-        choices.add(column);
-      }
-    }
-    return choices.isEmpty ? widget.columns : choices;
-  }
-
-  bool get _canSwapColumns {
-    return widget.columnChoices != null ||
-        widget.columns.length > _maxVisibleTableColumns;
-  }
-
-  void _syncVisibleColumns() {
-    final List<AppListTableColumn<T>> choices = _columnChoices;
-    final List<AppListTableColumn<T>> next = <AppListTableColumn<T>>[];
-    for (
-      var index = 0;
-      index < widget.columns.length && next.length < _maxVisibleTableColumns;
-      index += 1
-    ) {
-      final String? previousLabel = index < _visibleColumns.length
-          ? _visibleColumns[index].label
-          : null;
-      final AppListTableColumn<T> candidate =
-          _columnByLabel(choices, previousLabel) ??
-          _columnByLabel(choices, widget.columns[index].label) ??
-          widget.columns[index];
-      if (!_containsColumnLabel(next, candidate.label)) {
-        next.add(candidate);
-      }
-    }
-    for (final AppListTableColumn<T> column in choices) {
-      if (next.length >= _maxVisibleTableColumns) {
-        break;
-      }
-      if (!_containsColumnLabel(next, column.label)) {
-        next.add(column);
-      }
-    }
-    _visibleColumns = next;
-  }
-
-  AppListTableColumn<T>? _columnByLabel(
-    List<AppListTableColumn<T>> columns,
-    String? label,
-  ) {
-    if (label == null) {
-      return null;
-    }
-    for (final AppListTableColumn<T> column in columns) {
-      if (column.label == label) {
-        return column;
-      }
-    }
-    return null;
-  }
-
-  bool _containsColumnLabel(List<AppListTableColumn<T>> columns, String label) {
-    return columns.any((AppListTableColumn<T> column) => column.label == label);
-  }
-
-  List<AppListTableColumn<T>> _replaceVisibleColumn(
-    List<AppListTableColumn<T>> visibleColumns,
-    int index,
-    AppListTableColumn<T> replacement,
-  ) {
-    final List<AppListTableColumn<T>> next = List<AppListTableColumn<T>>.from(
-      visibleColumns,
+    return DataRow(
+      key: widget.itemKeyBuilder?.call(item),
+      color: _rowColor(context, item),
+      onSelectChanged: widget.onRowSelected == null
+          ? null
+          : (_) {
+              widget.onRowSelected!(item);
+            },
+      cells: <DataCell>[
+        DataCell(
+          SizedBox(
+            width: _rowNumberColumnWidth,
+            child: Text((index + 1).toString(), textAlign: TextAlign.center),
+          ),
+        ),
+        for (final AppListTableColumn<T> column in widget.columns)
+          DataCell(column.cellBuilder(context, item)),
+      ],
     );
-    if (index < 0 ||
-        index >= next.length ||
-        next[index].label == replacement.label) {
-      return next;
-    }
-
-    if (_containsColumnLabel(next, replacement.label)) {
-      return next;
-    }
-
-    next[index] = replacement;
-    return next;
   }
 
   WidgetStateProperty<Color?>? _rowColor(BuildContext context, T item) {
@@ -973,64 +1265,65 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   }
 }
 
-class _ColumnSwapHeader<T> extends StatelessWidget {
-  const _ColumnSwapHeader({
+class _DataColumnHeader<T> extends StatelessWidget {
+  const _DataColumnHeader({
     required this.column,
-    required this.visibleColumns,
-    required this.choices,
-    required this.onSelected,
+    required this.compact,
+    required this.isSorted,
+    required this.sortAscending,
+    required this.onSort,
   });
 
   final AppListTableColumn<T> column;
-  final List<AppListTableColumn<T>> visibleColumns;
-  final List<AppListTableColumn<T>> choices;
-  final ValueChanged<AppListTableColumn<T>> onSelected;
+  final bool compact;
+  final bool isSorted;
+  final bool sortAscending;
+  final ValueChanged<AppListTableColumn<T>> onSort;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    if (choices.length <= 1) {
-      return column.headerBuilder?.call(context) ?? Text(column.label);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double maxWidth = compact ? 132 : 164;
+
+    if (!column.isSortable) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: Text(column.label, overflow: TextOverflow.ellipsis),
+      );
     }
 
-    final Set<String> visibleLabels = visibleColumns
-        .where((AppListTableColumn<T> item) => item.label != column.label)
-        .map((AppListTableColumn<T> item) => item.label)
-        .toSet();
-    final double width = AppBreakpoints.of(context) == AppBreakpoint.md
-        ? 152
-        : 176;
+    final IconData sortIcon = isSorted
+        ? sortAscending
+              ? Icons.arrow_upward
+              : Icons.arrow_downward
+        : Icons.unfold_more;
 
-    return SizedBox(
-      width: width,
-      child: AppSelectField<AppListTableColumn<T>>.searchable(
-        value: column,
-        semanticLabel: column.tooltip ?? column.label,
-        menuHeight: 320,
-        allowClear: false,
-        options: <AppSelectOption<AppListTableColumn<T>>>[
-          for (final AppListTableColumn<T> choice in choices)
-            AppSelectOption<AppListTableColumn<T>>(
-              value: choice,
-              label: choice.label,
-              enabled:
-                  choice.label == column.label ||
-                  !visibleLabels.contains(choice.label),
-              leadingIcon: Icon(
-                choice.label == column.label
-                    ? Icons.check_circle_outline
-                    : Icons.view_column_outlined,
-                size: theme.appTokens.listIconSize,
-              ),
-            ),
-        ],
-        onChanged: (AppListTableColumn<T>? replacement) {
-          if (replacement != null &&
-              replacement.label != column.label &&
-              !visibleLabels.contains(replacement.label)) {
-            onSelected(replacement);
-          }
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: TextButton(
+        style: TextButton.styleFrom(
+          alignment: AlignmentDirectional.centerStart,
+          minimumSize: Size.zero,
+          padding: EdgeInsets.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          foregroundColor: isSorted
+              ? colorScheme.primary
+              : colorScheme.onSurfaceVariant,
+        ),
+        onPressed: () {
+          onSort(column);
         },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Flexible(
+              child: Text(column.label, overflow: TextOverflow.ellipsis),
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Icon(sortIcon, size: theme.appTokens.listIconSize * 0.82),
+          ],
+        ),
       ),
     );
   }

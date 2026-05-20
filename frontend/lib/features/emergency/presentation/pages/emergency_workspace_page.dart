@@ -224,7 +224,7 @@ class _EmergencyBoardPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: 'Emergency board',
       description: 'Open cases remain actionable without billing checkpoints.',
-      child: AppPaginatedListTable<EmergencyCaseSummary>(
+      child: AppListTable<EmergencyCaseSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
         previousPageLabel: 'Previous emergency cases',

@@ -232,7 +232,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       clinicalWorkspaceControllerProvider.notifier,
     );
     return _ClinicalWorklistSurface(
-      child: AppPaginatedListTable<ClinicalWorklistEntry>(
+      child: AppListTable<ClinicalWorklistEntry>(
         page: state.worklist,
         isLoading: state.isRefreshing,
         shrinkWrap: true,

@@ -268,7 +268,7 @@ class _BillingQueuePanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: _queueLabel(state.query.queue),
       description: 'Simple cashier worklist backed by billing APIs.',
-      child: AppPaginatedListTable<BillingWorkItem>(
+      child: AppListTable<BillingWorkItem>(
         page: state.workItems,
         isLoading: state.isRefreshing,
         shrinkWrap: true,

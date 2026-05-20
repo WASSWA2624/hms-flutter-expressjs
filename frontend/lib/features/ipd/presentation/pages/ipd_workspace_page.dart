@@ -220,7 +220,7 @@ class _IpdBoardPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.ipdBoardTitle,
       description: l10n.ipdBoardDescription,
-      child: AppPaginatedListTable<IpdAdmissionSummary>(
+      child: AppListTable<IpdAdmissionSummary>(
         page: state.admissions,
         isLoading: state.isRefreshing,
         previousPageLabel: l10n.opdPreviousPageLabel,

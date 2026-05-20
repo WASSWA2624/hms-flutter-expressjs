@@ -63,6 +63,8 @@ void main() {
 
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
 
@@ -218,7 +220,36 @@ void main() {
     expect(find.text('Beta'), findsOneWidget);
   });
 
-  testWidgets('AppPaginatedListTable wires page controls to page requests', (
+  testWidgets('AppListTable toggles sortable text headers', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columns,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    await tester.tap(find.text('Title'));
+    await tester.pump();
+    await tester.tap(find.text('Title'));
+    await tester.pump();
+
+    expect(
+      tester.getTopLeft(find.text('Beta')).dy,
+      lessThan(tester.getTopLeft(find.text('Alpha')).dy),
+    );
+  });
+
+  testWidgets('AppListTable wires page controls to page requests', (
     WidgetTester tester,
   ) async {
     AppPageRequest? nextRequest;
@@ -227,7 +258,7 @@ void main() {
       tester,
       SizedBox(
         height: 360,
-        child: AppPaginatedListTable<_RowItem>(
+        child: AppListTable<_RowItem>(
           page: const AppPage<_RowItem>(
             items: items,
             request: AppPageRequest(pageIndex: 1, pageSize: 2),
@@ -258,33 +289,45 @@ void main() {
     expect(nextRequest, const AppPageRequest(pageIndex: 2, pageSize: 2));
   });
 
-  testWidgets('AppPaginationControls emits page requests', (
+  testWidgets('AppListTable emits previous page requests', (
     WidgetTester tester,
   ) async {
-    AppPageRequest? nextRequest;
+    AppPageRequest? previousRequest;
 
     await pumpComponent(
       tester,
-      AppPaginationControls(
-        pageRequest: const AppPageRequest(pageIndex: 1),
-        hasPreviousPage: true,
-        hasNextPage: true,
-        pageLabel: 'Page 2',
-        previousPageLabel: 'Previous page',
-        nextPageLabel: 'Next page',
-        onPageChanged: (AppPageRequest request) {
-          nextRequest = request;
-        },
+      SizedBox(
+        height: 360,
+        child: AppListTable<_RowItem>(
+          page: const AppPage<_RowItem>(
+            items: items,
+            request: AppPageRequest(pageIndex: 1, pageSize: 2),
+            totalItemCount: 6,
+          ),
+          columns: _columns,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+          pageLabelBuilder: (AppPage<_RowItem> page) {
+            return 'Page ${page.pageIndex + 1}';
+          },
+          previousPageLabel: 'Previous page',
+          nextPageLabel: 'Next page',
+          onPageChanged: (AppPageRequest request) {
+            previousRequest = request;
+          },
+        ),
       ),
+      size: const Size(900, 600),
     );
 
-    await tester.tap(find.byTooltip('Next page'));
+    await tester.tap(find.byTooltip('Previous page'));
     await tester.pump();
 
-    expect(nextRequest, const AppPageRequest(pageIndex: 2));
+    expect(previousRequest, const AppPageRequest(pageSize: 2));
   });
 
-  testWidgets('AppSearchablePaginatedListTable filters rows in real time', (
+  testWidgets('AppListTable filters paged rows in real time', (
     WidgetTester tester,
   ) async {
     final ValueNotifier<String> searchQuery = ValueNotifier<String>('');
@@ -294,7 +337,7 @@ void main() {
       tester,
       SizedBox(
         height: 360,
-        child: AppSearchablePaginatedListTable<_RowItem>(
+        child: AppListTable<_RowItem>(
           page: const AppPage<_RowItem>(
             items: items,
             request: AppPageRequest(pageIndex: 1, pageSize: 2),
@@ -343,9 +386,25 @@ void main() {
 
 const List<AppListTableColumn<_RowItem>> _columns =
     <AppListTableColumn<_RowItem>>[
-      AppListTableColumn<_RowItem>(label: 'Title', cellBuilder: _titleCell),
-      AppListTableColumn<_RowItem>(label: 'Status', cellBuilder: _statusCell),
+      AppListTableColumn<_RowItem>(
+        label: 'Title',
+        cellBuilder: _titleCell,
+        sortComparator: _compareTitle,
+      ),
+      AppListTableColumn<_RowItem>(
+        label: 'Status',
+        cellBuilder: _statusCell,
+        sortComparator: _compareStatus,
+      ),
     ];
+
+int _compareTitle(_RowItem left, _RowItem right) {
+  return left.title.compareTo(right.title);
+}
+
+int _compareStatus(_RowItem left, _RowItem right) {
+  return left.status.compareTo(right.status);
+}
 
 Widget _titleCell(BuildContext context, _RowItem item) {
   return Text(item.title);

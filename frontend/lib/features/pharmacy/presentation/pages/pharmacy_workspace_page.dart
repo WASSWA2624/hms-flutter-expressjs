@@ -209,7 +209,7 @@ class _PharmacyQueuePanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyQueuePanelTitle,
       description: l10n.pharmacyQueuePanelDescription,
-      child: AppPaginatedListTable<PharmacyOrder>(
+      child: AppListTable<PharmacyOrder>(
         page: state.workbench.orders,
         isLoading: state.isRefreshingOrders,
         previousPageLabel: l10n.opdPreviousPageLabel,
@@ -824,7 +824,7 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
             ],
           ),
           SizedBox(height: Theme.of(context).spacing.md),
-          AppPaginatedListTable<PharmacyDrug>(
+          AppListTable<PharmacyDrug>(
             page: state.drugs,
             isLoading: state.isRefreshingDrugs,
             previousPageLabel: l10n.opdPreviousPageLabel,

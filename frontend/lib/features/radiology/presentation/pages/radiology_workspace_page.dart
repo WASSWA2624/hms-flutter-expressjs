@@ -303,7 +303,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.radiologyWorklistTitle,
       description: l10n.radiologyWorklistDescription,
-      child: AppPaginatedListTable<RadiologyOrder>(
+      child: AppListTable<RadiologyOrder>(
         page: state.orders,
         isLoading: state.isRefreshing,
         shrinkWrap: true,

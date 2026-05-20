@@ -279,7 +279,7 @@ class _TheaterCaseBoard extends StatelessWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.theaterCasesTitle,
       description: l10n.theaterCasesDescription,
-      child: AppPaginatedListTable<TheaterCase>(
+      child: AppListTable<TheaterCase>(
         page: state.cases,
         isLoading: state.isRefreshing,
         shrinkWrap: true,

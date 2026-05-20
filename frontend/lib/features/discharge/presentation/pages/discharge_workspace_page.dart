@@ -232,7 +232,7 @@ class _DischargeQueuePanel extends ConsumerWidget {
       description: l10n.dischargeWorklistDescription,
       child: SizedBox(
         height: 520,
-        child: AppPaginatedListTable<IpdAdmissionSummary>(
+        child: AppListTable<IpdAdmissionSummary>(
           page: state.queue,
           isLoading: state.isRefreshing,
           previousPageLabel: l10n.dischargePreviousPageLabel,

@@ -2166,7 +2166,7 @@ class _OpdMainTable extends ConsumerWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: AppPaginatedListTable<_OpdTableItem>(
+      child: AppListTable<_OpdTableItem>(
         page: page,
         isLoading: isLoading,
         shrinkWrap: true,

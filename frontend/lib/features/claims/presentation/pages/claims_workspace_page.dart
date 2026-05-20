@@ -267,7 +267,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       description: l10n.claimsWorklistDescription,
       child: SizedBox(
         height: 520,
-        child: AppPaginatedListTable<ClaimsQueueItem>(
+        child: AppListTable<ClaimsQueueItem>(
           page: state.queue,
           isLoading: state.isRefreshing,
           previousPageLabel: l10n.claimsPreviousPageLabel,

@@ -333,7 +333,7 @@ class _NursingWorklistPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.nursingWorklistTitle,
       description: l10n.nursingWorklistDescription,
-      child: AppPaginatedListTable<NursingWorkItem>(
+      child: AppListTable<NursingWorkItem>(
         page: state.worklist,
         isLoading: state.isRefreshing,
         previousPageLabel: l10n.opdPreviousPageLabel,
