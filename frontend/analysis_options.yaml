@@ -23,6 +23,7 @@ linter:
     directives_ordering: true
     prefer_const_constructors: true
     prefer_const_declarations: true
+    prefer_initializing_formals: false
     prefer_final_locals: true
     prefer_single_quotes: true
     require_trailing_commas: true

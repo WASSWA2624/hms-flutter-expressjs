@@ -10,7 +10,8 @@ abstract final class RealtimeEvents {
   static const String opdFlowUpdated = 'opd.flow.updated';
   static const String ipdFlowUpdated = 'ipd.flow.updated';
 
-  static const String visitQueuePositionChanged = 'visit_queue.position_changed';
+  static const String visitQueuePositionChanged =
+      'visit_queue.position_changed';
   static const String visitQueueTriageUpdated = 'visit_queue.triage_updated';
 
   static const String patientAdmitted = 'admission.patient_admitted';
@@ -26,7 +27,8 @@ abstract final class RealtimeEvents {
   static const String labResultUpdated = 'diagnostic.lab_result_updated';
   static const String radiologyWorkflowUpdated =
       'diagnostic.radiology_workflow_updated';
-  static const String radiologyResultReady = 'diagnostic.radiology_result_ready';
+  static const String radiologyResultReady =
+      'diagnostic.radiology_result_ready';
   static const String radiologyResultUpdated =
       'diagnostic.radiology_result_updated';
 

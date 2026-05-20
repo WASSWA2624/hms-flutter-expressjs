@@ -336,14 +336,13 @@ final class ClinicalWorkspaceController
       for (final ClinicalCatalogOption procedure in normalizedProcedures) {
         final String description = _procedureDescription(procedure);
         final String? code = _normalizedOptionalText(procedure.code);
-        final Result<void> procedureResult = await _repository.createProcedure(
-          <String, Object?>{
-            'encounter_id': encounterId,
-            'code': code,
-            'description': description,
-            'performed_at': performedAtIso,
-          },
-        );
+        final Result<void> procedureResult = await _repository
+            .createProcedure(<String, Object?>{
+              'encounter_id': encounterId,
+              'code': code,
+              'description': description,
+              'performed_at': performedAtIso,
+            });
         final AppFailure? failure = _failureOrNull(procedureResult);
         if (failure != null) {
           return Result<void>.failure(failure);
@@ -466,9 +465,7 @@ final class ClinicalWorkspaceController
     );
   }
 
-  Future<AppFailure?> prescribe({
-    required List<Map<String, Object?>> items,
-  }) {
+  Future<AppFailure?> prescribe({required List<Map<String, Object?>> items}) {
     final ClinicalWorklistEntry? entry = _selectedEntry;
     if (entry == null || entry.apiPatientId == null || items.isEmpty) {
       return Future<AppFailure?>.value(AppFailure.validation());
@@ -552,32 +549,29 @@ final class ClinicalWorkspaceController
 
     final String? opdFlowApiId = entry.opdFlowApiId;
     if (opdFlowApiId != null) {
-      return _mutateSelectedEncounter(
-        () async {
-          if (_requiresOpdDoctorReview(entry)) {
-            final Result<OpdFlowDetail> reviewResult = await _opdRepository
-                .doctorReview(opdFlowApiId, <String, Object?>{
-                  'note': _dispositionReviewNote(
-                    reason: normalizedReason,
-                    notes: normalizedNotes,
-                  ),
-                });
-            final AppFailure? reviewFailure = _failureOrNull(reviewResult);
-            if (reviewFailure != null) {
-              return Result<void>.failure(reviewFailure);
-            }
+      return _mutateSelectedEncounter(() async {
+        if (_requiresOpdDoctorReview(entry)) {
+          final Result<OpdFlowDetail> reviewResult = await _opdRepository
+              .doctorReview(opdFlowApiId, <String, Object?>{
+                'note': _dispositionReviewNote(
+                  reason: normalizedReason,
+                  notes: normalizedNotes,
+                ),
+              });
+          final AppFailure? reviewFailure = _failureOrNull(reviewResult);
+          if (reviewFailure != null) {
+            return Result<void>.failure(reviewFailure);
           }
+        }
 
-          return _opdRepository
-              .disposition(opdFlowApiId, <String, Object?>{
-                'decision': 'DISCHARGE',
-                'reason': normalizedReason,
-                'notes': normalizedNotes,
-              })
-              .then((Result<OpdFlowDetail> result) => result.map<void>((_) {}));
-        },
-        removeSelectedOnSuccess: true,
-      );
+        return _opdRepository
+            .disposition(opdFlowApiId, <String, Object?>{
+              'decision': 'DISCHARGE',
+              'reason': normalizedReason,
+              'notes': normalizedNotes,
+            })
+            .then((Result<OpdFlowDetail> result) => result.map<void>((_) {}));
+      }, removeSelectedOnSuccess: true);
     }
 
     final Result<ClinicalWorklistEntry> result = await _repository
@@ -1277,7 +1271,10 @@ final class ClinicalWorkspaceController
     );
   }
 
-  String _dispositionReviewNote({required String reason, required String notes}) {
+  String _dispositionReviewNote({
+    required String reason,
+    required String notes,
+  }) {
     final List<String> parts = <String>[
       if (reason.trim().isNotEmpty) reason.trim(),
       if (notes.trim().isNotEmpty) notes.trim(),

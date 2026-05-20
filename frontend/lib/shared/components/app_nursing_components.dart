@@ -89,9 +89,8 @@ class AppMedicationAdministrationForm extends StatelessWidget {
             enabled: enabled,
             isRequired: true,
             options: medicationOptions,
-            validator: (String? value) => value == null || value.trim().isEmpty
-                ? requiredMessage
-                : null,
+            validator: (String? value) =>
+                value == null || value.trim().isEmpty ? requiredMessage : null,
             onChanged: onMedicationChanged,
           )
         else if (noMedicationMessage != null)
@@ -210,9 +209,8 @@ class AppHandoverActionForm extends StatelessWidget {
           enabled: enabled,
           isRequired: true,
           options: userOptions,
-          validator: (String? value) => value == null || value.trim().isEmpty
-              ? requiredMessage
-              : null,
+          validator: (String? value) =>
+              value == null || value.trim().isEmpty ? requiredMessage : null,
           onChanged: onToUserChanged,
           onSearchTextChanged: onUserSearchTextChanged,
         ),

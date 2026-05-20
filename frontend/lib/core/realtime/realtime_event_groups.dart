@@ -147,10 +147,7 @@ abstract final class RealtimeEventGroups {
     ...pharmacy,
   };
 
-  static const Set<String> claims = <String>{
-    ...billing,
-    ...admissions,
-  };
+  static const Set<String> claims = <String>{...billing, ...admissions};
 
   static const Set<String> discharge = <String>{
     ...admissions,
@@ -158,8 +155,5 @@ abstract final class RealtimeEventGroups {
     ...billing,
   };
 
-  static const Set<String> theater = <String>{
-    ...admissions,
-    ...criticalAlerts,
-  };
+  static const Set<String> theater = <String>{...admissions, ...criticalAlerts};
 }

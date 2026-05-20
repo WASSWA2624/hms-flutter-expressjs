@@ -211,9 +211,8 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
                     currentDate: DateTime.now(),
                     enabled: !_isSaving,
                     isRequired: true,
-                    validator: (DateTime? value) => value == null
-                        ? widget.requiredMessage
-                        : null,
+                    validator: (DateTime? value) =>
+                        value == null ? widget.requiredMessage : null,
                     onChanged: (DateTime? value) {
                       if (value != null) {
                         setState(() => _recordedDate = value);
@@ -228,9 +227,8 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
                     invalidTimeMessage: widget.invalidTimeMessage,
                     enabled: !_isSaving,
                     isRequired: true,
-                    validator: (TimeOfDay? value) => value == null
-                        ? widget.requiredMessage
-                        : null,
+                    validator: (TimeOfDay? value) =>
+                        value == null ? widget.requiredMessage : null,
                     onChanged: (TimeOfDay? value) {
                       if (value != null) {
                         setState(() => _recordedTime = value);

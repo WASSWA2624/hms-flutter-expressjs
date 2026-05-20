@@ -363,8 +363,11 @@ final class ClinicalTermOptionDto {
   ClinicalCatalogOption toEntity() {
     final String? code = _string(json['code']);
     final String? description =
-        _string(json['description']) ?? _string(json['term']) ?? _string(json['name']);
-    final String? category = _string(json['category']) ?? _string(json['term_type']);
+        _string(json['description']) ??
+        _string(json['term']) ??
+        _string(json['name']);
+    final String? category =
+        _string(json['category']) ?? _string(json['term_type']);
     final String? source = _string(json['source']) ?? _string(json['origin']);
     return ClinicalCatalogOption(
       id:

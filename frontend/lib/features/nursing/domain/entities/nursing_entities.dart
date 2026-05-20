@@ -232,7 +232,11 @@ final class NursingPatientSummary {
   }
 
   String? get locationLabel {
-    return _joinDisplay(<String?>[wardDisplayName, roomDisplayLabel, bedDisplayLabel]);
+    return _joinDisplay(<String?>[
+      wardDisplayName,
+      roomDisplayLabel,
+      bedDisplayLabel,
+    ]);
   }
 
   bool get isUrgent {
@@ -424,7 +428,10 @@ final class NursingPatientSummary {
   }
 
   bool matchesAdmissionStatus(String admissionStatusFilter) {
-    return _matchesText(<String?>[admissionStatus, stage], admissionStatusFilter);
+    return _matchesText(<String?>[
+      admissionStatus,
+      stage,
+    ], admissionStatusFilter);
   }
 
   bool matchesTransferStatus(String transferStatusFilter) {
@@ -448,11 +455,18 @@ final class NursingPatientSummary {
   }
 
   bool matchesDischargeStatus(String dischargeStatusFilter) {
-    return _matchesText(<String?>[dischargeStatus, stage], dischargeStatusFilter);
+    return _matchesText(<String?>[
+      dischargeStatus,
+      stage,
+    ], dischargeStatusFilter);
   }
 
   bool matchesDischargeReadiness(String dischargeReadiness) {
-    return _matchesText(<String?>[dischargeStatus, stage, nextStep], dischargeReadiness);
+    return _matchesText(<String?>[
+      dischargeStatus,
+      stage,
+      nextStep,
+    ], dischargeReadiness);
   }
 
   bool matchesAssignedNurse(String assignedNurse) {
@@ -955,7 +969,6 @@ final class NursingRosterAssignment {
   final String? facilityId;
   final String? departmentId;
 }
-
 
 @immutable
 final class NursingUserOption {

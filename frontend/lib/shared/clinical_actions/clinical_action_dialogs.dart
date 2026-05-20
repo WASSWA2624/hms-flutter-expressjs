@@ -132,7 +132,8 @@ class ClinicalReferralActionDialog extends StatefulWidget {
     required String externalFacilityName,
     required String reason,
     required String notes,
-  }) onSubmit;
+  })
+  onSubmit;
 
   @override
   State<ClinicalReferralActionDialog> createState() =>
@@ -249,7 +250,8 @@ class ClinicalFollowUpActionDialog extends StatefulWidget {
   final Future<AppFailure?> Function({
     required DateTime scheduledAt,
     required String notes,
-  }) onSubmit;
+  })
+  onSubmit;
 
   @override
   State<ClinicalFollowUpActionDialog> createState() =>
@@ -608,7 +610,8 @@ class ClinicalDispositionActionDialog extends StatefulWidget {
   final Future<AppFailure?> Function({
     required String reason,
     required String notes,
-  }) onSubmit;
+  })
+  onSubmit;
 
   @override
   State<ClinicalDispositionActionDialog> createState() =>
@@ -779,19 +782,24 @@ List<AppSelectOption<String>> _admissionWardOptions(
   ClinicalActionReferenceData referenceData,
   List<ClinicalActionCatalogOption> availableBeds,
 ) {
-  final List<AppSelectOption<String>> options = _distinctAdmissionIds(
-    availableBeds.map((ClinicalActionCatalogOption bed) => bed.parentId),
-  ).map((String wardId) {
-    final ClinicalActionCatalogOption? ward = _catalogOptionById(
-      referenceData.wards,
-      wardId,
-    );
-    return AppSelectOption<String>(
-      value: wardId,
-      label: _admissionCatalogLabel(ward, wardId),
-      leadingIcon: const Icon(Icons.apartment_outlined),
-    );
-  }).toList(growable: false);
+  final List<AppSelectOption<String>> options =
+      _distinctAdmissionIds(
+            availableBeds.map(
+              (ClinicalActionCatalogOption bed) => bed.parentId,
+            ),
+          )
+          .map((String wardId) {
+            final ClinicalActionCatalogOption? ward = _catalogOptionById(
+              referenceData.wards,
+              wardId,
+            );
+            return AppSelectOption<String>(
+              value: wardId,
+              label: _admissionCatalogLabel(ward, wardId),
+              leadingIcon: const Icon(Icons.apartment_outlined),
+            );
+          })
+          .toList(growable: false);
   return _sortAdmissionOptions(options);
 }
 
@@ -805,19 +813,22 @@ List<AppSelectOption<String>> _admissionRoomOptions(
       : availableBeds.where(
           (ClinicalActionCatalogOption bed) => bed.parentId == wardId,
         );
-  final List<AppSelectOption<String>> options = _distinctAdmissionIds(
-    beds.map((ClinicalActionCatalogOption bed) => bed.secondaryId),
-  ).map((String roomId) {
-    final ClinicalActionCatalogOption? room = _catalogOptionById(
-      referenceData.rooms,
-      roomId,
-    );
-    return AppSelectOption<String>(
-      value: roomId,
-      label: _admissionCatalogLabel(room, roomId),
-      leadingIcon: const Icon(Icons.meeting_room_outlined),
-    );
-  }).toList(growable: false);
+  final List<AppSelectOption<String>> options =
+      _distinctAdmissionIds(
+            beds.map((ClinicalActionCatalogOption bed) => bed.secondaryId),
+          )
+          .map((String roomId) {
+            final ClinicalActionCatalogOption? room = _catalogOptionById(
+              referenceData.rooms,
+              roomId,
+            );
+            return AppSelectOption<String>(
+              value: roomId,
+              label: _admissionCatalogLabel(room, roomId),
+              leadingIcon: const Icon(Icons.meeting_room_outlined),
+            );
+          })
+          .toList(growable: false);
   return _sortAdmissionOptions(options);
 }
 

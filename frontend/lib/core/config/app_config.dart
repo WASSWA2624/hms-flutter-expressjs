@@ -237,8 +237,7 @@ final class AppConfig {
       logLevel: logLevel ?? this.logLevel,
       appName: appName ?? this.appName,
       appLogoUrl: appLogoUrl ?? this.appLogoUrl,
-      appAdministratorName:
-          appAdministratorName ?? this.appAdministratorName,
+      appAdministratorName: appAdministratorName ?? this.appAdministratorName,
       appAdministratorEmail:
           appAdministratorEmail ?? this.appAdministratorEmail,
       appAdministratorPhone:

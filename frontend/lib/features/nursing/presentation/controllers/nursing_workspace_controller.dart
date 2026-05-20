@@ -33,8 +33,10 @@ final class NursingWorkspaceController
   static const AppPageRequest _fetchRequest = AppPageRequest(pageSize: 100);
 
   NursingRepository get _repository => ref.read(nursingRepositoryProvider);
-  PatientRepository get _patientRepository => ref.read(patientRepositoryProvider);
-  ClinicalRepository get _clinicalRepository => ref.read(clinicalRepositoryProvider);
+  PatientRepository get _patientRepository =>
+      ref.read(patientRepositoryProvider);
+  ClinicalRepository get _clinicalRepository =>
+      ref.read(clinicalRepositoryProvider);
 
   Timer? _syncTimer;
   bool _isSyncing = false;
@@ -195,11 +197,9 @@ final class NursingWorkspaceController
     return _refreshWorklist(showLoading: true);
   }
 
-
   Future<List<NursingUserOption>> searchUsers(String query) async {
-    final Result<List<NursingUserOption>> result = await _repository.searchUsers(
-      query,
-    );
+    final Result<List<NursingUserOption>> result = await _repository
+        .searchUsers(query);
     return result.when(
       success: (List<NursingUserOption> value) => value,
       failure: (_) => const <NursingUserOption>[],
@@ -481,8 +481,8 @@ final class NursingWorkspaceController
       final String documentType = entry.key
           ? 'SCANNED_HANDOVER_DOCUMENT'
           : 'HANDOVER_DOCUMENT';
-      final Result<List<PatientDocument>> uploadResult = await _patientRepository
-          .uploadPatientDocuments(
+      final Result<List<PatientDocument>> uploadResult =
+          await _patientRepository.uploadPatientDocuments(
             patientId: patientId,
             documentType: documentType,
             files: entry.value,

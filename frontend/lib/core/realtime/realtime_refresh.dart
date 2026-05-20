@@ -5,7 +5,8 @@ import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
 
 typedef RealtimeRefreshPredicate = bool Function(RealtimeMessage message);
-typedef RealtimeRefreshCallback = Future<void> Function(RealtimeMessage message);
+typedef RealtimeRefreshCallback =
+    Future<void> Function(RealtimeMessage message);
 
 /// Debounced listener for workspace refreshes triggered by websocket events.
 ///

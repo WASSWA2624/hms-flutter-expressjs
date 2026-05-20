@@ -138,7 +138,8 @@ final class NursingPatientDetailDto {
           _string(json['ward_display_name']) ??
           _string(ward['name']) ??
           fallback.wardDisplayName,
-      roomId: _string(json['room_id']) ?? _string(room['id']) ?? fallback.roomId,
+      roomId:
+          _string(json['room_id']) ?? _string(room['id']) ?? fallback.roomId,
       roomDisplayLabel:
           _string(json['room_display_label']) ??
           _string(room['name']) ??

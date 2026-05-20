@@ -148,7 +148,9 @@ final class NursingRepositoryImpl implements NursingRepository {
     List<Map<String, Object?>> payloads,
   ) async {
     final Map<String, NursingVitalSign> existingVitals =
-        await _latestVitalsByType(payloads.isEmpty ? null : payloads.first['encounter_id']);
+        await _latestVitalsByType(
+          payloads.isEmpty ? null : payloads.first['encounter_id'],
+        );
 
     for (final Map<String, Object?> payload in payloads) {
       final Result<void> result = await _upsertVitalPayload(
@@ -566,7 +568,8 @@ final class NursingRepositoryImpl implements NursingRepository {
       if (!_isNonEmpty(id)) {
         continue;
       }
-      final String displayLabel = _firstNonEmpty(<Object?>[
+      final String displayLabel =
+          _firstNonEmpty(<Object?>[
             map['display_name'],
             map['displayName'],
             profile['display_name'],
@@ -674,5 +677,4 @@ final class NursingRepositoryImpl implements NursingRepository {
     final String normalized = value.toString().trim();
     return normalized.isEmpty ? null : normalized;
   }
-
 }
