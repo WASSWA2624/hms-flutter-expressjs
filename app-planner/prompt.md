@@ -1,72 +1,64 @@
-## Review the entire codebase and fully implement the following:
+```text
+Refactor and standardize the shared table component used across the HMS frontend.
 
-Focus on the frontend shared UI system and the module/workspace screens.
+Current implementation context:
+- The shared table file is `frontend/lib/shared/components/app_list_table.dart`.
+- It currently defines multiple table-related public widgets/classes, including `AppListTable`, `AppPaginatedListTable`, and `AppSearchablePaginatedListTable`.
+- Screens such as Patients, Billing, Claims, OPD, Emergency, IPD, ICU, Nursing, Clinical, Lab, Radiology, Pharmacy, Discharge, and Theater currently use these table variants.
+- The current desktop table headers use select-style column controls, as shown in the screenshots.
 
-1. **Audit and reorganize `frontend/lib/shared`**
-  - Review all shared components, layouts, forms, actions, dialogs, data helpers, and widgets.
-  - Make sure each shared component is placed in the most appropriate shared folder.
-  - Rename components only where the current name is unclear or not informative.
-  - Remove or merge true duplicate components that perform the same UI responsibility.
-  - Keep each shared component focused on one distinct UI purpose.
-  - Do not place feature-specific business logic inside shared components.
-  - Update imports and barrel exports after any reorganization.
-2. **Reuse the existing shared UI foundation**
-  - Reuse and extend the current shared components where appropriate, especially:
-    - `AppWorkspace`
-    - `AppWorkspaceHeader`
-    - `AppWorkspaceSummaryCard`
-    - `AppWorkspaceFilterBar`
-    - `AppListTable`
-    - `AppSearchBar`
-    - `AppSelectField.searchable`
-    - `AppDialog`
-    - `AppButton`
-    - `AppIconButton`
-    - `AppLogo`
-  - Do not create parallel components for the same layout, button, dialog, search, table, or badge behavior.
-3. **Standardize the module/workspace page layout**
-  Apply the same page structure to these screens:
-  - Patients
-  - Billing
-  - Claims
-  - OPD
-  - Emergency
-  - IPD
-  - ICU
-  - Nursing
-  - Clinical
-  - Lab
-  - Radiology
-  - Pharmacy
-  - Discharge
-  - Theater
-   Do not include Settings in this update.
-   Each screen should use the shared base workspace/page component and follow this visible structure:
-  - A top header with the page title and appropriate logo on the left.
-  - Action buttons aligned to the far right.
-  - On large screens, action buttons should show both icon and label.
-  - Below the header, show the notification/summary badges or cards.
-  - Below the badges, show one consistent search bar.
-  - Below the search bar, show the table.
-4. **Make the search and table area uniform**
-  - Use the same shared search bar styling and behavior across all target screens.
-  - The search area should remain clean and should not include unrelated visible controls around it.
-  - Tables should show no more than five visible columns at a time.
-  - The table column-header selector should use the existing searchable select pattern so users can search and choose column headers.
-  - Prevent duplicate visible columns in the table.
-  - Keep table headers, rows, empty states, loading states, and row selection behavior consistent through shared components.
-5. **Standardize badge, button, and modal behavior**
-  - Top action buttons and notification/summary badges/cards should open their corresponding modal dialogs when clicked.
-  - Reuse existing shared modal/dialog components wherever possible.
-  - If a dialog already exists in shared components, reuse it instead of redefining a similar one.
-  - Keep modal styling, buttons, spacing, titles, and actions uniform across the app.
-6. **Clean up inconsistent page content**
-  - Remove duplicated, unrelated, or mismatched visible section titles from the initial screen layout.
-  - Avoid screens showing inconsistent headings such as a registry title where the current module requires a different page title.
-  - Keep the initial page layout focused on: header, action buttons, summary badges, search bar, and table.
-7. **Follow existing project rules**
-  - Follow the app rules in `app-planner`.
-  - Preserve existing localization, permissions, routing, controllers, and data flow.
-  - Do not introduce new features beyond this UI modularization and uniformity work.
-  - Keep the app compiling and passing the existing frontend validation checks.
+Goal:
+Create one unified shared table component named `AppListTable` that handles all table use cases through configuration/properties instead of separate table widgets.
+
+Requirements:
+1. Keep only one public table widget class: `AppListTable`.
+2. Fold the behavior of the existing table variants into `AppListTable`, including:
+   - standard table display
+   - paginated table display
+   - responsive desktop/mobile display
+3. On desktop and larger screens, display data as a clean table.
+4. On small screens, display the same data as a compact, readable list.
+5. Add a built-in search bar to `AppListTable`. through which search happens.
+6. The search bar must include the advanced filter icon shown in the current UI.
+7. Advanced filters must be configurable per table context.
+8. Advanced filters must support date-based filtering where the table context requires date search.
+9. Add a table settings / column visibility control near the search area.
+10. The column visibility control must allow users to choose which columns are shown or hidden.
+11. By default, show the numbering column plus the first 4–5 most important columns.
+12. Add a numbering column to all table displays.
+13. The numbering column must update based on the currently visible rows after search/filter changes.
+14. Replace select-style table headers with simple text headers.
+15. Each sortable header must behave like a text button with a sort icon.
+16. Clicking a sortable header must toggle ascending and descending sorting.
+17. Do not use `AppSelectField` or select-style controls inside table headers.
+18. Keep the optional table title/description area compact.
+19. Minimize vertical spacing so tables do not consume unnecessary space.
+20. Preserve the current search text and search-field experience while table data updates.
+21. Table data should update in real time from the current data source/state without disrupting the search bar.
+22. Ensure the search bar and table controls remain usable on small screens.
+23. Use the unified `AppListTable` across:
+   - Patients
+   - Billing
+   - Claims
+   - OPD
+   - Emergency
+   - IPD
+   - ICU
+   - Nursing
+   - Clinical
+   - Lab
+   - Radiology
+   - Pharmacy
+   - Discharge
+   - Theater
+24. Also use the same `AppListTable` pattern for nested tables inside dialogs, modals, and screen-level detail components.
+25. Keep the component flexible so columns, filters, sorting, pagination, responsive behavior, row actions, and display behavior are determined by properties passed to `AppListTable`.
+
+Implementation expectations:
+- Update `app_list_table.dart` to remove the need for separate public table variants.
+- Replace current usages of `AppPaginatedListTable` and `AppSearchablePaginatedListTable` with `AppListTable`.
+- Keep the implementation aligned with the existing Flutter theme, spacing, shared components, and responsive breakpoint system.
+- Preserve existing screen behavior while standardizing the table UI and API.
+- Do not introduce unrelated features or redesign unrelated parts of the app.
+```
 
