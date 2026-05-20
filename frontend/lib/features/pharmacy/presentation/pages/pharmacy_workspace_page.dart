@@ -189,7 +189,7 @@ class _PharmacyWorkspaceContentState
           trailingActions: <AppSearchBarAction>[
             _tableColumnController.settingsAction(
               context,
-              label: 'Table settings',
+              label: l10n.commonTableSettingsActionLabel,
             ),
           ],
         ),
@@ -518,7 +518,7 @@ Future<void> _openPharmacyDetailDialog(
   await showAppDialog<void>(
     context: context,
     builder: (_) => AppDialog(
-      title: const Text('Prescription detail'),
+      title: Text(context.l10n.pharmacyPrescriptionDetailTitle),
       icon: const Icon(Icons.receipt_long_outlined),
       scrollable: true,
       maxWidth: 980,

@@ -272,7 +272,7 @@ class _BillingFilterBarState extends ConsumerState<_BillingFilterBar> {
         trailingActions: <AppSearchBarAction>[
           widget.columnVisibilityController.settingsAction(
             context,
-            label: 'Table settings',
+            label: context.l10n.commonTableSettingsActionLabel,
           ),
         ],
       ),

@@ -210,7 +210,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           trailingActions: <AppSearchBarAction>[
             _tableColumnController.settingsAction(
               context,
-              label: 'Table settings',
+              label: l10n.commonTableSettingsActionLabel,
             ),
           ],
         ),

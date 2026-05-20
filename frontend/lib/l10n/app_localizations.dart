@@ -142,6 +142,24 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get commonRefreshActionLabel;
 
+  /// Label for opening a worklist table column settings dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Table settings'**
+  String get commonTableSettingsActionLabel;
+
+  /// Title for the emergency case detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency case'**
+  String get emergencyCaseDialogTitle;
+
+  /// Title for the ICU stay detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU stay'**
+  String get icuStayDialogTitle;
+
   /// Label for actions that navigate back to the home route.
   ///
   /// In en, this message translates to:
@@ -10245,6 +10263,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading medicines, dispense history, and workflow actions.'**
   String get pharmacyDetailLoadingBody;
+
+  /// Title for the pharmacy prescription detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Prescription detail'**
+  String get pharmacyPrescriptionDetailTitle;
 
   /// Pharmacy detail empty title.
   ///

@@ -33,6 +33,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRefreshActionLabel => 'Refresh';
 
   @override
+  String get commonTableSettingsActionLabel => 'Table settings';
+
+  @override
+  String get emergencyCaseDialogTitle => 'Emergency case';
+
+  @override
+  String get icuStayDialogTitle => 'ICU stay';
+
+  @override
   String get commonGoHomeActionLabel => 'Go home';
 
   @override
@@ -5459,6 +5468,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pharmacyDetailLoadingBody =>
       'Loading medicines, dispense history, and workflow actions.';
+
+  @override
+  String get pharmacyPrescriptionDetailTitle => 'Prescription detail';
 
   @override
   String get pharmacyNoSelectionTitle => 'No prescription selected';

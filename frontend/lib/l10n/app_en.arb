@@ -32,6 +32,18 @@
   "@commonRefreshActionLabel": {
     "description": "Label for actions that refresh visible data without reloading the current screen."
   },
+  "commonTableSettingsActionLabel": "Table settings",
+  "@commonTableSettingsActionLabel": {
+    "description": "Label for opening a worklist table column settings dialog."
+  },
+  "emergencyCaseDialogTitle": "Emergency case",
+  "@emergencyCaseDialogTitle": {
+    "description": "Title for the emergency case detail dialog."
+  },
+  "icuStayDialogTitle": "ICU stay",
+  "@icuStayDialogTitle": {
+    "description": "Title for the ICU stay detail dialog."
+  },
   "commonGoHomeActionLabel": "Go home",
   "@commonGoHomeActionLabel": {
     "description": "Label for actions that navigate back to the home route."
@@ -7034,6 +7046,10 @@
   "pharmacyDetailLoadingBody": "Loading medicines, dispense history, and workflow actions.",
   "@pharmacyDetailLoadingBody": {
     "description": "Pharmacy prescription detail loading body."
+  },
+  "pharmacyPrescriptionDetailTitle": "Prescription detail",
+  "@pharmacyPrescriptionDetailTitle": {
+    "description": "Title for the pharmacy prescription detail dialog."
   },
   "pharmacyNoSelectionTitle": "No prescription selected",
   "@pharmacyNoSelectionTitle": {

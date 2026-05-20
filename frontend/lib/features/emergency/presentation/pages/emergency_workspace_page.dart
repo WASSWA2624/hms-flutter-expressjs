@@ -15,6 +15,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -180,7 +181,7 @@ class _EmergencyWorkspaceContentState
           trailingActions: <AppSearchBarAction>[
             _tableColumnController.settingsAction(
               context,
-              label: 'Table settings',
+              label: context.l10n.commonTableSettingsActionLabel,
             ),
           ],
         ),
@@ -537,7 +538,7 @@ Future<void> _openEmergencyDetailDialog(
   await showAppDialog<void>(
     context: context,
     builder: (_) => AppDialog(
-      title: const Text('Emergency case'),
+      title: Text(context.l10n.emergencyCaseDialogTitle),
       icon: const Icon(Icons.emergency_outlined),
       scrollable: true,
       maxWidth: 980,

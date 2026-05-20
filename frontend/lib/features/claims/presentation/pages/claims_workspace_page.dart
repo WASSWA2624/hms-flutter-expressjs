@@ -233,7 +233,7 @@ class _ClaimsWorkspaceContentState
           trailingActions: <AppSearchBarAction>[
             _tableColumnController.settingsAction(
               context,
-              label: 'Table settings',
+              label: l10n.commonTableSettingsActionLabel,
             ),
           ],
         ),

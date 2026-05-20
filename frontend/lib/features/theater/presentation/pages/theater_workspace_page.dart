@@ -236,7 +236,7 @@ class _TheaterFilterBarState extends ConsumerState<_TheaterFilterBar> {
         trailingActions: <AppSearchBarAction>[
           widget.columnVisibilityController.settingsAction(
             context,
-            label: 'Table settings',
+            label: l10n.commonTableSettingsActionLabel,
           ),
         ],
       ),

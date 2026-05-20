@@ -248,7 +248,7 @@ class _RadiologyFilterBarState extends ConsumerState<_RadiologyFilterBar> {
         trailingActions: <AppSearchBarAction>[
           widget.columnVisibilityController.settingsAction(
             context,
-            label: 'Table settings',
+            label: l10n.commonTableSettingsActionLabel,
           ),
         ],
       ),

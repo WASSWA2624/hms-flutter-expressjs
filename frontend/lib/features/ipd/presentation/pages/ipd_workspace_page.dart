@@ -181,7 +181,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
           trailingActions: <AppSearchBarAction>[
             _tableColumnController.settingsAction(
               context,
-              label: 'Table settings',
+              label: context.l10n.commonTableSettingsActionLabel,
             ),
           ],
         ),

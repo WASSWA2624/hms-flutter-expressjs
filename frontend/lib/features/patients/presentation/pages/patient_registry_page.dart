@@ -497,7 +497,7 @@ class _PatientFiltersState extends ConsumerState<_PatientFilters> {
       trailingActions: <AppSearchBarAction>[
         widget.columnVisibilityController.settingsAction(
           context,
-          label: 'Table settings',
+          label: l10n.commonTableSettingsActionLabel,
         ),
       ],
       onAdvancedFilterPressed: () {

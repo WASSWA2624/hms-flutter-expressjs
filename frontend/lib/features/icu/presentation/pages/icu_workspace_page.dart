@@ -469,7 +469,7 @@ Future<void> _openIcuDetailDialog(
   await showAppDialog<void>(
     context: context,
     builder: (_) => AppDialog(
-      title: const Text('ICU stay'),
+      title: Text(context.l10n.icuStayDialogTitle),
       icon: const Icon(Icons.monitor_heart_outlined),
       scrollable: true,
       maxWidth: 980,
