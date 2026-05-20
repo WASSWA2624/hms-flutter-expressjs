@@ -151,10 +151,18 @@ void main() {
     await tester.tap(find.byIcon(Icons.close).last);
     await tester.pumpAndSettle();
 
+    clearInteractions(clinicalRepository);
     await tester.tap(find.text('Waiting review'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Waiting review'), findsNWidgets(2));
+    final List<Object?> summaryQueries = verify(
+      () => clinicalRepository.listEncounters(captureAny()),
+    ).captured;
+    expect(
+      (summaryQueries.single as ClinicalWorklistQuery).scope,
+      ClinicalQueueScope.waitingReview,
+    );
+    expect(find.text('Waiting review'), findsOneWidget);
     expect(find.text('Sarah Clinical'), findsAtLeastNWidgets(1));
     expect(tester.takeException(), isNull);
   });
