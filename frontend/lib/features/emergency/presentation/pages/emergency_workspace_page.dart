@@ -136,38 +136,52 @@ class _EmergencyWorkspaceContentState
         ),
       ],
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: _EmergencyText.active,
-          value: _countLabel(context, state.activeCount),
-          icon: Icons.emergency_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-          onPressed: () => controller.applyScope(EmergencyBoardScope.active),
-        ),
-        AppWorkspaceSummaryCard(
-          label: _EmergencyText.critical,
-          value: _countLabel(context, state.criticalCount),
-          icon: Icons.priority_high_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          compact: true,
-          onPressed: () => controller.applyScope(EmergencyBoardScope.critical),
-        ),
-        AppWorkspaceSummaryCard(
-          label: _EmergencyText.ambulance,
-          value: _countLabel(context, state.ambulanceCount),
-          icon: Icons.airport_shuttle_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () => controller.applyScope(EmergencyBoardScope.ambulance),
-        ),
-        AppWorkspaceSummaryCard(
-          label: _EmergencyText.handoff,
-          value: _countLabel(context, state.handoffCount),
-          icon: Icons.output_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          compact: true,
-          onPressed: () => controller.applyScope(EmergencyBoardScope.handoff),
-        ),
+        if (_pageTotal(state.board) > 0)
+          AppWorkspaceSummaryCard(
+            label: _EmergencyText.allBoard,
+            value: _countLabel(context, _pageTotal(state.board)),
+            icon: Icons.inventory_2_outlined,
+            compact: true,
+            onPressed: () => controller.applyScope(EmergencyBoardScope.all),
+          ),
+        if (state.activeCount > 0)
+          AppWorkspaceSummaryCard(
+            label: _EmergencyText.active,
+            value: _countLabel(context, state.activeCount),
+            icon: Icons.emergency_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () => controller.applyScope(EmergencyBoardScope.active),
+          ),
+        if (state.criticalCount > 0)
+          AppWorkspaceSummaryCard(
+            label: _EmergencyText.critical,
+            value: _countLabel(context, state.criticalCount),
+            icon: Icons.priority_high_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(EmergencyBoardScope.critical),
+          ),
+        if (state.ambulanceCount > 0)
+          AppWorkspaceSummaryCard(
+            label: _EmergencyText.ambulance,
+            value: _countLabel(context, state.ambulanceCount),
+            icon: Icons.airport_shuttle_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(EmergencyBoardScope.ambulance),
+          ),
+        if (state.handoffCount > 0)
+          AppWorkspaceSummaryCard(
+            label: _EmergencyText.handoff,
+            value: _countLabel(context, state.handoffCount),
+            icon: Icons.output_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            compact: true,
+            onPressed: () => controller.applyScope(EmergencyBoardScope.handoff),
+          ),
       ],
       body: _EmergencyBoardPanel(
         state: state,
@@ -1772,6 +1786,7 @@ List<AppSelectOption<String>> _handoffOptions() {
 abstract final class _EmergencyText {
   static const String active = 'Active';
   static const String all = 'All';
+  static const String allBoard = 'All emergency records';
   static const String ambulance = 'Ambulance';
   static const String arrival = 'Arrival';
   static const String available = 'Available';
@@ -1914,6 +1929,8 @@ String _pageLabel(BuildContext context, AppPage<EmergencyCaseSummary> page) {
 String _countLabel(BuildContext context, int value) {
   return AppFormatters.compactNumber(value, Localizations.localeOf(context));
 }
+
+int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _dateTimeLabel(BuildContext context, DateTime? value) {
   if (value == null) {

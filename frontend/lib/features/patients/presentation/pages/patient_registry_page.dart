@@ -192,74 +192,45 @@ class _PatientRegistryContentState
         ),
       ],
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: l10n.patientsTotalSummaryLabel,
-          value: AppFormatters.compactNumber(
-            widget.state.overview.totalPatients,
-            Localizations.localeOf(context),
+        if (widget.state.overview.totalPatients > 0)
+          AppWorkspaceSummaryCard(
+            label: _PatientSummaryText.allPatients,
+            value: AppFormatters.compactNumber(
+              widget.state.overview.totalPatients,
+              Localizations.localeOf(context),
+            ),
+            icon: Icons.groups_outlined,
+            compact: true,
+            onPressed: () {
+              unawaited(
+                _applySummaryQuery(
+                  PatientListQuery(
+                    pageRequest: widget.state.query.pageRequest.first(),
+                  ),
+                ),
+              );
+            },
           ),
-          icon: Icons.groups_outlined,
-          compact: true,
-          onPressed: () {
-            _openSummaryPatientList(
-              context,
-              ref,
-              title: l10n.patientsTotalSummaryLabel,
-              query: const PatientListQuery(
-                pageRequest: AppPageRequest(pageSize: 8),
-              ),
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.patientsActiveSummaryLabel,
-          value: AppFormatters.compactNumber(
-            widget.state.overview.activePatients,
-            Localizations.localeOf(context),
+        if (widget.state.overview.activePatients > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.patientsActiveSummaryLabel,
+            value: AppFormatters.compactNumber(
+              widget.state.overview.activePatients,
+              Localizations.localeOf(context),
+            ),
+            icon: Icons.how_to_reg_outlined,
+            compact: true,
+            onPressed: () {
+              unawaited(
+                _applySummaryQuery(
+                  PatientListQuery(
+                    isActive: true,
+                    pageRequest: widget.state.query.pageRequest.first(),
+                  ),
+                ),
+              );
+            },
           ),
-          icon: Icons.how_to_reg_outlined,
-          compact: true,
-          onPressed: () {
-            _openSummaryPatientList(
-              context,
-              ref,
-              title: l10n.patientsActiveSummaryLabel,
-              query: const PatientListQuery(
-                isActive: true,
-                pageRequest: AppPageRequest(pageSize: 8),
-              ),
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.patientsQueueSummaryLabel,
-          value: AppFormatters.compactNumber(
-            widget.state.overview.waitingQueue,
-            Localizations.localeOf(context),
-          ),
-          icon: Icons.queue_outlined,
-          compact: true,
-          onPressed: () {
-            _openSummaryPatientList(
-              context,
-              ref,
-              title: l10n.patientsQueueSummaryLabel,
-              patients: widget.state.overview.waitingQueuePatients,
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.patientsDuplicateSummaryLabel,
-          value: AppFormatters.compactNumber(
-            widget.state.overview.duplicates.length,
-            Localizations.localeOf(context),
-          ),
-          icon: Icons.content_copy_outlined,
-          compact: true,
-          onPressed: () {
-            _openDuplicateReview(context, ref);
-          },
-        ),
       ],
       filters: _PatientFilters(
         query: widget.state.query,
@@ -357,31 +328,19 @@ class _PatientRegistryContentState
     }
   }
 
-  Future<void> _openDuplicateReview(BuildContext context, WidgetRef ref) async {
-    await showAppDialog<void>(
-      context: context,
-      builder: (_) => PatientDuplicateReviewDialog(
-        duplicates: widget.state.overview.duplicates,
-      ),
-    );
+  Future<void> _applySummaryQuery(PatientListQuery query) async {
+    _tableSearchDebounce?.cancel();
+    final AppFailure? failure = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .applyQuery(query);
+    if (mounted) {
+      await _showFailureIfNeeded(context, failure);
+    }
   }
+}
 
-  Future<void> _openSummaryPatientList(
-    BuildContext context,
-    WidgetRef ref, {
-    required String title,
-    PatientListQuery? query,
-    List<Patient>? patients,
-  }) async {
-    await showAppDialog<void>(
-      context: context,
-      builder: (_) => _PatientSummaryListDialog(
-        title: title,
-        query: query,
-        patients: patients,
-      ),
-    );
-  }
+abstract final class _PatientSummaryText {
+  static const String allPatients = 'All patients';
 }
 
 class _PatientFilters extends ConsumerStatefulWidget {
@@ -1167,266 +1126,6 @@ Future<void> _openPatientDetail(
 
   if (context.mounted) {
     ref.read(patientRegistryControllerProvider.notifier).clearSelection();
-  }
-}
-
-class _PatientSummaryListDialog extends ConsumerStatefulWidget {
-  const _PatientSummaryListDialog({
-    required this.title,
-    this.query,
-    this.patients,
-  });
-
-  final String title;
-  final PatientListQuery? query;
-  final List<Patient>? patients;
-
-  @override
-  ConsumerState<_PatientSummaryListDialog> createState() =>
-      _PatientSummaryListDialogState();
-}
-
-class _PatientSummaryListDialogState
-    extends ConsumerState<_PatientSummaryListDialog> {
-  late final TextEditingController _searchController;
-  AppPage<Patient>? _page;
-  AppFailure? _failure;
-  Timer? _searchDebounce;
-  String _search = '';
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _search = widget.query?.search ?? '';
-    _searchController = TextEditingController(text: _search);
-    _searchController.addListener(_handleSearchChanged);
-    final PatientListQuery? query = widget.query;
-    if (query != null) {
-      unawaited(_load(query.pageRequest));
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    _searchController
-      ..removeListener(_handleSearchChanged)
-      ..dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final List<Patient>? patients = widget.patients == null
-        ? null
-        : _filterPatients(widget.patients!);
-    final AppPage<Patient>? page = _page;
-    final Widget list = _failure != null
-        ? AppFailureStateView(failure: _failure!)
-        : patients != null
-        ? _SummaryPatientList(
-            page: AppPage<Patient>(
-              items: patients,
-              request: AppPageRequest(
-                pageSize: patients.length.clamp(1, 20).toInt(),
-              ),
-              totalItemCount: patients.length,
-            ),
-            isLoading: false,
-            onPageChanged: null,
-          )
-        : page == null && _isLoading
-        ? AppWorkspaceStatePanel.loading(
-            title: l10n.patientsSummaryLoadingTitle,
-            body: l10n.patientsSummaryLoadingBody,
-          )
-        : _SummaryPatientList(
-            page:
-                page ??
-                const AppPage<Patient>(
-                  items: <Patient>[],
-                  request: AppPageRequest(pageSize: 8),
-                  totalItemCount: 0,
-                ),
-            isLoading: _isLoading,
-            onPageChanged: (AppPageRequest request) {
-              unawaited(_load(request));
-            },
-          );
-
-    return AppDialog(
-      title: Text(widget.title),
-      icon: const Icon(Icons.groups_outlined),
-      maxWidth: 920,
-      scrollable: true,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppSearchBar(
-            controller: _searchController,
-            semanticLabel: l10n.patientsSearchLabel,
-            hintText: l10n.patientsSearchHint,
-            clearLabel: l10n.patientsClearFiltersAction,
-            onSubmitted: (_) => _runSearchImmediately(),
-          ),
-          SizedBox(height: theme.spacing.md),
-          list,
-        ],
-      ),
-    );
-  }
-
-  void _handleSearchChanged() {
-    final String value = _searchController.text.trim();
-    if (value == _search) {
-      return;
-    }
-    setState(() {
-      _search = value;
-    });
-
-    if (widget.query == null) {
-      return;
-    }
-
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        unawaited(_load(widget.query!.pageRequest.first()));
-      }
-    });
-  }
-
-  void _runSearchImmediately() {
-    _searchDebounce?.cancel();
-    final PatientListQuery? query = widget.query;
-    if (query != null) {
-      unawaited(_load(query.pageRequest.first()));
-    }
-  }
-
-  Future<void> _load(AppPageRequest request) async {
-    final PatientListQuery? query = widget.query;
-    if (query == null) {
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-      _failure = null;
-    });
-    final Result<AppPage<Patient>> result = await ref
-        .read(patientRegistryControllerProvider.notifier)
-        .loadPatientPage(query.copyWith(search: _search, pageRequest: request));
-    if (!mounted) {
-      return;
-    }
-    result.when(
-      success: (AppPage<Patient> page) {
-        setState(() {
-          _page = page;
-          _isLoading = false;
-        });
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isLoading = false;
-        });
-      },
-    );
-  }
-
-  List<Patient> _filterPatients(List<Patient> patients) {
-    final String needle = _search.toLowerCase();
-    if (needle.isEmpty) {
-      return patients;
-    }
-
-    return patients
-        .where((Patient patient) {
-          return <String?>[
-            patient.effectiveDisplayName,
-            patient.effectiveIdentifier,
-            patient.publicId,
-            patient.primaryPhone,
-            patient.primaryEmail,
-            patient.facilityLabel,
-          ].whereType<String>().any(
-            (String value) => value.toLowerCase().contains(needle),
-          );
-        })
-        .toList(growable: false);
-  }
-}
-
-class _SummaryPatientList extends ConsumerWidget {
-  const _SummaryPatientList({
-    required this.page,
-    required this.isLoading,
-    required this.onPageChanged,
-  });
-
-  final AppPage<Patient> page;
-  final bool isLoading;
-  final ValueChanged<AppPageRequest>? onPageChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
-
-    return AppListTable<Patient>(
-      page: page,
-      isLoading: isLoading,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      columns: <AppListTableColumn<Patient>>[
-        AppListTableColumn<Patient>(
-          label: l10n.patientsPatientColumnLabel,
-          cellBuilder: (_, Patient patient) =>
-              _PatientNameCell(patient: patient),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsIdentifierColumnLabel,
-          cellBuilder: (_, Patient patient) =>
-              Text(patient.effectiveIdentifier ?? l10n.profileUnknownValue),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsDobColumnLabel,
-          cellBuilder: (_, Patient patient) => Text(
-            patient.dateOfBirth == null
-                ? l10n.profileUnknownValue
-                : AppFormatters.mediumDate(patient.dateOfBirth!, locale),
-          ),
-        ),
-      ],
-      mobileItemBuilder: (_, Patient patient) =>
-          _PatientMobileRow(patient: patient),
-      itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
-      onRowSelected: (Patient patient) async {
-        await _openPatientDetail(context, ref, patient.id);
-      },
-      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-        title: l10n.patientsEmptyTitle,
-        body: l10n.patientsEmptyBody,
-        icon: Icons.person_search_outlined,
-        minHeight: 240,
-      ),
-      pageLabelBuilder: (AppPage<Patient> page) {
-        return l10n.patientsPageLabel(
-          page.firstItemNumber,
-          page.lastItemNumber,
-          page.totalItemCount ?? page.lastItemNumber,
-        );
-      },
-      previousPageLabel: l10n.patientsPreviousPageLabel,
-      nextPageLabel: l10n.patientsNextPageLabel,
-      onPageChanged: onPageChanged,
-    );
   }
 }
 

@@ -137,44 +137,49 @@ class _PharmacyWorkspaceContentState
         ),
       ],
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: l10n.pharmacySummaryReadyLabel,
-          value: _countLabel(context, state.workbench.summary.orderedQueue),
-          icon: Icons.medication_liquid_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-          onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.pharmacySummaryPartialLabel,
-          value: _countLabel(
-            context,
-            state.workbench.summary.partiallyDispensedQueue,
+        if (state.workbench.summary.totalOrders > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacyFilterAll,
+            value: _countLabel(context, state.workbench.summary.totalOrders),
+            icon: Icons.inventory_2_outlined,
+            compact: true,
+            onPressed: () => controller.applyFilter(PharmacyOrderFilter.all),
           ),
-          icon: Icons.pending_actions_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () => controller.applyFilter(PharmacyOrderFilter.partial),
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.pharmacySummaryAttestationLabel,
-          value: _countLabel(
-            context,
-            state.workbench.summary.pendingAttestations,
+        if (state.workbench.summary.orderedQueue > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacySummaryReadyLabel,
+            value: _countLabel(context, state.workbench.summary.orderedQueue),
+            icon: Icons.medication_liquid_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
           ),
-          icon: Icons.verified_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.pharmacySummaryCompletedLabel,
-          value: _countLabel(context, state.workbench.summary.dispensedOrders),
-          icon: Icons.done_all_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          compact: true,
-          onPressed: () =>
-              controller.applyFilter(PharmacyOrderFilter.completed),
-        ),
+        if (state.workbench.summary.partiallyDispensedQueue > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacySummaryPartialLabel,
+            value: _countLabel(
+              context,
+              state.workbench.summary.partiallyDispensedQueue,
+            ),
+            icon: Icons.pending_actions_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () =>
+                controller.applyFilter(PharmacyOrderFilter.partial),
+          ),
+        if (state.workbench.summary.dispensedOrders > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.pharmacySummaryCompletedLabel,
+            value: _countLabel(
+              context,
+              state.workbench.summary.dispensedOrders,
+            ),
+            icon: Icons.done_all_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            compact: true,
+            onPressed: () =>
+                controller.applyFilter(PharmacyOrderFilter.completed),
+          ),
       ],
       body: _PharmacyQueuePanel(
         state: state,

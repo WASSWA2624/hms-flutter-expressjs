@@ -39,6 +39,37 @@ final class BillingWorkItemPageDto {
     AppPageRequest request,
   ) {
     final BillingJsonMap data = _dataMap(responseData);
+    final List<BillingJsonMap> queueEntries = _list(data['queues']);
+    if (queueEntries.isNotEmpty) {
+      final List<BillingWorkItem> items = <BillingWorkItem>[];
+      int total = 0;
+      for (final BillingJsonMap queueEntry in queueEntries) {
+        final BillingQueueType queue = BillingQueueType.fromServer(
+          _string(queueEntry['queue']),
+        );
+        final List<BillingJsonMap> queueItems = _list(queueEntry['items']);
+        total += _int(queueEntry['total']) ?? queueItems.length;
+        items.addAll(
+          queueItems
+              .map((BillingJsonMap item) {
+                return BillingWorkItemDto(
+                  item,
+                  fallbackQueue: queue,
+                ).toEntity();
+              })
+              .where((BillingWorkItem item) => item.id.isNotEmpty),
+        );
+      }
+
+      return BillingWorkItemPageDto(
+        page: AppPage<BillingWorkItem>(
+          items: items,
+          request: request,
+          totalItemCount: total,
+        ),
+      );
+    }
+
     final BillingQueueType queue = BillingQueueType.fromServer(
       _string(data['queue']),
     );
@@ -308,6 +339,7 @@ String decodeBillingRecordId(Object? responseData) {
 
 String _queueDefaultLabel(BillingQueueType queue) {
   return switch (queue) {
+    BillingQueueType.all => 'All billing work items',
     BillingQueueType.needsIssue => 'Needs issue',
     BillingQueueType.pendingPayment => 'Pending payment',
     BillingQueueType.claimsPending => 'Claims pending',

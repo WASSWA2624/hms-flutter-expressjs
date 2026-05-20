@@ -135,42 +135,41 @@ class _RadiologyWorkspaceContentState
       ],
       compactSummaryCards: true,
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: l10n.radiologyTotalOrdersSummaryLabel,
-          value: state.summary.totalOrders.toString(),
-          icon: Icons.assignment_outlined,
-          compact: true,
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.radiologyWaitingImagingSummaryLabel,
-          value: state.summary.orderedQueue.toString(),
-          icon: Icons.pending_actions_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.radiologyReportingSummaryLabel,
-          value: state.reportingCount.toString(),
-          icon: Icons.edit_note_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.radiologyReleasedSummaryLabel,
-          value: state.releasedCount.toString(),
-          icon: Icons.verified_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          compact: true,
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.radiologyUnsyncedSummaryLabel,
-          value: state.summary.unsyncedStudies.toString(),
-          icon: Icons.cloud_off_outlined,
-          tone: state.summary.unsyncedStudies > 0
-              ? AppWorkspaceStatusTone.warning
-              : AppWorkspaceStatusTone.neutral,
-          compact: true,
-        ),
+        if (state.summary.totalOrders > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.radiologyTotalOrdersSummaryLabel,
+            value: state.summary.totalOrders.toString(),
+            icon: Icons.assignment_outlined,
+            compact: true,
+            onPressed: controller.clearFilters,
+          ),
+        if (state.summary.orderedQueue > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.radiologyWaitingImagingSummaryLabel,
+            value: state.summary.orderedQueue.toString(),
+            icon: Icons.pending_actions_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () => controller.applyStage('ORDERED'),
+          ),
+        if (state.reportingCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.radiologyReportingSummaryLabel,
+            value: state.reportingCount.toString(),
+            icon: Icons.edit_note_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () => controller.applyStage('REPORTING'),
+          ),
+        if (state.releasedCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.radiologyReleasedSummaryLabel,
+            value: state.releasedCount.toString(),
+            icon: Icons.verified_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            compact: true,
+            onPressed: () => controller.applyStage('COMPLETED'),
+          ),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

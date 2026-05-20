@@ -147,34 +147,44 @@ class _DischargeWorkspaceContentState
       ),
       compactSummaryCards: true,
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.dischargePlannedSummaryLabel,
-          value: state.plannedCount.toString(),
-          icon: Icons.event_available_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.dischargeSummaryPendingSummaryLabel,
-          value: state.summaryPendingCount.toString(),
-          icon: Icons.edit_note_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.dischargeDocumentsReadySummaryLabel,
-          value: state.documentsReadyCount.toString(),
-          icon: Icons.description_outlined,
-          tone: AppWorkspaceStatusTone.success,
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.dischargeCompletedSummaryLabel,
-          value: state.completedCount.toString(),
-          icon: Icons.check_circle_outline,
-          tone: AppWorkspaceStatusTone.neutral,
-        ),
+        if (_pageTotal(state.queue) > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.dischargeStatusAll,
+            value: _pageTotal(state.queue).toString(),
+            icon: Icons.inventory_2_outlined,
+            onPressed: () => controller.applyStatus(DischargeStatusFilter.all),
+          ),
+        if (state.plannedCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.dischargePlannedSummaryLabel,
+            value: state.plannedCount.toString(),
+            icon: Icons.event_available_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () =>
+                controller.applyStatus(DischargeStatusFilter.planned),
+          ),
+        if (state.summaryPendingCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.dischargeSummaryPendingSummaryLabel,
+            value: state.summaryPendingCount.toString(),
+            icon: Icons.edit_note_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () =>
+                controller.applyStatus(DischargeStatusFilter.summaryPending),
+          ),
+        if (state.completedCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.dischargeCompletedSummaryLabel,
+            value: state.completedCount.toString(),
+            icon: Icons.check_circle_outline,
+            tone: AppWorkspaceStatusTone.neutral,
+            onPressed: () =>
+                controller.applyStatus(DischargeStatusFilter.completed),
+          ),
       ],
       body: _DischargeQueuePanel(
         state: state,
@@ -1417,6 +1427,8 @@ String _pageLabel(BuildContext context, AppPage<IpdAdmissionSummary> page) {
     page.totalItemCount ?? page.items.length,
   );
 }
+
+int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 AppWorkspaceStatus _statusFor(BuildContext context, IpdAdmissionSummary item) {
   if (isCompletedDischarge(item)) {

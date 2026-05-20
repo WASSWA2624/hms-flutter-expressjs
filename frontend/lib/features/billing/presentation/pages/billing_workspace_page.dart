@@ -155,74 +155,60 @@ class _BillingWorkspaceContentState
     final controller = ref.read(billingWorkspaceControllerProvider.notifier);
 
     return <Widget>[
-      AppWorkspaceSummaryCard(
-        label: _BillingText.awaitingPayment,
-        value: summary.pendingPayment.toString(),
-        icon: Icons.payments_outlined,
-        tone: AppWorkspaceStatusTone.warning,
-        compact: true,
-        onPressed: () => controller.applyQueue(BillingQueueType.pendingPayment),
-      ),
-      AppWorkspaceSummaryCard(
-        label: _BillingText.partiallyPaid,
-        value: state.partialPaidVisibleCount.toString(),
-        icon: Icons.pie_chart_outline,
-        tone: AppWorkspaceStatusTone.info,
-        compact: true,
-      ),
-      AppWorkspaceSummaryCard(
-        label: _BillingText.clearedVisible,
-        value: state.clearedVisibleCount.toString(),
-        icon: Icons.verified_outlined,
-        tone: AppWorkspaceStatusTone.success,
-        compact: true,
-      ),
-      AppWorkspaceSummaryCard(
-        label: _BillingText.refundsToday,
-        value: AppFormatters.currency(
-          summary.refundsTodayTotal,
-          locale,
-          currencyCode: appDefaultCurrencyCode,
-          decimalDigits: 0,
+      if (summary.workloadCount > 0)
+        AppWorkspaceSummaryCard(
+          label: _BillingText.allWorkItems,
+          value: AppFormatters.compactNumber(summary.workloadCount, locale),
+          icon: Icons.inventory_2_outlined,
+          compact: true,
+          onPressed: () => controller.applyQueue(BillingQueueType.all),
         ),
-        icon: Icons.assignment_return_outlined,
-        compact: true,
-      ),
-      AppWorkspaceSummaryCard(
-        label: _BillingText.issueQueue,
-        value: summary.needsIssue.toString(),
-        icon: Icons.receipt_long_outlined,
-        compact: true,
-        onPressed: () => controller.applyQueue(BillingQueueType.needsIssue),
-      ),
-      AppWorkspaceSummaryCard(
-        label: _BillingText.approvals,
-        value: summary.approvalRequired.toString(),
-        icon: Icons.rule_outlined,
-        compact: true,
-        onPressed: () =>
-            controller.applyQueue(BillingQueueType.approvalRequired),
-      ),
-      AppWorkspaceSummaryCard(
-        label: _BillingText.overdue,
-        value: summary.overdue.toString(),
-        icon: Icons.warning_amber_outlined,
-        tone: AppWorkspaceStatusTone.error,
-        compact: true,
-        onPressed: () => controller.applyQueue(BillingQueueType.overdue),
-      ),
-      AppWorkspaceSummaryCard(
-        label: _BillingText.paymentsToday,
-        value: AppFormatters.currency(
-          summary.paymentsTodayTotal,
-          locale,
-          currencyCode: appDefaultCurrencyCode,
-          decimalDigits: 0,
+      if (summary.pendingPayment > 0)
+        AppWorkspaceSummaryCard(
+          label: _BillingText.awaitingPayment,
+          value: AppFormatters.compactNumber(summary.pendingPayment, locale),
+          icon: Icons.payments_outlined,
+          tone: AppWorkspaceStatusTone.warning,
+          compact: true,
+          onPressed: () =>
+              controller.applyQueue(BillingQueueType.pendingPayment),
         ),
-        icon: Icons.point_of_sale,
-        tone: AppWorkspaceStatusTone.success,
-        compact: true,
-      ),
+      if (summary.needsIssue > 0)
+        AppWorkspaceSummaryCard(
+          label: _BillingText.issueQueue,
+          value: AppFormatters.compactNumber(summary.needsIssue, locale),
+          icon: Icons.receipt_long_outlined,
+          compact: true,
+          onPressed: () => controller.applyQueue(BillingQueueType.needsIssue),
+        ),
+      if (summary.claimsPending > 0)
+        AppWorkspaceSummaryCard(
+          label: _queueLabel(BillingQueueType.claimsPending),
+          value: AppFormatters.compactNumber(summary.claimsPending, locale),
+          icon: Icons.health_and_safety_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          compact: true,
+          onPressed: () =>
+              controller.applyQueue(BillingQueueType.claimsPending),
+        ),
+      if (summary.approvalRequired > 0)
+        AppWorkspaceSummaryCard(
+          label: _BillingText.approvals,
+          value: AppFormatters.compactNumber(summary.approvalRequired, locale),
+          icon: Icons.rule_outlined,
+          compact: true,
+          onPressed: () =>
+              controller.applyQueue(BillingQueueType.approvalRequired),
+        ),
+      if (summary.overdue > 0)
+        AppWorkspaceSummaryCard(
+          label: _BillingText.overdue,
+          value: AppFormatters.compactNumber(summary.overdue, locale),
+          icon: Icons.warning_amber_outlined,
+          tone: AppWorkspaceStatusTone.error,
+          compact: true,
+          onPressed: () => controller.applyQueue(BillingQueueType.overdue),
+        ),
     ];
   }
 }
@@ -270,18 +256,17 @@ class _BillingQueuePanel extends ConsumerWidget {
           advancedFilterResetLabel: _BillingText.clear,
           advancedFilterCancelLabel: context.l10n.commonCancelActionLabel,
           enableDateFilter: false,
-          allFieldsLabel: _queueLabel(BillingQueueType.pendingPayment),
+          allFieldsLabel: _queueLabel(BillingQueueType.all),
           filterGroups: <AppSearchBarFilterGroup>[
             AppSearchBarFilterGroup(
               key: _billingQueueFilterKey,
               label: 'Queue',
-              allLabel: _queueLabel(BillingQueueType.pendingPayment),
+              allLabel: _queueLabel(BillingQueueType.all),
               choices: _billingQueueFilterChoices(),
             ),
           ],
           filterValue: _billingFilterValue(state.query),
-          hasActiveFilters:
-              state.query.queue != BillingQueueType.pendingPayment,
+          hasActiveFilters: state.query.queue != BillingQueueType.all,
           onFilterChanged: (AppSearchBarFilterValue value) {
             controller.applyQueue(
               _billingQueueFromFilter(value.option(_billingQueueFilterKey)),
@@ -1515,6 +1500,7 @@ void _showMutationResult(BuildContext context, AppFailure? failure) {
 
 String _queueLabel(BillingQueueType queue) {
   return switch (queue) {
+    BillingQueueType.all => _BillingText.allWorkItems,
     BillingQueueType.needsIssue => 'Needs issue',
     BillingQueueType.pendingPayment => 'Awaiting payment',
     BillingQueueType.claimsPending => 'Claims pending',
@@ -1526,7 +1512,7 @@ String _queueLabel(BillingQueueType queue) {
 const String _billingQueueFilterKey = 'queue';
 
 AppSearchBarFilterValue _billingFilterValue(BillingWorkspaceQuery query) {
-  if (query.queue == BillingQueueType.pendingPayment) {
+  if (query.queue == BillingQueueType.all) {
     return AppSearchBarFilterValue.empty;
   }
   return AppSearchBarFilterValue(
@@ -1540,13 +1526,13 @@ BillingQueueType _billingQueueFromFilter(String? value) {
       return queue;
     }
   }
-  return BillingQueueType.pendingPayment;
+  return BillingQueueType.all;
 }
 
 List<AppSearchBarFilterChoice> _billingQueueFilterChoices() {
   return <AppSearchBarFilterChoice>[
     for (final BillingQueueType queue in BillingQueueType.values)
-      if (queue != BillingQueueType.pendingPayment)
+      if (queue != BillingQueueType.all)
         AppSearchBarFilterChoice(
           value: queue.name,
           label: _queueLabel(queue),
@@ -1557,12 +1543,12 @@ List<AppSearchBarFilterChoice> _billingQueueFilterChoices() {
 
 abstract final class _BillingText {
   static const String adjust = 'Adjust';
+  static const String allWorkItems = 'All billing work items';
   static const String amount = 'Amount';
   static const String approvals = 'Approvals';
   static const String awaitingPayment = 'Awaiting payment';
   static const String balance = 'Balance';
   static const String clear = 'Clear';
-  static const String clearedVisible = 'Cleared visible';
   static const String closeDay = 'Close day';
   static const String closeShift = 'Close shift';
   static const String draft = 'Draft';
@@ -1577,16 +1563,13 @@ abstract final class _BillingText {
   static const String noPayments = 'No payments recorded for this invoice.';
   static const String overdue = 'Overdue';
   static const String paid = 'Paid';
-  static const String partiallyPaid = 'Partially paid';
   static const String partial = 'Partial';
   static const String patient = 'Patient';
   static const String payerHint = 'Patient, sponsor, insurer, or contact';
   static const String paymentReferenceHint =
       'Mobile money, card, or bank reference';
-  static const String paymentsToday = 'Payments today';
   static const String receivePayment = 'Receive payment';
   static const String refund = 'Refund';
-  static const String refundsToday = 'Refunds today';
   static const String requestAdjustment = 'Request adjustment';
   static const String requestRefund = 'Request refund';
   static const String searchHint = 'Invoice, patient, or reference';

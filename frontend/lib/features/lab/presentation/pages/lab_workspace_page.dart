@@ -149,54 +149,60 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         ),
       ],
       summaryCards: <Widget>[
-        _summaryCard(
-          context,
-          label: l10n.labTotalOrdersSummaryLabel,
-          value: state.summary.totalOrders,
-          icon: Icons.assignment_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          onPressed: () => controller.applyScope(LabQueueScope.all),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.labWaitingSampleSummaryLabel,
-          value: state.summary.collectionQueue,
-          icon: Icons.biotech_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          onPressed: () => controller.applyScope(LabQueueScope.collection),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.labProcessingSummaryLabel,
-          value: state.summary.processingQueue,
-          icon: Icons.sync_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          onPressed: () => controller.applyScope(LabQueueScope.processing),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.labResultPendingSummaryLabel,
-          value: state.summary.resultsQueue,
-          icon: Icons.pending_actions_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          onPressed: () => controller.applyScope(LabQueueScope.results),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.labCriticalSummaryLabel,
-          value: state.summary.criticalResults,
-          icon: Icons.priority_high_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          onPressed: () => controller.applyScope(LabQueueScope.critical),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.labCompletedSummaryLabel,
-          value: state.summary.completedOrders,
-          icon: Icons.verified_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          onPressed: () => controller.applyScope(LabQueueScope.completed),
-        ),
+        if (state.summary.totalOrders > 0)
+          _summaryCard(
+            context,
+            label: l10n.labTotalOrdersSummaryLabel,
+            value: state.summary.totalOrders,
+            icon: Icons.assignment_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () => controller.applyScope(LabQueueScope.all),
+          ),
+        if (state.summary.collectionQueue > 0)
+          _summaryCard(
+            context,
+            label: l10n.labWaitingSampleSummaryLabel,
+            value: state.summary.collectionQueue,
+            icon: Icons.biotech_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () => controller.applyScope(LabQueueScope.collection),
+          ),
+        if (state.summary.processingQueue > 0)
+          _summaryCard(
+            context,
+            label: l10n.labProcessingSummaryLabel,
+            value: state.summary.processingQueue,
+            icon: Icons.sync_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () => controller.applyScope(LabQueueScope.processing),
+          ),
+        if (state.summary.resultsQueue > 0)
+          _summaryCard(
+            context,
+            label: l10n.labResultPendingSummaryLabel,
+            value: state.summary.resultsQueue,
+            icon: Icons.pending_actions_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () => controller.applyScope(LabQueueScope.results),
+          ),
+        if (state.summary.criticalResults > 0)
+          _summaryCard(
+            context,
+            label: l10n.labCriticalSummaryLabel,
+            value: state.summary.criticalResults,
+            icon: Icons.priority_high_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            onPressed: () => controller.applyScope(LabQueueScope.critical),
+          ),
+        if (state.summary.completedOrders > 0)
+          _summaryCard(
+            context,
+            label: l10n.labCompletedSummaryLabel,
+            value: state.summary.completedOrders,
+            icon: Icons.verified_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            onPressed: () => controller.applyScope(LabQueueScope.completed),
+          ),
       ],
       body: _LabWorklistPanel(
         state: state,

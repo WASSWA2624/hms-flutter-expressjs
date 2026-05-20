@@ -496,8 +496,14 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
     final ColorScheme colorScheme = theme.colorScheme;
     final bool interactive = widget.onPressed != null;
     final bool active = interactive && (_hovered || _focused);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool iconOnlyCompact =
+        widget.compact &&
+        (breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm);
     final Color accentColor = _summaryAccentColor(theme, widget.tone);
-    final BorderRadius borderRadius = BorderRadius.circular(theme.radius.sm);
+    final BorderRadius borderRadius = iconOnlyCompact
+        ? BorderRadius.zero
+        : BorderRadius.circular(theme.radius.sm);
     final Color surfaceColor = Color.alphaBlend(
       accentColor.withValues(alpha: active ? 0.055 : 0.025),
       colorScheme.surface,
@@ -511,12 +517,14 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
         : active
         ? 1.01
         : 1;
-    final List<BoxShadow> boxShadow = _summaryCardShadow(
-      colorScheme: colorScheme,
-      accentColor: accentColor,
-      active: active,
-      pressed: _pressed,
-    );
+    final List<BoxShadow> boxShadow = iconOnlyCompact
+        ? const <BoxShadow>[]
+        : _summaryCardShadow(
+            colorScheme: colorScheme,
+            accentColor: accentColor,
+            active: active,
+            pressed: _pressed,
+          );
     final Widget cardBody = _SummaryCardBody(
       label: widget.label,
       value: widget.value,
@@ -550,24 +558,30 @@ class _AppWorkspaceSummaryCardState extends State<AppWorkspaceSummaryCard> {
           child: AnimatedContainer(
             duration: _animationDuration,
             curve: Curves.easeOutCubic,
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              border: Border.all(color: borderColor),
-              borderRadius: borderRadius,
-              boxShadow: boxShadow,
-            ),
+            decoration: iconOnlyCompact
+                ? null
+                : BoxDecoration(
+                    color: surfaceColor,
+                    border: Border.all(color: borderColor),
+                    borderRadius: borderRadius,
+                    boxShadow: boxShadow,
+                  ),
             child: Material(
               color: Colors.transparent,
               shape: RoundedRectangleBorder(borderRadius: borderRadius),
-              clipBehavior: Clip.antiAlias,
+              clipBehavior: iconOnlyCompact ? Clip.none : Clip.antiAlias,
               child: InkWell(
                 onTap: widget.onPressed,
                 onFocusChange: _setFocused,
                 onHighlightChanged: _setPressed,
                 hoverColor: Colors.transparent,
                 focusColor: Colors.transparent,
-                highlightColor: accentColor.withValues(alpha: 0.08),
-                splashColor: accentColor.withValues(alpha: 0.10),
+                highlightColor: iconOnlyCompact
+                    ? Colors.transparent
+                    : accentColor.withValues(alpha: 0.08),
+                splashColor: iconOnlyCompact
+                    ? Colors.transparent
+                    : accentColor.withValues(alpha: 0.10),
                 child: cardBody,
               ),
             ),
@@ -642,20 +656,14 @@ class _SummaryCardBody extends StatelessWidget {
                   theme.appTokens.minInteractiveDimension + theme.spacing.md,
             ),
             child: Center(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  top: theme.spacing.sm,
-                  right: theme.spacing.xs,
-                ),
-                child: _SummaryIconTile(
-                  icon: icon ?? Icons.insights_outlined,
-                  value: value,
-                  showValue: true,
-                  compact: compact,
-                  iconOnly: true,
-                  active: active,
-                  accentColor: accentColor,
-                ),
+              child: _SummaryIconTile(
+                icon: icon ?? Icons.insights_outlined,
+                value: value,
+                showValue: true,
+                compact: compact,
+                iconOnly: true,
+                active: active,
+                accentColor: accentColor,
               ),
             ),
           ),
@@ -768,7 +776,6 @@ class _SummaryIconTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final double tileSize = iconOnly
         ? 42
         : compact
@@ -780,6 +787,27 @@ class _SummaryIconTile extends StatelessWidget {
         ? 20
         : 24;
     final BorderRadius borderRadius = BorderRadius.circular(theme.radius.sm);
+
+    if (iconOnly) {
+      return SizedBox(
+        width: tileSize,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(icon, color: accentColor, size: iconSize),
+            if (showValue) ...<Widget>[
+              const SizedBox(height: 2),
+              _SummaryValueBadge(
+                value: value,
+                compact: true,
+                accentColor: accentColor,
+              ),
+            ],
+          ],
+        ),
+      );
+    }
 
     return SizedBox(
       width: tileSize,
@@ -823,10 +851,6 @@ class _SummaryIconTile extends StatelessWidget {
                 value: value,
                 compact: compact || iconOnly,
                 accentColor: accentColor,
-                foregroundColor: _onSummaryAccentColor(
-                  accentColor,
-                  colorScheme,
-                ),
               ),
             ),
         ],
@@ -840,13 +864,11 @@ class _SummaryValueBadge extends StatelessWidget {
     required this.value,
     required this.compact,
     required this.accentColor,
-    required this.foregroundColor,
   });
 
   final String value;
   final bool compact;
   final Color accentColor;
-  final Color foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -856,33 +878,16 @@ class _SummaryValueBadge extends StatelessWidget {
         : theme.textTheme.titleMedium;
 
     return ConstrainedBox(
-      constraints: BoxConstraints(
-        minWidth: compact ? 22 : 26,
-        minHeight: compact ? 20 : 22,
-        maxWidth: compact ? 58 : 72,
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
+      constraints: BoxConstraints(maxWidth: compact ? 58 : 72),
+      child: Text(
+        value.trim(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: textStyle?.copyWith(
           color: accentColor,
-          border: Border.all(color: foregroundColor.withValues(alpha: 0.24)),
-          borderRadius: BorderRadius.circular(theme.radius.xs),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
-            vertical: 2,
-          ),
-          child: Text(
-            value.trim(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: textStyle?.copyWith(
-              color: foregroundColor,
-              fontWeight: FontWeight.w900,
-              height: 1,
-            ),
-          ),
+          fontWeight: FontWeight.w900,
+          height: 1,
         ),
       ),
     );
@@ -900,14 +905,6 @@ Color _summaryAccentColor(ThemeData theme, AppWorkspaceStatusTone? tone) {
     AppWorkspaceStatusTone.error => statusColors.error,
     AppWorkspaceStatusTone.info => statusColors.info,
   };
-}
-
-Color _onSummaryAccentColor(Color accentColor, ColorScheme colorScheme) {
-  final Brightness brightness = ThemeData.estimateBrightnessForColor(
-    accentColor,
-  );
-
-  return brightness == Brightness.dark ? Colors.white : colorScheme.onSurface;
 }
 
 List<BoxShadow> _summaryCardShadow({

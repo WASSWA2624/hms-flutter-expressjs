@@ -125,38 +125,50 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
         ),
       ],
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: _IcuText.activeIcu,
-          value: _countLabel(context, state.activeCount),
-          icon: Icons.bed_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-          onPressed: () => controller.applyScope(IcuBoardScope.active),
-        ),
-        AppWorkspaceSummaryCard(
-          label: _IcuText.criticalAlerts,
-          value: _countLabel(context, state.criticalCount),
-          icon: Icons.priority_high_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          compact: true,
-          onPressed: () => controller.applyScope(IcuBoardScope.critical),
-        ),
-        AppWorkspaceSummaryCard(
-          label: _IcuText.transfers,
-          value: _countLabel(context, state.transferCount),
-          icon: Icons.compare_arrows_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () => controller.applyScope(IcuBoardScope.transfer),
-        ),
-        AppWorkspaceSummaryCard(
-          label: _IcuText.dischargeReady,
-          value: _countLabel(context, state.dischargeReadyCount),
-          icon: Icons.fact_check_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          compact: true,
-          onPressed: () => controller.applyScope(IcuBoardScope.discharge),
-        ),
+        if (_pageTotal(state.board) > 0)
+          AppWorkspaceSummaryCard(
+            label: _IcuText.allIcu,
+            value: _countLabel(context, _pageTotal(state.board)),
+            icon: Icons.inventory_2_outlined,
+            compact: true,
+            onPressed: () => controller.applyScope(IcuBoardScope.all),
+          ),
+        if (state.activeCount > 0)
+          AppWorkspaceSummaryCard(
+            label: _IcuText.activeIcu,
+            value: _countLabel(context, state.activeCount),
+            icon: Icons.bed_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () => controller.applyScope(IcuBoardScope.active),
+          ),
+        if (state.criticalCount > 0)
+          AppWorkspaceSummaryCard(
+            label: _IcuText.criticalAlerts,
+            value: _countLabel(context, state.criticalCount),
+            icon: Icons.priority_high_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            compact: true,
+            onPressed: () => controller.applyScope(IcuBoardScope.critical),
+          ),
+        if (state.transferCount > 0)
+          AppWorkspaceSummaryCard(
+            label: _IcuText.transfers,
+            value: _countLabel(context, state.transferCount),
+            icon: Icons.compare_arrows_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () => controller.applyScope(IcuBoardScope.transfer),
+          ),
+        if (state.dischargeReadyCount > 0)
+          AppWorkspaceSummaryCard(
+            label: _IcuText.dischargeReady,
+            value: _countLabel(context, state.dischargeReadyCount),
+            icon: Icons.fact_check_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            compact: true,
+            onPressed: () => controller.applyScope(IcuBoardScope.discharge),
+          ),
       ],
       body: _IcuBoardPanel(
         state: state,
@@ -1770,6 +1782,8 @@ AppWorkspaceStatusTone _vitalTone(IcuVitalSign item) {
 String _countLabel(BuildContext context, int value) {
   return AppFormatters.compactNumber(value, Localizations.localeOf(context));
 }
+
+int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _pageLabel(BuildContext context, AppPage<IcuPatientSummary> page) {
   final int total = page.totalItemCount ?? page.items.length;

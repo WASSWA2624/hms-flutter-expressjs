@@ -125,32 +125,39 @@ class _TheaterWorkspaceContentState
       ],
       compactSummaryCards: true,
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: l10n.theaterScheduledSummaryLabel,
-          value: state.scheduledCount.toString(),
-          icon: Icons.event_available_outlined,
-          compact: true,
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.theaterInTheaterSummaryLabel,
-          value: state.inTheaterCount.toString(),
-          icon: Icons.meeting_room_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.theaterReadySummaryLabel,
-          value: state.readyCount.toString(),
-          icon: Icons.fact_check_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          compact: true,
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.theaterCompletedSummaryLabel,
-          value: state.completedCount.toString(),
-          icon: Icons.task_alt_outlined,
-          compact: true,
-        ),
+        if (_pageTotal(state.cases) > 0)
+          AppWorkspaceSummaryCard(
+            label: _TheaterSummaryText.allCases,
+            value: _pageTotal(state.cases).toString(),
+            icon: Icons.inventory_2_outlined,
+            compact: true,
+            onPressed: controller.clearFilters,
+          ),
+        if (state.scheduledCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.theaterScheduledSummaryLabel,
+            value: state.scheduledCount.toString(),
+            icon: Icons.event_available_outlined,
+            compact: true,
+            onPressed: () => controller.applyStatus('SCHEDULED'),
+          ),
+        if (state.inTheaterCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.theaterInTheaterSummaryLabel,
+            value: state.inTheaterCount.toString(),
+            icon: Icons.meeting_room_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () => controller.applyStatus('IN_PROGRESS'),
+          ),
+        if (state.completedCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.theaterCompletedSummaryLabel,
+            value: state.completedCount.toString(),
+            icon: Icons.task_alt_outlined,
+            compact: true,
+            onPressed: () => controller.applyStatus('COMPLETED'),
+          ),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2250,6 +2257,12 @@ String _formatDateTime(BuildContext context, DateTime? value) {
   return value == null
       ? context.l10n.profileUnknownValue
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
+}
+
+int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
+
+abstract final class _TheaterSummaryText {
+  static const String allCases = 'All theatre cases';
 }
 
 String? _formatDateTimeOrNull(BuildContext context, DateTime? value) {

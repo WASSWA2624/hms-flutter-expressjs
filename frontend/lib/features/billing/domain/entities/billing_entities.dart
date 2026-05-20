@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 enum BillingQueueType {
+  all(''),
   needsIssue('NEEDS_ISSUE'),
   pendingPayment('PENDING_PAYMENT'),
   claimsPending('CLAIMS_PENDING'),
@@ -14,6 +15,9 @@ enum BillingQueueType {
 
   static BillingQueueType fromServer(String? value) {
     final String normalized = (value ?? '').trim().toUpperCase();
+    if (normalized.isEmpty) {
+      return BillingQueueType.pendingPayment;
+    }
     for (final BillingQueueType queue in values) {
       if (queue.serverValue == normalized) {
         return queue;
@@ -98,6 +102,7 @@ final class BillingSummary {
 
   int countFor(BillingQueueType queue) {
     return switch (queue) {
+      BillingQueueType.all => workloadCount,
       BillingQueueType.needsIssue => needsIssue,
       BillingQueueType.pendingPayment => pendingPayment,
       BillingQueueType.claimsPending => claimsPending,

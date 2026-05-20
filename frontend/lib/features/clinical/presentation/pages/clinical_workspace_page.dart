@@ -128,62 +128,53 @@ class _ClinicalWorkspaceContentState
         ),
       ],
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: l10n.clinicalWaitingReviewSummaryLabel,
-          value: _countLabel(context, state.waitingReviewCount),
-          icon: Icons.rate_review_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-          onPressed: () {
-            _openSummaryWorklistDialog(
-              context,
-              ref,
-              category: _ClinicalSummaryCategory.waitingReview,
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.clinicalUrgentSummaryLabel,
-          value: _countLabel(context, state.urgentCount),
-          icon: Icons.priority_high_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          compact: true,
-          onPressed: () {
-            _openSummaryWorklistDialog(
-              context,
-              ref,
-              category: _ClinicalSummaryCategory.urgent,
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.clinicalResultsReadySummaryLabel,
-          value: _countLabel(context, state.resultsReadyCount),
-          icon: Icons.science_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          compact: true,
-          onPressed: () {
-            _openSummaryWorklistDialog(
-              context,
-              ref,
-              category: _ClinicalSummaryCategory.resultsReady,
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.clinicalInConsultationSummaryLabel,
-          value: _countLabel(context, state.inConsultationCount),
-          icon: Icons.medical_information_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () {
-            _openSummaryWorklistDialog(
-              context,
-              ref,
-              category: _ClinicalSummaryCategory.inConsultation,
-            );
-          },
-        ),
+        if (_pageTotal(state.worklist) > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.clinicalAllScopeLabel,
+            value: _countLabel(context, _pageTotal(state.worklist)),
+            icon: Icons.inventory_2_outlined,
+            compact: true,
+            onPressed: () => controller.applyScope(ClinicalQueueScope.all),
+          ),
+        if (state.waitingReviewCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.clinicalWaitingReviewSummaryLabel,
+            value: _countLabel(context, state.waitingReviewCount),
+            icon: Icons.rate_review_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(ClinicalQueueScope.waitingReview),
+          ),
+        if (state.urgentCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.clinicalUrgentSummaryLabel,
+            value: _countLabel(context, state.urgentCount),
+            icon: Icons.priority_high_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            compact: true,
+            onPressed: () => controller.applyScope(ClinicalQueueScope.urgent),
+          ),
+        if (state.resultsReadyCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.clinicalResultsReadySummaryLabel,
+            value: _countLabel(context, state.resultsReadyCount),
+            icon: Icons.science_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(ClinicalQueueScope.resultsReady),
+          ),
+        if (state.inConsultationCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.clinicalInConsultationSummaryLabel,
+            value: _countLabel(context, state.inConsultationCount),
+            icon: Icons.medical_information_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(ClinicalQueueScope.inConsultation),
+          ),
       ],
       body: _ClinicalWorklistPanel(
         state: state,
@@ -535,24 +526,6 @@ Color? _clinicalRowColor(BuildContext context, ClinicalWorklistEntry item) {
   return null;
 }
 
-enum _ClinicalSummaryCategory {
-  waitingReview,
-  urgent,
-  resultsReady,
-  inConsultation,
-}
-
-Future<void> _openSummaryWorklistDialog(
-  BuildContext context,
-  WidgetRef ref, {
-  required _ClinicalSummaryCategory category,
-}) {
-  return showAppDialog<void>(
-    context: context,
-    builder: (_) => _ClinicalSummaryWorklistDialog(category: category),
-  );
-}
-
 Future<void> _openClinicalEntryDialog(
   BuildContext context,
   WidgetRef ref,
@@ -576,158 +549,6 @@ Future<void> _openClinicalEntryDialog(
     builder: (_) => _ClinicalEncounterDialog(initialEntry: entry),
   );
   controller.clearSelection();
-}
-
-class _ClinicalSummaryWorklistDialog extends ConsumerStatefulWidget {
-  const _ClinicalSummaryWorklistDialog({required this.category});
-
-  final _ClinicalSummaryCategory category;
-
-  @override
-  ConsumerState<_ClinicalSummaryWorklistDialog> createState() =>
-      _ClinicalSummaryWorklistDialogState();
-}
-
-class _ClinicalSummaryWorklistDialogState
-    extends ConsumerState<_ClinicalSummaryWorklistDialog> {
-  late final TextEditingController _searchController;
-  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final _ClinicalSummaryDialogConfig config = _summaryDialogConfig(
-      l10n,
-      widget.category,
-    );
-    final AsyncValue<Result<ClinicalWorkspaceState>> asyncState = ref.watch(
-      clinicalWorkspaceControllerProvider,
-    );
-
-    return AppDialog(
-      title: Text(config.title),
-      icon: Icon(config.icon),
-      scrollable: true,
-      maxWidth: 1040,
-      content: asyncState.when(
-        data: (Result<ClinicalWorkspaceState> result) {
-          return result.when(
-            success: (ClinicalWorkspaceState state) {
-              final List<ClinicalWorklistEntry> categoryItems = state
-                  .worklist
-                  .items
-                  .where(
-                    (ClinicalWorklistEntry item) =>
-                        _matchesSummaryCategory(item, widget.category),
-                  )
-                  .toList(growable: false);
-              final ClinicalWorklistFilters filters = _filtersFromValue(
-                _filterValue,
-              );
-              final String advancedSearch = _searchFromValue(_filterValue);
-              final List<ClinicalWorklistEntry> visibleItems = categoryItems
-                  .where(
-                    (ClinicalWorklistEntry item) =>
-                        item.matchesSearch(advancedSearch, filters: filters) &&
-                        item.matchesFilters(filters),
-                  )
-                  .toList(growable: false);
-
-              return AppListTable<ClinicalWorklistEntry>(
-                items: visibleItems,
-                columns: _clinicalWorklistColumns(l10n),
-                mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
-                itemKeyBuilder: _clinicalWorklistItemKey,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                rowColorBuilder: _clinicalRowColor,
-                onRowSelected: (ClinicalWorklistEntry entry) {
-                  _openClinicalEntryDialog(context, ref, entry);
-                },
-                emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-                  variant: AppStateViewVariant.empty,
-                  title: config.emptyTitle,
-                  body: l10n.clinicalNoWorklistBody,
-                  icon: config.icon,
-                ),
-                search: AppListTableSearch<ClinicalWorklistEntry>(
-                  controller: _searchController,
-                  semanticLabel: l10n.clinicalSearchLabel,
-                  hintText: l10n.clinicalSearchHint,
-                  clearLabel: l10n.opdClearFiltersAction,
-                  matcher: (ClinicalWorklistEntry item, String query) {
-                    return item.matchesSearch(query, filters: filters);
-                  },
-                  onClear: () {
-                    setState(() {
-                      _filterValue = _filterValueWithoutText(
-                        _filterValue.copyWith(clearField: true),
-                        _clinicalTextGeneral,
-                      );
-                    });
-                  },
-                  showAdvancedFilterButton: true,
-                  advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
-                  advancedFilterTitle: l10n.clinicalFiltersLabel,
-                  advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                  advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                  advancedFilterCancelLabel: l10n.commonCancelActionLabel,
-                  textFilters: _clinicalTextFilters(l10n),
-                  searchFieldLabel: l10n.clinicalSearchLabel,
-                  allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-                  dateFilterLabel: l10n.clinicalLastUpdatedLabel,
-                  dateFromLabel: l10n.opdDateFromLabel,
-                  dateToLabel: l10n.opdDateToLabel,
-                  datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
-                  invalidDateMessage: l10n.opdInvalidDateMessage,
-                  filterGroups: _clinicalFilterGroups(l10n, categoryItems),
-                  filterValue: _filterValue,
-                  hasActiveFilters: _filterValue.isActive,
-                  onFilterChanged: (AppSearchBarFilterValue value) {
-                    final String search = _searchFromValue(value);
-                    if (_searchController.text != search) {
-                      _searchController.text = search;
-                    }
-                    setState(() => _filterValue = value);
-                  },
-                ),
-              );
-            },
-            failure: (AppFailure failure) {
-              return AppFailureStateView(
-                failure: failure,
-                onRetry: () {
-                  ref
-                      .read(clinicalWorkspaceControllerProvider.notifier)
-                      .refresh();
-                },
-              );
-            },
-          );
-        },
-        error: (_, _) =>
-            const AppFailureStateView(failure: AppFailure.unexpected()),
-        loading: () => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.loading,
-          title: l10n.clinicalLoadingTitle,
-          body: l10n.clinicalLoadingBody,
-          icon: Icons.assignment_outlined,
-        ),
-      ),
-    );
-  }
 }
 
 class _ClinicalEncounterDialog extends ConsumerWidget {
@@ -2064,15 +1885,6 @@ String _searchFromValue(AppSearchBarFilterValue value) {
   return value.text(_clinicalTextGeneral)?.trim() ?? '';
 }
 
-AppSearchBarFilterValue _filterValueWithoutText(
-  AppSearchBarFilterValue value,
-  String key,
-) {
-  final Map<String, String> texts = Map<String, String>.of(value.texts)
-    ..remove(key);
-  return value.copyWith(texts: texts);
-}
-
 ClinicalQueueScope _scopeFromValue(AppSearchBarFilterValue value) {
   final String? scope = value.option(_clinicalFilterScope);
   if (scope == null) {
@@ -2259,68 +2071,6 @@ List<AppSearchBarFilterChoice> _filterChoices(
         icon: icon,
       ),
   ];
-}
-
-final class _ClinicalSummaryDialogConfig {
-  const _ClinicalSummaryDialogConfig({
-    required this.title,
-    required this.emptyTitle,
-    required this.icon,
-  });
-
-  final String title;
-  final String emptyTitle;
-  final IconData icon;
-}
-
-_ClinicalSummaryDialogConfig _summaryDialogConfig(
-  AppLocalizations l10n,
-  _ClinicalSummaryCategory category,
-) {
-  return switch (category) {
-    _ClinicalSummaryCategory.waitingReview => _ClinicalSummaryDialogConfig(
-      title: l10n.clinicalWaitingReviewSummaryLabel,
-      emptyTitle: l10n.clinicalNoWorklistTitle,
-      icon: Icons.rate_review_outlined,
-    ),
-    _ClinicalSummaryCategory.urgent => _ClinicalSummaryDialogConfig(
-      title: l10n.clinicalUrgentSummaryLabel,
-      emptyTitle: l10n.clinicalNoWorklistTitle,
-      icon: Icons.priority_high_outlined,
-    ),
-    _ClinicalSummaryCategory.resultsReady => _ClinicalSummaryDialogConfig(
-      title: l10n.clinicalResultsReadySummaryLabel,
-      emptyTitle: l10n.clinicalNoWorklistTitle,
-      icon: Icons.science_outlined,
-    ),
-    _ClinicalSummaryCategory.inConsultation => _ClinicalSummaryDialogConfig(
-      title: l10n.clinicalInConsultationSummaryLabel,
-      emptyTitle: l10n.clinicalNoWorklistTitle,
-      icon: Icons.medical_information_outlined,
-    ),
-  };
-}
-
-bool _matchesSummaryCategory(
-  ClinicalWorklistEntry item,
-  _ClinicalSummaryCategory category,
-) {
-  if (item.isTerminal) {
-    return false;
-  }
-  return switch (category) {
-    _ClinicalSummaryCategory.waitingReview => clinicalWorklistEntryMatchesScope(
-      item,
-      ClinicalQueueScope.waitingReview,
-    ),
-    _ClinicalSummaryCategory.urgent => item.isUrgent,
-    _ClinicalSummaryCategory.resultsReady => item.resultsReady,
-    _ClinicalSummaryCategory.inConsultation =>
-      clinicalWorklistEntryMatchesScope(
-        item,
-        ClinicalQueueScope.inConsultation,
-      ),
-  };
 }
 
 List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
@@ -2621,6 +2371,8 @@ bool _canDeleteLabOrder(String? status) {
 String _countLabel(BuildContext context, int value) {
   return AppFormatters.compactNumber(value, Localizations.localeOf(context));
 }
+
+int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _pageLabel(BuildContext context, AppPage<ClinicalWorklistEntry> page) {
   final int total = page.totalItemCount ?? page.items.length;

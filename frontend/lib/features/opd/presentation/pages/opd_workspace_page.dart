@@ -112,6 +112,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool iconOnly =
         breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
+    final List<_OpdTableItem> tableItems = _tableItems(context, state);
 
     return AppWorkspace(
       title: l10n.opdTitle,
@@ -161,104 +162,83 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         ),
       ],
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: l10n.opdArrivalsSummaryLabel,
-          value: AppFormatters.compactNumber(
-            _summaryPatientCount(state, _OpdSummaryPatientListType.arrivals),
-            Localizations.localeOf(context),
-          ),
-          icon: Icons.event_available_outlined,
-          tone: _categoryTone(_opdCategoryArrival),
-          compact: true,
-          onPressed: () {
-            _openSummaryPatientList(
-              context,
-              type: _OpdSummaryPatientListType.arrivals,
-              title: l10n.opdArrivalsSummaryLabel,
-              emptyTitle: l10n.opdNoArrivalsTitle,
-              emptyBody: l10n.opdNoArrivalsBody,
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.opdQueueSummaryLabel,
-          value: AppFormatters.compactNumber(
-            _summaryPatientCount(state, _OpdSummaryPatientListType.queue),
-            Localizations.localeOf(context),
-          ),
-          icon: Icons.queue_outlined,
-          tone: _categoryTone(_opdCategoryQueue),
-          compact: true,
-          onPressed: () {
-            _openSummaryPatientList(
-              context,
-              type: _OpdSummaryPatientListType.queue,
-              title: l10n.opdQueueSummaryLabel,
-              emptyTitle: l10n.opdNoQueueTitle,
-              emptyBody: l10n.opdNoQueueBody,
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.opdWorkflowTriageTitle,
-          value: AppFormatters.compactNumber(
-            state.triageQueueCount,
-            Localizations.localeOf(context),
-          ),
-          icon: Icons.monitor_heart_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () {
-            _openSummaryPatientList(
-              context,
-              type: _OpdSummaryPatientListType.triage,
-              title: l10n.opdWorkflowTriageTitle,
-              emptyTitle: l10n.opdNoFlowsTitle,
-              emptyBody: l10n.opdNoFlowsBody,
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.opdActiveFlowSummaryLabel,
-          value: AppFormatters.compactNumber(
-            _summaryPatientCount(state, _OpdSummaryPatientListType.activeFlows),
-            Localizations.localeOf(context),
-          ),
-          icon: Icons.medical_services_outlined,
-          tone: _categoryTone(_opdCategoryActiveFlow),
-          compact: true,
-          onPressed: () {
-            _openSummaryPatientList(
-              context,
-              type: _OpdSummaryPatientListType.activeFlows,
-              title: l10n.opdActiveFlowSummaryLabel,
-              emptyTitle: l10n.opdNoFlowsTitle,
-              emptyBody: l10n.opdNoFlowsBody,
-            );
-          },
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.opdCompletedFlowSummaryLabel,
-          value: AppFormatters.compactNumber(
-            _summaryPatientCount(
-              state,
-              _OpdSummaryPatientListType.completedFlows,
+        if (tableItems.isNotEmpty)
+          AppWorkspaceSummaryCard(
+            label: _OpdSummaryText.allRecords,
+            value: AppFormatters.compactNumber(
+              tableItems.length,
+              Localizations.localeOf(context),
             ),
-            Localizations.localeOf(context),
+            icon: Icons.groups_outlined,
+            compact: true,
+            onPressed: () {
+              _applySummaryFilter(const _OpdTableFilter());
+            },
           ),
-          icon: Icons.task_alt_outlined,
-          tone: AppWorkspaceStatusTone.neutral,
-          compact: true,
-          onPressed: () {
-            _openSummaryPatientList(
-              context,
-              type: _OpdSummaryPatientListType.completedFlows,
-              title: l10n.opdCompletedFlowSummaryLabel,
-              emptyTitle: l10n.opdNoSummaryPatientsTitle,
-              emptyBody: l10n.opdNoSummaryPatientsBody,
-            );
-          },
-        ),
+        if (_opdCategoryCount(tableItems, _opdCategoryArrival) > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.opdArrivalsSummaryLabel,
+            value: AppFormatters.compactNumber(
+              _opdCategoryCount(tableItems, _opdCategoryArrival),
+              Localizations.localeOf(context),
+            ),
+            icon: Icons.event_available_outlined,
+            tone: _categoryTone(_opdCategoryArrival),
+            compact: true,
+            onPressed: () {
+              _applySummaryFilter(
+                const _OpdTableFilter(category: _opdCategoryArrival),
+              );
+            },
+          ),
+        if (_opdCategoryCount(tableItems, _opdCategoryQueue) > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.opdQueueSummaryLabel,
+            value: AppFormatters.compactNumber(
+              _opdCategoryCount(tableItems, _opdCategoryQueue),
+              Localizations.localeOf(context),
+            ),
+            icon: Icons.queue_outlined,
+            tone: _categoryTone(_opdCategoryQueue),
+            compact: true,
+            onPressed: () {
+              _applySummaryFilter(
+                const _OpdTableFilter(category: _opdCategoryQueue),
+              );
+            },
+          ),
+        if (_opdCategoryCount(tableItems, _opdCategoryTriage) > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.opdWorkflowTriageTitle,
+            value: AppFormatters.compactNumber(
+              _opdCategoryCount(tableItems, _opdCategoryTriage),
+              Localizations.localeOf(context),
+            ),
+            icon: Icons.monitor_heart_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () {
+              _applySummaryFilter(
+                const _OpdTableFilter(category: _opdCategoryTriage),
+              );
+            },
+          ),
+        if (_opdCategoryCount(tableItems, _opdCategoryActiveFlow) > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.opdActiveFlowSummaryLabel,
+            value: AppFormatters.compactNumber(
+              _opdCategoryCount(tableItems, _opdCategoryActiveFlow),
+              Localizations.localeOf(context),
+            ),
+            icon: Icons.medical_services_outlined,
+            tone: _categoryTone(_opdCategoryActiveFlow),
+            compact: true,
+            onPressed: () {
+              _applySummaryFilter(
+                const _OpdTableFilter(category: _opdCategoryActiveFlow),
+              );
+            },
+          ),
       ],
       body: ValueListenableBuilder<_OpdTableFilter>(
         valueListenable: _filterNotifier,
@@ -288,6 +268,13 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     }
     _filterNotifier.value = filter;
     _tablePageNotifier.value = _tablePageNotifier.value.first();
+  }
+
+  void _applySummaryFilter(_OpdTableFilter filter) {
+    if (filter.search.trim().isEmpty && _searchController.text.isNotEmpty) {
+      _searchController.clear();
+    }
+    _setFilter(filter);
   }
 
   void _setTablePage(AppPageRequest request) {
@@ -326,476 +313,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     }
-  }
-
-  Future<void> _openSummaryPatientList(
-    BuildContext context, {
-    required _OpdSummaryPatientListType type,
-    required String title,
-    required String emptyTitle,
-    required String emptyBody,
-  }) async {
-    await showAppDialog<void>(
-      context: context,
-      builder: (_) => _OpdSummaryPatientListDialog(
-        type: type,
-        title: title,
-        emptyTitle: emptyTitle,
-        emptyBody: emptyBody,
-      ),
-    );
-  }
-}
-
-enum _OpdSummaryPatientListType {
-  arrivals,
-  queue,
-  triage,
-  activeFlows,
-  completedFlows,
-}
-
-@immutable
-final class _OpdPatientSummaryItem {
-  const _OpdPatientSummaryItem({
-    required this.id,
-    required this.category,
-    required this.title,
-    this.subtitle,
-    this.status,
-    this.provider,
-    this.time,
-    this.appointment,
-    this.queueEntry,
-    this.flow,
-  });
-
-  final String id;
-  final String category;
-  final String title;
-  final String? subtitle;
-  final String? status;
-  final String? provider;
-  final DateTime? time;
-  final OpdAppointment? appointment;
-  final OpdQueueEntry? queueEntry;
-  final OpdFlowSummary? flow;
-
-  bool matches(String search) {
-    final String needle = search.trim().toLowerCase();
-    if (needle.isEmpty) {
-      return true;
-    }
-
-    return <String?>[
-      id,
-      category,
-      title,
-      subtitle,
-      status,
-      provider,
-      appointment?.patientId,
-      appointment?.patientIdentifier,
-      appointment?.patientPhone,
-      appointment?.reason,
-      queueEntry?.patientId,
-      queueEntry?.patientIdentifier,
-      queueEntry?.patientPhone,
-      queueEntry?.appointmentReason,
-      flow?.patientId,
-      flow?.patientIdentifier,
-      flow?.patientPhone,
-      flow?.stage,
-      flow?.nextStep,
-    ].whereType<String>().any(
-      (String value) => value.toLowerCase().contains(needle),
-    );
-  }
-}
-
-int _summaryPatientCount(
-  OpdWorkspaceState state,
-  _OpdSummaryPatientListType type,
-) {
-  return _summaryItemsForType(state, type).length;
-}
-
-List<_OpdPatientSummaryItem> _summaryItemsForType(
-  OpdWorkspaceState state,
-  _OpdSummaryPatientListType type,
-) {
-  return switch (type) {
-    _OpdSummaryPatientListType.arrivals => _summaryItemsFromAppointments(
-      state.appointments.items.where(
-        (OpdAppointment item) => !_isCompletedStatus(item.status),
-      ),
-    ),
-    _OpdSummaryPatientListType.queue => _summaryItemsFromQueue(
-      state.queueEntries.items.where(
-        (OpdQueueEntry item) => !_isCompletedStatus(item.status),
-      ),
-    ),
-    _OpdSummaryPatientListType.triage => _summaryItemsFromFlows(
-      state.triageQueue.items.where(
-        (OpdFlowSummary item) =>
-            !item.isTerminal && !_isCompletedStatus(item.status ?? item.stage),
-      ),
-      category: _opdCategoryTriage,
-    ),
-    _OpdSummaryPatientListType.activeFlows => _summaryItemsFromFlows(
-      state.flows.items.where(
-        (OpdFlowSummary item) =>
-            !item.isTerminal && !_isCompletedStatus(item.status ?? item.stage),
-      ),
-    ),
-    _OpdSummaryPatientListType.completedFlows => _summaryItemsFromFlows(
-      state.flows.items.where(
-        (OpdFlowSummary item) => item.isTerminal && _isCompletedToday(item),
-      ),
-    ),
-  };
-}
-
-List<_OpdPatientSummaryItem> _summaryItemsFromAppointments(
-  Iterable<OpdAppointment> appointments,
-) {
-  return appointments
-      .map(
-        (OpdAppointment item) => _OpdPatientSummaryItem(
-          id: item.id,
-          category: _opdCategoryArrival,
-          title: item.displayTitle,
-          subtitle: _joinDisplay(<String?>[
-            item.patientIdentifier,
-            item.patientPhone,
-            item.reason,
-          ]),
-          status: item.status,
-          provider: item.providerDisplayName,
-          time: item.scheduledStart,
-          appointment: item,
-        ),
-      )
-      .toList(growable: false);
-}
-
-List<_OpdPatientSummaryItem> _summaryItemsFromQueue(
-  Iterable<OpdQueueEntry> entries,
-) {
-  return entries
-      .map(
-        (OpdQueueEntry item) => _OpdPatientSummaryItem(
-          id: item.id,
-          category: _opdCategoryQueue,
-          title: item.displayTitle,
-          subtitle: _joinDisplay(<String?>[
-            item.patientIdentifier,
-            item.patientPhone,
-            item.appointmentReason,
-          ]),
-          status: item.status,
-          provider: item.providerDisplayName,
-          time: item.queuedAt,
-          queueEntry: item,
-        ),
-      )
-      .toList(growable: false);
-}
-
-List<_OpdPatientSummaryItem> _summaryItemsFromFlows(
-  Iterable<OpdFlowSummary> flows, {
-  String category = _opdCategoryActiveFlow,
-}) {
-  return flows
-      .map(
-        (OpdFlowSummary item) => _OpdPatientSummaryItem(
-          id: item.id,
-          category: category,
-          title: item.displayTitle,
-          subtitle: _joinDisplay(<String?>[
-            item.patientIdentifier,
-            item.patientPhone,
-            item.nextStep == null ? null : _apiLabel(item.nextStep!),
-          ]),
-          status: item.stage,
-          provider: item.providerDisplayName,
-          time: item.endedAt ?? item.startedAt,
-          flow: item,
-        ),
-      )
-      .toList(growable: false);
-}
-
-class _OpdSummaryPatientListDialog extends ConsumerStatefulWidget {
-  const _OpdSummaryPatientListDialog({
-    required this.type,
-    required this.title,
-    required this.emptyTitle,
-    required this.emptyBody,
-  });
-
-  final _OpdSummaryPatientListType type;
-  final String title;
-  final String emptyTitle;
-  final String emptyBody;
-
-  @override
-  ConsumerState<_OpdSummaryPatientListDialog> createState() =>
-      _OpdSummaryPatientListDialogState();
-}
-
-class _OpdSummaryPatientListDialogState
-    extends ConsumerState<_OpdSummaryPatientListDialog> {
-  late final TextEditingController _searchController;
-  late final ValueNotifier<AppSearchBarFilterValue> _filterController;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-    _filterController = ValueNotifier<AppSearchBarFilterValue>(
-      AppSearchBarFilterValue.empty,
-    );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _filterController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Result<OpdWorkspaceState>? result = ref
-        .watch(opdWorkspaceControllerProvider)
-        .asData
-        ?.value;
-    final OpdWorkspaceState? state = result?.when(
-      success: (OpdWorkspaceState value) => value,
-      failure: (_) => null,
-    );
-    final List<_OpdPatientSummaryItem> patients = state == null
-        ? const <_OpdPatientSummaryItem>[]
-        : _summaryItemsForType(state, widget.type);
-
-    return AppDialog(
-      title: Text(widget.title),
-      icon: const Icon(Icons.groups_outlined),
-      maxWidth: 920,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _OpdSummaryPatientResults(
-            patients: patients,
-            searchController: _searchController,
-            filterController: _filterController,
-            emptyTitle: widget.emptyTitle,
-            emptyBody: widget.emptyBody,
-            onPatientPressed: _openPatientActions,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openPatientActions(_OpdPatientSummaryItem item) async {
-    final bool? changed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        final OpdAppointment? appointment = item.appointment;
-        if (appointment != null) {
-          return AppointmentActionsDialog(appointment: appointment);
-        }
-
-        final OpdQueueEntry? queueEntry = item.queueEntry;
-        if (queueEntry != null) {
-          return QueueActionsDialog(entry: queueEntry);
-        }
-
-        return FlowActionsDialog(flow: item.flow!);
-      },
-    );
-    if (changed == true && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-    }
-  }
-}
-
-class _OpdSummaryPatientResults extends StatelessWidget {
-  const _OpdSummaryPatientResults({
-    required this.patients,
-    required this.searchController,
-    required this.filterController,
-    required this.emptyTitle,
-    required this.emptyBody,
-    required this.onPatientPressed,
-  });
-
-  final List<_OpdPatientSummaryItem> patients;
-  final TextEditingController searchController;
-  final ValueNotifier<AppSearchBarFilterValue> filterController;
-  final String emptyTitle;
-  final String emptyBody;
-  final ValueChanged<_OpdPatientSummaryItem> onPatientPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final double maxHeight = (MediaQuery.sizeOf(context).height * 0.56).clamp(
-      280.0,
-      520.0,
-    );
-    final List<AppSearchBarFilterGroup> filterGroups =
-        _summaryPatientFilterGroups(context, patients);
-    return ValueListenableBuilder<AppSearchBarFilterValue>(
-      valueListenable: filterController,
-      builder: (BuildContext context, AppSearchBarFilterValue filterValue, _) {
-        final List<_OpdPatientSummaryItem> filteredPatients =
-            _filterSummaryPatients(patients, filterValue);
-        return SizedBox(
-          height: maxHeight,
-          child: AppListTable<_OpdPatientSummaryItem>(
-            items: filteredPatients,
-            displayMode: AppListTableDisplayMode.list,
-            emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-              title: emptyTitle,
-              body: emptyBody,
-              icon: Icons.person_search_outlined,
-              minHeight: 240,
-            ),
-            columns: <AppListTableColumn<_OpdPatientSummaryItem>>[
-              AppListTableColumn<_OpdPatientSummaryItem>(
-                label: l10n.opdPatientColumnLabel,
-                cellBuilder:
-                    (BuildContext context, _OpdPatientSummaryItem item) {
-                      return AppListItemText(
-                        title: item.title,
-                        subtitle: item.subtitle,
-                      );
-                    },
-              ),
-              AppListTableColumn<_OpdPatientSummaryItem>(
-                label: l10n.opdStatusColumnLabel,
-                cellBuilder:
-                    (BuildContext context, _OpdPatientSummaryItem item) {
-                      return _opdStatusText(context, item.status);
-                    },
-              ),
-            ],
-            mobileItemBuilder:
-                (BuildContext context, _OpdPatientSummaryItem item) {
-                  return _OpdSummaryPatientRow(item: item);
-                },
-            onRowSelected: onPatientPressed,
-            itemKeyBuilder: (_OpdPatientSummaryItem item) =>
-                ValueKey<String>('${item.category}-${item.id}'),
-            search: AppListTableSearch<_OpdPatientSummaryItem>(
-              controller: searchController,
-              semanticLabel: l10n.opdSearchLabel,
-              hintText: l10n.opdSearchHint,
-              clearLabel: l10n.opdClearFiltersAction,
-              matcher: (_OpdPatientSummaryItem item, String query) =>
-                  item.matches(query),
-              showAdvancedFilterButton: filterGroups.isNotEmpty,
-              advancedFilterButtonLabel: l10n.opdFilterAction,
-              advancedFilterTitle: l10n.opdFiltersLabel,
-              advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-              advancedFilterResetLabel: l10n.opdClearFiltersAction,
-              advancedFilterCancelLabel: l10n.commonCancelActionLabel,
-              enableDateFilter: false,
-              filterGroups: filterGroups,
-              filterValue: filterValue,
-              onFilterChanged: (AppSearchBarFilterValue value) {
-                filterController.value = value;
-              },
-              hasActiveFilters: filterValue.isActive,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  List<_OpdPatientSummaryItem> _filterSummaryPatients(
-    List<_OpdPatientSummaryItem> items,
-    AppSearchBarFilterValue filter,
-  ) {
-    final String? status = filter.option(_opdFilterKeyStatus);
-    if (status == null) {
-      return items;
-    }
-    return items
-        .where((_OpdPatientSummaryItem item) => item.status == status)
-        .toList(growable: false);
-  }
-
-  List<AppSearchBarFilterGroup> _summaryPatientFilterGroups(
-    BuildContext context,
-    List<_OpdPatientSummaryItem> patients,
-  ) {
-    final l10n = context.l10n;
-    final Set<String> statusSet = <String>{};
-    for (final _OpdPatientSummaryItem patient in patients) {
-      final String? status = patient.status;
-      if (status == null || status.trim().isEmpty) {
-        continue;
-      }
-      statusSet.add(status);
-    }
-    final List<String> statuses = statusSet.toList()..sort();
-    if (statuses.isEmpty) {
-      return const <AppSearchBarFilterGroup>[];
-    }
-    return <AppSearchBarFilterGroup>[
-      AppSearchBarFilterGroup(
-        key: _opdFilterKeyStatus,
-        label: l10n.opdStatusFilterLabel,
-        allLabel: l10n.opdAllStatusesOption,
-        choices: <AppSearchBarFilterChoice>[
-          for (final String status in statuses)
-            AppSearchBarFilterChoice(value: status, label: _apiLabel(status)),
-        ],
-      ),
-    ];
-  }
-}
-
-class _OpdSummaryPatientRow extends StatelessWidget {
-  const _OpdSummaryPatientRow({required this.item});
-
-  final _OpdPatientSummaryItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return AppListItemRow(
-      title: item.title,
-      subtitle: item.subtitle,
-      details: <Widget>[
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            _opdStatusBadge(context, item.status),
-            AppInlineMetaText(
-              icon: Icons.badge_outlined,
-              label: item.provider ?? context.l10n.profileUnknownValue,
-            ),
-            AppInlineMetaText(
-              icon: Icons.schedule_outlined,
-              label: _formatDateTime(context, item.time),
-            ),
-          ],
-        ),
-      ],
-      trailing: const Icon(Icons.chevron_right),
-    );
   }
 }
 
@@ -1657,6 +1174,14 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
   return items;
 }
 
+int _opdCategoryCount(List<_OpdTableItem> items, String category) {
+  return items.where((_OpdTableItem item) => item.category == category).length;
+}
+
+abstract final class _OpdSummaryText {
+  static const String allRecords = 'All OPD records';
+}
+
 DateTime? _appointmentArrivalTime(OpdAppointment appointment) {
   final String status = (appointment.status ?? '').toUpperCase();
   if (status == 'IN_PROGRESS') {
@@ -2164,22 +1689,6 @@ bool _isCompletedStatus(String? status) {
   };
 }
 
-bool _isCompletedToday(OpdFlowSummary flow) {
-  final DateTime? completedAt = flow.endedAt ?? flow.startedAt;
-  if (completedAt == null) {
-    return false;
-  }
-  return _isSameLocalDate(completedAt, DateTime.now());
-}
-
-bool _isSameLocalDate(DateTime left, DateTime right) {
-  final DateTime localLeft = left.toLocal();
-  final DateTime localRight = right.toLocal();
-  return localLeft.year == localRight.year &&
-      localLeft.month == localRight.month &&
-      localLeft.day == localRight.day;
-}
-
 class _OpdMainTable extends ConsumerWidget {
   const _OpdMainTable({
     required this.page,
@@ -2381,16 +1890,6 @@ class _QueueStatusCell extends StatelessWidget {
       ],
     );
   }
-}
-
-Widget _opdStatusBadge(BuildContext context, String? value) {
-  final String label = _apiLabel(value ?? '');
-  return AppWorkspaceStatusBadge(
-    status: AppWorkspaceStatus(
-      label: label.isEmpty ? context.l10n.profileUnknownValue : label,
-      tone: _stageTone(value),
-    ),
-  );
 }
 
 Widget _opdStatusText(BuildContext context, String? value) {

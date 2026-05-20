@@ -151,96 +151,74 @@ class _NursingWorkspaceContentState
         ),
       ],
       summaryCards: <Widget>[
-        _summaryCard(
-          context,
-          label: l10n.nursingAssignedWardSummaryLabel,
-          value: state.assignedWardCount,
-          icon: Icons.local_hospital_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          onPressed: () => _openSummaryPatientsDialog(
+        if (_pageTotal(state.worklist) > 0)
+          _summaryCard(
             context,
-            ref,
-            NursingQueueScope.assignedWard,
-            l10n.nursingAssignedWardSummaryLabel,
-            Icons.local_hospital_outlined,
-            AppWorkspaceStatusTone.info,
+            label: _NursingSummaryText.allWorklist,
+            value: _pageTotal(state.worklist),
+            icon: Icons.inventory_2_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () => controller.applyScope(NursingQueueScope.all),
           ),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.nursingUrgentSummaryLabel,
-          value: state.urgentCount,
-          icon: Icons.priority_high_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          onPressed: () => _openSummaryPatientsDialog(
+        if (state.assignedWardCount > 0)
+          _summaryCard(
             context,
-            ref,
-            NursingQueueScope.urgent,
-            l10n.nursingUrgentSummaryLabel,
-            Icons.priority_high_outlined,
-            AppWorkspaceStatusTone.error,
+            label: l10n.nursingAssignedWardSummaryLabel,
+            value: state.assignedWardCount,
+            icon: Icons.local_hospital_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.assignedWard),
           ),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.nursingMedicationDueSummaryLabel,
-          value: state.medicationDueCount,
-          icon: Icons.medication_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          onPressed: () => _openSummaryPatientsDialog(
+        if (state.urgentCount > 0)
+          _summaryCard(
             context,
-            ref,
-            NursingQueueScope.medicationDue,
-            l10n.nursingMedicationDueSummaryLabel,
-            Icons.medication_outlined,
-            AppWorkspaceStatusTone.warning,
+            label: l10n.nursingUrgentSummaryLabel,
+            value: state.urgentCount,
+            icon: Icons.priority_high_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            onPressed: () => controller.applyScope(NursingQueueScope.urgent),
           ),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.nursingHandoverPendingSummaryLabel,
-          value: state.handoverPendingCount,
-          icon: Icons.swap_horiz_outlined,
-          tone: AppWorkspaceStatusTone.neutral,
-          onPressed: () => _openSummaryPatientsDialog(
+        if (state.medicationDueCount > 0)
+          _summaryCard(
             context,
-            ref,
-            NursingQueueScope.handoverPending,
-            l10n.nursingHandoverPendingSummaryLabel,
-            Icons.swap_horiz_outlined,
-            AppWorkspaceStatusTone.neutral,
+            label: l10n.nursingMedicationDueSummaryLabel,
+            value: state.medicationDueCount,
+            icon: Icons.medication_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.medicationDue),
           ),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.nursingTransferPendingSummaryLabel,
-          value: state.transferPendingCount,
-          icon: Icons.transfer_within_a_station_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          onPressed: () => _openSummaryPatientsDialog(
+        if (state.handoverPendingCount > 0)
+          _summaryCard(
             context,
-            ref,
-            NursingQueueScope.transferPending,
-            l10n.nursingTransferPendingSummaryLabel,
-            Icons.transfer_within_a_station_outlined,
-            AppWorkspaceStatusTone.warning,
+            label: l10n.nursingHandoverPendingSummaryLabel,
+            value: state.handoverPendingCount,
+            icon: Icons.swap_horiz_outlined,
+            tone: AppWorkspaceStatusTone.neutral,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.handoverPending),
           ),
-        ),
-        _summaryCard(
-          context,
-          label: l10n.nursingDischargePendingSummaryLabel,
-          value: state.dischargePendingCount,
-          icon: Icons.logout_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          onPressed: () => _openSummaryPatientsDialog(
+        if (state.transferPendingCount > 0)
+          _summaryCard(
             context,
-            ref,
-            NursingQueueScope.dischargePending,
-            l10n.nursingDischargePendingSummaryLabel,
-            Icons.logout_outlined,
-            AppWorkspaceStatusTone.success,
+            label: l10n.nursingTransferPendingSummaryLabel,
+            value: state.transferPendingCount,
+            icon: Icons.transfer_within_a_station_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.transferPending),
           ),
-        ),
+        if (state.dischargePendingCount > 0)
+          _summaryCard(
+            context,
+            label: l10n.nursingDischargePendingSummaryLabel,
+            value: state.dischargePendingCount,
+            icon: Icons.logout_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            onPressed: () =>
+                controller.applyScope(NursingQueueScope.dischargePending),
+          ),
       ],
       body: _NursingWorklistPanel(
         state: state,
@@ -310,6 +288,12 @@ class _NursingWorkspaceContentState
       onPressed: onPressed,
     );
   }
+}
+
+int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
+
+abstract final class _NursingSummaryText {
+  static const String allWorklist = 'All nursing worklist';
 }
 
 class _NursingWorklistPanel extends ConsumerWidget {
@@ -523,139 +507,6 @@ List<AppListTableColumn<NursingWorkItem>> _nursingWorklistColumnChoices(
       },
     ),
   ];
-}
-
-void _openSummaryPatientsDialog(
-  BuildContext context,
-  WidgetRef ref,
-  NursingQueueScope scope,
-  String title,
-  IconData icon,
-  AppWorkspaceStatusTone tone,
-) {
-  final Future<Result<AppPage<NursingWorkItem>>> future = ref
-      .read(nursingWorkspaceControllerProvider.notifier)
-      .previewPatientsForScope(scope);
-
-  showAppDialog<void>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      return _NursingSummaryPatientsDialog(
-        title: title,
-        icon: icon,
-        tone: tone,
-        future: future,
-        onPatientSelected: (NursingWorkItem item) {
-          Navigator.of(dialogContext).maybePop();
-          _openPatientDetailDialog(context, ref, item);
-        },
-      );
-    },
-  );
-}
-
-class _NursingSummaryPatientsDialog extends StatelessWidget {
-  const _NursingSummaryPatientsDialog({
-    required this.title,
-    required this.icon,
-    required this.tone,
-    required this.future,
-    required this.onPatientSelected,
-  });
-
-  final String title;
-  final IconData icon;
-  final AppWorkspaceStatusTone tone;
-  final Future<Result<AppPage<NursingWorkItem>>> future;
-  final ValueChanged<NursingWorkItem> onPatientSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(title),
-      icon: Icon(icon),
-      semanticLabel: title,
-      scrollable: true,
-      maxWidth: 920,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppWorkspaceStatusBadge(
-            status: AppWorkspaceStatus(label: title, tone: tone),
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          FutureBuilder<Result<AppPage<NursingWorkItem>>>(
-            future: future,
-            builder:
-                (
-                  BuildContext context,
-                  AsyncSnapshot<Result<AppPage<NursingWorkItem>>> snapshot,
-                ) {
-                  final Result<AppPage<NursingWorkItem>>? result =
-                      snapshot.data;
-                  if (result == null) {
-                    return AppWorkspaceStatePanel.loading(
-                      title: l10n.nursingLoadingTitle,
-                      body: l10n.nursingLoadingBody,
-                    );
-                  }
-                  return result.when(
-                    success: (AppPage<NursingWorkItem> page) =>
-                        AppListTable<NursingWorkItem>(
-                          items: page.items,
-                          shrinkWrap: true,
-                          columns: _nursingWorklistDefaultColumns(l10n),
-                          columnChoices: _nursingWorklistColumnChoices(l10n),
-                          onRowSelected: onPatientSelected,
-                          emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-                            variant: AppStateViewVariant.empty,
-                            title: l10n.nursingNoWorklistTitle,
-                            body: l10n.nursingNoWorklistBody,
-                            icon: Icons.assignment_outlined,
-                          ),
-                          mobileItemBuilder:
-                              (BuildContext context, NursingWorkItem item) {
-                                final ThemeData theme = Theme.of(context);
-                                return Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: theme.spacing.sm,
-                                    vertical: theme.spacing.sm,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      _NursingPatientCell(item: item),
-                                      SizedBox(height: theme.spacing.xs),
-                                      Text(
-                                        _joinDisplay(<String?>[
-                                          item.locationLabel,
-                                          _taskTypeLabel(context, item),
-                                          _dueTimeLabel(context, item),
-                                        ]),
-                                        style: theme.textTheme.bodySmall,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                        ),
-                    failure: (AppFailure failure) =>
-                        AppFailureStateView(failure: failure),
-                  );
-                },
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      ],
-    );
-  }
 }
 
 Future<void> _openPatientDetailDialog(

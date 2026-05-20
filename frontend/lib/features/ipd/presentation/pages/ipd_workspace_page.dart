@@ -125,49 +125,54 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
         ),
       ],
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          label: l10n.ipdAdmissionQueueSummaryLabel,
-          value: _countLabel(context, state.admissionQueueCount),
-          icon: Icons.bed_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () => controller.applyScope(IpdQueueScope.admissionQueue),
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.ipdActivePatientsSummaryLabel,
-          value: _countLabel(context, state.activePatientCount),
-          icon: Icons.local_hospital_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          compact: true,
-          onPressed: () => controller.applyScope(IpdQueueScope.activePatients),
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.ipdTransferPendingSummaryLabel,
-          value: _countLabel(context, state.transferPendingCount),
-          icon: Icons.swap_horiz,
-          tone: AppWorkspaceStatusTone.warning,
-          compact: true,
-          onPressed: () => controller.applyScope(IpdQueueScope.transferPending),
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.ipdDischargePlannedSummaryLabel,
-          value: _countLabel(context, state.dischargePlannedCount),
-          icon: Icons.fact_check_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          compact: true,
-          onPressed: () =>
-              controller.applyScope(IpdQueueScope.dischargePlanned),
-        ),
-        AppWorkspaceSummaryCard(
-          label: l10n.ipdCriticalAlertsSummaryLabel,
-          value: _countLabel(context, state.criticalAlertCount),
-          icon: Icons.notification_important_outlined,
-          tone: state.criticalAlertCount > 0
-              ? AppWorkspaceStatusTone.error
-              : AppWorkspaceStatusTone.neutral,
-          compact: true,
-          onPressed: () => controller.applyScope(IpdQueueScope.all),
-        ),
+        if (_pageTotal(state.admissions) > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.ipdScopeAll,
+            value: _countLabel(context, _pageTotal(state.admissions)),
+            icon: Icons.inventory_2_outlined,
+            compact: true,
+            onPressed: () => controller.applyScope(IpdQueueScope.all),
+          ),
+        if (state.admissionQueueCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.ipdAdmissionQueueSummaryLabel,
+            value: _countLabel(context, state.admissionQueueCount),
+            icon: Icons.bed_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(IpdQueueScope.admissionQueue),
+          ),
+        if (state.activePatientCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.ipdActivePatientsSummaryLabel,
+            value: _countLabel(context, state.activePatientCount),
+            icon: Icons.local_hospital_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(IpdQueueScope.activePatients),
+          ),
+        if (state.transferPendingCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.ipdTransferPendingSummaryLabel,
+            value: _countLabel(context, state.transferPendingCount),
+            icon: Icons.swap_horiz,
+            tone: AppWorkspaceStatusTone.warning,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(IpdQueueScope.transferPending),
+          ),
+        if (state.dischargePlannedCount > 0)
+          AppWorkspaceSummaryCard(
+            label: l10n.ipdDischargePlannedSummaryLabel,
+            value: _countLabel(context, state.dischargePlannedCount),
+            icon: Icons.fact_check_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            compact: true,
+            onPressed: () =>
+                controller.applyScope(IpdQueueScope.dischargePlanned),
+          ),
       ],
       body: _IpdBoardPanel(
         state: state,
@@ -2088,6 +2093,8 @@ IconData _recordIcon(String kind) {
 String _countLabel(BuildContext context, int value) {
   return AppFormatters.compactNumber(value, Localizations.localeOf(context));
 }
+
+int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _pageLabel<T>(BuildContext context, AppPage<T> page) {
   final int total = page.totalItemCount ?? page.lastItemNumber;

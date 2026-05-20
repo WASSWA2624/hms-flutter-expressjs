@@ -55,7 +55,9 @@ final class BillingRepositoryImpl implements BillingRepository {
       queryParameters: _withoutEmpty(<String, Object?>{
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
-        'queue': query.queue.serverValue,
+        'queue': query.queue == BillingQueueType.all
+            ? null
+            : query.queue.serverValue,
         'search': query.search,
       }),
       decoder: (Object? data) {

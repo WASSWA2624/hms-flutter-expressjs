@@ -123,6 +123,23 @@ class _ClaimsWorkspaceContentState
     final ClaimsWorkspaceController controller = ref.read(
       claimsWorkspaceControllerProvider.notifier,
     );
+    final int allCount = state.queue.totalItemCount ?? state.queue.items.length;
+    final int authorizationDeniedCount = _claimsCountForFilter(
+      state,
+      ClaimsQueueFilter.authorizationDenied,
+    );
+    final int rejectedClaimsCount = _claimsCountForFilter(
+      state,
+      ClaimsQueueFilter.claimRejected,
+    );
+    final int paidClaimsCount = _claimsCountForFilter(
+      state,
+      ClaimsQueueFilter.claimPaid,
+    );
+    final int cancelledClaimsCount = _claimsCountForFilter(
+      state,
+      ClaimsQueueFilter.claimCancelled,
+    );
 
     return AppWorkspace(
       title: l10n.claimsWorkspaceTitle,
@@ -168,48 +185,141 @@ class _ClaimsWorkspaceContentState
       ],
       compactSummaryCards: true,
       summaryCards: <Widget>[
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.claimsAuthorizationPendingSummaryLabel,
-          value: state.authorizationPendingCount.toString(),
-          icon: Icons.schedule_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.claimsAuthorizationApprovedSummaryLabel,
-          value: state.authorizationApprovedCount.toString(),
-          icon: Icons.verified_outlined,
-          tone: AppWorkspaceStatusTone.success,
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.claimsSubmittedSummaryLabel,
-          value: state.submittedClaimsCount.toString(),
-          icon: Icons.outbox_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.claimsRejectedSummaryLabel,
-          value: state.rejectedResubmissionCount.toString(),
-          icon: Icons.report_gmailerrorred_outlined,
-          tone: AppWorkspaceStatusTone.error,
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.claimsApprovedSummaryLabel,
-          value: state.approvedClaimsCount.toString(),
-          icon: Icons.fact_check_outlined,
-          tone: AppWorkspaceStatusTone.success,
-        ),
-        AppWorkspaceSummaryCard(
-          compact: true,
-          label: l10n.claimsPaidClosedSummaryLabel,
-          value: state.paidClosedCount.toString(),
-          icon: Icons.task_alt_outlined,
-          tone: AppWorkspaceStatusTone.neutral,
-        ),
+        if (allCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsFilterAll,
+            value: allCount.toString(),
+            icon: Icons.inventory_2_outlined,
+            onPressed: () {
+              unawaited(_applySummaryFilter(controller, ClaimsQueueFilter.all));
+            },
+          ),
+        if (state.authorizationPendingCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsAuthorizationPendingSummaryLabel,
+            value: state.authorizationPendingCount.toString(),
+            icon: Icons.schedule_outlined,
+            tone: AppWorkspaceStatusTone.warning,
+            onPressed: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.authorizationPending,
+                ),
+              );
+            },
+          ),
+        if (state.authorizationApprovedCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsAuthorizationApprovedSummaryLabel,
+            value: state.authorizationApprovedCount.toString(),
+            icon: Icons.verified_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            onPressed: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.authorizationApproved,
+                ),
+              );
+            },
+          ),
+        if (state.submittedClaimsCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsSubmittedSummaryLabel,
+            value: state.submittedClaimsCount.toString(),
+            icon: Icons.outbox_outlined,
+            tone: AppWorkspaceStatusTone.info,
+            onPressed: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.claimSubmitted,
+                ),
+              );
+            },
+          ),
+        if (authorizationDeniedCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsFilterAuthorizationDenied,
+            value: authorizationDeniedCount.toString(),
+            icon: Icons.report_gmailerrorred_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            onPressed: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.authorizationDenied,
+                ),
+              );
+            },
+          ),
+        if (rejectedClaimsCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsFilterClaimRejected,
+            value: rejectedClaimsCount.toString(),
+            icon: Icons.report_gmailerrorred_outlined,
+            tone: AppWorkspaceStatusTone.error,
+            onPressed: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.claimRejected,
+                ),
+              );
+            },
+          ),
+        if (state.approvedClaimsCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsApprovedSummaryLabel,
+            value: state.approvedClaimsCount.toString(),
+            icon: Icons.fact_check_outlined,
+            tone: AppWorkspaceStatusTone.success,
+            onPressed: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.claimApproved,
+                ),
+              );
+            },
+          ),
+        if (paidClaimsCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsFilterClaimPaid,
+            value: paidClaimsCount.toString(),
+            icon: Icons.task_alt_outlined,
+            tone: AppWorkspaceStatusTone.neutral,
+            onPressed: () {
+              unawaited(
+                _applySummaryFilter(controller, ClaimsQueueFilter.claimPaid),
+              );
+            },
+          ),
+        if (cancelledClaimsCount > 0)
+          AppWorkspaceSummaryCard(
+            compact: true,
+            label: l10n.claimsFilterClaimCancelled,
+            value: cancelledClaimsCount.toString(),
+            icon: Icons.cancel_outlined,
+            tone: AppWorkspaceStatusTone.neutral,
+            onPressed: () {
+              unawaited(
+                _applySummaryFilter(
+                  controller,
+                  ClaimsQueueFilter.claimCancelled,
+                ),
+              );
+            },
+          ),
       ],
       body: _ClaimsQueuePanel(
         state: state,
@@ -217,6 +327,16 @@ class _ClaimsWorkspaceContentState
         columnVisibilityController: _tableColumnController,
       ),
     );
+  }
+
+  Future<void> _applySummaryFilter(
+    ClaimsWorkspaceController controller,
+    ClaimsQueueFilter filter,
+  ) async {
+    final AppFailure? failure = await controller.applyFilter(filter);
+    if (mounted) {
+      _showFailureIfNeeded(context, failure);
+    }
   }
 }
 
@@ -1451,6 +1571,24 @@ List<AppSearchBarFilterChoice> _claimsQueueFilterChoices(
           icon: Icons.filter_list,
         ),
   ];
+}
+
+int _claimsCountForFilter(
+  ClaimsWorkspaceState state,
+  ClaimsQueueFilter filter,
+) {
+  final String? authorizationStatus = preAuthorizationStatusForFilter(filter);
+  final String? claimStatus = insuranceClaimStatusForFilter(filter);
+  return state.queue.items.where((ClaimsQueueItem item) {
+    final String status = item.status.toUpperCase();
+    if (item.isAuthorization && authorizationStatus != null) {
+      return status == authorizationStatus;
+    }
+    if (item.isClaim && claimStatus != null) {
+      return status == claimStatus;
+    }
+    return filter == ClaimsQueueFilter.all;
+  }).length;
 }
 
 String _claimsFilterLabel(AppLocalizations l10n, ClaimsQueueFilter filter) {
