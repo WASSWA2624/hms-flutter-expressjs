@@ -61,7 +61,8 @@ import 'app_localizations_en.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -69,7 +70,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -81,17 +83,16 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('en')
-  ];
+  static const List<Locale> supportedLocales = <Locale>[Locale('en')];
 
   /// Application title shown in app bars and platform task lists.
   ///
@@ -273,6 +274,24 @@ abstract class AppLocalizations {
   /// **'Toggle sidebar'**
   String get appToggleSidebarTooltip;
 
+  /// Accessibility label for the desktop side navigation search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search menu'**
+  String get appNavigationSearchLabel;
+
+  /// Hint text for the desktop side navigation search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search menu'**
+  String get appNavigationSearchHint;
+
+  /// Empty-state label shown when side navigation search has no matching menu items.
+  ///
+  /// In en, this message translates to:
+  /// **'No menu items found'**
+  String get appNavigationSearchNoResultsLabel;
+
   /// Tooltip for the account avatar in the app header.
   ///
   /// In en, this message translates to:
@@ -344,6 +363,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Patients'**
   String get navigationPatientsLabel;
+
+  /// Navigation label for the billing workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get navigationBillingLabel;
+
+  /// Navigation label for the subscriptions workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscriptions'**
+  String get navigationSubscriptionsLabel;
+
+  /// Navigation label for the emergency workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get navigationEmergencyLabel;
+
+  /// Navigation label for the ICU workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU'**
+  String get navigationIcuLabel;
+
+  /// Navigation label for the human resources workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'HR'**
+  String get navigationHrLabel;
+
+  /// Desktop side navigation group label for overview destinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get navigationGroupOverviewLabel;
+
+  /// Desktop side navigation group label for front-desk and access destinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient access'**
+  String get navigationGroupPatientAccessLabel;
+
+  /// Desktop side navigation group label for inpatient care destinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Inpatient care'**
+  String get navigationGroupInpatientCareLabel;
+
+  /// Desktop side navigation group label for clinical service destinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical services'**
+  String get navigationGroupClinicalServicesLabel;
+
+  /// Desktop side navigation group label for diagnostic and medication destinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics and medication'**
+  String get navigationGroupDiagnosticsMedicationLabel;
+
+  /// Desktop side navigation group label for billing and revenue destinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue cycle'**
+  String get navigationGroupRevenueCycleLabel;
+
+  /// Desktop side navigation group label for facility operations destinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility operations'**
+  String get navigationGroupFacilityOperationsLabel;
+
+  /// Desktop side navigation group label for administrative destinations.
+  ///
+  /// In en, this message translates to:
+  /// **'Administration'**
+  String get navigationGroupAdministrationLabel;
 
   /// Navigation label for the OPD workflow destination.
   ///
@@ -13087,7 +13184,12 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{total} requests: {open} open, {inProgress} in progress, {completed} completed.'**
-  String operationsReportSummaryLine(int total, int open, int inProgress, int completed);
+  String operationsReportSummaryLine(
+    int total,
+    int open,
+    int inProgress,
+    int completed,
+  );
 
   /// Navigation label for the biomedical workspace.
   ///
@@ -20224,7 +20326,8 @@ abstract class AppLocalizations {
   String get hrWorkQueuesTitle;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -20233,24 +20336,24 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
+    case 'en':
+      return AppLocalizationsEn();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

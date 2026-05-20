@@ -120,6 +120,18 @@
   "@appToggleSidebarTooltip": {
     "description": "Tooltip for the desktop sidebar collapse and expand button."
   },
+  "appNavigationSearchLabel": "Search menu",
+  "@appNavigationSearchLabel": {
+    "description": "Accessibility label for the desktop side navigation search field."
+  },
+  "appNavigationSearchHint": "Search menu",
+  "@appNavigationSearchHint": {
+    "description": "Hint text for the desktop side navigation search field."
+  },
+  "appNavigationSearchNoResultsLabel": "No menu items found",
+  "@appNavigationSearchNoResultsLabel": {
+    "description": "Empty-state label shown when side navigation search has no matching menu items."
+  },
   "appAccountTooltip": "Account",
   "@appAccountTooltip": {
     "description": "Tooltip for the account avatar in the app header."
@@ -172,6 +184,58 @@
   "navigationPatientsLabel": "Patients",
   "@navigationPatientsLabel": {
     "description": "Navigation label for the patient registry destination."
+  },
+  "navigationBillingLabel": "Billing",
+  "@navigationBillingLabel": {
+    "description": "Navigation label for the billing workspace."
+  },
+  "navigationSubscriptionsLabel": "Subscriptions",
+  "@navigationSubscriptionsLabel": {
+    "description": "Navigation label for the subscriptions workspace."
+  },
+  "navigationEmergencyLabel": "Emergency",
+  "@navigationEmergencyLabel": {
+    "description": "Navigation label for the emergency workspace."
+  },
+  "navigationIcuLabel": "ICU",
+  "@navigationIcuLabel": {
+    "description": "Navigation label for the ICU workspace."
+  },
+  "navigationHrLabel": "HR",
+  "@navigationHrLabel": {
+    "description": "Navigation label for the human resources workspace."
+  },
+  "navigationGroupOverviewLabel": "Overview",
+  "@navigationGroupOverviewLabel": {
+    "description": "Desktop side navigation group label for overview destinations."
+  },
+  "navigationGroupPatientAccessLabel": "Patient access",
+  "@navigationGroupPatientAccessLabel": {
+    "description": "Desktop side navigation group label for front-desk and access destinations."
+  },
+  "navigationGroupInpatientCareLabel": "Inpatient care",
+  "@navigationGroupInpatientCareLabel": {
+    "description": "Desktop side navigation group label for inpatient care destinations."
+  },
+  "navigationGroupClinicalServicesLabel": "Clinical services",
+  "@navigationGroupClinicalServicesLabel": {
+    "description": "Desktop side navigation group label for clinical service destinations."
+  },
+  "navigationGroupDiagnosticsMedicationLabel": "Diagnostics and medication",
+  "@navigationGroupDiagnosticsMedicationLabel": {
+    "description": "Desktop side navigation group label for diagnostic and medication destinations."
+  },
+  "navigationGroupRevenueCycleLabel": "Revenue cycle",
+  "@navigationGroupRevenueCycleLabel": {
+    "description": "Desktop side navigation group label for billing and revenue destinations."
+  },
+  "navigationGroupFacilityOperationsLabel": "Facility operations",
+  "@navigationGroupFacilityOperationsLabel": {
+    "description": "Desktop side navigation group label for facility operations destinations."
+  },
+  "navigationGroupAdministrationLabel": "Administration",
+  "@navigationGroupAdministrationLabel": {
+    "description": "Desktop side navigation group label for administrative destinations."
   },
   "navigationOpdLabel": "OPD",
   "@navigationOpdLabel": {

@@ -10,12 +10,14 @@ final class ResponsiveShellDestination {
     required this.label,
     required this.icon,
     required this.selectedIcon,
+    this.groupLabel,
     this.badgeCount,
   });
 
   final String label;
   final IconData icon;
   final IconData selectedIcon;
+  final String? groupLabel;
   final int? badgeCount;
 }
 
@@ -78,6 +80,9 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.openMenuTooltip,
     super.closeDrawerTooltip,
     super.toggleSidebarTooltip,
+    super.navigationSearchLabel,
+    super.navigationSearchHint,
+    super.navigationSearchNoResultsLabel,
     super.accountTooltip,
     super.notificationsTooltip,
     super.notificationsUnreadLabel,
@@ -113,6 +118,9 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.openMenuTooltip = 'Open navigation menu',
     this.closeDrawerTooltip = 'Close navigation menu',
     this.toggleSidebarTooltip = 'Toggle sidebar',
+    this.navigationSearchLabel = 'Search menu',
+    this.navigationSearchHint = 'Search menu',
+    this.navigationSearchNoResultsLabel = 'No menu items found',
     this.accountTooltip = 'Account',
     this.notificationsTooltip = 'Notifications',
     this.notificationsUnreadLabel = 'No unread notifications',
@@ -144,6 +152,9 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final String openMenuTooltip;
   final String closeDrawerTooltip;
   final String toggleSidebarTooltip;
+  final String navigationSearchLabel;
+  final String navigationSearchHint;
+  final String navigationSearchNoResultsLabel;
   final String accountTooltip;
   final String notificationsTooltip;
   final String notificationsUnreadLabel;
@@ -243,6 +254,10 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                               width: _sidebarCollapsed
                                   ? _collapsedSidebarWidth
                                   : _sidebarWidth,
+                              searchLabel: widget.navigationSearchLabel,
+                              searchHint: widget.navigationSearchHint,
+                              noResultsLabel:
+                                  widget.navigationSearchNoResultsLabel,
                               onDestinationSelected:
                                   widget.onDestinationSelected,
                             ),
@@ -1073,6 +1088,10 @@ class _MobileShellDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final List<_NavigationListEntry> entries = _navigationListEntries(
+      _indexedDestinations(destinations),
+      showGroups: true,
+    );
 
     return Drawer(
       child: SafeArea(
@@ -1116,15 +1135,13 @@ class _MobileShellDrawer extends StatelessWidget {
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-                itemCount: destinations.length,
+                itemCount: entries.length,
                 itemBuilder: (BuildContext context, int index) {
-                  return _ShellMenuItem(
-                    destination: destinations[index],
-                    selected: index == selectedIndex,
+                  return _NavigationListEntryWidget(
+                    entry: entries[index],
+                    selectedIndex: selectedIndex,
                     showLabel: true,
-                    onTap: () {
-                      onDestinationSelected(index);
-                    },
+                    onDestinationSelected: onDestinationSelected,
                   );
                 },
               ),
@@ -1136,12 +1153,15 @@ class _MobileShellDrawer extends StatelessWidget {
   }
 }
 
-class SideNavigation extends StatelessWidget {
+class SideNavigation extends StatefulWidget {
   const SideNavigation({
     required this.destinations,
     required this.selectedIndex,
     required this.collapsed,
     required this.width,
+    required this.searchLabel,
+    required this.searchHint,
+    required this.noResultsLabel,
     required this.onDestinationSelected,
     super.key,
   });
@@ -1150,36 +1170,300 @@ class SideNavigation extends StatelessWidget {
   final int selectedIndex;
   final bool collapsed;
   final double width;
+  final String searchLabel;
+  final String searchHint;
+  final String noResultsLabel;
   final ValueChanged<int> onDestinationSelected;
+
+  @override
+  State<SideNavigation> createState() => _SideNavigationState();
+}
+
+class _SideNavigationState extends State<SideNavigation> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void didUpdateWidget(SideNavigation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.collapsed && widget.collapsed) {
+      _clearSearch();
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final String normalizedQuery = widget.collapsed
+        ? ''
+        : _normalizeNavigationSearchText(_searchQuery);
+    final List<_IndexedShellDestination> visibleDestinations =
+        _indexedDestinations(widget.destinations)
+            .where((_IndexedShellDestination indexedDestination) {
+              if (normalizedQuery.isEmpty) {
+                return true;
+              }
+              return _destinationMatchesSearch(
+                indexedDestination.destination,
+                normalizedQuery,
+              );
+            })
+            .toList(growable: false);
+    final List<_NavigationListEntry> entries = _navigationListEntries(
+      visibleDestinations,
+      showGroups: !widget.collapsed,
+    );
 
     return AnimatedContainer(
       duration: _sidebarAnimationDuration,
       curve: Curves.easeOutCubic,
-      width: width,
+      width: widget.width,
       color: colorScheme.surfaceContainerLowest,
-      child: ListView.builder(
-        padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-        itemCount: destinations.length,
-        itemBuilder: (BuildContext context, int index) {
-          return _ShellMenuItem(
-            destination: destinations[index],
-            selected: index == selectedIndex,
-            showLabel: !collapsed,
-            onTap: () {
-              if (index != selectedIndex) {
-                onDestinationSelected(index);
-              }
-            },
-          );
-        },
+      child: Column(
+        children: <Widget>[
+          if (!widget.collapsed)
+            _SidebarSearchField(
+              controller: _searchController,
+              semanticLabel: widget.searchLabel,
+              hintText: widget.searchHint,
+              onChanged: _handleSearchChanged,
+            ),
+          Expanded(
+            child: entries.isEmpty
+                ? _SidebarNavigationEmptyState(label: widget.noResultsLabel)
+                : ListView.builder(
+                    padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+                    itemCount: entries.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return _NavigationListEntryWidget(
+                        entry: entries[index],
+                        selectedIndex: widget.selectedIndex,
+                        showLabel: !widget.collapsed,
+                        onDestinationSelected: _selectDestination,
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
+
+  void _handleSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchQuery = '';
+  }
+
+  void _selectDestination(int index) {
+    if (index != widget.selectedIndex) {
+      widget.onDestinationSelected(index);
+    }
+  }
+}
+
+class _NavigationListEntryWidget extends StatelessWidget {
+  const _NavigationListEntryWidget({
+    required this.entry,
+    required this.selectedIndex,
+    required this.showLabel,
+    required this.onDestinationSelected,
+  });
+
+  final _NavigationListEntry entry;
+  final int selectedIndex;
+  final bool showLabel;
+  final ValueChanged<int> onDestinationSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (entry) {
+      _NavigationGroupHeaderEntry(:final label) => _ShellMenuGroupHeader(
+        label: label,
+      ),
+      _NavigationDestinationEntry(:final destination) => _ShellMenuItem(
+        destination: destination.destination,
+        selected: destination.index == selectedIndex,
+        showLabel: showLabel,
+        onTap: () {
+          onDestinationSelected(destination.index);
+        },
+      ),
+    };
+  }
+}
+
+class _SidebarSearchField extends StatelessWidget {
+  const _SidebarSearchField({
+    required this.controller,
+    required this.semanticLabel,
+    required this.hintText,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String semanticLabel;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.sm,
+        theme.spacing.sm,
+        theme.spacing.sm,
+        theme.spacing.xs,
+      ),
+      child: AppSearchBar(
+        controller: controller,
+        semanticLabel: semanticLabel,
+        hintText: hintText,
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _SidebarNavigationEmptyState extends StatelessWidget {
+  const _SidebarNavigationEmptyState({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShellMenuGroupHeader extends StatelessWidget {
+  const _ShellMenuGroupHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.md,
+        theme.spacing.md,
+        theme.spacing.md,
+        theme.spacing.xs,
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+sealed class _NavigationListEntry {
+  const _NavigationListEntry();
+}
+
+final class _NavigationGroupHeaderEntry extends _NavigationListEntry {
+  const _NavigationGroupHeaderEntry({required this.label});
+
+  final String label;
+}
+
+final class _NavigationDestinationEntry extends _NavigationListEntry {
+  const _NavigationDestinationEntry({required this.destination});
+
+  final _IndexedShellDestination destination;
+}
+
+final class _IndexedShellDestination {
+  const _IndexedShellDestination({
+    required this.index,
+    required this.destination,
+  });
+
+  final int index;
+  final ResponsiveShellDestination destination;
+}
+
+List<_IndexedShellDestination> _indexedDestinations(
+  List<ResponsiveShellDestination> destinations,
+) {
+  return <_IndexedShellDestination>[
+    for (var index = 0; index < destinations.length; index += 1)
+      _IndexedShellDestination(index: index, destination: destinations[index]),
+  ];
+}
+
+List<_NavigationListEntry> _navigationListEntries(
+  List<_IndexedShellDestination> destinations, {
+  required bool showGroups,
+}) {
+  final entries = <_NavigationListEntry>[];
+  String? currentGroup;
+
+  for (final _IndexedShellDestination destination in destinations) {
+    final String? groupLabel = _nonEmpty(destination.destination.groupLabel);
+    if (showGroups && groupLabel != null && groupLabel != currentGroup) {
+      entries.add(_NavigationGroupHeaderEntry(label: groupLabel));
+      currentGroup = groupLabel;
+    } else if (showGroups && groupLabel == null) {
+      currentGroup = null;
+    }
+
+    entries.add(_NavigationDestinationEntry(destination: destination));
+  }
+
+  return entries;
+}
+
+bool _destinationMatchesSearch(
+  ResponsiveShellDestination destination,
+  String normalizedQuery,
+) {
+  return _normalizeNavigationSearchText(
+        destination.label,
+      ).contains(normalizedQuery) ||
+      _normalizeNavigationSearchText(
+        destination.groupLabel ?? '',
+      ).contains(normalizedQuery);
+}
+
+String _normalizeNavigationSearchText(String value) {
+  return value.trim().toLowerCase();
 }
 
 class _ShellMenuItem extends StatefulWidget {

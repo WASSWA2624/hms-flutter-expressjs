@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
 
 void main() {
@@ -175,6 +176,88 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('shows fixed search only for the expanded desktop sidebar', (
+      WidgetTester tester,
+    ) async {
+      await pumpShellAtSize(tester, const Size(1200, 900));
+
+      final Finder sidebar = find.byType(SideNavigation);
+      final Finder sidebarListView = find.descendant(
+        of: sidebar,
+        matching: find.byType(ListView),
+      );
+
+      expect(find.byType(AppSearchBar), findsOneWidget);
+      expect(
+        find.descendant(
+          of: sidebarListView,
+          matching: find.byType(AppSearchBar),
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(find.byTooltip('Toggle sidebar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppSearchBar), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('filters grouped desktop side navigation items', (
+      WidgetTester tester,
+    ) async {
+      await pumpShellAtSize(
+        tester,
+        const Size(1200, 900),
+        destinations: const <ResponsiveShellDestination>[
+          ResponsiveShellDestination(
+            label: 'Home',
+            groupLabel: 'Overview',
+            icon: Icons.home_outlined,
+            selectedIcon: Icons.home,
+          ),
+          ResponsiveShellDestination(
+            label: 'Claims',
+            groupLabel: 'Revenue cycle',
+            icon: Icons.receipt_long_outlined,
+            selectedIcon: Icons.receipt_long,
+          ),
+          ResponsiveShellDestination(
+            label: 'Settings',
+            groupLabel: 'Administration',
+            icon: Icons.settings_outlined,
+            selectedIcon: Icons.settings,
+          ),
+        ],
+      );
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(SideNavigation),
+          matching: find.byType(TextFormField),
+        ),
+        'admin',
+      );
+      await tester.pump();
+
+      expect(find.text('Administration'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Home'), findsNothing);
+      expect(find.text('Claims'), findsNothing);
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(SideNavigation),
+          matching: find.byType(TextFormField),
+        ),
+        'missing',
+      );
+      await tester.pump();
+
+      expect(find.text('No menu items found'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('opens and closes the mobile drawer from header controls', (
       WidgetTester tester,
     ) async {
@@ -204,7 +287,7 @@ void main() {
         },
       );
 
-      for (var tabIndex = 0; tabIndex < 4; tabIndex += 1) {
+      for (var tabIndex = 0; tabIndex < 5; tabIndex += 1) {
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
         await tester.pump();
       }
