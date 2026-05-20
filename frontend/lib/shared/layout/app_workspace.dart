@@ -119,7 +119,12 @@ class AppWorkspace extends StatelessWidget {
       ),
     ];
 
-    if (summaryCards.isNotEmpty) {
+    final bool showSummaryCards =
+        summaryCards.isNotEmpty &&
+        breakpoint != AppBreakpoint.xs &&
+        breakpoint != AppBreakpoint.sm;
+
+    if (showSummaryCards) {
       children
         ..add(SizedBox(height: contentGap))
         ..add(

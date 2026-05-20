@@ -1,27 +1,24 @@
 You are working on the HOSSPI Hospital Management System codebase.
 
-Before implementing, review the current app-planner, backend, frontend, and any attached latest screenshots. Align the work with the existing Flutter/Riverpod implementation, current `AppWorkspace` layout pattern, shared components, and existing table/search/filter behavior.
+Before implementing, review the current app-planner, backend, frontend, and attached latest screenshots. Align the work with the existing Flutter/Riverpod implementation, `AppWorkspace`, `AppListTable`, `AppListTableSearch`, `AppSearchBar`, and the current workspace UI patterns.
 
 ## Goal
 
-Audit and complete the workspace summary-card behavior across the listed module screens.
+Unify the table layout, table search bar, advanced filters, and table settings controls across the workspace screens.
 
-Summary cards must behave consistently:
+Every workspace table should follow this order:
 
-- Summary cards must update/filter the table or list on the current main screen.
-- Summary cards must not open modal dialogs.
-- Each listed screen must have an “All” summary card for the full table/list on that screen.
-- Zero-value summary cards must not be displayed.
-- Every visible summary card must be clickable.
-- Informational-only summary cards that cannot update the table/list must be removed.
-- Summary values must display as plain text without a filled badge background.
-- On small screens, compact summary cards must show only the icon and value text, without the full card/badge background.
+1. Table title
+2. Short table description
+3. The table’s built-in search bar
+4. Table content
+5. Pagination/footer where applicable
 
-If a listed screen already satisfies a requirement, preserve the existing implementation.
+The search bar must be the table’s built-in search bar, not a separate search bar above or outside the table.
 
 ## Screens to update
 
-Update these screens only:
+Update these workspace screens:
 
 - Patients: `lib/features/patients/presentation/pages/patient_registry_page.dart`
 - Billing: `lib/features/billing/presentation/pages/billing_workspace_page.dart`
@@ -36,169 +33,176 @@ Update these screens only:
 - Radiology: `lib/features/radiology/presentation/pages/radiology_workspace_page.dart`
 - Pharmacy: `lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart`
 - Discharge: `lib/features/discharge/presentation/pages/discharge_workspace_page.dart`
-- Theatre/Theater: `lib/features/theater/presentation/pages/theater_workspace_page.dart`
+- Theater/Theatre: `lib/features/theater/presentation/pages/theater_workspace_page.dart`
 
 Do not update Settings, Setup, or Tenant Facility setup screens.
 
-Do not edit:
-
-- `lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
-
 ## Shared component anchors
 
-Use the existing shared summary-card implementation:
+Use the existing shared table/search components:
 
+- `lib/shared/components/app_list_table.dart`
+- `AppListTable`
+- `AppListTableSearch`
+- `AppListTableColumnVisibilityController`
+- `lib/shared/components/app_search_bar.dart`
+- `AppSearchBar`
+- `AppSearchBarFilterGroup`
+- `AppSearchBarTextFilter`
+- `AppSearchBarFilterValue`
 - `lib/shared/layout/app_workspace.dart`
 - `AppWorkspace`
-- `AppWorkspaceSummaryGrid`
-- `AppWorkspaceSummaryCard`
-- `_SummaryCardBody`
-- `_SummaryIconTile`
-- `_SummaryValueBadge`
+- `AppWorkspaceDetailPanel`
 
-Use the shared component for styling and layout consistency.
+Do not create a new table, search bar, filter bar, or table settings component.
 
-Do not create a new summary-card component.
+## Required table layout
 
-Do not implement zero-value hiding inside `AppWorkspaceSummaryCard`, because that would affect screens outside this task. Hide zero-value cards in each listed screen’s `summaryCards` construction by checking the raw numeric value before formatting.
+For each listed screen, the main table/worklist must visually appear as:
 
-## Current implementation anchors
+```text
+Table title
+Short description
+Built-in table search bar: [search input] [advanced filters icon] [table settings icon]
+Table rows / empty state
+Pagination/footer
+````
 
-Use the existing filter/update methods already present in each module.
+Use either:
 
-Examples:
+* `AppListTable(title: ..., description: ..., search: AppListTableSearch(...))`, or
+* `AppWorkspaceDetailPanel(title: ..., description: ..., child: AppListTable(search: AppListTableSearch(...)))`
 
-- Patients: use `_applySummaryQuery(...)` and `PatientListQuery(...)`
-- Billing: use `_summaryCards(...)` and `controller.applyQueue(...)`
-- Claims: use `_applySummaryFilter(...)` and `ClaimsQueueFilter`
-- OPD: use `_applySummaryFilter(...)` and `_OpdTableFilter`
-- Emergency: use `controller.applyScope(EmergencyBoardScope...)`
-- IPD: use `controller.applyScope(IpdQueueScope...)`
-- ICU: use `controller.applyScope(IcuBoardScope...)`
-- Nursing: use `_summaryCard(...)` and `controller.applyScope(NursingQueueScope...)`
-- Clinical: use `controller.applyScope(ClinicalQueueScope...)`
-- Lab: use `_summaryCard(...)` and `controller.applyScope(LabQueueScope...)`
-- Radiology: use `controller.clearFilters` and `controller.applyStage(...)`
-- Pharmacy: use `controller.applyFilter(PharmacyOrderFilter...)`
-- Discharge: use `controller.applyStatus(DischargeStatusFilter...)`
-- Theater: use `controller.clearFilters` and `controller.applyStatus(...)`
+The final visible order must still be title, description, built-in table search bar, then table content.
 
-Preserve existing controller calls, failure handling, loading behavior, refresh behavior, pagination behavior, search behavior, and table components.
+## Built-in table search requirement
 
-## Required behavior
+Use `AppListTableSearch` through the `search:` parameter of `AppListTable`.
 
-### 1. Card clicks must update the main table/list
+Do not use a separate `AppWorkspaceFilterBar` or standalone `AppSearchBar` for the main table search/filter controls.
 
-When a user clicks a summary card, update the current screen’s table/list filter.
+Where a screen currently has a separate search/filter bar above the table, move that search/filter behavior into the table’s `AppListTableSearch`.
 
-Do not open a modal from a summary-card click.
+## Search bar controls
 
-Do not use modal-opening methods as summary-card `onPressed` handlers.
+Each table search bar should contain only:
 
-Row actions, detail dialogs, create/edit dialogs, and workflow action dialogs are not part of this change and must continue working as before.
+* Search text input
+* One advanced filters button/icon
+* One table settings button/icon
 
-### 2. Each screen must have an “All” summary card
+Keep the existing advanced filter icon behavior from `AppSearchBar`.
 
-Each listed screen must include one summary card representing the full table/list for that screen.
+Keep the table settings button tied to the existing `AppListTable` column visibility behavior.
 
-Examples:
+Do not add extra standalone toolbar buttons beside the search bar for:
 
-- Patients: all patients
-- Billing: all billing work items
-- Claims: all claims/authorization work items
-- OPD: all OPD records/patients shown by the workspace table
-- Emergency: all emergency board records
-- IPD: all admissions/patients
-- ICU: all ICU records/patients
-- Nursing: all nursing worklist records/patients
-- Clinical: all clinical worklist records
-- Lab: all lab orders
-- Radiology: all radiology orders
-- Pharmacy: all pharmacy orders
-- Discharge: all discharge records
-- Theater: all theater cases
+* clear filters
+* resource filters
+* secondary filters
+* subfilters
 
-Clicking the “All” card must clear the card-applied category/status/scope filter and show the full table/list for that screen.
+Those controls must be inside the advanced filters dialog.
 
-### 3. Hide zero-value cards
+The text-input clear icon may remain when the search text field has text. The separate “clear filters” toolbar action must not remain.
 
-Do not render a summary card when its represented raw numeric value is zero.
+## Advanced filters
+
+All filters for a table must be accessed from one advanced filters button.
+
+Move any separate table subfilters into that advanced filter dialog.
+
+If needed, section the dialog contents, but keep them inside one filter dialog.
 
 Examples:
 
-- Count `0` → hide the card.
-- Amount `0` → hide the card.
-- “All” total `0` → hide the card.
+* Radiology: remove the separate clear-filters button from the search bar. Keep clear/reset behavior inside the advanced filters dialog.
+* Theater: merge theater filters and resource filters into one advanced filters dialog. Remove the separate resource-filters toolbar button and the separate clear-filters toolbar button.
+* Pharmacy drug/stock table: move the separate stock-status filter into the table’s advanced filters dialog.
+* Patients: move the current patient registry search/filter controls into the patient table’s built-in `AppListTableSearch` flow.
 
-Do not display zero-value cards just to preserve spacing.
+Preserve the current filter behavior, values, labels, controller calls, and query updates.
 
-### 4. Every visible summary card must be clickable
+## Current implementation cleanup anchors
 
-Every visible summary card must have an `onPressed` action.
+### Patients
 
-That action must update/filter the current table/list.
+Current patient registry search/filter controls are outside the table through `_PatientFilters`, `AppWorkspaceFilterBar`, and a standalone `AppSearchBar`.
 
-If a card is informational only and has no matching table/list filter behavior, remove it from the summary-card list.
+Update the patient registry so:
 
-Do not leave visible summary cards with `onPressed: null`.
+* `Patient records` appears above the description.
+* The search bar appears below the description.
+* The search bar is provided by `AppListTableSearch` on `AppListTable<Patient>`.
+* The existing advanced patient filter dialog behavior is preserved.
+* The table settings button is provided through the table/search pattern.
+* The search/filter bar no longer appears above the table title.
 
-Do not make a card clickable by opening a dialog.
+### Radiology
 
-### 5. Summary values must be plain text
+Current radiology search bar includes a separate clear-filters action.
 
-Ensure `_SummaryValueBadge` displays the value as plain text only.
+Update it so:
 
-Do not show a filled background, border, pill, or badge container behind the value.
+* The search bar has only the search input, advanced filters button, and table settings button.
+* The clear/reset filters action is available inside the advanced filters dialog.
+* Existing radiology stage, status, modality, and date filtering behavior is preserved.
 
-Keep the value readable, themed, accessible, and aligned with the existing summary-card design.
+### Theater/Theatre
 
-### 6. Small-screen compact behavior
+Current theater search bar includes separate theater filters, resource filters, and clear filters.
 
-For compact summary cards on small screens, show only:
+Update it so:
 
-- the icon
-- the value text
+* There is one advanced filters button.
+* Theater status, stage, scheduled date, room, surgeon, and anesthetist filters are available from that one advanced filters dialog.
+* The separate resource filters toolbar button is removed.
+* The separate clear-filters toolbar button is removed.
+* Existing theater query/controller behavior is preserved.
 
-Do not show:
+### Pharmacy
 
-- card label
-- description
-- status line
-- chevron
-- filled card background
-- card border
-- card shadow
-- filled value badge background
+Current pharmacy drug/stock table uses a separate `AppWorkspaceFilterBar`.
 
-Keep tooltip/semantic labeling so the card remains understandable and accessible.
+Update that table so:
+
+* Search is provided through `AppListTableSearch`.
+* Stock-status filtering is moved into the advanced filters dialog.
+* The table settings button appears through the table’s built-in controls.
+* Existing drug search, stock-status filtering, and pagination behavior is preserved.
+
+### Other listed screens
+
+Audit the remaining listed screens and ensure they follow the same layout and control pattern.
+
+If a screen already has the correct order and uses `AppListTableSearch`, preserve it.
 
 ## Implementation rules
 
-- Reuse `AppWorkspaceSummaryCard`.
-- Reuse existing screen-level filter/query/scope/status methods.
-- Keep existing labels, icons, tones, formatting, permissions, and localization keys unless a change is required by this task.
-- Preserve existing search, filter, pagination, table, row action, detail dialog, and workflow dialog behavior.
-- Preserve existing backend/API behavior.
-- Do not add backend routes.
-- Do not add new workflows.
-- Do not add new permissions.
-- Do not add new fields.
-- Do not add new API calls.
-- Do not replace current tables with new table components.
-- Do not introduce new dashboards or extra summary sections.
-- Do not edit Settings, Setup, or Tenant Facility setup screens.
+* Do not change backend behavior.
+* Do not add backend routes.
+* Do not add new API calls.
+* Do not change payload shapes.
+* Do not change table columns unless required only to keep existing column settings behavior.
+* Do not change row selection behavior.
+* Do not change row actions.
+* Do not change detail dialogs or workflow dialogs.
+* Do not change summary-card behavior from the previous update.
+* Do not change permissions.
+* Do not change search/filter semantics; only move controls into the unified table search/filter pattern.
+* Preserve existing labels, icons, localization keys, validation, loading states, success handling, error handling, refresh behavior, and pagination behavior.
 
 ## Acceptance criteria
 
-- Only the listed screens are updated.
-- Settings, Setup, and Tenant Facility setup are untouched.
-- Every visible summary card is clickable.
-- No summary card opens a modal dialog.
-- Clicking a summary card updates the current screen’s main table/list.
-- Each listed screen has an “All” card when the all-count is non-zero.
-- Zero-count and zero-amount cards are hidden.
-- Informational-only summary cards are removed.
-- Summary values show plain text without a filled badge background.
-- On small screens, compact cards show only icon and value text without full card/badge background.
-- Existing row/detail/workflow modals still work as before.
-- No backend behavior, workflow behavior, permission behavior, API call, payload shape, or table behavior is changed.
+* All listed workspace tables follow the same visual order: title, description, built-in search bar, table content.
+* Main table search uses `AppListTableSearch`, not a separate search bar.
+* The search bar shows only search input, advanced filters, and table settings.
+* Advanced filters are accessed through one button per table.
+* Separate clear-filter toolbar buttons are removed.
+* Separate resource/subfilter toolbar buttons are moved into the advanced filter dialog.
+* Patient registry no longer shows the search bar above the table title.
+* Radiology no longer shows a separate clear-filters button beside the search bar.
+* Theater no longer shows separate resource-filter or clear-filter buttons beside the search bar.
+* Pharmacy drug/stock table no longer uses a separate filter bar.
+* Existing table data, filters, pagination, row actions, dialogs, controller calls, and backend behavior remain unchanged.
+
