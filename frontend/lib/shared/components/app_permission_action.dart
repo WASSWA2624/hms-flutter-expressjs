@@ -14,6 +14,8 @@ class AppPermissionActionButton extends StatelessWidget {
     this.isLoading = false,
     this.fullWidth = false,
     this.hideWhenDenied = false,
+    this.semanticLabel,
+    this.tooltip,
     super.key,
   });
 
@@ -26,6 +28,8 @@ class AppPermissionActionButton extends StatelessWidget {
   final bool isLoading;
   final bool fullWidth;
   final bool hideWhenDenied;
+  final String? semanticLabel;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +47,8 @@ class AppPermissionActionButton extends StatelessWidget {
           enabled: enabled && isAllowed,
           isLoading: isLoading,
           fullWidth: fullWidth,
+          semanticLabel: semanticLabel,
+          tooltip: tooltip,
           onPressed: enabled && isAllowed ? onPressed : null,
         );
       },

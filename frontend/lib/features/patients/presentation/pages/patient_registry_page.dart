@@ -2259,10 +2259,9 @@ class _QuickActions extends ConsumerWidget {
       children: <Widget>[
         Text(l10n.patientsQuickActionsTitle, style: theme.textTheme.titleSmall),
         SizedBox(height: theme.spacing.sm),
-        AppActionList(
-          actions: const <AppActionItem>[],
-          extraActions: <Widget>[
-            AppPermissionActionButton(
+        AppPermissionActionList(
+          actions: <AppPermissionActionItem>[
+            AppPermissionActionItem(
               label: l10n.patientsQuickAppointmentAction,
               icon: Icons.event_available_outlined,
               onPressed: () => _openQuickAction(
@@ -2275,7 +2274,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.patientWrite],
               ),
             ),
-            AppPermissionActionButton(
+            AppPermissionActionItem(
               label: l10n.patientsQuickOpdCheckInAction,
               icon: Icons.login_outlined,
               onPressed: () => _openQuickAction(
@@ -2291,7 +2290,7 @@ class _QuickActions extends ConsumerWidget {
                 ],
               ),
             ),
-            AppPermissionActionButton(
+            AppPermissionActionItem(
               label: l10n.patientsQuickTriageAction,
               icon: Icons.monitor_heart_outlined,
               onPressed: () => _openQuickAction(
@@ -2304,7 +2303,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.emergencyWrite],
               ),
             ),
-            AppPermissionActionButton(
+            AppPermissionActionItem(
               label: l10n.patientsQuickClinicalAction,
               icon: Icons.medical_services_outlined,
               onPressed: () => _openQuickAction(
@@ -2317,7 +2316,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
               ),
             ),
-            AppPermissionActionButton(
+            AppPermissionActionItem(
               label: l10n.patientsQuickBillingAction,
               icon: Icons.receipt_long_outlined,
               onPressed: () => _openQuickAction(
@@ -2330,7 +2329,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.billingWrite],
               ),
             ),
-            AppPermissionActionButton(
+            AppPermissionActionItem(
               label: l10n.patientsQuickAdmissionAction,
               icon: Icons.local_hospital_outlined,
               onPressed: () => _openQuickAction(
@@ -2343,7 +2342,7 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
               ),
             ),
-            AppPermissionActionButton(
+            AppPermissionActionItem(
               label: l10n.patientsQuickReportAction,
               icon: Icons.summarize_outlined,
               onPressed: () => _openQuickAction(

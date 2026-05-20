@@ -492,7 +492,10 @@ List<AppListTableColumn<NursingWorkItem>> _nursingWorklistColumnChoices(
     AppListTableColumn<NursingWorkItem>(
       label: l10n.nursingDueTimeColumnLabel,
       sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
-          appListTableCompareDateTime(left.dueReferenceAt, right.dueReferenceAt),
+          appListTableCompareDateTime(
+            left.dueReferenceAt,
+            right.dueReferenceAt,
+          ),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(_dueTimeLabel(context, item));
       },
@@ -857,76 +860,69 @@ class _NursingActionBar extends ConsumerWidget {
       nursingWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.nursingActionsTitle,
-      child: AppAccessActionGate(
-        requirement: _NursingWorkspaceContentState.writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppActionList(
-            actions: <AppActionItem>[
+    return AppAccessActionGate(
+      requirement: _NursingWorkspaceContentState.writeRequirement,
+      builder: (BuildContext context, bool isAllowed) => AppActionPanel(
+        title: l10n.nursingActionsTitle,
+        actions: <AppActionItem>[
+          AppActionItem(
+            label: l10n.nursingActionRecordVitals,
+            leadingIcon: Icons.monitor_heart_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openVitalsDialog(context),
+          ),
+          AppActionItem(
+            label: l10n.nursingActionAddNote,
+            leadingIcon: Icons.note_add_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openNoteDialog(context),
+          ),
+          AppActionItem(
+            label: l10n.nursingActionAdministerMedication,
+            leadingIcon: Icons.medication_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openMedicationDialog(context, detail),
+          ),
+          AppActionItem(
+            label: l10n.clinicalPrescribeAction,
+            leadingIcon: Icons.add_circle_outline,
+            enabled: isAllowed,
+            onPressed: () => _openPrescriptionDialog(context, controller),
+          ),
+          AppActionItem(
+            label: l10n.nursingActionCreateHandover,
+            leadingIcon: Icons.swap_horiz_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openHandoverDialog(context),
+          ),
+          AppActionItem(
+            label: l10n.nursingActionEscalate,
+            leadingIcon: Icons.report_problem_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openEscalationDialog(context),
+          ),
+          AppActionItem(
+            label: l10n.nursingActionAcknowledgeTransfer,
+            leadingIcon: Icons.transfer_within_a_station_outlined,
+            enabled: isAllowed && detail.activeTransfer != null,
+            onPressed: () => _openTransferDialog(context, detail),
+          ),
+          AppActionItem(
+            label: l10n.nursingActionPrintSummary,
+            leadingIcon: Icons.print_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openPrintSummaryDialog(context, detail),
+          ),
+          for (final NursingHandover handover in detail.handovers)
+            if (handover.isPending)
               AppActionItem(
-                label: l10n.nursingActionRecordVitals,
-                leadingIcon: Icons.monitor_heart_outlined,
+                label: l10n.nursingActionAcceptHandover,
+                leadingIcon: Icons.done_all_outlined,
                 enabled: isAllowed,
-                onPressed: () => _openVitalsDialog(context),
+                onPressed: () =>
+                    _openAcceptHandoverDialog(context, controller, handover),
               ),
-              AppActionItem(
-                label: l10n.nursingActionAddNote,
-                leadingIcon: Icons.note_add_outlined,
-                enabled: isAllowed,
-                onPressed: () => _openNoteDialog(context),
-              ),
-              AppActionItem(
-                label: l10n.nursingActionAdministerMedication,
-                leadingIcon: Icons.medication_outlined,
-                enabled: isAllowed,
-                onPressed: () => _openMedicationDialog(context, detail),
-              ),
-              AppActionItem(
-                label: l10n.clinicalPrescribeAction,
-                leadingIcon: Icons.add_circle_outline,
-                enabled: isAllowed,
-                onPressed: () => _openPrescriptionDialog(context, controller),
-              ),
-              AppActionItem(
-                label: l10n.nursingActionCreateHandover,
-                leadingIcon: Icons.swap_horiz_outlined,
-                enabled: isAllowed,
-                onPressed: () => _openHandoverDialog(context),
-              ),
-              AppActionItem(
-                label: l10n.nursingActionEscalate,
-                leadingIcon: Icons.report_problem_outlined,
-                enabled: isAllowed,
-                onPressed: () => _openEscalationDialog(context),
-              ),
-              AppActionItem(
-                label: l10n.nursingActionAcknowledgeTransfer,
-                leadingIcon: Icons.transfer_within_a_station_outlined,
-                enabled: isAllowed && detail.activeTransfer != null,
-                onPressed: () => _openTransferDialog(context, detail),
-              ),
-              AppActionItem(
-                label: l10n.nursingActionPrintSummary,
-                leadingIcon: Icons.print_outlined,
-                enabled: isAllowed,
-                onPressed: () => _openPrintSummaryDialog(context, detail),
-              ),
-              for (final NursingHandover handover in detail.handovers)
-                if (handover.isPending)
-                  AppActionItem(
-                    label: l10n.nursingActionAcceptHandover,
-                    leadingIcon: Icons.done_all_outlined,
-                    enabled: isAllowed,
-                    onPressed: () => _openAcceptHandoverDialog(
-                      context,
-                      controller,
-                      handover,
-                    ),
-                  ),
-            ],
-          );
-        },
+        ],
       ),
     );
   }

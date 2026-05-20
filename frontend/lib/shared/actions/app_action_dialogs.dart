@@ -121,6 +121,217 @@ class AppTextActionDialog extends StatefulWidget {
   State<AppTextActionDialog> createState() => _AppTextActionDialogState();
 }
 
+/// Shared select-only dialog for simple action modals that return a value.
+class AppSelectActionDialog<T> extends StatefulWidget {
+  const AppSelectActionDialog({
+    required this.title,
+    required this.fieldLabel,
+    required this.submitLabel,
+    required this.cancelLabel,
+    required this.options,
+    required this.requiredMessage,
+    this.initialValue,
+    this.icon = const Icon(Icons.tune_outlined),
+    this.searchable = false,
+    this.isRequired = true,
+    this.scrollable = false,
+    this.maxWidth = 600,
+    super.key,
+  });
+
+  final String title;
+  final String fieldLabel;
+  final String submitLabel;
+  final String cancelLabel;
+  final List<AppSelectOption<T>> options;
+  final String requiredMessage;
+  final T? initialValue;
+  final Widget icon;
+  final bool searchable;
+  final bool isRequired;
+  final bool scrollable;
+  final double maxWidth;
+
+  @override
+  State<AppSelectActionDialog<T>> createState() =>
+      _AppSelectActionDialogState<T>();
+}
+
+class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  T? _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initialValue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      title: Text(widget.title),
+      icon: widget.icon,
+      scrollable: widget.scrollable,
+      maxWidth: widget.maxWidth,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[_selectField()],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: widget.cancelLabel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: widget.submitLabel,
+          leadingIcon: Icons.save_outlined,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Widget _selectField() {
+    if (widget.searchable) {
+      return AppSelectField<T>.searchable(
+        value: _value,
+        labelText: widget.fieldLabel,
+        isRequired: widget.isRequired,
+        options: widget.options,
+        validator: widget.isRequired ? _requiredSelect : null,
+        onChanged: _handleChanged,
+      );
+    }
+
+    return AppSelectField<T>(
+      value: _value,
+      labelText: widget.fieldLabel,
+      isRequired: widget.isRequired,
+      options: widget.options,
+      validator: widget.isRequired ? _requiredSelect : null,
+      onChanged: _handleChanged,
+    );
+  }
+
+  void _handleChanged(T? value) {
+    setState(() => _value = value);
+  }
+
+  String? _requiredSelect(T? value) {
+    return value == null || value.toString().trim().isEmpty
+        ? widget.requiredMessage
+        : null;
+  }
+
+  void _submit() {
+    if (_formKey.currentState?.validate() ?? false) {
+      Navigator.of(context).pop(_value);
+    }
+  }
+}
+
+/// Shared free-text dialog for simple action modals that return entered text.
+class AppTextInputActionDialog extends StatefulWidget {
+  const AppTextInputActionDialog({
+    required this.title,
+    required this.fieldLabel,
+    required this.submitLabel,
+    required this.cancelLabel,
+    required this.requiredMessage,
+    this.icon = const Icon(Icons.edit_note_outlined),
+    this.initialValue,
+    this.prefixIcon,
+    this.minLines = 3,
+    this.maxLines = 6,
+    this.maxWidth = 600,
+    this.isRequired = true,
+    this.scrollable = false,
+    super.key,
+  });
+
+  final String title;
+  final String fieldLabel;
+  final String submitLabel;
+  final String cancelLabel;
+  final String requiredMessage;
+  final Widget icon;
+  final Widget? prefixIcon;
+  final String? initialValue;
+  final int minLines;
+  final int maxLines;
+  final double maxWidth;
+  final bool isRequired;
+  final bool scrollable;
+
+  @override
+  State<AppTextInputActionDialog> createState() =>
+      _AppTextInputActionDialogState();
+}
+
+class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      title: Text(widget.title),
+      icon: widget.icon,
+      scrollable: widget.scrollable,
+      maxWidth: widget.maxWidth,
+      content: AppFormShell(
+        formKey: _formKey,
+        children: <Widget>[
+          AppTextField(
+            controller: _controller,
+            labelText: widget.fieldLabel,
+            prefixIcon: widget.prefixIcon,
+            isRequired: widget.isRequired,
+            minLines: widget.minLines,
+            maxLines: widget.maxLines,
+            textCapitalization: TextCapitalization.sentences,
+            validator: widget.isRequired ? _requiredText : null,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: widget.cancelLabel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: widget.submitLabel,
+          leadingIcon: Icons.check_circle_outline,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  String? _requiredText(String? value) {
+    return (value ?? '').trim().isEmpty ? widget.requiredMessage : null;
+  }
+
+  void _submit() {
+    if (_formKey.currentState?.validate() ?? false) {
+      Navigator.of(context).pop(_controller.text.trim());
+    }
+  }
+}
+
 class _AppTextActionDialogState extends State<AppTextActionDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _controller;

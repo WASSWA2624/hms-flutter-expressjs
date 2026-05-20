@@ -22,6 +22,7 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -4052,69 +4053,89 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
     final List<Widget> sections = <Widget>[];
 
-    void addSection(String title, List<Widget> actions) {
+    void addSection(String title, List<AppPermissionActionItem> actions) {
       if (actions.isEmpty) {
         return;
       }
-      sections.add(_OpdWorkflowSection(title: title, children: actions));
+      sections.add(
+        AppActionSection(
+          title: title,
+          minItemWidth: 190,
+          permissionActions: actions,
+        ),
+      );
     }
 
-    addSection(l10n.opdWorkflowReceptionTitle, <Widget>[
+    addSection(l10n.opdWorkflowReceptionTitle, <AppPermissionActionItem>[
       if (canPay)
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdBillingRequirement,
           label: l10n.opdPayConsultationAction,
           icon: Icons.payments_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () =>
               _openNested(context, ConsultationPaymentDialog(flow: flow)),
         ),
       if (!terminal && _canAssignDoctor(stage))
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdReceptionRequirement,
           label: l10n.opdAssignDoctorAction,
           icon: Icons.assignment_ind_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () => _openNested(context, AssignDoctorDialog(flow: flow)),
         ),
     ]);
 
-    addSection(l10n.opdWorkflowTriageTitle, <Widget>[
+    addSection(l10n.opdWorkflowTriageTitle, <AppPermissionActionItem>[
       if (!terminal && _canRecordVitals(stage))
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdTriageRequirement,
           label: l10n.opdRecordVitalsAction,
           icon: Icons.monitor_heart_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () => _openNested(context, RecordVitalsDialog(flow: flow)),
         ),
       if (!terminal && stage == 'WAITING_DOCTOR_ASSIGNMENT')
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdTriageRequirement,
           label: l10n.opdAssignDoctorAction,
           icon: Icons.assignment_ind_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () => _openNested(context, AssignDoctorDialog(flow: flow)),
         ),
       if (!terminal && stage == 'WAITING_DOCTOR_ASSIGNMENT')
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdTriageRequirement,
           label: l10n.opdRouteDecisionLabel,
           icon: Icons.alt_route_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () =>
               _openNested(context, RoutingDecisionDialog(flow: flow)),
         ),
     ]);
 
-    addSection(l10n.opdWorkflowDoctorTitle, <Widget>[
+    addSection(l10n.opdWorkflowDoctorTitle, <AppPermissionActionItem>[
       if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdDoctorRequirement,
           label: l10n.opdDoctorReviewAction,
           icon: Icons.edit_note_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () => _openNested(context, DoctorReviewDialog(flow: flow)),
         ),
       if (!terminal && _canDispose(stage))
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdDoctorRequirement,
           label: l10n.opdDispositionAction,
           icon: Icons.task_alt_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () => _openNested(
             context,
             OpdDispositionDialog(
@@ -4126,32 +4147,40 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           ),
         ),
       if (!terminal && (stage == 'WAITING_DOCTOR_REVIEW' || _canDispose(stage)))
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdDoctorRequirement,
           label: l10n.opdReferAction,
           icon: Icons.alt_route_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () => _openNested(context, ReferralDialog(flow: flow)),
         ),
       if (!terminal && (stage == 'WAITING_DOCTOR_REVIEW' || _canDispose(stage)))
-        _OpdWorkflowAction(
+        AppPermissionActionItem(
           requirement: _opdDoctorRequirement,
           label: l10n.opdFollowUpAction,
           icon: Icons.event_repeat_outlined,
+          fullWidth: true,
+          hideWhenDenied: true,
           onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
         ),
-      _OpdWorkflowAction(
+      AppPermissionActionItem(
         requirement: _opdDoctorRequirement,
         label: l10n.opdCorrectStageAction,
         icon: Icons.sync_alt_outlined,
+        fullWidth: true,
+        hideWhenDenied: true,
         onPressed: () => _openNested(context, CorrectStageDialog(flow: flow)),
       ),
     ]);
 
-    addSection(l10n.opdWorkflowPrintTitle, <Widget>[
-      _OpdWorkflowAction(
+    addSection(l10n.opdWorkflowPrintTitle, <AppPermissionActionItem>[
+      AppPermissionActionItem(
         requirement: _opdTriageRequirement,
         label: l10n.opdPrintSummaryAction,
         icon: Icons.print_outlined,
+        fullWidth: true,
+        hideWhenDenied: true,
         onPressed: () => _openNested(
           context,
           PrintOpdSummaryDialog(flow: flow, detail: detail),
@@ -4464,55 +4493,6 @@ class _OpdRelatedRecordsPanel extends StatelessWidget {
               _opdRelatedRecordSubtitle(context, item),
         ),
       ],
-    );
-  }
-}
-
-class _OpdWorkflowSection extends StatelessWidget {
-  const _OpdWorkflowSection({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return AppSectionPanel(
-      title: title,
-      children: <Widget>[
-        AppResponsiveWrap(
-          minItemWidth: 190,
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          children: children,
-        ),
-      ],
-    );
-  }
-}
-
-class _OpdWorkflowAction extends StatelessWidget {
-  const _OpdWorkflowAction({
-    required this.requirement,
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final AccessRequirement requirement;
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppPermissionActionButton(
-      requirement: requirement,
-      label: label,
-      icon: icon,
-      fullWidth: true,
-      hideWhenDenied: true,
-      onPressed: onPressed,
     );
   }
 }

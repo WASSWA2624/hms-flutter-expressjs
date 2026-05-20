@@ -590,106 +590,99 @@ class _EmergencyActionPanel extends ConsumerWidget {
         (detail.latestDispatch?.ambulanceId != null ||
             referenceData.availableAmbulances.isNotEmpty);
 
-    return AppWorkspaceDetailPanel(
-      title: 'Actions',
-      child: AppAccessActionGate(
-        requirement: writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppActionList(
-            actions: <AppActionItem>[
-              AppActionItem(
-                label: _EmergencyText.priority,
-                leadingIcon: Icons.priority_high_outlined,
-                enabled: isAllowed && detail.summary.isOpen,
-                onPressed: () => _openPriorityDialog(context),
-              ),
-              AppActionItem(
-                label: _EmergencyText.triage,
-                leadingIcon: Icons.monitor_heart_outlined,
-                enabled: isAllowed && detail.summary.isOpen,
-                onPressed: () => _openTriageDialog(context),
-              ),
-              AppActionItem(
-                label: _EmergencyText.response,
-                leadingIcon: Icons.medical_services_outlined,
-                enabled: isAllowed && detail.summary.isOpen,
-                onPressed: () => _openResponseDialog(context),
-              ),
-              AppActionItem(
-                label: _EmergencyText.dispatch,
-                leadingIcon: Icons.airport_shuttle_outlined,
-                enabled: isAllowed && detail.summary.isOpen,
-                onPressed: () => _openDispatchDialog(context, referenceData),
-              ),
-              AppActionItem(
-                label: _EmergencyText.dispatchStatus,
-                leadingIcon: Icons.route_outlined,
-                enabled: isAllowed && detail.summary.isOpen && hasDispatch,
-                onPressed: () => _openDispatchStatusDialog(context),
-              ),
-              AppActionItem(
-                label: _EmergencyText.startTrip,
-                leadingIcon: Icons.play_arrow_outlined,
-                enabled: isAllowed && detail.summary.isOpen && canStartTrip,
-                onPressed: () => _startTrip(context, referenceData),
-              ),
-              AppActionItem(
-                label: _EmergencyText.completeTrip,
-                leadingIcon: Icons.flag_outlined,
-                enabled: isAllowed && hasTrip,
-                onPressed: () => _confirmAction(
-                  context: context,
-                  title: 'Complete ambulance trip',
-                  body:
-                      'This records ambulance arrival for the active emergency trip.',
-                  actionLabel: 'Complete trip',
-                  onConfirmed: controller.completeTrip,
-                ),
-              ),
-              AppActionItem(
-                label: _EmergencyText.handoff,
-                leadingIcon: Icons.output_outlined,
-                enabled: isAllowed && detail.summary.isOpen,
-                onPressed: () => _openHandoffDialog(context),
-              ),
-            ],
-            extraActions: <Widget>[
-              AppReportActionButton.print(
-                label: _EmergencyText.printSummary,
-                onPressed: () async {
-                  await printFormTemplateDocument(
-                    ref: ref,
-                    context: context,
-                    title: 'Emergency summary',
-                    subtitle: detail.summary.displayTitle,
-                    metadata: <PrintFormMetadataItem>[
-                      PrintFormMetadataItem(
-                        label: _EmergencyText.caseLabel,
-                        value: detail.summary.caseLabel,
-                      ),
-                      PrintFormMetadataItem(
-                        label: _EmergencyText.severity,
-                        value: _apiLabel(detail.summary.severity ?? ''),
-                      ),
-                      PrintFormMetadataItem(
-                        label: _EmergencyText.status,
-                        value: _apiLabel(detail.summary.status ?? ''),
-                      ),
-                      PrintFormMetadataItem(
-                        label: _EmergencyText.arrival,
-                        value: _dateTimeLabel(
-                          context,
-                          detail.summary.createdAt,
-                        ),
-                      ),
-                    ],
-                    bodyHtml: _emergencySummaryHtml(context, detail),
-                  );
-                },
-              ),
-            ],
-          );
-        },
+    return AppAccessActionGate(
+      requirement: writeRequirement,
+      builder: (BuildContext context, bool isAllowed) => AppActionPanel(
+        title: 'Actions',
+        actions: <AppActionItem>[
+          AppActionItem(
+            label: _EmergencyText.priority,
+            leadingIcon: Icons.priority_high_outlined,
+            enabled: isAllowed && detail.summary.isOpen,
+            onPressed: () => _openPriorityDialog(context),
+          ),
+          AppActionItem(
+            label: _EmergencyText.triage,
+            leadingIcon: Icons.monitor_heart_outlined,
+            enabled: isAllowed && detail.summary.isOpen,
+            onPressed: () => _openTriageDialog(context),
+          ),
+          AppActionItem(
+            label: _EmergencyText.response,
+            leadingIcon: Icons.medical_services_outlined,
+            enabled: isAllowed && detail.summary.isOpen,
+            onPressed: () => _openResponseDialog(context),
+          ),
+          AppActionItem(
+            label: _EmergencyText.dispatch,
+            leadingIcon: Icons.airport_shuttle_outlined,
+            enabled: isAllowed && detail.summary.isOpen,
+            onPressed: () => _openDispatchDialog(context, referenceData),
+          ),
+          AppActionItem(
+            label: _EmergencyText.dispatchStatus,
+            leadingIcon: Icons.route_outlined,
+            enabled: isAllowed && detail.summary.isOpen && hasDispatch,
+            onPressed: () => _openDispatchStatusDialog(context),
+          ),
+          AppActionItem(
+            label: _EmergencyText.startTrip,
+            leadingIcon: Icons.play_arrow_outlined,
+            enabled: isAllowed && detail.summary.isOpen && canStartTrip,
+            onPressed: () => _startTrip(context, referenceData),
+          ),
+          AppActionItem(
+            label: _EmergencyText.completeTrip,
+            leadingIcon: Icons.flag_outlined,
+            enabled: isAllowed && hasTrip,
+            onPressed: () => _confirmAction(
+              context: context,
+              title: 'Complete ambulance trip',
+              body:
+                  'This records ambulance arrival for the active emergency trip.',
+              actionLabel: 'Complete trip',
+              onConfirmed: controller.completeTrip,
+            ),
+          ),
+          AppActionItem(
+            label: _EmergencyText.handoff,
+            leadingIcon: Icons.output_outlined,
+            enabled: isAllowed && detail.summary.isOpen,
+            onPressed: () => _openHandoffDialog(context),
+          ),
+        ],
+        extraActions: <Widget>[
+          AppReportActionButton.print(
+            label: _EmergencyText.printSummary,
+            onPressed: () async {
+              await printFormTemplateDocument(
+                ref: ref,
+                context: context,
+                title: 'Emergency summary',
+                subtitle: detail.summary.displayTitle,
+                metadata: <PrintFormMetadataItem>[
+                  PrintFormMetadataItem(
+                    label: _EmergencyText.caseLabel,
+                    value: detail.summary.caseLabel,
+                  ),
+                  PrintFormMetadataItem(
+                    label: _EmergencyText.severity,
+                    value: _apiLabel(detail.summary.severity ?? ''),
+                  ),
+                  PrintFormMetadataItem(
+                    label: _EmergencyText.status,
+                    value: _apiLabel(detail.summary.status ?? ''),
+                  ),
+                  PrintFormMetadataItem(
+                    label: _EmergencyText.arrival,
+                    value: _dateTimeLabel(context, detail.summary.createdAt),
+                  ),
+                ],
+                bodyHtml: _emergencySummaryHtml(context, detail),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -698,7 +691,19 @@ class _EmergencyActionPanel extends ConsumerWidget {
     final String? severity = await showAppDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _PriorityDialog(initialSeverity: detail.summary.severity),
+      builder: (_) => AppSelectActionDialog<String>(
+        title: _EmergencyText.updatePriority,
+        icon: const Icon(Icons.priority_high_outlined),
+        fieldLabel: _EmergencyText.priority,
+        initialValue: _normalizedOption(
+          detail.summary.severity,
+          fallback: 'HIGH',
+        ),
+        options: _severityOptions(),
+        cancelLabel: _EmergencyText.cancel,
+        submitLabel: _EmergencyText.update,
+        requiredMessage: _EmergencyText.required,
+      ),
     );
     if (severity == null || !context.mounted) {
       return;
@@ -738,7 +743,14 @@ class _EmergencyActionPanel extends ConsumerWidget {
     final String? notes = await showAppDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const _ResponseDialog(),
+      builder: (_) => const AppTextInputActionDialog(
+        title: _EmergencyText.markResponse,
+        icon: Icon(Icons.medical_services_outlined),
+        fieldLabel: _EmergencyText.responseNotes,
+        submitLabel: _EmergencyText.markResponse,
+        cancelLabel: _EmergencyText.cancel,
+        requiredMessage: _EmergencyText.required,
+      ),
     );
     if (notes == null || !context.mounted) {
       return;
@@ -781,8 +793,19 @@ class _EmergencyActionPanel extends ConsumerWidget {
     final String? status = await showAppDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (_) =>
-          _DispatchStatusDialog(initialStatus: detail.latestDispatch?.status),
+      builder: (_) => AppSelectActionDialog<String>(
+        title: _EmergencyText.updateDispatchStatus,
+        icon: const Icon(Icons.route_outlined),
+        fieldLabel: _EmergencyText.dispatchStatus,
+        initialValue: _normalizedOption(
+          detail.latestDispatch?.status,
+          fallback: 'EN_ROUTE',
+        ),
+        options: _ambulanceStatusOptions(),
+        cancelLabel: _EmergencyText.cancel,
+        submitLabel: _EmergencyText.update,
+        requiredMessage: _EmergencyText.required,
+      ),
     );
     if (status == null || !context.mounted) {
       return;
@@ -1281,65 +1304,6 @@ class _QuickArrivalDialogState extends State<_QuickArrivalDialog> {
   }
 }
 
-class _PriorityDialog extends StatefulWidget {
-  const _PriorityDialog({required this.initialSeverity});
-
-  final String? initialSeverity;
-
-  @override
-  State<_PriorityDialog> createState() => _PriorityDialogState();
-}
-
-class _PriorityDialogState extends State<_PriorityDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late String _severity = _normalizedOption(
-    widget.initialSeverity,
-    fallback: 'HIGH',
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: const Text(_EmergencyText.updatePriority),
-      icon: const Icon(Icons.priority_high_outlined),
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppSelectField<String>(
-            value: _severity,
-            labelText: 'Priority',
-            isRequired: true,
-            options: _severityOptions(),
-            validator: _requiredSelect,
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() {
-                  _severity = value;
-                });
-              }
-            },
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: _EmergencyText.cancel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        AppButton.primary(
-          label: _EmergencyText.update,
-          leadingIcon: Icons.save_outlined,
-          onPressed: () {
-            if (validateAndSaveAppForm(_formKey)) {
-              Navigator.of(context).pop(_severity);
-            }
-          },
-        ),
-      ],
-    );
-  }
-}
-
 class _TriageDialog extends StatefulWidget {
   const _TriageDialog({required this.latestTriage});
 
@@ -1420,61 +1384,6 @@ class _TriageDialogState extends State<_TriageDialog> {
         triageLevel: _triageLevel,
         notes: _nonEmpty(_notesController.text),
       ),
-    );
-  }
-}
-
-class _ResponseDialog extends StatefulWidget {
-  const _ResponseDialog();
-
-  @override
-  State<_ResponseDialog> createState() => _ResponseDialogState();
-}
-
-class _ResponseDialogState extends State<_ResponseDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: const Text(_EmergencyText.markResponse),
-      icon: const Icon(Icons.medical_services_outlined),
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _notesController,
-            labelText: 'Response notes',
-            isRequired: true,
-            minLines: 3,
-            maxLines: 6,
-            textCapitalization: TextCapitalization.sentences,
-            validator: _requiredText,
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: _EmergencyText.cancel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        AppButton.primary(
-          label: _EmergencyText.markResponse,
-          leadingIcon: Icons.check_circle_outline,
-          onPressed: () {
-            if (validateAndSaveAppForm(_formKey)) {
-              Navigator.of(context).pop(_notesController.text.trim());
-            }
-          },
-        ),
-      ],
     );
   }
 }
@@ -1602,65 +1511,6 @@ class _DispatchDialogState extends State<_DispatchDialog> {
     Navigator.of(
       context,
     ).pop(_DispatchInput(ambulanceId: ambulanceId, status: _status));
-  }
-}
-
-class _DispatchStatusDialog extends StatefulWidget {
-  const _DispatchStatusDialog({required this.initialStatus});
-
-  final String? initialStatus;
-
-  @override
-  State<_DispatchStatusDialog> createState() => _DispatchStatusDialogState();
-}
-
-class _DispatchStatusDialogState extends State<_DispatchStatusDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late String _status = _normalizedOption(
-    widget.initialStatus,
-    fallback: 'EN_ROUTE',
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: const Text(_EmergencyText.updateDispatchStatus),
-      icon: const Icon(Icons.route_outlined),
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppSelectField<String>(
-            value: _status,
-            labelText: 'Dispatch status',
-            isRequired: true,
-            options: _ambulanceStatusOptions(),
-            validator: _requiredSelect,
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() {
-                  _status = value;
-                });
-              }
-            },
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: _EmergencyText.cancel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        AppButton.primary(
-          label: _EmergencyText.update,
-          leadingIcon: Icons.save_outlined,
-          onPressed: () {
-            if (validateAndSaveAppForm(_formKey)) {
-              Navigator.of(context).pop(_status);
-            }
-          },
-        ),
-      ],
-    );
   }
 }
 
@@ -1965,8 +1815,10 @@ abstract final class _EmergencyText {
   static const String recordTriage = 'Record triage';
   static const String referral = 'Referral';
   static const String refresh = 'Refresh';
+  static const String required = 'Required';
   static const String responded = 'Responded';
   static const String response = 'Response';
+  static const String responseNotes = 'Response notes';
   static const String saveTriage = 'Save triage';
   static const String searchHint = 'Search patient, case, ambulance, or status';
   static const String severity = 'Severity';
@@ -2106,11 +1958,13 @@ String _normalizedOption(String? value, {required String fallback}) {
 }
 
 String? _requiredText(String? value) {
-  return (value ?? '').trim().isEmpty ? 'Required' : null;
+  return (value ?? '').trim().isEmpty ? _EmergencyText.required : null;
 }
 
 String? _requiredSelect(Object? value) {
-  return value == null || value.toString().trim().isEmpty ? 'Required' : null;
+  return value == null || value.toString().trim().isEmpty
+      ? _EmergencyText.required
+      : null;
 }
 
 String _emergencySummaryHtml(BuildContext context, EmergencyCaseDetail detail) {

@@ -543,104 +543,99 @@ class _IcuActionPanel extends ConsumerWidget {
     final bool hasActiveStay = detail.canRecordIcuAction;
     final bool hasAlert = detail.latestAlert != null;
 
-    return AppWorkspaceDetailPanel(
-      title: 'Actions',
-      child: AppAccessActionGate(
-        requirement: writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppActionList(
-            actions: <AppActionItem>[
-              AppActionItem(
-                label: _IcuText.observation,
-                leadingIcon: Icons.note_add_outlined,
-                enabled: isAllowed && hasActiveStay,
-                onPressed: () => _openObservationDialog(context),
-              ),
-              AppActionItem(
-                label: _IcuText.vitals,
-                leadingIcon: Icons.monitor_heart_outlined,
-                enabled: isAllowed && detail.summary.encounterId != null,
-                onPressed: () => _openVitalsDialog(context),
-              ),
-              AppActionItem(
-                label: _IcuText.alert,
-                leadingIcon: Icons.notification_important_outlined,
-                enabled: isAllowed && hasActiveStay,
-                onPressed: () => _openAlertDialog(context),
-              ),
-              AppActionItem(
-                label: _IcuText.acknowledge,
-                leadingIcon: Icons.done_all_outlined,
-                enabled: isAllowed && hasAlert,
-                onPressed: () => _confirmAction(
-                  context: context,
-                  title: 'Acknowledge alert',
-                  body:
-                      'This clears the selected critical alert from the active ICU board.',
-                  actionLabel: _IcuText.acknowledge,
-                  onConfirmed: controller.acknowledgeLatestAlert,
-                ),
-              ),
-              AppActionItem(
-                label: _IcuText.round,
-                leadingIcon: Icons.rate_review_outlined,
-                enabled: isAllowed,
-                onPressed: () => _openRoundDialog(context),
-              ),
-              AppActionItem(
-                label: _IcuText.transfer,
-                leadingIcon: Icons.compare_arrows_outlined,
-                enabled: isAllowed,
-                onPressed: () => _openTransferDialog(context, referenceData),
-              ),
-              AppActionItem(
-                label: _IcuText.readiness,
-                leadingIcon: Icons.fact_check_outlined,
-                enabled: isAllowed,
-                onPressed: () => _openReadinessDialog(context),
-              ),
-              AppActionItem(
-                label: _IcuText.transferOut,
-                leadingIcon: Icons.output_outlined,
-                enabled: isAllowed && hasActiveStay,
-                onPressed: () => _confirmAction(
-                  context: context,
-                  title: 'Transfer out of ICU',
-                  body:
-                      'This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.',
-                  actionLabel: _IcuText.transferOut,
-                  onConfirmed: controller.transferOut,
-                ),
-              ),
-            ],
-            extraActions: <Widget>[
-              AppReportActionButton.print(
-                label: _IcuText.printSummary,
-                onPressed: () async {
-                  await printFormTemplateDocument(
-                    ref: ref,
-                    context: context,
-                    title: 'ICU stay summary',
-                    subtitle: detail.summary.displayTitle,
-                    metadata: <PrintFormMetadataItem>[
-                      PrintFormMetadataItem(
-                        label: _IcuText.admission,
-                        value:
-                            detail.summary.displayId ??
-                            detail.summary.admissionId,
-                      ),
-                      PrintFormMetadataItem(
-                        label: _IcuText.location,
-                        value: detail.summary.locationLabel,
-                      ),
-                    ],
-                    bodyHtml: _icuSummaryHtml(context, detail),
-                  );
-                },
-              ),
-            ],
-          );
-        },
+    return AppAccessActionGate(
+      requirement: writeRequirement,
+      builder: (BuildContext context, bool isAllowed) => AppActionPanel(
+        title: 'Actions',
+        actions: <AppActionItem>[
+          AppActionItem(
+            label: _IcuText.observation,
+            leadingIcon: Icons.note_add_outlined,
+            enabled: isAllowed && hasActiveStay,
+            onPressed: () => _openObservationDialog(context),
+          ),
+          AppActionItem(
+            label: _IcuText.vitals,
+            leadingIcon: Icons.monitor_heart_outlined,
+            enabled: isAllowed && detail.summary.encounterId != null,
+            onPressed: () => _openVitalsDialog(context),
+          ),
+          AppActionItem(
+            label: _IcuText.alert,
+            leadingIcon: Icons.notification_important_outlined,
+            enabled: isAllowed && hasActiveStay,
+            onPressed: () => _openAlertDialog(context),
+          ),
+          AppActionItem(
+            label: _IcuText.acknowledge,
+            leadingIcon: Icons.done_all_outlined,
+            enabled: isAllowed && hasAlert,
+            onPressed: () => _confirmAction(
+              context: context,
+              title: 'Acknowledge alert',
+              body:
+                  'This clears the selected critical alert from the active ICU board.',
+              actionLabel: _IcuText.acknowledge,
+              onConfirmed: controller.acknowledgeLatestAlert,
+            ),
+          ),
+          AppActionItem(
+            label: _IcuText.round,
+            leadingIcon: Icons.rate_review_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openRoundDialog(context),
+          ),
+          AppActionItem(
+            label: _IcuText.transfer,
+            leadingIcon: Icons.compare_arrows_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openTransferDialog(context, referenceData),
+          ),
+          AppActionItem(
+            label: _IcuText.readiness,
+            leadingIcon: Icons.fact_check_outlined,
+            enabled: isAllowed,
+            onPressed: () => _openReadinessDialog(context),
+          ),
+          AppActionItem(
+            label: _IcuText.transferOut,
+            leadingIcon: Icons.output_outlined,
+            enabled: isAllowed && hasActiveStay,
+            onPressed: () => _confirmAction(
+              context: context,
+              title: 'Transfer out of ICU',
+              body:
+                  'This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.',
+              actionLabel: _IcuText.transferOut,
+              onConfirmed: controller.transferOut,
+            ),
+          ),
+        ],
+        extraActions: <Widget>[
+          AppReportActionButton.print(
+            label: _IcuText.printSummary,
+            onPressed: () async {
+              await printFormTemplateDocument(
+                ref: ref,
+                context: context,
+                title: 'ICU stay summary',
+                subtitle: detail.summary.displayTitle,
+                metadata: <PrintFormMetadataItem>[
+                  PrintFormMetadataItem(
+                    label: _IcuText.admission,
+                    value:
+                        detail.summary.displayId ?? detail.summary.admissionId,
+                  ),
+                  PrintFormMetadataItem(
+                    label: _IcuText.location,
+                    value: detail.summary.locationLabel,
+                  ),
+                ],
+                bodyHtml: _icuSummaryHtml(context, detail),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

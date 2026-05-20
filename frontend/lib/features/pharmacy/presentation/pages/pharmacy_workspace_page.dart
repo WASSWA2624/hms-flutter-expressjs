@@ -587,66 +587,62 @@ class _PharmacyActionPanel extends ConsumerWidget {
     final bool canCancel = workflow.nextActions.canCancel || order.canCancel;
     final bool canReturn = workflow.nextActions.canReturn || order.canReturn;
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.pharmacyActionsPanelTitle,
-      child: AppAccessActionGate(
-        requirement: writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppActionList(
-            actions: <AppActionItem>[
-              AppActionItem(
-                label: l10n.pharmacyDispenseAction,
-                leadingIcon: Icons.medication_liquid_outlined,
-                enabled: isAllowed && canPrepare,
-                onPressed: () => _openDispenseDialog(context, workflow),
-              ),
-              AppActionItem(
-                label: l10n.pharmacyAttestAction,
-                leadingIcon: Icons.verified_outlined,
-                enabled: isAllowed && canAttest,
-                onPressed: () => _openAttestDialog(context, workflow),
-              ),
-              AppActionItem(
-                label: l10n.pharmacyReturnAction,
-                leadingIcon: Icons.keyboard_return_outlined,
-                enabled: isAllowed && canReturn,
-                onPressed: () => _openReturnDialog(context, workflow),
-              ),
-              AppActionItem(
-                label: l10n.pharmacyCancelOrderAction,
-                leadingIcon: Icons.cancel_outlined,
-                enabled: isAllowed && canCancel,
-                onPressed: () => _openCancelDialog(context),
-              ),
-            ],
-            extraActions: <Widget>[
-              AppReportActionButton.print(
-                label: l10n.pharmacyPrintInstructionsAction,
-                variant: AppButtonVariant.secondary,
-                onPressed: () async {
-                  await printFormTemplateDocument(
-                    ref: ref,
-                    context: context,
-                    title: l10n.pharmacyReportTitle,
-                    subtitle: workflow.order.displayTitle,
-                    metadata: <PrintFormMetadataItem>[
-                      PrintFormMetadataItem(
-                        label: l10n.pharmacyReportOrderLabel,
-                        value: workflow.order.displayId ?? workflow.order.id,
-                      ),
-                      PrintFormMetadataItem(
-                        label: l10n.claimsStatusColumnLabel,
-                        value: _apiLabel(workflow.order.status ?? ''),
-                      ),
-                    ],
-                    bodyHtml: _pharmacyInstructionsHtml(context, workflow),
-                    footerNote: l10n.pharmacyReportFooter,
-                  );
-                },
-              ),
-            ],
-          );
-        },
+    return AppAccessActionGate(
+      requirement: writeRequirement,
+      builder: (BuildContext context, bool isAllowed) => AppActionPanel(
+        title: l10n.pharmacyActionsPanelTitle,
+        actions: <AppActionItem>[
+          AppActionItem(
+            label: l10n.pharmacyDispenseAction,
+            leadingIcon: Icons.medication_liquid_outlined,
+            enabled: isAllowed && canPrepare,
+            onPressed: () => _openDispenseDialog(context, workflow),
+          ),
+          AppActionItem(
+            label: l10n.pharmacyAttestAction,
+            leadingIcon: Icons.verified_outlined,
+            enabled: isAllowed && canAttest,
+            onPressed: () => _openAttestDialog(context, workflow),
+          ),
+          AppActionItem(
+            label: l10n.pharmacyReturnAction,
+            leadingIcon: Icons.keyboard_return_outlined,
+            enabled: isAllowed && canReturn,
+            onPressed: () => _openReturnDialog(context, workflow),
+          ),
+          AppActionItem(
+            label: l10n.pharmacyCancelOrderAction,
+            leadingIcon: Icons.cancel_outlined,
+            enabled: isAllowed && canCancel,
+            onPressed: () => _openCancelDialog(context),
+          ),
+        ],
+        extraActions: <Widget>[
+          AppReportActionButton.print(
+            label: l10n.pharmacyPrintInstructionsAction,
+            variant: AppButtonVariant.secondary,
+            onPressed: () async {
+              await printFormTemplateDocument(
+                ref: ref,
+                context: context,
+                title: l10n.pharmacyReportTitle,
+                subtitle: workflow.order.displayTitle,
+                metadata: <PrintFormMetadataItem>[
+                  PrintFormMetadataItem(
+                    label: l10n.pharmacyReportOrderLabel,
+                    value: workflow.order.displayId ?? workflow.order.id,
+                  ),
+                  PrintFormMetadataItem(
+                    label: l10n.claimsStatusColumnLabel,
+                    value: _apiLabel(workflow.order.status ?? ''),
+                  ),
+                ],
+                bodyHtml: _pharmacyInstructionsHtml(context, workflow),
+                footerNote: l10n.pharmacyReportFooter,
+              );
+            },
+          ),
+        ],
       ),
     );
   }
