@@ -23,6 +23,10 @@ const {
   LAB_PANEL_WITH_RELATIONS_INCLUDE
 } = require('@services/lab-workspace/lab.shared');
 const {
+  STANDARD_LAB_PANELS,
+  STANDARD_LAB_TESTS
+} = require('@services/lab-order/lab-order.service');
+const {
   ACTIVE_OPD_ENCOUNTER_TYPES,
   activeOpdLockKeyForEncounter,
   buildActiveOpdLockKey,
@@ -475,6 +479,105 @@ const resolveOpenEncounterForPatient = async (
     },
     tx
   );
+};
+
+const standardCatalogCodeFromIdentifier = (identifier, prefix) => {
+  const normalized = normalizeIdentifier(identifier).toUpperCase();
+  if (!normalized.startsWith(`${prefix}:`)) {
+    return null;
+  }
+  return normalized.slice(prefix.length + 1);
+};
+
+const resolveOrCreateStandardLabTest = async (
+  tx,
+  { identifier, tenantId, context = {} }
+) => {
+  const catalogCode = standardCatalogCodeFromIdentifier(
+    identifier,
+    'STD_LAB_TEST'
+  );
+  if (!catalogCode) {
+    return null;
+  }
+
+  const definition = STANDARD_LAB_TESTS[catalogCode];
+  if (!definition) {
+    return null;
+  }
+
+  const existing = await tx.lab_test.findFirst({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      code: definition.code
+    },
+    select: { id: true }
+  });
+  if (existing) {
+    return existing;
+  }
+
+  const labTest = await tx.lab_test.create({
+    data: {
+      tenant_id: tenantId,
+      name: definition.name,
+      code: definition.code,
+      category: definition.category,
+      specimen_type: definition.specimen_type,
+      result_kind: definition.result_kind,
+      unit: definition.unit,
+      description: definition.description,
+      ...(definition.unit
+        ? {
+            unit_options: {
+              create: [
+                {
+                  label: null,
+                  unit: definition.unit,
+                  ucum_code: null,
+                  is_default: true,
+                  sort_order: 0
+                }
+              ]
+            }
+          }
+        : {})
+    },
+    select: { id: true }
+  });
+
+  createAuditLog({
+    tenant_id: tenantId,
+    user_id: context.user_id || null,
+    action: 'CREATE',
+    entity: 'lab_test',
+    entity_id: labTest.id,
+    diff: {
+      after: { ...definition, id: labTest.id, source: 'STANDARD_LAB_CATALOG' }
+    },
+    ip_address: context.ip_address
+  }).catch(() => {});
+
+  return labTest;
+};
+
+const resolveLabTestRequest = async (
+  tx,
+  { identifier, tenantId, context = {} }
+) => {
+  const standardLabTest = await resolveOrCreateStandardLabTest(tx, {
+    identifier,
+    tenantId,
+    context
+  });
+  if (standardLabTest) {
+    return standardLabTest;
+  }
+
+  return resolveEntityByIdentifier(tx, 'lab_test', identifier, {
+    tenant_id: tenantId
+  });
 };
 
 const throwIfPatientHasOpenEncounter = async (
@@ -3263,14 +3366,11 @@ const doctorReview = async (id, data, context = {}) => {
       const seenLabTestIds = new Set();
       for (const [index, item] of data.lab_requests.entries()) {
         if (item.lab_test_id) {
-          const labTest = await resolveEntityByIdentifier(
-            tx,
-            'lab_test',
-            item.lab_test_id,
-            {
-              tenant_id: encounter.tenant_id
-            }
-          );
+          const labTest = await resolveLabTestRequest(tx, {
+            identifier: item.lab_test_id,
+            tenantId: encounter.tenant_id,
+            context
+          });
           if (!labTest) {
             throw new HttpError('errors.lab_test.not_found', 404, [
               { field: `lab_requests.${index}.lab_test_id` }
@@ -3288,6 +3388,28 @@ const doctorReview = async (id, data, context = {}) => {
 
         if (item.lab_panel_id) {
           const normalizedPanelId = normalizeIdentifier(item.lab_panel_id);
+          const standardPanelCode = standardCatalogCodeFromIdentifier(
+            normalizedPanelId,
+            'STD_LAB_PANEL'
+          );
+          if (standardPanelCode) {
+            const standardCodes = STANDARD_LAB_PANELS[standardPanelCode] || [];
+            for (const standardCode of standardCodes) {
+              const labTest = await resolveOrCreateStandardLabTest(tx, {
+                identifier: `STD_LAB_TEST:${standardCode}`,
+                tenantId: encounter.tenant_id,
+                context
+              });
+              if (!labTest?.id || seenLabTestIds.has(labTest.id)) continue;
+              seenLabTestIds.add(labTest.id);
+              resolvedLabRequests.push({
+                lab_test_id: labTest.id,
+                status: item.status || 'ORDERED'
+              });
+            }
+            continue;
+          }
+
           const labPanel = normalizedPanelId
             ? await tx.lab_panel.findFirst({
                 where: {

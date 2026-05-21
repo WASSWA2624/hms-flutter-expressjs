@@ -111,11 +111,7 @@ try {
   Add-FilteredFolder -Archive $archive -SourceRoot $appPlannerRoot -TargetFolder 'app-planner' -IncludeFile {
     param($file, $sourceRoot)
 
-    $relativePath = Get-RelativePath -BasePath $sourceRoot -Path $file.FullName
-    $rootFiles = @('app-write-up.md', 'opd-flow.md', 'ipd-flow.md')
-
-    return ($rootFiles -contains $relativePath) -or
-      (Test-PathPart -RelativePath $relativePath -Names @('dev-plan'))
+    return $true
   }
 
   $backendRoot = Join-Path $root 'backend'

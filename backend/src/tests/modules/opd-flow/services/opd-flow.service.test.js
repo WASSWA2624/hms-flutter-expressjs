@@ -1122,6 +1122,125 @@ describe('opd-flow.service', () => {
     expect(result.flow.stage).toBe('LAB_AND_RADIOLOGY_REQUESTED');
   });
 
+  it('resolves standard lab catalog requests during doctor review', async () => {
+    const tx = {
+      encounter: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'enc-1',
+            tenant_id: 'tenant-1',
+            patient_id: 'pat-1',
+            provider_user_id: 'doc-1',
+            extension_json: {
+              opd_flow: {
+                stage: 'WAITING_DOCTOR_REVIEW',
+                review_completed: false,
+                visit_queue_id: null,
+                appointment_id: null,
+                consultation: {
+                  invoice_id: null,
+                  payment_id: null
+                }
+              }
+            }
+          })
+          .mockResolvedValueOnce({
+            id: 'enc-1',
+            encounter_type: 'OPD',
+            extension_json: {
+              opd_flow: {
+                stage: 'LAB_REQUESTED',
+                visit_queue_id: null,
+                appointment_id: null,
+                consultation: {
+                  invoice_id: null,
+                  payment_id: null
+                }
+              }
+            }
+          }),
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
+      },
+      clinical_note: {
+        create: jest.fn().mockResolvedValue({ id: 'cn-1' })
+      },
+      diagnosis: {
+        createMany: jest.fn()
+      },
+      procedure: {
+        createMany: jest.fn()
+      },
+      lab_order: {
+        create: jest.fn().mockResolvedValue({ id: 'lab-1' })
+      },
+      lab_order_item: {
+        createMany: jest.fn()
+      },
+      lab_test: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 'lab-test-standard-1' })
+      },
+      lab_panel: {
+        findFirst: jest.fn()
+      },
+      radiology_order: {
+        create: jest.fn()
+      },
+      radiology_test: {
+        findFirst: jest.fn()
+      },
+      pharmacy_order: {
+        create: jest.fn()
+      },
+      pharmacy_order_item: {
+        createMany: jest.fn()
+      },
+      drug: {
+        findFirst: jest.fn()
+      },
+      visit_queue: { findFirst: jest.fn() },
+      appointment: { findFirst: jest.fn() },
+      invoice: { findFirst: jest.fn() },
+      payment: { findFirst: jest.fn() },
+      emergency_case: { findFirst: jest.fn() },
+      triage_assessment: { findFirst: jest.fn() }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    const result = await opdFlowService.doctorReview(
+      'enc-1',
+      {
+        note: 'Request lab',
+        lab_requests: [{ lab_test_id: 'STD_LAB_TEST:LOINC_6742_1' }]
+      },
+      { user_id: 'doc-1' }
+    );
+
+    expect(tx.lab_test.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenant_id: 'tenant-1',
+          code: '6742-1'
+        }),
+        select: { id: true }
+      })
+    );
+    expect(tx.lab_order_item.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          lab_order_id: 'lab-1',
+          lab_test_id: 'lab-test-standard-1',
+          status: 'ORDERED'
+        }
+      ]
+    });
+    expect(result.flow.stage).toBe('LAB_REQUESTED');
+  });
+
   it('prevents send-to-pharmacy disposition without pharmacy order', async () => {
     const tx = {
       encounter: {

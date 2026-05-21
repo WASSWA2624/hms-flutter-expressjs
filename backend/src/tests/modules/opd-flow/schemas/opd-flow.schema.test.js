@@ -60,8 +60,12 @@ describe('opd-flow.schema', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.tenant_id).toBe('550e8400-e29b-41d4-a716-446655440000');
-      expect(result.data.facility_id).toBe('550e8400-e29b-41d4-a716-446655440001');
+      expect(result.data.tenant_id).toBe(
+        '550e8400-e29b-41d4-a716-446655440000'
+      );
+      expect(result.data.facility_id).toBe(
+        '550e8400-e29b-41d4-a716-446655440001'
+      );
     });
   });
 
@@ -220,6 +224,25 @@ describe('opd-flow.schema', () => {
       expect(result.success).toBe(true);
     });
 
+    it('accepts standard lab catalog identifiers during doctor review', () => {
+      const result = doctorReviewSchema.safeParse({
+        note: 'Request catalog tests',
+        lab_requests: [
+          {
+            lab_test_id: 'STD_LAB_TEST:LOINC_6742_1'
+          },
+          {
+            lab_panel_id: 'STD_LAB_PANEL:CBC'
+          }
+        ]
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data?.lab_requests?.[0].lab_test_id).toBe(
+        'STD_LAB_TEST:LOINC_6742_1'
+      );
+    });
+
     it('rejects lab requests without a test or panel selection', () => {
       const result = doctorReviewSchema.safeParse({
         note: 'Incomplete request',
@@ -312,8 +335,12 @@ describe('opd-flow.schema', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.tenant_id).toBe('550e8400-e29b-41d4-a716-446655440000');
-      expect(result.data.facility_id).toBe('550e8400-e29b-41d4-a716-446655440001');
+      expect(result.data.tenant_id).toBe(
+        '550e8400-e29b-41d4-a716-446655440000'
+      );
+      expect(result.data.facility_id).toBe(
+        '550e8400-e29b-41d4-a716-446655440001'
+      );
     });
   });
 });
