@@ -10,9 +10,7 @@ abstract interface class HrRepository {
     String? departmentId,
   });
 
-  Future<Result<AppPage<HrStaffProfile>>> listStaffProfiles(
-    HrStaffQuery query,
-  );
+  Future<Result<AppPage<HrStaffProfile>>> listStaffProfiles(HrStaffQuery query);
 
   Future<Result<HrStaffDetail>> loadStaffDetail(HrStaffProfile profile);
 

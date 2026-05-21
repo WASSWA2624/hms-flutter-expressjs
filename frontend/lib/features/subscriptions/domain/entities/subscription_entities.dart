@@ -500,12 +500,8 @@ final class SubscriptionItem {
   final DateTime? expiresAt;
   final DateTime? updatedAt;
 
-  String get effectiveDisplayId => _firstText(<String?>[
-    displayId,
-    invoiceDisplayId,
-    code,
-    id,
-  ]);
+  String get effectiveDisplayId =>
+      _firstText(<String?>[displayId, invoiceDisplayId, code, id]);
 
   String get title {
     return _firstText(<String?>[
@@ -564,7 +560,8 @@ final class SubscriptionItem {
   }
 
   bool get canToggleModule {
-    return resource == SubscriptionResource.moduleSubscriptions && id.isNotEmpty;
+    return resource == SubscriptionResource.moduleSubscriptions &&
+        id.isNotEmpty;
   }
 
   bool get canCollectInvoice {

@@ -17,18 +17,19 @@ final class HousekeepingWorkspaceDto {
   }
 
   HousekeepingWorkspaceLoad toEntity(AppPageRequest request) {
-    final HousekeepingWorkspaceOverview overview = HousekeepingWorkspaceOverview(
-      summaryCards: _list(json['summary'])
-          .map(HousekeepingSummaryCardDto.new)
-          .map((HousekeepingSummaryCardDto dto) => dto.toEntity())
-          .where((HousekeepingSummaryCard card) => card.id.isNotEmpty)
-          .toList(growable: false),
-      queueSummaries: _list(json['queue_summaries'])
-          .map(HousekeepingQueueSummaryDto.new)
-          .map((HousekeepingQueueSummaryDto dto) => dto.toEntity())
-          .toList(growable: false),
-      lookups: HousekeepingLookupsDto(_map(json['lookups'])).toEntity(),
-    );
+    final HousekeepingWorkspaceOverview overview =
+        HousekeepingWorkspaceOverview(
+          summaryCards: _list(json['summary'])
+              .map(HousekeepingSummaryCardDto.new)
+              .map((HousekeepingSummaryCardDto dto) => dto.toEntity())
+              .where((HousekeepingSummaryCard card) => card.id.isNotEmpty)
+              .toList(growable: false),
+          queueSummaries: _list(json['queue_summaries'])
+              .map(HousekeepingQueueSummaryDto.new)
+              .map((HousekeepingQueueSummaryDto dto) => dto.toEntity())
+              .toList(growable: false),
+          lookups: HousekeepingLookupsDto(_map(json['lookups'])).toEntity(),
+        );
     final List<HousekeepingWorkItem> items = _list(json['items'])
         .map(HousekeepingWorkItemDto.new)
         .map((HousekeepingWorkItemDto dto) => dto.toEntity())
@@ -139,7 +140,8 @@ final class HousekeepingWorkItemDto {
 
     return HousekeepingWorkItem(
       id: id,
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       resource: resource,
       title: _firstString(<Object?>[
         json['title'],

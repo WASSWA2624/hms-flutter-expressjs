@@ -9,10 +9,7 @@ abstract interface class HousekeepingRepository {
 
   Future<Result<void>> createTask(HousekeepingTaskDraft draft);
 
-  Future<Result<void>> updateTask(
-    String taskId,
-    Map<String, Object?> payload,
-  );
+  Future<Result<void>> updateTask(String taskId, Map<String, Object?> payload);
 
   Future<Result<void>> createSchedule(HousekeepingScheduleDraft draft);
 

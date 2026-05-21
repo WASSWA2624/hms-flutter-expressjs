@@ -259,7 +259,8 @@ final class HousekeepingWorkItem {
   String get effectiveDisplayId => displayId ?? id;
 
   String get locationDisplay {
-    return _firstNonEmpty(<String?>[roomLabel, facilityLabel, assetLabel]) ?? '';
+    return _firstNonEmpty(<String?>[roomLabel, facilityLabel, assetLabel]) ??
+        '';
   }
 
   String get dueDisplaySource {
@@ -448,29 +449,29 @@ const List<String> housekeepingMaintenanceStatusValues = <String>[
   'CANCELLED',
 ];
 
-const List<HousekeepingBackendGap> housekeepingBackendGaps =
-    <HousekeepingBackendGap>[
-      HousekeepingBackendGap(
-        title: 'Discharge-to-cleaning automation',
-        body:
-            'No confirmed atomic endpoint links final discharge, bed release, and housekeeping task creation.',
-      ),
-      HousekeepingBackendGap(
-        title: 'Bed cleaning status',
-        body:
-            'The beds API currently supports AVAILABLE, OCCUPIED, RESERVED, and OUT_OF_SERVICE only; CLEANING and room-ready transitions are not exposed.',
-      ),
-      HousekeepingBackendGap(
-        title: 'Inspection and rework',
-        body:
-            'Housekeeping tasks do not expose inspection pending, failed, rework, sanitation checklist, or task note fields.',
-      ),
-      HousekeepingBackendGap(
-        title: 'Generated housekeeping reports',
-        body:
-            'No dedicated housekeeping report template/run contract is exposed yet for turnaround and readiness reports.',
-      ),
-    ];
+const List<HousekeepingBackendGap>
+housekeepingBackendGaps = <HousekeepingBackendGap>[
+  HousekeepingBackendGap(
+    title: 'Discharge-to-cleaning automation',
+    body:
+        'No confirmed atomic endpoint links final discharge, bed release, and housekeeping task creation.',
+  ),
+  HousekeepingBackendGap(
+    title: 'Bed cleaning status',
+    body:
+        'The beds API currently supports AVAILABLE, OCCUPIED, RESERVED, and OUT_OF_SERVICE only; CLEANING and room-ready transitions are not exposed.',
+  ),
+  HousekeepingBackendGap(
+    title: 'Inspection and rework',
+    body:
+        'Housekeeping tasks do not expose inspection pending, failed, rework, sanitation checklist, or task note fields.',
+  ),
+  HousekeepingBackendGap(
+    title: 'Generated housekeeping reports',
+    body:
+        'No dedicated housekeeping report template/run contract is exposed yet for turnaround and readiness reports.',
+  ),
+];
 
 String? _firstNonEmpty(Iterable<String?> values) {
   for (final String? value in values) {

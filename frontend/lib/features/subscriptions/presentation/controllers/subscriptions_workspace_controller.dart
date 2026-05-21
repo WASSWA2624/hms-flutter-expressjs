@@ -28,7 +28,8 @@ final class SubscriptionsWorkspaceController
     return dataResult.map(
       (SubscriptionsWorkspaceData data) => SubscriptionsWorkspaceState(
         data: data,
-        selectedItem: data.overview.currentSubscription ?? data.items.items.firstOrNull,
+        selectedItem:
+            data.overview.currentSubscription ?? data.items.items.firstOrNull,
       ),
     );
   }
@@ -229,9 +230,7 @@ final class SubscriptionsWorkspaceController
     );
   }
 
-  Future<AppFailure?> createModuleSubscription(
-    ModuleSubscriptionDraft draft,
-  ) {
+  Future<AppFailure?> createModuleSubscription(ModuleSubscriptionDraft draft) {
     return _submitAction(
       () => _repository.createModuleSubscription(draft),
       refreshSession: true,

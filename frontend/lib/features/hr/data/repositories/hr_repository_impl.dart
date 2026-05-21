@@ -152,7 +152,9 @@ final class HrRepositoryImpl implements HrRepository {
   }
 
   @override
-  Future<Result<Object?>> createStaffAvailability(Map<String, Object?> payload) {
+  Future<Result<Object?>> createStaffAvailability(
+    Map<String, Object?> payload,
+  ) {
     return _postCollection(HmsApiResource.staffAvailabilities, payload);
   }
 
@@ -251,10 +253,7 @@ final class HrRepositoryImpl implements HrRepository {
   }) {
     return _postHrAction(
       <String>['shifts', shiftId, 'override'],
-      <String, Object?>{
-        'staff_profile_id': staffProfileId,
-        'reason': reason,
-      },
+      <String, Object?>{'staff_profile_id': staffProfileId, 'reason': reason},
     );
   }
 

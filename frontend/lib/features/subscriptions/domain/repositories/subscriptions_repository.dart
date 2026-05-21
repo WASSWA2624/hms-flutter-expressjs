@@ -26,9 +26,7 @@ abstract interface class SubscriptionsRepository {
     SubscriptionPlanChangeDraft draft,
   );
 
-  Future<Result<void>> createModuleSubscription(
-    ModuleSubscriptionDraft draft,
-  );
+  Future<Result<void>> createModuleSubscription(ModuleSubscriptionDraft draft);
 
   Future<Result<void>> setModuleSubscriptionActive(
     String moduleSubscriptionId, {

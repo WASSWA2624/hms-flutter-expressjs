@@ -309,9 +309,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         builder: (_) => FlowActionsDialog(flow: existingFlow),
       );
       if (changed == true && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.opdSavedMessage)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
       }
       return;
     }

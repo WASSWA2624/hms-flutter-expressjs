@@ -76,7 +76,8 @@ final class HrTimelineItemDto {
 
   HrTimelineItem toEntity() {
     return HrTimelineItem(
-      id: _string(json['display_id']) ??
+      id:
+          _string(json['display_id']) ??
           _string(json['backend_identifier']) ??
           _string(json['id']) ??
           '',
@@ -165,23 +166,27 @@ final class HrStaffProfileDto {
     ]);
 
     return HrStaffProfile(
-      id: _string(json['id']) ??
+      id:
+          _string(json['id']) ??
           _string(json['display_id']) ??
           _string(json['staff_number']) ??
           '',
-      displayId: _string(json['display_id']) ??
+      displayId:
+          _string(json['display_id']) ??
           _string(json['human_friendly_id']) ??
           _string(json['staff_number']),
-      tenantId: _string(json['tenant_display_id']) ?? _string(json['tenant_id']),
+      tenantId:
+          _string(json['tenant_display_id']) ?? _string(json['tenant_id']),
       userId: _string(json['user_id']),
       userDisplayId: _string(json['user_display_id']),
       userFullName: _string(json['user_full_name']) ?? fallbackName,
       userEmail: _string(user['email']),
       departmentId: _string(json['department_id']),
-      departmentDisplayId: _string(json['department_display_id']) ??
+      departmentDisplayId:
+          _string(json['department_display_id']) ??
           _string(department['human_friendly_id']),
-      departmentName: _string(department['name']) ??
-          _string(department['short_name']),
+      departmentName:
+          _string(department['name']) ?? _string(department['short_name']),
       staffNumber: _string(json['staff_number']),
       position: _string(json['position']),
       practitionerType: _string(json['practitioner_type']),
@@ -218,11 +223,13 @@ final class HrStaffAssignmentDto {
 
   HrStaffAssignment toEntity() {
     return HrStaffAssignment(
-      id: _string(json['display_id']) ??
+      id:
+          _string(json['display_id']) ??
           _string(json['human_friendly_id']) ??
           _string(json['id']) ??
           '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       staffProfileId: _string(json['staff_profile_id']),
       departmentId: _string(json['department_id']),
       unitId: _string(json['unit_id']),
@@ -256,11 +263,13 @@ final class HrStaffLeaveDto {
 
   HrStaffLeave toEntity() {
     return HrStaffLeave(
-      id: _string(json['display_id']) ??
+      id:
+          _string(json['display_id']) ??
           _string(json['human_friendly_id']) ??
           _string(json['id']) ??
           '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       staffProfileId: _string(json['staff_profile_id']),
       status: _string(json['status']),
       startDate: _date(json['start_date']),
@@ -294,11 +303,13 @@ final class HrStaffAvailabilityDto {
 
   HrStaffAvailability toEntity() {
     return HrStaffAvailability(
-      id: _string(json['display_id']) ??
+      id:
+          _string(json['display_id']) ??
           _string(json['human_friendly_id']) ??
           _string(json['id']) ??
           '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       staffProfileId: _string(json['staff_profile_id']),
       dayOfWeek: _int(json['day_of_week']),
       startTime: _string(json['start_time']),
@@ -334,11 +345,13 @@ final class HrShiftAssignmentDto {
 
   HrShiftAssignment toEntity() {
     return HrShiftAssignment(
-      id: _string(json['display_id']) ??
+      id:
+          _string(json['display_id']) ??
           _string(json['human_friendly_id']) ??
           _string(json['id']) ??
           '',
-      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      displayId:
+          _string(json['display_id']) ?? _string(json['human_friendly_id']),
       shiftId: _string(json['shift_id']),
       staffProfileId: _string(json['staff_profile_id']),
       assignedAt: _date(json['assigned_at']),
@@ -387,17 +400,20 @@ final class HrWorkItemDto {
       displayId: _string(json['display_id']),
       backendIdentifier: _string(json['backend_identifier']),
       status: _string(json['status']),
-      staffProfileId: _string(json['staff_profile_display_id']) ??
+      staffProfileId:
+          _string(json['staff_profile_display_id']) ??
           _string(json['staff_profile_id']) ??
           _string(json['requester_staff_display_id']) ??
           _string(json['requester_staff_id']),
       staffName: _string(json['staff_name']),
-      staffNumber: _string(json['staff_number']) ??
+      staffNumber:
+          _string(json['staff_number']) ??
           _string(json['requester_staff_number']),
       staffPosition: _string(json['staff_position']),
       shiftId: _string(json['shift_display_id']) ?? _string(json['shift_id']),
       shiftType: _string(json['shift_type']),
-      rosterId: _string(json['nurse_roster_display_id']) ??
+      rosterId:
+          _string(json['nurse_roster_display_id']) ??
           _string(json['nurse_roster_id']) ??
           _string(json['display_id']),
       payrollRunId: queue == HrQueue.payrollDrafts
@@ -442,7 +458,8 @@ final class HrOptionDto {
   final HrJsonMap json;
 
   HrOption toEntity() {
-    final String value = _string(json['value']) ??
+    final String value =
+        _string(json['value']) ??
         _string(json['display_id']) ??
         _string(json['id']) ??
         '';
@@ -452,7 +469,12 @@ final class HrOptionDto {
       displayId: _string(json['display_id']),
       extra: <String, Object?>{
         for (final MapEntry<String, Object?> entry in json.entries)
-          if (!<String>{'value', 'label', 'display_id', 'id'}.contains(entry.key))
+          if (!<String>{
+            'value',
+            'label',
+            'display_id',
+            'id',
+          }.contains(entry.key))
             entry.key: entry.value,
       },
     );

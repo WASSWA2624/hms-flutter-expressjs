@@ -65,10 +65,7 @@ final class HousekeepingRepositoryImpl implements HousekeepingRepository {
   }
 
   @override
-  Future<Result<void>> updateTask(
-    String taskId,
-    Map<String, Object?> payload,
-  ) {
+  Future<Result<void>> updateTask(String taskId, Map<String, Object?> payload) {
     return _apiClient.put<void>(
       ApiEndpoints.byId(HmsApiResource.housekeepingTasks, taskId),
       data: _withoutEmpty(payload),

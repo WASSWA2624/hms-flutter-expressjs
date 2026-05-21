@@ -19,10 +19,7 @@ final class SubscriptionsWorkspaceDto {
   SubscriptionsWorkspaceData toEntity() {
     final List<SubscriptionItem> items = _list(json['items'])
         .map((SubscriptionJsonMap item) {
-          return SubscriptionItemDto(
-            item,
-            resource: query.resource,
-          ).toEntity();
+          return SubscriptionItemDto(item, resource: query.resource).toEntity();
         })
         .where((SubscriptionItem item) => item.id.isNotEmpty)
         .toList(growable: false);
@@ -286,8 +283,7 @@ final class SubscriptionItemDto {
       planId: _string(json['plan_id']),
       planLabel: _string(json['plan_label']),
       planCode: _string(json['plan_code']),
-      tierCode:
-          _string(json['tier_code']) ?? _string(json['plan_tier_code']),
+      tierCode: _string(json['tier_code']) ?? _string(json['plan_tier_code']),
       billingCycle: _string(json['billing_cycle']),
       moduleId: _string(json['module_id']),
       moduleLabel:
