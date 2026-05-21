@@ -1909,10 +1909,7 @@ const startOpdFlow = async (data, context = {}) => {
       });
 
       if (existingFlow) {
-        if (reuseOpenEncounter) {
-          return { existingEncounterId: existingFlow.id };
-        }
-        throw new HttpError('errors.opd_flow.appointment_already_linked', 409, [{ field: 'appointment_id' }]);
+        return { existingEncounterId: existingFlow.id };
       }
     }
 

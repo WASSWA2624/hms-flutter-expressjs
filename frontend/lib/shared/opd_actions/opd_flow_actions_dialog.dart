@@ -262,101 +262,106 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     }
 
     if (!terminal) {
+      final bool clinicalStage = <String>{
+        'WAITING_DOCTOR_REVIEW',
+        'LAB_REQUESTED',
+        'RADIOLOGY_REQUESTED',
+        'LAB_AND_RADIOLOGY_REQUESTED',
+        'PHARMACY_REQUESTED',
+        'WAITING_DISPOSITION',
+      }.contains(stage);
+      final bool canAdjustBilling =
+          nextActionKey != 'billing' &&
+          (consultationPaid || consultationPaymentRequired);
+
+      if (canAdjustBilling) {
+        addAction('billing', billingAction());
+      }
+
+      if (clinicalStage) {
+        addAction(
+          'diagnosis',
+          AppPermissionActionItem(
+            requirement: opdDoctorActionRequirement,
+            label: l10n.clinicalAddDiagnosisAction,
+            icon: Icons.rule_outlined,
+            fullWidth: true,
+            hideWhenDenied: true,
+            onPressed: () => _openDiagnosisDialog(context, flow),
+          ),
+        );
+        addAction(
+          'lab',
+          AppPermissionActionItem(
+            requirement: opdDoctorActionRequirement,
+            label: l10n.clinicalRequestLabAction,
+            icon: Icons.science_outlined,
+            fullWidth: true,
+            hideWhenDenied: true,
+            onPressed: () => _openLabOrderDialog(context, flow),
+          ),
+        );
+        addAction(
+          'radiology',
+          AppPermissionActionItem(
+            requirement: opdDoctorActionRequirement,
+            label: l10n.clinicalRequestRadiologyAction,
+            icon: Icons.biotech_outlined,
+            fullWidth: true,
+            hideWhenDenied: true,
+            onPressed: () => _openRadiologyOrderDialog(context, flow),
+          ),
+        );
+        addAction(
+          'prescription',
+          AppPermissionActionItem(
+            requirement: opdDoctorActionRequirement,
+            label: l10n.clinicalPrescribeAction,
+            icon: Icons.medication_outlined,
+            fullWidth: true,
+            hideWhenDenied: true,
+            onPressed: () => _openPrescriptionDialog(context, flow),
+          ),
+        );
+        addAction(
+          'procedure',
+          AppPermissionActionItem(
+            requirement: opdDoctorActionRequirement,
+            label: l10n.clinicalRequestProcedureAction,
+            icon: Icons.healing_outlined,
+            fullWidth: true,
+            hideWhenDenied: true,
+            onPressed: () => _openProcedureDialog(context, flow),
+          ),
+        );
+        addAction(
+          'referral',
+          AppPermissionActionItem(
+            requirement: opdDoctorActionRequirement,
+            label: l10n.opdReferAction,
+            icon: Icons.alt_route_outlined,
+            fullWidth: true,
+            hideWhenDenied: true,
+            onPressed: () => _openNested(context, ReferralDialog(flow: flow)),
+          ),
+        );
+        addAction(
+          'follow_up',
+          AppPermissionActionItem(
+            requirement: opdDoctorActionRequirement,
+            label: l10n.opdFollowUpAction,
+            icon: Icons.event_repeat_outlined,
+            fullWidth: true,
+            hideWhenDenied: true,
+            onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
+          ),
+        );
+        if (nextActionKey != 'disposition' &&
+            stage != 'WAITING_DOCTOR_REVIEW') {
+          addAction('disposition', dispositionAction());
+        }
+      }
       addAction('correct_stage', _correctStageAction(context, flow));
-      addAction('assign_doctor', assignDoctorAction());
-      addAction('vitals', vitalsAction());
-      addAction('billing', billingAction());
-      addAction('doctor_review', doctorReviewAction());
-      addAction(
-        'route',
-        AppPermissionActionItem(
-          requirement: opdTriageActionRequirement,
-          label: l10n.opdRouteDecisionLabel,
-          icon: Icons.alt_route_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () =>
-              _openNested(context, RoutingDecisionDialog(flow: flow)),
-        ),
-      );
-      addAction('disposition', dispositionAction());
-      addAction(
-        'diagnosis',
-        AppPermissionActionItem(
-          requirement: opdDoctorActionRequirement,
-          label: l10n.clinicalAddDiagnosisAction,
-          icon: Icons.rule_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openDiagnosisDialog(context, flow),
-        ),
-      );
-      addAction(
-        'lab',
-        AppPermissionActionItem(
-          requirement: opdDoctorActionRequirement,
-          label: l10n.clinicalRequestLabAction,
-          icon: Icons.science_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openLabOrderDialog(context, flow),
-        ),
-      );
-      addAction(
-        'radiology',
-        AppPermissionActionItem(
-          requirement: opdDoctorActionRequirement,
-          label: l10n.clinicalRequestRadiologyAction,
-          icon: Icons.biotech_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openRadiologyOrderDialog(context, flow),
-        ),
-      );
-      addAction(
-        'prescription',
-        AppPermissionActionItem(
-          requirement: opdDoctorActionRequirement,
-          label: l10n.clinicalPrescribeAction,
-          icon: Icons.medication_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openPrescriptionDialog(context, flow),
-        ),
-      );
-      addAction(
-        'procedure',
-        AppPermissionActionItem(
-          requirement: opdDoctorActionRequirement,
-          label: l10n.clinicalRequestProcedureAction,
-          icon: Icons.healing_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openProcedureDialog(context, flow),
-        ),
-      );
-      addAction(
-        'referral',
-        AppPermissionActionItem(
-          requirement: opdDoctorActionRequirement,
-          label: l10n.opdReferAction,
-          icon: Icons.alt_route_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openNested(context, ReferralDialog(flow: flow)),
-        ),
-      );
-      addAction(
-        'follow_up',
-        AppPermissionActionItem(
-          requirement: opdDoctorActionRequirement,
-          label: l10n.opdFollowUpAction,
-          icon: Icons.event_repeat_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
-        ),
-      );
     } else {
       addAction('correct_stage', _correctStageAction(context, flow));
     }

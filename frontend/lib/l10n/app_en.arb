@@ -2163,11 +2163,11 @@
   "@patientsQuickAppointmentAction": {
     "description": "Patient quick appointment action label."
   },
-  "patientsQuickOpdCheckInAction": "Start OPD encounter",
+  "patientsQuickOpdCheckInAction": "Start / Check in OPD",
   "@patientsQuickOpdCheckInAction": {
     "description": "Patient quick action label for creating or continuing an OPD encounter."
   },
-  "patientsQuickViewActiveOpdAction": "View active OPD encounter",
+  "patientsQuickViewActiveOpdAction": "Continue OPD flow",
   "@patientsQuickViewActiveOpdAction": {
     "description": "Patient quick action label for opening the active OPD encounter actions."
   },

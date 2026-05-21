@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
@@ -49,6 +50,15 @@ const AccessRequirement opdEncounterPermissionRequirement = AccessRequirement(
 );
 
 enum _WalkInPatientMode { existing, appointment, newPatient }
+
+const List<String> _opdStartPaymentMethods = <String>[
+  'CASH',
+  'MOBILE_MONEY',
+  'BANK_TRANSFER',
+  'CREDIT_CARD',
+  'INSURANCE',
+  'OTHER',
+];
 
 class _WalkInModeSelector extends StatelessWidget {
   const _WalkInModeSelector({
@@ -163,6 +173,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   late final TextEditingController _newPatientLastNameController;
   late final TextEditingController _feeController;
   late final TextEditingController _notesController;
+  late final TextEditingController _transactionRefController;
   List<Patient> _patientOptions = const <Patient>[];
   List<OpdAppointment> _appointmentOptions = const <OpdAppointment>[];
   List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
@@ -180,7 +191,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   String _arrivalMode = 'WALK_IN';
   String _emergencySeverity = 'HIGH';
   String? _triageLevel;
+  String _paymentMethod = 'CASH';
   bool _requireConsultationPayment = true;
+  bool _payNow = false;
   bool _isSaving = false;
   AppFailure? _failure;
   int _activeEncounterLookupToken = 0;
@@ -193,6 +206,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     _newPatientLastNameController = TextEditingController();
     _feeController = TextEditingController();
     _notesController = TextEditingController();
+    _transactionRefController = TextEditingController();
     _patientOptions = <Patient>[
       if (widget.initialPatient != null) widget.initialPatient!,
     ];
@@ -231,6 +245,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     _newPatientLastNameController.dispose();
     _feeController.dispose();
     _notesController.dispose();
+    _transactionRefController.dispose();
     super.dispose();
   }
 
@@ -440,6 +455,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
               setState(() {
                 _arrivalMode = value ?? 'WALK_IN';
                 _requireConsultationPayment = _arrivalMode != 'EMERGENCY';
+                if (!_requireConsultationPayment) {
+                  _payNow = false;
+                }
               });
             },
             options: _statusOptions(_arrivalModeOptions),
@@ -524,6 +542,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             l10n.opdCurrencyLabel,
           ),
           enabled: !_isSaving,
+          isRequired: _payNow,
+          allowZero: !_payNow,
           onCurrencyChanged: (String? value) {
             setState(() {
               _currency = value ?? appDefaultCurrencyCode;
@@ -544,9 +564,60 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           onChanged: (bool value) {
             setState(() {
               _requireConsultationPayment = value;
+              if (!value) {
+                _payNow = false;
+              }
             });
           },
         ),
+        AppCheckboxField(
+          title: l10n.patientsMarkPaymentReceivedLabel,
+          value: _payNow,
+          enabled: !_isSaving,
+          secondary: const Icon(Icons.point_of_sale_outlined),
+          onChanged: (bool value) {
+            setState(() {
+              _payNow = value;
+              if (value) {
+                _requireConsultationPayment = true;
+              }
+            });
+          },
+        ),
+        if (_payNow)
+          AppResponsiveFieldRow.two(
+            left: AppSelectField<String>.searchable(
+              value: _paymentMethod,
+              labelText: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdPaymentMethodLabel,
+              ),
+              semanticLabel: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdPaymentMethodLabel,
+              ),
+              enabled: !_isSaving,
+              onChanged: (String? value) {
+                setState(() {
+                  _paymentMethod = value ?? 'CASH';
+                });
+              },
+              options: _statusOptions(_opdStartPaymentMethods),
+              validator: (String? value) => _payNow && !_isNonEmpty(value)
+                  ? l10n.validationRequired
+                  : null,
+            ),
+            right: AppTextField(
+              controller: _transactionRefController,
+              labelText: _opdOptionalFieldLabel(
+                l10n,
+                l10n.opdTransactionReferenceLabel,
+              ),
+              enabled: !_isSaving,
+            ),
+            breakpoint: 520,
+            gap: AppResponsiveFieldRowGap.form,
+          ),
       ],
     );
   }
@@ -1211,10 +1282,12 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   Map<String, Object?> _payload() {
     final String notes = _notesController.text.trim();
     final String consultationFee = normalizeCurrencyAmount(_feeController.text);
+    final String transactionRef = _transactionRefController.text.trim();
     final String arrivalMode = _patientMode == _WalkInPatientMode.appointment
         ? 'ONLINE_APPOINTMENT'
         : _arrivalMode;
     final bool hasConsultationFee = consultationFee.isNotEmpty;
+    final bool submitPayment = _payNow && hasConsultationFee;
     final OpdFlowSummary? activeEncounter = _activeEncounter;
     final bool canReuseOpenEncounter =
         _patientMode != _WalkInPatientMode.newPatient;
@@ -1241,7 +1314,15 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       'require_consultation_payment': _requireConsultationPayment,
       if (canReuseOpenEncounter) 'reuse_open_encounter': true,
       'create_consultation_invoice':
-          hasConsultationFee || _requireConsultationPayment,
+          hasConsultationFee || _requireConsultationPayment || submitPayment,
+      if (submitPayment)
+        'pay_now': <String, Object?>{
+          'method': _paymentMethod,
+          'amount': consultationFee,
+          'status': 'COMPLETED',
+          if (transactionRef.isNotEmpty) 'transaction_ref': transactionRef,
+          'paid_at': DateTime.now().toUtc().toIso8601String(),
+        },
       'notes': notes,
     };
   }

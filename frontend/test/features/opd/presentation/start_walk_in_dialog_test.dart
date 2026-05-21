@@ -60,6 +60,10 @@ void main() {
       (_) async =>
           const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
     );
+    when(() => opdRepository.listProviders()).thenAnswer(
+      (_) async =>
+          const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -108,6 +112,70 @@ void main() {
     expect(submittedPayload?['arrival_mode'], 'WALK_IN');
     expect(submittedPayload?['require_consultation_payment'], isTrue);
     expect(submittedPayload?['create_consultation_invoice'], isTrue);
+  });
+
+  testWidgets('OpdEncounterDialog submits pay-now payload during OPD start', (
+    WidgetTester tester,
+  ) async {
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+    const Patient patient = Patient(
+      id: 'patient-1',
+      publicId: 'PAT000001',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    );
+    Map<String, Object?>? submittedPayload;
+
+    _stubStartDialogLookups(
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      patients: const <Patient>[patient],
+    );
+
+    await _pumpStartDialog(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      dialog: OpdEncounterDialog(
+        providerSchedules: const <OpdProviderSchedule>[],
+        appointments: const <OpdAppointment>[],
+        initialPatient: patient,
+        onSubmit: (Map<String, Object?> payload) async {
+          submittedPayload = payload;
+          return null;
+        },
+      ),
+    );
+
+    final Finder amountInput = find.descendant(
+      of: find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppCurrencyAmountField &&
+            widget.amountLabelText == 'Consultation fee (optional)',
+      ),
+      matching: find.byType(EditableText),
+    );
+
+    await tester.enterText(amountInput, '25000');
+    await tester.ensureVisible(find.text('Payment received'));
+    await tester.tap(find.text('Payment received'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(EditableText).last, 'MM-10001');
+    await tester.ensureVisible(find.text('Start encounter').last);
+    await tester.tap(find.text('Start encounter').last);
+    await tester.pumpAndSettle();
+
+    expect(submittedPayload?['require_consultation_payment'], isTrue);
+    expect(submittedPayload?['create_consultation_invoice'], isTrue);
+    expect(submittedPayload?['consultation_fee'], '25000');
+    final Map<String, Object?> payNow =
+        submittedPayload!['pay_now']! as Map<String, Object?>;
+    expect(payNow, containsPair('method', 'CASH'));
+    expect(payNow, containsPair('amount', '25000'));
+    expect(payNow, containsPair('status', 'COMPLETED'));
+    expect(payNow, containsPair('transaction_ref', 'MM-10001'));
+    expect(payNow['paid_at'], isA<String>());
   });
 
   testWidgets(
@@ -708,6 +776,10 @@ void _stubStartDialogLookups({
   when(
     () => opdRepository.listProviders(search: any(named: 'search')),
   ).thenAnswer(
+    (_) async =>
+        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+  when(() => opdRepository.listProviders()).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
   );

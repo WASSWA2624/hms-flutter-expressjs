@@ -387,7 +387,7 @@ void main() {
 
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Start OPD encounter').first);
+    await tester.tap(find.text('Start / Check in OPD').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Existing patient'), findsOneWidget);
@@ -395,18 +395,17 @@ void main() {
     expect(find.text('Start encounter'), findsOneWidget);
   });
 
-  testWidgets('triage quick action shows vital units and range status', (
+  testWidgets('patient quick actions expose one OPD entry point', (
     WidgetTester tester,
   ) async {
     final patientRepository = _MockPatientRepository();
     final opdRepository = _MockOpdRepository();
-    final patient = Patient(
+    const patient = Patient(
       id: 'patient-1',
       tenantId: 'tenant-1',
       facilityId: 'facility-1',
       firstName: 'Amina',
       lastName: 'Kato',
-      dateOfBirth: DateTime(1990),
       gender: 'FEMALE',
       primaryPhone: '+256700000000',
       primaryIdentifierType: 'MRN',
@@ -421,170 +420,69 @@ void main() {
       patientRepository: patientRepository,
       opdRepository: opdRepository,
       size: const Size(1000, 920),
+      roles: const <String>['SUPER_ADMIN'],
     );
 
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Triage'));
-    await tester.pumpAndSettle();
 
-    expect(find.text('Triage intake'), findsOneWidget);
-    expect(find.text('Blood pressure'), findsOneWidget);
-    expect(find.byType(DropdownButtonFormField<String>), findsNWidgets(4));
-    expect(find.text('mmHg'), findsOneWidget);
-    expect(find.text('\u00B0C'), findsOneWidget);
-    expect(find.text('\u00B0F'), findsNothing);
-    expect(find.text('beats per minute'), findsOneWidget);
-    expect(find.text('breaths per minute'), findsOneWidget);
-    expect(find.text('%'), findsOneWidget);
-    expect(find.text('kg'), findsOneWidget);
-    expect(find.text('cm'), findsOneWidget);
-    expect(find.text('lb'), findsNothing);
-    expect(find.text('m'), findsNothing);
-    expect(find.textContaining('Expected for Adult Female'), findsWidgets);
-
-    final Finder systolicInput = find.descendant(
-      of: find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is AppTextField && widget.labelText == 'Systolic',
-      ),
-      matching: find.byType(EditableText),
-    );
-
-    await tester.enterText(systolicInput, '500');
-    await tester.pumpAndSettle();
-    expect(find.text('Enter a value between 30-300 mmHg.'), findsOneWidget);
-
-    await tester.enterText(systolicInput, '125');
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('Abnormal - Expected for Adult Female: 90-120 mmHg'),
-      findsOneWidget,
-    );
-
-    await tester.enterText(systolicInput, '110');
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('Normal - Expected for Adult Female: 90-120 mmHg'),
-      findsOneWidget,
-    );
+    expect(find.text('Start / Check in OPD'), findsOneWidget);
+    expect(find.text('Continue OPD flow'), findsNothing);
+    expect(find.text('Triage'), findsNothing);
+    expect(find.text('Record vitals'), findsNothing);
+    expect(find.text('Assign doctor'), findsNothing);
+    expect(find.text('Doctor review'), findsNothing);
+    expect(find.text('Manage consultation billing'), findsNothing);
+    expect(find.text('Request lab'), findsNothing);
+    expect(find.text('Request radiology'), findsNothing);
+    expect(find.text('Prescribe'), findsNothing);
   });
 
-  testWidgets('triage quick action saves vital payload with units and time', (
+  testWidgets('active OPD patient quick action continues the flow', (
     WidgetTester tester,
   ) async {
     final patientRepository = _MockPatientRepository();
     final opdRepository = _MockOpdRepository();
-    late Map<String, Object?> savedPayload;
-    final patient = Patient(
+    const patient = Patient(
       id: 'patient-1',
+      publicId: 'PAT-1001',
       tenantId: 'tenant-1',
       facilityId: 'facility-1',
       firstName: 'Amina',
       lastName: 'Kato',
-      dateOfBirth: DateTime(1990),
       gender: 'FEMALE',
       primaryPhone: '+256700000000',
       primaryIdentifierType: 'MRN',
       primaryIdentifierValue: 'MRN-10024',
-    );
-    const started = OpdFlowDetail(
-      summary: OpdFlowSummary(
-        id: 'flow-1',
+      currentVisit: PatientVisitContext(
+        kind: 'encounter',
         publicId: 'OPD-1',
-        patientId: 'patient-1',
-        stage: 'WAITING_VITALS',
-      ),
-    );
-    const triaged = OpdFlowDetail(
-      summary: OpdFlowSummary(
-        id: 'flow-1',
-        publicId: 'OPD-1',
-        patientId: 'patient-1',
-        stage: 'WAITING_DOCTOR_ASSIGNMENT',
+        status: 'WAITING_VITALS',
+        title: 'OPD encounter',
       ),
     );
 
     _stubPatientRegistry(patientRepository, patient);
     _stubProviderLookup(opdRepository);
-    when(
-      () => opdRepository.startOpdFlow(any()),
-    ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(started));
-    when(() => opdRepository.recordVitals(any(), any())).thenAnswer((
-      Invocation invocation,
-    ) async {
-      savedPayload = invocation.positionalArguments[1] as Map<String, Object?>;
-      return const Result<OpdFlowDetail>.success(triaged);
-    });
 
     await _pumpPatientRegistry(
       tester,
       patientRepository: patientRepository,
       opdRepository: opdRepository,
       size: const Size(1100, 960),
+      roles: const <String>['SUPER_ADMIN'],
     );
 
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Triage'));
-    await tester.pumpAndSettle();
 
-    Future<void> enterField(String label, String value) async {
-      final Finder input = find.descendant(
-        of: find.byWidgetPredicate(
-          (Widget widget) =>
-              widget is AppTextField && widget.labelText == label,
-        ),
-        matching: find.byType(EditableText),
-      );
-      await tester.enterText(input, value);
-    }
-
-    await enterField('Chief complaint', 'Severe headache');
-    await enterField('Systolic', '110');
-    await enterField('Diastolic', '70');
-    await enterField('Temperature', '37');
-    await enterField('Heart rate', '82');
-    await enterField('Respiratory rate', '18');
-    await enterField('Oxygen saturation', '98');
-    await enterField('Weight', '65');
-    await enterField('Height', '170');
-    await tester.tap(find.text('Triage').last);
-    await tester.pumpAndSettle();
-
-    final vitals = savedPayload['vitals'] as List<Map<String, Object?>>;
-    expect(vitals, hasLength(7));
-    expect(
-      vitals.firstWhere(
-        (Map<String, Object?> item) => item['vital_type'] == 'BLOOD_PRESSURE',
-      ),
-      containsPair('unit', 'mmHg'),
-    );
-    expect(
-      vitals.firstWhere(
-        (Map<String, Object?> item) => item['vital_type'] == 'TEMPERATURE',
-      ),
-      containsPair('unit', '\u00B0C'),
-    );
-    expect(
-      vitals.firstWhere(
-        (Map<String, Object?> item) => item['vital_type'] == 'WEIGHT',
-      ),
-      containsPair('unit', 'kg'),
-    );
-    expect(
-      vitals.firstWhere(
-        (Map<String, Object?> item) => item['vital_type'] == 'HEIGHT',
-      ),
-      containsPair('unit', 'cm'),
-    );
-    for (final Map<String, Object?> vital in vitals) {
-      expect(DateTime.tryParse(vital['recorded_at']! as String), isNotNull);
-    }
-    verify(() => opdRepository.recordVitals('OPD-1', any())).called(1);
-    verify(
-      () => patientRepository.loadPatientDetail(patient.id),
-    ).called(greaterThanOrEqualTo(2));
+    expect(find.text('Continue OPD flow'), findsOneWidget);
+    expect(find.text('Start / Check in OPD'), findsNothing);
+    expect(find.text('Triage'), findsNothing);
+    expect(find.text('Record vitals'), findsNothing);
+    expect(find.text('Assign doctor'), findsNothing);
+    expect(find.text('Doctor review'), findsNothing);
+    expect(find.text('Manage consultation billing'), findsNothing);
   });
 
   testWidgets('patient report opens configurable paginated print preview', (

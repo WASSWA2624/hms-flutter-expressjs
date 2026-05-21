@@ -1881,17 +1881,6 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.patientWrite],
               ),
             ),
-            AppPermissionActionItem(
-              label: l10n.patientsQuickOpdCheckInAction,
-              icon: opdEncounterIcon,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.opdCheckIn,
-              ),
-              requirement: opdEncounterPermissionRequirement,
-            ),
             if (hasActiveOpdEncounter)
               AppPermissionActionItem(
                 label: l10n.patientsQuickViewActiveOpdAction,
@@ -1910,133 +1899,19 @@ class _QuickActions extends ConsumerWidget {
                     AppPermissions.billingWrite,
                   ],
                 ),
+              )
+            else
+              AppPermissionActionItem(
+                label: l10n.patientsQuickOpdCheckInAction,
+                icon: opdEncounterIcon,
+                onPressed: () => _openQuickAction(
+                  context,
+                  ref,
+                  patient,
+                  _PatientQuickAction.opdCheckIn,
+                ),
+                requirement: opdEncounterPermissionRequirement,
               ),
-            AppPermissionActionItem(
-              label: l10n.patientsQuickTriageAction,
-              icon: Icons.monitor_heart_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.triage,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.emergencyWrite],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.opdRecordVitalsAction,
-              icon: Icons.monitor_heart_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.opdActions,
-              ),
-              requirement: const AccessRequirement(
-                anyPermissions: <AppPermission>[
-                  AppPermissions.clinicalWrite,
-                  AppPermissions.emergencyWrite,
-                ],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.opdAssignDoctorAction,
-              icon: Icons.assignment_ind_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.opdActions,
-              ),
-              requirement: const AccessRequirement(
-                anyPermissions: <AppPermission>[
-                  AppPermissions.patientWrite,
-                  AppPermissions.operationsWrite,
-                  AppPermissions.clinicalWrite,
-                ],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.opdDoctorReviewAction,
-              icon: Icons.edit_note_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.opdActions,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.opdManageConsultationBillingAction,
-              icon: Icons.receipt_long_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                hasActiveOpdEncounter
-                    ? _PatientQuickAction.opdActions
-                    : _PatientQuickAction.billing,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.billingWrite],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.clinicalRequestLabAction,
-              icon: Icons.science_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.opdActions,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.clinicalRequestRadiologyAction,
-              icon: Icons.biotech_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.opdActions,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.clinicalPrescribeAction,
-              icon: Icons.medication_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.opdActions,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-              ),
-            ),
-            AppPermissionActionItem(
-              label: l10n.patientsQuickAdmissionAction,
-              icon: Icons.local_hospital_outlined,
-              onPressed: () => _openQuickAction(
-                context,
-                ref,
-                patient,
-                _PatientQuickAction.admission,
-              ),
-              requirement: const AccessRequirement(
-                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-              ),
-            ),
             AppPermissionActionItem(
               label: l10n.patientsQuickReportAction,
               icon: Icons.summarize_outlined,
@@ -3290,7 +3165,9 @@ class _PatientFlowQuickDialogState
 
     final AppFailure? failure = await (switch (widget.action) {
       _PatientQuickAction.billing => _submitBilling(),
-      _ => Future<AppFailure?>.value(),
+      _ => Future<AppFailure?>.value(
+        AppFailure.validation(validationFields: const <String>{'action'}),
+      ),
     });
 
     if (!mounted) {

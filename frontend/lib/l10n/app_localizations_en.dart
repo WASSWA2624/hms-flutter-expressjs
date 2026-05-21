@@ -1651,10 +1651,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsQuickAppointmentAction => 'Appointment';
 
   @override
-  String get patientsQuickOpdCheckInAction => 'Start OPD encounter';
+  String get patientsQuickOpdCheckInAction => 'Start / Check in OPD';
 
   @override
-  String get patientsQuickViewActiveOpdAction => 'View active OPD encounter';
+  String get patientsQuickViewActiveOpdAction => 'Continue OPD flow';
 
   @override
   String get patientsQuickTriageAction => 'Triage';

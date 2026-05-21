@@ -325,6 +325,7 @@ class _OpdWorkspaceBody extends StatelessWidget {
         .toList(growable: false);
 
     return _OpdMainTable(
+      state: state,
       page: _tablePage(items, pageRequest),
       searchController: searchController,
       filter: filter,
@@ -1715,6 +1716,7 @@ bool _isCompletedStatus(String? status) {
 
 class _OpdMainTable extends ConsumerWidget {
   const _OpdMainTable({
+    required this.state,
     required this.page,
     required this.searchController,
     required this.filter,
@@ -1725,6 +1727,7 @@ class _OpdMainTable extends ConsumerWidget {
     required this.isLoading,
   });
 
+  final OpdWorkspaceState state;
   final AppPage<_OpdTableItem> page;
   final TextEditingController searchController;
   final _OpdTableFilter filter;
@@ -1836,7 +1839,10 @@ class _OpdMainTable extends ConsumerWidget {
       barrierDismissible: false,
       builder: (_) {
         if (appointment != null) {
-          return AppointmentActionsDialog(appointment: appointment);
+          return AppointmentActionsDialog(
+            appointment: appointment,
+            state: state,
+          );
         }
         if (queueEntry != null) {
           return QueueActionsDialog(entry: queueEntry);
@@ -2051,9 +2057,14 @@ class _ProviderSelectField extends StatelessWidget {
 }
 
 class AppointmentActionsDialog extends ConsumerStatefulWidget {
-  const AppointmentActionsDialog({required this.appointment, super.key});
+  const AppointmentActionsDialog({
+    required this.appointment,
+    required this.state,
+    super.key,
+  });
 
   final OpdAppointment appointment;
+  final OpdWorkspaceState state;
 
   @override
   ConsumerState<AppointmentActionsDialog> createState() =>
@@ -2152,14 +2163,37 @@ class _AppointmentActionsDialogState
             label: l10n.opdCheckInAction,
             leadingIcon: Icons.login_outlined,
             isLoading: _isSaving,
-            onPressed: () => _run(
-              () => ref
-                  .read(opdWorkspaceControllerProvider.notifier)
-                  .checkInAppointment(widget.appointment),
-            ),
+            onPressed: _openCheckIn,
           ),
       ],
     );
+  }
+
+  Future<void> _openCheckIn() async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => OpdEncounterDialog(
+        providerSchedules: widget.state.providerSchedules,
+        appointments: widget.state.appointments.items,
+        activeFlows: <OpdFlowSummary>[
+          ...widget.state.flows.items,
+          ...widget.state.triageQueue.items,
+        ],
+        initialAppointment: widget.appointment,
+        initialAppointmentId: widget.appointment.apiId,
+        defaultArrivalMode: 'ONLINE_APPOINTMENT',
+        defaultProviderId: widget.appointment.providerUserId,
+        onSubmit: (Map<String, Object?> payload) {
+          return ref
+              .read(opdWorkspaceControllerProvider.notifier)
+              .startOpdEncounter(payload);
+        },
+      ),
+    );
+    if (changed == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   Future<void> _openReschedule() async {
