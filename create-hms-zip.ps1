@@ -111,7 +111,9 @@ try {
   Add-FilteredFolder -Archive $archive -SourceRoot $appPlannerRoot -TargetFolder 'app-planner' -IncludeFile {
     param($file, $sourceRoot)
 
-    return $true
+    $relativePath = Get-RelativePath -BasePath $sourceRoot -Path $file.FullName
+    $parts = $relativePath -split '[\\/]'
+    return !($parts.Count -gt 0 -and $parts[0].Equals('dashboard-screens', [System.StringComparison]::OrdinalIgnoreCase))
   }
 
   $backendRoot = Join-Path $root 'backend'
