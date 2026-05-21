@@ -110,6 +110,50 @@ describe('dashboard-workspace service', () => {
     );
   });
 
+  it('uses profile-specific quick actions for manager dashboards', async () => {
+    repository.resolveWorkspaceScope.mockResolvedValue({
+      state: 'ready',
+      scope: {
+        tenant_id: 'TEN0001',
+        facility_id: 'FAC0001',
+      },
+    });
+    repository.findFacilityContext.mockResolvedValue({
+      id: 'facility-uuid',
+      human_friendly_id: 'FAC0001',
+      name: 'Central Hospital',
+      facility_type: 'HOSPITAL',
+    });
+    repository.findCurrentSubscription.mockResolvedValue(null);
+    repository.findLookups.mockResolvedValue({
+      tenants: [],
+      facilities: [],
+      branches: [],
+    });
+    repository.countRows.mockResolvedValue(0);
+    repository.sumRows.mockResolvedValue(0);
+    repository.findRows.mockResolvedValue([]);
+    buildDashboardSummary.mockResolvedValueOnce({
+      roleProfile: { id: 'ward_manager', role: 'WARD_MANAGER', pack: 'nurse' },
+      summaryCards: [],
+    });
+
+    const result = await subject.getWorkspace(
+      { panel: 'overview' },
+      1,
+      20,
+      'updated_at',
+      'desc',
+      { role: 'WARD_MANAGER' }
+    );
+
+    expect(result.quick_action_ids).toEqual([
+      'record_vitals',
+      'publish_roster',
+      'run_report',
+    ]);
+  });
+
   it('returns normalized lookups collections', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'ready',

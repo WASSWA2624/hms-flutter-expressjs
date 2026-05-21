@@ -73,12 +73,10 @@ void main() {
 
     expect(find.text(l10n.appTitle), findsWidgets);
     expect(find.text(l10n.appStatusOnlineLabel), findsOneWidget);
-    expect(find.text(l10n.homeReadyTitle), findsOneWidget);
+    expect(find.text('Organization overview'), findsOneWidget);
+    expect(find.text('Today at a glance'), findsOneWidget);
+    expect(find.text('Quick actions'), findsOneWidget);
     expect(find.byType(AppLogo), findsOneWidget);
-
-    for (final String serviceArea in l10n.homeServiceAreas) {
-      expect(find.text(serviceArea), findsOneWidget);
-    }
   });
 
   testWidgets('renders the home screen at 320px width', (
@@ -97,10 +95,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final l10n = tester.element(find.byType(HomePage)).l10n;
-    final Scaffold scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+    final Scaffold scaffold = tester
+        .widgetList<Scaffold>(find.byType(Scaffold))
+        .singleWhere((Scaffold value) => value.drawer != null);
 
-    expect(find.text(l10n.homeReadyTitle), findsOneWidget);
+    expect(find.text('Organization overview'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(scaffold.drawer, isNotNull);
     expect(tester.takeException(), isNull);
@@ -122,9 +121,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final l10n = tester.element(find.byType(HomePage)).l10n;
-
-    expect(find.text(l10n.homeReadyTitle), findsOneWidget);
+    expect(find.text('Organization overview'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

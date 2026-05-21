@@ -33,6 +33,16 @@ const ROLE_PROFILE_IDS = Object.freeze({
   [ROLES.BIOMED]: 'biomed',
   [ROLES.HOUSE_KEEPER]: 'house_keeper',
   [ROLES.AMBULANCE_OPERATOR]: 'ambulance_operator',
+  [ROLES.UNIT_MANAGER]: 'unit_manager',
+  [ROLES.WARD_MANAGER]: 'ward_manager',
+  [ROLES.ICU_MANAGER]: 'icu_manager',
+  [ROLES.THEATRE_MANAGER]: 'theatre_manager',
+  [ROLES.HOUSEKEEPING_MANAGER]: 'housekeeping_manager',
+  [ROLES.BIOMED_MANAGER]: 'biomed_manager',
+  [ROLES.MORTUARY_STAFF]: 'mortuary_staff',
+  [ROLES.MORTUARY_MANAGER]: 'mortuary_manager',
+  [ROLES.PATIENT]: 'patient',
+  [ROLES.OTHER]: 'other',
 });
 
 const PROFILE_TO_PACK = Object.freeze({
@@ -51,6 +61,16 @@ const PROFILE_TO_PACK = Object.freeze({
   biomed: ROLE_PACKS.BIOMED,
   house_keeper: ROLE_PACKS.HOUSE_KEEPER,
   ambulance_operator: ROLE_PACKS.AMBULANCE_OPERATOR,
+  unit_manager: ROLE_PACKS.HR,
+  ward_manager: ROLE_PACKS.NURSE,
+  icu_manager: ROLE_PACKS.NURSE,
+  theatre_manager: ROLE_PACKS.OPERATIONS,
+  housekeeping_manager: ROLE_PACKS.HOUSE_KEEPER,
+  biomed_manager: ROLE_PACKS.BIOMED,
+  mortuary_staff: ROLE_PACKS.OPERATIONS,
+  mortuary_manager: ROLE_PACKS.OPERATIONS,
+  patient: ROLE_PACKS.OPERATIONS,
+  other: ROLE_PACKS.OPERATIONS,
 });
 
 const DASHBOARD_ALLOWLIST = Object.freeze({
@@ -141,8 +161,8 @@ const resolveEffectiveRole = (user = {}) => {
   }, null);
 };
 
-const resolveProfileId = (effectiveRole) => ROLE_PROFILE_IDS[effectiveRole] || 'operations';
-const resolvePackId = (profileId) => PROFILE_TO_PACK[profileId] || ROLE_PACKS.ADMIN;
+const resolveProfileId = (effectiveRole) => ROLE_PROFILE_IDS[effectiveRole] || 'other';
+const resolvePackId = (profileId) => PROFILE_TO_PACK[profileId] || ROLE_PACKS.OPERATIONS;
 
 const resolveScope = async (query = {}, user = {}, effectiveRole = null, repository = null) => {
   const userScope = {

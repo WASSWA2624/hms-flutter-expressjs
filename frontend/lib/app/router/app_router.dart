@@ -37,6 +37,7 @@ import 'package:hosspi_hms/features/discharge/presentation/pages/discharge_works
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/controllers/housekeeping_workspace_controller.dart';
@@ -129,7 +130,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.home.path,
             name: AppRoutes.home.name,
-            builder: (_, _) => const HomePage(),
+            builder: (_, GoRouterState state) => HomePage(
+              request: HomeDashboardRequest.fromQuery(
+                state.uri.queryParameters,
+              ),
+            ),
           ),
           GoRoute(
             path: AppRoutes.patients.path,

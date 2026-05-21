@@ -139,6 +139,63 @@ const QUICK_ACTION_IDS_BY_PACK = Object.freeze({
   [ROLE_PACKS.AMBULANCE_OPERATOR]: [],
 });
 
+const QUICK_ACTION_IDS_BY_PROFILE = Object.freeze({
+  super_admin: ['select_context', 'manage_subscription', 'run_report'],
+  tenant_admin: [
+    'new_patient',
+    'appointment',
+    'invoice',
+    'start_admission',
+    'lab_order',
+    'sale',
+    'report_equipment_issue',
+    'run_report',
+  ],
+  facility_admin: [
+    'new_patient',
+    'appointment',
+    'invoice',
+    'start_admission',
+    'report_maintenance_issue',
+    'report_equipment_issue',
+    'run_report',
+  ],
+  doctor: [
+    'start_consultation',
+    'lab_order',
+    'radiology_order',
+    'start_admission',
+    'record_vitals',
+  ],
+  nurse: ['record_vitals', 'start_admission'],
+  lab_tech: ['lab_order', 'run_report'],
+  radiology_tech: ['radiology_order', 'run_report'],
+  pharmacist: ['sale', 'run_report'],
+  receptionist: ['new_patient', 'appointment', 'invoice'],
+  billing: ['invoice', 'receive_payment', 'run_report'],
+  operations: [
+    'report_maintenance_issue',
+    'report_equipment_issue',
+    'cleaning_task',
+    'run_report',
+  ],
+  hr: ['staff_profile', 'publish_roster', 'run_report'],
+  biomed: ['report_equipment_issue', 'run_report'],
+  house_keeper: ['cleaning_task'],
+  ambulance_operator: ['dispatch_ambulance'],
+  unit_manager: ['publish_roster', 'run_report'],
+  ward_manager: ['record_vitals', 'publish_roster', 'run_report'],
+  icu_manager: ['record_vitals', 'report_equipment_issue', 'run_report'],
+  theatre_manager: ['report_equipment_issue', 'publish_roster', 'run_report'],
+  housekeeping_manager: ['cleaning_task', 'publish_roster', 'run_report'],
+  biomed_manager: ['report_equipment_issue', 'run_report'],
+  mortuary_staff: ['mortuary_case'],
+  mortuary_manager: ['release_authorisation', 'mortuary_case', 'run_report'],
+});
+
+const resolveQuickActionIds = (profileId, packId) =>
+  QUICK_ACTION_IDS_BY_PROFILE[profileId] || QUICK_ACTION_IDS_BY_PACK[packId] || [];
+
 const startOfDay = (value = new Date()) => {
   const date = new Date(value);
   date.setHours(0, 0, 0, 0);
@@ -1395,7 +1452,7 @@ const getWorkspace = async (
     },
     panel_summaries: panelSummaries,
     status_strip: buildStatusStrip(baseSummary),
-    quick_action_ids: QUICK_ACTION_IDS_BY_PACK[packId] || [],
+    quick_action_ids: resolveQuickActionIds(baseSummary.roleProfile?.id, packId),
     overview: {
       hero: {
         role_profile_id: baseSummary.roleProfile?.id || 'operations',

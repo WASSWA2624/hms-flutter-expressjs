@@ -436,6 +436,16 @@ describe('Dashboard Widget Service', () => {
         ['BIOMED', 'biomed'],
         ['HOUSE_KEEPER', 'house_keeper'],
         ['AMBULANCE_OPERATOR', 'ambulance_operator'],
+        ['UNIT_MANAGER', 'unit_manager'],
+        ['WARD_MANAGER', 'ward_manager'],
+        ['ICU_MANAGER', 'icu_manager'],
+        ['THEATRE_MANAGER', 'theatre_manager'],
+        ['HOUSEKEEPING_MANAGER', 'housekeeping_manager'],
+        ['BIOMED_MANAGER', 'biomed_manager'],
+        ['MORTUARY_STAFF', 'mortuary_staff'],
+        ['MORTUARY_MANAGER', 'mortuary_manager'],
+        ['PATIENT', 'patient'],
+        ['OTHER', 'other'],
       ];
 
       dashboardWidgetRepository.getDashboardSummaryByPack.mockResolvedValue({
