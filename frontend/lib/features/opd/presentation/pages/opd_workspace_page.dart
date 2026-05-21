@@ -3716,6 +3716,7 @@ class RecordVitalsDialog extends ConsumerStatefulWidget {
 }
 
 class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _chiefComplaintController;
   late final TextEditingController _symptomsController;
   late final TextEditingController _allergiesController;
@@ -3742,6 +3743,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   bool _isLoadingProviders = false;
   bool _isSaving = false;
   AppFailure? _failure;
+  String? _formErrorText;
 
   @override
   void initState() {
@@ -3825,10 +3827,14 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       scrollable: true,
       closeEnabled: !_isSaving,
       maxWidth: 780,
-      content: AppFormSection(
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
         density: AppFormSectionDensity.compact,
+        formStatus: _failure == null
+            ? null
+            : AppFailureStateView(failure: _failure!, body: _formErrorText),
         children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
           OpdActionContextPanel(flow: widget.flow, showTitle: false),
           if (!editingVitals) _triagePrioritySection(context),
           _vitalsSection(context),
@@ -4043,28 +4049,52 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   }
 
   Future<void> _submit() async {
+    final l10n = context.l10n;
+    if (!validateAndSaveAppForm(_formKey)) {
+      setState(() {
+        _failure = AppFailure.validation();
+        _formErrorText = l10n.errorValidationMessage;
+      });
+      return;
+    }
     final List<Map<String, Object?>> vitals = _vitalsPayload();
     if (vitals.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
+      setState(() {
+        _failure = AppFailure.validation(
+          validationFields: const <String>{'vitals'},
+        );
+        _formErrorText = l10n.opdVitalsAtLeastOneRequiredHelper;
+      });
       return;
     }
     if (!_hasCompleteBloodPressureInput()) {
-      setState(() => _failure = AppFailure.validation());
+      setState(() {
+        _failure = AppFailure.validation(
+          validationFields: const <String>{'blood_pressure'},
+        );
+        _formErrorText = l10n.errorValidationMessage;
+      });
       return;
     }
     final bool editingVitals = widget.editing && widget.detail != null;
     if (!editingVitals &&
         _routeDecision == 'CONSULTATION' &&
         !_isNonEmpty(_providerId ?? widget.flow.providerUserId)) {
-      setState(() => _failure = AppFailure.validation());
+      setState(() {
+        _failure = AppFailure.validation(
+          validationFields: const <String>{'provider_user_id'},
+        );
+        _formErrorText = l10n.validationRequired;
+      });
       return;
     }
 
     setState(() {
       _isSaving = true;
       _failure = null;
+      _formErrorText = null;
     });
-    final String triageNotes = _triageNotesPayload(context.l10n);
+    final String triageNotes = _triageNotesPayload(l10n);
     final AppFailure? failure = editingVitals
         ? await ref
               .read(opdWorkspaceControllerProvider.notifier)
@@ -4085,6 +4115,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     if (failure != null) {
       setState(() {
         _failure = failure;
+        _formErrorText = null;
         _isSaving = false;
       });
       return;
@@ -4108,6 +4139,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       if (routeFailure != null) {
         setState(() {
           _failure = routeFailure;
+          _formErrorText = null;
           _isSaving = false;
         });
         return;
@@ -4140,8 +4172,8 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
       'TEMPERATURE',
       _selectedTemperatureUnit,
     );
-    final String systolic = _systolicController.text.trim();
-    final String diastolic = _diastolicController.text.trim();
+    final String systolic = normalizeCurrencyAmount(_systolicController.text);
+    final String diastolic = normalizeCurrencyAmount(_diastolicController.text);
     if (systolic.isNotEmpty && diastolic.isNotEmpty) {
       final String systolicValue = _bloodPressurePayloadValue(
         _systolicController,
@@ -4264,8 +4296,12 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   }
 
   bool _hasCompleteBloodPressureInput() {
-    final bool hasSystolic = _systolicController.text.trim().isNotEmpty;
-    final bool hasDiastolic = _diastolicController.text.trim().isNotEmpty;
+    final bool hasSystolic = normalizeCurrencyAmount(
+      _systolicController.text,
+    ).isNotEmpty;
+    final bool hasDiastolic = normalizeCurrencyAmount(
+      _diastolicController.text,
+    ).isNotEmpty;
     return hasSystolic == hasDiastolic;
   }
 

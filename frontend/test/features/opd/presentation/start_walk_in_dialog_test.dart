@@ -361,6 +361,59 @@ void main() {
     },
   );
 
+  testWidgets('RecordVitalsDialog explains empty vital submission', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+
+    when(() => opdRepository.listProviders()).thenAnswer(
+      (_) async =>
+          const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [opdRepositoryProvider.overrideWithValue(opdRepository)],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const Scaffold(
+            body: RecordVitalsDialog(
+              flow: OpdFlowSummary(
+                id: 'encounter-1',
+                publicId: 'ENC000001',
+                stage: 'WAITING_VITALS',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.widgetWithText(
+        AppFailureStateView,
+        'Enter at least one vital sign.',
+      ),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Record vitals').last);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.widgetWithText(
+        AppFailureStateView,
+        'Enter at least one vital sign.',
+      ),
+      findsOneWidget,
+    );
+    verifyNever(() => opdRepository.recordTriageVitals(any(), any()));
+  });
+
   testWidgets('DoctorReviewDialog shows the triage summary notes', (
     WidgetTester tester,
   ) async {
