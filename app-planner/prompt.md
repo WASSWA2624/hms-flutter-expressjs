@@ -1,362 +1,365 @@
-﻿# HMS OPD Screen + Active Encounter Workflow Refactor
-
-You are working in the HMS/HOSSPI codebase from `hms.zip`.
-
-Project structure:
-- `frontend/` — Flutter app using Riverpod, Dio, GoRouter, shared UI components.
-- `backend/` — Node.js/Express/Prisma/MySQL backend.
-- `app-planner/` — planning/reference docs only unless a documented update is needed.
-
-No OPD-specific screenshots were included in the archive, so use the current OPD UI and the written requirements below as the source of truth.
-
-## Main goal
-
-Refactor and test the OPD workflow so that OPD records, appointments, queues, triage, active encounters, and patient-module OPD actions behave consistently, persist correctly to the database, and use the shared clinical/action/printing components already available in the codebase.
-
-Important existing frontend areas:
-- `frontend/lib/features/opd/presentation/pages/opd_workspace_page.dart`
-- `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
-- `frontend/lib/shared/components/opd_encounter_dialog.dart`
-- `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart`
-- `frontend/lib/shared/clinical_actions/clinical_order_action_dialogs.dart`
-- `frontend/lib/shared/printing/`
-- `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart`
-
-Important backend areas:
-- `backend/src/modules/opd-flow/`
-- `backend/src/lib/opd-active-encounter.js`
-- related patient, appointment, queue, billing, lab, pharmacy, referral, follow-up, and provider/doctor modules.
-
----
-
-## 1. Preserve working OPD summary cards
-
-The OPD button/cards are currently working and should not regress:
-
-- All OPD records
-- Queue
-- Triage
-- Active flows
-- Any existing arrivals/appointments summary card
-- Refresh
-- Start OPD Encounter
-
-When these cards are clicked, the OPD table must continue updating correctly.
+﻿You are working in the HMS codebase whose main folders are:
 
-Do not redesign these cards unless required for consistency. Keep their current filtering behavior.
-
----
-
-## 2. Fix provider search in “Start OPD Encounter”
-
-In `OpdEncounterDialog`, the provider search currently shows duplicate providers and displays internal IDs.
-
-Observed issue:
-- A provider such as `Jordan / Jordani Demo Demo` appears more than once.
-- Internal UID/HFID/UUID/staff-profile identifiers are visible in the provider search result.
-
-Required behavior:
-- Each provider must appear only once.
-- Provider results must show human-readable details only:
-  - provider display name
-  - role/position/title
-  - practitioner type
-  - facility/department when useful
-- Do not display internal IDs, UUIDs, human-friendly IDs, `staff_profile_id`, `providerUserId`, or raw API IDs in visible UI labels/subtitles.
-- Do not use internal IDs as fallback display text. If the name is missing, show a safe fallback like `Unknown provider`.
-- Deduplicate providers across:
-  - provider list API results
-  - provider schedules
-  - any fallback schedule-based provider options
-- Prefer the canonical provider/doctor record over a schedule fallback when both point to the same person.
-
-Also check the backend provider/doctor response if duplicates originate from the API. Fix uniqueness at the correct layer, not only visually.
-
-Acceptance test:
-- Searching for `Jordan` or `Jordani Demo` shows the provider once.
-- No internal ID is visible in the provider dropdown.
-
----
-
-## 3. Change active encounter behavior
-
-Current bad behavior:
-- When an existing patient already has an active OPD encounter, the dialog shows/open action like “Open Active Encounter”.
-- Clicking it takes the user back to the OPD screen and does not clearly update or open the active encounter.
-- Provider, billing, routing, and related changes are not reliably persisted.
-
-Required behavior:
-- If the selected patient already has a running active OPD encounter, do not create a new encounter.
-- Replace the “Open Active Encounter” action with a clearer action:
-  - `Update Encounter`
-  - or `Update Active Encounter`
-- Submitting this action must update the existing active encounter, not start a duplicate encounter.
-- Persist changed values to the database, including where applicable:
-  - assigned provider/doctor
-  - routing/stage/queue context
-  - appointment linkage
-  - billing/consultation fee/payment requirement/payment state
-  - notes/reason/visit context
-  - payer/payment method where supported
-- Update the UI immediately after success:
-  - selected active encounter state
-  - OPD table row
-  - summary counts
-  - action dialog/context panel
-- Do not fake success with frontend-only state changes.
-
-After updating an active encounter:
-- Either open the unified OPD action dialog for that active encounter, or keep the user in a clearly updated active encounter state.
-- Do not simply close/pop back to the OPD list without showing what happened.
-
-Backend requirement:
-- Add or update an OPD endpoint/service method if needed for active encounter context updates.
-- Keep duplicate active encounter prevention at backend/service/database level.
-- Reuse the existing active encounter instead of creating another one.
-
----
-
-## 4. Remove redundant modal-close “Cancel” buttons in OPD dialogs
-
-In OPD start/action shell dialogs, remove `Cancel` buttons whose only purpose is closing the dialog.
-
-Required behavior:
-- Use the existing dialog header close button.
-- Pressing `Esc` must close the OPD dialog when no save/submission is in progress.
-- Do not remove real business actions such as “Cancel appointment”. Only remove redundant modal-close cancel buttons.
-- Prevent double-submit while saving.
+* `app-planner/`
+* `backend/`
+* `frontend/`
 
-Apply this to:
-- Start OPD Encounter dialog
-- OPD action shell/dialogs where the secondary cancel button only closes the modal
-
-Do not globally remove valid cancel actions from unrelated workflows.
-
----
-
-## 5. Unify OPD row click dialogs
-
-Current bad behavior:
-- Appointment patients, queue patients, triage patients, and active flow patients open different dialogs.
-- Appointment patients get a different dialog from active OPD patients.
-- This confuses users.
-
-Required behavior:
-- All OPD patient rows must open the same unified OPD patient/action dialog.
-- This applies to:
-  - appointment rows
-  - queue rows
-  - triage rows
-  - active flow rows
-  - all OPD records
-- Do not create separate confusing dialogs for appointment vs queue vs active flow patients.
-- If an action is not currently available, keep it visible but disabled with a clear reason.
-- If an action is already completed, keep it visible and mark it as done/completed.
-- Do not hide actions merely because the patient is in a different OPD state.
-
-The unified dialog must show consistent actions such as:
-- Update encounter
-- Update consultation/billing
-- Record/update vitals
-- Assign/change provider
-- Start/update consultation
-- Add diagnosis
-- Request lab
-- Request radiology
-- Prescribe
-- Add procedure
-- Refer
-- Follow up
-- Correct stage
-- Disposition
-- Print
-
-Appointment-specific actions such as queue/check-in/reschedule/cancel appointment may remain, but they must be presented inside the same unified dialog pattern.
-
-Queue-specific actions such as prioritize/move queue/start consultation may remain, but they must also be presented inside the same unified dialog pattern.
-
-Security note:
-- Preserve permission checks.
-- For authorized users, do not hide actions just because the current state makes them inactive; show disabled/done status instead.
-
----
-
-## 6. Use shared clinical/action components
-
-Do not create duplicate custom dialogs where shared components already exist.
-
-Diagnosis:
-- Use the shared diagnosis/catalog dialog already defined in the shared clinical components.
-- It must expose the predefined diagnosis fields/options.
-- It must save/update against the active OPD encounter.
-
-Lab:
-- Use the shared lab request/order component.
-- Lab requests must attach to the active encounter and persist to the backend.
-
-Radiology:
-- Use the shared radiology order component where available.
-
-Prescription:
-- Verify prescribing works end-to-end.
-- Preserve shared prescription/drug selection behavior.
-
-Procedure:
-- Ensure procedure creation/update works and is persisted.
-
-Referral:
-- Ensure referral works and persists.
-
-Follow-up:
-- Ensure follow-up works and persists.
-
-Print:
-- Use the shared printing components under `frontend/lib/shared/printing/`.
-- Do not implement a one-off print layout for OPD.
-- Printing should reflect current encounter data.
-
-Catalog search behavior:
-- If the user searches for a diagnosis/lab/procedure/radiology/drug item and it does not exist, provide an appropriate “add new” path where the module supports it.
-- Persist newly added catalog items through the backend, not temporary frontend-only state.
-
----
-
-## 7. Patient module must use the same OPD action model
-
-In the Patients module, patient detail/quick actions must be consistent with OPD.
-
-Required behavior:
-- Opening a patient from the patient registry must expose the same OPD action set/pattern used in the OPD workspace.
-- Do not show a different OPD dialog under Patients.
-- If the patient has an active OPD encounter:
-  - show/update that active encounter
-  - do not create a duplicate encounter
-- If no OPD encounter exists:
-  - allow OPD check-in/start encounter
-  - keep downstream actions visible but disabled until an encounter exists
-- Completed actions should be marked done.
-- Users should be able to revisit/update previous OPD actions where clinically valid.
-
----
-
-## 8. Realtime UI/database consistency
-
-Every OPD action mutation must update both database and UI.
-
-After each mutation, refresh or patch:
-- active encounter details
-- selected flow
-- table row
-- summary card counts
-- related appointment/queue/triage state
-- patient registry active encounter status where relevant
-
-No stale UI should remain after:
-- updating encounter provider/routing/billing
-- paying/updating consultation billing
-- recording vitals
-- assigning provider
-- doctor review
-- adding diagnosis
-- requesting lab/radiology
-- prescribing
-- adding procedure
-- referral
-- follow-up
-- correcting stage
-- disposition
-- printing/logging print event where applicable
-
-Prefer targeted refresh/patching rather than full unnecessary workspace reloads.
-
----
-
-## 9. Backend requirements
-
-Implement backend changes cleanly through the existing architecture.
+Implement the role-based dashboard redesign shown in the attached dashboard screenshots. The dashboard must render the correct dashboard for the signed-in user’s account/role, use real database-backed data, and update when relevant backend data changes.
+
+## Core problem
+
+The current home dashboard is too generic. Redesign and connect the dashboards for these account types:
+
+* Super Admin
+* Tenant Admin
+* Facility Admin
+* Doctor
+* Nurse
+* Lab
+* Pharmacy
+* Reception
+* Billing
+* Operations
+* HR
+* Biomedical
+* Housekeeping
+* Ambulance
+* Patient Portal
+
+Each dashboard must visually match the provided screenshots as closely as possible while preserving the existing HMS Flutter architecture and backend dashboard workspace design.
+
+Do not hardcode screenshot values. Use the screenshot values only as design/content examples. Actual counts, queues, alerts, activity, trends, and distributions must come from the database through the backend.
+
+## Relevant project areas to inspect and modify
+
+### Frontend
+
+Inspect and modify only where required:
+
+* `frontend/lib/features/home/`
+
+  * `data/dtos/home_dashboard_dtos.dart`
+  * `data/repositories/home_repository_impl.dart`
+  * `domain/entities/home_dashboard.dart`
+  * `domain/entities/home_dashboard_profiles.dart`
+  * `domain/repositories/home_repository.dart`
+  * `presentation/controllers/home_controller.dart`
+  * `presentation/pages/home_page.dart`
+* `frontend/lib/core/network/api_endpoints.dart`
+* `frontend/lib/core/permissions/access_policy.dart`
+* `frontend/lib/core/realtime/`
+
+  * `realtime_refresh.dart`
+  * `realtime_event_groups.dart`
+  * `realtime_events.dart`
+* `frontend/lib/shared/layout/`
+* `frontend/lib/shared/components/`
+* `frontend/lib/app/router/app_router.dart`
+
+Reuse the existing `HomePage`, `homeControllerProvider`, `HomeDashboardRequest`, `HomeDashboardProfile`, `AppWorkspaceHeader`, shared layout, responsive shell, theme, buttons, panels, and permission patterns wherever possible.
+
+### Backend
+
+Inspect and modify only where required:
+
+* `backend/src/modules/dashboard-workspace/`
+
+  * `routes/dashboard-workspace.routes.js`
+  * `controllers/dashboard-workspace.controller.js`
+  * `services/dashboard-workspace.service.js`
+  * `repositories/dashboard-workspace.repository.js`
+  * `schemas/dashboard-workspace.schema.js`
+* `backend/src/lib/dashboard/summary.js`
+* `backend/src/config/roles.js`
+* `backend/src/lib/websocket/`
+* `backend/docs/api/v1/openapi.yaml`
+
+The existing backend already has dashboard workspace concepts such as role profiles, summary cards, quick actions, queue previews, alerts, activity, insights, and role packs. Extend these instead of replacing them.
+
+### App planner
+
+Use these files as implementation guidance:
+
+* `app-planner/dev-plan/10-workspace-ui.md`
+* `app-planner/dev-plan/35-reports-audit.md`
+* `app-planner/dev-plan/37-quality-release.md`
+* `app-planner/app-write-up.md`
+
+Follow the planner rules: dashboards must be clear, responsive, role-aware, not congested, and must use backend summaries or targeted queries rather than client-side counting of large datasets.
+
+## Architecture and style rules
+
+Preserve the current:
+
+* Folder structure
+* Naming conventions
+* Flutter/Riverpod architecture
+* Backend service/controller/repository structure
+* Role and permission model
+* Shared UI shell and theme
+* Existing route structure
+* Existing responsive layout approach
+
+Do not perform unrelated rewrites, broad refactors, or visual changes outside the dashboard task.
+
+Modify only the files required for this change.
+
+## Required dashboard UI/UX
+
+Implement a common dashboard layout matching the screenshots.
+
+### Common layout
+
+Each role dashboard must include:
+
+1. Existing HMS app shell with top bar and side navigation.
+2. Role-specific page header:
+
+   * Role icon/initial tile
+   * Dashboard title
+   * Role/status pill
+   * Refresh button
+3. Hero panel:
+
+   * Short role-specific description
+   * Facility/tenant/branch/scope context
+   * “Live dashboard” style badge
+   * Dynamic “Updated …” timestamp from backend `generated_at`
+4. “Today at a glance” summary cards:
+
+   * Rounded cards
+   * Small icon/initial tile
+   * Metric label
+   * Large metric value
+   * Color-coded values for normal, success, warning, and critical states
+5. Quick actions:
+
+   * Compact outlined action buttons
+   * Small icon/initial tile
+   * Role-specific actions
+   * Wrap cleanly on smaller screens
+6. Main content:
+
+   * Left trend chart panel
+   * Right distribution/donut panel
+   * Action queue panel
+   * Alerts/insights panel
+   * Recent activity panel
+
+### Responsive behavior
+
+Match the screenshots:
+
+| Screen size | Required behavior                                                                                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop     | Persistent left navigation, wide dashboard content, summary cards in one row where possible, trend chart left and donut panel right, queue left and alerts/activity right. |
+| Tablet      | Left navigation remains visible, cards wrap into fewer columns, charts and panels adapt without overflow.                                                                  |
+| Mobile      | No persistent side nav, compact header, cards in two columns where possible, quick actions wrap, charts and panels stack vertically, no horizontal scrolling.              |
+
+Verify against these viewport sizes:
+
+* `390x844`
+* `1024x768`
+* `1440x1024`
+* Also verify the larger doctor/nurse/lab screenshot proportions where applicable.
+
+## Role-specific dashboard content
+
+Use these labels, sections, and actions as the written source of truth from the screenshots. Values must be dynamic and database-backed.
+
+| Role           | Dashboard title                | Summary cards                                                                                                                                            | Quick actions                                                                                                          | Main panels                                                                                                          |
+| -------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Super Admin    | Platform command center        | Tenants active, Facilities active, Subscriptions at risk, Module entitlement issues, Security reviews due, Integration/API errors                        | Select tenant/facility, Create tenant, Create facility, Manage subscription, Review audit, Run report                  | Platform signal trend, Tenant mix donut, Platform review queue, Alerts and insights, Recent activity                 |
+| Tenant Admin   | Organization overview          | Facilities active, Active users, Module adoption, Organization patient flow, Organization revenue, Staffing exceptions                                   | Create facility, Manage users and roles, Manage subscription, Add staff profile, Run report, Review audit              | Facilities performance trend, Module adoption donut, Organization action queue, Alerts and insights, Recent activity |
+| Facility Admin | Facility operations dashboard  | Patient flow today, Appointments today, Active admissions, Occupied beds, Billing exceptions, Operational blockers                                       | Register patient, Book appointment, Check in patient, Create maintenance request, Report equipment issue, Run report   | OPD flow by hour, Bed readiness donut, Facility operations queue, Alerts and insights, Recent activity               |
+| Doctor         | Clinical worklist              | Assigned consultations, Consultations in progress, Completed consultations, Active admissions, Critical lab signals, OPD notifications pending attention | Start consultation, Continue consultation, Write clinical note, Record vitals, Order lab, Order radiology              | Consultation trend, Patient acuity mix, Clinical action queue, Critical attention/alerts, Recent activity            |
+| Nurse          | Nursing work dashboard         | Active inpatients, Medication administrations today, Transfer queue, Critical lab signals, Discharge pressure, OPD notifications pending attention       | Record vitals, Mark medication administered, Create handover, Route patient                                            | Medication rounds trend, Ward distribution, Nursing action queue, Alerts and insights, Recent activity               |
+| Lab            | Laboratory queue               | Lab orders today, Orders in process, Pending results, Critical results, Completed orders                                                                 | Receive sample, Enter lab result, Flag critical lab, Run report                                                        | Sample throughput trend, Test mix donut, Laboratory action queue, Alerts and insights, Recent activity               |
+| Pharmacy       | Pharmacy workload              | Medication orders today, Pending dispense workload, Dispensed today, Low stock pressure, Critical stock pressure                                         | Dispense medication, Record pharmacy sale, Receive pharmacy stock, Adjust pharmacy stock, Run report                   | Dispensing throughput trend, Stock pressure donut, Pharmacy action queue, Alerts and insights, Recent activity       |
+| Reception      | Front desk dashboard           | Registrations today, Appointment desk queue, No-show pressure, Front billing queue, Appointments today, OPD notifications pending attention              | Register patient, Book appointment, Check in patient, Route patient                                                    | Front desk arrivals trend, Queue mix donut, Front desk action queue, Alerts and insights, Recent activity            |
+| Billing        | Billing workbench              | Invoices issued today, Overdue invoices, Open balances, Collections today, Refunds today                                                                 | Create invoice, Receive payment, Process refund, Close shift, Run report                                               | Collections trend, Revenue mix donut, Billing action queue, Alerts and insights, Recent activity                     |
+| Operations     | Operations readiness dashboard | Occupied beds, Total beds, Open maintenance requests, Low stock pressure, Housekeeping backlog, Facility readiness                                       | Create maintenance request, Assign maintenance, Update bed readiness, Report equipment issue, Review audit, Run report | Facility readiness trend, Bed readiness mix donut, Operations action queue, Alerts and insights, Recent activity     |
+| HR             | Workforce dashboard            | Active staff profiles, Shifts today, Pending leave approvals, Staffing backlog, Unassigned shifts, Attendance rate                                       | Add staff profile, Review leave, Create shift, Publish roster, Approve roster, Run report                              | Staffing coverage trend, Workforce mix donut, Workforce action queue, Alerts and insights, Recent activity           |
+| Biomedical     | Biomedical service queue       | Open work orders, Open incidents, Active downtime events, Critical service-risk indicators, High-priority work orders, Assets operational                | Acknowledge work order, Update work order, Report equipment issue, Log calibration, Schedule maintenance, Run report   | Equipment service trend, Asset service status donut, Biomedical service queue, Alerts and insights, Recent activity  |
+| Housekeeping   | My cleaning tasks              | Pending tasks, Tasks in progress, Overdue tasks, Tasks completed today, Completion throughput                                                            | Start cleaning task, Complete cleaning task, Mark cleaning blocked                                                     | Cleaning throughput trend, Task mix donut, Housekeeping action queue, Alerts and insights, Recent activity           |
+| Ambulance      | Ambulance dispatch board       | Dispatches today, Active trips, Critical emergencies, Fleet available, Fleet out of service                                                              | Dispatch ambulance, Update trip status, Record emergency handover                                                      | Dispatch response trend, Fleet readiness donut, Ambulance action queue, Alerts and insights, Recent activity         |
+| Patient Portal | My care dashboard              | My upcoming appointments, My open bills, My prescriptions, My released results, My messages, My profile status                                           | Update own profile, View my care, Contact facility                                                                     | Care activity trend, Care summary donut, My care updates, Alerts and insights, Recent activity                       |
+
+Keep existing support for roles that are already in the codebase but are not represented in the screenshots, such as radiology, managers, mortuary roles, and other valid roles. Do not remove or break them. If no screenshot exists for a role, preserve the existing profile or provide a safe fallback consistent with the existing architecture.
+
+## Data and backend requirements
+
+1. Use the existing dashboard workspace endpoint and service architecture as the primary data source.
+2. Extend backend dashboard responses only as needed to support:
+
+   * Summary cards
+   * Trend chart data
+   * Distribution/donut segments
+   * Action queue rows
+   * Alerts/insights
+   * Recent activity
+   * Hero/context metadata
+   * Quick action IDs
+3. Use targeted Prisma/database queries and aggregates on the backend.
+4. Do not count large datasets on the Flutter client.
+5. Scope all data correctly by role, tenant, facility, branch, department, staff profile, and patient where applicable.
+6. Patient Portal must only show the signed-in patient’s own care data.
+7. Prevent cross-tenant, cross-facility, and cross-patient data leakage.
+8. Display empty states only when the database truly has no matching records.
+9. Avoid static/demo fallback values for authenticated live dashboards.
+10. Preserve tenant-context-required behavior where applicable.
+11. Update OpenAPI docs if the dashboard response schema changes.
+
+Important backend note: the existing dashboard workspace route currently excludes some roles such as `PATIENT`. Verify the current authorization and route behavior. If Patient Portal is not supported by the current endpoint, implement secure patient dashboard support using the existing dashboard architecture or a patient-safe equivalent endpoint. Do not expose admin/facility data to patients.
+
+## Real-time update requirements
+
+Dashboards must stay current when underlying data changes.
+
+Implement real-time refresh using the existing frontend real-time infrastructure:
+
+* `listenForRealtimeRefresh`
+* `RealtimeEventGroups`
+* `RealtimeEvents`
+
+Use relevant existing event groups such as appointments, OPD flow, admissions, diagnostics, pharmacy, billing, emergency, operations, HR, housekeeping, biomedical, communications, patient registry, and related workspace events.
 
 Requirements:
-- Prevent duplicate active OPD encounters for the same patient.
-- Reuse/update running active encounters when requested.
-- Add an explicit update-active-encounter/context endpoint if existing endpoints are insufficient.
-- Ensure appointment-linked and queue-linked encounters remain correctly linked.
-- Ensure billing/provider/stage updates are transactional where needed.
-- Write audit/timeline/activity entries for meaningful OPD changes.
-- Ensure API responses return enough updated data for the frontend to refresh accurately.
-- Do not expose internal IDs unnecessarily in provider-facing display fields.
 
----
+1. `homeControllerProvider(request)` must refresh when relevant real-time events arrive.
+2. Refresh should be debounced to avoid excessive reloads.
+3. Refresh should respect current tenant/facility/branch/patient scope where payload scope is available.
+4. Manual refresh button must still work.
+5. `generated_at` must update after successful reload.
 
-## 10. Testing requirements
+Only add new real-time event constants/groups if existing ones cannot support the dashboard refresh cleanly.
 
-Perform full backend, frontend, and end-to-end testing. Modify/reset local test data as needed.
+## Frontend implementation requirements
 
-Backend:
-- Run existing backend tests.
-- Add/update tests for:
-  - provider uniqueness
-  - no duplicate active OPD encounter creation
-  - updating an active encounter instead of opening/duplicating it
-  - billing/consultation update persistence
-  - provider assignment update persistence
-  - OPD action mutations
-  - appointment/queue/triage/flow state consistency
+1. Extend `HomeDashboard` entities and DTOs only as needed for chart/distribution/panel data.
+2. Keep `HomeDashboardProfile` role mappings compatible with existing `AppRole` values.
+3. Add missing quick-action definitions only when required by the screenshots.
+4. Quick actions must navigate to existing valid HMS routes where available.
+5. If a destination route does not exist, keep the action disabled or route to the safest existing relevant workspace; do not invent unrelated screens.
+6. Reuse existing shared components before creating new ones.
+7. If chart widgets are needed, add small, maintainable Flutter widgets in the home feature or shared components only if reusable.
+8. Do not introduce a large chart dependency unless the project already uses one.
+9. Ensure all dashboard text is user-friendly and does not expose backend/internal terminology.
+10. Ensure loading, error, empty, and offline states remain polished.
+11. Ensure accessibility labels/semantics for dashboard cards, buttons, and charts.
+12. Fix the quick actions overflow/wrapping behavior on mobile.
+13. If editing current quick action rendering, verify the existing `skip(4).skip(4)` behavior and correct it if it incorrectly hides actions.
 
-Frontend:
-- Add/update tests for:
-  - provider dropdown deduplication
-  - no internal IDs visible in provider search
-  - active encounter shows `Update Encounter`
-  - active encounter update persists and refreshes UI
-  - appointment/queue/triage/active rows open the same unified OPD dialog
-  - inactive actions remain visible but disabled
-  - completed actions are marked done
-  - Esc closes OPD dialogs
-  - redundant modal-close Cancel buttons are removed
+## Backend implementation requirements
 
-Manual E2E:
-- Start app and backend locally.
-- Login with seeded/demo users if available.
-- Test:
-  - existing patient without active encounter
-  - existing patient with active encounter
-  - appointment patient
-  - queue patient
-  - triage patient
-  - active flow patient
-  - provider search
-  - billing update
-  - diagnosis/lab/prescription/procedure/referral/follow-up
-  - patient registry OPD actions
-  - print workflow
+1. Keep controller/route/service/repository responsibilities separated.
+2. Extend `ROLE_PACKS`, role profiles, and role summary builders consistently.
+3. Add or update repository aggregate methods for missing metrics.
+4. Ensure dashboard metrics come from real tables already used by the HMS modules.
+5. Do not create duplicate dashboard logic in unrelated modules.
+6. Preserve existing authorization middleware and strengthen it where needed.
+7. Keep response payloads stable where possible to avoid breaking existing frontend code.
+8. Add schema validation for any new query or response fields.
+9. Keep all currency, percentage, and count formatting consistent with existing dashboard conventions.
+10. Ensure dashboard queries are efficient and safe for production-sized datasets.
 
-Use the project’s existing scripts where applicable, for example:
-- Backend: `npm install`, `npm run test:backend`, `npm run test:backend:unit`, `npm run test:backend:integration`, `npm run validate`
-- Frontend: `flutter pub get`, `dart run build_runner build --delete-conflicting-outputs`, `flutter analyze`, `flutter test`
-- Run browser/manual testing with the existing Flutter web configuration.
+## Testing and verification
 
-Install missing test tools/dependencies only when necessary and keep changes minimal.
+Run and/or add tests as appropriate.
 
----
+### Frontend
 
-## 11. Acceptance criteria
+Verify:
 
-The work is complete only when:
+* `flutter analyze`
+* `flutter test`
+* Dashboard DTO parsing for new response fields
+* Role-to-dashboard rendering for all screenshot roles
+* Responsive rendering at mobile, tablet, and desktop sizes
+* No Flutter overflow warnings
+* Refresh button reloads data
+* Real-time events reload the dashboard
+* Empty/error/loading states render correctly
 
-1. OPD summary cards still filter the table correctly.
-2. Provider search shows each provider once.
-3. Provider search never exposes internal UID/UUID/HFID/staff-profile IDs.
-4. Existing patient prefill still works.
-5. Appointment patient prefill still works.
-6. Patients with active encounters show `Update Encounter`, not `Open Active Encounter`.
-7. Updating an active encounter persists provider/routing/billing changes to the database.
-8. Updating an active encounter does not create a duplicate OPD encounter.
-9. Appointment, queue, triage, active flow, and all OPD rows open one consistent OPD action dialog.
-10. The Patients module uses the same OPD action model.
-11. Actions are visible consistently; inactive actions are disabled, completed actions are marked done.
-12. Diagnosis, lab, radiology, prescription, procedure, referral, follow-up, correct stage, billing, and print actions work end-to-end.
-13. Shared clinical and print components are used instead of duplicate one-off dialogs.
-14. Redundant modal-close Cancel buttons are removed from OPD shell dialogs.
-15. Esc closes OPD dialogs safely.
-16. Backend and frontend tests pass.
-17. Manual E2E testing confirms database and UI stay synchronized.
+### Backend
+
+Verify:
+
+* Existing backend test command
+* Existing lint command if available
+* Dashboard workspace endpoint returns correct role-specific payloads
+* Role scoping and authorization are correct
+* Patient portal cannot access another patient’s data
+* Tenant/facility users cannot access data outside their scope
+* Aggregates update when database records change
+* OpenAPI docs remain valid if updated
+
+### End-to-end verification
+
+Test login and dashboard rendering for:
+
+* Super Admin
+* Tenant Admin
+* Facility Admin
+* Doctor
+* Nurse
+* Lab
+* Pharmacy
+* Reception
+* Billing
+* Operations
+* HR
+* Biomedical
+* Housekeeping
+* Ambulance
+* Patient
+
+For each role, verify:
+
+1. Correct dashboard title and content.
+2. Correct quick actions.
+3. Real database values appear.
+4. Manual refresh updates values.
+5. Relevant database changes update the dashboard through real-time refresh.
+6. UI matches the screenshots across desktop, tablet, and mobile.
+7. No unrelated role data is visible.
+
+## Scope limits
+
+Do not:
+
+* Rewrite the app shell.
+* Rewrite authentication.
+* Rewrite routing globally.
+* Replace the dashboard workspace architecture.
+* Add unrelated modules.
+* Refactor unrelated screens.
+* Change database schema unless absolutely necessary.
+* Hardcode screenshot demo values.
+* Modify screenshots or planner files unless required.
+* Remove support for existing roles not shown in the screenshots.
+* Touch files unrelated to the dashboard implementation.
+
+Modify only the files required for this requested change.
+
+## Delivery requirements
+
+Return a zipped archive containing only the files and folders that were created or updated.
+
+All files must be placed in their correct relative project directories, for example:
+
+* `frontend/lib/...`
+* `backend/src/...`
+* `backend/docs/...`
+* `app-planner/...`
+
+If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those delete or rename operations.
+
+The `.ps1` scripts must:
+
+* Use correct relative paths.
+* Check that paths exist before deleting or renaming.
+* Avoid deleting unrelated files.
+* Be safe to run from the project root.
+
+Do not include unchanged files in the returned archive.
