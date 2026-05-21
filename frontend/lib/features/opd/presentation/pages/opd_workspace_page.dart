@@ -275,6 +275,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    OpdFlowSummary? activeEncounterToOpen;
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -290,9 +291,32 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
               .read(opdWorkspaceControllerProvider.notifier)
               .startOpdEncounter(payload);
         },
+        onExistingActiveEncounter: (OpdFlowSummary flow) {
+          activeEncounterToOpen = flow;
+        },
       ),
     );
-    if (saved == true && context.mounted) {
+
+    if (saved != true || !context.mounted) {
+      return;
+    }
+
+    final OpdFlowSummary? existingFlow = activeEncounterToOpen;
+    if (existingFlow != null) {
+      final bool? changed = await showAppDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => FlowActionsDialog(flow: existingFlow),
+      );
+      if (changed == true && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.opdSavedMessage)),
+        );
+      }
+      return;
+    }
+
+    if (context.mounted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));

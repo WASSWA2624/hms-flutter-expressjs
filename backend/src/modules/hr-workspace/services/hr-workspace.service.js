@@ -252,7 +252,7 @@ const mapLeave = (item) => ({
   staff_profile_display_id: resolveDisplayId(item.staff_profile || {}),
   staff_number: item.staff_profile?.staff_number || null,
   staff_name: normalizeString(
-    `${item.staff_profile?.user?.first_name || ''} ${item.staff_profile?.user?.last_name || ''}`
+    `${item.staff_profile?.user?.profile?.first_name || ''} ${item.staff_profile?.user?.profile?.last_name || ''}`
   ) || item.staff_profile?.user?.email || null,
   staff_position: item.staff_profile?.position || null,
   start_date: item.start_date,
@@ -370,8 +370,8 @@ const buildLeaveSearchWhere = (search) => {
       { status: { contains: search, mode: 'insensitive' } },
       { staff_profile: { human_friendly_id: { contains: search, mode: 'insensitive' } } },
       { staff_profile: { staff_number: { contains: search, mode: 'insensitive' } } },
-      { staff_profile: { user: { first_name: { contains: search, mode: 'insensitive' } } } },
-      { staff_profile: { user: { last_name: { contains: search, mode: 'insensitive' } } } },
+      { staff_profile: { user: { profile: { first_name: { contains: search, mode: 'insensitive' } } } } },
+      { staff_profile: { user: { profile: { last_name: { contains: search, mode: 'insensitive' } } } } },
       { staff_profile: { user: { email: { contains: search, mode: 'insensitive' } } } },
     ],
   };
@@ -1736,7 +1736,17 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
           staff_number: true,
           consultation_fee: true,
           consultation_currency: true,
-          user: { select: { first_name: true, last_name: true, email: true } },
+          user: {
+            select: {
+              email: true,
+              profile: {
+                select: {
+                  first_name: true,
+                  last_name: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -1771,7 +1781,7 @@ const buildPayrollProposedItems = async (payrollRunRecord, filters = {}) => {
       staff_profile_display_id: resolveDisplayId(entry.profile || {}),
       staff_number: entry.profile.staff_number || null,
       staff_name:
-        normalizeString(`${entry.profile.user?.first_name || ''} ${entry.profile.user?.last_name || ''}`) ||
+        normalizeString(`${entry.profile.user?.profile?.first_name || ''} ${entry.profile.user?.profile?.last_name || ''}`) ||
         entry.profile.user?.email ||
         null,
       assignment_count: entry.assignmentCount,

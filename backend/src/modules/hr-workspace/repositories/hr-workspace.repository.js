@@ -101,9 +101,13 @@ const findManyLeaves = async ({ where = {}, skip = 0, take = 20, orderBy = { cre
               select: {
                 id: true,
                 human_friendly_id: true,
-                first_name: true,
-                last_name: true,
                 email: true,
+                profile: {
+                  select: {
+                    first_name: true,
+                    last_name: true,
+                  },
+                },
               },
             },
           },
