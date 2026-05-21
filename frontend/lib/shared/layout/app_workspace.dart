@@ -195,7 +195,7 @@ class AppWorkspaceHeader extends StatelessWidget {
     final Widget titleBlock = _WorkspaceHeaderTitle(
       leading: leading,
       title: title,
-      status: null,
+      status: status,
     );
     final Widget actionBar = _WorkspaceHeaderActions(
       actions: actions,

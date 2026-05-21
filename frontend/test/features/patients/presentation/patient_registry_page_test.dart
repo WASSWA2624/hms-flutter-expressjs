@@ -649,8 +649,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Patient report'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Print report'));
-    await tester.pumpAndSettle();
 
     expect(find.text('Print preview'), findsOneWidget);
     expect(find.text('Report period'), findsWidgets);

@@ -49,7 +49,7 @@ void main() {
     );
 
     expect(find.text('Admissions'), findsOneWidget);
-    expect(find.text('Operational'), findsNothing);
+    expect(find.text('Operational'), findsOneWidget);
     expect(find.text('Waiting'), findsOneWidget);
     expect(find.text('Search'), findsOneWidget);
     expect(find.text('Workspace body'), findsOneWidget);

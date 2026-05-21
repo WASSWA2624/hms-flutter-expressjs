@@ -22,8 +22,6 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
-import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
-import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -2249,6 +2247,8 @@ class StartWalkInDialog extends ConsumerStatefulWidget {
 
 class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _newPatientFirstNameController;
+  late final TextEditingController _newPatientLastNameController;
   late final TextEditingController _feeController;
   late final TextEditingController _notesController;
   List<Patient> _patientOptions = const <Patient>[];
@@ -2261,6 +2261,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   String? _patientId;
   String? _appointmentId;
   String? _providerId;
+  String? _newPatientGender;
   String _currency = appDefaultCurrencyCode;
   String _arrivalMode = 'WALK_IN';
   String _emergencySeverity = 'HIGH';
@@ -2272,6 +2273,8 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   @override
   void initState() {
     super.initState();
+    _newPatientFirstNameController = TextEditingController();
+    _newPatientLastNameController = TextEditingController();
     _feeController = TextEditingController();
     _notesController = TextEditingController();
     _appointmentOptions = _eligibleAppointmentOptions(widget.appointments);
@@ -2282,6 +2285,8 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
 
   @override
   void dispose() {
+    _newPatientFirstNameController.dispose();
+    _newPatientLastNameController.dispose();
     _feeController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -2474,11 +2479,6 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
-    if (_patientMode == _WalkInPatientMode.newPatient &&
-        !_isNonEmpty(_patientId)) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -2565,78 +2565,61 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       _WalkInPatientMode.newPatient => AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: AppButton.secondary(
-              label: l10n.opdRegisterNewPatientLabel,
-              leadingIcon: Icons.person_add_alt_1_outlined,
+          AppResponsiveFieldRow.two(
+            left: AppTextField(
+              controller: _newPatientFirstNameController,
+              labelText: _opdRequiredFieldLabel(l10n, l10n.opdFirstNameLabel),
+              semanticLabel: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdFirstNameLabel,
+              ),
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
               enabled: !_isSaving,
-              onPressed: _openNewPatientDialog,
+              isRequired: true,
+              validator: AppValidators.requiredText(l10n.validationRequired),
             ),
+            right: AppTextField(
+              controller: _newPatientLastNameController,
+              labelText: _opdRequiredFieldLabel(l10n, l10n.opdLastNameLabel),
+              semanticLabel: _opdRequiredFieldLabel(
+                l10n,
+                l10n.opdLastNameLabel,
+              ),
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              enabled: !_isSaving,
+              isRequired: true,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            ),
+          ),
+          AppGenderField(
+            value: _newPatientGender,
+            labelText: _opdOptionalFieldLabel(l10n, l10n.opdGenderLabel),
+            semanticLabel: _opdOptionalFieldLabel(l10n, l10n.opdGenderLabel),
+            maleLabel: l10n.patientsGenderMale,
+            femaleLabel: l10n.patientsGenderFemale,
+            otherLabel: l10n.patientsGenderOther,
+            unknownLabel: l10n.patientsGenderUnknown,
+            includeUnknown: false,
+            enabled: !_isSaving,
+            onChanged: (String? value) {
+              setState(() {
+                _newPatientGender = value;
+              });
+            },
           ),
         ],
       ),
     };
   }
 
-  Future<void> _openNewPatientDialog() async {
-    final PatientRepository patientRepository = ref.read(
-      patientRepositoryProvider,
-    );
-    final Result<PatientReferenceData> referenceResult = await patientRepository
-        .loadReferenceData();
-    if (!mounted) {
-      return;
-    }
-
-    final PatientReferenceData? referenceData = referenceResult.when(
-      success: (PatientReferenceData value) => value,
-      failure: (AppFailure failure) {
-        setState(() => _failure = failure);
-        return null;
-      },
-    );
-    if (referenceData == null) {
-      return;
-    }
-
-    Patient? createdPatient;
-    final bool? saved = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => PatientFormDialog(
-        referenceData: referenceData,
-        onLookupDuplicates: (PatientDuplicateQuery query) {
-          return patientRepository.listDuplicateCandidates(query);
-        },
-        onSubmit: (Map<String, Object?> payload) async {
-          final Result<Patient> result = await patientRepository.createPatient(
-            payload,
-          );
-          return result.when(
-            success: (Patient patient) {
-              createdPatient = patient;
-              return null;
-            },
-            failure: (AppFailure failure) => failure,
-          );
-        },
-      ),
-    );
-    if (!mounted || saved != true || createdPatient == null) {
-      return;
-    }
-
-    setState(() {
-      _patientMode = _WalkInPatientMode.existing;
-      _patientId = createdPatient!.id;
-      _patientOptions = <Patient>[
-        createdPatient!,
-        ..._patientOptions.where(
-          (Patient patient) => patient.id != createdPatient!.id,
-        ),
-      ];
-    });
+  Map<String, Object?> _newPatientRegistrationPayload() {
+    return <String, Object?>{
+      'first_name': _newPatientFirstNameController.text.trim(),
+      'last_name': _newPatientLastNameController.text.trim(),
+      'gender': _newPatientGender,
+    };
   }
 
   Future<void> _loadPatientOptions() async {
@@ -2757,6 +2740,8 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     return <String, Object?>{
       if (_patientMode == _WalkInPatientMode.appointment)
         'appointment_id': _appointmentId
+      else if (_patientMode == _WalkInPatientMode.newPatient)
+        'patient_registration': _newPatientRegistrationPayload()
       else
         'patient_id': _patientId,
       'provider_user_id': _providerId,
