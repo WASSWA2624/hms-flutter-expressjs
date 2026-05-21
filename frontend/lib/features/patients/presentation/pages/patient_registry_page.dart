@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
@@ -19,6 +20,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
@@ -1814,6 +1816,7 @@ class _PatientContextHeader extends StatelessWidget {
             icon: Icons.error_outline,
           ),
       ],
+      fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
       fields: <AppWorkspacePatientContextField>[
         AppWorkspacePatientContextField(
           label: l10n.patientsDobLabel,
@@ -1824,11 +1827,6 @@ class _PatientContextHeader extends StatelessWidget {
           label: l10n.patientsPhoneLabel,
           value: patient.primaryPhone ?? '',
           icon: Icons.phone_outlined,
-        ),
-        AppWorkspacePatientContextField(
-          label: l10n.patientsEmailLabel,
-          value: patient.primaryEmail ?? '',
-          icon: Icons.alternate_email_outlined,
         ),
         AppWorkspacePatientContextField(
           label: l10n.patientsFacilityLabel,
@@ -1860,6 +1858,8 @@ class _QuickActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
+    final PatientVisitContext? visit = patient.currentVisit;
+    final bool hasActiveOpdEncounter = _isActiveOpdVisit(visit);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1892,6 +1892,25 @@ class _QuickActions extends ConsumerWidget {
               ),
               requirement: opdEncounterPermissionRequirement,
             ),
+            if (hasActiveOpdEncounter)
+              AppPermissionActionItem(
+                label: l10n.patientsQuickViewActiveOpdAction,
+                icon: Icons.open_in_new_outlined,
+                onPressed: () => _openQuickAction(
+                  context,
+                  ref,
+                  patient,
+                  _PatientQuickAction.opdActions,
+                ),
+                requirement: const AccessRequirement(
+                  anyPermissions: <AppPermission>[
+                    AppPermissions.clinicalRead,
+                    AppPermissions.clinicalWrite,
+                    AppPermissions.billingRead,
+                    AppPermissions.billingWrite,
+                  ],
+                ),
+              ),
             AppPermissionActionItem(
               label: l10n.patientsQuickTriageAction,
               icon: Icons.monitor_heart_outlined,
@@ -1906,16 +1925,103 @@ class _QuickActions extends ConsumerWidget {
               ),
             ),
             AppPermissionActionItem(
-              label: l10n.patientsQuickBillingAction,
+              label: l10n.opdRecordVitalsAction,
+              icon: Icons.monitor_heart_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.opdActions,
+              ),
+              requirement: const AccessRequirement(
+                anyPermissions: <AppPermission>[
+                  AppPermissions.clinicalWrite,
+                  AppPermissions.emergencyWrite,
+                ],
+              ),
+            ),
+            AppPermissionActionItem(
+              label: l10n.opdAssignDoctorAction,
+              icon: Icons.assignment_ind_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.opdActions,
+              ),
+              requirement: const AccessRequirement(
+                anyPermissions: <AppPermission>[
+                  AppPermissions.patientWrite,
+                  AppPermissions.operationsWrite,
+                  AppPermissions.clinicalWrite,
+                ],
+              ),
+            ),
+            AppPermissionActionItem(
+              label: l10n.opdDoctorReviewAction,
+              icon: Icons.edit_note_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.opdActions,
+              ),
+              requirement: const AccessRequirement(
+                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+              ),
+            ),
+            AppPermissionActionItem(
+              label: l10n.opdManageConsultationBillingAction,
               icon: Icons.receipt_long_outlined,
               onPressed: () => _openQuickAction(
                 context,
                 ref,
                 patient,
-                _PatientQuickAction.billing,
+                hasActiveOpdEncounter
+                    ? _PatientQuickAction.opdActions
+                    : _PatientQuickAction.billing,
               ),
               requirement: const AccessRequirement(
                 allPermissions: <AppPermission>[AppPermissions.billingWrite],
+              ),
+            ),
+            AppPermissionActionItem(
+              label: l10n.clinicalRequestLabAction,
+              icon: Icons.science_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.opdActions,
+              ),
+              requirement: const AccessRequirement(
+                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+              ),
+            ),
+            AppPermissionActionItem(
+              label: l10n.clinicalRequestRadiologyAction,
+              icon: Icons.biotech_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.opdActions,
+              ),
+              requirement: const AccessRequirement(
+                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+              ),
+            ),
+            AppPermissionActionItem(
+              label: l10n.clinicalPrescribeAction,
+              icon: Icons.medication_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.opdActions,
+              ),
+              requirement: const AccessRequirement(
+                allPermissions: <AppPermission>[AppPermissions.clinicalWrite],
               ),
             ),
             AppPermissionActionItem(
@@ -1944,6 +2050,39 @@ class _QuickActions extends ConsumerWidget {
                 allPermissions: <AppPermission>[AppPermissions.reportsRead],
               ),
             ),
+            AppPermissionActionItem(
+              label: l10n.opdCopyPatientIdAction,
+              icon: Icons.copy_outlined,
+              onPressed: () => _openQuickAction(
+                context,
+                ref,
+                patient,
+                _PatientQuickAction.copyPatientId,
+              ),
+              requirement: const AccessRequirement(
+                anyPermissions: <AppPermission>[
+                  AppPermissions.patientRead,
+                  AppPermissions.patientWrite,
+                ],
+              ),
+            ),
+            if (hasActiveOpdEncounter)
+              AppPermissionActionItem(
+                label: l10n.opdCopyEncounterIdAction,
+                icon: Icons.copy_outlined,
+                onPressed: () => _openQuickAction(
+                  context,
+                  ref,
+                  patient,
+                  _PatientQuickAction.copyEncounterId,
+                ),
+                requirement: const AccessRequirement(
+                  anyPermissions: <AppPermission>[
+                    AppPermissions.clinicalRead,
+                    AppPermissions.clinicalWrite,
+                  ],
+                ),
+              ),
           ],
         ),
       ],
@@ -1954,10 +2093,13 @@ class _QuickActions extends ConsumerWidget {
 enum _PatientQuickAction {
   appointment,
   opdCheckIn,
+  opdActions,
   triage,
   billing,
   admission,
   report,
+  copyPatientId,
+  copyEncounterId,
 }
 
 Future<void> _openQuickAction(
@@ -1972,6 +2114,31 @@ Future<void> _openQuickAction(
   final PatientDetail? detail = state?.selectedDetail?.patient.id == patient.id
       ? state?.selectedDetail
       : null;
+  if (action == _PatientQuickAction.copyPatientId) {
+    await Clipboard.setData(ClipboardData(text: _patientApiId(patient)));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.clinicalPatientIdCopiedMessage)),
+      );
+    }
+    return;
+  }
+  if (action == _PatientQuickAction.copyEncounterId) {
+    final String? encounterId = patient.currentVisit?.publicId;
+    if (encounterId != null && encounterId.trim().isNotEmpty) {
+      await Clipboard.setData(ClipboardData(text: encounterId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.opdEncounterIdCopiedMessage)),
+        );
+      }
+    }
+    return;
+  }
+  if (action == _PatientQuickAction.opdActions) {
+    await _openActiveOpdActions(context, ref, patient);
+    return;
+  }
 
   final bool? changed = await showAppDialog<bool>(
     context: context,
@@ -2041,6 +2208,54 @@ Future<void> _openQuickAction(
         SnackBar(content: Text(context.l10n.patientsQuickActionSavedMessage)),
       );
     }
+  }
+}
+
+bool _isActiveOpdVisit(PatientVisitContext? visit) {
+  if (visit == null) {
+    return false;
+  }
+  final String title = (visit.title ?? '').toUpperCase();
+  final String status = (visit.status ?? '').toUpperCase();
+  return visit.kind == 'encounter' &&
+      (title.contains('OPD') || title.contains('EMERGENCY')) &&
+      !isOpdTerminalStatus(status);
+}
+
+Future<void> _openActiveOpdActions(
+  BuildContext context,
+  WidgetRef ref,
+  Patient patient,
+) async {
+  final String? encounterId = patient.currentVisit?.publicId;
+  if (encounterId == null || encounterId.trim().isEmpty) {
+    return;
+  }
+  final Result<OpdFlowDetail> result = await ref
+      .read(opdRepositoryProvider)
+      .getOpdFlow(encounterId.trim());
+  if (!context.mounted) {
+    return;
+  }
+  final OpdFlowDetail? detail = result.when(
+    success: (OpdFlowDetail value) => value,
+    failure: (AppFailure failure) {
+      _showFailureIfNeeded(context, failure);
+      return null;
+    },
+  );
+  if (detail == null || !context.mounted) {
+    return;
+  }
+  final bool? changed = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => FlowActionsDialog(flow: detail.summary),
+  );
+  if (changed == true && context.mounted) {
+    await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .selectPatient(patient.id);
   }
 }
 

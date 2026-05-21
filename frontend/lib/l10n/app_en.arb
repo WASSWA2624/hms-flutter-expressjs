@@ -845,6 +845,10 @@
   "opdPaymentPaidLabel": "Paid",
   "opdPaymentRequiredLabel": "Payment required",
   "opdPaymentNotRequiredLabel": "Not required",
+  "opdEncounterContextTitle": "Encounter context",
+  "opdCopyPatientIdAction": "Copy patient ID",
+  "opdCopyEncounterIdAction": "Copy encounter ID",
+  "opdEncounterIdCopiedMessage": "Encounter ID copied.",
   "opdPageLabel": "{from}-{to} of {total}",
   "@opdPageLabel": {
     "description": "Pagination label for OPD data lists.",
@@ -911,7 +915,10 @@
   "opdMoveQueueAction": "Move",
   "opdStartConsultationAction": "Start consultation",
   "opdAssignDoctorAction": "Assign doctor",
+  "opdChangeDoctorAction": "Change doctor",
   "opdPayConsultationAction": "Pay consultation",
+  "opdManageConsultationBillingAction": "Manage consultation billing",
+  "opdUpdateConsultationBillingAction": "Update consultation billing",
   "opdCorrectStageAction": "Correct stage",
   "opdReferAction": "Refer",
   "opdFollowUpAction": "Follow up",
@@ -920,6 +927,9 @@
   "opdPaymentMethodLabel": "Payment method",
   "opdTransactionReferenceLabel": "Transaction reference",
   "opdStageLabel": "Stage",
+  "opdCurrentStageLabel": "Current stage",
+  "opdTargetStageLabel": "Target stage",
+  "opdStageCorrectionReasonRequiredMessage": "Enter a reason for this stage correction.",
   "opdExternalFacilityLabel": "External facility",
   "opdFollowUpDateLabel": "Follow-up date",
   "opdFollowUpTimeLabel": "Follow-up time",
@@ -1340,6 +1350,18 @@
   "@opdPaymentNotRequiredLabel": {
     "description": "Payment not required label."
   },
+  "@opdEncounterContextTitle": {
+    "description": "Title for the reusable OPD encounter context panel."
+  },
+  "@opdCopyPatientIdAction": {
+    "description": "Action label to copy the OPD patient identifier."
+  },
+  "@opdCopyEncounterIdAction": {
+    "description": "Action label to copy the OPD encounter identifier."
+  },
+  "@opdEncounterIdCopiedMessage": {
+    "description": "Snackbar shown after copying an OPD encounter identifier."
+  },
   "@opdPreviousPageLabel": {
     "description": "Previous page label for OPD lists."
   },
@@ -1466,8 +1488,17 @@
   "@opdAssignDoctorAction": {
     "description": "Action label to assign doctor."
   },
+  "@opdChangeDoctorAction": {
+    "description": "Action label to change the assigned OPD doctor."
+  },
   "@opdPayConsultationAction": {
     "description": "Action label to record consultation payment."
+  },
+  "@opdManageConsultationBillingAction": {
+    "description": "Action label to manage OPD consultation billing."
+  },
+  "@opdUpdateConsultationBillingAction": {
+    "description": "Action label to update OPD consultation billing."
   },
   "@opdCorrectStageAction": {
     "description": "Action label to correct OPD stage."
@@ -1492,6 +1523,15 @@
   },
   "@opdStageLabel": {
     "description": "Stage field label."
+  },
+  "@opdCurrentStageLabel": {
+    "description": "Current OPD workflow stage label."
+  },
+  "@opdTargetStageLabel": {
+    "description": "Target OPD workflow stage label."
+  },
+  "@opdStageCorrectionReasonRequiredMessage": {
+    "description": "Validation message when an OPD stage correction requires a reason."
   },
   "@opdExternalFacilityLabel": {
     "description": "External facility field label."
@@ -2126,6 +2166,10 @@
   "patientsQuickOpdCheckInAction": "Start OPD encounter",
   "@patientsQuickOpdCheckInAction": {
     "description": "Patient quick action label for creating or continuing an OPD encounter."
+  },
+  "patientsQuickViewActiveOpdAction": "View active OPD encounter",
+  "@patientsQuickViewActiveOpdAction": {
+    "description": "Patient quick action label for opening the active OPD encounter actions."
   },
   "patientsQuickTriageAction": "Triage",
   "@patientsQuickTriageAction": {

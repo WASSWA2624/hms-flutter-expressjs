@@ -1750,6 +1750,30 @@ abstract class AppLocalizations {
   /// **'Not required'**
   String get opdPaymentNotRequiredLabel;
 
+  /// Title for the reusable OPD encounter context panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter context'**
+  String get opdEncounterContextTitle;
+
+  /// Action label to copy the OPD patient identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy patient ID'**
+  String get opdCopyPatientIdAction;
+
+  /// Action label to copy the OPD encounter identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy encounter ID'**
+  String get opdCopyEncounterIdAction;
+
+  /// Snackbar shown after copying an OPD encounter identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter ID copied.'**
+  String get opdEncounterIdCopiedMessage;
+
   /// Pagination label for OPD data lists.
   ///
   /// In en, this message translates to:
@@ -2014,11 +2038,29 @@ abstract class AppLocalizations {
   /// **'Assign doctor'**
   String get opdAssignDoctorAction;
 
+  /// Action label to change the assigned OPD doctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Change doctor'**
+  String get opdChangeDoctorAction;
+
   /// Action label to record consultation payment.
   ///
   /// In en, this message translates to:
   /// **'Pay consultation'**
   String get opdPayConsultationAction;
+
+  /// Action label to manage OPD consultation billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage consultation billing'**
+  String get opdManageConsultationBillingAction;
+
+  /// Action label to update OPD consultation billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Update consultation billing'**
+  String get opdUpdateConsultationBillingAction;
 
   /// Action label to correct OPD stage.
   ///
@@ -2067,6 +2109,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stage'**
   String get opdStageLabel;
+
+  /// Current OPD workflow stage label.
+  ///
+  /// In en, this message translates to:
+  /// **'Current stage'**
+  String get opdCurrentStageLabel;
+
+  /// Target OPD workflow stage label.
+  ///
+  /// In en, this message translates to:
+  /// **'Target stage'**
+  String get opdTargetStageLabel;
+
+  /// Validation message when an OPD stage correction requires a reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a reason for this stage correction.'**
+  String get opdStageCorrectionReasonRequiredMessage;
 
   /// External facility field label.
   ///
@@ -3183,6 +3243,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start OPD encounter'**
   String get patientsQuickOpdCheckInAction;
+
+  /// Patient quick action label for opening the active OPD encounter actions.
+  ///
+  /// In en, this message translates to:
+  /// **'View active OPD encounter'**
+  String get patientsQuickViewActiveOpdAction;
 
   /// Patient quick triage action label.
   ///

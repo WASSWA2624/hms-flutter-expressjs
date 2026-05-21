@@ -13,6 +13,8 @@ import 'package:hosspi_hms/shared/layout/responsive_spacing.dart';
 
 enum AppWorkspaceStatusTone { neutral, success, warning, error, info }
 
+enum AppWorkspacePatientContextFieldStyle { tiles, inline }
+
 @immutable
 final class AppWorkspaceStatus {
   const AppWorkspaceStatus({
@@ -1204,6 +1206,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
     this.status,
     this.alerts = const <AppWorkspaceStatus>[],
     this.fields = const <AppWorkspacePatientContextField>[],
+    this.fieldStyle = AppWorkspacePatientContextFieldStyle.tiles,
     this.actions = const <Widget>[],
     this.onCopyPatientNumber,
     this.copyPatientNumberTooltip,
@@ -1218,6 +1221,7 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
   final AppWorkspaceStatus? status;
   final List<AppWorkspaceStatus> alerts;
   final List<AppWorkspacePatientContextField> fields;
+  final AppWorkspacePatientContextFieldStyle fieldStyle;
   final List<Widget> actions;
   final VoidCallback? onCopyPatientNumber;
   final String? copyPatientNumberTooltip;
@@ -1275,7 +1279,11 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
             if (visibleFields.isNotEmpty) {
               children
                 ..add(SizedBox(height: theme.spacing.md))
-                ..add(_PatientContextFieldGrid(fields: visibleFields));
+                ..add(
+                  fieldStyle == AppWorkspacePatientContextFieldStyle.inline
+                      ? _PatientContextInlineFacts(fields: visibleFields)
+                      : _PatientContextFieldGrid(fields: visibleFields),
+                );
             }
 
             return Column(
@@ -1912,6 +1920,80 @@ class _PatientContextAlerts extends StatelessWidget {
         for (final AppWorkspaceStatus alert in alerts)
           AppWorkspaceStatusBadge(status: alert),
       ],
+    );
+  }
+}
+
+class _PatientContextInlineFacts extends StatelessWidget {
+  const _PatientContextInlineFacts({required this.fields});
+
+  final List<AppWorkspacePatientContextField> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Wrap(
+      spacing: theme.spacing.lg,
+      runSpacing: theme.spacing.sm,
+      children: <Widget>[
+        for (final AppWorkspacePatientContextField field in fields)
+          _PatientContextInlineFact(field: field),
+      ],
+    );
+  }
+}
+
+class _PatientContextInlineFact extends StatelessWidget {
+  const _PatientContextInlineFact({required this.field});
+
+  final AppWorkspacePatientContextField field;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final _WorkspaceToneColors colors = _toneColors(theme, field.tone);
+    final Color accentColor = field.tone == AppWorkspaceStatusTone.neutral
+        ? colorScheme.primary
+        : colors.on;
+
+    return Semantics(
+      label: '${field.label}: ${field.value}',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (field.icon != null) ...<Widget>[
+            Icon(
+              field.icon,
+              size: theme.appTokens.listIconSize,
+              color: accentColor,
+            ),
+            SizedBox(width: theme.spacing.xs),
+          ],
+          Text.rich(
+            TextSpan(
+              children: <InlineSpan>[
+                TextSpan(
+                  text: '${field.label}: ',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(
+                  text: field.value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 }

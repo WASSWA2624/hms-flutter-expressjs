@@ -769,96 +769,80 @@ final class OpdWorkspaceController
     }
 
     AppFailure? firstFailure;
-    final Result<AppPage<OpdAppointment>> appointmentsResult = await _repository
-        .listAppointments(current.appointmentQuery);
+    final Future<Result<AppPage<OpdAppointment>>> appointmentsFuture =
+        _repository.listAppointments(current.appointmentQuery);
+    final Future<Result<AppPage<OpdQueueEntry>>> queueFuture = _repository
+        .listVisitQueues(current.queueQuery);
+    final Future<Result<AppPage<OpdFlowSummary>>> flowsFuture = _repository
+        .listOpdFlows(current.flowQuery);
+    final Future<Result<AppPage<OpdFlowSummary>>> triageFuture = _repository
+        .listTriageQueue(current.triageQueueQuery);
+
+    final Result<AppPage<OpdAppointment>> appointmentsResult =
+        await appointmentsFuture;
+    final Result<AppPage<OpdQueueEntry>> queueResult = await queueFuture;
+    final Result<AppPage<OpdFlowSummary>> flowsResult = await flowsFuture;
+    final Result<AppPage<OpdFlowSummary>> triageResult = await triageFuture;
+
+    OpdWorkspaceState nextState = current;
+
     appointmentsResult.when(
       success: (AppPage<OpdAppointment> page) {
-        final OpdWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(appointments: page));
-        }
+        nextState = nextState.copyWith(appointments: page);
       },
       failure: (AppFailure failure) {
         firstFailure ??= failure;
       },
     );
 
-    final OpdWorkspaceState? afterAppointments = _currentState;
-    if (afterAppointments == null) {
-      return firstFailure;
-    }
-    final Result<AppPage<OpdQueueEntry>> queueResult = await _repository
-        .listVisitQueues(afterAppointments.queueQuery);
     queueResult.when(
       success: (AppPage<OpdQueueEntry> page) {
-        final OpdWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(queueEntries: page));
-        }
+        nextState = nextState.copyWith(queueEntries: page);
       },
       failure: (AppFailure failure) {
         firstFailure ??= failure;
       },
     );
 
-    final OpdWorkspaceState? afterQueue = _currentState;
-    if (afterQueue == null) {
-      return firstFailure;
-    }
-    final Result<AppPage<OpdFlowSummary>> flowsResult = await _repository
-        .listOpdFlows(afterQueue.flowQuery);
     flowsResult.when(
       success: (AppPage<OpdFlowSummary> page) {
-        final OpdWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          final OpdFlowDetail? selected = _selectedAfterFlowRefresh(
-            page,
-            latest.selectedFlow,
-          );
-          _emit(
-            latest.copyWith(
-              flows: page,
-              selectedFlow: selected,
-              clearSelectedFlow: selected == null,
-            ),
-          );
-        }
+        final OpdFlowDetail? selected = _selectedAfterFlowRefresh(
+          page,
+          nextState.selectedFlow,
+        );
+        nextState = nextState.copyWith(
+          flows: page,
+          selectedFlow: selected,
+          clearSelectedFlow: selected == null,
+        );
       },
       failure: (AppFailure failure) {
         firstFailure ??= failure;
       },
     );
 
-    final OpdWorkspaceState? afterFlows = _currentState;
-    if (afterFlows == null) {
-      return firstFailure;
-    }
-    final Result<AppPage<OpdFlowSummary>> triageResult = await _repository
-        .listTriageQueue(afterFlows.triageQueueQuery);
     triageResult.when(
       success: (AppPage<OpdFlowSummary> page) {
-        final OpdWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(triageQueue: page));
-        }
+        nextState = nextState.copyWith(triageQueue: page);
       },
       failure: (AppFailure failure) {
         firstFailure ??= failure;
       },
     );
 
-    final OpdWorkspaceState? latest = _currentState;
-    if (showLoading && latest != null) {
-      _emit(
-        latest.copyWith(
-          isRefreshingAppointments: false,
-          isRefreshingQueue: false,
-          isRefreshingFlows: false,
-          isRefreshingTriageQueue: false,
-          lastFailure: firstFailure,
-        ),
-      );
-    }
+    _emit(
+      nextState.copyWith(
+        isRefreshingAppointments: showLoading
+            ? false
+            : nextState.isRefreshingAppointments,
+        isRefreshingQueue: showLoading ? false : nextState.isRefreshingQueue,
+        isRefreshingFlows: showLoading ? false : nextState.isRefreshingFlows,
+        isRefreshingTriageQueue: showLoading
+            ? false
+            : nextState.isRefreshingTriageQueue,
+        lastFailure: firstFailure,
+      ),
+    );
 
     return firstFailure;
   }

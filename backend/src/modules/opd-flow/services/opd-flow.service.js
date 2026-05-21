@@ -32,6 +32,7 @@ const STAGES = {
 
 const TERMINAL_STAGES = new Set([STAGES.ADMITTED, STAGES.DISCHARGED]);
 const WORKFLOW_STAGE_SET = new Set(Object.values(STAGES));
+const WORKFLOW_STAGE_ORDER = Object.values(STAGES);
 const ACTIVE_OPD_ENCOUNTER_TYPES = ['OPD', 'EMERGENCY'];
 const QUEUE_SCOPES = Object.freeze({
   ASSIGNED: 'ASSIGNED',
@@ -155,6 +156,14 @@ const buildOpdFlowStagePresenceClause = () => ({
     extension_json: buildOpdFlowJsonFilter(OPD_FLOW_STAGE_JSON_PATH, stage)
   }))
 });
+
+const stageCorrectionRequiresReason = (stageFrom, stageTo) => {
+  if (TERMINAL_STAGES.has(stageTo)) return true;
+  const fromIndex = WORKFLOW_STAGE_ORDER.indexOf(stageFrom);
+  const toIndex = WORKFLOW_STAGE_ORDER.indexOf(stageTo);
+  if (fromIndex < 0 || toIndex < 0) return true;
+  return toIndex < fromIndex || Math.abs(toIndex - fromIndex) > 1;
+};
 
 const normalizeSearchTokens = (search) =>
   String(search || '')
@@ -791,7 +800,11 @@ const enrichConsultationBillingForListItems = async (items = []) => {
             deleted_at: null,
             OR: [
               { id: { in: invoiceIdentifiers } },
-              { human_friendly_id: { in: invoiceIdentifiers.flatMap(lookupIdentifierKeys) } }
+              {
+                human_friendly_id: {
+                  in: invoiceIdentifiers.flatMap(lookupIdentifierKeys)
+                }
+              }
             ]
           },
           include: {
@@ -808,7 +821,11 @@ const enrichConsultationBillingForListItems = async (items = []) => {
             deleted_at: null,
             OR: [
               { id: { in: paymentIdentifiers } },
-              { human_friendly_id: { in: paymentIdentifiers.flatMap(lookupIdentifierKeys) } }
+              {
+                human_friendly_id: {
+                  in: paymentIdentifiers.flatMap(lookupIdentifierKeys)
+                }
+              }
             ]
           },
           include: {
@@ -2296,10 +2313,7 @@ const payConsultation = async (id, data, context = {}) => {
     const stageBefore = flow.stage;
 
     const consultation = flow.consultation || {};
-
-    if (consultation.is_paid) {
-      throw new HttpError('errors.opd_flow.consultation_already_paid', 400);
-    }
+    const isCorrection = consultation.is_paid === true;
 
     let invoiceId = data.invoice_id || consultation.invoice_id || null;
     let invoice = null;
@@ -2321,7 +2335,10 @@ const payConsultation = async (id, data, context = {}) => {
           status: 'SENT',
           billing_status: 'ISSUED',
           total_amount: normalizeDecimalString(data.amount, consultation.consultation_fee || '0.00'),
-          currency: data.currency || consultation.currency || 'USD',
+          currency: normalizeCurrencyCode(
+            data.currency || consultation.currency,
+            await resolveDefaultCurrency(tx, encounter.tenant_id, encounter.facility_id)
+          ),
           issued_at: new Date()
         }
       });
@@ -2329,6 +2346,10 @@ const payConsultation = async (id, data, context = {}) => {
     }
 
     const paymentStatus = data.status || 'COMPLETED';
+    const currency = normalizeCurrencyCode(
+      data.currency || consultation.currency || invoice.currency,
+      await resolveDefaultCurrency(tx, encounter.tenant_id, encounter.facility_id)
+    );
     const amount = normalizeDecimalString(
       data.amount,
       consultation.consultation_fee || normalizeDecimalString(invoice.total_amount, '0.00')
@@ -2348,7 +2369,23 @@ const payConsultation = async (id, data, context = {}) => {
       }
     });
 
-    const invoiceTotal = toDecimalNumber(invoice.total_amount);
+    const correctedInvoiceTotal =
+      isCorrection && data.amount ? amount : normalizeDecimalString(invoice.total_amount, amount);
+    if (
+      isCorrection &&
+      data.amount &&
+      toDecimalNumber(correctedInvoiceTotal) !== toDecimalNumber(invoice.total_amount)
+    ) {
+      invoice = await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          total_amount: correctedInvoiceTotal,
+          currency
+        }
+      });
+    }
+
+    const invoiceTotal = toDecimalNumber(correctedInvoiceTotal);
     const paidAmount = toDecimalNumber(amount);
     const isPaid = paymentStatus === 'COMPLETED' && paidAmount >= invoiceTotal;
 
@@ -2356,6 +2393,7 @@ const payConsultation = async (id, data, context = {}) => {
       where: { id: invoice.id },
       data: {
         status: isPaid ? 'PAID' : 'SENT',
+        currency,
         billing_status: paymentStatus === 'COMPLETED' ? (isPaid ? 'PAID' : 'PARTIAL') : 'ISSUED'
       }
     });
@@ -2366,20 +2404,25 @@ const payConsultation = async (id, data, context = {}) => {
     consultation.is_paid = isPaid;
     consultation.paid_amount = isPaid ? amount : null;
     consultation.paid_at = isPaid && payment.paid_at ? payment.paid_at.toISOString() : null;
-    consultation.currency = data.currency || consultation.currency || invoice.currency;
+    consultation.currency = currency;
     flow.consultation = consultation;
 
     if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT && consultation.is_paid) {
       setFlowStage(flow, STAGES.WAITING_VITALS);
     }
 
-    appendTimelineEvent(flow, 'CONSULTATION_PAYMENT_RECORDED', context, {
-      payment_id: payment.id,
-      invoice_id: invoice.id,
-      amount,
-      status: paymentStatus,
-      notes: data.notes || null
-    });
+    appendTimelineEvent(
+      flow,
+      isCorrection ? 'CONSULTATION_PAYMENT_CORRECTED' : 'CONSULTATION_PAYMENT_RECORDED',
+      context,
+      {
+        payment_id: payment.id,
+        invoice_id: invoice.id,
+        amount,
+        status: paymentStatus,
+        notes: data.notes || null
+      }
+    );
 
     const updatedEncounter = await tx.encounter.update({
       where: { id: encounter.id },
@@ -3138,6 +3181,9 @@ const correctStage = async (id, data, context = {}) => {
     const stageBefore = flow.stage || null;
     if (stageBefore === stageTo) {
       throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [{ field: 'stage_to' }]);
+    }
+    if (stageCorrectionRequiresReason(stageBefore, stageTo) && !reason) {
+      throw new HttpError('errors.validation.required', 400, [{ field: 'reason' }]);
     }
 
     setFlowStage(flow, stageTo);

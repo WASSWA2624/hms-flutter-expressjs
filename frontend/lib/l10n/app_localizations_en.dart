@@ -872,6 +872,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdPaymentNotRequiredLabel => 'Not required';
 
   @override
+  String get opdEncounterContextTitle => 'Encounter context';
+
+  @override
+  String get opdCopyPatientIdAction => 'Copy patient ID';
+
+  @override
+  String get opdCopyEncounterIdAction => 'Copy encounter ID';
+
+  @override
+  String get opdEncounterIdCopiedMessage => 'Encounter ID copied.';
+
+  @override
   String opdPageLabel(int from, int to, int total) {
     return '$from-$to of $total';
   }
@@ -1020,7 +1032,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdAssignDoctorAction => 'Assign doctor';
 
   @override
+  String get opdChangeDoctorAction => 'Change doctor';
+
+  @override
   String get opdPayConsultationAction => 'Pay consultation';
+
+  @override
+  String get opdManageConsultationBillingAction =>
+      'Manage consultation billing';
+
+  @override
+  String get opdUpdateConsultationBillingAction =>
+      'Update consultation billing';
 
   @override
   String get opdCorrectStageAction => 'Correct stage';
@@ -1045,6 +1068,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdStageLabel => 'Stage';
+
+  @override
+  String get opdCurrentStageLabel => 'Current stage';
+
+  @override
+  String get opdTargetStageLabel => 'Target stage';
+
+  @override
+  String get opdStageCorrectionReasonRequiredMessage =>
+      'Enter a reason for this stage correction.';
 
   @override
   String get opdExternalFacilityLabel => 'External facility';
@@ -1619,6 +1652,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsQuickOpdCheckInAction => 'Start OPD encounter';
+
+  @override
+  String get patientsQuickViewActiveOpdAction => 'View active OPD encounter';
 
   @override
   String get patientsQuickTriageAction => 'Triage';

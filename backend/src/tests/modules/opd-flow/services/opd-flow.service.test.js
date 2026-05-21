@@ -32,6 +32,12 @@ jest.mock('@prisma/client', () => ({
   user: {
     findFirst: jest.fn()
   },
+  invoice: {
+    findMany: jest.fn()
+  },
+  payment: {
+    findMany: jest.fn()
+  },
   user_role: {
     findMany: jest.fn()
   },
@@ -58,6 +64,8 @@ describe('opd-flow.service', () => {
     prisma.facility.findFirst.mockResolvedValue(null);
     prisma.patient.findFirst.mockResolvedValue(null);
     prisma.user.findFirst.mockResolvedValue(null);
+    prisma.invoice.findMany.mockResolvedValue([]);
+    prisma.payment.findMany.mockResolvedValue([]);
     createAuditLog.mockResolvedValue({});
     ipdFlowService.emitAdmissionRefreshEvent.mockResolvedValue(null);
     prisma.user_role.findMany.mockResolvedValue([]);
@@ -96,6 +104,58 @@ describe('opd-flow.service', () => {
     expect(result.items).toHaveLength(1);
     expect(result.items[0].flow.stage).toBe('WAITING_VITALS');
     expect(result.pagination.total).toBe(1);
+  });
+
+  it('lists OPD flows with canonical paid consultation amounts from invoice payments', async () => {
+    opdFlowRepository.findMany.mockResolvedValue([
+      {
+        id: 'enc-1',
+        extension_json: {
+          opd_flow: {
+            stage: 'WAITING_VITALS',
+            consultation: {
+              require_payment: true,
+              is_paid: true,
+              invoice_id: 'inv-1',
+              payment_id: null,
+              consultation_fee: '20000',
+              currency: 'UGX'
+            }
+          }
+        }
+      }
+    ]);
+    opdFlowRepository.count.mockResolvedValue(1);
+    prisma.invoice.findMany.mockResolvedValue([
+      {
+        id: 'inv-1',
+        human_friendly_id: 'INV000001',
+        total_amount: '20000',
+        currency: 'UGX',
+        billing_status: 'PAID',
+        status: 'PAID',
+        payments: [
+          {
+            id: 'pay-1',
+            status: 'COMPLETED',
+            amount: '20000',
+            deleted_at: null
+          }
+        ]
+      }
+    ]);
+
+    const result = await opdFlowService.listOpdFlows({}, 1, 20, 'started_at', 'desc');
+
+    expect(result.items[0].flow.consultation).toEqual(
+      expect.objectContaining({
+        consultation_fee: '20000',
+        paid_amount: '20000.00',
+        currency: 'UGX',
+        invoice_id: 'INV000001',
+        payment_status: 'PAID'
+      })
+    );
   });
 
   it('maps human-friendly patient filters when listing OPD flows', async () => {
@@ -514,6 +574,176 @@ describe('opd-flow.service', () => {
         { user_id: 'usr-1' }
       )
     ).rejects.toBeInstanceOf(HttpError);
+  });
+
+  it('allows audit-safe consultation billing correction after payment', async () => {
+    const snapshotEncounter = {
+      id: 'enc-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      patient_id: 'pat-1',
+      provider_user_id: null,
+      encounter_type: 'OPD',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_VITALS',
+          consultation: {
+            require_payment: true,
+            is_paid: true,
+            invoice_id: 'inv-1',
+            payment_id: 'pay-old',
+            paid_amount: '20000',
+            currency: 'UGX'
+          }
+        }
+      },
+      vital_signs: [],
+      clinical_notes: [],
+      diagnoses: [],
+      procedures: [],
+      care_plans: [],
+      alerts: [],
+      referrals: [],
+      follow_ups: [],
+      admissions: [],
+      lab_orders: [],
+      radiology_orders: [],
+      pharmacy_orders: []
+    };
+    const tx = {
+      encounter: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'enc-1',
+            tenant_id: 'tenant-1',
+            facility_id: 'facility-1',
+            patient_id: 'pat-1',
+            provider_user_id: null,
+            encounter_type: 'OPD',
+            extension_json: {
+              opd_flow: {
+                stage: 'WAITING_VITALS',
+                consultation: {
+                  require_payment: true,
+                  is_paid: true,
+                  invoice_id: 'inv-1',
+                  payment_id: 'pay-old',
+                  paid_amount: '20000',
+                  consultation_fee: '20000',
+                  currency: 'UGX'
+                }
+              }
+            }
+          })
+          .mockResolvedValue(snapshotEncounter),
+        update: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
+      },
+      invoice: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          human_friendly_id: 'INV000001',
+          total_amount: '20000',
+          currency: 'UGX',
+          payments: []
+        }),
+        create: jest.fn(),
+        update: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          human_friendly_id: 'INV000001',
+          total_amount: '30000',
+          currency: 'UGX'
+        })
+      },
+      payment: {
+        create: jest.fn().mockResolvedValue({
+          id: 'pay-new',
+          human_friendly_id: 'PAY000002',
+          status: 'COMPLETED',
+          amount: '30000',
+          paid_at: new Date('2026-05-21T09:00:00.000Z')
+        }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'pay-new',
+          human_friendly_id: 'PAY000002',
+          status: 'COMPLETED',
+          amount: '30000'
+        })
+      },
+      facility: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      visit_queue: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      emergency_case: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      triage_assessment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await opdFlowService.payConsultation(
+      'enc-1',
+      {
+        amount: '30000',
+        currency: 'UGX',
+        method: 'CASH',
+        status: 'COMPLETED',
+        notes: 'Corrected consultation fee'
+      },
+      {
+        user_id: 'billing-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1'
+      }
+    );
+
+    expect(tx.payment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        invoice_id: 'inv-1',
+        amount: '30000',
+        status: 'COMPLETED'
+      })
+    });
+    expect(tx.invoice.update).toHaveBeenNthCalledWith(1, {
+      where: { id: 'inv-1' },
+      data: expect.objectContaining({
+        total_amount: '30000',
+        currency: 'UGX'
+      })
+    });
+    expect(tx.invoice.update).toHaveBeenNthCalledWith(2, {
+      where: { id: 'inv-1' },
+      data: expect.objectContaining({
+        status: 'PAID',
+        billing_status: 'PAID',
+        currency: 'UGX'
+      })
+    });
+    expect(tx.encounter.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          extension_json: expect.objectContaining({
+            opd_flow: expect.objectContaining({
+              consultation: expect.objectContaining({
+                payment_id: 'pay-new',
+                paid_amount: '30000'
+              })
+            })
+          })
+        })
+      })
+    );
   });
 
   it('updates existing OPD vitals instead of creating duplicate encounter measurements', async () => {
@@ -1017,6 +1247,43 @@ describe('opd-flow.service', () => {
       data: { status: 'IN_PROGRESS' }
     });
     expect(result.flow.stage).toBe('WAITING_DOCTOR_REVIEW');
+  });
+
+  it('requires a reason for backward stage corrections', async () => {
+    const tx = {
+      encounter: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'enc-1',
+          tenant_id: 'tenant-1',
+          patient_id: 'pat-1',
+          status: 'OPEN',
+          extension_json: {
+            opd_flow: {
+              stage: 'WAITING_DOCTOR_REVIEW',
+              visit_queue_id: null,
+              appointment_id: null
+            }
+          }
+        }),
+        update: jest.fn()
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.correctStage(
+        'enc-1',
+        {
+          stage_to: 'WAITING_VITALS'
+        },
+        { user_id: 'doctor-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.validation.required',
+      errors: expect.arrayContaining([expect.objectContaining({ field: 'reason' })])
+    });
+    expect(tx.encounter.update).not.toHaveBeenCalled();
   });
 
   it('emits OPD realtime updates, excluding actor and adding assigned provider', async () => {
