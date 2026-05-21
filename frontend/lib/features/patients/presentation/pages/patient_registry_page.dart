@@ -19,7 +19,6 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
-import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
@@ -1884,14 +1883,14 @@ class _QuickActions extends ConsumerWidget {
             ),
             AppPermissionActionItem(
               label: l10n.patientsQuickOpdCheckInAction,
-              icon: startOpdEncounterIcon,
+              icon: opdEncounterIcon,
               onPressed: () => _openQuickAction(
                 context,
                 ref,
                 patient,
                 _PatientQuickAction.opdCheckIn,
               ),
-              requirement: startOpdEncounterPermissionRequirement,
+              requirement: opdEncounterPermissionRequirement,
             ),
             AppPermissionActionItem(
               label: l10n.patientsQuickTriageAction,
@@ -1995,7 +1994,7 @@ Future<void> _openQuickAction(
           detail: detail,
           patient: patient,
         ),
-        _PatientQuickAction.opdCheckIn => StartOpdEncounterDialog(
+        _PatientQuickAction.opdCheckIn => OpdEncounterDialog(
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,

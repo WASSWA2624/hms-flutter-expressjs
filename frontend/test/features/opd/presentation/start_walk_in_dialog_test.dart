@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -27,91 +28,89 @@ void main() {
     registerFallbackValue(const OpdTriageQueueQuery());
   });
 
-  testWidgets(
-    'StartOpdEncounterDialog loads and submits the new patient flow',
-    (WidgetTester tester) async {
-      final _MockPatientRepository patientRepository = _MockPatientRepository();
-      final _MockOpdRepository opdRepository = _MockOpdRepository();
-      Map<String, Object?>? submittedPayload;
+  testWidgets('OpdEncounterDialog loads and submits the new patient flow', (
+    WidgetTester tester,
+  ) async {
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+    Map<String, Object?>? submittedPayload;
 
-      when(() => patientRepository.listPatients(any())).thenAnswer(
-        (_) async => const Result<AppPage<Patient>>.success(
-          AppPage<Patient>(
-            items: <Patient>[],
-            request: AppPageRequest(pageSize: 50),
-            totalItemCount: 0,
-          ),
+    when(() => patientRepository.listPatients(any())).thenAnswer(
+      (_) async => const Result<AppPage<Patient>>.success(
+        AppPage<Patient>(
+          items: <Patient>[],
+          request: AppPageRequest(pageSize: 50),
+          totalItemCount: 0,
         ),
-      );
-      when(() => opdRepository.listAppointments(any())).thenAnswer(
-        (_) async => const Result<AppPage<OpdAppointment>>.success(
-          AppPage<OpdAppointment>(
-            items: <OpdAppointment>[],
-            request: AppPageRequest(pageSize: 50),
-            totalItemCount: 0,
-          ),
+      ),
+    );
+    when(() => opdRepository.listAppointments(any())).thenAnswer(
+      (_) async => const Result<AppPage<OpdAppointment>>.success(
+        AppPage<OpdAppointment>(
+          items: <OpdAppointment>[],
+          request: AppPageRequest(pageSize: 50),
+          totalItemCount: 0,
         ),
-      );
-      when(
-        () => opdRepository.listProviders(search: any(named: 'search')),
-      ).thenAnswer(
-        (_) async => const Result<List<OpdProviderOption>>.success(
-          <OpdProviderOption>[],
-        ),
-      );
+      ),
+    );
+    when(
+      () => opdRepository.listProviders(search: any(named: 'search')),
+    ).thenAnswer(
+      (_) async =>
+          const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+    );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            patientRepositoryProvider.overrideWithValue(patientRepository),
-            opdRepositoryProvider.overrideWithValue(opdRepository),
-          ],
-          child: MaterialApp(
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            supportedLocales: AppLocalizations.supportedLocales,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: Scaffold(
-              body: StartOpdEncounterDialog(
-                providerSchedules: const <OpdProviderSchedule>[],
-                appointments: const <OpdAppointment>[],
-                onSubmit: (Map<String, Object?> payload) async {
-                  submittedPayload = payload;
-                  return null;
-                },
-              ),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          patientRepositoryProvider.overrideWithValue(patientRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(
+            body: OpdEncounterDialog(
+              providerSchedules: const <OpdProviderSchedule>[],
+              appointments: const <OpdAppointment>[],
+              onSubmit: (Map<String, Object?> payload) async {
+                submittedPayload = payload;
+                return null;
+              },
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('New patient'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('New patient'));
+    await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('First name *'), findsOneWidget);
-      expect(find.text('Last name *'), findsOneWidget);
-      expect(find.text('Gender (optional)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(find.text('First name *'), findsOneWidget);
+    expect(find.text('Last name *'), findsOneWidget);
+    expect(find.text('Gender (optional)'), findsOneWidget);
 
-      await tester.enterText(find.byType(EditableText).at(0), 'Jane');
-      await tester.enterText(find.byType(EditableText).at(1), 'Doe');
-      await tester.tap(find.text('Start encounter').last);
-      await tester.pumpAndSettle();
+    await tester.enterText(find.byType(EditableText).at(0), 'Jane');
+    await tester.enterText(find.byType(EditableText).at(1), 'Doe');
+    await tester.tap(find.text('Start encounter').last);
+    await tester.pumpAndSettle();
 
-      expect(submittedPayload?['patient_registration'], <String, Object?>{
-        'first_name': 'Jane',
-        'last_name': 'Doe',
-        'gender': null,
-      });
-      expect(submittedPayload?['arrival_mode'], 'WALK_IN');
-      expect(submittedPayload?['require_consultation_payment'], isTrue);
-      expect(submittedPayload?['create_consultation_invoice'], isTrue);
-    },
-  );
+    expect(submittedPayload?['patient_registration'], <String, Object?>{
+      'first_name': 'Jane',
+      'last_name': 'Doe',
+      'gender': null,
+    });
+    expect(submittedPayload?['arrival_mode'], 'WALK_IN');
+    expect(submittedPayload?['require_consultation_payment'], isTrue);
+    expect(submittedPayload?['create_consultation_invoice'], isTrue);
+  });
 
   testWidgets(
-    'StartOpdEncounterDialog preselects existing patient when no appointment exists',
+    'OpdEncounterDialog preselects existing patient when no appointment exists',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
       final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -132,7 +131,7 @@ void main() {
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
-        dialog: StartOpdEncounterDialog(
+        dialog: OpdEncounterDialog(
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,
@@ -146,7 +145,7 @@ void main() {
   );
 
   testWidgets(
-    'StartOpdEncounterDialog preselects appointment mode for one eligible patient appointment',
+    'OpdEncounterDialog preselects appointment mode for one eligible patient appointment',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
       final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -176,7 +175,7 @@ void main() {
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
-        dialog: StartOpdEncounterDialog(
+        dialog: OpdEncounterDialog(
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,
@@ -195,7 +194,7 @@ void main() {
   );
 
   testWidgets(
-    'StartOpdEncounterDialog requires selection when patient has multiple eligible appointments',
+    'OpdEncounterDialog requires selection when patient has multiple eligible appointments',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
       final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -235,7 +234,7 @@ void main() {
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
-        dialog: StartOpdEncounterDialog(
+        dialog: OpdEncounterDialog(
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,
@@ -252,7 +251,7 @@ void main() {
   );
 
   testWidgets(
-    'StartOpdEncounterDialog opens active encounter instead of submitting duplicate creation',
+    'OpdEncounterDialog opens active encounter instead of submitting duplicate creation',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
       final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -285,7 +284,7 @@ void main() {
         tester,
         patientRepository: patientRepository,
         opdRepository: opdRepository,
-        dialog: StartOpdEncounterDialog(
+        dialog: OpdEncounterDialog(
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           activeFlows: <OpdFlowSummary>[activeFlow],
@@ -642,7 +641,7 @@ Future<void> _pumpStartDialog(
   WidgetTester tester, {
   required _MockPatientRepository patientRepository,
   required _MockOpdRepository opdRepository,
-  required StartOpdEncounterDialog dialog,
+  required OpdEncounterDialog dialog,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
