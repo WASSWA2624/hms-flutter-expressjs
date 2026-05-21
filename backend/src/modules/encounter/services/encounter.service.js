@@ -10,6 +10,7 @@
 const encounterRepository = require('@repositories/encounter/encounter.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { activeOpdLockKeyForEncounter } = require('@lib/opd-active-encounter');
 
 const PATIENT_CONTACT_LOOKUP_TYPES = ['PHONE', 'EMAIL'];
 
@@ -26,18 +27,18 @@ const ENCOUNTER_LOOKUP_INCLUDE = {
         where: {
           deleted_at: null,
           contact_type: {
-            in: PATIENT_CONTACT_LOOKUP_TYPES,
-          },
+            in: PATIENT_CONTACT_LOOKUP_TYPES
+          }
         },
         orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }],
         select: {
           contact_type: true,
           value: true,
-          is_primary: true,
-        },
-      },
-    },
-  },
+          is_primary: true
+        }
+      }
+    }
+  }
 };
 
 const normalizeSearchTerm = (value) => {
@@ -45,12 +46,14 @@ const normalizeSearchTerm = (value) => {
   if (!term) return null;
   return {
     raw: term,
-    upper: term.toUpperCase(),
+    upper: term.toUpperCase()
   };
 };
 
 const normalizeContactType = (value) =>
-  String(value || '').trim().toUpperCase();
+  String(value || '')
+    .trim()
+    .toUpperCase();
 
 const resolvePrimaryPatientContactByType = (contacts = [], type) => {
   const normalizedType = normalizeContactType(type);
@@ -64,8 +67,10 @@ const serializeEncounterPatient = (patient) => {
   if (!patient || typeof patient !== 'object') return patient;
 
   const contacts = Array.isArray(patient.contacts) ? patient.contacts : [];
-  const primaryPhone = resolvePrimaryPatientContactByType(contacts, 'PHONE')?.value || null;
-  const primaryEmail = resolvePrimaryPatientContactByType(contacts, 'EMAIL')?.value || null;
+  const primaryPhone =
+    resolvePrimaryPatientContactByType(contacts, 'PHONE')?.value || null;
+  const primaryEmail =
+    resolvePrimaryPatientContactByType(contacts, 'EMAIL')?.value || null;
 
   return {
     ...patient,
@@ -74,7 +79,7 @@ const serializeEncounterPatient = (patient) => {
     primary_phone: primaryPhone,
     primary_email: primaryEmail,
     contact_phone: primaryPhone,
-    contact_email: primaryEmail,
+    contact_email: primaryEmail
   };
 };
 
@@ -84,7 +89,7 @@ const serializeEncounterSummaries = (encounters = []) =>
     if (!encounter.patient) return encounter;
     return {
       ...encounter,
-      patient: serializeEncounterPatient(encounter.patient),
+      patient: serializeEncounterPatient(encounter.patient)
     };
   });
 
@@ -100,19 +105,29 @@ const serializeEncounterSummaries = (encounters = []) =>
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Encounters and pagination data
  */
-const listEncounters = async (filters, page, limit, sortBy, order, userId, ipAddress) => {
+const listEncounters = async (
+  filters,
+  page,
+  limit,
+  sortBy,
+  order,
+  userId,
+  ipAddress
+) => {
   try {
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { created_at: 'desc' };
 
     // Build filter object
     const whereClause = {};
-    
+
     if (filters.tenant_id) whereClause.tenant_id = filters.tenant_id;
     if (filters.facility_id) whereClause.facility_id = filters.facility_id;
     if (filters.patient_id) whereClause.patient_id = filters.patient_id;
-    if (filters.provider_user_id) whereClause.provider_user_id = filters.provider_user_id;
-    if (filters.encounter_type) whereClause.encounter_type = filters.encounter_type;
+    if (filters.provider_user_id)
+      whereClause.provider_user_id = filters.provider_user_id;
+    if (filters.encounter_type)
+      whereClause.encounter_type = filters.encounter_type;
     if (filters.status) whereClause.status = filters.status;
 
     const searchTerm = normalizeSearchTerm(filters.search);
@@ -128,15 +143,15 @@ const listEncounters = async (filters, page, limit, sortBy, order, userId, ipAdd
               some: {
                 deleted_at: null,
                 contact_type: {
-                  in: PATIENT_CONTACT_LOOKUP_TYPES,
+                  in: PATIENT_CONTACT_LOOKUP_TYPES
                 },
-                value: { contains: searchTerm.raw },
-              },
-            },
-          },
+                value: { contains: searchTerm.raw }
+              }
+            }
+          }
         },
         { encounter_type: { contains: searchTerm.raw } },
-        { status: { contains: searchTerm.raw } },
+        { status: { contains: searchTerm.raw } }
       ];
     }
 
@@ -166,7 +181,9 @@ const listEncounters = async (filters, page, limit, sortBy, order, userId, ipAdd
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.server.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -189,7 +206,9 @@ const getEncounterById = async (id, userId, ipAddress) => {
     return encounter;
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.server.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -210,8 +229,9 @@ const createEncounter = async (data, userId, ipAddress) => {
       provider_user_id: data.provider_user_id || userId || null,
       status: data.status || 'OPEN',
       started_at: data.started_at ? new Date(data.started_at) : now,
-      ended_at: data.ended_at ? new Date(data.ended_at) : null,
+      ended_at: data.ended_at ? new Date(data.ended_at) : null
     };
+    payload.active_opd_lock_key = activeOpdLockKeyForEncounter(payload);
 
     const encounter = await encounterRepository.create(payload);
 
@@ -228,7 +248,9 @@ const createEncounter = async (data, userId, ipAddress) => {
     return encounter;
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.server.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -259,6 +281,11 @@ const updateEncounter = async (id, data, userId, ipAddress) => {
     ) {
       payload.ended_at = new Date();
     }
+    payload.active_opd_lock_key = activeOpdLockKeyForEncounter({
+      ...before,
+      ...payload,
+      status: payload.status || before.status
+    });
 
     const encounter = await encounterRepository.update(id, payload);
 
@@ -275,7 +302,9 @@ const updateEncounter = async (id, data, userId, ipAddress) => {
     return encounter;
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.server.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -310,7 +339,9 @@ const deleteEncounter = async (id, userId, ipAddress) => {
     }).catch(() => {});
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.server.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 

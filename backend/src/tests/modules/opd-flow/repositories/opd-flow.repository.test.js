@@ -76,6 +76,7 @@ describe('opd-flow.repository', () => {
 
     const result = await repository.findOpenActiveEncounterForPatient({
       tenantId: 'tenant-1',
+      facilityId: 'facility-1',
       patientId: 'patient-1'
     });
 
@@ -84,6 +85,7 @@ describe('opd-flow.repository', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
           patient_id: 'patient-1',
           status: 'OPEN',
           encounter_type: { in: ['OPD', 'EMERGENCY'] },
@@ -104,6 +106,18 @@ describe('opd-flow.repository', () => {
     await expect(repository.create({})).rejects.toBeInstanceOf(HttpError);
   });
 
+  it('create maps active OPD lock conflicts to OPD duplicate error', async () => {
+    const error = new Error('unique violation');
+    error.code = 'P2002';
+    error.meta = { target: ['active_opd_lock_key'] };
+    prisma.encounter.create.mockRejectedValue(error);
+
+    await expect(repository.create({})).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.active_encounter_exists',
+      statusCode: 409
+    });
+  });
+
   it('create maps foreign key violation to HttpError', async () => {
     const error = new Error('foreign key violation');
     error.code = 'P2003';
@@ -118,7 +132,9 @@ describe('opd-flow.repository', () => {
     error.code = 'P2025';
     prisma.encounter.update.mockRejectedValue(error);
 
-    await expect(repository.update('enc-1', {})).rejects.toBeInstanceOf(HttpError);
+    await expect(repository.update('enc-1', {})).rejects.toBeInstanceOf(
+      HttpError
+    );
   });
 
   it('update maps foreign key violation to HttpError', async () => {
@@ -127,7 +143,9 @@ describe('opd-flow.repository', () => {
     error.meta = { field_name: 'provider_user_id' };
     prisma.encounter.update.mockRejectedValue(error);
 
-    await expect(repository.update('enc-1', {})).rejects.toBeInstanceOf(HttpError);
+    await expect(repository.update('enc-1', {})).rejects.toBeInstanceOf(
+      HttpError
+    );
   });
 
   it('softDelete sets deleted_at', async () => {
@@ -139,6 +157,7 @@ describe('opd-flow.repository', () => {
       expect.objectContaining({
         where: { id: 'enc-1' },
         data: {
+          active_opd_lock_key: null,
           deleted_at: expect.any(Date)
         }
       })

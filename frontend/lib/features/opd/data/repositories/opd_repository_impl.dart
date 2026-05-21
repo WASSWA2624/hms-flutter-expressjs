@@ -422,6 +422,18 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
+  Future<Result<void>> updateLabOrder(
+    String labOrderId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.labOrders, labOrderId),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<List<OpdProviderOption>>> listProviders({String? search}) {
     return _apiClient.get<List<OpdProviderOption>>(
       ApiEndpoints.collection(HmsApiResource.doctors),

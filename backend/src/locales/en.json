@@ -1087,6 +1087,7 @@
   "errors.opd_flow.appointment_patient_mismatch": "Provided patient does not match appointment patient",
   "errors.opd_flow.appointment_terminal_status": "Cannot start OPD flow from a cancelled or no-show appointment",
   "errors.opd_flow.patient_not_found": "Patient not found",
+  "errors.opd_flow.active_encounter_exists": "This patient already has an active OPD encounter at this facility",
   "errors.opd_flow.consultation_already_paid": "Consultation payment is already completed",
   "errors.opd_flow.consultation_payment_required": "Consultation payment is required before continuing this step",
   "errors.opd_flow.invalid_stage_transition": "Invalid OPD flow stage transition",

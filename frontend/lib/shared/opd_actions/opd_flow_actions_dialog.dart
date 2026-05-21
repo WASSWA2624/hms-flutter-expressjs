@@ -562,7 +562,14 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               required List<String> labTestIds,
               required List<String> labPanelIds,
             }) {
-              return Future<AppFailure?>.value(AppFailure.validation());
+              return ref
+                  .read(opdWorkspaceControllerProvider.notifier)
+                  .updateLabOrder(
+                    flow: flow,
+                    labOrderId: labOrderId,
+                    labTestIds: labTestIds,
+                    labPanelIds: labPanelIds,
+                  );
             },
       ),
     );

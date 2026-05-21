@@ -5,9 +5,12 @@ jest.mock('@lib/audit');
 jest.mock('@services/ipd-flow/ipd-flow.service', () => ({
   emitAdmissionRefreshEvent: jest.fn().mockResolvedValue(null)
 }));
-jest.mock('@services/clinical-alert-threshold/clinical-alert-threshold.service', () => ({
-  evaluateVitalAndCreateAlerts: jest.fn().mockResolvedValue(null)
-}));
+jest.mock(
+  '@services/clinical-alert-threshold/clinical-alert-threshold.service',
+  () => ({
+    evaluateVitalAndCreateAlerts: jest.fn().mockResolvedValue(null)
+  })
+);
 jest.mock('@lib/websocket', () => ({
   emitToUser: jest.fn(),
   emitToUsers: jest.fn(),
@@ -98,7 +101,13 @@ describe('opd-flow.service', () => {
     ]);
     opdFlowRepository.count.mockResolvedValue(1);
 
-    const result = await opdFlowService.listOpdFlows({ tenant_id: 'tenant-1' }, 1, 20, 'started_at', 'desc');
+    const result = await opdFlowService.listOpdFlows(
+      { tenant_id: 'tenant-1' },
+      1,
+      20,
+      'started_at',
+      'desc'
+    );
 
     expect(opdFlowRepository.findMany).toHaveBeenCalled();
     expect(result.items).toHaveLength(1);
@@ -145,7 +154,13 @@ describe('opd-flow.service', () => {
       }
     ]);
 
-    const result = await opdFlowService.listOpdFlows({}, 1, 20, 'started_at', 'desc');
+    const result = await opdFlowService.listOpdFlows(
+      {},
+      1,
+      20,
+      'started_at',
+      'desc'
+    );
 
     expect(result.items[0].flow.consultation).toEqual(
       expect.objectContaining({
@@ -228,7 +243,9 @@ describe('opd-flow.service', () => {
         findFirst: jest.fn().mockResolvedValue(null)
       },
       encounter: {
-        create: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
         findFirst: jest.fn().mockResolvedValueOnce({
           id: 'enc-1',
           encounter_type: 'OPD',
@@ -263,6 +280,13 @@ describe('opd-flow.service', () => {
     );
 
     expect(tx.patient.create).toHaveBeenCalled();
+    expect(tx.encounter.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          active_opd_lock_key: 'opd:TENANT-1:GLOBAL:pat-1'
+        })
+      })
+    );
     expect(result.flow.stage).toBe('WAITING_CONSULTATION_PAYMENT');
   });
 
@@ -302,7 +326,9 @@ describe('opd-flow.service', () => {
         update: jest.fn()
       },
       encounter: {
-        create: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
         findFirst: jest.fn().mockResolvedValueOnce({
           id: 'enc-1',
           encounter_type: 'EMERGENCY',
@@ -407,7 +433,9 @@ describe('opd-flow.service', () => {
         update: jest.fn()
       },
       encounter: {
-        create: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
         findFirst: jest
           .fn()
           .mockResolvedValueOnce(null)
@@ -541,14 +569,77 @@ describe('opd-flow.service', () => {
       messageKey: 'errors.opd_flow.active_encounter_exists',
       statusCode: 409
     });
-    expect(opdFlowRepository.findOpenActiveEncounterForPatient).toHaveBeenCalledWith(
+    expect(
+      opdFlowRepository.findOpenActiveEncounterForPatient
+    ).toHaveBeenCalledWith(
       {
         tenantId: 'TENANT-1',
+        facilityId: null,
         patientId: 'pat-1',
         encounterTypes: ['OPD', 'EMERGENCY']
       },
       tx
     );
+  });
+
+  it('maps database active OPD lock conflicts to duplicate encounter errors', async () => {
+    const duplicateError = new Error('unique conflict');
+    duplicateError.code = 'P2002';
+    duplicateError.meta = { target: ['active_opd_lock_key'] };
+
+    const tx = {
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      patient: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'pat-1' })
+      },
+      invoice: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      payment: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      emergency_case: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      triage_assessment: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      visit_queue: {
+        create: jest.fn().mockResolvedValue({ id: 'vq-1' }),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      encounter: {
+        create: jest.fn().mockRejectedValue(duplicateError),
+        findFirst: jest.fn(),
+        update: jest.fn()
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.startOpdFlow(
+        {
+          tenant_id: 'tenant-1',
+          patient_id: 'PAT0000003',
+          require_consultation_payment: false
+        },
+        { tenant_id: 'tenant-1', user_id: 'usr-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.active_encounter_exists',
+      statusCode: 409
+    });
   });
 
   it('rejects OPD flow start for cancelled appointment', async () => {
@@ -668,7 +759,9 @@ describe('opd-flow.service', () => {
             }
           })
           .mockResolvedValue(snapshotEncounter),
-        update: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
       },
       invoice: {
         findFirst: jest.fn().mockResolvedValue({
@@ -939,7 +1032,9 @@ describe('opd-flow.service', () => {
               }
             }
           }),
-        update: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
       },
       clinical_note: {
         create: jest.fn().mockResolvedValue({ id: 'cn-1' })
@@ -962,7 +1057,10 @@ describe('opd-flow.service', () => {
       lab_panel: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'lab-panel-1',
-          panel_items: [{ lab_test_id: 'lab-test-1' }, { lab_test_id: 'lab-test-2' }]
+          panel_items: [
+            { lab_test_id: 'lab-test-1' },
+            { lab_test_id: 'lab-test-2' }
+          ]
         })
       },
       radiology_order: {
@@ -994,7 +1092,10 @@ describe('opd-flow.service', () => {
       'enc-1',
       {
         note: 'Doctor assessment completed',
-        lab_requests: [{ lab_test_id: 'lab-test-1' }, { lab_panel_id: 'lab-panel-1' }],
+        lab_requests: [
+          { lab_test_id: 'lab-test-1' },
+          { lab_panel_id: 'lab-panel-1' }
+        ],
         radiology_requests: [{ radiology_test_id: 'rad-test-1' }],
         medications: [{ drug_id: 'drug-1', quantity: 1 }]
       },
@@ -1094,7 +1195,9 @@ describe('opd-flow.service', () => {
               }
             }
           }),
-        update: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
       },
       admission: {
         create: jest.fn().mockResolvedValue({ id: 'adm-1' })
@@ -1104,7 +1207,9 @@ describe('opd-flow.service', () => {
         findFirst: jest.fn().mockResolvedValue({ id: 'vq-1' })
       },
       appointment: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'apt-1', status: 'IN_PROGRESS' }),
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 'apt-1', status: 'IN_PROGRESS' }),
         update: jest.fn()
       },
       emergency_case: {
@@ -1200,7 +1305,9 @@ describe('opd-flow.service', () => {
           .mockResolvedValueOnce({
             id: 'enc-1',
             tenant_id: 'tenant-1',
+            facility_id: 'facility-1',
             patient_id: 'pat-1',
+            encounter_type: 'OPD',
             status: 'CLOSED',
             ended_at: new Date('2026-05-16T08:00:00.000Z'),
             extension_json: {
@@ -1225,14 +1332,18 @@ describe('opd-flow.service', () => {
               }
             }
           }),
-        update: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
       },
       visit_queue: {
         update: jest.fn(),
         findFirst: jest.fn().mockResolvedValue({ id: 'vq-1' })
       },
       appointment: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'apt-1', status: 'COMPLETED' }),
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 'apt-1', status: 'COMPLETED' }),
         update: jest.fn()
       },
       invoice: {
@@ -1265,6 +1376,7 @@ describe('opd-flow.service', () => {
         where: { id: 'enc-1' },
         data: expect.objectContaining({
           status: 'OPEN',
+          active_opd_lock_key: 'opd:tenant-1:facility-1:pat-1',
           ended_at: null
         })
       })
@@ -1312,13 +1424,18 @@ describe('opd-flow.service', () => {
       )
     ).rejects.toMatchObject({
       messageKey: 'errors.validation.required',
-      errors: expect.arrayContaining([expect.objectContaining({ field: 'reason' })])
+      errors: expect.arrayContaining([
+        expect.objectContaining({ field: 'reason' })
+      ])
     });
     expect(tx.encounter.update).not.toHaveBeenCalled();
   });
 
   it('emits OPD realtime updates, excluding actor and adding assigned provider', async () => {
-    prisma.user_role.findMany.mockResolvedValue([{ user_id: 'doctor-team-1' }, { user_id: 'actor-1' }]);
+    prisma.user_role.findMany.mockResolvedValue([
+      { user_id: 'doctor-team-1' },
+      { user_id: 'actor-1' }
+    ]);
     prisma.notification_delivery.createMany.mockResolvedValue({ count: 2 });
 
     const tx = {
@@ -1471,7 +1588,10 @@ describe('opd-flow.service', () => {
         findFirst: jest.fn().mockResolvedValue(null)
       },
       user: {
-        findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 'doc-global-1' })
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({ id: 'doc-global-1' })
       },
       appointment: {
         findFirst: jest.fn().mockResolvedValue(null)
@@ -1550,7 +1670,9 @@ describe('opd-flow.service', () => {
               }
             }
           }),
-        update: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
+        update: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' })
       },
       vital_sign: {
         createMany: jest.fn()

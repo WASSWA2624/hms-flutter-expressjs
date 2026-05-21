@@ -533,6 +533,27 @@ final class OpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> updateLabOrder({
+    required OpdFlowSummary flow,
+    required String labOrderId,
+    required List<String> labTestIds,
+    required List<String> labPanelIds,
+  }) {
+    return _mutateRelatedFlowRecord(
+      flow,
+      () => _repository.updateLabOrder(labOrderId, <String, Object?>{
+        'requested_tests': <Map<String, Object?>>[
+          for (final String id in labTestIds)
+            <String, Object?>{'lab_test_id': id},
+        ],
+        'requested_panels': <Map<String, Object?>>[
+          for (final String id in labPanelIds)
+            <String, Object?>{'lab_panel_id': id},
+        ],
+      }),
+    );
+  }
+
   Future<AppFailure?> disposeFlow(
     OpdFlowSummary flow,
     String decision,

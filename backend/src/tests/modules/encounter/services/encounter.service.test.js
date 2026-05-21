@@ -1,6 +1,6 @@
 jest.mock('@repositories/encounter/encounter.repository');
 jest.mock('@lib/audit', () => ({
-  createAuditLog: jest.fn(),
+  createAuditLog: jest.fn().mockResolvedValue({})
 }));
 
 const subject = require('../../../../modules/encounter/services/encounter.service');
@@ -30,16 +30,16 @@ describe('encounter.service', () => {
             {
               contact_type: 'EMAIL',
               value: 'ada@example.com',
-              is_primary: false,
+              is_primary: false
             },
             {
               contact_type: 'PHONE',
               value: '+256700000001',
-              is_primary: true,
-            },
-          ],
-        },
-      },
+              is_primary: true
+            }
+          ]
+        }
+      }
     ]);
     encounterRepository.count.mockResolvedValue(0);
 
@@ -47,7 +47,7 @@ describe('encounter.service', () => {
       {
         tenant_id: 'tenant-1',
         facility_id: 'facility-1',
-        search: 'enc-2001',
+        search: 'enc-2001'
       },
       1,
       20,
@@ -71,14 +71,14 @@ describe('encounter.service', () => {
                 some: expect.objectContaining({
                   deleted_at: null,
                   contact_type: {
-                    in: ['PHONE', 'EMAIL'],
+                    in: ['PHONE', 'EMAIL']
                   },
-                  value: { contains: 'enc-2001' },
-                }),
-              },
-            },
-          },
-        ]),
+                  value: { contains: 'enc-2001' }
+                })
+              }
+            }
+          }
+        ])
       }),
       0,
       20,
@@ -93,12 +93,12 @@ describe('encounter.service', () => {
               where: expect.objectContaining({
                 deleted_at: null,
                 contact_type: {
-                  in: ['PHONE', 'EMAIL'],
-                },
-              }),
-            }),
-          }),
-        }),
+                  in: ['PHONE', 'EMAIL']
+                }
+              })
+            })
+          })
+        })
       })
     );
     expect(result.encounters).toEqual([
@@ -110,13 +110,72 @@ describe('encounter.service', () => {
           primary_phone: '+256700000001',
           primary_email: 'ada@example.com',
           contact_phone: '+256700000001',
-          contact_email: 'ada@example.com',
-        }),
-      }),
+          contact_email: 'ada@example.com'
+        })
+      })
     ]);
     expect(encounterRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({
-        OR: expect.any(Array),
+        OR: expect.any(Array)
+      })
+    );
+  });
+
+  it('sets active OPD lock key when creating an open OPD encounter', async () => {
+    encounterRepository.create.mockImplementation(async (payload) => ({
+      id: 'enc-1',
+      ...payload
+    }));
+
+    await subject.createEncounter(
+      {
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        patient_id: 'patient-1',
+        encounter_type: 'OPD',
+        status: 'OPEN',
+        started_at: '2026-05-21T08:00:00.000Z'
+      },
+      'user-1',
+      '127.0.0.1'
+    );
+
+    expect(encounterRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        active_opd_lock_key: 'opd:tenant-1:facility-1:patient-1'
+      })
+    );
+  });
+
+  it('clears active OPD lock key when closing an encounter', async () => {
+    encounterRepository.findById.mockResolvedValue({
+      id: 'enc-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      patient_id: 'patient-1',
+      encounter_type: 'OPD',
+      status: 'OPEN',
+      ended_at: null
+    });
+    encounterRepository.update.mockImplementation(async (_, payload) => ({
+      id: 'enc-1',
+      ...payload
+    }));
+
+    await subject.updateEncounter(
+      'enc-1',
+      {
+        status: 'CLOSED'
+      },
+      'user-1',
+      '127.0.0.1'
+    );
+
+    expect(encounterRepository.update).toHaveBeenCalledWith(
+      'enc-1',
+      expect.objectContaining({
+        active_opd_lock_key: null,
+        ended_at: expect.any(Date)
       })
     );
   });

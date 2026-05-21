@@ -10,6 +10,7 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { withActivePatient } = require('@lib/patient-query-filters');
+const { throwIfActiveOpdLockError } = require('@lib/opd-active-encounter');
 
 const PROVIDER_PROFILE_SELECT = {
   first_name: true,
@@ -74,7 +75,9 @@ const findById = async (id, include = {}) => {
       }
     });
   } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -88,11 +91,17 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Additional relations to include
  * @returns {Promise<Array>} Array of encounter records
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { started_at: 'desc' }, include = {}) => {
+const findMany = async (
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = { started_at: 'desc' },
+  include = {}
+) => {
   try {
     const where = withActivePatient({
       encounter_type: { in: ['OPD', 'EMERGENCY'] },
-      ...filters,
+      ...filters
     });
 
     return await prisma.encounter.findMany({
@@ -106,7 +115,9 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { started_a
       }
     });
   } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -120,12 +131,14 @@ const count = async (filters = {}) => {
   try {
     const where = withActivePatient({
       encounter_type: { in: ['OPD', 'EMERGENCY'] },
-      ...filters,
+      ...filters
     });
 
     return await prisma.encounter.count({ where });
   } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -134,13 +147,19 @@ const count = async (filters = {}) => {
  *
  * @param {Object} filters - Filter criteria
  * @param {string} filters.tenantId - Tenant ID
+ * @param {string|null} [filters.facilityId] - Facility ID
  * @param {string} filters.patientId - Patient ID
  * @param {Array<string>} [filters.encounterTypes] - Encounter types to guard
  * @param {Object} [client] - Prisma client or transaction client
  * @returns {Promise<Object|null>} Open encounter or null
  */
 const findOpenActiveEncounterForPatient = async (
-  { tenantId, patientId, encounterTypes = ['OPD', 'EMERGENCY'] } = {},
+  {
+    tenantId,
+    facilityId,
+    patientId,
+    encounterTypes = ['OPD', 'EMERGENCY']
+  } = {},
   client = prisma
 ) => {
   try {
@@ -151,6 +170,9 @@ const findOpenActiveEncounterForPatient = async (
     return await client.encounter.findFirst({
       where: withActivePatient({
         tenant_id: tenantId,
+        ...(facilityId !== undefined
+          ? { facility_id: facilityId || null }
+          : {}),
         patient_id: patientId,
         status: 'OPEN',
         encounter_type: { in: encounterTypes }
@@ -169,7 +191,9 @@ const findOpenActiveEncounterForPatient = async (
       }
     });
   } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -186,15 +210,22 @@ const create = async (data) => {
       include: BASE_INCLUDE
     });
   } catch (error) {
+    throwIfActiveOpdLockError(error);
     if (error.code === 'P2002') {
       const target = error.meta?.target?.[0] || 'field';
-      throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
+      throw new HttpError('errors.database.unique_field', 409, [
+        { field: target }
+      ]);
     }
     if (error.code === 'P2003') {
       const target = error.meta?.field_name || 'field';
-      throw new HttpError('errors.database.foreign_key_field', 400, [{ field: target }]);
+      throw new HttpError('errors.database.foreign_key_field', 400, [
+        { field: target }
+      ]);
     }
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -213,18 +244,25 @@ const update = async (id, data) => {
       include: BASE_INCLUDE
     });
   } catch (error) {
+    throwIfActiveOpdLockError(error);
     if (error.code === 'P2025') {
       throw new HttpError('errors.encounter.not_found', 404);
     }
     if (error.code === 'P2002') {
       const target = error.meta?.target?.[0] || 'field';
-      throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
+      throw new HttpError('errors.database.unique_field', 409, [
+        { field: target }
+      ]);
     }
     if (error.code === 'P2003') {
       const target = error.meta?.field_name || 'field';
-      throw new HttpError('errors.database.foreign_key_field', 400, [{ field: target }]);
+      throw new HttpError('errors.database.foreign_key_field', 400, [
+        { field: target }
+      ]);
     }
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -240,6 +278,7 @@ const softDelete = async (id) => {
     return await prisma.encounter.update({
       where: { id },
       data: {
+        active_opd_lock_key: null,
         deleted_at: new Date()
       }
     });
@@ -247,7 +286,9 @@ const softDelete = async (id) => {
     if (error.code === 'P2025') {
       throw new HttpError('errors.encounter.not_found', 404);
     }
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 

@@ -2135,6 +2135,7 @@ model encounter {
   provider_user_id         String?         @db.VarChar(36)
   encounter_type           EncounterType
   status                   EncounterStatus
+  active_opd_lock_key      String?         @unique @db.VarChar(160)
   started_at               DateTime
   ended_at                 DateTime?
   extension_json           Json?

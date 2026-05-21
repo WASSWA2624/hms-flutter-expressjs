@@ -10,6 +10,7 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { withActivePatient } = require('@lib/patient-query-filters');
+const { throwIfActiveOpdLockError } = require('@lib/opd-active-encounter');
 
 /**
  * Find encounter by ID
@@ -25,7 +26,9 @@ const findById = async (id, include = {}) => {
       include
     });
   } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -39,7 +42,13 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of encounters
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = { created_at: 'desc' },
+  include = {}
+) => {
   try {
     const where = withActivePatient(filters);
 
@@ -51,7 +60,9 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       include
     });
   } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -67,7 +78,9 @@ const count = async (filters = {}) => {
 
     return await prisma.encounter.count({ where });
   } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -83,17 +96,24 @@ const create = async (data) => {
       data
     });
   } catch (error) {
+    throwIfActiveOpdLockError(error);
     if (error.code === 'P2002') {
       // Unique constraint violation
       const target = error.meta?.target?.[0] || 'field';
-      throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
+      throw new HttpError('errors.database.unique_field', 409, [
+        { field: target }
+      ]);
     }
     if (error.code === 'P2003') {
       // Foreign key constraint violation
       const target = error.meta?.field_name || 'field';
-      throw new HttpError('errors.database.foreign_key_field', 400, [{ field: target }]);
+      throw new HttpError('errors.database.foreign_key_field', 400, [
+        { field: target }
+      ]);
     }
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -111,20 +131,27 @@ const update = async (id, data) => {
       data
     });
   } catch (error) {
+    throwIfActiveOpdLockError(error);
     if (error.code === 'P2025') {
       throw new HttpError('errors.encounter.not_found', 404);
     }
     if (error.code === 'P2002') {
       // Unique constraint violation
       const target = error.meta?.target?.[0] || 'field';
-      throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
+      throw new HttpError('errors.database.unique_field', 409, [
+        { field: target }
+      ]);
     }
     if (error.code === 'P2003') {
       // Foreign key constraint violation
       const target = error.meta?.field_name || 'field';
-      throw new HttpError('errors.database.foreign_key_field', 400, [{ field: target }]);
+      throw new HttpError('errors.database.foreign_key_field', 400, [
+        { field: target }
+      ]);
     }
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 
@@ -140,6 +167,7 @@ const softDelete = async (id) => {
     return await prisma.encounter.update({
       where: { id },
       data: {
+        active_opd_lock_key: null,
         deleted_at: new Date()
       }
     });
@@ -147,7 +175,9 @@ const softDelete = async (id) => {
     if (error.code === 'P2025') {
       throw new HttpError('errors.encounter.not_found', 404);
     }
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
   }
 };
 

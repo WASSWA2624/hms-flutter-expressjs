@@ -71,9 +71,7 @@ describe('Encounter Repository', () => {
     it('should throw HttpError on database error', async () => {
       prisma.encounter.findFirst.mockRejectedValue(new Error('DB error'));
 
-      await expect(findById('enc-123'))
-        .rejects
-        .toThrow(HttpError);
+      await expect(findById('enc-123')).rejects.toThrow(HttpError);
     });
   });
 
@@ -138,9 +136,7 @@ describe('Encounter Repository', () => {
       error.meta = { field_name: 'patient_id' };
       prisma.encounter.create.mockRejectedValue(error);
 
-      await expect(create({}))
-        .rejects
-        .toThrow(HttpError);
+      await expect(create({})).rejects.toThrow(HttpError);
     });
   });
 
@@ -162,9 +158,7 @@ describe('Encounter Repository', () => {
       error.code = 'P2025';
       prisma.encounter.update.mockRejectedValue(error);
 
-      await expect(update('enc-123', {}))
-        .rejects
-        .toThrow(HttpError);
+      await expect(update('enc-123', {})).rejects.toThrow(HttpError);
     });
   });
 
@@ -181,7 +175,10 @@ describe('Encounter Repository', () => {
       expect(result).toEqual(mockEncounter);
       expect(prisma.encounter.update).toHaveBeenCalledWith({
         where: { id: 'enc-123' },
-        data: { deleted_at: expect.any(Date) }
+        data: {
+          active_opd_lock_key: null,
+          deleted_at: expect.any(Date)
+        }
       });
     });
   });

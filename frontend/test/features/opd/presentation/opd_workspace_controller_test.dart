@@ -247,9 +247,9 @@ void main() {
       Map<String, Object?>? submittedPayload;
 
       _stubInitialLoad(repository, flows: <OpdFlowSummary>[flow]);
-      when(() => repository.getOpdFlow(any())).thenAnswer(
-        (_) async => const Result<OpdFlowDetail>.success(corrected),
-      );
+      when(
+        () => repository.getOpdFlow(any()),
+      ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(corrected));
       when(() => repository.correctStage(any(), any())).thenAnswer((
         Invocation invocation,
       ) async {
@@ -275,6 +275,69 @@ void main() {
       verify(() => repository.correctStage('ENC000001', any())).called(1);
       verifyNever(() => repository.correctTriageStage(any(), any()));
     });
+
+    test(
+      'updateLabOrder sends requested tests and refreshes encounter detail',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        const OpdFlowSummary flow = OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          stage: 'LAB_REQUESTED',
+        );
+        const OpdFlowDetail detail = OpdFlowDetail(
+          summary: flow,
+          labOrders: <OpdRelatedRecord>[
+            OpdRelatedRecord(id: 'lab-order-1', kind: 'lab_order'),
+          ],
+        );
+        Map<String, Object?>? submittedPayload;
+
+        _stubInitialLoad(repository, flows: <OpdFlowSummary>[flow]);
+        when(() => repository.updateLabOrder(any(), any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          submittedPayload =
+              invocation.positionalArguments[1] as Map<String, Object?>;
+          return const Result<void>.success(null);
+        });
+        when(
+          () => repository.getOpdFlow(any()),
+        ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
+
+        final ProviderContainer container = ProviderContainer(
+          overrides: [opdRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+        clearInteractions(repository);
+
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .updateLabOrder(
+              flow: flow,
+              labOrderId: 'lab-order-1',
+              labTestIds: <String>['lab-test-1'],
+              labPanelIds: <String>['lab-panel-1'],
+            );
+
+        expect(failure, isNull);
+        expect(
+          submittedPayload?['requested_tests'],
+          equals(<Map<String, Object?>>[
+            <String, Object?>{'lab_test_id': 'lab-test-1'},
+          ]),
+        );
+        expect(
+          submittedPayload?['requested_panels'],
+          equals(<Map<String, Object?>>[
+            <String, Object?>{'lab_panel_id': 'lab-panel-1'},
+          ]),
+        );
+        verify(() => repository.updateLabOrder('lab-order-1', any())).called(1);
+        verify(() => repository.getOpdFlow('ENC000001')).called(1);
+      },
+    );
   });
 }
 
