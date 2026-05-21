@@ -1088,6 +1088,7 @@ class DoctorReviewDialog extends ConsumerStatefulWidget {
 class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
   late final TextEditingController _noteController;
   bool _isSaving = false;
+  String? _noteErrorText;
   AppFailure? _failure;
 
   @override
@@ -1121,15 +1122,21 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
-          OpdActionContextPanel(flow: flow, showTitle: false),
-          _OpdWorkflowStatusSummary(flow: flow, detail: detail),
           AppTextField(
             controller: _noteController,
             labelText: _opdRequiredFieldLabel(l10n, l10n.opdClinicalNoteLabel),
+            errorText: _noteErrorText,
             enabled: !_isSaving,
             maxLines: 4,
+            onChanged: (_) {
+              if (_noteErrorText != null) {
+                setState(() => _noteErrorText = null);
+              }
+            },
             validator: AppValidators.requiredText(l10n.validationRequired),
           ),
+          OpdActionContextPanel(flow: flow, showTitle: false),
+          _OpdWorkflowStatusSummary(flow: flow, detail: detail),
         ],
       ),
       actions: <Widget>[
@@ -1150,12 +1157,16 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
 
   Future<void> _submit() async {
     if (!_isNonEmpty(_noteController.text)) {
-      setState(() => _failure = AppFailure.validation());
+      setState(() {
+        _noteErrorText = context.l10n.validationRequired;
+        _failure = null;
+      });
       return;
     }
 
     setState(() {
       _isSaving = true;
+      _noteErrorText = null;
       _failure = null;
     });
     final AppFailure? failure = await ref

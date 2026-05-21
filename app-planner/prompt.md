@@ -1,522 +1,362 @@
-You are working on the HOSSPI HMS codebase.
+# HMS OPD Screen + Active Encounter Workflow Refactor
+
+You are working in the HMS/HOSSPI codebase from `hms.zip`.
 
 Project structure:
-- app-planner/
-- backend/
-- frontend/
+- `frontend/` — Flutter app using Riverpod, Dio, GoRouter, shared UI components.
+- `backend/` — Node.js/Express/Prisma/MySQL backend.
+- `app-planner/` — planning/reference docs only unless a documented update is needed.
 
-No OPD screenshots were included in the archive. Use the actual Flutter UI implementation as the source of truth for layout and interaction details.
+No OPD-specific screenshots were included in the archive, so use the current OPD UI and the written requirements below as the source of truth.
 
-Your task is to perform a complete OPD module UI + backend functionality test, fix every failure found, and leave the OPD workflow fully functional end-to-end.
+## Main goal
 
-Test accounts:
-Use the same password for all accounts: Hosspi@2624
+Refactor and test the OPD workflow so that OPD records, appointments, queues, triage, active encounters, and patient-module OPD actions behave consistently, persist correctly to the database, and use the shared clinical/action/printing components already available in the codebase.
 
-Accounts:
-- super.admin@hosspi.com
-- tenant.admin@hosspi.com
-- facility.admin@hosspi.com
-- doctor@hosspi.com
-- nurse@hosspi.com
-- lab@hosspi.com
-- pharmacy@hosspi.com
-- reception@hosspi.com
-- billing@hosspi.com
-- operations@hosspi.com
-- hr@hosspi.com
-- biomed@hosspi.com
-- housekeeping@hosspi.com
-- ambulance@hosspi.com
-- patient.portal@hosspi.com
-
-Important:
-- Use these credentials only in the local/test environment.
-- Do not commit credentials, logs containing credentials, or generated secrets.
-
-Main objective:
-Fully test and repair the OPD module so that every visible action, nested dialog, workflow transition, database update, and cross-module effect works correctly from both frontend and backend.
-
-This is not only a code review. You must run the application, interact with the UI, perform real OPD workflows, verify backend persistence, and confirm that related UI areas update correctly.
-
-Technology and architecture constraints:
-
-Backend:
-- Node.js / Express / Prisma / MySQL.
-- CommonJS only.
-- Follow the existing backend architecture:
-  Route → Controller → Service → Repository → Prisma.
-- APIs must stay under `/api/v1`.
-- Use existing response helpers, error handling, auth middleware, permission checks, and Zod validation style.
-- Do not bypass service/repository layers.
-- Add Prisma migrations when schema/database changes are required.
-
-Frontend:
-- Flutter app.
-- Follow the existing feature-first structure.
-- Use the existing Riverpod, GoRouter, Dio, repository, controller, DTO, entity, and shared component patterns.
-- Preserve existing design system components such as `AppWorkspace`, `AppListTable`, dialogs, summary cards, filters, and responsive layouts.
-- Do not replace the OPD UI with an unrelated implementation.
-- Fix the current implementation in place.
-
-Do not modify `app-planner/` unless a file there is directly required for runtime behavior. Prefer backend/frontend changes only.
-
-Key OPD frontend files to inspect:
-- `frontend/lib/features/opd/data/dtos/opd_dtos.dart`
-- `frontend/lib/features/opd/data/repositories/opd_repository_impl.dart`
-- `frontend/lib/features/opd/domain/entities/opd_entities.dart`
-- `frontend/lib/features/opd/domain/repositories/opd_repository.dart`
-- `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
+Important existing frontend areas:
 - `frontend/lib/features/opd/presentation/pages/opd_workspace_page.dart`
+- `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
 - `frontend/lib/shared/components/opd_encounter_dialog.dart`
-- `frontend/lib/shared/opd_actions/opd_action_context.dart`
-- `frontend/lib/shared/opd_actions/opd_billing_state.dart`
 - `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart`
 - `frontend/lib/shared/clinical_actions/clinical_order_action_dialogs.dart`
+- `frontend/lib/shared/printing/`
+- `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart`
 
-Key backend modules to inspect:
-- `backend/src/modules/opd-flow`
-- `backend/src/modules/triage`
-- `backend/src/modules/encounter`
-- `backend/src/modules/vital-sign`
-- `backend/src/modules/lab-order`
-- `backend/src/modules/lab-order-item`
-- `backend/src/modules/radiology-order`
-- `backend/src/modules/pharmacy-order`
-- `backend/src/modules/pharmacy-order-item`
-- `backend/src/modules/procedure`
-- `backend/src/modules/referral`
-- `backend/src/modules/follow-up`
-- `backend/src/modules/billing`
-- `backend/src/modules/admission`
-- `backend/prisma/schema.prisma`
+Important backend areas:
+- `backend/src/modules/opd-flow/`
+- `backend/src/lib/opd-active-encounter.js`
+- related patient, appointment, queue, billing, lab, pharmacy, referral, follow-up, and provider/doctor modules.
 
-OPD route:
-- The Flutter OPD page is routed at `/opd`.
-- Confirm route protection, role access, permissions, redirects, and module activation behavior.
+---
 
-Core OPD UI areas to test:
+## 1. Preserve working OPD summary cards
 
-1. OPD workspace loading
-- Login with relevant staff accounts.
-- Open `/opd`.
-- Confirm the workspace loads without crashes, blank states, infinite loaders, or permission errors for allowed roles.
-- Confirm denied roles cannot access OPD if the app is designed to block them.
+The OPD button/cards are currently working and should not regress:
 
-2. OPD summary cards
-Test all summary cards:
-- All records
-- Arrivals
+- All OPD records
 - Queue
 - Triage
-- Active flow
+- Active flows
+- Any existing arrivals/appointments summary card
+- Refresh
+- Start OPD Encounter
 
-Verify:
-- Counts are correct.
-- Zero-value cards behave as intended.
-- Clicking each card filters the main OPD table correctly.
-- Clearing filters restores all records.
-- Counts update after actions such as check-in, queueing, triage, payment, vitals, doctor assignment, review, discharge, and refresh.
+When these cards are clicked, the OPD table must continue updating correctly.
 
-3. OPD main table
-Test:
-- Search.
-- Advanced filters.
-- Category filters.
-- Status filters.
-- Column visibility.
-- Sorting if available.
-- Pagination or scrolling if available.
-- Empty states.
-- Loading states.
-- Error states.
-- Refresh action.
-- Responsive behavior on desktop and narrow widths.
+Do not redesign these cards unless required for consistency. Keep their current filtering behavior.
 
-Every row type must open the correct action dialog:
-- Appointment rows → appointment actions dialog.
-- Queue rows → queue actions dialog.
-- Active OPD flow rows → flow actions dialog.
-- Triage rows → correct triage/flow dialog behavior.
+---
 
-4. Start walk-in flow
-Test the “Start walk-in” primary action.
+## 2. Fix provider search in “Start OPD Encounter”
 
-Verify:
-- New patient creation if supported.
-- Existing patient selection if supported.
-- Required field validation.
-- Duplicate patient prevention.
-- Encounter creation.
-- Queue creation/update.
-- Appointment linkage if applicable.
-- Correct initial OPD stage.
-- Correct UI refresh after creation.
-- No duplicated active OPD encounters for the same patient.
+In `OpdEncounterDialog`, the provider search currently shows duplicate providers and displays internal IDs.
 
-5. Appointment actions
-For appointment rows, test every action:
-- Queue appointment.
-- Reschedule appointment.
-- Cancel appointment.
-- Check in / start OPD encounter.
-
-Verify:
-- Dialogs open correctly.
-- Required validations work.
-- Backend calls succeed.
-- Appointment status updates correctly.
-- OPD table updates correctly.
-- Duplicate queue or encounter records are not created.
-- Cancelled appointments cannot incorrectly continue into active OPD flow unless explicitly allowed.
-
-6. Queue actions
-For queue rows, test every action:
-- Prioritize.
-- Move queue.
-- Start consultation.
-
-Verify:
-- Queue status changes correctly.
-- Priority changes persist.
-- Department/service movement persists.
-- Starting consultation creates or reuses the correct OPD encounter.
-- UI updates immediately after each action.
-- Backend prevents duplicate active encounters.
-
-7. OPD flow actions
-For every active OPD patient, open the flow actions dialog and test every visible action and every nested dialog.
-
-Test at minimum:
-- Consultation payment.
-- Record vitals.
-- Edit/update vitals.
-- Assign doctor.
-- Change doctor.
-- Doctor review.
-- Add diagnosis.
-- Add procedure.
-- Request lab tests.
-- Request radiology tests.
-- Prescribe medication.
-- Create referral.
-- Create follow-up.
-- Correct stage.
-- Disposition.
-- Print OPD summary.
-
-For each action:
-- Confirm the button is visible only when appropriate.
-- Confirm disabled states are correct.
-- Open the dialog.
-- Test required validation.
-- Submit valid data.
-- Confirm success feedback.
-- Confirm errors display clearly when backend rejects the request.
-- Confirm database state changes.
-- Confirm OPD UI refreshes.
-- Confirm related modules reflect the change.
-
-8. Consultation payment
-Test:
-- Payment required flow.
-- Payment not required flow if supported.
-- Cash/mobile money/insurance/other available methods.
-- Invoice creation/update.
-- Payment status.
-- Partial/invalid payment handling if supported.
-- Transition from `WAITING_CONSULTATION_PAYMENT` to `WAITING_VITALS`.
-
-Verify Billing module reflects the invoice/payment correctly.
-
-9. Vitals
-Test:
-- Recording vitals.
-- Updating existing vitals.
-- Required fields.
-- Numeric validation.
-- Clinical alert thresholds if implemented.
-- Stage transition to doctor assignment.
-
-Verify:
-- Vitals persist.
-- Updated vitals replace or update the correct record.
-- No duplicate vitals are created when update behavior is intended.
-- Vitals are visible anywhere else they should appear.
-
-10. Doctor assignment
-Test:
-- Provider list loading.
-- Assigning doctor.
-- Changing assigned doctor.
-- Invalid provider handling.
-- Stage transition to doctor review.
-
-Verify:
-- Assigned doctor appears correctly in OPD UI.
-- Doctor account can see or act on the assigned patient if role-based filtering exists.
-
-11. Doctor review
-Test full doctor review:
-- Notes.
-- Diagnosis.
-- Procedures.
-- Lab orders.
-- Radiology orders.
-- Medication prescriptions.
-- Review completion.
-- Stage transition logic.
-
-Verify:
-- Lab-only review moves to lab-requested stage.
-- Radiology-only review moves to radiology-requested stage.
-- Lab + radiology review moves to combined lab/radiology stage.
-- Prescription review moves to pharmacy-requested stage.
-- No-order review moves to waiting disposition.
-- Review completion is persisted.
-- Cross-module records are created correctly.
-
-12. Lab requests
-Test:
-- Creating lab orders from OPD.
-- Adding lab order items.
-- Updating existing lab orders if the UI exposes update.
-- Required fields.
-- Duplicate prevention.
-- Correct patient/encounter linkage.
-
-Important known area to inspect:
-In `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart`, the OPD lab-order update callback may currently return a validation failure placeholder. If existing lab-order update is exposed in the UI, implement it properly through the repository/backend.
-
-Verify:
-- Lab orders appear in the Lab module.
-- Lab status changes are reflected back where expected.
-- OPD stage and badges remain consistent.
-
-13. Radiology requests
-Test:
-- Creating radiology orders from OPD.
-- Required fields.
-- Correct patient/encounter linkage.
-- Cross-module visibility in Radiology.
-
-Verify:
-- Radiology orders appear in the Radiology module.
-- Status changes are reflected where expected.
-
-14. Prescriptions / pharmacy
-Test:
-- Creating prescriptions from OPD.
-- Medication search/list loading.
-- Quantity, dosage, frequency, duration validation.
-- Duplicate medication handling if applicable.
-- Pharmacy order creation.
-
-Verify:
-- Pharmacy module receives the order.
-- OPD patient stage/status reflects pharmacy request.
-- Disposition to pharmacy works only with valid pharmacy order linkage.
-
-15. Procedures
-Test:
-- Adding procedures.
-- Required fields.
-- Procedure persistence.
-- Billing linkage if procedure billing is expected.
-- Correct encounter linkage.
-
-16. Referrals and follow-ups
-Test:
-- Creating referral.
-- Creating follow-up.
-- Required field validation.
-- Date/time validation.
-- Provider/facility linkage.
-- Cross-module or patient-record visibility.
-
-17. Correct stage
-Test correcting the OPD workflow stage to each allowed stage:
-- `WAITING_CONSULTATION_PAYMENT`
-- `WAITING_VITALS`
-- `WAITING_DOCTOR_ASSIGNMENT`
-- `WAITING_DOCTOR_REVIEW`
-- `LAB_REQUESTED`
-- `RADIOLOGY_REQUESTED`
-- `LAB_AND_RADIOLOGY_REQUESTED`
-- `PHARMACY_REQUESTED`
-- `WAITING_DISPOSITION`
-- `ADMITTED`
-- `DISCHARGED`
-
-Verify:
-- Invalid transitions are blocked if business rules require blocking.
-- Terminal stages close encounters correctly.
-- Queue and appointment statuses update correctly.
-- UI reflects corrected stage everywhere.
-
-18. Disposition
-Test:
-- Admit.
-- Send to pharmacy.
-- Discharge.
-
-Verify:
-- Admit creates admission/IPD record.
-- Send to pharmacy requires a valid pharmacy order.
-- Discharge closes the encounter.
-- Closed encounters no longer appear as active OPD encounters.
-- Patient history remains accessible.
-
-19. Print OPD summary
-Test:
-- Print dialog opens.
-- Summary content contains correct patient, encounter, vitals, doctor review, diagnosis, orders, prescriptions, procedures, referral/follow-up, and disposition details.
-- Print/export action does not crash.
-- Empty sections render cleanly.
-
-20. Duplicate active encounter prevention
-This is critical.
-
-Find and fix cases where the same patient can have more than one active OPD encounter at the same time.
-
-Test duplicate attempts from:
-- Start walk-in.
-- Appointment check-in.
-- Queue start consultation.
-- Triage routing.
-- Browser refresh/retry.
-- Double-clicking submit buttons.
-- Two roles acting on the same patient.
-- Direct backend API calls.
+Observed issue:
+- A provider such as `Jordan / Jordani Demo Demo` appears more than once.
+- Internal UID/HFID/UUID/staff-profile identifiers are visible in the provider search result.
 
 Required behavior:
-- A patient must not have more than one active OPD encounter at the same facility/tenant at the same time.
-- If an active encounter exists, the system should either reuse it intentionally or reject the duplicate with a clear error.
-- UI must show a clear message instead of creating duplicates.
-- Backend must enforce this rule, not only the frontend.
+- Each provider must appear only once.
+- Provider results must show human-readable details only:
+  - provider display name
+  - role/position/title
+  - practitioner type
+  - facility/department when useful
+- Do not display internal IDs, UUIDs, human-friendly IDs, `staff_profile_id`, `providerUserId`, or raw API IDs in visible UI labels/subtitles.
+- Do not use internal IDs as fallback display text. If the name is missing, show a safe fallback like `Unknown provider`.
+- Deduplicate providers across:
+  - provider list API results
+  - provider schedules
+  - any fallback schedule-based provider options
+- Prefer the canonical provider/doctor record over a schedule fallback when both point to the same person.
 
-Implementation requirement:
-- Inspect existing duplicate active encounters in the database.
-- Add cleanup/backfill logic if needed.
-- Add a transaction-safe backend guard.
-- Add a database-level uniqueness constraint or equivalent durable protection where feasible with MySQL/Prisma.
-- Add tests proving duplicates cannot be created under normal and repeated requests.
+Also check the backend provider/doctor response if duplicates originate from the API. Fix uniqueness at the correct layer, not only visually.
 
-21. Cross-module consistency
-After each OPD action, verify affected modules:
-- Billing
-- Lab
-- Radiology
-- Pharmacy
-- Patients
-- Admissions/IPD
-- Referrals
-- Follow-ups
-- Triage
-- Visit queues
-- Appointments
+Acceptance test:
+- Searching for `Jordan` or `Jordani Demo` shows the provider once.
+- No internal ID is visible in the provider dropdown.
 
-For every created or updated record:
-- Confirm the backend database row is correct.
-- Confirm the OPD UI reflects the change.
-- Confirm the target module reflects the change.
-- Confirm refresh/reload still shows correct data.
+---
 
-22. Error handling and UX
-Fix:
-- Buttons that do nothing.
-- Dialogs that open but cannot submit.
-- Silent failures.
-- Incorrect success messages.
-- Incorrect loading states.
-- Duplicate submissions.
-- Stale UI after mutation.
-- Missing refresh after mutation.
-- Crashes caused by null/empty data.
-- Bad validation messages.
-- Overflow, clipped buttons, broken scrolling, or unusable layouts.
-- Broken responsive behavior.
+## 3. Change active encounter behavior
 
-23. Testing requirements
-Add or update tests where needed.
+Current bad behavior:
+- When an existing patient already has an active OPD encounter, the dialog shows/open action like “Open Active Encounter”.
+- Clicking it takes the user back to the OPD screen and does not clearly update or open the active encounter.
+- Provider, billing, routing, and related changes are not reliably persisted.
+
+Required behavior:
+- If the selected patient already has a running active OPD encounter, do not create a new encounter.
+- Replace the “Open Active Encounter” action with a clearer action:
+  - `Update Encounter`
+  - or `Update Active Encounter`
+- Submitting this action must update the existing active encounter, not start a duplicate encounter.
+- Persist changed values to the database, including where applicable:
+  - assigned provider/doctor
+  - routing/stage/queue context
+  - appointment linkage
+  - billing/consultation fee/payment requirement/payment state
+  - notes/reason/visit context
+  - payer/payment method where supported
+- Update the UI immediately after success:
+  - selected active encounter state
+  - OPD table row
+  - summary counts
+  - action dialog/context panel
+- Do not fake success with frontend-only state changes.
+
+After updating an active encounter:
+- Either open the unified OPD action dialog for that active encounter, or keep the user in a clearly updated active encounter state.
+- Do not simply close/pop back to the OPD list without showing what happened.
+
+Backend requirement:
+- Add or update an OPD endpoint/service method if needed for active encounter context updates.
+- Keep duplicate active encounter prevention at backend/service/database level.
+- Reuse the existing active encounter instead of creating another one.
+
+---
+
+## 4. Remove redundant modal-close “Cancel” buttons in OPD dialogs
+
+In OPD start/action shell dialogs, remove `Cancel` buttons whose only purpose is closing the dialog.
+
+Required behavior:
+- Use the existing dialog header close button.
+- Pressing `Esc` must close the OPD dialog when no save/submission is in progress.
+- Do not remove real business actions such as “Cancel appointment”. Only remove redundant modal-close cancel buttons.
+- Prevent double-submit while saving.
+
+Apply this to:
+- Start OPD Encounter dialog
+- OPD action shell/dialogs where the secondary cancel button only closes the modal
+
+Do not globally remove valid cancel actions from unrelated workflows.
+
+---
+
+## 5. Unify OPD row click dialogs
+
+Current bad behavior:
+- Appointment patients, queue patients, triage patients, and active flow patients open different dialogs.
+- Appointment patients get a different dialog from active OPD patients.
+- This confuses users.
+
+Required behavior:
+- All OPD patient rows must open the same unified OPD patient/action dialog.
+- This applies to:
+  - appointment rows
+  - queue rows
+  - triage rows
+  - active flow rows
+  - all OPD records
+- Do not create separate confusing dialogs for appointment vs queue vs active flow patients.
+- If an action is not currently available, keep it visible but disabled with a clear reason.
+- If an action is already completed, keep it visible and mark it as done/completed.
+- Do not hide actions merely because the patient is in a different OPD state.
+
+The unified dialog must show consistent actions such as:
+- Update encounter
+- Update consultation/billing
+- Record/update vitals
+- Assign/change provider
+- Start/update consultation
+- Add diagnosis
+- Request lab
+- Request radiology
+- Prescribe
+- Add procedure
+- Refer
+- Follow up
+- Correct stage
+- Disposition
+- Print
+
+Appointment-specific actions such as queue/check-in/reschedule/cancel appointment may remain, but they must be presented inside the same unified dialog pattern.
+
+Queue-specific actions such as prioritize/move queue/start consultation may remain, but they must also be presented inside the same unified dialog pattern.
+
+Security note:
+- Preserve permission checks.
+- For authorized users, do not hide actions just because the current state makes them inactive; show disabled/done status instead.
+
+---
+
+## 6. Use shared clinical/action components
+
+Do not create duplicate custom dialogs where shared components already exist.
+
+Diagnosis:
+- Use the shared diagnosis/catalog dialog already defined in the shared clinical components.
+- It must expose the predefined diagnosis fields/options.
+- It must save/update against the active OPD encounter.
+
+Lab:
+- Use the shared lab request/order component.
+- Lab requests must attach to the active encounter and persist to the backend.
+
+Radiology:
+- Use the shared radiology order component where available.
+
+Prescription:
+- Verify prescribing works end-to-end.
+- Preserve shared prescription/drug selection behavior.
+
+Procedure:
+- Ensure procedure creation/update works and is persisted.
+
+Referral:
+- Ensure referral works and persists.
+
+Follow-up:
+- Ensure follow-up works and persists.
+
+Print:
+- Use the shared printing components under `frontend/lib/shared/printing/`.
+- Do not implement a one-off print layout for OPD.
+- Printing should reflect current encounter data.
+
+Catalog search behavior:
+- If the user searches for a diagnosis/lab/procedure/radiology/drug item and it does not exist, provide an appropriate “add new” path where the module supports it.
+- Persist newly added catalog items through the backend, not temporary frontend-only state.
+
+---
+
+## 7. Patient module must use the same OPD action model
+
+In the Patients module, patient detail/quick actions must be consistent with OPD.
+
+Required behavior:
+- Opening a patient from the patient registry must expose the same OPD action set/pattern used in the OPD workspace.
+- Do not show a different OPD dialog under Patients.
+- If the patient has an active OPD encounter:
+  - show/update that active encounter
+  - do not create a duplicate encounter
+- If no OPD encounter exists:
+  - allow OPD check-in/start encounter
+  - keep downstream actions visible but disabled until an encounter exists
+- Completed actions should be marked done.
+- Users should be able to revisit/update previous OPD actions where clinically valid.
+
+---
+
+## 8. Realtime UI/database consistency
+
+Every OPD action mutation must update both database and UI.
+
+After each mutation, refresh or patch:
+- active encounter details
+- selected flow
+- table row
+- summary card counts
+- related appointment/queue/triage state
+- patient registry active encounter status where relevant
+
+No stale UI should remain after:
+- updating encounter provider/routing/billing
+- paying/updating consultation billing
+- recording vitals
+- assigning provider
+- doctor review
+- adding diagnosis
+- requesting lab/radiology
+- prescribing
+- adding procedure
+- referral
+- follow-up
+- correcting stage
+- disposition
+- printing/logging print event where applicable
+
+Prefer targeted refresh/patching rather than full unnecessary workspace reloads.
+
+---
+
+## 9. Backend requirements
+
+Implement backend changes cleanly through the existing architecture.
+
+Requirements:
+- Prevent duplicate active OPD encounters for the same patient.
+- Reuse/update running active encounters when requested.
+- Add an explicit update-active-encounter/context endpoint if existing endpoints are insufficient.
+- Ensure appointment-linked and queue-linked encounters remain correctly linked.
+- Ensure billing/provider/stage updates are transactional where needed.
+- Write audit/timeline/activity entries for meaningful OPD changes.
+- Ensure API responses return enough updated data for the frontend to refresh accurately.
+- Do not expose internal IDs unnecessarily in provider-facing display fields.
+
+---
+
+## 10. Testing requirements
+
+Perform full backend, frontend, and end-to-end testing. Modify/reset local test data as needed.
 
 Backend:
-Run and keep passing:
-- `npm run test:backend`
-- `npm run test:backend:unit`
-- `npm run test:backend:integration`
-- `npm run openapi:validate`
-- `npm run validate`
+- Run existing backend tests.
+- Add/update tests for:
+  - provider uniqueness
+  - no duplicate active OPD encounter creation
+  - updating an active encounter instead of opening/duplicating it
+  - billing/consultation update persistence
+  - provider assignment update persistence
+  - OPD action mutations
+  - appointment/queue/triage/flow state consistency
 
 Frontend:
-Run and keep passing:
-- `flutter pub get`
-- `dart run build_runner build --delete-conflicting-outputs`
-- `dart format --set-exit-if-changed .`
-- `flutter analyze`
-- `flutter test`
-- `flutter test integration_test`
+- Add/update tests for:
+  - provider dropdown deduplication
+  - no internal IDs visible in provider search
+  - active encounter shows `Update Encounter`
+  - active encounter update persists and refreshes UI
+  - appointment/queue/triage/active rows open the same unified OPD dialog
+  - inactive actions remain visible but disabled
+  - completed actions are marked done
+  - Esc closes OPD dialogs
+  - redundant modal-close Cancel buttons are removed
 
-Add focused tests for:
-- OPD duplicate active encounter prevention.
-- Start walk-in.
-- Appointment check-in.
-- Queue start consultation.
-- Payment.
-- Vitals.
-- Doctor assignment.
-- Doctor review with lab/radiology/pharmacy/procedure orders.
-- Disposition.
-- Correct stage.
-- Cross-module order creation.
-- OPD controller refresh/state updates.
-- Any fixed regression.
+Manual E2E:
+- Start app and backend locally.
+- Login with seeded/demo users if available.
+- Test:
+  - existing patient without active encounter
+  - existing patient with active encounter
+  - appointment patient
+  - queue patient
+  - triage patient
+  - active flow patient
+  - provider search
+  - billing update
+  - diagnosis/lab/prescription/procedure/referral/follow-up
+  - patient registry OPD actions
+  - print workflow
 
-24. Manual UI test requirement
-Run the app locally and manually test the OPD module in the browser.
+Use the project’s existing scripts where applicable, for example:
+- Backend: `npm install`, `npm run test:backend`, `npm run test:backend:unit`, `npm run test:backend:integration`, `npm run validate`
+- Frontend: `flutter pub get`, `dart run build_runner build --delete-conflicting-outputs`, `flutter analyze`, `flutter test`
+- Run browser/manual testing with the existing Flutter web configuration.
 
-Recommended frontend run command:
-`flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example`
+Install missing test tools/dependencies only when necessary and keep changes minimal.
 
-Open:
-`http://127.0.0.1:5201`
+---
 
-Manually test OPD with multiple roles, especially:
-- super admin
-- tenant admin
-- facility admin
-- receptionist
-- nurse
-- doctor
-- lab
-- radiology-related user if available
-- pharmacy
-- billing
-- patient portal where relevant
+## 11. Acceptance criteria
 
-25. Deliverables
-When finished, provide:
+The work is complete only when:
 
-1. Summary of what was tested.
-2. Accounts/roles tested.
-3. OPD workflows tested.
-4. Bugs found.
-5. Bugs fixed.
-6. Backend files changed.
-7. Frontend files changed.
-8. Prisma migrations added, if any.
-9. Tests added/updated.
-10. Commands run and results.
-11. Any remaining limitations or manual follow-up needed.
-
-Acceptance criteria:
-- OPD opens correctly.
-- Every visible OPD button works or is intentionally disabled with a clear reason.
-- Every OPD dialog can be opened, validated, submitted, cancelled, and reopened.
-- Every OPD workflow stage behaves correctly.
-- Backend and frontend stay synchronized.
-- Cross-module effects are visible in the correct modules.
-- No duplicate active OPD encounters can be created for one patient at the same time.
-- All relevant tests pass.
-- No credentials are committed.
-- No frontend-only fake success behavior is left behind.
-- No unresolved placeholder callbacks remain in OPD actions.
+1. OPD summary cards still filter the table correctly.
+2. Provider search shows each provider once.
+3. Provider search never exposes internal UID/UUID/HFID/staff-profile IDs.
+4. Existing patient prefill still works.
+5. Appointment patient prefill still works.
+6. Patients with active encounters show `Update Encounter`, not `Open Active Encounter`.
+7. Updating an active encounter persists provider/routing/billing changes to the database.
+8. Updating an active encounter does not create a duplicate OPD encounter.
+9. Appointment, queue, triage, active flow, and all OPD rows open one consistent OPD action dialog.
+10. The Patients module uses the same OPD action model.
+11. Actions are visible consistently; inactive actions are disabled, completed actions are marked done.
+12. Diagnosis, lab, radiology, prescription, procedure, referral, follow-up, correct stage, billing, and print actions work end-to-end.
+13. Shared clinical and print components are used instead of duplicate one-off dialogs.
+14. Redundant modal-close Cancel buttons are removed from OPD shell dialogs.
+15. Esc closes OPD dialogs safely.
+16. Backend and frontend tests pass.
+17. Manual E2E testing confirms database and UI stay synchronized.

@@ -582,6 +582,15 @@ void main() {
     expect(find.text('Triage notes'), findsOneWidget);
     expect(find.textContaining('Dizziness'), findsOneWidget);
     expect(find.textContaining('Fall risk'), findsOneWidget);
+
+    await tester.tap(find.text('Doctor review').last);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.widgetWithText(AppFailureStateView, 'Check the details'),
+      findsNothing,
+    );
+    expect(find.text('This field is required.'), findsOneWidget);
   });
 
   testWidgets('OpdWorkspacePage exposes the required OPD worklist columns', (
