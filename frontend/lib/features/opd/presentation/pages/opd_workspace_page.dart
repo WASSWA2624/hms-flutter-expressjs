@@ -33,6 +33,20 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
+const IconData startOpdEncounterIcon = Icons.person_add_alt_1_outlined;
+
+const AccessRequirement startOpdEncounterPermissionRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[
+        AppPermissions.patientWrite,
+        AppPermissions.clinicalWrite,
+        AppPermissions.billingWrite,
+        AppPermissions.operationsWrite,
+        AppPermissions.emergencyWrite,
+      ],
+      activeModules: <String>['scheduling-queue'],
+    );
+
 class OpdWorkspacePage extends ConsumerWidget {
   const OpdWorkspacePage({super.key});
 
@@ -70,17 +84,6 @@ class _OpdWorkspaceContent extends ConsumerStatefulWidget {
 }
 
 class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.patientWrite,
-      AppPermissions.clinicalWrite,
-      AppPermissions.billingWrite,
-      AppPermissions.operationsWrite,
-      AppPermissions.emergencyWrite,
-    ],
-    activeModules: <String>['scheduling-queue'],
-  );
-
   final ValueNotifier<_OpdTableFilter> _filterNotifier =
       ValueNotifier<_OpdTableFilter>(const _OpdTableFilter());
   late final TextEditingController _searchController;
@@ -121,26 +124,26 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       leadingIcon: AppRouteIcons.opd,
       compactSummaryCards: true,
       primaryAction: AppAccessActionGate(
-        requirement: _writeRequirement,
+        requirement: startOpdEncounterPermissionRequirement,
         builder: (BuildContext context, bool isAllowed) {
           if (iconOnly) {
             return AppIconButton(
-              icon: Icons.person_add_alt_1_outlined,
+              icon: startOpdEncounterIcon,
               semanticLabel: l10n.opdStartWalkInAction,
-              tooltip: l10n.opdStartWalkInAction,
+              tooltip: l10n.opdStartEncounterTooltip,
               enabled: isAllowed,
               onPressed: () {
-                _openStartWalkInDialog(context, ref);
+                _openStartOpdEncounterDialog(context, ref);
               },
             );
           }
 
           return AppButton.primary(
             label: l10n.opdStartWalkInAction,
-            leadingIcon: Icons.person_add_alt_1_outlined,
+            leadingIcon: startOpdEncounterIcon,
             enabled: isAllowed,
             onPressed: () {
-              _openStartWalkInDialog(context, ref);
+              _openStartOpdEncounterDialog(context, ref);
             },
           );
         },
@@ -293,14 +296,14 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     }
   }
 
-  Future<void> _openStartWalkInDialog(
+  Future<void> _openStartOpdEncounterDialog(
     BuildContext context,
     WidgetRef ref,
   ) async {
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => StartWalkInDialog(
+      builder: (_) => StartOpdEncounterDialog(
         providerSchedules: widget.state.providerSchedules,
         appointments: widget.state.appointments.items,
         activeFlows: <OpdFlowSummary>[
@@ -310,7 +313,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(opdWorkspaceControllerProvider.notifier)
-              .startWalkIn(payload);
+              .startOpdEncounter(payload);
         },
       ),
     );
@@ -2331,11 +2334,20 @@ class _WalkInTabLabel extends StatelessWidget {
 typedef OpdPayloadSubmit =
     Future<AppFailure?> Function(Map<String, Object?> payload);
 
-class StartWalkInDialog extends ConsumerStatefulWidget {
-  const StartWalkInDialog({
+class StartOpdEncounterDialog extends ConsumerStatefulWidget {
+  const StartOpdEncounterDialog({
     required this.providerSchedules,
     required this.appointments,
     this.activeFlows = const <OpdFlowSummary>[],
+    this.source,
+    this.initialPatientId,
+    this.initialPatient,
+    this.initialAppointmentId,
+    this.initialAppointment,
+    this.defaultArrivalMode = 'WALK_IN',
+    this.defaultProviderId,
+    this.onSuccess,
+    this.onExistingActiveEncounter,
     required this.onSubmit,
     super.key,
   });
@@ -2343,13 +2355,24 @@ class StartWalkInDialog extends ConsumerStatefulWidget {
   final List<OpdProviderSchedule> providerSchedules;
   final List<OpdAppointment> appointments;
   final List<OpdFlowSummary> activeFlows;
+  final String? source;
+  final String? initialPatientId;
+  final Patient? initialPatient;
+  final String? initialAppointmentId;
+  final OpdAppointment? initialAppointment;
+  final String defaultArrivalMode;
+  final String? defaultProviderId;
+  final VoidCallback? onSuccess;
+  final ValueChanged<OpdFlowSummary>? onExistingActiveEncounter;
   final OpdPayloadSubmit onSubmit;
 
   @override
-  ConsumerState<StartWalkInDialog> createState() => _StartWalkInDialogState();
+  ConsumerState<StartOpdEncounterDialog> createState() =>
+      _StartOpdEncounterDialogState();
 }
 
-class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
+class _StartOpdEncounterDialogState
+    extends ConsumerState<StartOpdEncounterDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _newPatientFirstNameController;
   late final TextEditingController _newPatientLastNameController;
@@ -2376,6 +2399,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   bool _isSaving = false;
   AppFailure? _failure;
   int _activeEncounterLookupToken = 0;
+  bool _appliedInitialContext = false;
 
   @override
   void initState() {
@@ -2384,10 +2408,36 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     _newPatientLastNameController = TextEditingController();
     _feeController = TextEditingController();
     _notesController = TextEditingController();
-    _appointmentOptions = _eligibleAppointmentOptions(widget.appointments);
+    _patientOptions = <Patient>[
+      if (widget.initialPatient != null) widget.initialPatient!,
+    ];
+    _appointmentOptions = _eligibleAppointmentOptions(<OpdAppointment>[
+      ...widget.appointments,
+      if (widget.initialAppointment != null) widget.initialAppointment!,
+    ]);
+    _patientId = _initialPatientApiId();
+    _appointmentId = _initialAppointmentApiId();
+    _providerId =
+        widget.defaultProviderId ?? widget.initialAppointment?.providerUserId;
+    _arrivalMode =
+        widget.defaultArrivalMode.toUpperCase() == 'ONLINE_APPOINTMENT'
+        ? 'WALK_IN'
+        : widget.defaultArrivalMode.toUpperCase();
+    if (_appointmentId != null) {
+      _patientMode = _WalkInPatientMode.appointment;
+      _arrivalMode = 'ONLINE_APPOINTMENT';
+    } else if (_patientId != null) {
+      _patientMode = _WalkInPatientMode.existing;
+    }
     unawaited(_loadPatientOptions());
     unawaited(_loadAppointmentOptions());
     unawaited(_loadProviderOptions());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _applyInitialContext();
+        _refreshActiveEncounterForSelection();
+      }
+    });
   }
 
   @override
@@ -2399,13 +2449,140 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     super.dispose();
   }
 
+  String? _initialPatientApiId() {
+    return _firstNonEmptyText(<String?>[
+      widget.initialPatient?.publicId,
+      widget.initialPatient?.id,
+      widget.initialPatientId,
+    ]);
+  }
+
+  String? _initialAppointmentApiId() {
+    return _firstNonEmptyText(<String?>[
+      widget.initialAppointment?.publicId,
+      widget.initialAppointment?.id,
+      widget.initialAppointmentId,
+    ]);
+  }
+
+  void _applyInitialContext({bool force = false}) {
+    if (_appliedInitialContext && !force) {
+      return;
+    }
+    if (widget.initialPatient == null &&
+        !_isNonEmpty(widget.initialPatientId) &&
+        widget.initialAppointment == null &&
+        !_isNonEmpty(widget.initialAppointmentId)) {
+      _appliedInitialContext = true;
+      return;
+    }
+
+    final OpdAppointment? appointment = _appointmentByApiId(_appointmentId);
+    if (appointment != null) {
+      setState(() {
+        _appliedInitialContext = true;
+        _patientMode = _WalkInPatientMode.appointment;
+        _appointmentId = appointment.apiId;
+        _providerId = appointment.providerUserId ?? _providerId;
+        _arrivalMode = 'ONLINE_APPOINTMENT';
+        _requireConsultationPayment = true;
+        _applyProviderDefaultsToState(_providerId);
+      });
+      return;
+    }
+
+    final Patient? patient = _patientByApiId(_patientId);
+    if (patient == null && !_isNonEmpty(_patientId)) {
+      _appliedInitialContext = true;
+      return;
+    }
+
+    final List<OpdAppointment> patientAppointments =
+        _eligibleAppointmentsForPatient(patient);
+    setState(() {
+      _appliedInitialContext = true;
+      if (patientAppointments.isEmpty) {
+        _patientMode = _WalkInPatientMode.existing;
+        _patientId =
+            _firstNonEmptyText(<String?>[patient?.publicId, patient?.id]) ??
+            _patientId;
+        return;
+      }
+
+      _patientMode = _WalkInPatientMode.appointment;
+      _arrivalMode = 'ONLINE_APPOINTMENT';
+      _requireConsultationPayment = true;
+      if (patientAppointments.length == 1) {
+        final OpdAppointment match = patientAppointments.single;
+        _appointmentId = match.apiId;
+        _providerId = match.providerUserId ?? _providerId;
+        _applyProviderDefaultsToState(_providerId);
+      } else {
+        _appointmentId = null;
+      }
+    });
+  }
+
+  List<OpdAppointment> _eligibleAppointmentsForPatient(Patient? patient) {
+    final Set<String> patientKeys =
+        <String?>[
+              patient?.id,
+              patient?.publicId,
+              patient?.effectiveIdentifier,
+              widget.initialPatientId,
+            ]
+            .whereType<String>()
+            .map((String value) => value.trim().toUpperCase())
+            .where((String value) => value.isNotEmpty)
+            .toSet();
+    final Set<String> phoneKeys = <String?>[patient?.primaryPhone]
+        .whereType<String>()
+        .map((String value) => value.trim().toUpperCase())
+        .where((String value) => value.isNotEmpty)
+        .toSet();
+
+    return _appointmentOptions
+        .where((OpdAppointment appointment) {
+          final Set<String> appointmentPatientKeys =
+              <String?>[appointment.patientId, appointment.patientIdentifier]
+                  .whereType<String>()
+                  .map((String value) => value.trim().toUpperCase())
+                  .where((String value) => value.isNotEmpty)
+                  .toSet();
+          final bool matchesPatient =
+              patientKeys.isNotEmpty &&
+              appointmentPatientKeys.any(patientKeys.contains);
+          final bool matchesPhone =
+              phoneKeys.isNotEmpty &&
+              phoneKeys.contains(
+                (appointment.patientPhone ?? '').trim().toUpperCase(),
+              );
+          return matchesPatient || matchesPhone;
+        })
+        .toList(growable: false);
+  }
+
+  List<Patient> _mergePatients(Iterable<Patient> patients) {
+    final Map<String, Patient> byId = <String, Patient>{};
+    for (final Patient patient in patients) {
+      final String key =
+          _firstNonEmptyText(<String?>[patient.publicId, patient.id]) ?? '';
+      if (key.isEmpty) {
+        continue;
+      }
+      byId[key] = patient;
+    }
+    return byId.values.toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final bool hasActiveEncounter = _activeEncounter != null;
 
     return AppDialog(
       title: Text(l10n.opdWalkInDialogTitle),
-      icon: const Icon(Icons.person_add_alt_1_outlined),
+      icon: const Icon(startOpdEncounterIcon),
       scrollable: true,
       maxWidth: 880,
       content: AppFormShell(
@@ -2446,8 +2623,12 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
-          label: l10n.opdStartWalkInAction,
-          leadingIcon: Icons.play_arrow_outlined,
+          label: hasActiveEncounter
+              ? l10n.opdOpenActiveEncounterAction
+              : l10n.opdStartEncounterAction,
+          leadingIcon: hasActiveEncounter
+              ? Icons.open_in_new_outlined
+              : Icons.play_arrow_outlined,
           enabled: !_isResolvingActiveEncounter || _activeEncounter != null,
           isLoading: _isSaving,
           onPressed: _submit,
@@ -2680,6 +2861,16 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
                     value: _apiLabel(flow.stage ?? flow.status ?? ''),
                   ),
                   _ActiveEncounterDetail(
+                    label: l10n.opdVisitTypeColumnLabel,
+                    value: _apiLabel(
+                      _firstNonEmptyText(<String?>[
+                            flow.arrivalMode,
+                            flow.encounterType,
+                          ]) ??
+                          '',
+                    ),
+                  ),
+                  _ActiveEncounterDetail(
                     label: l10n.opdProviderColumnLabel,
                     value: flow.providerDisplayName ?? l10n.profileUnknownValue,
                   ),
@@ -2714,6 +2905,11 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       return;
     }
     if (failure == null) {
+      final OpdFlowSummary? activeEncounter = _activeEncounter;
+      if (activeEncounter != null) {
+        widget.onExistingActiveEncounter?.call(activeEncounter);
+      }
+      widget.onSuccess?.call();
       Navigator.of(context).pop(true);
       return;
     }
@@ -2845,6 +3041,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
 
   void _selectAppointmentPatient(String? value) {
     final OpdAppointment? appointment = _appointmentByApiId(value);
+    final Patient? contextPatient = _patientByApiId(_patientId);
     setState(() {
       _appointmentId = value;
       _providerId = appointment?.providerUserId ?? _providerId;
@@ -2853,10 +3050,14 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       _applyProviderDefaultsToState(_providerId);
     });
     _resolveActiveEncounterForPatient(
-      patientId: appointment?.patientId,
-      patientPublicId: appointment?.patientIdentifier,
-      patientIdentifier: appointment?.patientIdentifier,
-      patientPhone: appointment?.patientPhone,
+      patientId: appointment?.patientId ?? contextPatient?.id,
+      patientPublicId:
+          appointment?.patientIdentifier ??
+          contextPatient?.publicId ??
+          _patientId,
+      patientIdentifier:
+          appointment?.patientIdentifier ?? contextPatient?.effectiveIdentifier,
+      patientPhone: appointment?.patientPhone ?? contextPatient?.primaryPhone,
       appointmentId: appointment?.apiId,
     );
   }
@@ -3113,9 +3314,13 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     result.when(
       success: (AppPage<Patient> page) {
         setState(() {
-          _patientOptions = page.items;
+          _patientOptions = _mergePatients(<Patient>[
+            ..._patientOptions,
+            ...page.items,
+          ]);
           _isLoadingPatients = false;
         });
+        _applyInitialContext(force: true);
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -3142,9 +3347,14 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     result.when(
       success: (AppPage<OpdAppointment> page) {
         setState(() {
-          _appointmentOptions = _eligibleAppointmentOptions(page.items);
+          _appointmentOptions = _eligibleAppointmentOptions(<OpdAppointment>[
+            ..._appointmentOptions,
+            ...page.items,
+          ]);
           _isLoadingAppointments = false;
         });
+        _applyInitialContext(force: true);
+        _refreshActiveEncounterForSelection();
       },
       failure: (_) {
         setState(() {
@@ -6255,7 +6465,10 @@ List<AppSelectOption<String>> _flowStageOptions() {
 }
 
 AppSelectOption<String>? _patientSelectOption(Patient patient) {
-  final String? value = patient.publicId;
+  final String? value = _firstNonEmptyText(<String?>[
+    patient.publicId,
+    patient.id,
+  ]);
   if (!_isNonEmpty(value)) {
     return null;
   }

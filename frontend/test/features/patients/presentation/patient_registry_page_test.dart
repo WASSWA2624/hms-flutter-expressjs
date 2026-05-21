@@ -27,6 +27,8 @@ import '../../../helpers/test_harness.dart';
 void main() {
   setUpAll(() {
     registerFallbackValue(const PatientListQuery());
+    registerFallbackValue(const OpdAppointmentQuery());
+    registerFallbackValue(const OpdFlowQuery());
   });
 
   testWidgets('PatientFormDialog warns before saving duplicate candidates', (
@@ -319,6 +321,63 @@ void main() {
     expect(durationSize.width, lessThanOrEqualTo(180));
     expect((dateTop - timeTop).abs(), lessThan(1));
     expect((dateTop - durationTop).abs(), lessThan(1));
+  });
+
+  testWidgets('OPD quick action opens the shared encounter dialog', (
+    WidgetTester tester,
+  ) async {
+    final patientRepository = _MockPatientRepository();
+    final opdRepository = _MockOpdRepository();
+    const patient = Patient(
+      id: 'patient-1',
+      publicId: 'PAT-1001',
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      firstName: 'Amina',
+      lastName: 'Kato',
+      primaryPhone: '+256700000000',
+      primaryIdentifierType: 'MRN',
+      primaryIdentifierValue: 'MRN-10024',
+    );
+
+    _stubPatientRegistry(patientRepository, patient);
+    _stubProviderLookup(opdRepository);
+    when(() => opdRepository.listAppointments(any())).thenAnswer(
+      (_) async => const Result<AppPage<OpdAppointment>>.success(
+        AppPage<OpdAppointment>(
+          items: <OpdAppointment>[],
+          request: AppPageRequest(pageSize: 50),
+          totalItemCount: 0,
+        ),
+      ),
+    );
+    when(() => opdRepository.listOpdFlows(any())).thenAnswer(
+      (Invocation invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+        AppPage<OpdFlowSummary>(
+          items: const <OpdFlowSummary>[],
+          request: (invocation.positionalArguments.single as OpdFlowQuery)
+              .pageRequest,
+          totalItemCount: 0,
+        ),
+      ),
+    );
+
+    await _pumpPatientRegistry(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      size: const Size(1000, 820),
+      roles: const <String>['SUPER_ADMIN'],
+    );
+
+    await tester.tap(find.text('Amina Kato').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start OPD encounter').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Existing patient'), findsOneWidget);
+    expect(find.text('Search patient *'), findsOneWidget);
+    expect(find.text('Start encounter'), findsOneWidget);
   });
 
   testWidgets('triage quick action shows vital units and range status', (

@@ -19,6 +19,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
@@ -1883,19 +1884,14 @@ class _QuickActions extends ConsumerWidget {
             ),
             AppPermissionActionItem(
               label: l10n.patientsQuickOpdCheckInAction,
-              icon: Icons.login_outlined,
+              icon: startOpdEncounterIcon,
               onPressed: () => _openQuickAction(
                 context,
                 ref,
                 patient,
                 _PatientQuickAction.opdCheckIn,
               ),
-              requirement: const AccessRequirement(
-                anyPermissions: <AppPermission>[
-                  AppPermissions.patientWrite,
-                  AppPermissions.emergencyWrite,
-                ],
-              ),
+              requirement: startOpdEncounterPermissionRequirement,
             ),
             AppPermissionActionItem(
               label: l10n.patientsQuickTriageAction,
@@ -1998,6 +1994,35 @@ Future<void> _openQuickAction(
         _PatientQuickAction.report => _PatientReportPrintPreviewDialog(
           detail: detail,
           patient: patient,
+        ),
+        _PatientQuickAction.opdCheckIn => StartOpdEncounterDialog(
+          providerSchedules: const <OpdProviderSchedule>[],
+          appointments: const <OpdAppointment>[],
+          initialPatient: patient,
+          initialPatientId: _patientApiId(patient),
+          source: 'patient_registry',
+          onSubmit: (Map<String, Object?> payload) async {
+            final Object? existingEncounterId =
+                payload['existing_encounter_id'];
+            if (existingEncounterId is String &&
+                existingEncounterId.trim().isNotEmpty) {
+              final Result<OpdFlowDetail> result = await ref
+                  .read(opdRepositoryProvider)
+                  .getOpdFlow(existingEncounterId.trim());
+              return _failureOrNull(result);
+            }
+
+            final Result<OpdFlowDetail> result = await ref
+                .read(opdRepositoryProvider)
+                .startOpdFlow(
+                  _withoutEmptyPayload(<String, Object?>{
+                    'tenant_id': patient.tenantId,
+                    'facility_id': patient.facilityId,
+                    ...payload,
+                  }),
+                );
+            return _failureOrNull(result);
+          },
         ),
         _ => _PatientFlowQuickDialog(
           patient: patient,
@@ -2822,9 +2847,6 @@ class _PatientFlowQuickDialogState
       TextEditingController();
   String? _facilityId;
   String? _providerId;
-  String _arrivalMode = 'WALK_IN';
-  String _emergencySeverity = 'HIGH';
-  String? _triageLevel;
   String _currency = appDefaultCurrencyCode;
   String _paymentMethod = 'CASH';
   bool _markPaid = false;
@@ -2912,7 +2934,6 @@ class _PatientFlowQuickDialogState
 
   IconData get _dialogIcon {
     return switch (widget.action) {
-      _PatientQuickAction.opdCheckIn => Icons.login_outlined,
       _PatientQuickAction.triage => Icons.monitor_heart_outlined,
       _PatientQuickAction.billing => Icons.receipt_long_outlined,
       _PatientQuickAction.admission => Icons.local_hospital_outlined,
@@ -2922,7 +2943,6 @@ class _PatientFlowQuickDialogState
 
   String _dialogTitle(AppLocalizations l10n) {
     return switch (widget.action) {
-      _PatientQuickAction.opdCheckIn => l10n.patientsOpdCheckInDialogTitle,
       _PatientQuickAction.triage => l10n.patientsTriageDialogTitle,
       _PatientQuickAction.billing => l10n.patientsBillingDialogTitle,
       _PatientQuickAction.admission => l10n.patientsAdmissionDialogTitle,
@@ -2932,7 +2952,6 @@ class _PatientFlowQuickDialogState
 
   String _primaryActionLabel(AppLocalizations l10n) {
     return switch (widget.action) {
-      _PatientQuickAction.opdCheckIn => l10n.patientsQuickOpdCheckInAction,
       _PatientQuickAction.triage => l10n.patientsQuickTriageAction,
       _PatientQuickAction.billing => l10n.patientsQuickBillingAction,
       _PatientQuickAction.admission => l10n.patientsQuickAdmissionAction,
@@ -2943,27 +2962,6 @@ class _PatientFlowQuickDialogState
   List<Widget> _modeFields(BuildContext context) {
     final l10n = context.l10n;
     return switch (widget.action) {
-      _PatientQuickAction.opdCheckIn => <Widget>[
-        AppFormSection(
-          title: l10n.patientsArrivalSectionTitle,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            AppSelectField<String>.searchable(
-              value: _arrivalMode,
-              labelText: l10n.patientsArrivalModeLabel,
-              enabled: !_isSaving,
-              onChanged: (String? value) =>
-                  setState(() => _arrivalMode = value ?? 'WALK_IN'),
-              options: _simpleStatusOptions(const <String>[
-                'WALK_IN',
-                'EMERGENCY',
-              ]),
-            ),
-            if (_arrivalMode == 'EMERGENCY') _emergencyFields(context),
-            _consultationFeeField(context, required: false),
-          ],
-        ),
-      ],
       _PatientQuickAction.billing => <Widget>[
         AppFormSection(
           title: l10n.patientsBillingSectionTitle,
@@ -2997,27 +2995,6 @@ class _PatientFlowQuickDialogState
       ],
       _ => const <Widget>[],
     };
-  }
-
-  Widget _emergencyFields(BuildContext context) {
-    final l10n = context.l10n;
-    return AppResponsiveFieldRow.two(
-      left: AppSelectField<String>.searchable(
-        value: _emergencySeverity,
-        labelText: l10n.patientsEmergencySeverityLabel,
-        enabled: !_isSaving,
-        onChanged: (String? value) =>
-            setState(() => _emergencySeverity = value ?? 'HIGH'),
-        options: _simpleStatusOptions(_emergencySeverityOptions),
-      ),
-      right: AppSelectField<String>.searchable(
-        value: _triageLevel,
-        labelText: l10n.patientsTriageLevelLabel,
-        enabled: !_isSaving,
-        onChanged: (String? value) => setState(() => _triageLevel = value),
-        options: _simpleStatusOptions(_triageLevelOptions),
-      ),
-    );
   }
 
   Widget _consultationFeeField(BuildContext context, {required bool required}) {
@@ -3098,7 +3075,6 @@ class _PatientFlowQuickDialogState
     });
 
     final AppFailure? failure = await (switch (widget.action) {
-      _PatientQuickAction.opdCheckIn => _submitOpdCheckIn(),
       _PatientQuickAction.billing => _submitBilling(),
       _ => Future<AppFailure?>.value(),
     });
@@ -3113,18 +3089,6 @@ class _PatientFlowQuickDialogState
     setState(() {
       _isSaving = false;
       _failure = failure;
-    });
-  }
-
-  Future<AppFailure?> _submitOpdCheckIn() {
-    final String amount = normalizeCurrencyAmount(_feeController.text);
-    return _startFlow(<String, Object?>{
-      'arrival_mode': _arrivalMode,
-      if (_arrivalMode == 'EMERGENCY') 'emergency': _emergencyPayload(),
-      if (amount.isNotEmpty) 'consultation_fee': amount,
-      if (amount.isNotEmpty) 'currency': _currency,
-      'create_consultation_invoice': amount.isNotEmpty,
-      'require_consultation_payment': amount.isNotEmpty,
     });
   }
 
@@ -3163,14 +3127,6 @@ class _PatientFlowQuickDialogState
       'queued_at': DateTime.now().toUtc().toIso8601String(),
       'notes': _notesController.text.trim(),
       ...extra,
-    });
-  }
-
-  Map<String, Object?> _emergencyPayload() {
-    return _withoutEmptyPayload(<String, Object?>{
-      'severity': _emergencySeverity,
-      'triage_level': _triageLevel,
-      'notes': _notesController.text.trim(),
     });
   }
 }
@@ -6723,6 +6679,16 @@ IconData _paymentMethodIcon(String value) {
 
 String _joinDisplay(Iterable<String?> values) {
   return AppDisplay.joinNonEmpty(values);
+}
+
+String _patientApiId(Patient patient) {
+  for (final String? value in <String?>[patient.publicId, patient.id]) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return patient.id;
 }
 
 const List<String> _identifierTypes = <String>[

@@ -1210,11 +1210,29 @@ abstract class AppLocalizations {
   /// **'Saving'**
   String get opdSavingStatus;
 
-  /// Action label to start a walk-in OPD encounter.
+  /// Action label to create or continue an OPD encounter.
   ///
   /// In en, this message translates to:
-  /// **'Start walk-in'**
+  /// **'Start OPD encounter'**
   String get opdStartWalkInAction;
+
+  /// Primary button label for creating a new OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Start encounter'**
+  String get opdStartEncounterAction;
+
+  /// Primary button label when a selected patient already has an active OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open active encounter'**
+  String get opdOpenActiveEncounterAction;
+
+  /// Tooltip for the shared OPD encounter start action.
+  ///
+  /// In en, this message translates to:
+  /// **'Create or continue an OPD encounter for this patient'**
+  String get opdStartEncounterTooltip;
 
   /// Snackbar shown after an OPD operation succeeds.
   ///
@@ -1756,10 +1774,10 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No open slots} =1{1 open slot} other{{count} open slots}}'**
   String opdAvailableSlotsLabel(int count);
 
-  /// Walk-in dialog title.
+  /// Dialog title for the shared OPD encounter start flow.
   ///
   /// In en, this message translates to:
-  /// **'Start OPD walk-in'**
+  /// **'Start OPD encounter'**
   String get opdWalkInDialogTitle;
 
   /// Title for the patient section in the OPD walk-in form.
@@ -1828,10 +1846,10 @@ abstract class AppLocalizations {
   /// **'Active OPD encounter found'**
   String get opdActiveEncounterFoundTitle;
 
-  /// Body text shown when an OPD walk-in selection matches an already active encounter.
+  /// Body text shown when an OPD encounter selection matches an already active encounter.
   ///
   /// In en, this message translates to:
-  /// **'This patient already has an open OPD encounter. Available routing, provider, and billing details have been filled from that encounter.'**
+  /// **'This patient already has an active OPD encounter. Open the active encounter instead of creating a duplicate.'**
   String get opdActiveEncounterFoundBody;
 
   /// Searchable provider field label in OPD.
@@ -1927,7 +1945,7 @@ abstract class AppLocalizations {
   /// Action label to check in an appointment.
   ///
   /// In en, this message translates to:
-  /// **'Check in'**
+  /// **'Start OPD encounter'**
   String get opdCheckInAction;
 
   /// Appointment start field label.
@@ -3160,10 +3178,10 @@ abstract class AppLocalizations {
   /// **'Appointment'**
   String get patientsQuickAppointmentAction;
 
-  /// Patient quick OPD check-in action label.
+  /// Patient quick action label for creating or continuing an OPD encounter.
   ///
   /// In en, this message translates to:
-  /// **'OPD check-in'**
+  /// **'Start OPD encounter'**
   String get patientsQuickOpdCheckInAction;
 
   /// Patient quick triage action label.
@@ -3316,10 +3334,10 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get patientsNotesSectionTitle;
 
-  /// Patient OPD check-in dialog title.
+  /// Patient OPD encounter dialog title.
   ///
   /// In en, this message translates to:
-  /// **'OPD check-in'**
+  /// **'Start OPD encounter'**
   String get patientsOpdCheckInDialogTitle;
 
   /// Patient triage dialog title.

@@ -350,7 +350,7 @@ final class OpdWorkspaceController
     }
   }
 
-  Future<AppFailure?> startWalkIn(Map<String, Object?> payload) {
+  Future<AppFailure?> startOpdEncounter(Map<String, Object?> payload) {
     final Object? existingEncounterId = payload['existing_encounter_id'];
     if (existingEncounterId is String &&
         existingEncounterId.trim().isNotEmpty) {
@@ -368,6 +368,10 @@ final class OpdWorkspaceController
       }),
       refreshAfter: true,
     );
+  }
+
+  Future<AppFailure?> startWalkIn(Map<String, Object?> payload) {
+    return startOpdEncounter(payload);
   }
 
   Future<AppFailure?> checkInAppointment(OpdAppointment appointment) {

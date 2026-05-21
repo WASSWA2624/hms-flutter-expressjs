@@ -755,7 +755,10 @@
   "opdLoadingBody": "Loading outpatient queue and encounter data.",
   "opdLiveStatus": "Live sync",
   "opdSavingStatus": "Saving",
-  "opdStartWalkInAction": "Start walk-in",
+  "opdStartWalkInAction": "Start OPD encounter",
+  "opdStartEncounterAction": "Start encounter",
+  "opdOpenActiveEncounterAction": "Open active encounter",
+  "opdStartEncounterTooltip": "Create or continue an OPD encounter for this patient",
   "opdSavedMessage": "OPD changes saved.",
   "opdArrivalsSummaryLabel": "Arrivals",
   "opdQueueSummaryLabel": "Queue",
@@ -868,7 +871,7 @@
       }
     }
   },
-  "opdWalkInDialogTitle": "Start OPD walk-in",
+  "opdWalkInDialogTitle": "Start OPD encounter",
   "opdPatientSectionTitle": "Patient",
   "opdRoutingSectionTitle": "Routing",
   "opdBillingSectionTitle": "Billing",
@@ -880,7 +883,7 @@
   "opdAppointmentPatientHelper": "Select a scheduled appointment to check the patient into OPD.",
   "opdActiveEncounterCheckingLabel": "Checking for an active OPD encounter...",
   "opdActiveEncounterFoundTitle": "Active OPD encounter found",
-  "opdActiveEncounterFoundBody": "This patient already has an open OPD encounter. Available routing, provider, and billing details have been filled from that encounter.",
+  "opdActiveEncounterFoundBody": "This patient already has an active OPD encounter. Open the active encounter instead of creating a duplicate.",
   "opdSearchProviderLabel": "Search provider",
   "opdSearchProviderHelper": "This provider will handle the patient.",
   "opdNoProvidersHelper": "No registered providers were found. Check doctor setup or provider permissions.",
@@ -896,7 +899,7 @@
   "opdQueueAction": "Queue",
   "opdRescheduleAction": "Reschedule",
   "opdCancelAction": "Cancel",
-  "opdCheckInAction": "Check in",
+  "opdCheckInAction": "Start OPD encounter",
   "opdAppointmentStartLabel": "Start time",
   "opdAppointmentEndLabel": "End time",
   "opdDateTimeHint": "YYYY-MM-DDTHH:MM:SS",
@@ -1068,7 +1071,16 @@
     "description": "Status badge shown while OPD changes are saving."
   },
   "@opdStartWalkInAction": {
-    "description": "Action label to start a walk-in OPD encounter."
+    "description": "Action label to create or continue an OPD encounter."
+  },
+  "@opdStartEncounterAction": {
+    "description": "Primary button label for creating a new OPD encounter."
+  },
+  "@opdOpenActiveEncounterAction": {
+    "description": "Primary button label when a selected patient already has an active OPD encounter."
+  },
+  "@opdStartEncounterTooltip": {
+    "description": "Tooltip for the shared OPD encounter start action."
   },
   "@opdSavedMessage": {
     "description": "Snackbar shown after an OPD operation succeeds."
@@ -1335,7 +1347,7 @@
     "description": "Next page label for OPD lists."
   },
   "@opdWalkInDialogTitle": {
-    "description": "Walk-in dialog title."
+    "description": "Dialog title for the shared OPD encounter start flow."
   },
   "@opdPatientSectionTitle": {
     "description": "Title for the patient section in the OPD walk-in form."
@@ -1371,7 +1383,7 @@
     "description": "Title shown when the selected OPD patient already has an active encounter."
   },
   "@opdActiveEncounterFoundBody": {
-    "description": "Body text shown when an OPD walk-in selection matches an already active encounter."
+    "description": "Body text shown when an OPD encounter selection matches an already active encounter."
   },
   "@opdSearchProviderLabel": {
     "description": "Searchable provider field label in OPD."
@@ -2111,9 +2123,9 @@
   "@patientsQuickAppointmentAction": {
     "description": "Patient quick appointment action label."
   },
-  "patientsQuickOpdCheckInAction": "OPD check-in",
+  "patientsQuickOpdCheckInAction": "Start OPD encounter",
   "@patientsQuickOpdCheckInAction": {
-    "description": "Patient quick OPD check-in action label."
+    "description": "Patient quick action label for creating or continuing an OPD encounter."
   },
   "patientsQuickTriageAction": "Triage",
   "@patientsQuickTriageAction": {
@@ -2221,9 +2233,9 @@
   "@patientsNotesSectionTitle": {
     "description": "Patient quick action notes section title."
   },
-  "patientsOpdCheckInDialogTitle": "OPD check-in",
+  "patientsOpdCheckInDialogTitle": "Start OPD encounter",
   "@patientsOpdCheckInDialogTitle": {
-    "description": "Patient OPD check-in dialog title."
+    "description": "Patient OPD encounter dialog title."
   },
   "patientsTriageDialogTitle": "Triage intake",
   "@patientsTriageDialogTitle": {

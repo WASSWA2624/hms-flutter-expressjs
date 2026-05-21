@@ -592,7 +592,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdSavingStatus => 'Saving';
 
   @override
-  String get opdStartWalkInAction => 'Start walk-in';
+  String get opdStartWalkInAction => 'Start OPD encounter';
+
+  @override
+  String get opdStartEncounterAction => 'Start encounter';
+
+  @override
+  String get opdOpenActiveEncounterAction => 'Open active encounter';
+
+  @override
+  String get opdStartEncounterTooltip =>
+      'Create or continue an OPD encounter for this patient';
 
   @override
   String get opdSavedMessage => 'OPD changes saved.';
@@ -885,7 +895,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get opdWalkInDialogTitle => 'Start OPD walk-in';
+  String get opdWalkInDialogTitle => 'Start OPD encounter';
 
   @override
   String get opdPatientSectionTitle => 'Patient';
@@ -924,7 +934,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdActiveEncounterFoundBody =>
-      'This patient already has an open OPD encounter. Available routing, provider, and billing details have been filled from that encounter.';
+      'This patient already has an active OPD encounter. Open the active encounter instead of creating a duplicate.';
 
   @override
   String get opdSearchProviderLabel => 'Search provider';
@@ -974,7 +984,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdCancelAction => 'Cancel';
 
   @override
-  String get opdCheckInAction => 'Check in';
+  String get opdCheckInAction => 'Start OPD encounter';
 
   @override
   String get opdAppointmentStartLabel => 'Start time';
@@ -1608,7 +1618,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsQuickAppointmentAction => 'Appointment';
 
   @override
-  String get patientsQuickOpdCheckInAction => 'OPD check-in';
+  String get patientsQuickOpdCheckInAction => 'Start OPD encounter';
 
   @override
   String get patientsQuickTriageAction => 'Triage';
@@ -1689,7 +1699,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsNotesSectionTitle => 'Notes';
 
   @override
-  String get patientsOpdCheckInDialogTitle => 'OPD check-in';
+  String get patientsOpdCheckInDialogTitle => 'Start OPD encounter';
 
   @override
   String get patientsTriageDialogTitle => 'Triage intake';
