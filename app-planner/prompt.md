@@ -1,163 +1,178 @@
-You are working on the HOSSPI Hospital Management System codebase.
+You are working on the HOSSPI Hospital Management System. Review the attached `app-planner.zip`, `backend.zip`, `frontend.zip`, and the provided OPD screenshots before making changes.
 
-Before implementing, review the current app-planner, backend, frontend, and latest screenshots. Align the work with the existing Flutter/Riverpod frontend, Express backend, current shared action/dialog patterns, and current patient/clinical workflow behavior.
+Fix the OPD flow bugs and simplify the OPD action dialogs while keeping the backend and frontend fully synchronized.
 
-## Goal
+## Current problem
 
-Standardize reusable patient, appointment, OPD, triage, admission, clinical order, referral, follow-up, disposition, and report/print dialogs across the app.
+On the OPD screen, the same patient can currently end up with more than one active OPD encounter. For example, the screenshots show `Nia Demo-Charlie` appearing multiple times, including a paid consultation flow and another new walk-in flow waiting for consultation payment. This should not happen.
 
-Do not create duplicate local dialogs when an equivalent dialog already exists.
+A patient must not be allowed to start a new OPD encounter while another OPD/emergency encounter for that patient is still open. The previous encounter must be closed first.
 
-## Main reuse sources
+## Backend requirements
 
-Use these existing implementations as the source of truth before creating anything new:
+Work in the existing OPD flow backend structure, especially:
 
-- Patient creation: `PatientFormDialog`
-- Emergency registration: `EmergencyPatientFormDialog`
-- Appointment creation: `_PatientAppointmentQuickDialog`
-- OPD check-in: patient quick-action OPD check-in flow
-- Triage: existing patient/emergency/triage form patterns
-- Admission request/admit patient: existing clinical admission dialog and patient admission flow
-- Diagnosis: `ClinicalDiagnosisActionDialog`
-- Lab request: `ClinicalLabOrderActionDialog`
-- Radiology request: `ClinicalRadiologyOrderActionDialog`
-- Prescription: `ClinicalPrescriptionActionDialog`
-- Procedure: `ClinicalProcedureActionDialog`
-- Referral: `ClinicalReferralActionDialog`
-- Follow-up: `ClinicalFollowUpActionDialog`
-- Disposition: `ClinicalDispositionActionDialog`
-- Report/print: existing shared printing/report components
+* `backend/src/modules/opd-flow/services/opd-flow.service.js`
+* `backend/src/modules/opd-flow/controllers/opd-flow.controller.js`
+* `backend/src/modules/opd-flow/repositories/opd-flow.repository.js`
+* `backend/src/modules/opd-flow/routes/opd-flow.routes.js`
+* `backend/src/modules/opd-flow/schemas/opd-flow.schema.js`
 
-## Required updates
+Implement backend protection so duplicate active OPD encounters cannot be created for the same patient.
 
-### 1. Patient creation
+Apply this protection to OPD flow creation paths, including:
 
-Use the Patient screen’s `PatientFormDialog` as the reusable patient creation dialog everywhere a new patient is created.
+* existing patient walk-in
+* appointment patient
+* queue-based start
+* any other `startOpdFlow` path that creates an OPD/emergency encounter
 
-- First name is required.
-- Last name must be optional.
-- Update frontend validation.
-- If backend validation currently requires last name, update backend validation so last name is optional.
-- Preserve existing patient payload shape as much as possible.
-- Do not add new patient fields.
+Keep the existing appointment and visit-queue duplicate checks, but add the missing patient-level active encounter guard.
 
-### 2. Emergency registration
+The backend must be the source of truth. Do not rely only on frontend filtering or disabling.
 
-Fix emergency registration so the existing emergency registration form works.
+When a patient already has an open OPD/emergency encounter, do not create another encounter. Return the existing backend validation/error pattern used by the project so the frontend can show the failure clearly.
 
-- Keep the current emergency registration action.
-- Preserve the intended submit flow through patient creation.
-- Do not add a new emergency workflow.
+Ensure consultation payment data stays consistent in the OPD flow response:
 
-### 3. Appointment scheduling
+* consultation fee
+* currency
+* consultation invoice ID
+* payment status
+* encounter ID
+* patient ID
 
-Reuse the existing patient appointment dialog everywhere appointments are created or scheduled.
+## Frontend requirements
 
-Do not redefine separate appointment dialogs for equivalent scheduling behavior.
+Work in the existing OPD frontend structure, especially:
 
-### 4. OPD check-in
+* `frontend/lib/features/opd/presentation/pages/opd_workspace_page.dart`
+* `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
+* `frontend/lib/features/opd/domain/entities/opd_entities.dart`
+* `frontend/lib/features/opd/data/dtos/opd_dtos.dart`
+* `frontend/lib/features/opd/data/repositories/opd_repository_impl.dart`
 
-Reuse the existing OPD check-in dialog/flow everywhere an OPD patient is checked in.
+### 1. Prevent duplicate visible OPD rows
 
-Do not duplicate OPD check-in forms.
+The combined OPD table should not show duplicate actionable rows for the same active patient/encounter when the same patient appears through flows, triage queue, visit queue, or appointments.
 
-### 5. Triage
+Show one clear actionable row that represents the patient’s current OPD state and next step.
 
-Reuse one shared triage form/dialog everywhere triage is performed.
+### 2. Start walk-in duplicate handling
 
-Preserve existing triage fields, validation, submit behavior, and controller calls.
+When starting a walk-in for an existing patient, the frontend must respect the backend duplicate-encounter guard.
 
-### 6. Clinical visit
+If the backend says the patient already has an active encounter, show the error instead of creating another row.
 
-Remove the Clinical visit quick-action/dialog from the Patient details quick actions.
+### 3. Pay consultation dialog
 
-Do not remove unrelated clinical workspace functionality.
+In `ConsultationPaymentDialog`, pre-fill the amount and currency from the selected OPD flow’s allocated consultation fee/currency.
 
-### 7. Billing
+The user should not need to manually re-enter an amount that is already allocated to the patient.
 
-Keep consultation billing behavior as currently implemented.
+Expected behavior:
 
-Do not replace it unless the same consultation billing dialog is duplicated elsewhere.
+* amount is pre-filled from the OPD flow
+* currency is pre-filled from the OPD flow
+* payment method remains selectable
+* transaction reference and notes can remain optional
+* submitting payment should use the existing OPD pay-consultation API
 
-### 8. Admission
+### 4. Simplify OPD flow action dialog
 
-Standardize admission request/admit patient dialogs.
+The OPD patient/flow dialog is currently too congested and places the useful actions too far down.
 
-- Reuse the existing clinical admission/request admission dialog where admission is requested.
-- Preserve current admission behavior.
-- When a patient is admitted/requested for admission, they must appear in the inpatient/IPD workflow as pending admission for the relevant ward/room/bed context.
-- Do not add new admission fields unless already required by the existing dialog/API.
+Refactor `FlowActionsDialog` so it is focused on advancing the OPD flow.
 
-### 9. Reports and printing
+Do not place the main action buttons at the bottom after large detail sections. Put the action buttons near the top of the dialog.
 
-When reports/print is clicked, open the print preview flow directly.
+Replace the separate grouped action sections such as:
 
-Use the same shared report/print flow globally.
+* Reception and queue
+* Triage
+* Doctor consultation
+* Printing
 
-The print preview must allow choosing what to print and what not to print if that behavior already exists.
+with one compact responsive action grid using the existing shared action/button patterns.
 
-### 10. OPD actions
+The action grid should use multiple columns where space allows, so buttons consume less vertical space.
 
-Review OPD actions and replace duplicated dialogs with shared ones where equivalent:
+Prioritize the current next step. For example:
 
-- Consultation/payment: reuse existing consultation billing behavior.
-- Assign doctor/provider: preserve current behavior.
-- Doctor review: replace duplicated diagnosis/order/prescription/procedure behavior with the existing shared clinical dialogs where equivalent.
-- Print summary: use the shared print/report flow.
+* if the patient is waiting for consultation payment, `Pay consultation` should be immediately visible
+* if the patient is waiting for vitals, `Record vitals` should be immediately visible
+* if the patient is waiting for doctor review, doctor review actions should be immediately visible
 
-### 11. Clinical actions
+If the current stage can be skipped or corrected using the existing flow, expose that action clearly instead of burying it.
 
-Reuse existing shared clinical dialogs globally:
+### 5. Remove unnecessary OPD dialog clutter
 
-- Add diagnosis
-- Request lab
-- Request radiology
-- Prescribe
-- Add procedure
-- Refer
-- Request admission
-- Follow up
-- Complete disposition
-- Print summary
+The OPD flow dialog should not be dominated by details that do not help the user advance the OPD workflow.
 
-Remove the Care plan action/component where it appears as a clinical action.
+De-emphasize or remove from the main dialog area:
 
-### 12. Lab requests
+* large active-flow summary blocks
+* repeated arrival mode/stage/queue/wait-time panels
+* vitals summary counts
+* clinical notes counts
+* procedures counts
+* service counts
+* other patient-detail style information
 
-Remove standalone “Request lab” entry points that create lab requests without first selecting a patient.
+Those details can remain accessible elsewhere, but the OPD dialog itself should be mainly for managing the OPD flow and moving the patient to the next step.
 
-Lab requests should be initiated from a selected patient/encounter context and must reuse the shared clinical lab request dialog.
+### 6. Copy patient and encounter IDs
 
-### 13. Radiology
+Add copy actions in OPD flow/action dialogs where patient and encounter context exists.
 
-Review radiology actions, but only standardize actions already clearly duplicated elsewhere.
+The user should be able to copy:
 
-Do not redesign unclear radiology-specific flows such as assign, start imaging, or perform study in this task.
+* patient ID
+* encounter ID
 
-## Implementation rules
+Use the existing Flutter clipboard approach and shared button style.
 
-- Do not add new workflows.
-- Do not add new fields unless needed only to preserve an existing dialog/API.
-- Do not add new permissions.
-- Do not change unrelated backend behavior.
-- Do not duplicate dialogs.
-- Keep feature-specific submit callbacks and controller/repository calls in feature code.
-- Move only reusable dialog/action UI into shared components.
-- Preserve existing labels, icons, validation, loading states, success/error handling, refresh behavior, and payload mapping.
-- Preserve current table, search, filter, summary-card, and workspace layout behavior.
+### 7. Keep backend and frontend synchronized
 
-## Acceptance criteria
+After OPD actions complete, the frontend state should refresh/update so the OPD table reflects the backend state correctly.
 
-- Patient creation uses one reusable patient dialog.
-- Last name is optional in frontend and backend validation.
-- Emergency registration works.
-- Appointment scheduling uses one reusable appointment dialog.
-- OPD check-in uses one reusable OPD check-in flow.
-- Triage uses one reusable triage dialog.
-- Clinical visit quick action is removed from Patient details.
-- Care plan action is removed.
-- Shared clinical dialogs are reused for diagnosis, lab, radiology, prescription, procedure, referral, admission, follow-up, and disposition.
-- Lab requests require selected patient/encounter context.
-- Print/report actions open the shared print preview flow directly.
-- No duplicate equivalent dialogs remain where a shared dialog exists.
-- Existing business behavior is preserved.
+This includes:
+
+* starting walk-in
+* paying consultation
+* recording vitals
+* assigning doctor
+* doctor review
+* correcting stage
+* printing summary flow if it affects state
+
+## Constraints
+
+Do not add unrelated features.
+
+Do not invent new OPD workflow stages.
+
+Do not change the overall architecture.
+
+Use the existing backend layering:
+
+`route → controller → service → repository → Prisma`
+
+Use the existing frontend patterns:
+
+* Riverpod controller
+* OPD repository
+* OPD DTO/entity mapping
+* shared dialog/action components
+* existing permission gates
+
+## Expected result
+
+After the fix:
+
+* a patient cannot have multiple active OPD encounters
+* duplicate OPD rows are no longer shown for the same active patient/encounter
+* the pay-consultation dialog opens with the allocated amount already filled in
+* OPD action dialogs are simpler and action-first
+* patient ID and encounter ID can be copied from OPD flow dialogs
+* backend and frontend stay consistent after each OPD action

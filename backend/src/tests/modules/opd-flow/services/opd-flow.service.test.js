@@ -53,6 +53,7 @@ const opdFlowService = require('@services/opd-flow/opd-flow.service');
 describe('opd-flow.service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    opdFlowRepository.findOpenActiveEncounterForPatient.mockResolvedValue(null);
     prisma.tenant.findFirst.mockResolvedValue(null);
     prisma.facility.findFirst.mockResolvedValue(null);
     prisma.patient.findFirst.mockResolvedValue(null);
@@ -139,8 +140,16 @@ describe('opd-flow.service', () => {
         create: jest.fn().mockResolvedValue({ id: 'pat-1' })
       },
       invoice: {
-        create: jest.fn().mockResolvedValue({ id: 'inv-1', total_amount: '40.00', currency: 'USD' }),
-        findFirst: jest.fn().mockResolvedValue({ id: 'inv-1', total_amount: '40.00', currency: 'USD' })
+        create: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '40.00',
+          currency: 'USD'
+        }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '40.00',
+          currency: 'USD'
+        })
       },
       payment: {
         create: jest.fn(),
@@ -160,23 +169,21 @@ describe('opd-flow.service', () => {
       },
       encounter: {
         create: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
-        findFirst: jest
-          .fn()
-          .mockResolvedValueOnce({
-            id: 'enc-1',
-            encounter_type: 'OPD',
-            extension_json: {
-              opd_flow: {
-                stage: 'WAITING_CONSULTATION_PAYMENT',
-                visit_queue_id: null,
-                appointment_id: null,
-                consultation: {
-                  invoice_id: null,
-                  payment_id: null
-                }
+        findFirst: jest.fn().mockResolvedValueOnce({
+          id: 'enc-1',
+          encounter_type: 'OPD',
+          extension_json: {
+            opd_flow: {
+              stage: 'WAITING_CONSULTATION_PAYMENT',
+              visit_queue_id: null,
+              appointment_id: null,
+              consultation: {
+                invoice_id: null,
+                payment_id: null
               }
             }
-          }),
+          }
+        }),
         update: jest.fn()
       }
     };
@@ -236,25 +243,23 @@ describe('opd-flow.service', () => {
       },
       encounter: {
         create: jest.fn().mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
-        findFirst: jest
-          .fn()
-          .mockResolvedValueOnce({
-            id: 'enc-1',
-            encounter_type: 'EMERGENCY',
-            extension_json: {
-              opd_flow: {
-                stage: 'WAITING_VITALS',
-                visit_queue_id: null,
-                appointment_id: null,
-                emergency_case_id: 'ec-1',
-                triage_assessment_id: 'tri-1',
-                consultation: {
-                  invoice_id: null,
-                  payment_id: null
-                }
+        findFirst: jest.fn().mockResolvedValueOnce({
+          id: 'enc-1',
+          encounter_type: 'EMERGENCY',
+          extension_json: {
+            opd_flow: {
+              stage: 'WAITING_VITALS',
+              visit_queue_id: null,
+              appointment_id: null,
+              emergency_case_id: 'ec-1',
+              triage_assessment_id: 'tri-1',
+              consultation: {
+                invoice_id: null,
+                payment_id: null
               }
             }
-          }),
+          }
+        }),
         update: jest.fn()
       }
     };
@@ -313,8 +318,16 @@ describe('opd-flow.service', () => {
         create: jest.fn()
       },
       invoice: {
-        create: jest.fn().mockResolvedValue({ id: 'inv-1', total_amount: '30.00', currency: 'USD' }),
-        findFirst: jest.fn().mockResolvedValue({ id: 'inv-1', total_amount: '30.00', currency: 'USD' })
+        create: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '30.00',
+          currency: 'USD'
+        }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '30.00',
+          currency: 'USD'
+        })
       },
       payment: {
         create: jest.fn(),
@@ -396,14 +409,55 @@ describe('opd-flow.service', () => {
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     await expect(
-      opdFlowService.startOpdFlow(
-        { appointment_id: 'apt-1' },
-        { tenant_id: 'tenant-1', user_id: 'usr-1' }
-      )
+      opdFlowService.startOpdFlow({ appointment_id: 'apt-1' }, { tenant_id: 'tenant-1', user_id: 'usr-1' })
     ).rejects.toMatchObject({
       messageKey: 'errors.opd_flow.appointment_already_linked',
       statusCode: 409
     });
+  });
+
+  it('rejects a new OPD flow when the patient already has an open OPD or emergency encounter', async () => {
+    const tx = {
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
+      },
+      patient: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'pat-1' })
+      }
+    };
+    opdFlowRepository.findOpenActiveEncounterForPatient.mockResolvedValueOnce({
+      id: 'enc-open-1',
+      human_friendly_id: 'ENC000009',
+      encounter_type: 'EMERGENCY',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_DOCTOR_REVIEW'
+        }
+      }
+    });
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.startOpdFlow(
+        {
+          tenant_id: 'tenant-1',
+          patient_id: 'PAT0000003'
+        },
+        { tenant_id: 'tenant-1', user_id: 'usr-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.active_encounter_exists',
+      statusCode: 409
+    });
+    expect(opdFlowRepository.findOpenActiveEncounterForPatient).toHaveBeenCalledWith(
+      {
+        tenantId: 'TENANT-1',
+        patientId: 'pat-1',
+        encounterTypes: ['OPD', 'EMERGENCY']
+      },
+      tx
+    );
   });
 
   it('rejects OPD flow start for cancelled appointment', async () => {
@@ -647,10 +701,7 @@ describe('opd-flow.service', () => {
       lab_panel: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'lab-panel-1',
-          panel_items: [
-            { lab_test_id: 'lab-test-1' },
-            { lab_test_id: 'lab-test-2' }
-          ]
+          panel_items: [{ lab_test_id: 'lab-test-1' }, { lab_test_id: 'lab-test-2' }]
         })
       },
       radiology_order: {
@@ -682,10 +733,7 @@ describe('opd-flow.service', () => {
       'enc-1',
       {
         note: 'Doctor assessment completed',
-        lab_requests: [
-          { lab_test_id: 'lab-test-1' },
-          { lab_panel_id: 'lab-panel-1' }
-        ],
+        lab_requests: [{ lab_test_id: 'lab-test-1' }, { lab_panel_id: 'lab-panel-1' }],
         radiology_requests: [{ radiology_test_id: 'rad-test-1' }],
         medications: [{ drug_id: 'drug-1', quantity: 1 }]
       },
@@ -972,10 +1020,7 @@ describe('opd-flow.service', () => {
   });
 
   it('emits OPD realtime updates, excluding actor and adding assigned provider', async () => {
-    prisma.user_role.findMany.mockResolvedValue([
-      { user_id: 'doctor-team-1' },
-      { user_id: 'actor-1' }
-    ]);
+    prisma.user_role.findMany.mockResolvedValue([{ user_id: 'doctor-team-1' }, { user_id: 'actor-1' }]);
     prisma.notification_delivery.createMany.mockResolvedValue({ count: 2 });
 
     const tx = {
@@ -1071,9 +1116,9 @@ describe('opd-flow.service', () => {
         expect.objectContaining({
           channel: 'IN_APP',
           status: 'SENT',
-          sent_at: expect.any(Date),
-        }),
-      ]),
+          sent_at: expect.any(Date)
+        })
+      ])
     });
     expect(emitToUser).toHaveBeenCalledTimes(2);
   });
@@ -1128,10 +1173,7 @@ describe('opd-flow.service', () => {
         findFirst: jest.fn().mockResolvedValue(null)
       },
       user: {
-        findFirst: jest
-          .fn()
-          .mockResolvedValueOnce(null)
-          .mockResolvedValueOnce({ id: 'doc-global-1' })
+        findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 'doc-global-1' })
       },
       appointment: {
         findFirst: jest.fn().mockResolvedValue(null)

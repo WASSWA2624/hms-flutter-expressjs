@@ -954,8 +954,11 @@ final class _OpdTableItem {
     final OpdQueueEntry? activeQueue = queueEntry;
     final OpdAppointment? activeAppointment = appointment;
     return activeFlow?.patientId ??
+        activeFlow?.patientIdentifier ??
         activeQueue?.patientId ??
+        activeQueue?.patientIdentifier ??
         activeAppointment?.patientId ??
+        activeAppointment?.patientIdentifier ??
         id;
   }
 
@@ -1032,8 +1035,17 @@ final class _OpdTableItem {
 }
 
 List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
-  final Set<String> usedPatientKeys = <String>{};
+  final Map<String, _OpdTableItem> activeItemsByPatient =
+      <String, _OpdTableItem>{};
   final List<_OpdTableItem> items = <_OpdTableItem>[];
+
+  void upsertActiveFlowItem(_OpdTableItem item) {
+    final String key = item.categoryKey;
+    final _OpdTableItem? existing = activeItemsByPatient[key];
+    if (existing == null || _preferOpdTableItem(item, existing)) {
+      activeItemsByPatient[key] = item;
+    }
+  }
 
   for (final OpdFlowSummary flow in state.triageQueue.items) {
     if (flow.isTerminal || _isCompletedStatus(flow.status ?? flow.stage)) {
@@ -1063,8 +1075,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       urgencyRank: _flowUrgencyRank(flow),
       flow: flow,
     );
-    usedPatientKeys.add(item.categoryKey);
-    items.add(item);
+    upsertActiveFlowItem(item);
   }
 
   for (final OpdFlowSummary flow in state.flows.items) {
@@ -1095,9 +1106,11 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       urgencyRank: _flowUrgencyRank(flow),
       flow: flow,
     );
-    usedPatientKeys.add(item.categoryKey);
-    items.add(item);
+    upsertActiveFlowItem(item);
   }
+
+  final Set<String> usedPatientKeys = activeItemsByPatient.keys.toSet();
+  items.addAll(activeItemsByPatient.values);
 
   for (final OpdQueueEntry entry in state.queueEntries.items) {
     if (_isCompletedStatus(entry.status)) {
@@ -1174,6 +1187,62 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
     ).compareTo(_categorySort(right.category));
   });
   return items;
+}
+
+bool _preferOpdTableItem(_OpdTableItem candidate, _OpdTableItem current) {
+  final OpdFlowSummary? candidateFlow = candidate.flow;
+  final OpdFlowSummary? currentFlow = current.flow;
+
+  if (candidateFlow != null && currentFlow == null) {
+    return true;
+  }
+  if (candidateFlow == null && currentFlow != null) {
+    return false;
+  }
+
+  if (candidateFlow != null && currentFlow != null) {
+    if (_isSameFlow(candidateFlow, currentFlow)) {
+      return _categorySort(candidate.category) <
+          _categorySort(current.category);
+    }
+
+    final int candidateRank = _flowActionRank(candidateFlow);
+    final int currentRank = _flowActionRank(currentFlow);
+    if (candidateRank != currentRank) {
+      return candidateRank > currentRank;
+    }
+  }
+
+  if (candidate.urgencyRank != current.urgencyRank) {
+    return candidate.urgencyRank < current.urgencyRank;
+  }
+
+  final DateTime candidateTime = candidate.time ?? _unknownArrivalTime;
+  final DateTime currentTime = current.time ?? _unknownArrivalTime;
+  if (candidateTime != currentTime) {
+    return candidateTime.isBefore(currentTime);
+  }
+
+  return _categorySort(candidate.category) < _categorySort(current.category);
+}
+
+int _flowActionRank(OpdFlowSummary flow) {
+  final int stageRank = switch ((flow.stage ?? '').toUpperCase()) {
+    'WAITING_CONSULTATION_PAYMENT' => 10,
+    'WAITING_VITALS' => 20,
+    'WAITING_DOCTOR_ASSIGNMENT' => 30,
+    'WAITING_DOCTOR_REVIEW' => 40,
+    'LAB_REQUESTED' ||
+    'RADIOLOGY_REQUESTED' ||
+    'LAB_AND_RADIOLOGY_REQUESTED' ||
+    'PHARMACY_REQUESTED' => 50,
+    'WAITING_DISPOSITION' => 60,
+    _ => 0,
+  };
+
+  final int emergencyRank = _isEmergencyFlow(flow) ? 1000 : 0;
+  final int paymentRank = flow.consultationPaid ? 5 : 0;
+  return emergencyRank + stageRank + paymentRank;
 }
 
 int _opdCategoryCount(List<_OpdTableItem> items, String category) {
@@ -1401,6 +1470,16 @@ String? _moneyLabel(BuildContext context, num? amount, String? currency) {
     Localizations.localeOf(context),
     currencyCode: currency,
   );
+}
+
+String _currencyAmountInput(num? amount) {
+  if (amount == null) {
+    return '';
+  }
+  if (amount is int || amount == amount.roundToDouble()) {
+    return amount.toStringAsFixed(0);
+  }
+  return amount.toString();
 }
 
 String? _nextActionFilterValue(_OpdTableItem item) {
@@ -3502,39 +3581,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         density: AppFormSectionDensity.compact,
         children: <Widget>[
           if (detail == null) const LinearProgressIndicator(),
-          AppListItemText(
-            title: _categoryLabel(context, _opdCategoryActiveFlow),
-            subtitle: _joinDisplay(<String?>[
-              _apiLabel(flow.stage ?? ''),
-              flow.providerDisplayName,
-              flow.patientPhone,
-            ]),
-          ),
-          _OpdWorkflowStatusSummary(flow: flow, detail: detail),
-          _OpdWorkflowRecordSummary(
-            detail: detail,
-            thresholds:
-                workspaceState?.clinicalAlertThresholds ??
-                const <OpdClinicalAlertThreshold>[],
-          ),
-          _OpdVitalIndicatorsPanel(
-            detail: detail,
-            thresholds:
-                workspaceState?.clinicalAlertThresholds ??
-                const <OpdClinicalAlertThreshold>[],
-            onEditVitals: detail == null
-                ? null
-                : (OpdFlowDetail value) => _openNested(
-                    context,
-                    RecordVitalsDialog(
-                      flow: value.summary,
-                      detail: value,
-                      editing: true,
-                    ),
-                  ),
-          ),
-          if (detail != null) _OpdRelatedRecordsPanel(detail: detail),
-          ..._actionSections(context, flow, detail),
+          _actionGrid(context, flow, detail),
+          _OpdFlowContextPanel(flow: flow),
         ],
       ),
       actions: <Widget>[
@@ -3546,7 +3594,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     );
   }
 
-  List<Widget> _actionSections(
+  Widget _actionGrid(
     BuildContext context,
     OpdFlowSummary flow,
     OpdFlowDetail? detail,
@@ -3564,61 +3612,66 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         (stage == 'WAITING_CONSULTATION_PAYMENT' ||
             consultationPaymentRequired);
 
-    final List<Widget> sections = <Widget>[];
-
-    void addSection(String title, List<AppPermissionActionItem> actions) {
-      if (actions.isEmpty) {
-        return;
-      }
-      sections.add(
-        AppActionSection(
-          title: title,
-          minItemWidth: 190,
-          permissionActions: actions,
-        ),
-      );
-    }
-
-    addSection(l10n.opdWorkflowReceptionTitle, <AppPermissionActionItem>[
+    final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[
       if (canPay)
         AppPermissionActionItem(
           requirement: _opdBillingRequirement,
           label: l10n.opdPayConsultationAction,
           icon: Icons.payments_outlined,
+          variant: AppButtonVariant.primary,
           fullWidth: true,
           hideWhenDenied: true,
           onPressed: () =>
               _openNested(context, ConsultationPaymentDialog(flow: flow)),
         ),
-      if (!terminal && _canAssignDoctor(stage))
-        AppPermissionActionItem(
-          requirement: _opdReceptionRequirement,
-          label: l10n.opdAssignDoctorAction,
-          icon: Icons.assignment_ind_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openNested(context, AssignDoctorDialog(flow: flow)),
-        ),
-    ]);
-
-    addSection(l10n.opdWorkflowTriageTitle, <AppPermissionActionItem>[
       if (!terminal && _canRecordVitals(stage))
         AppPermissionActionItem(
           requirement: _opdTriageRequirement,
           label: l10n.opdRecordVitalsAction,
           icon: Icons.monitor_heart_outlined,
+          variant: AppButtonVariant.primary,
           fullWidth: true,
           hideWhenDenied: true,
           onPressed: () => _openNested(context, RecordVitalsDialog(flow: flow)),
         ),
-      if (!terminal && stage == 'WAITING_DOCTOR_ASSIGNMENT')
+      if (!terminal &&
+          (_canAssignDoctor(stage) || stage == 'WAITING_DOCTOR_ASSIGNMENT'))
         AppPermissionActionItem(
-          requirement: _opdTriageRequirement,
+          requirement: _opdReceptionRequirement,
           label: l10n.opdAssignDoctorAction,
           icon: Icons.assignment_ind_outlined,
+          variant: AppButtonVariant.primary,
           fullWidth: true,
           hideWhenDenied: true,
           onPressed: () => _openNested(context, AssignDoctorDialog(flow: flow)),
+        ),
+      if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
+        AppPermissionActionItem(
+          requirement: _opdDoctorRequirement,
+          label: l10n.opdDoctorReviewAction,
+          icon: Icons.edit_note_outlined,
+          variant: AppButtonVariant.primary,
+          fullWidth: true,
+          hideWhenDenied: true,
+          onPressed: () => _openNested(context, DoctorReviewDialog(flow: flow)),
+        ),
+      if (!terminal && _canDispose(stage))
+        AppPermissionActionItem(
+          requirement: _opdDoctorRequirement,
+          label: l10n.opdDispositionAction,
+          icon: Icons.task_alt_outlined,
+          variant: AppButtonVariant.primary,
+          fullWidth: true,
+          hideWhenDenied: true,
+          onPressed: () => _openNested(
+            context,
+            OpdDispositionDialog(
+              flow: flow,
+              hasPharmacyOrder:
+                  detail?.pharmacyOrders.isNotEmpty ??
+                  stage == 'PHARMACY_REQUESTED',
+            ),
+          ),
         ),
       if (!terminal && stage == 'WAITING_DOCTOR_ASSIGNMENT')
         AppPermissionActionItem(
@@ -3630,18 +3683,14 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           onPressed: () =>
               _openNested(context, RoutingDecisionDialog(flow: flow)),
         ),
-    ]);
-
-    addSection(l10n.opdWorkflowDoctorTitle, <AppPermissionActionItem>[
-      if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
-        AppPermissionActionItem(
-          requirement: _opdDoctorRequirement,
-          label: l10n.opdDoctorReviewAction,
-          icon: Icons.edit_note_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openNested(context, DoctorReviewDialog(flow: flow)),
-        ),
+      AppPermissionActionItem(
+        requirement: _opdDoctorRequirement,
+        label: l10n.opdCorrectStageAction,
+        icon: Icons.sync_alt_outlined,
+        fullWidth: true,
+        hideWhenDenied: true,
+        onPressed: () => _openNested(context, CorrectStageDialog(flow: flow)),
+      ),
       if (!terminal && stage == 'WAITING_DOCTOR_REVIEW')
         AppPermissionActionItem(
           requirement: _opdDoctorRequirement,
@@ -3687,23 +3736,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           hideWhenDenied: true,
           onPressed: () => _openProcedureDialog(context, flow),
         ),
-      if (!terminal && _canDispose(stage))
-        AppPermissionActionItem(
-          requirement: _opdDoctorRequirement,
-          label: l10n.opdDispositionAction,
-          icon: Icons.task_alt_outlined,
-          fullWidth: true,
-          hideWhenDenied: true,
-          onPressed: () => _openNested(
-            context,
-            OpdDispositionDialog(
-              flow: flow,
-              hasPharmacyOrder:
-                  detail?.pharmacyOrders.isNotEmpty ??
-                  stage == 'PHARMACY_REQUESTED',
-            ),
-          ),
-        ),
       if (!terminal && (stage == 'WAITING_DOCTOR_REVIEW' || _canDispose(stage)))
         AppPermissionActionItem(
           requirement: _opdDoctorRequirement,
@@ -3723,17 +3755,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
         ),
       AppPermissionActionItem(
-        requirement: _opdDoctorRequirement,
-        label: l10n.opdCorrectStageAction,
-        icon: Icons.sync_alt_outlined,
-        fullWidth: true,
-        hideWhenDenied: true,
-        onPressed: () => _openNested(context, CorrectStageDialog(flow: flow)),
-      ),
-    ]);
-
-    addSection(l10n.opdWorkflowPrintTitle, <AppPermissionActionItem>[
-      AppPermissionActionItem(
         requirement: _opdTriageRequirement,
         label: l10n.opdPrintSummaryAction,
         icon: Icons.print_outlined,
@@ -3745,9 +3766,14 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           closeParentOnChange: false,
         ),
       ),
-    ]);
+    ];
 
-    return sections;
+    return AppActionSection(
+      title: l10n.opdActionsColumnLabel,
+      minItemWidth: 170,
+      maxColumns: 4,
+      permissionActions: actions,
+    );
   }
 
   Future<void> _openNested(
@@ -3985,6 +4011,76 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
   }
 }
 
+class _OpdFlowContextPanel extends StatelessWidget {
+  const _OpdFlowContextPanel({required this.flow});
+
+  final OpdFlowSummary flow;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final String? patientId = _firstNonEmptyText(<String?>[
+      flow.patientIdentifier,
+      flow.patientId,
+    ]);
+    final String encounterId = flow.apiId;
+
+    return AppSectionPanel(
+      density: AppContentPanelDensity.compact,
+      children: <Widget>[
+        Wrap(
+          spacing: Theme.of(context).spacing.sm,
+          runSpacing: Theme.of(context).spacing.sm,
+          children: <Widget>[
+            if (patientId != null)
+              AppButton.secondary(
+                label: 'Copy patient ID',
+                leadingIcon: Icons.copy_outlined,
+                onPressed: () => _copyTextToClipboard(
+                  context,
+                  patientId,
+                  l10n.clinicalPatientIdCopiedMessage,
+                ),
+              ),
+            AppButton.secondary(
+              label: 'Copy encounter ID',
+              leadingIcon: Icons.copy_outlined,
+              onPressed: () => _copyTextToClipboard(
+                context,
+                encounterId,
+                'Encounter ID copied.',
+              ),
+            ),
+          ],
+        ),
+        AppInfoTileGrid(
+          minItemWidth: 130,
+          borderedTiles: false,
+          emptyValue: l10n.profileUnknownValue,
+          items: <AppInfoTileData>[
+            AppInfoTileData(
+              label: l10n.opdStageLabel,
+              value: _apiLabel(flow.stage ?? ''),
+            ),
+            AppInfoTileData(
+              label: l10n.opdNextStepColumnLabel,
+              value: _apiLabel(flow.nextStep ?? ''),
+            ),
+            AppInfoTileData(
+              label: l10n.opdPaymentStatusLabel,
+              value: _flowBillingStatusLabel(context, flow),
+            ),
+            AppInfoTileData(
+              label: l10n.opdProviderColumnLabel,
+              value: flow.providerDisplayName,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _OpdWorkflowStatusSummary extends StatelessWidget {
   const _OpdWorkflowStatusSummary({required this.flow, required this.detail});
 
@@ -4061,73 +4157,14 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
   }
 }
 
-class _OpdWorkflowRecordSummary extends StatelessWidget {
-  const _OpdWorkflowRecordSummary({
-    required this.detail,
-    required this.thresholds,
-  });
-
-  final OpdFlowDetail? detail;
-  final List<OpdClinicalAlertThreshold> thresholds;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final OpdFlowDetail? value = detail;
-    final int abnormalVitalCount = _abnormalVitalCount(value, thresholds);
-    final List<AppInfoTileData> items = <AppInfoTileData>[
-      AppInfoTileData(
-        label: l10n.opdVitalsSummaryLabel,
-        value: '${value?.vitalSigns.length ?? 0}',
-      ),
-      AppInfoTileData(
-        label: l10n.opdAbnormalVitalsSummaryLabel,
-        value: '$abnormalVitalCount',
-      ),
-      AppInfoTileData(
-        label: l10n.opdClinicalAlertsSummaryLabel,
-        value: '${value?.clinicalAlerts.length ?? 0}',
-      ),
-      AppInfoTileData(
-        label: l10n.opdServicesSummaryLabel,
-        value:
-            '${(value?.labOrders.length ?? 0) + (value?.radiologyOrders.length ?? 0) + (value?.pharmacyOrders.length ?? 0)}',
-      ),
-      AppInfoTileData(
-        label: l10n.opdClinicalNotesSummaryLabel,
-        value: '${value?.clinicalNotes.length ?? 0}',
-      ),
-      AppInfoTileData(
-        label: l10n.opdProceduresSummaryLabel,
-        value: '${value?.procedures.length ?? 0}',
-      ),
-    ];
-
-    return AppTriageSummaryPanel(
-      items: items,
-      statuses: <AppWorkspaceStatus>[
-        AppWorkspaceStatus(
-          label: _apiLabel(abnormalVitalCount > 0 ? 'ABNORMAL' : 'NORMAL'),
-          tone: abnormalVitalCount > 0
-              ? AppWorkspaceStatusTone.warning
-              : AppWorkspaceStatusTone.success,
-        ),
-      ],
-      emptyValue: context.l10n.profileUnknownValue,
-    );
-  }
-}
-
 class _OpdVitalIndicatorsPanel extends StatelessWidget {
   const _OpdVitalIndicatorsPanel({
     required this.detail,
     required this.thresholds,
-    this.onEditVitals,
   });
 
   final OpdFlowDetail? detail;
   final List<OpdClinicalAlertThreshold> thresholds;
-  final ValueChanged<OpdFlowDetail>? onEditVitals;
 
   @override
   Widget build(BuildContext context) {
@@ -4150,8 +4187,6 @@ class _OpdVitalIndicatorsPanel extends StatelessWidget {
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.success,
       ),
-      editLabel: onEditVitals == null ? null : context.l10n.opdEditVitalsAction,
-      onEdit: onEditVitals == null ? null : () => onEditVitals!(value),
       items: <AppVitalSummaryItem>[
         for (final OpdVitalSign vital in vitals)
           _opdVitalSummaryItem(
@@ -4195,83 +4230,6 @@ AppVitalSummaryItem _opdVitalSummaryItem(
       },
     ),
   );
-}
-
-class _OpdRelatedRecordsPanel extends StatelessWidget {
-  const _OpdRelatedRecordsPanel({required this.detail});
-
-  final OpdFlowDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final List<OpdRelatedRecord> clinicalRecords = <OpdRelatedRecord>[
-      ...detail.clinicalNotes,
-      ...detail.diagnoses,
-      ...detail.procedures,
-    ];
-    final List<OpdRelatedRecord> serviceRecords = <OpdRelatedRecord>[
-      ...detail.labOrders,
-      ...detail.radiologyOrders,
-      ...detail.pharmacyOrders,
-      ...detail.admissions,
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppExpandableRecordSection<OpdTimelineItem>(
-          title: l10n.opdTimelineTitle,
-          emptyLabel: l10n.opdNoTimelineLabel,
-          items: detail.timeline,
-          maxItems: 8,
-          itemLeadingIcon: Icons.history_outlined,
-          itemTitle: (OpdTimelineItem item) => _apiLabel(item.action),
-          itemSubtitle: (OpdTimelineItem item) => _joinDisplay(<String?>[
-            _apiLabel(item.stage ?? ''),
-            item.notes,
-            _formatOptionalDateTime(context, item.occurredAt),
-          ]),
-        ),
-        AppExpandableRecordSection<OpdRelatedRecord>(
-          title: l10n.opdReferralsTitle,
-          emptyLabel: l10n.opdNoRelatedRecordsLabel,
-          items: detail.referrals,
-          itemLeadingIcon: Icons.call_split_outlined,
-          itemTitle: _opdRelatedRecordTitle,
-          itemSubtitle: (OpdRelatedRecord item) =>
-              _opdRelatedRecordSubtitle(context, item),
-        ),
-        AppExpandableRecordSection<OpdRelatedRecord>(
-          title: l10n.opdFollowUpsTitle,
-          emptyLabel: l10n.opdNoRelatedRecordsLabel,
-          items: detail.followUps,
-          itemLeadingIcon: Icons.event_repeat_outlined,
-          itemTitle: _opdRelatedRecordTitle,
-          itemSubtitle: (OpdRelatedRecord item) =>
-              _opdRelatedRecordSubtitle(context, item),
-        ),
-        AppExpandableRecordSection<OpdRelatedRecord>(
-          title: l10n.opdClinicalNotesSummaryLabel,
-          emptyLabel: l10n.opdNoRelatedRecordsLabel,
-          items: clinicalRecords,
-          itemLeadingIcon: Icons.note_alt_outlined,
-          itemTitle: _opdRelatedRecordTitle,
-          itemSubtitle: (OpdRelatedRecord item) =>
-              _opdRelatedRecordSubtitle(context, item),
-        ),
-        AppExpandableRecordSection<OpdRelatedRecord>(
-          title: l10n.opdServicesSummaryLabel,
-          emptyLabel: l10n.opdNoRelatedRecordsLabel,
-          items: serviceRecords,
-          itemLeadingIcon: Icons.room_service_outlined,
-          itemTitle: _opdRelatedRecordTitle,
-          itemSubtitle: (OpdRelatedRecord item) =>
-              _opdRelatedRecordSubtitle(context, item),
-        ),
-      ],
-    );
-  }
 }
 
 bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
@@ -5369,9 +5327,14 @@ class _ConsultationPaymentDialogState
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController();
+    _amountController = TextEditingController(
+      text: _currencyAmountInput(widget.flow.consultationFee),
+    );
     _referenceController = TextEditingController();
     _notesController = TextEditingController();
+    _currency =
+        widget.flow.consultationCurrency?.trim().toUpperCase() ??
+        appDefaultCurrencyCode;
   }
 
   @override
@@ -5932,6 +5895,28 @@ bool _isNonEmpty(String? value) {
   return value != null && value.trim().isNotEmpty;
 }
 
+String? _firstNonEmptyText(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
+Future<void> _copyTextToClipboard(
+  BuildContext context,
+  String value,
+  String message,
+) async {
+  await Clipboard.setData(ClipboardData(text: value));
+  if (!context.mounted) {
+    return;
+  }
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
 String _apiLabel(String value) {
   return AppDisplay.apiLabel(value);
 }
@@ -5950,25 +5935,6 @@ String? _formatOptionalDateTime(BuildContext context, DateTime? value) {
 
 String _joinDisplay(Iterable<String?> values) {
   return AppDisplay.joinNonEmpty(values, separator: ' | ');
-}
-
-String _opdRelatedRecordTitle(OpdRelatedRecord record) {
-  final String? title = record.title?.trim();
-  if (title != null && title.isNotEmpty) {
-    return title;
-  }
-  return _apiLabel(record.kind);
-}
-
-String _opdRelatedRecordSubtitle(
-  BuildContext context,
-  OpdRelatedRecord record,
-) {
-  return _joinDisplay(<String?>[
-    record.status == null ? null : _apiLabel(record.status!),
-    record.subtitle,
-    _formatOptionalDateTime(context, record.occurredAt),
-  ]);
 }
 
 AppWorkspaceStatusTone _stageTone(String? value) {

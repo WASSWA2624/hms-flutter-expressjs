@@ -38,7 +38,9 @@ describe('opd-flow.repository', () => {
   it('findMany applies OPD/EMERGENCY filter', async () => {
     prisma.encounter.findMany.mockResolvedValue([]);
 
-    await repository.findMany({ tenant_id: 'tenant-1' }, 0, 10, { started_at: 'desc' });
+    await repository.findMany({ tenant_id: 'tenant-1' }, 0, 10, {
+      started_at: 'desc'
+    });
 
     expect(prisma.encounter.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -65,6 +67,30 @@ describe('opd-flow.repository', () => {
           encounter_type: { in: ['OPD', 'EMERGENCY'] },
           AND: [{ patient: { deleted_at: null } }]
         })
+      })
+    );
+  });
+
+  it('findOpenActiveEncounterForPatient finds open OPD or emergency encounter for a patient', async () => {
+    prisma.encounter.findFirst.mockResolvedValue({ id: 'enc-open-1' });
+
+    const result = await repository.findOpenActiveEncounterForPatient({
+      tenantId: 'tenant-1',
+      patientId: 'patient-1'
+    });
+
+    expect(result).toEqual({ id: 'enc-open-1' });
+    expect(prisma.encounter.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tenant_id: 'tenant-1',
+          patient_id: 'patient-1',
+          status: 'OPEN',
+          encounter_type: { in: ['OPD', 'EMERGENCY'] },
+          deleted_at: null,
+          AND: [{ patient: { deleted_at: null } }]
+        }),
+        orderBy: { started_at: 'asc' }
       })
     );
   });

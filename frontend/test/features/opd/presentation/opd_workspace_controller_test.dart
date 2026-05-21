@@ -134,10 +134,10 @@ void main() {
       expect(submittedPayload, containsPair('triage_level', 'LEVEL_2'));
       expect(submittedPayload, containsPair('emergency', true));
       expect(submittedPayload, containsPair('notes', 'Priority review'));
-      verifyNever(() => repository.listAppointments(any()));
-      verifyNever(() => repository.listVisitQueues(any()));
-      verifyNever(() => repository.listOpdFlows(any()));
-      verifyNever(() => repository.listTriageQueue(any()));
+      verify(() => repository.listAppointments(any())).called(1);
+      verify(() => repository.listVisitQueues(any())).called(1);
+      verify(() => repository.listOpdFlows(any())).called(1);
+      verify(() => repository.listTriageQueue(any())).called(1);
     });
   });
 }

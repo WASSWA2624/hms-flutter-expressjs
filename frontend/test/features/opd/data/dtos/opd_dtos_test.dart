@@ -25,6 +25,7 @@ void main() {
               'currency': 'UGX',
               'invoice_id': 'INV0001',
               'payment_id': 'PAY0001',
+              'payment_status': 'COMPLETED',
             },
             'timeline': <Object?>[],
           },
@@ -38,6 +39,7 @@ void main() {
     expect(detail.consultationPaid, isTrue);
     expect(detail.consultationInvoiceId, 'INV0001');
     expect(detail.consultationPaymentId, 'PAY0001');
+    expect(detail.consultationPaymentStatus, 'COMPLETED');
     expect(detail.summary.queuedAt, DateTime.parse('2026-05-17T07:45:00.000Z'));
     expect(detail.summary.arrivalMode, 'EMERGENCY');
     expect(detail.summary.emergencyIndicator, isTrue);
@@ -45,5 +47,6 @@ void main() {
     expect(detail.summary.consultationPaid, isTrue);
     expect(detail.summary.consultationFee, 25000);
     expect(detail.summary.consultationCurrency, 'UGX');
+    expect(detail.summary.consultationPaymentStatus, 'COMPLETED');
   });
 }

@@ -221,6 +221,7 @@ final class OpdFlowSummaryDto {
       consultationCurrency: _string(consultation['currency']),
       consultationInvoiceId: _string(consultation['invoice_id']),
       consultationPaymentId: _string(consultation['payment_id']),
+      consultationPaymentStatus: _string(consultation['payment_status']),
     );
   }
 }
@@ -247,6 +248,7 @@ final class OpdFlowDetailDto {
       summary: summary,
       consultationInvoiceId: _string(consultation['invoice_id']),
       consultationPaymentId: _string(consultation['payment_id']),
+      consultationPaymentStatus: _string(consultation['payment_status']),
       consultationPaid: _bool(consultation['paid'] ?? consultation['is_paid']),
       consultationPaymentRequired: _bool(
         consultation['payment_required'] ??

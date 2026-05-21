@@ -459,7 +459,7 @@ final class OpdWorkspaceController
       () => _repository.assignTriageProvider(flow.apiId, <String, Object?>{
         'provider_user_id': providerUserId,
       }),
-      refreshAfter: false,
+      refreshAfter: true,
     );
   }
 
@@ -469,7 +469,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.payConsultation(flow.apiId, payload),
-      refreshAfter: false,
+      refreshAfter: true,
     );
   }
 
@@ -479,7 +479,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.recordTriageVitals(flow.apiId, payload),
-      refreshAfter: false,
+      refreshAfter: true,
     );
   }
 
@@ -489,7 +489,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.updateVitals(detail, vitals),
-      refreshAfter: false,
+      refreshAfter: true,
     );
   }
 
@@ -503,7 +503,7 @@ final class OpdWorkspaceController
         'stage_to': stage,
         'reason': reason,
       }),
-      refreshAfter: false,
+      refreshAfter: true,
     );
   }
 
@@ -513,7 +513,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.doctorReview(flow.apiId, payload),
-      refreshAfter: false,
+      refreshAfter: true,
     );
   }
 
@@ -534,7 +534,7 @@ final class OpdWorkspaceController
         'triage_level': triageLevel,
         'emergency': emergency,
       }),
-      refreshAfter: false,
+      refreshAfter: true,
     );
   }
 
@@ -544,7 +544,7 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.disposition(flow.apiId, payload),
-      refreshAfter: false,
+      refreshAfter: true,
     );
   }
 
@@ -1043,6 +1043,7 @@ final class OpdWorkspaceController
           summary: flow,
           consultationInvoiceId: selected.consultationInvoiceId,
           consultationPaymentId: selected.consultationPaymentId,
+          consultationPaymentStatus: selected.consultationPaymentStatus,
           consultationPaid: selected.consultationPaid,
           consultationPaymentRequired: selected.consultationPaymentRequired,
           timeline: selected.timeline,

@@ -130,6 +130,50 @@ const count = async (filters = {}) => {
 };
 
 /**
+ * Find an open OPD/emergency encounter for a patient.
+ *
+ * @param {Object} filters - Filter criteria
+ * @param {string} filters.tenantId - Tenant ID
+ * @param {string} filters.patientId - Patient ID
+ * @param {Array<string>} [filters.encounterTypes] - Encounter types to guard
+ * @param {Object} [client] - Prisma client or transaction client
+ * @returns {Promise<Object|null>} Open encounter or null
+ */
+const findOpenActiveEncounterForPatient = async (
+  { tenantId, patientId, encounterTypes = ['OPD', 'EMERGENCY'] } = {},
+  client = prisma
+) => {
+  try {
+    if (!tenantId || !patientId) {
+      return null;
+    }
+
+    return await client.encounter.findFirst({
+      where: withActivePatient({
+        tenant_id: tenantId,
+        patient_id: patientId,
+        status: 'OPEN',
+        encounter_type: { in: encounterTypes }
+      }),
+      orderBy: { started_at: 'asc' },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        tenant_id: true,
+        facility_id: true,
+        patient_id: true,
+        encounter_type: true,
+        status: true,
+        started_at: true,
+        extension_json: true
+      }
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
  * Create OPD flow encounter
  *
  * @param {Object} data - Encounter payload
@@ -211,6 +255,7 @@ module.exports = {
   findById,
   findMany,
   count,
+  findOpenActiveEncounterForPatient,
   create,
   update,
   softDelete

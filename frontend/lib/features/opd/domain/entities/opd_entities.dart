@@ -341,6 +341,7 @@ final class OpdFlowSummary {
     this.consultationCurrency,
     this.consultationInvoiceId,
     this.consultationPaymentId,
+    this.consultationPaymentStatus,
   });
 
   final String id;
@@ -376,6 +377,7 @@ final class OpdFlowSummary {
   final String? consultationCurrency;
   final String? consultationInvoiceId;
   final String? consultationPaymentId;
+  final String? consultationPaymentStatus;
 
   String get apiId => publicId ?? id;
 
@@ -426,6 +428,7 @@ final class OpdFlowSummary {
     String? consultationCurrency,
     String? consultationInvoiceId,
     String? consultationPaymentId,
+    String? consultationPaymentStatus,
   }) {
     return OpdFlowSummary(
       id: id ?? this.id,
@@ -464,6 +467,8 @@ final class OpdFlowSummary {
           consultationInvoiceId ?? this.consultationInvoiceId,
       consultationPaymentId:
           consultationPaymentId ?? this.consultationPaymentId,
+      consultationPaymentStatus:
+          consultationPaymentStatus ?? this.consultationPaymentStatus,
     );
   }
 }
@@ -671,6 +676,7 @@ final class OpdFlowDetail {
     required this.summary,
     this.consultationInvoiceId,
     this.consultationPaymentId,
+    this.consultationPaymentStatus,
     this.consultationPaid = false,
     this.consultationPaymentRequired = false,
     this.timeline = const <OpdTimelineItem>[],
@@ -692,6 +698,7 @@ final class OpdFlowDetail {
   final OpdFlowSummary summary;
   final String? consultationInvoiceId;
   final String? consultationPaymentId;
+  final String? consultationPaymentStatus;
   final bool consultationPaid;
   final bool consultationPaymentRequired;
   final List<OpdTimelineItem> timeline;

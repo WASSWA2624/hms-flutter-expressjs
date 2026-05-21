@@ -32,6 +32,7 @@ const STAGES = {
 
 const TERMINAL_STAGES = new Set([STAGES.ADMITTED, STAGES.DISCHARGED]);
 const WORKFLOW_STAGE_SET = new Set(Object.values(STAGES));
+const ACTIVE_OPD_ENCOUNTER_TYPES = ['OPD', 'EMERGENCY'];
 const QUEUE_SCOPES = Object.freeze({
   ASSIGNED: 'ASSIGNED',
   WAITING: 'WAITING',
@@ -391,30 +392,37 @@ const resolveEncounterByIdentifier = async (tx, identifier, options = {}) => {
 
 const resolveOpenEncounterForPatient = async (
   tx,
-  { tenantId, facilityId = null, patientId, encounterType = 'OPD', providerUserId = null }
+  { tenantId, patientId, encounterTypes = ACTIVE_OPD_ENCOUNTER_TYPES }
 ) => {
-  if (!tx?.encounter?.findFirst) return null;
+  return opdFlowRepository.findOpenActiveEncounterForPatient(
+    {
+      tenantId,
+      patientId,
+      encounterTypes
+    },
+    tx
+  );
+};
 
-  const where = {
-    deleted_at: null,
-    tenant_id: tenantId,
-    patient_id: patientId,
-    status: 'OPEN',
-    encounter_type: encounterType
-  };
-
-  if (facilityId) {
-    where.facility_id = facilityId;
-  }
-
-  if (providerUserId) {
-    where.provider_user_id = providerUserId;
-  }
-
-  return tx.encounter.findFirst({
-    where,
-    orderBy: { started_at: 'desc' }
+const throwIfPatientHasOpenEncounter = async (tx, { tenantId, patientId }) => {
+  const existing = await resolveOpenEncounterForPatient(tx, {
+    tenantId,
+    patientId,
+    encounterTypes: ACTIVE_OPD_ENCOUNTER_TYPES
   });
+
+  if (!existing) {
+    return;
+  }
+
+  throw new HttpError('errors.opd_flow.active_encounter_exists', 409, [
+    {
+      field: 'patient_id',
+      encounter_id: existing.human_friendly_id || existing.id,
+      encounter_type: existing.encounter_type,
+      stage: existing.extension_json?.opd_flow?.stage || null
+    }
+  ]);
 };
 
 const NEXT_STEP_BY_STAGE = {
@@ -1348,8 +1356,15 @@ const getOpdFlowById = async (id) => {
       ...flow,
       consultation: {
         ...(flow.consultation || {}),
-        invoice_id: consultationInvoice?.human_friendly_id || null,
-        payment_id: consultationPayment?.human_friendly_id || null
+        consultation_fee:
+          flow.consultation?.consultation_fee ?? normalizeDecimalString(consultationInvoice?.total_amount, '0.00'),
+        currency: flow.consultation?.currency || consultationInvoice?.currency || null,
+        invoice_id: consultationInvoice?.human_friendly_id || flow.consultation?.invoice_id || null,
+        payment_id: consultationPayment?.human_friendly_id || flow.consultation?.payment_id || null,
+        payment_status:
+          consultationPayment?.status ||
+          flow.consultation?.payment_status ||
+          (flow.consultation?.is_paid ? 'COMPLETED' : flow.consultation?.require_payment ? 'PENDING' : 'NOT_REQUIRED')
       },
       appointment_id: appointment?.human_friendly_id || flow.appointment_id || null,
       visit_queue_id: visitQueue?.human_friendly_id || flow.visit_queue_id || null,
@@ -1559,17 +1574,24 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
       providerUserId = provider.id;
     }
 
-    if (reuseOpenEncounter) {
-      const existing = await resolveOpenEncounterForPatient(tx, {
-        tenantId,
-        facilityId,
-        patientId: patient.id,
-        encounterType,
-        providerUserId
-      });
-      if (existing) {
-        return { encounterId: existing.id, reused: true };
+    const existingOpenEncounter = await resolveOpenEncounterForPatient(tx, {
+      tenantId,
+      patientId: patient.id,
+      encounterTypes: ACTIVE_OPD_ENCOUNTER_TYPES
+    });
+    if (existingOpenEncounter) {
+      if (reuseOpenEncounter) {
+        return { encounterId: existingOpenEncounter.id, reused: true };
       }
+
+      throw new HttpError('errors.opd_flow.active_encounter_exists', 409, [
+        {
+          field: 'patient_id',
+          encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
+          encounter_type: existingOpenEncounter.encounter_type,
+          stage: existingOpenEncounter.extension_json?.opd_flow?.stage || null
+        }
+      ]);
     }
 
     return {
@@ -1749,6 +1771,11 @@ const startOpdFlow = async (data, context = {}) => {
       throw new HttpError('errors.opd_flow.appointment_queue_mismatch', 400, [{ field: 'visit_queue_id' }]);
     }
 
+    await throwIfPatientHasOpenEncounter(tx, {
+      tenantId,
+      patientId
+    });
+
     const providerIdentifier =
       normalizeIdentifier(data.provider_user_id) ||
       normalizeIdentifier(requestedVisitQueue?.provider_user_id) ||
@@ -1783,6 +1810,7 @@ const startOpdFlow = async (data, context = {}) => {
     let consultationPayment = null;
     let isConsultationPaid = false;
     let consultationPaidAt = null;
+    let consultationPaymentStatus = requireConsultationPayment ? 'PENDING' : 'NOT_REQUIRED';
 
     if (createConsultationInvoice || data.pay_now) {
       consultationInvoice = await tx.invoice.create({
@@ -1801,6 +1829,7 @@ const startOpdFlow = async (data, context = {}) => {
 
     if (data.pay_now) {
       const paymentStatus = data.pay_now.status || 'COMPLETED';
+      consultationPaymentStatus = paymentStatus;
       const paidAt = data.pay_now.paid_at ? new Date(data.pay_now.paid_at) : startedAt;
       const amount = normalizeDecimalString(data.pay_now.amount, consultationFee);
 
@@ -1819,11 +1848,10 @@ const startOpdFlow = async (data, context = {}) => {
       });
 
       if (paymentStatus === 'COMPLETED') {
-        isConsultationPaid = true;
-        consultationPaidAt = consultationPayment.paid_at || paidAt;
-
         const invoiceAmount = toDecimalNumber(consultationInvoice.total_amount);
         const paymentAmount = toDecimalNumber(amount);
+        isConsultationPaid = paymentAmount >= invoiceAmount;
+        consultationPaidAt = isConsultationPaid ? consultationPayment.paid_at || paidAt : null;
         await tx.invoice.update({
           where: { id: consultationInvoice.id },
           data: {
@@ -1883,6 +1911,7 @@ const startOpdFlow = async (data, context = {}) => {
         currency,
         invoice_id: consultationInvoice?.id || null,
         payment_id: consultationPayment?.id || null,
+        payment_status: consultationPaymentStatus,
         is_paid: isConsultationPaid,
         paid_at: consultationPaidAt ? consultationPaidAt.toISOString() : null
       },
@@ -2117,8 +2146,9 @@ const payConsultation = async (id, data, context = {}) => {
 
     consultation.invoice_id = invoice.id;
     consultation.payment_id = payment.id;
-    consultation.is_paid = paymentStatus === 'COMPLETED';
-    consultation.paid_at = payment.paid_at ? payment.paid_at.toISOString() : null;
+    consultation.payment_status = paymentStatus;
+    consultation.is_paid = isPaid;
+    consultation.paid_at = isPaid && payment.paid_at ? payment.paid_at.toISOString() : null;
     consultation.currency = data.currency || consultation.currency || invoice.currency;
     flow.consultation = consultation;
 
