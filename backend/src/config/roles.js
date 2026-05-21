@@ -82,6 +82,11 @@ const normalizeRoleName = (role) => {
 const isCanonicalRole = (role) => normalizeRoleName(role) !== null;
 
 const ELEVATED_ROLES = Object.freeze([ROLES.SUPER_ADMIN]);
+const STAFF_PATIENT_FLOW_DENIED_ROLES = Object.freeze([
+  ROLES.PATIENT,
+  ROLES.HOUSE_KEEPER,
+  ROLES.OTHER
+]);
 
 const ROLE_HIERARCHY = Object.freeze({
   [ROLES.OTHER]: 0,
@@ -116,6 +121,7 @@ module.exports = {
   ROLE_VALUES,
   ROLE_HIERARCHY,
   ELEVATED_ROLES,
+  STAFF_PATIENT_FLOW_DENIED_ROLES,
   LEGACY_ROLE_ALIASES,
   normalizeRoleName,
   isCanonicalRole

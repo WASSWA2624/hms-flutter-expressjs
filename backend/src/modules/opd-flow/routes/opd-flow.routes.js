@@ -11,9 +11,9 @@ const express = require('express');
 const router = express.Router();
 const opdFlowController = require('@controllers/opd-flow/opd-flow.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { authenticate, authorize, denyRoles } = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
-const { ROLES } = require('@config/roles');
+const { ROLES, STAFF_PATIENT_FLOW_DENIED_ROLES } = require('@config/roles');
 const {
   createOpdFlowSchema,
   bootstrapOpdFlowSchema,
@@ -27,6 +27,8 @@ const {
   correctStageSchema,
   listOpdFlowsQuerySchema
 } = require('@validations/opd-flow/opd-flow.schema');
+
+router.use(authenticate(), denyRoles(STAFF_PATIENT_FLOW_DENIED_ROLES));
 
 /**
  * @description List OPD flows with pagination and filters

@@ -193,6 +193,63 @@ void main() {
       );
     });
 
+    test(
+      'keeps patient portal and housekeeping out of staff patient flow routes',
+      () {
+        for (final role in <String>['PATIENT', 'HOUSE_KEEPER']) {
+          final session = AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: AuthUserProfile(roles: <String>[role]),
+          );
+          final AppRouteGuards guards = AppRouteGuards(
+            sessionState: SessionState.authenticated(session: session),
+            routes: const <AppRouteData>[AppRoutes.patients, AppRoutes.opd],
+          );
+
+          expect(
+            guards.redirect(
+              AppRouteGuardRequest(
+                location: Uri(path: AppRoutes.patients.path),
+              ),
+            ),
+            AppRoutes.forbidden.locationWithFrom(
+              Uri(path: AppRoutes.patients.path),
+            ),
+          );
+          expect(
+            guards.redirect(
+              AppRouteGuardRequest(location: Uri(path: AppRoutes.opd.path)),
+            ),
+            AppRoutes.forbidden.locationWithFrom(Uri(path: AppRoutes.opd.path)),
+          );
+        }
+      },
+    );
+
+    test('allows permitted staff patient flow roles', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+      );
+      final AppRouteGuards guards = AppRouteGuards(
+        sessionState: SessionState.authenticated(session: session),
+        routes: const <AppRouteData>[AppRoutes.patients, AppRoutes.opd],
+      );
+
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(location: Uri(path: AppRoutes.patients.path)),
+        ),
+        isNull,
+      );
+      expect(
+        guards.redirect(
+          AppRouteGuardRequest(location: Uri(path: AppRoutes.opd.path)),
+        ),
+        isNull,
+      );
+    });
+
     test('gates the HR workspace by HR and roster permissions', () {
       final Uri targetLocation = Uri(path: AppRoutes.hr.path);
       final AuthSession session = AuthSession(

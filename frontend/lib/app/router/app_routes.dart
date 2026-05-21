@@ -66,6 +66,32 @@ final class AppRouteData {
 }
 
 abstract final class AppRoutes {
+  static const List<AppRole> patientRegistryRoles = <AppRole>[
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.receptionist,
+    AppRole.wardManager,
+    AppRole.icuManager,
+    AppRole.theatreManager,
+    AppRole.mortuaryStaff,
+    AppRole.mortuaryManager,
+  ];
+  static const List<AppRole> patientFlowWorkspaceRoles = <AppRole>[
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.receptionist,
+    AppRole.billing,
+    AppRole.operations,
+    AppRole.ambulanceOperator,
+    AppRole.wardManager,
+    AppRole.icuManager,
+    AppRole.theatreManager,
+  ];
+
   static const AppRouteData home = AppRouteData(
     name: 'home',
     path: '/',
@@ -81,6 +107,7 @@ abstract final class AppRoutes {
     path: '/patients',
     access: AppRouteAccess.authenticated,
     requiredPermissions: <AppPermission>[AppPermissions.patientRead],
+    requiredAnyRoles: patientRegistryRoles,
   );
   static const AppRouteData billing = AppRouteData(
     name: 'billing',
@@ -124,6 +151,7 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
       AppPermissions.emergencyRead,
     ],
+    requiredAnyRoles: patientFlowWorkspaceRoles,
     requiredActiveModules: <String>['scheduling-queue'],
   );
   static const AppRouteData emergency = AppRouteData(

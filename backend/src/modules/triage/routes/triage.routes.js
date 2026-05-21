@@ -9,8 +9,9 @@ const express = require('express');
 const router = express.Router();
 const triageController = require('@controllers/triage/triage.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { authenticate, authorize, denyRoles } = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
+const { STAFF_PATIENT_FLOW_DENIED_ROLES } = require('@config/roles');
 const {
   triageIdParamsSchema,
   listTriageQueueQuerySchema,
@@ -35,6 +36,8 @@ const TRIAGE_ACTION_PERMISSIONS = [
 ];
 
 const TRIAGE_CLINICAL_ACTION_PERMISSIONS = [PERMISSIONS.CLINICAL_WRITE, PERMISSIONS.EMERGENCY_WRITE];
+
+router.use(authenticate(), denyRoles(STAFF_PATIENT_FLOW_DENIED_ROLES));
 
 router.get(
   '/',

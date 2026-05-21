@@ -26,8 +26,8 @@ const createEncounterSchema = z.object({
   patient_id: uuidSchema,
   provider_user_id: uuidSchema.optional().nullable(),
   encounter_type: z.enum(['OPD', 'IPD', 'ICU', 'THEATRE', 'EMERGENCY', 'TELEMEDICINE']),
-  status: z.enum(['OPEN', 'CLOSED', 'CANCELLED']).optional().default('OPEN'),
-  started_at: isoDateSchema.optional(),
+  status: z.enum(['OPEN', 'CLOSED', 'CANCELLED']),
+  started_at: isoDateSchema,
   ended_at: isoDateSchema.optional().nullable()
 });
 

@@ -401,6 +401,47 @@ const authorize = (requiredRole, type = 'role') => {
 };
 
 /**
+ * Explicitly deny selected roles after authentication.
+ *
+ * This is useful for staff-only route groups where broad read permissions are
+ * also used by portal or support roles in other, narrower contexts.
+ *
+ * @param {string|string[]} disallowedRoles - Role(s) not allowed on the route.
+ * @returns {Function} Express middleware
+ */
+const denyRoles = (disallowedRoles) => {
+  const normalizedDisallowedRoles = new Set(
+    (Array.isArray(disallowedRoles) ? disallowedRoles : [disallowedRoles])
+      .map((role) => normalizeRoleName(role) || String(role || '').toUpperCase())
+      .filter(Boolean)
+  );
+
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        return next(new HttpError('errors.auth.unauthorized', 403));
+      }
+
+      const userRoles = (Array.isArray(req.user.roles) ? req.user.roles : [req.user.role])
+        .map((role) => normalizeRoleName(role) || String(role || '').toUpperCase())
+        .filter(Boolean);
+
+      if (userRoles.some((role) => normalizedDisallowedRoles.has(role))) {
+        recordSecurityEvent('auth.role_denied', {
+          'http.route': String(req.originalUrl || req.path || '').split('?')[0],
+          'auth.check.type': 'role_denylist',
+        });
+        return next(new HttpError('errors.auth.insufficient_permissions', 403));
+      }
+
+      return next();
+    } catch (err) {
+      return next(err);
+    }
+  };
+};
+
+/**
  * Combined authentication and authorization middleware
  * 
  * @param {string|string[]} [requiredRole] - Optional required role(s)
@@ -420,6 +461,7 @@ const requireAuth = (requiredRole = null, type = 'role') => {
 module.exports = {
   authenticate,
   authorize,
+  denyRoles,
   requireAuth,
   normalizeUserContext,
   getUserPermissions,

@@ -20,7 +20,7 @@ jest.mock('@repositories/api-key/api-key.repository', () => ({
   touchLastUsed: jest.fn()
 }));
 
-const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { authenticate, authorize, denyRoles } = require('@middlewares/auth.middleware');
 const { HttpError } = require('@lib/errors');
 const { verifyToken } = require('@lib/jwt');
 const { verifyApiKey } = require('@lib/crypto');
@@ -148,6 +148,44 @@ describe('auth middleware', () => {
     const [error] = next.mock.calls[0];
     expect(error).toBeInstanceOf(HttpError);
     expect(error.statusCode).toBe(403);
+  });
+
+  it('explicitly denies selected roles on staff-only route groups', () => {
+    const middleware = denyRoles(['PATIENT', 'HOUSE_KEEPER']);
+    const req = {
+      user: {
+        role: 'PATIENT',
+        roles: ['PATIENT']
+      },
+      originalUrl: '/api/v1/patients',
+      path: '/patients'
+    };
+    const res = {};
+    const next = jest.fn();
+
+    middleware(req, res, next);
+
+    const [error] = next.mock.calls[0];
+    expect(error).toBeInstanceOf(HttpError);
+    expect(error.statusCode).toBe(403);
+  });
+
+  it('allows roles outside the explicit deny list', () => {
+    const middleware = denyRoles(['PATIENT', 'HOUSE_KEEPER']);
+    const req = {
+      user: {
+        role: 'NURSE',
+        roles: ['NURSE']
+      },
+      originalUrl: '/api/v1/triage',
+      path: '/triage'
+    };
+    const res = {};
+    const next = jest.fn();
+
+    middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledWith();
   });
 
   it('authorizes AMBULANCE_OPERATOR emergency write permission from role mapping', () => {

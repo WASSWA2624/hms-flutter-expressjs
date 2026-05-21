@@ -12,8 +12,9 @@ const multer = require('multer');
 const router = express.Router();
 const patientController = require('@controllers/patient/patient.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { authenticate, authorize, denyRoles } = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
+const { STAFF_PATIENT_FLOW_DENIED_ROLES } = require('@config/roles');
 const {
   createPatientSchema,
   updatePatientSchema,
@@ -40,6 +41,8 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024,
   },
 });
+
+router.use(authenticate(), denyRoles(STAFF_PATIENT_FLOW_DENIED_ROLES));
 
 /**
  * @description List patients with pagination and filters
