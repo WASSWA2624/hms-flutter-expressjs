@@ -1,301 +1,523 @@
-# Refined prompt: Reusable OPD encounter start dialog
-
-## Objective
-
-Refactor the current OPD start workflow into one reusable, consistent OPD encounter creation/check-in dialog that can be opened from the OPD module, Patient Registry patient details, and any future patient-context workflow such as Emergency.
-
-The goal is not to create separate forms per screen. The HMS app must have one canonical OPD encounter start experience with shared logic, shared validation, shared backend calls, shared duplicate-check behavior, and consistent action naming/icons across the app.
-
-## Visual context from screenshots
-
-The current UI shows:
-
-- `/opd` page titled **OPD flow**.
-- Top-right action currently labeled **Start walk-in**.
-- Clicking it opens a modal titled **Start OPD walk-in**.
-- The modal has three patient tabs:
-  - **Existing patient**
-  - **Appointment patient**
-  - **New patient**
-- Existing patient tab includes:
-  - Required patient search field.
-  - Routing section with arrival mode defaulting to **Walk In**.
-  - Optional provider search.
-  - Billing section with optional consultation fee, currency selector, notes, and **Payment required** toggle.
-- Appointment patient tab includes:
-  - Required appointment search field.
-  - Helper text explaining that a scheduled appointment is selected to check the patient into OPD.
-  - Optional provider, billing, notes, and payment toggle.
-- New patient tab includes:
-  - Required first name and last name.
-  - Optional gender.
-  - Routing and billing fields similar to existing patient flow.
-- `/patients` page shows **Patient registry**.
-- Opening a patient displays a patient detail modal with quick actions:
-  - Appointment
-  - OPD check-in
-  - Triage
-  - Billing
-  - Admission
-  - Patient report
-- The **OPD check-in** quick action must open the same reusable OPD encounter dialog, not a separate form.
+# HMS task: Improve OPD billing display, reusable OPD actions, patient detail actions, and stage/action workflows
+
+## Project context
+
+The HMS project contains:
+
+- `frontend`: Flutter app using Riverpod, shared widgets, localization, and workspace-style screens.
+- `backend`: Express/Prisma API with OPD flow, billing, patient, appointment, visit queue, and realtime/WebSocket logic.
+- `app-planner`: architecture and implementation rules.
+
+Relevant frontend files to inspect first:
+
+- `frontend/lib/features/opd/presentation/pages/opd_workspace_page.dart`
+- `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
+- `frontend/lib/features/opd/domain/entities/opd_entities.dart`
+- `frontend/lib/features/opd/data/dtos/opd_dtos.dart`
+- `frontend/lib/features/opd/data/repositories/opd_repository_impl.dart`
+- `frontend/lib/features/opd/domain/repositories/opd_repository.dart`
+- `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart`
+- `frontend/lib/shared/components/opd_encounter_dialog.dart`
+- `frontend/lib/shared/actions/`
+- `frontend/lib/shared/clinical_actions/`
+- `frontend/lib/shared/layout/app_workspace.dart`
+- `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/l10n/app_en.arb`
+
+Relevant backend files to inspect first:
+
+- `backend/src/modules/opd-flow/routes/opd-flow.routes.js`
+- `backend/src/modules/opd-flow/controllers/opd-flow.controller.js`
+- `backend/src/modules/opd-flow/services/opd-flow.service.js`
+- `backend/src/modules/opd-flow/repositories/opd-flow.repository.js`
+- `backend/src/modules/opd-flow/schemas/opd-flow.schema.js`
+- `backend/src/modules/patient/services/patient.service.js`
+- `backend/src/modules/patient/services/patient-workspace.service.js`
+- `backend/src/modules/billing/`
+- `backend/src/modules/payment/`
+- Realtime/WebSocket helpers used by OPD and billing.
+
+## Important current state
+
+Some earlier OPD encounter work already exists:
+
+- `OpdEncounterDialog` is already in `frontend/lib/shared/components/opd_encounter_dialog.dart`.
+- The label **Start OPD encounter** already appears in OPD and patient quick actions.
+- The dialog can show an **Active OPD encounter found** notice with encounter ID, stage, visit type, provider, billing state, amount, and arrival time.
+- The patient detail modal already has a **Start OPD encounter** quick action.
+
+Do not duplicate this work. Reuse and improve it.
+
+## Visual requirements from screenshots
+
+The coding agent will not have screenshots, so preserve these visual/UX details in code:
+
+1. OPD page:
+   - Page title: **OPD flow**.
+   - Top-right primary action: **Start OPD encounter**.
+   - OPD table columns include patient, visit type, queue/status, payer/billing, and wait time.
+   - Billing values such as **Paid**, **Payment required**, **Completed**, and amounts are shown in the payer/billing column.
+
+2. Start OPD encounter dialog:
+   - Title: **Start OPD encounter**.
+   - Three patient modes:
+     - Existing patient
+     - Appointment patient
+     - New patient
+   - Existing patient mode searches/selects an existing patient.
+   - Appointment patient mode searches/selects a scheduled appointment.
+   - New patient mode captures first name, last name, gender, routing, billing, and notes.
+   - Routing section includes arrival mode and provider.
+   - Billing section includes consultation fee, currency, notes, and payment-required toggle.
+   - If an active encounter exists, show a clear active encounter panel and offer **Open active encounter** instead of creating a duplicate.
 
-## Required naming update
+3. Patient detail modal:
+   - Current header shows patient name, MRN, age/sex, status, DOB, phone, facility, and visit.
+   - The current field cards have too many borders and look heavy.
+   - Redesign the details to be cleaner, preferably inline rows such as:
+     - `Date of birth: Feb 26, 1985`
+     - `Phone: +15550000003`
+     - `Facility: Demo General Hospital`
+     - `Visit: OPD - ENC0000012 - Open`
+   - Icons may remain, but avoid bordered cards for every small field.
+
+4. OPD action dialogs:
+   - Clicking an OPD patient opens an action dialog.
+   - The current/next needed action must appear first.
+   - Example: if the patient is waiting for vitals, **Record vitals** must be first.
+   - If waiting for payment, **Pay consultation** or **Manage consultation billing** must be first.
+   - Every OPD action dialog must show copy buttons:
+     - **Copy patient ID**
+     - **Copy encounter ID**
+
+## Main objectives
+
+### 1. Fix OPD table billing/payment display
+
+The OPD table currently shows inconsistent billing values:
+
+- Some rows show **Paid** but no amount.
+- Some rows show amounts that blink/flicker.
+- Some paid/required/completed values do not reflect the latest database state.
 
-Replace unclear or inconsistent labels such as **Start walk-in** and **OPD check-in** with one consistent action name:
+Fix this so the OPD table always uses one canonical backend-backed billing state.
 
-**Start OPD encounter**
+Expected display rules:
 
-Use this label wherever the action creates or resumes an OPD encounter.
+- If payment is required and unpaid:
+  - Show `Payment required`
+  - Show the consultation fee amount when available.
+  - Example: `Payment required | UGX 20,000`
 
-Recommended related labels:
+- If paid:
+  - Show `Paid`
+  - Show the paid amount when available.
+  - Example: `Paid | UGX 20,000`
 
-- Dialog title: **Start OPD encounter**
-- Primary submit button: **Start encounter**
-- Duplicate active encounter action: **Open active encounter**
-- Tooltip/help text: **Create or continue an OPD encounter for this patient**
+- If completed and paid:
+  - Show `Completed | UGX 30,000` or the project’s equivalent canonical label.
 
-Use one consistent icon across all locations, preferably a patient-plus, medical-plus, or encounter/clipboard-plus icon already available in the project icon system.
+- If billing is not required:
+  - Show `Not required`.
+
+- If the backend truly has no amount:
+  - Show the status without amount, but do not blink or alternate between amount/no amount.
+
+Use the actual currency from the backend. Do not hard-code `$` or USD when the encounter uses UGX.
+
+### 2. Stop table blinking/flickering
+
+Investigate and fix the blinking table values.
+
+Likely areas to inspect:
+
+- `OpdWorkspaceController._syncInterval`
+- `OpdWorkspaceController._refreshVisiblePages`
+- Multiple `_emit(...)` calls during one refresh cycle.
+- OPD table item merging in `_tableItems(...)`.
+- Row keys in `AppListTable`.
+- The OPD row `categoryKey`, which currently deduplicates by patient identifiers.
 
-## Scope
+Requirements:
 
-Update only the necessary frontend/backend files after inspecting the actual codebase.
+- Do not clear table cells while refreshing.
+- Do not temporarily show stale/unknown billing during refresh.
+- Prefer batching OPD refresh data and emitting once after all visible OPD pages are loaded.
+- Keep stable row identity using encounter/flow ID first, not patient ID.
+- Only merge records that represent the same encounter/flow.
+- Do not let the same row alternate between `flows`, `triageQueue`, and `queueEntries` if that changes billing labels.
+- Keep the table visually stable during realtime updates.
+- Wait time may update naturally, but payment/status text must not blink.
 
-Expected surfaces to review and update:
+### 3. Make OPD action dialogs reusable and shared
 
-- OPD page/header action where **Start walk-in** currently exists.
-- Current OPD walk-in dialog/form implementation.
-- Patient Registry patient details modal quick actions.
-- Patient detail action currently labeled **OPD check-in**.
-- Existing hooks/services/API wrappers used for:
-  - OPD flow/encounter creation.
-  - Patient search/lookup.
-  - Appointment search/lookup.
-  - Provider search/assignment.
-  - Billing/consultation fee/invoice/payment-required state.
-  - Active OPD encounter lookup.
-- Existing i18n/translation files.
-- Existing permission/access-control helpers.
-- Relevant frontend and backend tests.
+Many OPD action dialogs are currently defined inside `opd_workspace_page.dart`.
 
-Do not rewrite unrelated OPD, patient registry, billing, triage, or emergency workflows.
+Move reusable action dialogs into an appropriate shared folder, for example:
 
-## Core implementation requirements
+- `frontend/lib/shared/opd_actions/`
+- `frontend/lib/shared/opd_actions/dialogs/`
+- `frontend/lib/shared/opd_actions/opd_action_context.dart`
+- `frontend/lib/shared/opd_actions/opd_action_panel.dart`
+- `frontend/lib/shared/opd_actions/opd_actions.dart`
 
-### 1. Create one reusable OPD encounter launcher
+Use existing shared folders where appropriate:
 
-Extract the existing OPD start dialog into a reusable component and hook.
+- `shared/actions`
+- `shared/clinical_actions`
+- `shared/components`
 
-Suggested names, adjusted to match existing project conventions:
-
-- `StartOpdEncounterDialog`
-- `StartOpdEncounterButton`
-- `useStartOpdEncounter`
-- `OpdEncounterStartForm`
+Move or extract these OPD-specific dialogs/actions where appropriate:
 
-The reusable dialog must accept patient or appointment context through props, for example:
+- Consultation payment / billing management
+- Record/edit vitals
+- Assign doctor
+- Doctor review
+- Correct stage
+- Routing/move queue
+- Disposition
+- Diagnosis
+- Procedure
+- Lab request
+- Radiology request
+- Prescription
+- Referral
+- Follow-up
+- Print summary
+- OPD action panel/grid
+- OPD encounter context/copy-ID panel
 
-- `open`
-- `onOpenChange`
-- `source`
-- `initialPatientId`
-- `initialPatient`
-- `initialAppointmentId`
-- `initialAppointment`
-- `defaultArrivalMode`
-- `defaultProviderId`
-- `onSuccess`
-- `onExistingActiveEncounter`
+After refactor:
+
+- `opd_workspace_page.dart` should mostly compose shared dialogs/actions.
+- Patient Registry should reuse the same shared dialogs/actions.
+- Do not maintain duplicate OPD action forms in Patient Registry and OPD.
 
-The dialog must support these launch contexts:
+### 4. Show all useful OPD actions, with the next action first
 
-1. **From OPD page**
-   - No patient preselected.
-   - User can choose Existing patient, Appointment patient, or New patient.
+When a user opens an OPD encounter, show a comprehensive set of actions.
 
-2. **From patient details modal**
-   - Patient is already known.
-   - The dialog must prefill/select that patient.
-   - The user should not need to search for the same patient again.
-   - The dialog must detect whether this patient has an eligible appointment.
+The first action must be the current/next workflow action:
 
-3. **Future emergency/patient-context screens**
-   - The component should be reusable without duplicating form logic.
-   - Do not implement unrelated emergency changes unless the existing code already exposes the action there.
+- `WAITING_CONSULTATION_PAYMENT` → Pay/manage consultation billing
+- `WAITING_VITALS` → Record vitals
+- `WAITING_DOCTOR_ASSIGNMENT` → Assign doctor
+- `WAITING_DOCTOR_REVIEW` → Doctor review
+- `WAITING_DISPOSITION` → Disposition
+- Lab/radiology/pharmacy-related stages → relevant follow-up/disposition actions
 
-### 2. Auto-select the correct patient mode
+After the first action, show other useful actions:
 
-When the dialog opens with a patient context:
+- Correct stage
+- Assign doctor
+- Record/edit vitals
+- Manage billing
+- Doctor review
+- Add diagnosis
+- Request lab
+- Request radiology
+- Prescribe
+- Add procedure
+- Refer
+- Follow up
+- Admission/IPD
+- ICU transfer/view
+- Emergency view/transfer where applicable
+- Print summary
+- Patient report
+- Copy patient ID
+- Copy encounter ID
 
-- If the patient has one eligible scheduled appointment that can be checked into OPD, select **Appointment patient** and prefill the appointment.
-- If the patient has multiple eligible appointments, select **Appointment patient** and require staff to choose the correct appointment.
-- If the patient has no eligible appointment, select **Existing patient** and prefill the patient.
-- Never default to **New patient** when a patient record already exists.
-- If an appointment context is passed directly, select **Appointment patient** and load both appointment and patient details from that appointment.
+Do not hide actions only because a stage has already progressed. If the action is an update/edit action, allow it to open in update mode.
 
-Eligibility must follow existing backend rules and statuses. Do not hard-code appointment status logic if the backend already provides a safer contract.
+Respect permissions. If the user lacks permission, either hide or disable according to the existing project pattern, but avoid stage-based hiding that prevents legitimate updates.
 
-### 3. Prevent duplicate active OPD encounters
+### 5. Allow updating already completed action data
 
-Before creating a new OPD encounter, the dialog must check whether the selected patient or appointment already has an active OPD encounter/flow.
+The OPD workflow should not be one-way only.
+
+If data already exists, the action should become an update/manage action instead of disappearing or failing.
 
-Active means any non-terminal OPD encounter status, for example waiting vitals, queue, triage, doctor review, billing pending, in progress, or similar existing statuses. Use the project’s actual enum/status definitions.
+Examples:
 
-If an active OPD encounter exists:
+- If consultation was paid but amount is wrong or missing:
+  - Show **Manage consultation billing** or **Update consultation billing**.
+  - Allow an audit-safe correction/update.
+  - Update the database and refresh the OPD table immediately.
+
+- If vitals already exist:
+  - Show **Edit vitals**.
+  - Load existing values.
+  - Save updates through the existing vital-sign update flow or a proper backend endpoint.
+
+- If doctor is already assigned:
+  - Show **Change doctor** or allow Assign doctor to update provider.
+
+- If doctor review exists:
+  - Allow adding/updating notes/orders where medically appropriate.
+
+- If diagnosis/procedure/lab/radiology/prescription/referral/follow-up exists:
+  - Support add-new and update-existing where backend contracts already exist.
+  - If backend support is missing, add the smallest safe endpoint needed.
+
+For financial data, do not silently overwrite payment history. Use an audit-safe approach:
+
+- Update invoice/payment/OPD consultation summary consistently.
+- Preserve audit logs.
+- Use billing adjustments or correction records if the existing billing model requires them.
+- Emit realtime updates after correction.
+
+### 6. Fix “Correct stage”
+
+The **Correct stage** action currently appears not to work reliably.
+
+Requirements:
+
+- Correct stage must allow selecting any valid OPD workflow stage except the current one.
+- The current stage should not be the default selectable submit value unless the form clearly requires a different choice.
+- Show the current stage and target stage clearly.
+- Require a reason when moving backwards, skipping stages, or moving to a terminal stage.
+- Submit the exact backend enum expected by `opd-flow.service.js`.
+- Backend must:
+  - Update encounter status correctly.
+  - Update visit queue status correctly.
+  - Update appointment status correctly where linked.
+  - Emit realtime OPD updates.
+  - Write audit logs.
+- Frontend must:
+  - Refresh OPD table.
+  - Refresh selected flow details.
+  - Refresh patient detail current visit where applicable.
+  - Show clear success/failure feedback.
+
+Do not bypass permissions or audit logging.
+
+### 7. Copy patient ID and encounter ID everywhere
+
+Create one reusable context/reference component for OPD actions.
+
+It should display:
+
+- Copy patient ID
+- Copy encounter ID
+- Current stage
+- Next step
+- Payment state
+- Provider
+
+Use it in:
+
+- Main OPD action dialog
+- Pay/manage consultation billing dialog
+- Record/edit vitals dialog
+- Assign/change doctor dialog
+- Doctor review dialog
+- Correct stage dialog
+- Diagnosis/procedure/lab/radiology/prescription dialogs
+- Referral/follow-up dialogs
+- Print summary dialog
+- Queue/move/start consultation dialogs where encounter context exists
+
+Use localization keys instead of hard-coded labels.
+
+### 8. Improve patient detail modal
+
+The Patient Registry detail modal should become a command center for the selected patient.
+
+Update the header:
+
+- Keep patient name, MRN, age/sex, and active status prominent.
+- Replace the heavy bordered field cards with cleaner inline patient facts.
+- Example layout:
+  - `Date of birth: Feb 26, 1985`
+  - `Phone: +15550000003`
+  - `Facility: Demo General Hospital`
+  - `Visit: OPD - ENC0000012 - Open`
+- Keep icons if they improve readability.
+- Avoid excessive borders around every small field.
+- Do not break other modules using `AppWorkspacePatientContextHeader`; add an optional style/variant if needed.
 
-- Do not create a duplicate encounter.
-- Show a clear notice inside the dialog, for example:
+Expand quick actions:
 
-  **This patient already has an active OPD encounter.**
+- Appointment
+- Start OPD encounter
+- View active OPD encounter
+- Record/edit vitals
+- Triage
+- Assign/change doctor
+- Doctor review
+- Billing/manage billing
+- Admission/IPD
+- ICU
+- Emergency
+- Lab request
+- Radiology request
+- Prescription
+- Patient report
+- Print summary
+- Copy patient ID
+- Copy active encounter ID where available
 
-  Include:
-  - Encounter/flow ID if available.
-  - Current queue/status.
-  - Visit type.
-  - Billing/payment state if available.
-  - Started/checked-in time if available.
+Actions should either open a reusable dialog or navigate to the correct module filtered to that patient/encounter.
 
-- Provide an action to open the existing encounter:
-  - **Open active encounter**
-- Provide a safe cancel/close option.
-- Only allow creating another OPD encounter if the backend explicitly supports it and the current role has a clearly defined override permission. Otherwise block duplicates.
+### 9. Cross-module consistency
 
-### 4. Reuse the same dialog from Patient Registry
+The same action should look and behave the same everywhere:
+
+- OPD module
+- Patient Registry
+- Emergency module if applicable
+- Clinical/Nursing/Billing screens where the same action is exposed
 
-In the patient detail modal quick actions:
+Examples:
 
-- Replace the current **OPD check-in** action with the shared **Start OPD encounter** action.
-- Use the same icon, label, styling, hover/focus behavior, disabled state, and permission behavior used in the OPD module.
-- Pass the selected patient into the reusable dialog.
-- After successful creation or after opening an existing encounter:
-  - Refresh the patient detail modal.
-  - Update the displayed active visit/encounter state.
-  - Refresh OPD lists/cache where applicable.
-  - Navigate/open the OPD encounter if this is the existing project behavior.
+- **Start OPD encounter** should use the same label, icon, permission requirement, tooltip, and dialog.
+- **Record vitals** should use the same form.
+- **Assign doctor** should use the same provider picker.
+- **Manage consultation billing** should use the same billing correction/payment form.
 
-### 5. Keep form capabilities identical across launch points
+Avoid redefining similar dialogs per screen.
 
-The shared dialog must preserve the current capabilities visible in the OPD modal:
-
-- Existing patient flow.
-- Appointment patient flow.
-- New patient flow.
-- Arrival mode selection.
-- Optional provider assignment.
-- Optional consultation fee.
-- Currency selector.
-- Notes.
-- Payment required toggle.
-- Correct validation for required fields.
-- Correct loading, error, empty, offline, and permission states.
-- Correct success feedback.
-
-Do not remove functionality from the OPD module while making the form reusable.
-
-### 6. Improve wording without changing meaning
-
-Update user-facing text so the flow is not wrongly limited to walk-ins.
-
-Use:
-
-- **Start OPD encounter** instead of **Start walk-in**.
-- **Start OPD encounter** instead of **OPD check-in** where the action can create or resume an OPD encounter.
-- **Start encounter** for the modal primary button.
-- Keep **Walk In** only as an arrival mode option.
-
-Update translation/i18n keys instead of hard-coding strings.
-
-### 7. Backend-first behavior
-
-Inspect the backend before changing frontend assumptions.
-
-Use existing backend endpoints/contracts for:
-
-- Creating OPD encounters/flows.
-- Searching patients.
-- Searching appointments.
-- Loading appointment details.
-- Loading active OPD encounter by patient/appointment.
-- Creating a new patient when using the New patient tab.
-- Billing/payment-required handling.
-
-If the backend lacks a safe active encounter lookup, add the smallest backend contract needed, with tests. Do not fake duplicate detection only on the frontend.
-
-Suggested backend behavior if missing:
-
-- Endpoint/service method to return active OPD encounter by:
-  - patient ID
-  - appointment ID
-  - facility/tenant context
-- Response should include enough summary data for the dialog notice:
-  - encounter ID
-  - patient ID
-  - appointment ID if linked
-  - current status/stage
-  - billing/payment state
-  - provider if assigned
-  - created/started time
-
-### 8. Permissions and access control
-
-Respect existing RBAC/ABAC/permission rules.
-
-The shared action should:
-
-- Hide or disable itself if the user cannot start OPD encounters.
-- Show a clear no-permission message if the action is visible but blocked.
-- Respect patient access restrictions.
-- Respect appointment access restrictions.
-- Respect billing permissions for consultation fee/payment-required fields.
-- Respect facility/tenant scope.
-
-Do not expose backend IDs or internal fields unnecessarily in the UI.
-
-### 9. UX and accessibility
-
-The dialog must remain consistent with the visual design shown in the screenshots:
-
-- Modal overlay.
-- Clear title and close button.
-- Segmented patient mode tabs.
-- Patient, Routing, and Billing sections.
-- Sticky footer actions.
-- Clear primary and secondary actions.
-- Responsive layout for smaller screens.
-- Keyboard navigation and focus trap.
-- Visible focus states.
-- Screen-reader labels for tabs, fields, toggle, and submit action.
-- Non-color-only status messaging for duplicate active encounters and validation errors.
-
-### 10. Tests
-
-Add or update tests for:
-
-- Opening the shared dialog from OPD page.
-- Opening the shared dialog from patient detail quick actions.
-- Patient context preselects Existing patient when no eligible appointment exists.
-- Patient context preselects Appointment patient when eligible appointment exists.
-- Multiple appointments require selection.
-- Active OPD encounter blocks duplicate creation and shows **Open active encounter**.
-- New patient flow still creates/registers patient then starts OPD encounter.
-- Billing fields and payment-required toggle submit correctly.
-- Permission-denied states.
-- i18n keys are used.
-- Responsive/accessibility behavior where existing test tools support it.
-
-### 11. Acceptance criteria
-
-Implementation is complete when:
-
-- There is only one canonical OPD encounter start dialog/form.
-- OPD page uses the reusable dialog.
-- Patient detail modal uses the same reusable dialog.
-- Action label/icon are consistent across the app.
-- The dialog title no longer says walk-in for appointment/new patient flows.
-- Patient detail quick action passes the selected patient into the dialog.
-- The dialog detects active OPD encounters and prevents duplicates.
-- Existing patient, appointment patient, and new patient flows still work.
-- Backend contracts are reused or minimally extended where necessary.
-- No unrelated module is rewritten.
+### 10. Realtime/database reflection
+
+After every action update:
+
+- Persist to the database.
+- Return the updated OPD flow detail/summary from backend.
+- Emit realtime events for affected workspaces.
+- Update frontend Riverpod state without waiting for manual refresh.
+- Refresh affected views:
+  - OPD table
+  - selected OPD action dialog
+  - Patient detail modal
+  - Billing workspace if affected
+  - Triage/Nursing/Clinical views if affected
+
+Do not make the user press refresh to see corrected billing/status/stage values.
+
+### 11. Backend requirements
+
+Before adding new endpoints, inspect existing contracts.
+
+Existing OPD endpoints include:
+
+- `POST /api/v1/opd-flows/start`
+- `POST /api/v1/opd-flows/bootstrap`
+- `POST /api/v1/opd-flows/:id/pay-consultation`
+- `POST /api/v1/opd-flows/:id/record-vitals`
+- `POST /api/v1/opd-flows/:id/assign-doctor`
+- `POST /api/v1/opd-flows/:id/doctor-review`
+- `POST /api/v1/opd-flows/:id/disposition`
+- `POST /api/v1/opd-flows/:id/correct-stage`
+
+If needed, add minimal backend support for:
+
+- Updating consultation billing/payment summary safely.
+- Returning canonical OPD billing state and amount in list endpoints.
+- Updating existing OPD action records.
+- Loading active OPD context for Patient Registry actions.
+- Returning patient current active encounter details.
+
+Backend must preserve:
+
+- tenant/facility scoping
+- permissions
+- validation
+- audit logs
+- realtime events
+- consistent response format
+
+### 12. Localization
+
+Do not hard-code new user-facing strings.
+
+Update:
+
+- `frontend/lib/l10n/app_en.arb`
+- generated localization files if the project requires committed generated files.
+
+Prefer clear labels:
+
+- `Start OPD encounter`
+- `Open active encounter`
+- `Manage consultation billing`
+- `Update consultation billing`
+- `Record vitals`
+- `Edit vitals`
+- `Assign doctor`
+- `Change doctor`
+- `Correct stage`
+- `Copy patient ID`
+- `Copy encounter ID`
+
+Existing stale keys such as `opdStartWalkInAction` may remain only if renaming causes unnecessary churn, but values must be correct. Prefer clearer key names if safe.
+
+### 13. Tests
+
+Add/update tests in the existing test structure.
+
+Frontend tests:
+
+- `test/features/opd/presentation/opd_workspace_controller_test.dart`
+- `test/features/opd/presentation/start_walk_in_dialog_test.dart`
+- `test/features/opd/data/dtos/opd_dtos_test.dart`
+- `test/features/patients/presentation/patient_registry_page_test.dart`
+- `test/shared/components/app_list_table_test.dart`
+- `test/shared/layout/app_workspace_test.dart`
+- `test/l10n/hard_coded_ui_text_test.dart`
+
+Backend tests:
+
+- `backend/src/tests/modules/opd-flow/services/opd-flow.service.test.js`
+- `backend/src/tests/modules/opd-flow/routes/opd-flow.routes.test.js`
+- `backend/src/tests/modules/opd-flow/controllers/opd-flow.controller.test.js`
+- Billing/payment tests if billing correction is changed.
+
+Test cases:
+
+- Paid OPD row displays amount.
+- Payment-required OPD row displays fee.
+- Paid row without direct paid amount resolves amount from invoice/payment if available.
+- OPD table does not blank or flicker billing values during refresh.
+- Correct stage updates backend and frontend state.
+- Correct stage rejects current-stage submit with a clear validation message.
+- Existing paid consultation can be managed/corrected safely.
+- Existing vitals can be edited.
+- Patient detail quick action opens reusable OPD action dialogs.
+- Current/next OPD action is first in the action list.
+- Copy patient ID and copy encounter ID buttons exist in all OPD action dialogs.
+- Patient detail header uses the cleaner inline layout.
+- Realtime refresh updates OPD and patient detail state.
+
+### 14. Acceptance criteria
+
+The task is complete when:
+
+- OPD billing/payment labels and amounts are accurate and stable.
+- No OPD table billing/status text blinks or alternates during background refresh.
+- `Paid` rows show the paid amount whenever the backend has it.
+- OPD action dialogs are reusable shared components, not duplicated inside pages.
+- OPD action list shows the next required action first.
+- All useful OPD actions remain accessible for an active encounter.
+- Existing data can be updated safely instead of being blocked by workflow progression.
+- Correct stage works end-to-end.
+- Every OPD action dialog has copy patient ID and copy encounter ID actions.
+- Patient detail modal has a cleaner header and more comprehensive quick actions.
+- Updates persist to the database and reflect immediately across OPD, Patient Registry, Billing, and related modules.
+- Permissions, tenant/facility scoping, localization, accessibility, and audit logging are preserved.
 - Tests pass.
-- The final output lists every modified, created, and deleted file with exact paths.
+
+## Output requirements
+
+Modify only necessary files.
+
+For the final response, list:
+
+- Modified files with exact paths
+- New files with exact paths
+- Deleted files with exact paths, if any
+- A brief summary of what changed
+- Tests run and their results
+- Any remaining limitations or follow-up notes
+
+If any file is deleted, include a safe deletion script.
