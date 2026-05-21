@@ -4,6 +4,8 @@ const {
   ROLE_PACKS,
   buildDashboardSummary,
   resolveEffectiveRole,
+  resolvePackId,
+  resolveProfileId,
 } = require('@lib/dashboard/summary');
 const {
   buildDateWindowFilter,
@@ -11,7 +13,8 @@ const {
   normalizeString,
   safeUpper,
 } = require('@lib/reports/api');
-const { ROLES } = require('@config/roles');
+const { ROLES, normalizeRoleName } = require('@config/roles');
+const { getUserPermissions } = require('@middlewares/auth.middleware');
 
 const ADMIN_ROLES = new Set([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN]);
 const DEFAULT_LIMIT = 20;
@@ -123,78 +126,217 @@ const QUEUE_STATUS_LOOKUPS = Object.freeze(
 
 const ACTIVITY_STATUS_LOOKUPS = Object.freeze(QUEUE_STATUS_LOOKUPS);
 
-const QUICK_ACTION_IDS_BY_PACK = Object.freeze({
-  [ROLE_PACKS.ADMIN]: ['new_patient', 'appointment', 'invoice', 'start_admission', 'lab_order', 'sale', 'report_equipment_issue'],
-  [ROLE_PACKS.DOCTOR]: ['new_patient', 'appointment', 'start_admission'],
-  [ROLE_PACKS.NURSE]: ['appointment', 'start_admission'],
-  [ROLE_PACKS.LAB_TECH]: ['lab_order'],
-  [ROLE_PACKS.RADIOLOGY_TECH]: [],
-  [ROLE_PACKS.PHARMACIST]: ['sale'],
-  [ROLE_PACKS.RECEPTIONIST]: ['new_patient', 'appointment', 'invoice'],
-  [ROLE_PACKS.BILLING]: ['invoice'],
-  [ROLE_PACKS.OPERATIONS]: ['report_equipment_issue'],
-  [ROLE_PACKS.HR]: ['staff_profile'],
-  [ROLE_PACKS.BIOMED]: ['report_equipment_issue'],
-  [ROLE_PACKS.HOUSE_KEEPER]: [],
-  [ROLE_PACKS.AMBULANCE_OPERATOR]: [],
+const actionTarget = (moduleSlug, resource, action = 'open') => ({
+  module_slug: moduleSlug,
+  resource,
+  public_id: null,
+  action,
 });
 
-const QUICK_ACTION_IDS_BY_PROFILE = Object.freeze({
-  super_admin: ['select_context', 'manage_subscription', 'run_report'],
-  tenant_admin: [
-    'new_patient',
-    'appointment',
-    'invoice',
-    'start_admission',
-    'lab_order',
-    'sale',
-    'report_equipment_issue',
-    'run_report',
-  ],
-  facility_admin: [
-    'new_patient',
-    'appointment',
-    'invoice',
-    'start_admission',
-    'report_maintenance_issue',
-    'report_equipment_issue',
-    'run_report',
-  ],
-  doctor: [
-    'start_consultation',
-    'lab_order',
-    'radiology_order',
-    'start_admission',
-    'record_vitals',
-  ],
-  nurse: ['record_vitals', 'start_admission'],
-  lab_tech: ['lab_order', 'run_report'],
-  radiology_tech: ['radiology_order', 'run_report'],
-  pharmacist: ['sale', 'run_report'],
-  receptionist: ['new_patient', 'appointment', 'invoice'],
-  billing: ['invoice', 'receive_payment', 'run_report'],
-  operations: [
-    'report_maintenance_issue',
-    'report_equipment_issue',
-    'cleaning_task',
-    'run_report',
-  ],
-  hr: ['staff_profile', 'publish_roster', 'run_report'],
-  biomed: ['report_equipment_issue', 'run_report'],
-  house_keeper: ['cleaning_task'],
-  ambulance_operator: ['dispatch_ambulance'],
-  unit_manager: ['publish_roster', 'run_report'],
-  ward_manager: ['record_vitals', 'publish_roster', 'run_report'],
-  icu_manager: ['record_vitals', 'report_equipment_issue', 'run_report'],
-  theatre_manager: ['report_equipment_issue', 'publish_roster', 'run_report'],
-  housekeeping_manager: ['cleaning_task', 'publish_roster', 'run_report'],
-  biomed_manager: ['report_equipment_issue', 'run_report'],
-  mortuary_staff: ['mortuary_case'],
-  mortuary_manager: ['release_authorisation', 'mortuary_case', 'run_report'],
+const actionDefinition = ({
+  id,
+  label,
+  allowedRoles,
+  requiredPermissions = [],
+  requiredAnyPermissions = [],
+  requiredModules = [],
+  scope = 'assigned_scope',
+  target,
+}) => Object.freeze({
+  id,
+  label,
+  allowed_roles: allowedRoles,
+  required_permissions: requiredPermissions,
+  required_any_permissions: requiredAnyPermissions,
+  required_modules: requiredModules,
+  scope,
+  route_target: target,
 });
 
-const resolveQuickActionIds = (profileId, packId) =>
-  QUICK_ACTION_IDS_BY_PROFILE[profileId] || QUICK_ACTION_IDS_BY_PACK[packId] || [];
+const QUICK_ACTION_LIBRARY = Object.freeze([
+  actionDefinition({ id: 'select_context', label: 'Select tenant/facility context', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN], requiredAnyPermissions: ['system:admin', 'tenant:admin'], scope: 'platform_or_tenant', target: actionTarget('settings', 'tenant-facility-context') }),
+  actionDefinition({ id: 'create_tenant', label: 'Create tenant', allowedRoles: [ROLES.SUPER_ADMIN], requiredPermissions: ['system:admin'], scope: 'platform', target: actionTarget('settings', 'tenants', 'create') }),
+  actionDefinition({ id: 'create_facility', label: 'Create facility', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['tenant:admin', 'facility:admin'], scope: 'tenant_or_facility', target: actionTarget('settings', 'facilities', 'create') }),
+  actionDefinition({ id: 'manage_subscription', label: 'Manage subscription', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['subscriptions:write', 'subscriptions:read'], requiredModules: ['subscriptions'], scope: 'tenant_or_facility', target: actionTarget('subscriptions', 'subscriptions') }),
+  actionDefinition({ id: 'manage_users_roles', label: 'Manage users and roles', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.HR], requiredAnyPermissions: ['tenant:admin', 'facility:admin', 'hr:write'], scope: 'tenant_or_facility', target: actionTarget('settings', 'users-roles') }),
+  actionDefinition({ id: 'run_report', label: 'Run report', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.BILLING, ROLES.OPERATIONS, ROLES.HR, ROLES.UNIT_MANAGER, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER, ROLES.HOUSEKEEPING_MANAGER, ROLES.BIOMED_MANAGER, ROLES.MORTUARY_MANAGER, ROLES.LAB_TECH, ROLES.RADIOLOGY_TECH, ROLES.PHARMACIST], requiredPermissions: ['reports:read'], requiredModules: ['reports'], scope: 'assigned_scope', target: actionTarget('reports', 'reports') }),
+  actionDefinition({ id: 'review_audit', label: 'Review audit/compliance', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.OPERATIONS, ROLES.MORTUARY_MANAGER, ROLES.BIOMED_MANAGER], requiredAnyPermissions: ['compliance:review', 'evidence:export'], scope: 'assigned_scope', target: actionTarget('reports', 'audit') }),
+  actionDefinition({ id: 'register_patient', label: 'Register patient', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST], requiredPermissions: ['patient:write'], requiredModules: ['patients'], scope: 'facility', target: actionTarget('patients', 'patients', 'create') }),
+  actionDefinition({ id: 'book_appointment', label: 'Book appointment', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'facility', target: actionTarget('scheduling', 'appointments', 'create') }),
+  actionDefinition({ id: 'check_in_patient', label: 'Check in patient', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'facility', target: actionTarget('scheduling', 'opd-flows') }),
+  actionDefinition({ id: 'route_patient', label: 'Route patient to service', allowedRoles: [ROLES.RECEPTIONIST, ROLES.NURSE], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'patient_flow', target: actionTarget('scheduling', 'opd-flows') }),
+  actionDefinition({ id: 'start_consultation', label: 'Start consultation', allowedRoles: [ROLES.DOCTOR], requiredPermissions: ['clinical:write'], requiredModules: ['clinical'], scope: 'assigned_clinical', target: actionTarget('clinical', 'consultations') }),
+  actionDefinition({ id: 'continue_consultation', label: 'Continue consultation', allowedRoles: [ROLES.DOCTOR], requiredPermissions: ['clinical:write'], requiredModules: ['clinical'], scope: 'assigned_clinical', target: actionTarget('clinical', 'consultations') }),
+  actionDefinition({ id: 'write_clinical_note', label: 'Write clinical note', allowedRoles: [ROLES.DOCTOR, ROLES.NURSE, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER], requiredPermissions: ['clinical:write'], requiredModules: ['clinical'], scope: 'clinical_scope', target: actionTarget('clinical', 'notes', 'create') }),
+  actionDefinition({ id: 'order_lab', label: 'Order lab test', allowedRoles: [ROLES.DOCTOR], requiredPermissions: ['clinical:write'], requiredModules: ['lab'], scope: 'assigned_clinical', target: actionTarget('lab', 'orders', 'create') }),
+  actionDefinition({ id: 'order_radiology', label: 'Order imaging', allowedRoles: [ROLES.DOCTOR], requiredPermissions: ['clinical:write'], requiredModules: ['radiology'], scope: 'assigned_clinical', target: actionTarget('radiology', 'orders', 'create') }),
+  actionDefinition({ id: 'record_vitals', label: 'Record vitals', allowedRoles: [ROLES.NURSE, ROLES.DOCTOR, ROLES.ICU_MANAGER], requiredPermissions: ['clinical:write'], requiredModules: ['nursing'], scope: 'clinical_scope', target: actionTarget('nursing', 'vitals', 'create') }),
+  actionDefinition({ id: 'mark_med_administered', label: 'Mark medication administered', allowedRoles: [ROLES.NURSE], requiredPermissions: ['clinical:write'], requiredModules: ['nursing'], scope: 'assigned_nursing', target: actionTarget('nursing', 'medications') }),
+  actionDefinition({ id: 'create_handover', label: 'Create handover', allowedRoles: [ROLES.NURSE, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER], requiredAnyPermissions: ['clinical:write', 'unit:manage'], requiredModules: ['nursing'], scope: 'assigned_unit', target: actionTarget('nursing', 'handovers', 'create') }),
+  actionDefinition({ id: 'receive_sample', label: 'Receive sample', allowedRoles: [ROLES.LAB_TECH], requiredPermissions: ['lab:write'], requiredModules: ['lab'], scope: 'lab', target: actionTarget('lab', 'samples') }),
+  actionDefinition({ id: 'enter_lab_result', label: 'Enter lab result', allowedRoles: [ROLES.LAB_TECH], requiredPermissions: ['lab:write'], requiredModules: ['lab'], scope: 'lab', target: actionTarget('lab', 'results', 'create') }),
+  actionDefinition({ id: 'flag_critical_lab', label: 'Flag critical lab result', allowedRoles: [ROLES.LAB_TECH], requiredPermissions: ['lab:write'], requiredModules: ['lab'], scope: 'lab', target: actionTarget('lab', 'results') }),
+  actionDefinition({ id: 'start_imaging_study', label: 'Start imaging study', allowedRoles: [ROLES.RADIOLOGY_TECH], requiredPermissions: ['radiology:write'], requiredModules: ['radiology'], scope: 'radiology', target: actionTarget('radiology', 'studies') }),
+  actionDefinition({ id: 'update_imaging_status', label: 'Update imaging status', allowedRoles: [ROLES.RADIOLOGY_TECH], requiredPermissions: ['radiology:write'], requiredModules: ['radiology'], scope: 'radiology', target: actionTarget('radiology', 'studies') }),
+  actionDefinition({ id: 'add_radiology_report', label: 'Add imaging report', allowedRoles: [ROLES.RADIOLOGY_TECH], requiredPermissions: ['radiology:write'], requiredModules: ['radiology'], scope: 'radiology', target: actionTarget('radiology', 'reports', 'create') }),
+  actionDefinition({ id: 'dispense_medication', label: 'Dispense medication', allowedRoles: [ROLES.PHARMACIST], requiredPermissions: ['pharmacy:write'], requiredModules: ['pharmacy'], scope: 'pharmacy', target: actionTarget('pharmacy', 'orders') }),
+  actionDefinition({ id: 'record_pharmacy_sale', label: 'Record pharmacy sale', allowedRoles: [ROLES.PHARMACIST], requiredPermissions: ['pharmacy:write'], requiredModules: ['pharmacy'], scope: 'pharmacy', target: actionTarget('pharmacy', 'sales', 'create') }),
+  actionDefinition({ id: 'receive_pharmacy_stock', label: 'Receive pharmacy stock', allowedRoles: [ROLES.PHARMACIST], requiredPermissions: ['pharmacy:write'], requiredModules: ['pharmacy'], scope: 'pharmacy', target: actionTarget('pharmacy', 'stock') }),
+  actionDefinition({ id: 'adjust_pharmacy_stock', label: 'Adjust pharmacy stock', allowedRoles: [ROLES.PHARMACIST], requiredPermissions: ['pharmacy:write'], requiredModules: ['pharmacy'], scope: 'pharmacy', target: actionTarget('pharmacy', 'stock') }),
+  actionDefinition({ id: 'create_invoice', label: 'Create invoice', allowedRoles: [ROLES.BILLING], requiredPermissions: ['billing:write'], requiredModules: ['billing'], scope: 'billing', target: actionTarget('billing', 'invoices', 'create') }),
+  actionDefinition({ id: 'receive_payment', label: 'Receive payment', allowedRoles: [ROLES.BILLING], requiredPermissions: ['billing:write'], requiredModules: ['billing'], scope: 'billing', target: actionTarget('billing', 'payments', 'create') }),
+  actionDefinition({ id: 'process_refund', label: 'Process refund', allowedRoles: [ROLES.BILLING], requiredPermissions: ['billing:write'], requiredModules: ['billing'], scope: 'billing', target: actionTarget('billing', 'refunds') }),
+  actionDefinition({ id: 'close_shift', label: 'Close shift/day', allowedRoles: [ROLES.BILLING], requiredPermissions: ['billing:write'], requiredModules: ['billing'], scope: 'billing', target: actionTarget('billing', 'closeout') }),
+  actionDefinition({ id: 'create_maintenance_request', label: 'Create maintenance request', allowedRoles: [ROLES.OPERATIONS, ROLES.FACILITY_ADMIN], requiredPermissions: ['operations:write'], requiredModules: ['operations'], scope: 'operations', target: actionTarget('operations', 'maintenance-requests', 'create') }),
+  actionDefinition({ id: 'assign_maintenance', label: 'Assign maintenance', allowedRoles: [ROLES.OPERATIONS], requiredPermissions: ['operations:write'], requiredModules: ['operations'], scope: 'operations', target: actionTarget('operations', 'maintenance-requests') }),
+  actionDefinition({ id: 'update_bed_readiness', label: 'Update bed/room readiness', allowedRoles: [ROLES.OPERATIONS, ROLES.HOUSEKEEPING_MANAGER], requiredPermissions: ['operations:write'], requiredModules: ['rooms_beds'], scope: 'facility', target: actionTarget('rooms_beds', 'beds') }),
+  actionDefinition({ id: 'create_cleaning_task', label: 'Create cleaning task', allowedRoles: [ROLES.HOUSEKEEPING_MANAGER, ROLES.OPERATIONS], requiredPermissions: ['operations:write'], requiredModules: ['housekeeping'], scope: 'housekeeping', target: actionTarget('housekeeping', 'tasks', 'create') }),
+  actionDefinition({ id: 'assign_cleaning_task', label: 'Assign cleaning task', allowedRoles: [ROLES.HOUSEKEEPING_MANAGER], requiredPermissions: ['operations:write'], requiredModules: ['housekeeping'], scope: 'housekeeping', target: actionTarget('housekeeping', 'tasks') }),
+  actionDefinition({ id: 'start_cleaning_task', label: 'Start assigned cleaning task', allowedRoles: [ROLES.HOUSE_KEEPER], requiredPermissions: ['operations:read'], requiredModules: ['housekeeping'], scope: 'assigned_tasks', target: actionTarget('housekeeping', 'tasks') }),
+  actionDefinition({ id: 'complete_cleaning_task', label: 'Complete assigned cleaning task', allowedRoles: [ROLES.HOUSE_KEEPER], requiredPermissions: ['operations:read'], requiredModules: ['housekeeping'], scope: 'assigned_tasks', target: actionTarget('housekeeping', 'tasks') }),
+  actionDefinition({ id: 'mark_cleaning_blocked', label: 'Mark cleaning task blocked', allowedRoles: [ROLES.HOUSE_KEEPER, ROLES.HOUSEKEEPING_MANAGER], requiredPermissions: ['operations:read'], requiredModules: ['housekeeping'], scope: 'housekeeping', target: actionTarget('housekeeping', 'tasks') }),
+  actionDefinition({ id: 'add_staff_profile', label: 'Add staff profile', allowedRoles: [ROLES.HR, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], requiredAnyPermissions: ['hr:write', 'tenant:admin', 'facility:admin'], requiredModules: ['hr'], scope: 'tenant_or_facility', target: actionTarget('hr', 'staff-profiles', 'create') }),
+  actionDefinition({ id: 'review_leave', label: 'Review leave request', allowedRoles: [ROLES.HR, ROLES.UNIT_MANAGER, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER, ROLES.HOUSEKEEPING_MANAGER, ROLES.BIOMED_MANAGER], requiredAnyPermissions: ['hr:write', 'roster:approve'], requiredModules: ['hr'], scope: 'assigned_team', target: actionTarget('hr', 'leave') }),
+  actionDefinition({ id: 'create_shift', label: 'Create shift', allowedRoles: [ROLES.HR, ROLES.UNIT_MANAGER, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER, ROLES.HOUSEKEEPING_MANAGER, ROLES.BIOMED_MANAGER], requiredPermissions: ['roster:write'], requiredModules: ['hr'], scope: 'assigned_team', target: actionTarget('hr', 'shifts', 'create') }),
+  actionDefinition({ id: 'publish_roster', label: 'Publish roster', allowedRoles: [ROLES.HR, ROLES.UNIT_MANAGER, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER], requiredPermissions: ['roster:publish'], requiredModules: ['hr'], scope: 'assigned_team', target: actionTarget('hr', 'rosters') }),
+  actionDefinition({ id: 'approve_roster', label: 'Approve roster', allowedRoles: [ROLES.HR, ROLES.UNIT_MANAGER, ROLES.WARD_MANAGER, ROLES.ICU_MANAGER, ROLES.THEATRE_MANAGER], requiredPermissions: ['roster:approve'], requiredModules: ['hr'], scope: 'assigned_team', target: actionTarget('hr', 'rosters') }),
+  actionDefinition({ id: 'report_equipment_issue', label: 'Report equipment issue', allowedRoles: [ROLES.BIOMED, ROLES.BIOMED_MANAGER, ROLES.FACILITY_ADMIN, ROLES.OPERATIONS], requiredAnyPermissions: ['biomed:write', 'facility:admin', 'operations:write'], requiredModules: ['biomedical'], scope: 'biomed', target: actionTarget('biomedical', 'work-orders', 'create') }),
+  actionDefinition({ id: 'acknowledge_work_order', label: 'Acknowledge work order', allowedRoles: [ROLES.BIOMED], requiredPermissions: ['biomed:write'], requiredModules: ['biomedical'], scope: 'biomed', target: actionTarget('biomedical', 'work-orders') }),
+  actionDefinition({ id: 'update_work_order', label: 'Update work order', allowedRoles: [ROLES.BIOMED, ROLES.BIOMED_MANAGER], requiredPermissions: ['biomed:write'], requiredModules: ['biomedical'], scope: 'biomed', target: actionTarget('biomedical', 'work-orders') }),
+  actionDefinition({ id: 'assign_technician', label: 'Assign technician', allowedRoles: [ROLES.BIOMED_MANAGER], requiredPermissions: ['biomed:write'], requiredModules: ['biomedical'], scope: 'biomed_management', target: actionTarget('biomedical', 'work-orders') }),
+  actionDefinition({ id: 'dispatch_ambulance', label: 'Dispatch ambulance', allowedRoles: [ROLES.AMBULANCE_OPERATOR], requiredPermissions: ['emergency:write'], requiredModules: ['emergency'], scope: 'ambulance', target: actionTarget('emergency', 'ambulance-dispatches', 'create') }),
+  actionDefinition({ id: 'update_trip_status', label: 'Update trip status', allowedRoles: [ROLES.AMBULANCE_OPERATOR], requiredPermissions: ['emergency:write'], requiredModules: ['emergency'], scope: 'ambulance', target: actionTarget('emergency', 'ambulance-trips') }),
+  actionDefinition({ id: 'record_emergency_handover', label: 'Record emergency handover', allowedRoles: [ROLES.AMBULANCE_OPERATOR], requiredPermissions: ['emergency:write'], requiredModules: ['emergency'], scope: 'ambulance', target: actionTarget('emergency', 'handovers') }),
+  actionDefinition({ id: 'open_mortuary_case', label: 'Open mortuary case', allowedRoles: [ROLES.MORTUARY_STAFF, ROLES.MORTUARY_MANAGER], requiredPermissions: ['mortuary:write'], requiredModules: ['mortuary'], scope: 'mortuary', target: actionTarget('mortuary', 'cases', 'create') }),
+  actionDefinition({ id: 'assign_storage_slot', label: 'Assign storage slot', allowedRoles: [ROLES.MORTUARY_STAFF, ROLES.MORTUARY_MANAGER], requiredPermissions: ['mortuary:manage_storage'], requiredModules: ['mortuary'], scope: 'mortuary', target: actionTarget('mortuary', 'storage') }),
+  actionDefinition({ id: 'record_custody_event', label: 'Record custody event', allowedRoles: [ROLES.MORTUARY_STAFF, ROLES.MORTUARY_MANAGER], requiredPermissions: ['mortuary:write'], requiredModules: ['mortuary'], scope: 'mortuary', target: actionTarget('mortuary', 'custody-events', 'create') }),
+  actionDefinition({ id: 'schedule_viewing', label: 'Schedule viewing', allowedRoles: [ROLES.MORTUARY_STAFF, ROLES.MORTUARY_MANAGER], requiredPermissions: ['mortuary:write'], requiredModules: ['mortuary'], scope: 'mortuary', target: actionTarget('mortuary', 'viewings', 'create') }),
+  actionDefinition({ id: 'add_mortuary_billable_event', label: 'Add mortuary billable event', allowedRoles: [ROLES.MORTUARY_STAFF, ROLES.MORTUARY_MANAGER], requiredPermissions: ['mortuary:billing_event'], requiredModules: ['mortuary'], scope: 'mortuary', target: actionTarget('mortuary', 'billable-events', 'create') }),
+  actionDefinition({ id: 'review_release_authorization', label: 'Review release authorization', allowedRoles: [ROLES.MORTUARY_MANAGER], requiredAnyPermissions: ['mortuary:release', 'mortuary:approve'], requiredModules: ['mortuary'], scope: 'mortuary_management', target: actionTarget('mortuary', 'release-authorisations') }),
+  actionDefinition({ id: 'approve_release', label: 'Approve release', allowedRoles: [ROLES.MORTUARY_MANAGER], requiredPermissions: ['mortuary:approve'], requiredModules: ['mortuary'], scope: 'mortuary_management', target: actionTarget('mortuary', 'release-authorisations') }),
+  actionDefinition({ id: 'export_mortuary_evidence', label: 'Export mortuary evidence', allowedRoles: [ROLES.MORTUARY_MANAGER], requiredAnyPermissions: ['mortuary:export', 'evidence:export'], requiredModules: ['mortuary'], scope: 'mortuary_management', target: actionTarget('mortuary', 'exports') }),
+  actionDefinition({ id: 'update_own_profile', label: 'Update my profile', allowedRoles: [ROLES.PATIENT, ROLES.OTHER, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.NURSE, ROLES.BILLING, ROLES.HR, ROLES.OPERATIONS], requiredAnyPermissions: ['profile:update', 'profile:read'], scope: 'self', target: actionTarget('profile', 'profile') }),
+  actionDefinition({ id: 'view_my_care', label: 'View my care information', allowedRoles: [ROLES.PATIENT], requiredPermissions: ['profile:read'], scope: 'self', target: actionTarget('profile', 'care') }),
+  actionDefinition({ id: 'contact_facility', label: 'Contact facility', allowedRoles: [ROLES.PATIENT, ROLES.OTHER], requiredPermissions: ['profile:read'], scope: 'self', target: actionTarget('communications', 'messages') }),
+]);
+
+const getUserRoles = (user = {}) => {
+  const candidates = [];
+  const roleValues = Array.isArray(user.roles) ? user.roles : [];
+  for (const role of roleValues) {
+    const normalized = normalizeRoleName(role?.name || role?.role_name || role?.role?.name || role);
+    if (normalized) candidates.push(normalized);
+  }
+  const directRole = normalizeRoleName(user.role || user.role_name);
+  if (directRole) candidates.push(directRole);
+  const roles = Array.from(new Set(candidates));
+  return roles.length ? roles : [ROLES.OTHER];
+};
+
+const normalizeModuleCode = (value) =>
+  normalizeString(value).toLowerCase().replace(/[\s-]+/g, '_');
+
+const normalizeModuleEntitlements = (user = {}) => {
+  const source =
+    user.module_entitlements ||
+    user.moduleEntitlements ||
+    user.modules ||
+    user.enabled_modules ||
+    user.enabledModules;
+  if (!source) return null;
+
+  const entries = Array.isArray(source)
+    ? source
+    : typeof source === 'object'
+      ? Object.entries(source).map(([code, value]) => ({ code, value }))
+      : [];
+  if (!entries.length) return null;
+
+  const enabled = new Set();
+  for (const entry of entries) {
+    const rawCode = Array.isArray(entry)
+      ? entry[0]
+      : entry?.code || entry?.module_code || entry?.moduleCode || entry?.slug || entry?.module?.slug;
+    const normalizedCode = normalizeModuleCode(rawCode);
+    if (!normalizedCode) continue;
+    const value = Array.isArray(entry) ? entry[1] : entry?.value ?? entry;
+    const disabled =
+      value === false ||
+      entry?.is_active === false ||
+      entry?.isActive === false ||
+      entry?.enabled === false ||
+      entry?.status === 'DISABLED' ||
+      entry?.status === 'EXPIRED';
+    if (!disabled) enabled.add(normalizedCode);
+  }
+
+  return enabled.size ? enabled : null;
+};
+
+const modulesEnabled = (user, modules = []) => {
+  if (!modules.length) return true;
+  const enabled = normalizeModuleEntitlements(user);
+  if (!enabled) return true;
+  return modules.every((moduleCode) => enabled.has(normalizeModuleCode(moduleCode)));
+};
+
+const hasAllPermissions = (permissions, required = []) =>
+  required.every((permission) => permissions.has(permission));
+
+const hasAnyPermission = (permissions, required = []) =>
+  !required.length || required.some((permission) => permissions.has(permission));
+
+const sanitizeQuickAction = (action) => ({
+  id: action.id,
+  label: action.label,
+  allowed_roles: action.allowed_roles,
+  required_permissions: action.required_permissions,
+  required_any_permissions: action.required_any_permissions,
+  required_modules: action.required_modules,
+  scope: action.scope,
+  route_target: action.route_target,
+});
+
+const hiddenReasonForAction = (action, roles, permissions, user) => {
+  if (!action.allowed_roles.some((role) => roles.includes(role))) {
+    return `Requires ${action.allowed_roles.join(' or ')} role`;
+  }
+  if (!hasAllPermissions(permissions, action.required_permissions)) {
+    return `Requires ${action.required_permissions.join(', ')}`;
+  }
+  if (!hasAnyPermission(permissions, action.required_any_permissions)) {
+    return `Requires one of ${action.required_any_permissions.join(', ')}`;
+  }
+  if (!modulesEnabled(user, action.required_modules)) {
+    return 'Module not enabled';
+  }
+  return null;
+};
+
+const resolveQuickActions = (user = {}, limit = 8) => {
+  const roles = getUserRoles(user);
+  const permissions = new Set(getUserPermissions({ ...user, roles }));
+  const hiddenReasonMap = {};
+  const quickActions = [];
+  const seen = new Set();
+
+  for (const action of QUICK_ACTION_LIBRARY) {
+    const reason = hiddenReasonForAction(action, roles, permissions, user);
+    if (reason) {
+      hiddenReasonMap[action.id] = reason;
+      continue;
+    }
+    if (!seen.has(action.id)) {
+      quickActions.push(sanitizeQuickAction(action));
+      seen.add(action.id);
+    }
+  }
+
+  return {
+    quickActions: quickActions.slice(0, limit),
+    hiddenReasonMap,
+  };
+};
 
 const startOfDay = (value = new Date()) => {
   const date = new Date(value);
@@ -505,10 +647,89 @@ const activeQueueDefinitions = Object.freeze({
     },
     activity_event_type: 'emergency_case_updated',
   },
+  mortuary_cases: {
+    id: 'mortuary_cases',
+    queue_key: 'mortuary_cases',
+    kind: 'mortuary_case',
+    module_slug: 'mortuary',
+    resource: 'cases',
+    model: 'mortuary_case',
+    time_field: 'received_at',
+    default_sort: 'received_at',
+    select: { id: true, human_friendly_id: true, status: true, received_at: true, updated_at: true, created_at: true },
+    buildWhere: (scope) => ({
+      ...directScope(scope),
+      status: { in: ['RECEIVED', 'IDENTIFICATION_PENDING', 'IN_STORAGE', 'POST_MORTEM_PENDING', 'READY_FOR_RELEASE'] },
+    }),
+    buildSeverity: (row) => {
+      const status = normalizeString(row?.status).toUpperCase();
+      if (['IDENTIFICATION_PENDING', 'POST_MORTEM_PENDING'].includes(status)) return 'high';
+      return 'medium';
+    },
+    activity_event_type: 'mortuary_case_updated',
+  },
+  mortuary_releases: {
+    id: 'mortuary_releases',
+    queue_key: 'mortuary_releases',
+    kind: 'mortuary_release_authorisation',
+    module_slug: 'mortuary',
+    resource: 'release-authorisations',
+    model: 'mortuary_release_authorisation',
+    time_field: 'created_at',
+    default_sort: 'created_at',
+    select: { id: true, human_friendly_id: true, status: true, created_at: true, updated_at: true },
+    buildWhere: (scope) => ({
+      ...directScope(scope),
+      status: 'DRAFT',
+    }),
+    buildSeverity: () => 'high',
+    activity_event_type: 'mortuary_release_updated',
+  },
+  mortuary_viewings: {
+    id: 'mortuary_viewings',
+    queue_key: 'mortuary_viewings',
+    kind: 'mortuary_viewing',
+    module_slug: 'mortuary',
+    resource: 'viewings',
+    model: 'mortuary_viewing',
+    time_field: 'scheduled_at',
+    default_sort: 'scheduled_at',
+    select: { id: true, human_friendly_id: true, status: true, scheduled_at: true, updated_at: true, created_at: true },
+    buildWhere: (scope) => ({
+      ...directScope(scope),
+      status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
+    }),
+    buildSeverity: (row) => {
+      const scheduledAt = row?.scheduled_at ? new Date(row.scheduled_at) : null;
+      if (scheduledAt && scheduledAt.getTime() < Date.now()) return 'high';
+      return 'medium';
+    },
+    activity_event_type: 'mortuary_viewing_updated',
+  },
+  mortuary_post_mortems: {
+    id: 'mortuary_post_mortems',
+    queue_key: 'mortuary_post_mortems',
+    kind: 'mortuary_post_mortem_request',
+    module_slug: 'mortuary',
+    resource: 'post-mortem-requests',
+    model: 'mortuary_post_mortem_request',
+    time_field: 'created_at',
+    default_sort: 'created_at',
+    select: { id: true, human_friendly_id: true, status: true, created_at: true, updated_at: true },
+    buildWhere: (scope) => ({
+      ...directScope(scope),
+      status: { in: ['REQUESTED', 'APPROVED', 'SCHEDULED', 'IN_PROGRESS'] },
+    }),
+    buildSeverity: () => 'medium',
+    activity_event_type: 'mortuary_post_mortem_updated',
+  },
 });
 
 const ROLE_QUEUE_IDS = Object.freeze({
-  [ROLE_PACKS.ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'lab_results', 'radiology_results', 'pharmacy_orders', 'maintenance_requests', 'housekeeping_tasks', 'equipment_work_orders', 'staff_leaves'],
+  [ROLE_PACKS.ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
+  [ROLE_PACKS.SUPER_ADMIN]: ['billing_follow_up', 'maintenance_requests', 'equipment_work_orders', 'staff_leaves'],
+  [ROLE_PACKS.TENANT_ADMIN]: ['admissions', 'billing_follow_up', 'maintenance_requests', 'staff_leaves'],
+  [ROLE_PACKS.FACILITY_ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
   [ROLE_PACKS.DOCTOR]: ['appointments', 'admissions', 'lab_results', 'radiology_results'],
   [ROLE_PACKS.NURSE]: ['admissions', 'lab_results', 'radiology_results', 'appointments'],
   [ROLE_PACKS.LAB_TECH]: ['lab_results'],
@@ -521,6 +742,16 @@ const ROLE_QUEUE_IDS = Object.freeze({
   [ROLE_PACKS.BIOMED]: ['equipment_work_orders'],
   [ROLE_PACKS.HOUSE_KEEPER]: ['housekeeping_tasks'],
   [ROLE_PACKS.AMBULANCE_OPERATOR]: ['emergency_cases'],
+  [ROLE_PACKS.UNIT_MANAGER]: ['staff_leaves', 'admissions'],
+  [ROLE_PACKS.WARD_MANAGER]: ['admissions', 'appointments', 'staff_leaves'],
+  [ROLE_PACKS.ICU_MANAGER]: ['admissions', 'lab_results', 'staff_leaves'],
+  [ROLE_PACKS.THEATRE_MANAGER]: ['admissions', 'staff_leaves'],
+  [ROLE_PACKS.HOUSEKEEPING_MANAGER]: ['housekeeping_tasks', 'maintenance_requests'],
+  [ROLE_PACKS.BIOMED_MANAGER]: ['equipment_work_orders'],
+  [ROLE_PACKS.MORTUARY_STAFF]: ['mortuary_cases', 'mortuary_viewings', 'mortuary_post_mortems'],
+  [ROLE_PACKS.MORTUARY_MANAGER]: ['mortuary_releases', 'mortuary_cases', 'mortuary_post_mortems'],
+  [ROLE_PACKS.PATIENT_SAFE]: [],
+  [ROLE_PACKS.LIMITED]: [],
 });
 
 const routeTarget = (moduleSlug, resource, publicId, action = 'view') => ({
@@ -579,7 +810,7 @@ const applyHumanFriendlySearch = (where, search) => {
 };
 
 const resolveQueueDefinitions = (packId, filters = {}) => {
-  const queueIds = ROLE_QUEUE_IDS[packId] || ROLE_QUEUE_IDS[ROLE_PACKS.ADMIN];
+  const queueIds = ROLE_QUEUE_IDS[packId] || [];
   const normalizedQueue = normalizeString(filters.queue).toLowerCase();
   const normalizedModule = normalizeString(filters.module).toLowerCase();
 
@@ -1151,11 +1382,42 @@ const buildPlanUsage = (subscription = null, canManageSubscriptions = false) => 
   };
 };
 
-const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubscriptions }) => {
+const ALERT_MODULES_BY_PACK = Object.freeze({
+  [ROLE_PACKS.SUPER_ADMIN]: ['subscriptions', 'billing', 'operations', 'biomedical'],
+  [ROLE_PACKS.TENANT_ADMIN]: ['subscriptions', 'billing', 'operations', 'hr'],
+  [ROLE_PACKS.FACILITY_ADMIN]: ['billing', 'lab', 'ipd', 'operations', 'subscriptions'],
+  [ROLE_PACKS.DOCTOR]: ['lab', 'ipd'],
+  [ROLE_PACKS.NURSE]: ['lab', 'ipd'],
+  [ROLE_PACKS.LAB_TECH]: ['lab'],
+  [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology'],
+  [ROLE_PACKS.PHARMACIST]: ['pharmacy'],
+  [ROLE_PACKS.RECEPTIONIST]: ['scheduling'],
+  [ROLE_PACKS.BILLING]: ['billing'],
+  [ROLE_PACKS.OPERATIONS]: ['operations', 'ipd'],
+  [ROLE_PACKS.HR]: ['hr'],
+  [ROLE_PACKS.BIOMED]: ['biomedical'],
+  [ROLE_PACKS.HOUSE_KEEPER]: ['housekeeping'],
+  [ROLE_PACKS.AMBULANCE_OPERATOR]: ['emergency'],
+  [ROLE_PACKS.UNIT_MANAGER]: ['hr'],
+  [ROLE_PACKS.WARD_MANAGER]: ['ipd', 'nursing'],
+  [ROLE_PACKS.ICU_MANAGER]: ['icu', 'lab', 'ipd'],
+  [ROLE_PACKS.THEATRE_MANAGER]: ['theatre'],
+  [ROLE_PACKS.HOUSEKEEPING_MANAGER]: ['housekeeping', 'operations'],
+  [ROLE_PACKS.BIOMED_MANAGER]: ['biomedical'],
+  [ROLE_PACKS.MORTUARY_STAFF]: ['mortuary'],
+  [ROLE_PACKS.MORTUARY_MANAGER]: ['mortuary'],
+});
+
+const packAllowsAlertModule = (packId, moduleSlug) => {
+  const modules = ALERT_MODULES_BY_PACK[packId] || [];
+  return modules.includes(moduleSlug);
+};
+
+const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubscriptions, packId }) => {
   const signals = [];
   const occupancyPercent = percentOf(snapshot.occupied_beds, snapshot.total_beds);
 
-  if (snapshot.overdue_invoices > 0) {
+  if (snapshot.overdue_invoices > 0 && packAllowsAlertModule(packId, 'billing')) {
     signals.push({
       id: 'overdue_invoices',
       kind: 'overdue_invoices',
@@ -1165,7 +1427,7 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
       target: routeTarget('billing', 'invoices', null, 'list'),
     });
   }
-  if (snapshot.critical_labs > 0) {
+  if (snapshot.critical_labs > 0 && packAllowsAlertModule(packId, 'lab')) {
     signals.push({
       id: 'critical_labs',
       kind: 'critical_labs',
@@ -1175,7 +1437,7 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
       target: routeTarget('lab', 'results', null, 'list'),
     });
   }
-  if (occupancyPercent >= 85) {
+  if (occupancyPercent >= 85 && packAllowsAlertModule(packId, 'ipd')) {
     signals.push({
       id: 'bed_occupancy',
       kind: 'bed_occupancy_pressure',
@@ -1190,7 +1452,7 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
   const approachingLimits = (planUsage.metrics || []).filter(
     (metric) => metric.limit > 0 && metric.percent >= planUsage.warning_percent
   );
-  if (approachingLimits.length) {
+  if (approachingLimits.length && canManageSubscriptions) {
     signals.push({
       id: 'plan_limits',
       kind: 'plan_limit_pressure',
@@ -1225,15 +1487,17 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
       ? ['biomedical', 'housekeeping', 'subscriptions']
       : ['pharmacy', 'lab', 'subscriptions'];
 
-  const recommendations = recommendationCandidates
-    .filter((slug) => !activeModuleSlugs.has(slug))
-    .slice(0, 3)
-    .map((slug) => ({
-      id: `module:${slug}`,
-      module_slug: slug,
-      state: canManageSubscriptions ? 'actionable' : 'read_only',
-      target: routeTarget('subscriptions', 'modules', null, 'discover'),
-    }));
+  const recommendations = canManageSubscriptions
+    ? recommendationCandidates
+        .filter((slug) => !activeModuleSlugs.has(slug))
+        .slice(0, 3)
+        .map((slug) => ({
+          id: `module:${slug}`,
+          module_slug: slug,
+          state: 'actionable',
+          target: routeTarget('subscriptions', 'modules', null, 'discover'),
+        }))
+    : [];
 
   const helpCards = [
     {
@@ -1291,7 +1555,17 @@ const buildChecklist = ({ snapshot, facilityContext, packId }) => {
     },
   ];
 
-  if (isHospital || [ROLE_PACKS.DOCTOR, ROLE_PACKS.NURSE, ROLE_PACKS.ADMIN].includes(packId)) {
+  if (
+    isHospital ||
+    [
+      ROLE_PACKS.DOCTOR,
+      ROLE_PACKS.NURSE,
+      ROLE_PACKS.ADMIN,
+      ROLE_PACKS.SUPER_ADMIN,
+      ROLE_PACKS.TENANT_ADMIN,
+      ROLE_PACKS.FACILITY_ADMIN,
+    ].includes(packId)
+  ) {
     items.push({
       id: 'admissions',
       kind: 'admissions',
@@ -1359,6 +1633,11 @@ const buildStatusStrip = (dashboardSummary = {}) =>
     label: item.label,
     value: item.value,
     format: item.format || 'number',
+    required_permissions: item.required_permissions || [],
+    required_modules: item.required_modules || [],
+    allowed_roles: item.allowed_roles || [],
+    scope: item.scope || null,
+    route_target: item.route_target || null,
   }));
 
 const getWorkspace = async (
@@ -1375,18 +1654,32 @@ const getWorkspace = async (
     user,
     effectiveRole,
   });
+  const effectiveProfileId = resolveProfileId(effectiveRole);
+  const effectivePackId = resolvePackId(effectiveProfileId);
+  const tenantContextQuickActions = resolveQuickActions(user, 8);
 
   if (scopeResult.state === 'tenant_context_required') {
     const lookups = await dashboardWorkspaceRepository.findLookups({ scope: null, includeTenants: true });
     return {
       state: 'tenant_context_required',
       generated_at: new Date().toISOString(),
-      context: {
+      role_profile: {
+        id: effectiveProfileId,
         role: effectiveRole,
+        pack: effectivePackId,
+      },
+      context: {
+        role: {
+          id: effectiveProfileId,
+          role: effectiveRole,
+          pack: effectivePackId,
+        },
       },
       panel_summaries: [],
       status_strip: [],
-      quick_action_ids: [],
+      quick_actions: tenantContextQuickActions.quickActions,
+      quick_action_ids: tenantContextQuickActions.quickActions.map((action) => action.id),
+      hidden_reason_map: tenantContextQuickActions.hiddenReasonMap,
       overview: {
         checklist: { completed_count: 0, total_count: 0, items: [] },
         alerts: [],
@@ -1417,6 +1710,7 @@ const getWorkspace = async (
   });
   const packId = baseSummary.roleProfile?.pack || ROLE_PACKS.ADMIN;
   const canManageSubscriptions = ADMIN_ROLES.has(effectiveRole);
+  const quickActionResolution = resolveQuickActions(user, 8);
 
   const [facilityContext, subscription, queueItems, activityItems, snapshot] = await Promise.all([
     dashboardWorkspaceRepository.findFacilityContext(scope),
@@ -1427,7 +1721,13 @@ const getWorkspace = async (
   ]);
 
   const checklist = buildChecklist({ snapshot, facilityContext, packId });
-  const insights = buildInsights({ snapshot, subscription, facilityContext, canManageSubscriptions });
+  const insights = buildInsights({
+    snapshot,
+    subscription,
+    facilityContext,
+    canManageSubscriptions,
+    packId,
+  });
   const valueProof = buildValueProof(snapshot);
   const panelSummaries = buildPanelSummaries({ queueItems, activityItems, insights, checklist });
 
@@ -1442,6 +1742,7 @@ const getWorkspace = async (
   return {
     state: 'ready',
     generated_at: new Date().toISOString(),
+    role_profile: baseSummary.roleProfile,
     context: {
       role: baseSummary.roleProfile,
       tenant_id: dashboardWorkspaceRepository.safePublicId(scope.tenant_id),
@@ -1452,7 +1753,10 @@ const getWorkspace = async (
     },
     panel_summaries: panelSummaries,
     status_strip: buildStatusStrip(baseSummary),
-    quick_action_ids: resolveQuickActionIds(baseSummary.roleProfile?.id, packId),
+    summary_cards: buildStatusStrip(baseSummary),
+    quick_actions: quickActionResolution.quickActions,
+    quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
+    hidden_reason_map: quickActionResolution.hiddenReasonMap,
     overview: {
       hero: {
         role_profile_id: baseSummary.roleProfile?.id || 'operations',

@@ -64,10 +64,9 @@ final class HomeRepositoryImpl implements HomeRepository {
           dashboard.profile.role == AppRole.other
           ? localProfile
           : dashboard.profile;
-      final List<String> quickActionIds = _mergeIds(<Iterable<String>>[
-        dashboard.quickActionIds,
-        mergedHomeQuickActions(_accessPolicy.roles),
-      ]);
+      final List<String> quickActionIds = dashboard.quickActionIds.isEmpty
+          ? mergedHomeQuickActions(_accessPolicy.roles)
+          : dashboard.quickActionIds;
       final List<String> shortcutIds = _mergeIds(<Iterable<String>>[
         dashboard.shortcutIds,
         mergedHomeShortcuts(_accessPolicy.roles),

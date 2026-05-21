@@ -24,7 +24,7 @@ final class HomeDashboardDto {
         profile: profile,
         context: HomeDashboardContext(roleValue: roleValue),
         statusCards: profile.fallbackStatusCards(),
-        quickActionIds: profile.quickActionIds,
+        quickActionIds: _quickActionIds(json, fallback: profile.quickActionIds),
         shortcutIds: profile.shortcutIds,
         queuePreview: const <HomeQueueItem>[],
         alerts: const <HomeAlertItem>[],
@@ -88,7 +88,7 @@ final class HomeDashboardDto {
       statusCards: statusCards.isEmpty
           ? profile.fallbackStatusCards()
           : statusCards,
-      quickActionIds: _strings(json['quick_action_ids']),
+      quickActionIds: _quickActionIds(json, fallback: profile.quickActionIds),
       shortcutIds: profile.shortcutIds,
       queuePreview: queuePreview,
       alerts: alerts,
@@ -305,6 +305,27 @@ List<String> _strings(Object? value) {
     return const <String>[];
   }
   return value.map(_string).whereType<String>().toSet().toList(growable: false);
+}
+
+List<String> _quickActionIds(
+  HomeJsonMap json, {
+  Iterable<String> fallback = const <String>[],
+}) {
+  final ids = _strings(json['quick_action_ids']);
+  if (ids.isNotEmpty) {
+    return ids;
+  }
+
+  final actionIds = _list(json['quick_actions'])
+      .map((HomeJsonMap item) => _string(item['id']))
+      .whereType<String>()
+      .toSet()
+      .toList(growable: false);
+  if (actionIds.isNotEmpty) {
+    return actionIds;
+  }
+
+  return fallback.toSet().toList(growable: false);
 }
 
 String? _string(Object? value) {

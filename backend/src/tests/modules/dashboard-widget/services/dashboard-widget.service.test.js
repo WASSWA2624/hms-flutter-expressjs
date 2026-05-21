@@ -421,31 +421,31 @@ describe('Dashboard Widget Service', () => {
 
     it('resolves role-profile mapping using hierarchy for all canonical staff roles', async () => {
       const roleCases = [
-        ['SUPER_ADMIN', 'super_admin'],
-        ['TENANT_ADMIN', 'tenant_admin'],
-        ['FACILITY_ADMIN', 'facility_admin'],
-        ['DOCTOR', 'doctor'],
-        ['NURSE', 'nurse'],
-        ['LAB_TECH', 'lab_tech'],
-        ['RADIOLOGY_TECH', 'radiology_tech'],
-        ['PHARMACIST', 'pharmacist'],
-        ['RECEPTIONIST', 'receptionist'],
-        ['BILLING', 'billing'],
-        ['OPERATIONS', 'operations'],
-        ['HR', 'hr'],
-        ['BIOMED', 'biomed'],
-        ['HOUSE_KEEPER', 'house_keeper'],
-        ['AMBULANCE_OPERATOR', 'ambulance_operator'],
-        ['UNIT_MANAGER', 'unit_manager'],
-        ['WARD_MANAGER', 'ward_manager'],
-        ['ICU_MANAGER', 'icu_manager'],
-        ['THEATRE_MANAGER', 'theatre_manager'],
-        ['HOUSEKEEPING_MANAGER', 'housekeeping_manager'],
-        ['BIOMED_MANAGER', 'biomed_manager'],
-        ['MORTUARY_STAFF', 'mortuary_staff'],
-        ['MORTUARY_MANAGER', 'mortuary_manager'],
-        ['PATIENT', 'patient'],
-        ['OTHER', 'other'],
+        ['SUPER_ADMIN', 'super_admin', 'super_admin'],
+        ['TENANT_ADMIN', 'tenant_admin', 'tenant_admin'],
+        ['FACILITY_ADMIN', 'facility_admin', 'facility_admin'],
+        ['DOCTOR', 'doctor', 'doctor'],
+        ['NURSE', 'nurse', 'nurse'],
+        ['LAB_TECH', 'lab_tech', 'lab_tech'],
+        ['RADIOLOGY_TECH', 'radiology_tech', 'radiology_tech'],
+        ['PHARMACIST', 'pharmacist', 'pharmacist'],
+        ['RECEPTIONIST', 'receptionist', 'receptionist'],
+        ['BILLING', 'billing', 'billing'],
+        ['OPERATIONS', 'operations', 'operations'],
+        ['HR', 'hr', 'hr'],
+        ['BIOMED', 'biomed', 'biomed'],
+        ['HOUSE_KEEPER', 'house_keeper', 'house_keeper'],
+        ['AMBULANCE_OPERATOR', 'ambulance_operator', 'ambulance_operator'],
+        ['UNIT_MANAGER', 'unit_manager', 'unit_manager'],
+        ['WARD_MANAGER', 'ward_manager', 'ward_manager'],
+        ['ICU_MANAGER', 'icu_manager', 'icu_manager'],
+        ['THEATRE_MANAGER', 'theatre_manager', 'theatre_manager'],
+        ['HOUSEKEEPING_MANAGER', 'housekeeping_manager', 'housekeeping_manager'],
+        ['BIOMED_MANAGER', 'biomed_manager', 'biomed_manager'],
+        ['MORTUARY_STAFF', 'mortuary_staff', 'mortuary_staff'],
+        ['MORTUARY_MANAGER', 'mortuary_manager', 'mortuary_manager'],
+        ['PATIENT', 'patient', 'patient_safe'],
+        ['OTHER', 'other', 'limited'],
       ];
 
       dashboardWidgetRepository.getDashboardSummaryByPack.mockResolvedValue({
@@ -455,7 +455,7 @@ describe('Dashboard Widget Service', () => {
         activity: {},
       });
 
-      for (const [role, profile] of roleCases) {
+      for (const [role, profile, pack] of roleCases) {
         const result = await dashboardWidgetService.getDashboardSummary(
           { days: 7, tenant_id: '660e8400-e29b-41d4-a716-446655440000' },
           {
@@ -467,6 +467,7 @@ describe('Dashboard Widget Service', () => {
         );
 
         expect(result.roleProfile.id).toBe(profile);
+        expect(result.roleProfile.pack).toBe(pack);
       }
     });
 
@@ -591,9 +592,9 @@ describe('Dashboard Widget Service', () => {
         { days: 7 },
         {
           id: 'user-1',
-          roles: ['TENANT_ADMIN'],
-          tenant_id: '660e8400-e29b-41d4-a716-446655440000',
-        }
+        roles: ['DOCTOR'],
+        tenant_id: '660e8400-e29b-41d4-a716-446655440000',
+      }
       );
 
       expect(result.summaryCards).toEqual(
@@ -618,6 +619,42 @@ describe('Dashboard Widget Service', () => {
             id: 'queue_opd_attention',
             statusVariant: 'error',
           }),
+        ])
+      );
+    });
+
+    it('does not append OPD unread notification signals for unrelated roles', async () => {
+      dashboardWidgetRepository.getDashboardSummaryByPack.mockResolvedValue({
+        metrics: {
+          ordersToday: 2,
+          inProcess: 1,
+          pending: 0,
+          critical: 0,
+          completed: 3,
+        },
+        trendDates: [],
+        statusCounts: {},
+        activity: {},
+      });
+
+      const result = await dashboardWidgetService.getDashboardSummary(
+        { days: 7 },
+        {
+          id: 'user-1',
+          roles: ['LAB_TECH'],
+          tenant_id: '660e8400-e29b-41d4-a716-446655440000',
+        }
+      );
+
+      expect(dashboardWidgetRepository.countUnreadOpdNotifications).not.toHaveBeenCalled();
+      expect(result.summaryCards).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'opd_notifications_attention' }),
+        ])
+      );
+      expect(result.queue).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'queue_opd_attention' }),
         ])
       );
     });

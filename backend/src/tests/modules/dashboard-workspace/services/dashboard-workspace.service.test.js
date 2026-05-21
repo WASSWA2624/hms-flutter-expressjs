@@ -3,6 +3,9 @@ jest.mock('@repositories/dashboard-widget/dashboard-widget.repository', () => ({
 jest.mock('@lib/dashboard/summary', () => ({
   ROLE_PACKS: {
     ADMIN: 'admin',
+    SUPER_ADMIN: 'super_admin',
+    TENANT_ADMIN: 'tenant_admin',
+    FACILITY_ADMIN: 'facility_admin',
     DOCTOR: 'doctor',
     NURSE: 'nurse',
     LAB_TECH: 'lab_tech',
@@ -15,10 +18,63 @@ jest.mock('@lib/dashboard/summary', () => ({
     BIOMED: 'biomed',
     HOUSE_KEEPER: 'house_keeper',
     AMBULANCE_OPERATOR: 'ambulance_operator',
+    UNIT_MANAGER: 'unit_manager',
+    WARD_MANAGER: 'ward_manager',
+    ICU_MANAGER: 'icu_manager',
+    THEATRE_MANAGER: 'theatre_manager',
+    HOUSEKEEPING_MANAGER: 'housekeeping_manager',
+    BIOMED_MANAGER: 'biomed_manager',
+    MORTUARY_STAFF: 'mortuary_staff',
+    MORTUARY_MANAGER: 'mortuary_manager',
+    PATIENT_SAFE: 'patient_safe',
+    LIMITED: 'limited',
   },
-  resolveEffectiveRole: jest.fn(() => 'SUPER_ADMIN'),
+  resolveEffectiveRole: jest.fn((user = {}) => {
+    if (Array.isArray(user.roles) && user.roles.length) return user.roles[0];
+    return user.role || 'SUPER_ADMIN';
+  }),
+  resolveProfileId: jest.fn((role) => {
+    const profileIds = {
+      SUPER_ADMIN: 'super_admin',
+      TENANT_ADMIN: 'tenant_admin',
+      FACILITY_ADMIN: 'facility_admin',
+      DOCTOR: 'doctor',
+      NURSE: 'nurse',
+      LAB_TECH: 'lab_tech',
+      RADIOLOGY_TECH: 'radiology_tech',
+      PHARMACIST: 'pharmacist',
+      RECEPTIONIST: 'receptionist',
+      BILLING: 'billing',
+      OPERATIONS: 'operations',
+      HR: 'hr',
+      BIOMED: 'biomed',
+      HOUSE_KEEPER: 'house_keeper',
+      AMBULANCE_OPERATOR: 'ambulance_operator',
+      UNIT_MANAGER: 'unit_manager',
+      WARD_MANAGER: 'ward_manager',
+      ICU_MANAGER: 'icu_manager',
+      THEATRE_MANAGER: 'theatre_manager',
+      HOUSEKEEPING_MANAGER: 'housekeeping_manager',
+      BIOMED_MANAGER: 'biomed_manager',
+      MORTUARY_STAFF: 'mortuary_staff',
+      MORTUARY_MANAGER: 'mortuary_manager',
+      PATIENT: 'patient',
+      OTHER: 'other',
+    };
+    return profileIds[role] || 'other';
+  }),
+  resolvePackId: jest.fn((profileId) => {
+    const packIds = {
+      super_admin: 'super_admin',
+      tenant_admin: 'tenant_admin',
+      facility_admin: 'facility_admin',
+      patient: 'patient_safe',
+      other: 'limited',
+    };
+    return packIds[profileId] || profileId || 'limited';
+  }),
   buildDashboardSummary: jest.fn(async () => ({
-    roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'admin' },
+    roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
     summaryCards: [{ id: 'patients_today', label: 'Patients today', value: 12, format: 'number' }],
   })),
 }));
@@ -134,7 +190,7 @@ describe('dashboard-workspace service', () => {
     repository.sumRows.mockResolvedValue(0);
     repository.findRows.mockResolvedValue([]);
     buildDashboardSummary.mockResolvedValueOnce({
-      roleProfile: { id: 'ward_manager', role: 'WARD_MANAGER', pack: 'nurse' },
+      roleProfile: { id: 'ward_manager', role: 'WARD_MANAGER', pack: 'ward_manager' },
       summaryCards: [],
     });
 
@@ -148,10 +204,73 @@ describe('dashboard-workspace service', () => {
     );
 
     expect(result.quick_action_ids).toEqual([
-      'record_vitals',
-      'publish_roster',
       'run_report',
+      'create_handover',
+      'review_leave',
+      'create_shift',
+      'publish_roster',
+      'approve_roster',
     ]);
+  });
+
+  it('keeps tenant-admin quick actions to oversight and setup work', async () => {
+    repository.resolveWorkspaceScope.mockResolvedValue({
+      state: 'ready',
+      scope: {
+        tenant_id: 'TEN0001',
+        facility_id: 'FAC0001',
+      },
+    });
+    repository.findFacilityContext.mockResolvedValue({
+      id: 'facility-uuid',
+      human_friendly_id: 'FAC0001',
+      name: 'Central Hospital',
+      facility_type: 'HOSPITAL',
+    });
+    repository.findCurrentSubscription.mockResolvedValue(null);
+    repository.findLookups.mockResolvedValue({
+      tenants: [],
+      facilities: [],
+      branches: [],
+    });
+    repository.countRows.mockResolvedValue(0);
+    repository.sumRows.mockResolvedValue(0);
+    repository.findRows.mockResolvedValue([]);
+    buildDashboardSummary.mockResolvedValueOnce({
+      roleProfile: { id: 'tenant_admin', role: 'TENANT_ADMIN', pack: 'tenant_admin' },
+      summaryCards: [],
+    });
+
+    const result = await subject.getWorkspace(
+      { panel: 'overview' },
+      1,
+      20,
+      'updated_at',
+      'desc',
+      { role: 'TENANT_ADMIN' }
+    );
+
+    expect(result.quick_action_ids).toEqual(
+      expect.arrayContaining([
+        'select_context',
+        'create_facility',
+        'manage_users_roles',
+        'manage_subscription',
+        'run_report',
+        'review_audit',
+        'add_staff_profile',
+      ])
+    );
+    expect(result.quick_action_ids).not.toEqual(
+      expect.arrayContaining([
+        'start_consultation',
+        'record_vitals',
+        'enter_lab_result',
+        'dispense_medication',
+        'receive_payment',
+        'record_custody_event',
+      ])
+    );
   });
 
   it('returns normalized lookups collections', async () => {

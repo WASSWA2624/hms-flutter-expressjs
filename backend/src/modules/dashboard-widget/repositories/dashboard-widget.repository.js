@@ -14,6 +14,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const ROLE_PACKS = Object.freeze({
   ADMIN: 'admin',
+  SUPER_ADMIN: 'super_admin',
+  TENANT_ADMIN: 'tenant_admin',
+  FACILITY_ADMIN: 'facility_admin',
   DOCTOR: 'doctor',
   NURSE: 'nurse',
   LAB_TECH: 'lab_tech',
@@ -25,7 +28,17 @@ const ROLE_PACKS = Object.freeze({
   HR: 'hr',
   BIOMED: 'biomed',
   HOUSE_KEEPER: 'house_keeper',
-  AMBULANCE_OPERATOR: 'ambulance_operator'
+  AMBULANCE_OPERATOR: 'ambulance_operator',
+  UNIT_MANAGER: 'unit_manager',
+  WARD_MANAGER: 'ward_manager',
+  ICU_MANAGER: 'icu_manager',
+  THEATRE_MANAGER: 'theatre_manager',
+  HOUSEKEEPING_MANAGER: 'housekeeping_manager',
+  BIOMED_MANAGER: 'biomed_manager',
+  MORTUARY_STAFF: 'mortuary_staff',
+  MORTUARY_MANAGER: 'mortuary_manager',
+  PATIENT_SAFE: 'patient_safe',
+  LIMITED: 'limited'
 });
 
 const toNumber = (value) => {
@@ -448,6 +461,12 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     const ambulanceDispatchWhere = buildAmbulanceDispatchScopeWhere(scope);
     const ambulanceTripWhere = buildAmbulanceTripScopeWhere(scope);
     const emergencyCaseWhere = directScope(scope, { includeTenant: true, includeFacility: true });
+    const shiftWhere = directScope(scope, { includeTenant: true, includeFacility: true });
+    const theatreCaseWhere = {
+      deleted_at: null,
+      encounter: directScope(scope, { includeTenant: true, includeFacility: true })
+    };
+    const mortuaryWhere = directScope(scope, { includeTenant: true, includeFacility: true });
 
     if (packId === ROLE_PACKS.DOCTOR) {
       const providerWhere = { ...appointmentWhere, provider_user_id: userId || '' };
@@ -702,15 +721,227 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
       };
     }
 
-    const [patientsToday, appointmentsToday, activeAdmissions, openInvoices, paymentsToday] = await Promise.all([
+    if (packId === ROLE_PACKS.UNIT_MANAGER) {
+      const [unitCensus, staffOnShift, openRosterGaps, pendingLeaves] = await Promise.all([
+        prisma.admission.count({ where: { ...admissionWhere, status: 'ADMITTED' } }),
+        prisma.shift.count({ where: { ...shiftWhere, status: 'SCHEDULED', start_time: { gte: todayStart } } }),
+        prisma.shift.count({ where: { ...shiftWhere, status: 'SCHEDULED', start_time: { gte: todayStart }, assignments: { none: { deleted_at: null } } } }),
+        prisma.staff_leave.count({
+          where: {
+            deleted_at: null,
+            staff_profile: {
+              deleted_at: null,
+              ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})
+            },
+            status: 'REQUESTED'
+          }
+        })
+      ]);
+      return {
+        metrics: { unitCensus, staffOnShift, openRosterGaps, pendingLeaves },
+        trendDates: await selectDateSeries(prisma.shift, { ...shiftWhere, start_time: { gte: trendStart } }, 'start_time'),
+        statusCounts: await countByStatuses(prisma.shift, shiftWhere, ['SCHEDULED', 'COMPLETED', 'CANCELLED']),
+        activity: {
+          shifts: await prisma.shift.count({ where: { ...shiftWhere, updated_at: { gte: window24h } } }),
+          leaves: await prisma.staff_leave.count({
+            where: {
+              deleted_at: null,
+              staff_profile: {
+                deleted_at: null,
+                ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})
+              },
+              updated_at: { gte: window24h }
+            }
+          }),
+          admissions: await prisma.admission.count({ where: { ...admissionWhere, updated_at: { gte: window24h } } })
+        }
+      };
+    }
+
+    if (packId === ROLE_PACKS.WARD_MANAGER || packId === ROLE_PACKS.ICU_MANAGER) {
+      const [activeAdmissions, occupiedBeds, transferQueue, criticalLabs, staffOnShift] = await Promise.all([
+        prisma.admission.count({ where: { ...admissionWhere, status: 'ADMITTED' } }),
+        prisma.bed.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), status: 'OCCUPIED' } }),
+        prisma.transfer_request.count({ where: { deleted_at: null, admission: admissionWhere, status: { in: ['REQUESTED', 'IN_PROGRESS'] } } }),
+        prisma.lab_result.count({ where: { ...labResultWhere, status: 'CRITICAL' } }),
+        prisma.shift.count({ where: { ...shiftWhere, status: 'SCHEDULED', start_time: { gte: todayStart } } })
+      ]);
+      return {
+        metrics: {
+          wardCensus: activeAdmissions,
+          icuCensus: activeAdmissions,
+          activeAdmissions,
+          occupiedBeds,
+          icuBedsOccupied: occupiedBeds,
+          pendingNursingTasks: transferQueue,
+          transferQueue,
+          criticalLabs,
+          criticalPatientAlerts: criticalLabs,
+          staffOnShift,
+          staffCoverage: staffOnShift
+        },
+        trendDates: await selectDateSeries(prisma.admission, { ...admissionWhere, updated_at: { gte: trendStart } }, 'updated_at'),
+        statusCounts: await countByStatuses(prisma.admission, admissionWhere, ['ADMITTED', 'DISCHARGED', 'TRANSFERRED', 'CANCELLED']),
+        activity: {
+          admissions: await prisma.admission.count({ where: { ...admissionWhere, updated_at: { gte: window24h } } }),
+          transfers: await prisma.transfer_request.count({ where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } } }),
+          labs: await prisma.lab_result.count({ where: { ...labResultWhere, updated_at: { gte: window24h } } })
+        }
+      };
+    }
+
+    if (packId === ROLE_PACKS.THEATRE_MANAGER) {
+      const [proceduresToday, readyForTheatre, inTheatre, cancellationsOrDelays, theatreStaffCoverage] = await Promise.all([
+        prisma.theatre_case.count({ where: { ...theatreCaseWhere, scheduled_at: { gte: todayStart } } }),
+        prisma.theatre_case.count({ where: { ...theatreCaseWhere, status: 'SCHEDULED' } }),
+        prisma.theatre_case.count({ where: { ...theatreCaseWhere, status: 'IN_PROGRESS' } }),
+        prisma.theatre_case.count({ where: { ...theatreCaseWhere, status: 'CANCELLED' } }),
+        prisma.shift.count({ where: { ...shiftWhere, status: 'SCHEDULED', start_time: { gte: todayStart } } })
+      ]);
+      return {
+        metrics: { proceduresToday, readyForTheatre, inTheatre, cancellationsOrDelays, theatreStaffCoverage },
+        trendDates: await selectDateSeries(prisma.theatre_case, { ...theatreCaseWhere, scheduled_at: { gte: trendStart } }, 'scheduled_at'),
+        statusCounts: await countByStatuses(prisma.theatre_case, theatreCaseWhere, ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
+        activity: {
+          theatreCases: await prisma.theatre_case.count({ where: { ...theatreCaseWhere, updated_at: { gte: window24h } } }),
+          shifts: await prisma.shift.count({ where: { ...shiftWhere, updated_at: { gte: window24h } } })
+        }
+      };
+    }
+
+    if (packId === ROLE_PACKS.HOUSEKEEPING_MANAGER) {
+      const [pendingTasks, unassignedCleaningTasks, inProgressTasks, overdueTasks, roomsReady, housekeepingStaffOnShift] = await Promise.all([
+        prisma.housekeeping_task.count({ where: { ...housekeepingWhere, status: 'PENDING' } }),
+        prisma.housekeeping_task.count({ where: { ...housekeepingWhere, status: 'PENDING', assigned_to_staff_id: null } }),
+        prisma.housekeeping_task.count({ where: { ...housekeepingWhere, status: 'IN_PROGRESS' } }),
+        prisma.housekeeping_task.count({ where: { ...housekeepingWhere, status: { in: ['PENDING', 'IN_PROGRESS'] }, scheduled_at: { lt: now } } }),
+        prisma.bed.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), status: 'AVAILABLE' } }),
+        prisma.shift.count({ where: { ...shiftWhere, status: 'SCHEDULED', start_time: { gte: todayStart } } })
+      ]);
+      return {
+        metrics: {
+          pendingCleaningTasks: pendingTasks,
+          pendingTasks,
+          unassignedCleaningTasks,
+          inProgressCleaningTasks: inProgressTasks,
+          inProgressTasks,
+          overdueCleaningTasks: overdueTasks,
+          overdueTasks,
+          roomsReady,
+          housekeepingStaffOnShift
+        },
+        trendDates: await selectDateSeries(prisma.housekeeping_task, { ...housekeepingWhere, scheduled_at: { gte: trendStart } }, 'scheduled_at'),
+        statusCounts: await countByStatuses(prisma.housekeeping_task, housekeepingWhere, ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
+        activity: {
+          tasks: await prisma.housekeeping_task.count({ where: { ...housekeepingWhere, updated_at: { gte: window24h } } }),
+          rooms: await prisma.bed.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), updated_at: { gte: window24h } } })
+        }
+      };
+    }
+
+    if (packId === ROLE_PACKS.BIOMED_MANAGER) {
+      const workOrderWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}) };
+      const incidentWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}) };
+      const downtimeWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}) };
+      const maintenancePlanWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}) };
+      const [openWorkOrders, highPriorityWorkOrders, activeDowntime, openIncidents, overdueMaintenance, technicianLoad] = await Promise.all([
+        prisma.equipment_work_order.count({ where: { ...workOrderWhere, status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] } } }),
+        prisma.equipment_work_order.count({ where: { ...workOrderWhere, status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] }, priority: { in: ['HIGH', 'CRITICAL', 'URGENT'] } } }),
+        prisma.equipment_downtime_log.count({ where: { ...downtimeWhere, ended_at: null } }),
+        prisma.equipment_incident_report.count({ where: { ...incidentWhere, status: { in: ['OPEN', 'IN_PROGRESS', 'REPORTED'] } } }),
+        prisma.equipment_maintenance_plan.count({ where: { ...maintenancePlanWhere, next_due_at: { lt: now }, is_active: true } }),
+        prisma.equipment_work_order.count({ where: { ...workOrderWhere, assigned_engineer_user_id: { not: null }, status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] } } })
+      ]);
+      return {
+        metrics: { openWorkOrders, highPriorityWorkOrders, activeDowntime, openIncidents, overdueMaintenance, technicianLoad },
+        trendDates: await selectDateSeries(prisma.equipment_work_order, { ...workOrderWhere, opened_at: { gte: trendStart } }, 'opened_at'),
+        statusCounts: await countByStatuses(prisma.equipment_work_order, workOrderWhere, ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED', 'COMPLETED', 'CLOSED']),
+        activity: {
+          workOrders: await prisma.equipment_work_order.count({ where: { ...workOrderWhere, updated_at: { gte: window24h } } }),
+          incidents: await prisma.equipment_incident_report.count({ where: { ...incidentWhere, updated_at: { gte: window24h } } }),
+          downtime: await prisma.equipment_downtime_log.count({ where: { ...downtimeWhere, updated_at: { gte: window24h } } })
+        }
+      };
+    }
+
+    if (packId === ROLE_PACKS.MORTUARY_STAFF || packId === ROLE_PACKS.MORTUARY_MANAGER) {
+      const activeMortuaryCaseWhere = {
+        ...mortuaryWhere,
+        status: { in: ['RECEIVED', 'IDENTIFICATION_PENDING', 'IN_STORAGE', 'POST_MORTEM_PENDING', 'READY_FOR_RELEASE'] }
+      };
+      const [activeMortuaryCases, storageAssignments, occupiedSlots, totalSlots, custodyEventsDue, viewingsToday, postMortemRequests, billableEventsToCapture, releasesAwaitingApproval, custodyExceptions] = await Promise.all([
+        prisma.mortuary_case.count({ where: activeMortuaryCaseWhere }),
+        prisma.mortuary_storage_assignment.count({ where: { ...mortuaryWhere, assignment_status: 'ACTIVE', ended_at: null } }),
+        prisma.mortuary_storage_slot.count({ where: { ...mortuaryWhere, status: 'OCCUPIED' } }),
+        prisma.mortuary_storage_slot.count({ where: mortuaryWhere }),
+        prisma.mortuary_case.count({ where: { ...mortuaryWhere, status: 'RECEIVED', storage_assignments: { none: { deleted_at: null, assignment_status: 'ACTIVE' } } } }),
+        prisma.mortuary_viewing.count({ where: { ...mortuaryWhere, scheduled_at: { gte: todayStart } } }),
+        prisma.mortuary_post_mortem_request.count({ where: { ...mortuaryWhere, status: { in: ['REQUESTED', 'APPROVED', 'SCHEDULED', 'IN_PROGRESS'] } } }),
+        prisma.mortuary_billable_event.count({ where: { ...mortuaryWhere, status: 'PENDING' } }),
+        prisma.mortuary_release_authorisation.count({ where: { ...mortuaryWhere, status: 'DRAFT' } }),
+        prisma.mortuary_case.count({ where: { ...mortuaryWhere, identification_status: { in: ['UNVERIFIED', 'PARTIAL'] } } })
+      ]);
+      const storageOccupancy = totalSlots > 0
+        ? Math.round((Number(occupiedSlots || 0) / Number(totalSlots || 0)) * 100)
+        : 0;
+      return {
+        metrics: {
+          activeMortuaryCases,
+          storageAssignments,
+          custodyEventsDue,
+          viewingsToday,
+          postMortemRequests,
+          billableEventsToCapture,
+          storageOccupancy,
+          releasesAwaitingApproval,
+          custodyExceptions,
+          pendingPostMortemRequests: postMortemRequests
+        },
+        trendDates: await selectDateSeries(prisma.mortuary_case, { ...mortuaryWhere, received_at: { gte: trendStart } }, 'received_at'),
+        statusCounts: await countByStatuses(prisma.mortuary_case, mortuaryWhere, ['RECEIVED', 'IDENTIFICATION_PENDING', 'IN_STORAGE', 'POST_MORTEM_PENDING', 'READY_FOR_RELEASE', 'RELEASED', 'CLOSED']),
+        activity: {
+          cases: await prisma.mortuary_case.count({ where: { ...mortuaryWhere, updated_at: { gte: window24h } } }),
+          custody: await prisma.mortuary_custody_event.count({ where: { ...mortuaryWhere, updated_at: { gte: window24h } } }),
+          releases: await prisma.mortuary_release_authorisation.count({ where: { ...mortuaryWhere, updated_at: { gte: window24h } } })
+        }
+      };
+    }
+
+    const [patientsToday, appointmentsToday, activeAdmissions, openInvoices, paymentsToday, activeUsers, openMaintenance, pendingLeaves, occupiedBeds] = await Promise.all([
       prisma.patient.count({ where: { ...patientWhere, created_at: { gte: todayStart } } }),
       prisma.appointment.count({ where: { ...appointmentWhere, scheduled_start: { gte: todayStart } } }),
       prisma.admission.count({ where: { ...admissionWhere, status: 'ADMITTED' } }),
       prisma.invoice.count({ where: { ...invoiceWhere, OR: [{ status: { in: ['SENT', 'OVERDUE'] } }, { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }] } }),
-      sumField(prisma.payment, { ...paymentWhere, status: 'COMPLETED', paid_at: { gte: todayStart } }, 'amount')
+      sumField(prisma.payment, { ...paymentWhere, status: 'COMPLETED', paid_at: { gte: todayStart } }, 'amount'),
+      prisma.user.count({ where: { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}), ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) } }),
+      prisma.maintenance_request.count({ where: { ...maintenanceWhere, status: { in: ['OPEN', 'IN_PROGRESS'] } } }),
+      prisma.staff_leave.count({
+        where: {
+          deleted_at: null,
+          staff_profile: {
+            deleted_at: null,
+            ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})
+          },
+          status: 'REQUESTED'
+        }
+      }),
+      prisma.bed.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), status: 'OCCUPIED' } })
     ]);
     return {
-      metrics: { patientsToday, appointmentsToday, activeAdmissions, openInvoices, paymentsToday },
+      metrics: {
+        patientsToday,
+        appointmentsToday,
+        activeAdmissions,
+        openInvoices,
+        paymentsToday,
+        activeUsers,
+        usersTotal: activeUsers,
+        patientFlow: appointmentsToday,
+        revenueSummary: paymentsToday,
+        staffingExceptions: pendingLeaves,
+        openMaintenance,
+        occupiedBeds
+      },
       trendDates: await selectDateSeries(prisma.appointment, { ...appointmentWhere, scheduled_start: { gte: trendStart } }, 'scheduled_start'),
       statusCounts: await countByStatuses(prisma.invoice, invoiceWhere, ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']),
       activity: {
