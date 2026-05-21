@@ -501,6 +501,8 @@ class _ClinicalAdmissionActionDialogState
       title: Text(l10n.clinicalRequestAdmissionAction),
       icon: const Icon(Icons.bed_outlined),
       closeEnabled: !_isSaving,
+      maxWidth: 900,
+      scrollable: true,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -568,7 +570,7 @@ class _ClinicalAdmissionActionDialogState
                       widget.referenceData,
                       selectedBed,
                     ),
-                    maxColumns: 2,
+                    minItemWidth: 180,
                   ),
                   if (widget.reasonLabel != null)
                     AppTextField(
