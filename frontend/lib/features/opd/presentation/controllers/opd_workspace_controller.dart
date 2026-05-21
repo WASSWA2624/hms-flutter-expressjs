@@ -351,6 +351,15 @@ final class OpdWorkspaceController
   }
 
   Future<AppFailure?> startWalkIn(Map<String, Object?> payload) {
+    final Object? existingEncounterId = payload['existing_encounter_id'];
+    if (existingEncounterId is String &&
+        existingEncounterId.trim().isNotEmpty) {
+      return _mutateFlow(
+        () => _repository.getOpdFlow(existingEncounterId.trim()),
+        refreshAfter: true,
+      );
+    }
+
     return _mutateFlow(
       () => _repository.startOpdFlow(<String, Object?>{
         'arrival_mode': 'WALK_IN',
@@ -1046,6 +1055,7 @@ final class OpdWorkspaceController
           consultationPaymentStatus: selected.consultationPaymentStatus,
           consultationPaid: selected.consultationPaid,
           consultationPaymentRequired: selected.consultationPaymentRequired,
+          consultationPaidAmount: selected.consultationPaidAmount,
           timeline: selected.timeline,
           referrals: selected.referrals,
           followUps: selected.followUps,

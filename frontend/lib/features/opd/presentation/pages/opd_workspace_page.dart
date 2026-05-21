@@ -303,6 +303,10 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
       builder: (_) => StartWalkInDialog(
         providerSchedules: widget.state.providerSchedules,
         appointments: widget.state.appointments.items,
+        activeFlows: <OpdFlowSummary>[
+          ...widget.state.flows.items,
+          ...widget.state.triageQueue.items,
+        ],
         onSubmit: (Map<String, Object?> payload) {
           return ref
               .read(opdWorkspaceControllerProvider.notifier)
@@ -1374,9 +1378,13 @@ String _flowQueueLabel(BuildContext context, OpdFlowSummary flow) {
 
 String _flowBillingLabel(BuildContext context, OpdFlowSummary flow) {
   final String status = _flowBillingStatusLabel(context, flow);
+  final bool isPaid = _flowBillingState(flow) == _opdBillingStatePaid;
+  final num? billingAmount = isPaid
+      ? flow.consultationPaidAmount
+      : flow.consultationFee;
   final String? amount = _moneyLabel(
     context,
-    flow.consultationFee,
+    billingAmount,
     flow.consultationCurrency,
   );
   return _joinDisplay(<String?>[status, amount]);
@@ -1388,7 +1396,19 @@ String _flowBillingStatusLabel(BuildContext context, OpdFlowSummary flow) {
 
 String _flowBillingState(OpdFlowSummary flow) {
   final String stage = (flow.stage ?? '').toUpperCase();
-  if (flow.consultationPaid) {
+  final String paymentStatus = (flow.consultationPaymentStatus ?? '')
+      .trim()
+      .toUpperCase();
+  final num? paidAmount = flow.consultationPaidAmount;
+  final num? fee = flow.consultationFee;
+  final bool paymentCoversFee =
+      paidAmount != null &&
+      paidAmount > 0 &&
+      (fee == null || fee <= 0 || paidAmount >= fee);
+  if (flow.consultationPaid ||
+      paymentStatus == 'PAID' ||
+      paymentStatus == 'CLEARED' ||
+      (paymentStatus == 'COMPLETED' && paymentCoversFee)) {
     return _opdBillingStatePaid;
   }
   if (flow.consultationPaymentRequired ||
@@ -1413,11 +1433,11 @@ AppWorkspaceStatusTone _flowBillingTone(OpdFlowSummary flow) {
 
 String _queueBillingLabel(BuildContext context, OpdQueueEntry entry) {
   final String status = (entry.paymentStatus ?? '').trim();
-  final String? amount = _moneyLabel(
-    context,
-    entry.amountToPay,
-    entry.currency,
-  );
+  final String billingState = _queueBillingState(entry);
+  final num? billingAmount = billingState == _opdBillingStatePaid
+      ? entry.amountPaid
+      : entry.amountToPay;
+  final String? amount = _moneyLabel(context, billingAmount, entry.currency);
   if (status.isEmpty) {
     return amount ?? context.l10n.profileUnknownValue;
   }
@@ -1426,6 +1446,9 @@ String _queueBillingLabel(BuildContext context, OpdQueueEntry entry) {
 
 String _queueBillingState(OpdQueueEntry entry) {
   final String status = (entry.paymentStatus ?? '').toUpperCase();
+  if (entry.amountPaid != null && entry.amountPaid! > 0 && status.isEmpty) {
+    return _opdBillingStatePaid;
+  }
   if (entry.amountToPay != null && entry.amountToPay! > 0 && status.isEmpty) {
     return _opdBillingStateRequired;
   }
@@ -2312,12 +2335,14 @@ class StartWalkInDialog extends ConsumerStatefulWidget {
   const StartWalkInDialog({
     required this.providerSchedules,
     required this.appointments,
+    required this.activeFlows,
     required this.onSubmit,
     super.key,
   });
 
   final List<OpdProviderSchedule> providerSchedules;
   final List<OpdAppointment> appointments;
+  final List<OpdFlowSummary> activeFlows;
   final OpdPayloadSubmit onSubmit;
 
   @override
@@ -2337,9 +2362,11 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   bool _isLoadingPatients = false;
   bool _isLoadingAppointments = false;
   bool _isLoadingProviders = false;
+  bool _isResolvingActiveEncounter = false;
   String? _patientId;
   String? _appointmentId;
   String? _providerId;
+  OpdFlowSummary? _activeEncounter;
   String? _newPatientGender;
   String _currency = appDefaultCurrencyCode;
   String _arrivalMode = 'WALK_IN';
@@ -2348,6 +2375,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
   bool _requireConsultationPayment = true;
   bool _isSaving = false;
   AppFailure? _failure;
+  int _activeEncounterLookupToken = 0;
 
   @override
   void initState() {
@@ -2400,6 +2428,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
                 onChanged: _setPatientMode,
               ),
               _patientModeContent(l10n),
+              _activeEncounterNotice(l10n),
             ],
           ),
           AppResponsiveFieldRow.two(
@@ -2419,6 +2448,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         AppButton.primary(
           label: l10n.opdStartWalkInAction,
           leadingIcon: Icons.play_arrow_outlined,
+          enabled: !_isResolvingActiveEncounter || _activeEncounter != null,
           isLoading: _isSaving,
           onPressed: _submit,
         ),
@@ -2503,6 +2533,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
           onChanged: (String? value) {
             setState(() {
               _providerId = value;
+              _applyProviderDefaultsToState(value);
             });
           },
         ),
@@ -2554,6 +2585,121 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
     );
   }
 
+  Widget _activeEncounterNotice(AppLocalizations l10n) {
+    if (_patientMode == _WalkInPatientMode.newPatient) {
+      return const SizedBox.shrink();
+    }
+
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final OpdFlowSummary? flow = _activeEncounter;
+    if (_isResolvingActiveEncounter && flow == null) {
+      return Padding(
+        padding: EdgeInsets.only(top: theme.spacing.md),
+        child: Row(
+          children: <Widget>[
+            SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.primary,
+              ),
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Text(
+                l10n.opdActiveEncounterCheckingLabel,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (flow == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(top: theme.spacing.md),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.secondaryContainer.withValues(alpha: 0.28),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(theme.spacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Wrap(
+                spacing: theme.spacing.sm,
+                runSpacing: theme.spacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                  Text(
+                    l10n.opdActiveEncounterFoundTitle,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  AppWorkspaceStatusBadge(
+                    status: AppWorkspaceStatus(
+                      label: _apiLabel(flow.stage ?? flow.status ?? ''),
+                      tone: AppWorkspaceStatusTone.warning,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                l10n.opdActiveEncounterFoundBody,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              SizedBox(height: theme.spacing.md),
+              Wrap(
+                spacing: theme.spacing.lg,
+                runSpacing: theme.spacing.sm,
+                children: <Widget>[
+                  _ActiveEncounterDetail(
+                    label: l10n.clinicalEncounterNumberLabel,
+                    value: flow.apiId,
+                  ),
+                  _ActiveEncounterDetail(
+                    label: l10n.opdStageLabel,
+                    value: _apiLabel(flow.stage ?? flow.status ?? ''),
+                  ),
+                  _ActiveEncounterDetail(
+                    label: l10n.opdProviderColumnLabel,
+                    value: flow.providerDisplayName ?? l10n.profileUnknownValue,
+                  ),
+                  _ActiveEncounterDetail(
+                    label: l10n.opdPayerBillingColumnLabel,
+                    value: _flowBillingLabel(context, flow),
+                  ),
+                  _ActiveEncounterDetail(
+                    label: l10n.opdTimeColumnLabel,
+                    value: _formatDateTime(context, flow.startedAt),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
@@ -2588,6 +2734,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         _requireConsultationPayment = true;
       }
     });
+    _refreshActiveEncounterForSelection();
   }
 
   Widget _patientModeContent(AppLocalizations l10n) {
@@ -2602,11 +2749,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         semanticLabel: _opdRequiredFieldLabel(l10n, l10n.opdSearchPatientLabel),
         isLoading: _isLoadingPatients,
         enabled: !_isSaving,
-        onChanged: (String? value) {
-          setState(() {
-            _patientId = value;
-          });
-        },
+        onChanged: _selectExistingPatient,
         validator: (String? value) =>
             _patientMode != _WalkInPatientMode.existing || _isNonEmpty(value)
             ? null
@@ -2629,13 +2772,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         ),
         isLoading: _isLoadingAppointments,
         enabled: !_isSaving,
-        onChanged: (String? value) {
-          setState(() {
-            _appointmentId = value;
-            final OpdAppointment? appointment = _appointmentByApiId(value);
-            _providerId = appointment?.providerUserId ?? _providerId;
-          });
-        },
+        onChanged: _selectAppointmentPatient,
         validator: (String? value) =>
             _patientMode != _WalkInPatientMode.appointment || _isNonEmpty(value)
             ? null
@@ -2691,6 +2828,262 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         ],
       ),
     };
+  }
+
+  void _selectExistingPatient(String? value) {
+    final Patient? patient = _patientByApiId(value);
+    setState(() {
+      _patientId = value;
+    });
+    _resolveActiveEncounterForPatient(
+      patientId: patient?.id,
+      patientPublicId: patient?.publicId ?? value,
+      patientIdentifier: patient?.effectiveIdentifier,
+      patientPhone: patient?.primaryPhone,
+    );
+  }
+
+  void _selectAppointmentPatient(String? value) {
+    final OpdAppointment? appointment = _appointmentByApiId(value);
+    setState(() {
+      _appointmentId = value;
+      _providerId = appointment?.providerUserId ?? _providerId;
+      _arrivalMode = 'ONLINE_APPOINTMENT';
+      _requireConsultationPayment = true;
+      _applyProviderDefaultsToState(_providerId);
+    });
+    _resolveActiveEncounterForPatient(
+      patientId: appointment?.patientId,
+      patientPublicId: appointment?.patientIdentifier,
+      patientIdentifier: appointment?.patientIdentifier,
+      patientPhone: appointment?.patientPhone,
+      appointmentId: appointment?.apiId,
+    );
+  }
+
+  void _refreshActiveEncounterForSelection() {
+    if (_patientMode == _WalkInPatientMode.existing) {
+      _selectExistingPatient(_patientId);
+      return;
+    }
+    if (_patientMode == _WalkInPatientMode.appointment) {
+      _selectAppointmentPatient(_appointmentId);
+      return;
+    }
+
+    _activeEncounterLookupToken++;
+    setState(() {
+      _activeEncounter = null;
+      _isResolvingActiveEncounter = false;
+    });
+  }
+
+  void _resolveActiveEncounterForPatient({
+    String? patientId,
+    String? patientPublicId,
+    String? patientIdentifier,
+    String? patientPhone,
+    String? appointmentId,
+  }) {
+    final int token = ++_activeEncounterLookupToken;
+    final OpdFlowSummary? localMatch = _findActiveEncounterForPatient(
+      flows: widget.activeFlows,
+      patientId: patientId,
+      patientPublicId: patientPublicId,
+      patientIdentifier: patientIdentifier,
+      patientPhone: patientPhone,
+      appointmentId: appointmentId,
+    );
+    final String? search = _firstNonEmptyText(<String?>[
+      patientPublicId,
+      patientIdentifier,
+      patientPhone,
+      patientId,
+      appointmentId,
+    ]);
+
+    setState(() {
+      _isResolvingActiveEncounter = _isNonEmpty(search);
+      _applyActiveEncounterToState(localMatch);
+    });
+
+    if (!_isNonEmpty(search)) {
+      setState(() {
+        _isResolvingActiveEncounter = false;
+      });
+      return;
+    }
+
+    unawaited(
+      _loadActiveEncounterMatch(
+        token: token,
+        search: search!,
+        localMatch: localMatch,
+        patientId: patientId,
+        patientPublicId: patientPublicId,
+        patientIdentifier: patientIdentifier,
+        patientPhone: patientPhone,
+        appointmentId: appointmentId,
+      ),
+    );
+  }
+
+  Future<void> _loadActiveEncounterMatch({
+    required int token,
+    required String search,
+    required OpdFlowSummary? localMatch,
+    String? patientId,
+    String? patientPublicId,
+    String? patientIdentifier,
+    String? patientPhone,
+    String? appointmentId,
+  }) async {
+    final Result<AppPage<OpdFlowSummary>> result = await ref
+        .read(opdRepositoryProvider)
+        .listOpdFlows(
+          OpdFlowQuery(
+            search: search,
+            pageRequest: const AppPageRequest(pageSize: 25),
+          ),
+        );
+    if (!mounted || token != _activeEncounterLookupToken) {
+      return;
+    }
+
+    result.when(
+      success: (AppPage<OpdFlowSummary> page) {
+        final OpdFlowSummary? remoteMatch = _findActiveEncounterForPatient(
+          flows: <OpdFlowSummary>[...page.items, ...widget.activeFlows],
+          patientId: patientId,
+          patientPublicId: patientPublicId,
+          patientIdentifier: patientIdentifier,
+          patientPhone: patientPhone,
+          appointmentId: appointmentId,
+        );
+        setState(() {
+          _isResolvingActiveEncounter = false;
+          _applyActiveEncounterToState(remoteMatch ?? localMatch);
+        });
+      },
+      failure: (_) {
+        setState(() {
+          _isResolvingActiveEncounter = false;
+          _applyActiveEncounterToState(localMatch);
+        });
+      },
+    );
+  }
+
+  void _applyActiveEncounterToState(OpdFlowSummary? flow) {
+    _activeEncounter = flow;
+    if (flow == null) {
+      return;
+    }
+
+    final String encounterType = (flow.encounterType ?? '').toUpperCase();
+    final String arrivalMode = (flow.arrivalMode ?? '').toUpperCase();
+    if (_patientMode != _WalkInPatientMode.appointment) {
+      if (encounterType == 'EMERGENCY' || arrivalMode == 'EMERGENCY') {
+        _arrivalMode = 'EMERGENCY';
+      } else if (_isNonEmpty(flow.arrivalMode) &&
+          arrivalMode != 'ONLINE_APPOINTMENT') {
+        _arrivalMode = flow.arrivalMode!;
+      }
+    }
+    if (_isNonEmpty(flow.providerUserId)) {
+      _providerId = flow.providerUserId;
+    }
+    final num? billingAmount =
+        flow.consultationFee ?? flow.consultationPaidAmount;
+    if (billingAmount != null) {
+      _feeController.text = _currencyAmountInput(billingAmount);
+    }
+    if (_isNonEmpty(flow.consultationCurrency)) {
+      _currency = flow.consultationCurrency!.trim().toUpperCase();
+    }
+    _requireConsultationPayment = flow.consultationPaymentRequired;
+    if (_isNonEmpty(flow.triageLevel)) {
+      _triageLevel = flow.triageLevel;
+    }
+  }
+
+  OpdFlowSummary? _findActiveEncounterForPatient({
+    required Iterable<OpdFlowSummary> flows,
+    String? patientId,
+    String? patientPublicId,
+    String? patientIdentifier,
+    String? patientPhone,
+    String? appointmentId,
+  }) {
+    final Set<String> patientKeys =
+        <String?>[patientId, patientPublicId, patientIdentifier]
+            .whereType<String>()
+            .map((String value) => value.trim().toUpperCase())
+            .where((String value) => value.isNotEmpty)
+            .toSet();
+    final Set<String> phoneKeys = <String?>[patientPhone]
+        .whereType<String>()
+        .map((String value) => value.trim().toUpperCase())
+        .where((String value) => value.isNotEmpty)
+        .toSet();
+    final String normalizedAppointmentId =
+        appointmentId?.trim().toUpperCase() ?? '';
+    final List<OpdFlowSummary> matches = flows
+        .where((OpdFlowSummary flow) {
+          if (flow.isTerminal ||
+              _isCompletedStatus(flow.status ?? flow.stage)) {
+            return false;
+          }
+          if (normalizedAppointmentId.isNotEmpty &&
+              (flow.appointmentId ?? '').trim().toUpperCase() ==
+                  normalizedAppointmentId) {
+            return true;
+          }
+          final bool hasPatientKeyMatch =
+              patientKeys.contains(
+                (flow.patientId ?? '').trim().toUpperCase(),
+              ) ||
+              patientKeys.contains(
+                (flow.patientIdentifier ?? '').trim().toUpperCase(),
+              );
+          if (patientKeys.isNotEmpty) {
+            return hasPatientKeyMatch;
+          }
+          return phoneKeys.contains(
+            (flow.patientPhone ?? '').trim().toUpperCase(),
+          );
+        })
+        .toList(growable: false);
+
+    if (matches.isEmpty) {
+      return null;
+    }
+    matches.sort((OpdFlowSummary left, OpdFlowSummary right) {
+      return _activeEncounterTime(right).compareTo(_activeEncounterTime(left));
+    });
+    return matches.first;
+  }
+
+  int _activeEncounterTime(OpdFlowSummary flow) {
+    return (flow.startedAt ?? flow.queuedAt)?.millisecondsSinceEpoch ?? 0;
+  }
+
+  void _applyProviderDefaultsToState(
+    String? providerId, {
+    bool overwrite = false,
+  }) {
+    final OpdProviderOption? provider = _providerOptionById(providerId);
+    if (provider == null) {
+      return;
+    }
+    if (provider.consultationFee != null &&
+        (overwrite || _feeController.text.trim().isEmpty)) {
+      _feeController.text = _currencyAmountInput(provider.consultationFee);
+    }
+    if (_isNonEmpty(provider.consultationCurrency) &&
+        (overwrite || _currency == appDefaultCurrencyCode)) {
+      _currency = provider.consultationCurrency!.trim().toUpperCase();
+    }
   }
 
   Map<String, Object?> _newPatientRegistrationPayload() {
@@ -2776,6 +3169,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       success: (List<OpdProviderOption> providers) {
         setState(() {
           _providerOptions = providers;
+          _applyProviderDefaultsToState(_providerId);
           _isLoadingProviders = false;
         });
       },
@@ -2805,6 +3199,17 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       );
     }
 
+    final OpdFlowSummary? activeEncounter = _activeEncounter;
+    final String? activeProviderId = activeEncounter?.providerUserId;
+    if (_isNonEmpty(activeProviderId) &&
+        !options.containsKey(activeProviderId)) {
+      options[activeProviderId!] = OpdProviderOption(
+        id: activeProviderId,
+        displayName: activeEncounter?.providerDisplayName,
+        facilityId: activeEncounter?.facilityId,
+      );
+    }
+
     return options.values.toList(growable: false);
   }
 
@@ -2815,8 +3220,13 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
         ? 'ONLINE_APPOINTMENT'
         : _arrivalMode;
     final bool hasConsultationFee = consultationFee.isNotEmpty;
+    final OpdFlowSummary? activeEncounter = _activeEncounter;
+    final bool canReuseOpenEncounter =
+        _patientMode != _WalkInPatientMode.newPatient;
 
     return <String, Object?>{
+      if (activeEncounter != null)
+        'existing_encounter_id': activeEncounter.apiId,
       if (_patientMode == _WalkInPatientMode.appointment)
         'appointment_id': _appointmentId
       else if (_patientMode == _WalkInPatientMode.newPatient)
@@ -2834,6 +3244,7 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       'consultation_fee': consultationFee,
       'currency': _currency,
       'require_consultation_payment': _requireConsultationPayment,
+      if (canReuseOpenEncounter) 'reuse_open_encounter': true,
       'create_consultation_invoice':
           hasConsultationFee || _requireConsultationPayment,
       'notes': notes,
@@ -2851,6 +3262,73 @@ class _StartWalkInDialogState extends ConsumerState<StartWalkInDialog> {
       }
     }
     return null;
+  }
+
+  Patient? _patientByApiId(String? value) {
+    if (!_isNonEmpty(value)) {
+      return null;
+    }
+
+    for (final Patient patient in _patientOptions) {
+      if (patient.publicId == value || patient.id == value) {
+        return patient;
+      }
+    }
+    return null;
+  }
+
+  OpdProviderOption? _providerOptionById(String? value) {
+    if (!_isNonEmpty(value)) {
+      return null;
+    }
+
+    for (final OpdProviderOption provider in _providerOptionsForDialog()) {
+      if (provider.id == value) {
+        return provider;
+      }
+    }
+    return null;
+  }
+}
+
+class _ActiveEncounterDetail extends StatelessWidget {
+  const _ActiveEncounterDetail({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 132, maxWidth: 220),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs / 2),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

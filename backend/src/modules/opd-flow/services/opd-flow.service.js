@@ -39,6 +39,8 @@ const QUEUE_SCOPES = Object.freeze({
   ALL: 'ALL'
 });
 const WAITING_QUEUE_STAGES = [STAGES.WAITING_DOCTOR_ASSIGNMENT];
+const PAID_PAYMENT_STATUSES = new Set(['COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL', 'APPROVED']);
+const PAID_BILLING_STATUSES = new Set(['PAID', 'SETTLED', 'CLEARED']);
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const BLOOD_PRESSURE_VALUE_REGEX = /^(\d{2,3}(?:\.\d{1,2})?)\s*\/\s*(\d{2,3}(?:\.\d{1,2})?)$/;
 const MAX_OPD_SEARCH_TOKENS = 6;
@@ -684,6 +686,193 @@ const normalizeDecimalString = (value, fallback = '0.00') => {
 const normalizeCurrencyCode = (value, fallback = null) => {
   const normalized = normalizeIdentifier(value).toUpperCase();
   return normalized || fallback;
+};
+
+const normalizeUpper = (value) => normalizeIdentifier(value).toUpperCase();
+
+const uniqueNormalizedIdentifiers = (values = []) =>
+  Array.from(new Set(values.map((value) => normalizeIdentifier(value)).filter(Boolean)));
+
+const lookupIdentifierKeys = (value) => {
+  const normalized = normalizeIdentifier(value);
+  if (!normalized) return [];
+  const upper = normalized.toUpperCase();
+  return normalized === upper ? [normalized] : [normalized, upper];
+};
+
+const setLookupRecord = (target, identifier, record) => {
+  for (const key of lookupIdentifierKeys(identifier)) {
+    target.set(key, record);
+  }
+};
+
+const getLookupRecord = (source, identifier) => {
+  for (const key of lookupIdentifierKeys(identifier)) {
+    if (source.has(key)) return source.get(key);
+  }
+  return null;
+};
+
+const positiveDecimalStringOrNull = (value) => {
+  const amount = toDecimalNumber(value);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return normalizeDecimalString(value, amount.toFixed(2));
+};
+
+const sumPaidPayments = (payments = []) => {
+  const total = (Array.isArray(payments) ? payments : []).reduce((sum, payment) => {
+    if (!payment || payment.deleted_at) return sum;
+    if (!PAID_PAYMENT_STATUSES.has(normalizeUpper(payment.status))) return sum;
+    return sum + toDecimalNumber(payment.amount);
+  }, 0);
+  return total > 0 ? total.toFixed(2) : null;
+};
+
+const resolveConsultationPaymentAmount = ({ consultation = {}, invoice = null, payment = null } = {}) => {
+  const directAmount = positiveDecimalStringOrNull(
+    consultation.paid_amount || consultation.payment_amount || consultation.amount_paid
+  );
+  if (directAmount) return directAmount;
+
+  if (payment && PAID_PAYMENT_STATUSES.has(normalizeUpper(payment.status))) {
+    const paymentAmount = positiveDecimalStringOrNull(payment.amount);
+    if (paymentAmount) return paymentAmount;
+  }
+
+  const invoicePaymentAmount = sumPaidPayments(invoice?.payments);
+  if (invoicePaymentAmount) return invoicePaymentAmount;
+
+  const consultationIsPaid =
+    consultation.is_paid === true ||
+    consultation.paid === true ||
+    PAID_PAYMENT_STATUSES.has(normalizeUpper(consultation.payment_status));
+  const invoiceIsPaid =
+    PAID_BILLING_STATUSES.has(normalizeUpper(invoice?.billing_status)) ||
+    PAID_BILLING_STATUSES.has(normalizeUpper(invoice?.status));
+
+  if (consultationIsPaid || invoiceIsPaid) {
+    return positiveDecimalStringOrNull(invoice?.total_amount);
+  }
+
+  return null;
+};
+
+const resolveConsultationFeeAmount = (consultation = {}, invoice = null) => {
+  return (
+    positiveDecimalStringOrNull(consultation.consultation_fee) ||
+    positiveDecimalStringOrNull(consultation.fee) ||
+    positiveDecimalStringOrNull(invoice?.total_amount) ||
+    normalizeDecimalString(consultation.consultation_fee, null)
+  );
+};
+
+const resolveConsultationPaymentStatus = ({ consultation = {}, invoice = null, payment = null } = {}) => {
+  return (
+    payment?.status ||
+    consultation.payment_status ||
+    invoice?.billing_status ||
+    invoice?.status ||
+    (consultation.is_paid ? 'COMPLETED' : consultation.require_payment ? 'PENDING' : 'NOT_REQUIRED')
+  );
+};
+
+const enrichConsultationBillingForListItems = async (items = []) => {
+  const invoiceIdentifiers = uniqueNormalizedIdentifiers(items.map((item) => item?.flow?.consultation?.invoice_id));
+  const paymentIdentifiers = uniqueNormalizedIdentifiers(items.map((item) => item?.flow?.consultation?.payment_id));
+
+  if (invoiceIdentifiers.length === 0 && paymentIdentifiers.length === 0) {
+    return items;
+  }
+
+  const [invoices, payments] = await Promise.all([
+    invoiceIdentifiers.length > 0 && typeof prisma.invoice?.findMany === 'function'
+      ? prisma.invoice.findMany({
+          where: {
+            deleted_at: null,
+            OR: [
+              { id: { in: invoiceIdentifiers } },
+              { human_friendly_id: { in: invoiceIdentifiers.flatMap(lookupIdentifierKeys) } }
+            ]
+          },
+          include: {
+            payments: {
+              where: { deleted_at: null },
+              orderBy: { created_at: 'desc' }
+            }
+          }
+        })
+      : [],
+    paymentIdentifiers.length > 0 && typeof prisma.payment?.findMany === 'function'
+      ? prisma.payment.findMany({
+          where: {
+            deleted_at: null,
+            OR: [
+              { id: { in: paymentIdentifiers } },
+              { human_friendly_id: { in: paymentIdentifiers.flatMap(lookupIdentifierKeys) } }
+            ]
+          },
+          include: {
+            invoice: {
+              include: {
+                payments: {
+                  where: { deleted_at: null },
+                  orderBy: { created_at: 'desc' }
+                }
+              }
+            }
+          }
+        })
+      : []
+  ]);
+
+  const invoiceByIdentifier = new Map();
+  for (const invoice of invoices) {
+    setLookupRecord(invoiceByIdentifier, invoice?.id, invoice);
+    setLookupRecord(invoiceByIdentifier, invoice?.human_friendly_id, invoice);
+  }
+
+  const paymentByIdentifier = new Map();
+  for (const payment of payments) {
+    setLookupRecord(paymentByIdentifier, payment?.id, payment);
+    setLookupRecord(paymentByIdentifier, payment?.human_friendly_id, payment);
+  }
+
+  return items.map((item) => {
+    const flow = item?.flow || null;
+    const consultation = flow?.consultation || {};
+    const payment = getLookupRecord(paymentByIdentifier, consultation.payment_id);
+    const invoice = getLookupRecord(invoiceByIdentifier, consultation.invoice_id) || payment?.invoice || null;
+    if (
+      !flow ||
+      (!invoice && !payment && !consultation.paid_amount && !consultation.payment_amount && !consultation.amount_paid)
+    ) {
+      return item;
+    }
+
+    return {
+      ...item,
+      flow: {
+        ...flow,
+        consultation: {
+          ...consultation,
+          consultation_fee: resolveConsultationFeeAmount(consultation, invoice),
+          paid_amount: resolveConsultationPaymentAmount({
+            consultation,
+            invoice,
+            payment
+          }),
+          currency: consultation.currency || invoice?.currency || null,
+          invoice_id: invoice?.human_friendly_id || consultation.invoice_id || null,
+          payment_id: payment?.human_friendly_id || consultation.payment_id || null,
+          payment_status: resolveConsultationPaymentStatus({
+            consultation,
+            invoice,
+            payment
+          })
+        }
+      }
+    };
+  });
 };
 
 const resolveCurrencyFromExtension = (extensionJson) => {
@@ -1351,20 +1540,26 @@ const getOpdFlowById = async (id) => {
       (Array.isArray(encounter.pharmacy_orders)
         ? encounter.pharmacy_orders.find((item) => item.id === flow.pharmacy_order_id) || encounter.pharmacy_orders[0]
         : null) || null;
+    const consultation = flow.consultation || {};
 
     const flowWithFriendlyIds = {
       ...flow,
       consultation: {
-        ...(flow.consultation || {}),
-        consultation_fee:
-          flow.consultation?.consultation_fee ?? normalizeDecimalString(consultationInvoice?.total_amount, '0.00'),
-        currency: flow.consultation?.currency || consultationInvoice?.currency || null,
-        invoice_id: consultationInvoice?.human_friendly_id || flow.consultation?.invoice_id || null,
-        payment_id: consultationPayment?.human_friendly_id || flow.consultation?.payment_id || null,
-        payment_status:
-          consultationPayment?.status ||
-          flow.consultation?.payment_status ||
-          (flow.consultation?.is_paid ? 'COMPLETED' : flow.consultation?.require_payment ? 'PENDING' : 'NOT_REQUIRED')
+        ...consultation,
+        consultation_fee: resolveConsultationFeeAmount(consultation, consultationInvoice),
+        paid_amount: resolveConsultationPaymentAmount({
+          consultation,
+          invoice: consultationInvoice,
+          payment: consultationPayment
+        }),
+        currency: consultation.currency || consultationInvoice?.currency || null,
+        invoice_id: consultationInvoice?.human_friendly_id || consultation.invoice_id || null,
+        payment_id: consultationPayment?.human_friendly_id || consultation.payment_id || null,
+        payment_status: resolveConsultationPaymentStatus({
+          consultation,
+          invoice: consultationInvoice,
+          payment: consultationPayment
+        })
       },
       appointment_id: appointment?.human_friendly_id || flow.appointment_id || null,
       visit_queue_id: visitQueue?.human_friendly_id || flow.visit_queue_id || null,
@@ -1515,6 +1710,7 @@ const listOpdFlows = async (
   if (resolvedFilters.encounter_type === 'EMERGENCY') {
     items = sortEmergencyQueueItems(await enrichEmergencyQueueUrgency(items));
   }
+  items = await enrichConsultationBillingForListItems(items);
 
   return {
     items,
@@ -1617,6 +1813,7 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
 
 const startOpdFlow = async (data, context = {}) => {
   const startedAt = new Date();
+  const reuseOpenEncounter = data?.reuse_open_encounter === true;
 
   const startedResult = await prisma.$transaction(async (tx) => {
     const resolvedTenantFromBody = data.tenant_id ? await resolveTenantByIdentifier(tx, data.tenant_id) : null;
@@ -1695,6 +1892,9 @@ const startOpdFlow = async (data, context = {}) => {
       });
 
       if (existingFlow) {
+        if (reuseOpenEncounter) {
+          return { existingEncounterId: existingFlow.id };
+        }
         throw new HttpError('errors.opd_flow.appointment_already_linked', 409, [{ field: 'appointment_id' }]);
       }
     }
@@ -1771,10 +1971,24 @@ const startOpdFlow = async (data, context = {}) => {
       throw new HttpError('errors.opd_flow.appointment_queue_mismatch', 400, [{ field: 'visit_queue_id' }]);
     }
 
-    await throwIfPatientHasOpenEncounter(tx, {
+    const existingOpenEncounter = await resolveOpenEncounterForPatient(tx, {
       tenantId,
       patientId
     });
+    if (existingOpenEncounter) {
+      if (reuseOpenEncounter) {
+        return { existingEncounterId: existingOpenEncounter.id };
+      }
+
+      throw new HttpError('errors.opd_flow.active_encounter_exists', 409, [
+        {
+          field: 'patient_id',
+          encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
+          encounter_type: existingOpenEncounter.encounter_type,
+          stage: existingOpenEncounter.extension_json?.opd_flow?.stage || null
+        }
+      ]);
+    }
 
     const providerIdentifier =
       normalizeIdentifier(data.provider_user_id) ||
@@ -1913,6 +2127,8 @@ const startOpdFlow = async (data, context = {}) => {
         payment_id: consultationPayment?.id || null,
         payment_status: consultationPaymentStatus,
         is_paid: isConsultationPaid,
+        paid_amount:
+          isConsultationPaid && consultationPayment ? consultationPayment.amount?.toString?.() || null : null,
         paid_at: consultationPaidAt ? consultationPaidAt.toISOString() : null
       },
       appointment_id: appointment?.id || requestedVisitQueue?.appointment_id || null,
@@ -2148,6 +2364,7 @@ const payConsultation = async (id, data, context = {}) => {
     consultation.payment_id = payment.id;
     consultation.payment_status = paymentStatus;
     consultation.is_paid = isPaid;
+    consultation.paid_amount = isPaid ? amount : null;
     consultation.paid_at = isPaid && payment.paid_at ? payment.paid_at.toISOString() : null;
     consultation.currency = data.currency || consultation.currency || invoice.currency;
     flow.consultation = consultation;

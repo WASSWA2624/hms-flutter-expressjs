@@ -1816,6 +1816,24 @@ abstract class AppLocalizations {
   /// **'Select a scheduled appointment to check the patient into OPD.'**
   String get opdAppointmentPatientHelper;
 
+  /// Message shown while checking whether the selected OPD patient already has an active encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for an active OPD encounter...'**
+  String get opdActiveEncounterCheckingLabel;
+
+  /// Title shown when the selected OPD patient already has an active encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Active OPD encounter found'**
+  String get opdActiveEncounterFoundTitle;
+
+  /// Body text shown when an OPD walk-in selection matches an already active encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'This patient already has an open OPD encounter. Available routing, provider, and billing details have been filled from that encounter.'**
+  String get opdActiveEncounterFoundBody;
+
   /// Searchable provider field label in OPD.
   ///
   /// In en, this message translates to:

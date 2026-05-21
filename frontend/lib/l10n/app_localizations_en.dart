@@ -916,6 +916,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select a scheduled appointment to check the patient into OPD.';
 
   @override
+  String get opdActiveEncounterCheckingLabel =>
+      'Checking for an active OPD encounter...';
+
+  @override
+  String get opdActiveEncounterFoundTitle => 'Active OPD encounter found';
+
+  @override
+  String get opdActiveEncounterFoundBody =>
+      'This patient already has an open OPD encounter. Available routing, provider, and billing details have been filled from that encounter.';
+
+  @override
   String get opdSearchProviderLabel => 'Search provider';
 
   @override

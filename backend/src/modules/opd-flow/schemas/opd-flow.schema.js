@@ -144,6 +144,7 @@ const createOpdFlowSchema = z
     currency: z.string().trim().min(1).max(10).optional(),
     create_consultation_invoice: z.boolean().optional(),
     require_consultation_payment: z.boolean().optional(),
+    reuse_open_encounter: z.boolean().optional(),
     pay_now: payNowSchema.optional(),
     emergency: emergencyPayloadSchema.optional(),
     notes: z.string().trim().max(65535).optional().nullable(),

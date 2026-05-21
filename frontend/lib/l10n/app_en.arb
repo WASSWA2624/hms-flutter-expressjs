@@ -878,6 +878,9 @@
   "opdSearchPatientLabel": "Search patient",
   "opdAppointmentPatientLabel": "Search appointment",
   "opdAppointmentPatientHelper": "Select a scheduled appointment to check the patient into OPD.",
+  "opdActiveEncounterCheckingLabel": "Checking for an active OPD encounter...",
+  "opdActiveEncounterFoundTitle": "Active OPD encounter found",
+  "opdActiveEncounterFoundBody": "This patient already has an open OPD encounter. Available routing, provider, and billing details have been filled from that encounter.",
   "opdSearchProviderLabel": "Search provider",
   "opdSearchProviderHelper": "This provider will handle the patient.",
   "opdNoProvidersHelper": "No registered providers were found. Check doctor setup or provider permissions.",
@@ -1360,6 +1363,15 @@
   },
   "@opdAppointmentPatientHelper": {
     "description": "Helper text for selecting appointment patients in OPD."
+  },
+  "@opdActiveEncounterCheckingLabel": {
+    "description": "Message shown while checking whether the selected OPD patient already has an active encounter."
+  },
+  "@opdActiveEncounterFoundTitle": {
+    "description": "Title shown when the selected OPD patient already has an active encounter."
+  },
+  "@opdActiveEncounterFoundBody": {
+    "description": "Body text shown when an OPD walk-in selection matches an already active encounter."
   },
   "@opdSearchProviderLabel": {
     "description": "Searchable provider field label in OPD."

@@ -133,6 +133,7 @@ router.get(
  * @bodyParams {string} [currency] - Currency code
  * @bodyParams {boolean} [create_consultation_invoice] - Whether to create consultation invoice
  * @bodyParams {boolean} [require_consultation_payment] - Whether consultation payment is required
+ * @bodyParams {boolean} [reuse_open_encounter] - Return an existing open OPD encounter instead of duplicating it
  * @bodyParams {Object} [pay_now] - Optional immediate payment payload
  * @bodyParams {Object} [emergency] - Emergency context payload
  * @bodyParams {string} [notes] - Notes

@@ -123,6 +123,7 @@ final class OpdQueueEntryDto {
           _providerDisplayName(_nullableMap(json['provider'])),
       paymentStatus: _string(json['payment_status']),
       amountToPay: _number(json['amount_to_pay']),
+      amountPaid: _number(json['amount_paid']),
       currency: _string(json['currency']),
     );
   }
@@ -218,6 +219,10 @@ final class OpdFlowSummaryDto {
             consultation['require_payment'],
       ),
       consultationFee: _number(consultation['consultation_fee']),
+      consultationPaidAmount:
+          _number(consultation['paid_amount']) ??
+          _number(consultation['payment_amount']) ??
+          _number(consultation['amount_paid']),
       consultationCurrency: _string(consultation['currency']),
       consultationInvoiceId: _string(consultation['invoice_id']),
       consultationPaymentId: _string(consultation['payment_id']),
@@ -255,6 +260,10 @@ final class OpdFlowDetailDto {
             consultation['required'] ??
             consultation['require_payment'],
       ),
+      consultationPaidAmount:
+          _number(consultation['paid_amount']) ??
+          _number(consultation['payment_amount']) ??
+          _number(consultation['amount_paid']),
       timeline: _list(flow['timeline'])
           .map(OpdTimelineItemDto.new)
           .map((OpdTimelineItemDto dto) => dto.toEntity())

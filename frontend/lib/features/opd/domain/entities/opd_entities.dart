@@ -232,6 +232,7 @@ final class OpdQueueEntry {
     this.providerDisplayName,
     this.paymentStatus,
     this.amountToPay,
+    this.amountPaid,
     this.currency,
   });
 
@@ -251,6 +252,7 @@ final class OpdQueueEntry {
   final String? providerDisplayName;
   final String? paymentStatus;
   final num? amountToPay;
+  final num? amountPaid;
   final String? currency;
 
   String get apiId => publicId ?? id;
@@ -281,6 +283,7 @@ final class OpdQueueEntry {
     String? providerDisplayName,
     String? paymentStatus,
     num? amountToPay,
+    num? amountPaid,
     String? currency,
   }) {
     return OpdQueueEntry(
@@ -300,6 +303,7 @@ final class OpdQueueEntry {
       providerDisplayName: providerDisplayName ?? this.providerDisplayName,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       amountToPay: amountToPay ?? this.amountToPay,
+      amountPaid: amountPaid ?? this.amountPaid,
       currency: currency ?? this.currency,
     );
   }
@@ -338,6 +342,7 @@ final class OpdFlowSummary {
     this.consultationPaid = false,
     this.consultationPaymentRequired = false,
     this.consultationFee,
+    this.consultationPaidAmount,
     this.consultationCurrency,
     this.consultationInvoiceId,
     this.consultationPaymentId,
@@ -374,6 +379,7 @@ final class OpdFlowSummary {
   final bool consultationPaid;
   final bool consultationPaymentRequired;
   final num? consultationFee;
+  final num? consultationPaidAmount;
   final String? consultationCurrency;
   final String? consultationInvoiceId;
   final String? consultationPaymentId;
@@ -425,6 +431,7 @@ final class OpdFlowSummary {
     bool? consultationPaid,
     bool? consultationPaymentRequired,
     num? consultationFee,
+    num? consultationPaidAmount,
     String? consultationCurrency,
     String? consultationInvoiceId,
     String? consultationPaymentId,
@@ -462,6 +469,8 @@ final class OpdFlowSummary {
       consultationPaymentRequired:
           consultationPaymentRequired ?? this.consultationPaymentRequired,
       consultationFee: consultationFee ?? this.consultationFee,
+      consultationPaidAmount:
+          consultationPaidAmount ?? this.consultationPaidAmount,
       consultationCurrency: consultationCurrency ?? this.consultationCurrency,
       consultationInvoiceId:
           consultationInvoiceId ?? this.consultationInvoiceId,
@@ -679,6 +688,7 @@ final class OpdFlowDetail {
     this.consultationPaymentStatus,
     this.consultationPaid = false,
     this.consultationPaymentRequired = false,
+    this.consultationPaidAmount,
     this.timeline = const <OpdTimelineItem>[],
     this.referrals = const <OpdRelatedRecord>[],
     this.followUps = const <OpdRelatedRecord>[],
@@ -701,6 +711,7 @@ final class OpdFlowDetail {
   final String? consultationPaymentStatus;
   final bool consultationPaid;
   final bool consultationPaymentRequired;
+  final num? consultationPaidAmount;
   final List<OpdTimelineItem> timeline;
   final List<OpdRelatedRecord> referrals;
   final List<OpdRelatedRecord> followUps;
