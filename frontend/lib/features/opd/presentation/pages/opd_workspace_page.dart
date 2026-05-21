@@ -2335,7 +2335,7 @@ class StartWalkInDialog extends ConsumerStatefulWidget {
   const StartWalkInDialog({
     required this.providerSchedules,
     required this.appointments,
-    required this.activeFlows,
+    this.activeFlows = const <OpdFlowSummary>[],
     required this.onSubmit,
     super.key,
   });
