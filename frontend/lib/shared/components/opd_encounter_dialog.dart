@@ -22,7 +22,6 @@ import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_gender_field.dart';
-import 'package:hosspi_hms/shared/components/app_list_item_text.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/components/app_switch_field.dart';
@@ -35,6 +34,7 @@ import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 
 const IconData opdEncounterIcon = Icons.person_add_alt_1_outlined;
 
@@ -384,6 +384,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       title: Text(l10n.opdWalkInDialogTitle),
       icon: const Icon(opdEncounterIcon),
       scrollable: true,
+      closeEnabled: !_isSaving,
       maxWidth: 880,
       content: AppFormShell(
         formKey: _formKey,
@@ -417,19 +418,16 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: hasActiveEncounter
               ? l10n.opdOpenActiveEncounterAction
               : l10n.opdStartEncounterAction,
           leadingIcon: hasActiveEncounter
-              ? Icons.open_in_new_outlined
+              ? Icons.save_outlined
               : Icons.play_arrow_outlined,
-          enabled: !_isResolvingActiveEncounter || _activeEncounter != null,
+          enabled:
+              !_isSaving &&
+              (!_isResolvingActiveEncounter || _activeEncounter != null),
           isLoading: _isSaving,
           onPressed: _submit,
         ),
@@ -748,6 +746,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
@@ -1234,7 +1235,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     result.when(
       success: (List<OpdProviderOption> providers) {
         setState(() {
-          _providerOptions = providers;
+          _providerOptions = dedupeOpdProviderOptions(providers);
           _applyProviderDefaultsToState(_providerId);
           _isLoadingProviders = false;
         });
@@ -1276,7 +1277,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       );
     }
 
-    return options.values.toList(growable: false);
+    return dedupeOpdProviderOptions(options.values);
   }
 
   Map<String, Object?> _payload() {
@@ -1544,56 +1545,7 @@ List<AppSelectOption<String>> _providerSelectOptions({
   required List<OpdProviderOption> providers,
   required List<OpdProviderSchedule> schedules,
 }) {
-  final Map<String, AppSelectOption<String>> options =
-      <String, AppSelectOption<String>>{};
-
-  for (final OpdProviderOption provider in providers) {
-    final String value = provider.id;
-    if (!_isNonEmpty(value) || options.containsKey(value)) {
-      continue;
-    }
-    options[value] = AppSelectOption<String>(
-      value: value,
-      label: _joinDisplay(<String?>[
-        provider.displayTitle,
-        provider.positionTitle,
-        provider.practitionerType,
-        provider.staffProfileId,
-        value,
-      ]),
-      leadingIcon: const Icon(Icons.person_search_outlined),
-      labelWidget: AppListItemText(
-        title: provider.displayTitle,
-        subtitle: _joinDisplay(<String?>[
-          provider.positionTitle,
-          provider.practitionerType,
-          provider.staffProfileId,
-        ]),
-      ),
-    );
-  }
-
-  for (final OpdProviderSchedule schedule in schedules) {
-    final String value = schedule.providerApiId;
-    if (!_isNonEmpty(value) || options.containsKey(value)) {
-      continue;
-    }
-    options[value] = AppSelectOption<String>(
-      value: value,
-      label: _joinDisplay(<String?>[
-        schedule.providerDisplayName,
-        value,
-        schedule.facilityName,
-      ]),
-      leadingIcon: const Icon(Icons.person_search_outlined),
-      labelWidget: AppListItemText(
-        title: schedule.providerDisplayName ?? value,
-        subtitle: schedule.facilityName,
-      ),
-    );
-  }
-
-  return options.values.toList(growable: false);
+  return opdProviderSelectOptions(providers: providers, schedules: schedules);
 }
 
 String _flowBillingLabel(BuildContext context, OpdFlowSummary flow) {

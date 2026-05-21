@@ -33,6 +33,7 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class PatientRegistryPage extends ConsumerWidget {
@@ -2049,7 +2050,16 @@ Future<void> _openQuickAction(
                 existingEncounterId.trim().isNotEmpty) {
               final Result<OpdFlowDetail> result = await ref
                   .read(opdRepositoryProvider)
-                  .getOpdFlow(existingEncounterId.trim());
+                  .updateActiveEncounter(
+                    existingEncounterId.trim(),
+                    _withoutEmptyPayload(
+                      <String, Object?>{
+                        'tenant_id': patient.tenantId,
+                        'facility_id': patient.facilityId,
+                        ...payload,
+                      }..remove('existing_encounter_id'),
+                    ),
+                  );
               return _failureOrNull(result);
             }
 
@@ -2373,7 +2383,7 @@ class _PatientAppointmentQuickDialogState
     result.when(
       success: (List<OpdProviderOption> providers) {
         setState(() {
-          _providers = providers;
+          _providers = dedupeOpdProviderOptions(providers);
           _isLoadingProviders = false;
         });
       },
@@ -2556,7 +2566,7 @@ class _PatientTriageQuickDialogState
     result.when(
       success: (List<OpdProviderOption> providers) {
         setState(() {
-          _providers = providers;
+          _providers = dedupeOpdProviderOptions(providers);
           _providerFailure = null;
           _isLoadingProviders = false;
         });
@@ -2633,6 +2643,7 @@ class _PatientTriageQuickDialogState
       'patient_id': widget.patient.id,
       'provider_user_id': _providerId,
       'queued_at': DateTime.now().toUtc().toIso8601String(),
+      'reuse_open_encounter': true,
       'notes': input.notes,
       ...extra,
     });
@@ -3141,7 +3152,7 @@ class _PatientFlowQuickDialogState
     result.when(
       success: (List<OpdProviderOption> providers) {
         setState(() {
-          _providers = providers;
+          _providers = dedupeOpdProviderOptions(providers);
           _isLoadingProviders = false;
         });
       },
@@ -3216,6 +3227,7 @@ class _PatientFlowQuickDialogState
       'patient_id': widget.patient.id,
       'provider_user_id': _providerId,
       'queued_at': DateTime.now().toUtc().toIso8601String(),
+      'reuse_open_encounter': true,
       'notes': _notesController.text.trim(),
       ...extra,
     });
@@ -6468,21 +6480,10 @@ List<AppTriageOption> _statusTriageOptions(Iterable<String> values) {
 List<AppSelectOption<String>> _providerSelectOptions(
   List<OpdProviderOption> providers,
 ) {
-  return <AppSelectOption<String>>[
-    for (final OpdProviderOption provider in providers)
-      AppSelectOption<String>(
-        value: provider.id,
-        label: provider.displayTitle,
-        leadingIcon: const Icon(Icons.person_search_outlined),
-        labelWidget: AppListItemText(
-          title: provider.displayTitle,
-          subtitle: _joinDisplay(<String?>[
-            provider.positionTitle,
-            provider.practitionerType,
-          ]),
-        ),
-      ),
-  ];
+  return opdProviderSelectOptions(
+    providers: providers,
+    schedules: const <OpdProviderSchedule>[],
+  );
 }
 
 FormFieldValidator<String> _timeValidator(BuildContext context) {

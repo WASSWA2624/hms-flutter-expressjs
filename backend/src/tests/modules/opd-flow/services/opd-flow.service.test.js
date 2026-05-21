@@ -870,6 +870,195 @@ describe('opd-flow.service', () => {
     );
   });
 
+  it('updates active encounter context instead of creating a duplicate OPD flow', async () => {
+    const initialEncounter = {
+      id: 'enc-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      patient_id: 'pat-1',
+      provider_user_id: null,
+      encounter_type: 'OPD',
+      status: 'OPEN',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_CONSULTATION_PAYMENT',
+          consultation: {
+            require_payment: true,
+            is_paid: false,
+            invoice_id: 'inv-1',
+            payment_id: null,
+            consultation_fee: '20000',
+            currency: 'UGX'
+          },
+          timeline: []
+        }
+      }
+    };
+    const snapshotEncounter = {
+      ...initialEncounter,
+      provider_user_id: 'doc-1',
+      extension_json: {
+        opd_flow: {
+          ...initialEncounter.extension_json.opd_flow,
+          stage: 'WAITING_VITALS',
+          next_step: 'RECORD_VITALS',
+          consultation: {
+            require_payment: true,
+            is_paid: true,
+            invoice_id: 'inv-1',
+            payment_id: 'pay-1',
+            consultation_fee: '50000',
+            currency: 'UGX',
+            payment_status: 'COMPLETED',
+            paid_amount: '50000'
+          },
+          timeline: []
+        }
+      },
+      tenant: {},
+      facility: {},
+      patient: {},
+      provider: { human_friendly_id: 'DOC000001', profile: {} },
+      vital_signs: [],
+      clinical_notes: [],
+      diagnoses: [],
+      procedures: [],
+      care_plans: [],
+      alerts: [],
+      referrals: [],
+      follow_ups: [],
+      admissions: [],
+      lab_orders: [],
+      radiology_orders: [],
+      pharmacy_orders: []
+    };
+    const tx = {
+      encounter: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce(initialEncounter)
+          .mockResolvedValueOnce(snapshotEncounter),
+        update: jest.fn().mockResolvedValue({
+          id: 'enc-1',
+          tenant_id: 'tenant-1'
+        }),
+        create: jest.fn()
+      },
+      user: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'doc-1',
+          staff_profile: {
+            practitioner_type: 'SPECIALIST',
+            consultation_fee: '50000',
+            consultation_currency: 'UGX'
+          }
+        })
+      },
+      facility: {
+        findFirst: jest.fn().mockResolvedValue({ extension_json: {} })
+      },
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ extension_json: {} })
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      visit_queue: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      invoice: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          human_friendly_id: 'INV000001',
+          total_amount: '50000',
+          currency: 'UGX',
+          status: 'SENT',
+          billing_status: 'ISSUED',
+          payments: []
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '50000',
+          currency: 'UGX'
+        }),
+        create: jest.fn()
+      },
+      payment: {
+        create: jest.fn().mockResolvedValue({
+          id: 'pay-1',
+          human_friendly_id: 'PAY000001',
+          amount: '50000',
+          status: 'COMPLETED',
+          paid_at: new Date()
+        }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'pay-1',
+          human_friendly_id: 'PAY000001',
+          amount: '50000',
+          status: 'COMPLETED'
+        })
+      },
+      emergency_case: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      triage_assessment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    const result = await opdFlowService.updateActiveEncounterContext(
+      'enc-1',
+      {
+        provider_user_id: 'doc-1',
+        consultation_fee: '50000',
+        currency: 'UGX',
+        require_consultation_payment: true,
+        pay_now: {
+          method: 'CASH',
+          amount: '50000',
+          status: 'COMPLETED'
+        },
+        notes: 'Updated active encounter'
+      },
+      {
+        user_id: 'reception-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1'
+      }
+    );
+
+    expect(tx.encounter.create).not.toHaveBeenCalled();
+    expect(tx.encounter.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'enc-1' },
+        data: expect.objectContaining({
+          provider_user_id: 'doc-1',
+          extension_json: expect.objectContaining({
+            opd_flow: expect.objectContaining({
+              stage: 'WAITING_VITALS',
+              consultation: expect.objectContaining({
+                consultation_fee: '50000',
+                payment_id: 'pay-1',
+                is_paid: true
+              })
+            })
+          })
+        })
+      })
+    );
+    expect(result.flow.consultation.paid_amount).toBe('50000');
+    expect(createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'UPDATE',
+        entity: 'opd_flow',
+        entity_id: 'enc-1'
+      })
+    );
+  });
+
   it('updates existing OPD vitals instead of creating duplicate encounter measurements', async () => {
     const snapshotEncounter = {
       id: 'enc-1',

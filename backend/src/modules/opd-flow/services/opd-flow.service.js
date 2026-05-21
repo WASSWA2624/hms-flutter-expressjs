@@ -11,21 +11,11 @@ const opdFlowRepository = require('@repositories/opd-flow/opd-flow.repository');
 const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const {
-  emitToUser,
-  emitToUsers,
-  OPD_EVENTS,
-  NOTIFICATION_EVENTS
-} = require('@lib/websocket');
+const { emitToUser, emitToUsers, OPD_EVENTS, NOTIFICATION_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 const clinicalAlertThresholdService = require('@services/clinical-alert-threshold/clinical-alert-threshold.service');
-const {
-  LAB_PANEL_WITH_RELATIONS_INCLUDE
-} = require('@services/lab-workspace/lab.shared');
-const {
-  STANDARD_LAB_PANELS,
-  STANDARD_LAB_TESTS
-} = require('@services/lab-order/lab-order.service');
+const { LAB_PANEL_WITH_RELATIONS_INCLUDE } = require('@services/lab-workspace/lab.shared');
+const { STANDARD_LAB_PANELS, STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
 const {
   ACTIVE_OPD_ENCOUNTER_TYPES,
   activeOpdLockKeyForEncounter,
@@ -57,18 +47,10 @@ const QUEUE_SCOPES = Object.freeze({
   ALL: 'ALL'
 });
 const WAITING_QUEUE_STAGES = [STAGES.WAITING_DOCTOR_ASSIGNMENT];
-const PAID_PAYMENT_STATUSES = new Set([
-  'COMPLETED',
-  'PAID',
-  'SUCCESS',
-  'SUCCESSFUL',
-  'APPROVED'
-]);
+const PAID_PAYMENT_STATUSES = new Set(['COMPLETED', 'PAID', 'SUCCESS', 'SUCCESSFUL', 'APPROVED']);
 const PAID_BILLING_STATUSES = new Set(['PAID', 'SETTLED', 'CLEARED']);
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const BLOOD_PRESSURE_VALUE_REGEX =
-  /^(\d{2,3}(?:\.\d{1,2})?)\s*\/\s*(\d{2,3}(?:\.\d{1,2})?)$/;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const BLOOD_PRESSURE_VALUE_REGEX = /^(\d{2,3}(?:\.\d{1,2})?)\s*\/\s*(\d{2,3}(?:\.\d{1,2})?)$/;
 const MAX_OPD_SEARCH_TOKENS = 6;
 const OPD_FLOW_STAGE_JSON_PATH = '$.opd_flow.stage';
 const OPD_FLOW_APPOINTMENT_ID_JSON_PATH = '$.opd_flow.appointment_id';
@@ -167,8 +149,7 @@ const TRIAGE_ALIAS_MAP = {
   LEVEL_5: 'LEVEL_5'
 };
 
-const normalizeIdentifier = (value) =>
-  typeof value === 'string' ? value.trim() : '';
+const normalizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
 const normalizeNotes = (value) => {
   const normalized = typeof value === 'string' ? value.trim() : '';
   return normalized || null;
@@ -216,9 +197,7 @@ const resolveTenantByIdentifier = async (tx, identifier) => {
   return tx.tenant.findFirst({
     where: {
       deleted_at: null,
-      OR: isUuid(normalized)
-        ? [{ id: normalized }]
-        : [{ human_friendly_id: normalized.toUpperCase() }]
+      OR: isUuid(normalized) ? [{ id: normalized }] : [{ human_friendly_id: normalized.toUpperCase() }]
     }
   });
 };
@@ -234,19 +213,12 @@ const resolveFacilityByIdentifier = async (tx, identifier, tenantId = null) => {
     where: {
       deleted_at: null,
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      OR: isUuid(normalized)
-        ? [{ id: normalized }]
-        : [{ human_friendly_id: normalized.toUpperCase() }]
+      OR: isUuid(normalized) ? [{ id: normalized }] : [{ human_friendly_id: normalized.toUpperCase() }]
     }
   });
 };
 
-const resolveEntityByIdentifier = async (
-  tx,
-  modelName,
-  identifier,
-  where = {}
-) => {
+const resolveEntityByIdentifier = async (tx, modelName, identifier, where = {}) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return null;
   const delegate = tx?.[modelName];
@@ -258,9 +230,7 @@ const resolveEntityByIdentifier = async (
     where: {
       deleted_at: null,
       ...where,
-      OR: isUuid(normalized)
-        ? [{ id: normalized }]
-        : [{ human_friendly_id: normalized.toUpperCase() }]
+      OR: isUuid(normalized) ? [{ id: normalized }] : [{ human_friendly_id: normalized.toUpperCase() }]
     }
   });
 };
@@ -297,11 +267,7 @@ const resolvePatientByIdentifier = async (tx, identifier, tenantId = null) => {
   return tx.patient.findFirst({ where });
 };
 
-const resolveUserLookupWhere = (
-  identifier,
-  tenantId = null,
-  facilityId = null
-) => {
+const resolveUserLookupWhere = (identifier, tenantId = null, facilityId = null) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return null;
 
@@ -344,23 +310,14 @@ const resolveUserLookupWhere = (
   };
 };
 
-const resolveProviderByIdentifier = async (
-  tx,
-  identifier,
-  tenantId = null,
-  facilityId = null
-) => {
+const resolveProviderByIdentifier = async (tx, identifier, tenantId = null, facilityId = null) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return null;
   if (!tx?.user?.findFirst) {
     return null;
   }
 
-  const facilityScopedWhere = resolveUserLookupWhere(
-    identifier,
-    tenantId,
-    facilityId
-  );
+  const facilityScopedWhere = resolveUserLookupWhere(identifier, tenantId, facilityId);
   if (!facilityScopedWhere) return null;
 
   const facilityScopedProvider = await tx.user.findFirst({
@@ -380,12 +337,7 @@ const resolveProviderByIdentifier = async (
   });
 };
 
-const resolveAppointmentByIdentifier = async (
-  tx,
-  identifier,
-  tenantId = null,
-  facilityId = null
-) => {
+const resolveAppointmentByIdentifier = async (tx, identifier, tenantId = null, facilityId = null) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return null;
   if (!tx?.appointment?.findFirst) return null;
@@ -413,12 +365,7 @@ const resolveAppointmentByIdentifier = async (
   });
 };
 
-const resolveVisitQueueByIdentifier = async (
-  tx,
-  identifier,
-  tenantId = null,
-  facilityId = null
-) => {
+const resolveVisitQueueByIdentifier = async (tx, identifier, tenantId = null, facilityId = null) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return null;
   if (!tx?.visit_queue?.findFirst) return null;
@@ -463,12 +410,7 @@ const resolveEncounterByIdentifier = async (tx, identifier, options = {}) => {
 
 const resolveOpenEncounterForPatient = async (
   tx,
-  {
-    tenantId,
-    facilityId,
-    patientId,
-    encounterTypes = ACTIVE_OPD_ENCOUNTER_TYPES
-  }
+  { tenantId, facilityId, patientId, encounterTypes = ACTIVE_OPD_ENCOUNTER_TYPES }
 ) => {
   return opdFlowRepository.findOpenActiveEncounterForPatient(
     {
@@ -489,14 +431,8 @@ const standardCatalogCodeFromIdentifier = (identifier, prefix) => {
   return normalized.slice(prefix.length + 1);
 };
 
-const resolveOrCreateStandardLabTest = async (
-  tx,
-  { identifier, tenantId, context = {} }
-) => {
-  const catalogCode = standardCatalogCodeFromIdentifier(
-    identifier,
-    'STD_LAB_TEST'
-  );
+const resolveOrCreateStandardLabTest = async (tx, { identifier, tenantId, context = {} }) => {
+  const catalogCode = standardCatalogCodeFromIdentifier(identifier, 'STD_LAB_TEST');
   if (!catalogCode) {
     return null;
   }
@@ -562,10 +498,7 @@ const resolveOrCreateStandardLabTest = async (
   return labTest;
 };
 
-const resolveLabTestRequest = async (
-  tx,
-  { identifier, tenantId, context = {} }
-) => {
+const resolveLabTestRequest = async (tx, { identifier, tenantId, context = {} }) => {
   const standardLabTest = await resolveOrCreateStandardLabTest(tx, {
     identifier,
     tenantId,
@@ -580,10 +513,7 @@ const resolveLabTestRequest = async (
   });
 };
 
-const throwIfPatientHasOpenEncounter = async (
-  tx,
-  { tenantId, facilityId, patientId }
-) => {
+const throwIfPatientHasOpenEncounter = async (tx, { tenantId, facilityId, patientId }) => {
   const existing = await resolveOpenEncounterForPatient(tx, {
     tenantId,
     facilityId,
@@ -654,34 +584,24 @@ const buildFlowSummary = (snapshot) => {
 
 const buildRealtimePayload = ({ snapshot, transition, context }) => {
   const encounterPublicId = snapshot?.encounter?.human_friendly_id || null;
-  const providerPublicId =
-    snapshot?.encounter?.provider?.human_friendly_id || null;
-  const patientPublicId =
-    snapshot?.encounter?.patient?.human_friendly_id || null;
+  const providerPublicId = snapshot?.encounter?.provider?.human_friendly_id || null;
+  const patientPublicId = snapshot?.encounter?.patient?.human_friendly_id || null;
   const tenantPublicId = snapshot?.encounter?.tenant?.human_friendly_id || null;
-  const facilityPublicId =
-    snapshot?.encounter?.facility?.human_friendly_id || null;
-  const providerInternalId =
-    snapshot?.encounter?.provider_user_id ||
-    transition?.provider_user_id ||
-    null;
+  const facilityPublicId = snapshot?.encounter?.facility?.human_friendly_id || null;
+  const providerInternalId = snapshot?.encounter?.provider_user_id || transition?.provider_user_id || null;
   const actorInternalId = context?.user_id || null;
   const stageTo = transition?.stage_to || snapshot?.flow?.stage || null;
   const stageFrom = transition?.stage_from || null;
   const occurredAt =
-    transition?.occurred_at ||
-    snapshot?.encounter?.updated_at?.toISOString?.() ||
-    new Date().toISOString();
+    transition?.occurred_at || snapshot?.encounter?.updated_at?.toISOString?.() || new Date().toISOString();
 
   return {
     encounter_id: encounterPublicId || snapshot?.encounter?.id || null,
     encounter_public_id: encounterPublicId,
     tenant_id: tenantPublicId,
     facility_id: facilityPublicId,
-    tenant_internal_id:
-      snapshot?.encounter?.tenant_id || context?.tenant_id || null,
-    facility_internal_id:
-      snapshot?.encounter?.facility_id || context?.facility_id || null,
+    tenant_internal_id: snapshot?.encounter?.tenant_id || context?.tenant_id || null,
+    facility_internal_id: snapshot?.encounter?.facility_id || context?.facility_id || null,
     patient_id: patientPublicId,
     provider_user_id: providerPublicId,
     stage_from: stageFrom,
@@ -693,16 +613,12 @@ const buildRealtimePayload = ({ snapshot, transition, context }) => {
     actor_internal_user_id: actorInternalId,
     occurred_at: occurredAt,
     flow_summary: buildFlowSummary(snapshot),
-    target_path: encounterPublicId
-      ? `/scheduling/opd-flows/${encounterPublicId}`
-      : '/scheduling/opd-flows'
+    target_path: encounterPublicId ? `/scheduling/opd-flows/${encounterPublicId}` : '/scheduling/opd-flows'
   };
 };
 
 const buildOpdNotificationContent = (payload) => {
-  const stageLabel = formatStageLabel(
-    payload?.stage_to || payload?.flow_summary?.stage
-  );
+  const stageLabel = formatStageLabel(payload?.stage_to || payload?.flow_summary?.stage);
   const title = `OPD flow update: ${stageLabel}`;
   const message = `Encounter ${payload.encounter_public_id || 'unknown'} is now ${stageLabel}.`;
 
@@ -784,8 +700,7 @@ const createAndEmitOpdNotifications = async ({ payload, recipientUserIds }) => {
     return [];
   }
 
-  const priority =
-    payload?.flow_summary?.encounter_type === 'EMERGENCY' ? 'HIGH' : 'MEDIUM';
+  const priority = payload?.flow_summary?.encounter_type === 'EMERGENCY' ? 'HIGH' : 'MEDIUM';
   const { title, message } = buildOpdNotificationContent(payload);
 
   const createdNotifications = [];
@@ -809,10 +724,7 @@ const createAndEmitOpdNotifications = async ({ payload, recipientUserIds }) => {
     }
   }
 
-  if (
-    createdNotifications.length > 0 &&
-    prisma?.notification_delivery?.createMany
-  ) {
+  if (createdNotifications.length > 0 && prisma?.notification_delivery?.createMany) {
     try {
       await prisma.notification_delivery.createMany({
         data: createdNotifications.map((notification) => ({
@@ -829,10 +741,7 @@ const createAndEmitOpdNotifications = async ({ payload, recipientUserIds }) => {
 
   createdNotifications.forEach((notification) => {
     emitToUser(notification.user_id, NOTIFICATION_EVENTS.NOTIFICATION_CREATED, {
-      notification: toSafeNotificationPayload(
-        notification,
-        payload.target_path
-      ),
+      notification: toSafeNotificationPayload(notification, payload.target_path),
       target_path: payload.target_path
     });
   });
@@ -887,9 +796,7 @@ const normalizeCurrencyCode = (value, fallback = null) => {
 const normalizeUpper = (value) => normalizeIdentifier(value).toUpperCase();
 
 const uniqueNormalizedIdentifiers = (values = []) =>
-  Array.from(
-    new Set(values.map((value) => normalizeIdentifier(value)).filter(Boolean))
-  );
+  Array.from(new Set(values.map((value) => normalizeIdentifier(value)).filter(Boolean)));
 
 const lookupIdentifierKeys = (value) => {
   const normalized = normalizeIdentifier(value);
@@ -918,27 +825,17 @@ const positiveDecimalStringOrNull = (value) => {
 };
 
 const sumPaidPayments = (payments = []) => {
-  const total = (Array.isArray(payments) ? payments : []).reduce(
-    (sum, payment) => {
-      if (!payment || payment.deleted_at) return sum;
-      if (!PAID_PAYMENT_STATUSES.has(normalizeUpper(payment.status)))
-        return sum;
-      return sum + toDecimalNumber(payment.amount);
-    },
-    0
-  );
+  const total = (Array.isArray(payments) ? payments : []).reduce((sum, payment) => {
+    if (!payment || payment.deleted_at) return sum;
+    if (!PAID_PAYMENT_STATUSES.has(normalizeUpper(payment.status))) return sum;
+    return sum + toDecimalNumber(payment.amount);
+  }, 0);
   return total > 0 ? total.toFixed(2) : null;
 };
 
-const resolveConsultationPaymentAmount = ({
-  consultation = {},
-  invoice = null,
-  payment = null
-} = {}) => {
+const resolveConsultationPaymentAmount = ({ consultation = {}, invoice = null, payment = null } = {}) => {
   const directAmount = positiveDecimalStringOrNull(
-    consultation.paid_amount ||
-      consultation.payment_amount ||
-      consultation.amount_paid
+    consultation.paid_amount || consultation.payment_amount || consultation.amount_paid
   );
   if (directAmount) return directAmount;
 
@@ -974,39 +871,26 @@ const resolveConsultationFeeAmount = (consultation = {}, invoice = null) => {
   );
 };
 
-const resolveConsultationPaymentStatus = ({
-  consultation = {},
-  invoice = null,
-  payment = null
-} = {}) => {
+const resolveConsultationPaymentStatus = ({ consultation = {}, invoice = null, payment = null } = {}) => {
   return (
     payment?.status ||
     consultation.payment_status ||
     invoice?.billing_status ||
     invoice?.status ||
-    (consultation.is_paid
-      ? 'COMPLETED'
-      : consultation.require_payment
-        ? 'PENDING'
-        : 'NOT_REQUIRED')
+    (consultation.is_paid ? 'COMPLETED' : consultation.require_payment ? 'PENDING' : 'NOT_REQUIRED')
   );
 };
 
 const enrichConsultationBillingForListItems = async (items = []) => {
-  const invoiceIdentifiers = uniqueNormalizedIdentifiers(
-    items.map((item) => item?.flow?.consultation?.invoice_id)
-  );
-  const paymentIdentifiers = uniqueNormalizedIdentifiers(
-    items.map((item) => item?.flow?.consultation?.payment_id)
-  );
+  const invoiceIdentifiers = uniqueNormalizedIdentifiers(items.map((item) => item?.flow?.consultation?.invoice_id));
+  const paymentIdentifiers = uniqueNormalizedIdentifiers(items.map((item) => item?.flow?.consultation?.payment_id));
 
   if (invoiceIdentifiers.length === 0 && paymentIdentifiers.length === 0) {
     return items;
   }
 
   const [invoices, payments] = await Promise.all([
-    invoiceIdentifiers.length > 0 &&
-    typeof prisma.invoice?.findMany === 'function'
+    invoiceIdentifiers.length > 0 && typeof prisma.invoice?.findMany === 'function'
       ? prisma.invoice.findMany({
           where: {
             deleted_at: null,
@@ -1027,8 +911,7 @@ const enrichConsultationBillingForListItems = async (items = []) => {
           }
         })
       : [],
-    paymentIdentifiers.length > 0 &&
-    typeof prisma.payment?.findMany === 'function'
+    paymentIdentifiers.length > 0 && typeof prisma.payment?.findMany === 'function'
       ? prisma.payment.findMany({
           where: {
             deleted_at: null,
@@ -1070,21 +953,11 @@ const enrichConsultationBillingForListItems = async (items = []) => {
   return items.map((item) => {
     const flow = item?.flow || null;
     const consultation = flow?.consultation || {};
-    const payment = getLookupRecord(
-      paymentByIdentifier,
-      consultation.payment_id
-    );
-    const invoice =
-      getLookupRecord(invoiceByIdentifier, consultation.invoice_id) ||
-      payment?.invoice ||
-      null;
+    const payment = getLookupRecord(paymentByIdentifier, consultation.payment_id);
+    const invoice = getLookupRecord(invoiceByIdentifier, consultation.invoice_id) || payment?.invoice || null;
     if (
       !flow ||
-      (!invoice &&
-        !payment &&
-        !consultation.paid_amount &&
-        !consultation.payment_amount &&
-        !consultation.amount_paid)
+      (!invoice && !payment && !consultation.paid_amount && !consultation.payment_amount && !consultation.amount_paid)
     ) {
       return item;
     }
@@ -1102,10 +975,8 @@ const enrichConsultationBillingForListItems = async (items = []) => {
             payment
           }),
           currency: consultation.currency || invoice?.currency || null,
-          invoice_id:
-            invoice?.human_friendly_id || consultation.invoice_id || null,
-          payment_id:
-            payment?.human_friendly_id || consultation.payment_id || null,
+          invoice_id: invoice?.human_friendly_id || consultation.invoice_id || null,
+          payment_id: payment?.human_friendly_id || consultation.payment_id || null,
           payment_status: resolveConsultationPaymentStatus({
             consultation,
             invoice,
@@ -1118,18 +989,9 @@ const enrichConsultationBillingForListItems = async (items = []) => {
 };
 
 const resolveCurrencyFromExtension = (extensionJson) => {
-  if (
-    !extensionJson ||
-    typeof extensionJson !== 'object' ||
-    Array.isArray(extensionJson)
-  )
-    return null;
+  if (!extensionJson || typeof extensionJson !== 'object' || Array.isArray(extensionJson)) return null;
 
-  const directCandidates = [
-    extensionJson.currency,
-    extensionJson.default_currency,
-    extensionJson.defaultCurrency
-  ];
+  const directCandidates = [extensionJson.currency, extensionJson.default_currency, extensionJson.defaultCurrency];
   const nestedCandidates = [
     extensionJson.settings?.currency,
     extensionJson.settings?.default_currency,
@@ -1182,9 +1044,7 @@ const resolveProviderConsultationDefaults = (provider) => {
     };
   }
 
-  const practitionerType = normalizeIdentifier(
-    profile.practitioner_type
-  ).toUpperCase();
+  const practitionerType = normalizeIdentifier(profile.practitioner_type).toUpperCase();
   if (practitionerType !== 'SPECIALIST') {
     return {
       consultationFee: null,
@@ -1194,10 +1054,7 @@ const resolveProviderConsultationDefaults = (provider) => {
 
   return {
     consultationFee: normalizeDecimalString(profile.consultation_fee, null),
-    consultationCurrency: normalizeCurrencyCode(
-      profile.consultation_currency,
-      null
-    )
+    consultationCurrency: normalizeCurrencyCode(profile.consultation_currency, null)
   };
 };
 
@@ -1255,25 +1112,14 @@ const computeMeanArterialPressure = (systolic, diastolic) => {
 
 const normalizeBloodPressureVital = (vital) => {
   const parsedLegacy = parseLegacyBloodPressureValue(vital.value);
-  const systolic =
-    roundToTwo(toFiniteNumber(vital.systolic_value)) ??
-    parsedLegacy?.systolic ??
-    null;
-  const diastolic =
-    roundToTwo(toFiniteNumber(vital.diastolic_value)) ??
-    parsedLegacy?.diastolic ??
-    null;
+  const systolic = roundToTwo(toFiniteNumber(vital.systolic_value)) ?? parsedLegacy?.systolic ?? null;
+  const diastolic = roundToTwo(toFiniteNumber(vital.diastolic_value)) ?? parsedLegacy?.diastolic ?? null;
 
   if (!Number.isFinite(systolic) || !Number.isFinite(diastolic)) {
-    throw new HttpError('errors.validation.required', 400, [
-      { field: 'systolic_value' },
-      { field: 'diastolic_value' }
-    ]);
+    throw new HttpError('errors.validation.required', 400, [{ field: 'systolic_value' }, { field: 'diastolic_value' }]);
   }
 
-  const mapValue =
-    roundToTwo(toFiniteNumber(vital.map_value)) ??
-    computeMeanArterialPressure(systolic, diastolic);
+  const mapValue = roundToTwo(toFiniteNumber(vital.map_value)) ?? computeMeanArterialPressure(systolic, diastolic);
   const canonicalValue = `${formatBloodPressureValueComponent(systolic)}/${formatBloodPressureValueComponent(diastolic)}`;
 
   return {
@@ -1331,9 +1177,7 @@ const TRIAGE_PRIORITY_RANK = Object.freeze({
 const resolveTriagePriorityRank = (triageLevel) => {
   const mapped = mapTriageLevel(triageLevel);
   if (!mapped) return 99;
-  return Number.isInteger(TRIAGE_PRIORITY_RANK[mapped])
-    ? TRIAGE_PRIORITY_RANK[mapped]
-    : 99;
+  return Number.isInteger(TRIAGE_PRIORITY_RANK[mapped]) ? TRIAGE_PRIORITY_RANK[mapped] : 99;
 };
 
 const toTimestamp = (value) => {
@@ -1345,9 +1189,7 @@ const toTimestamp = (value) => {
 const resolveEmergencyQueueTimestamp = (item) => {
   const flow = item?.flow || {};
   const encounter = item?.encounter || {};
-  return toTimestamp(
-    flow.queued_at || encounter.started_at || encounter.created_at
-  );
+  return toTimestamp(flow.queued_at || encounter.started_at || encounter.created_at);
 };
 
 const enrichEmergencyQueueUrgency = async (items = []) => {
@@ -1355,11 +1197,7 @@ const enrichEmergencyQueueUrgency = async (items = []) => {
   if (!prisma?.triage_assessment?.findMany) return items;
 
   const emergencyCaseIds = Array.from(
-    new Set(
-      items
-        .map((item) => normalizeIdentifier(item?.flow?.emergency_case_id))
-        .filter(Boolean)
-    )
+    new Set(items.map((item) => normalizeIdentifier(item?.flow?.emergency_case_id)).filter(Boolean))
   );
 
   if (emergencyCaseIds.length === 0) {
@@ -1389,12 +1227,8 @@ const enrichEmergencyQueueUrgency = async (items = []) => {
   const triageByEmergencyCaseId = new Map();
   for (const row of triageRows || []) {
     const emergencyCaseId = normalizeIdentifier(row?.emergency_case_id);
-    if (!emergencyCaseId || triageByEmergencyCaseId.has(emergencyCaseId))
-      continue;
-    triageByEmergencyCaseId.set(
-      emergencyCaseId,
-      mapTriageLevel(row?.triage_level)
-    );
+    if (!emergencyCaseId || triageByEmergencyCaseId.has(emergencyCaseId)) continue;
+    triageByEmergencyCaseId.set(emergencyCaseId, mapTriageLevel(row?.triage_level));
   }
 
   return items.map((item) => {
@@ -1441,13 +1275,7 @@ const getOpdFlowState = (encounter) => {
 
 const getNextStep = (stage) => NEXT_STEP_BY_STAGE[stage] || null;
 
-const appendTimelineEvent = (
-  flow,
-  event,
-  context = {},
-  details = {},
-  at = new Date()
-) => {
+const appendTimelineEvent = (flow, event, context = {}, details = {}, at = new Date()) => {
   if (!Array.isArray(flow.timeline)) {
     flow.timeline = [];
   }
@@ -1500,10 +1328,7 @@ const buildEncounterSearchTokenClause = (token) => {
           contacts: {
             some: {
               deleted_at: null,
-              OR: [
-                { human_friendly_id: { contains: upper } },
-                { value: { contains: term } }
-              ]
+              OR: [{ human_friendly_id: { contains: upper } }, { value: { contains: term } }]
             }
           }
         }
@@ -1548,14 +1373,10 @@ const buildEncounterWhereClause = (filters = {}) => {
   if (filters.tenant_id) where.tenant_id = filters.tenant_id;
   if (filters.facility_id) where.facility_id = filters.facility_id;
   if (filters.patient_id) where.patient_id = filters.patient_id;
-  if (filters.provider_user_id)
-    where.provider_user_id = filters.provider_user_id;
+  if (filters.provider_user_id) where.provider_user_id = filters.provider_user_id;
   if (filters.encounter_type) where.encounter_type = filters.encounter_type;
   if (filters.stage) {
-    where.extension_json = buildOpdFlowJsonFilter(
-      OPD_FLOW_STAGE_JSON_PATH,
-      filters.stage
-    );
+    where.extension_json = buildOpdFlowJsonFilter(OPD_FLOW_STAGE_JSON_PATH, filters.stage);
   } else {
     andClauses.push(buildOpdFlowStagePresenceClause());
   }
@@ -1579,10 +1400,7 @@ const buildEncounterWhereClause = (filters = {}) => {
       { provider_user_id: null },
       {
         OR: WAITING_QUEUE_STAGES.map((stage) => ({
-          extension_json: buildOpdFlowJsonFilter(
-            OPD_FLOW_STAGE_JSON_PATH,
-            stage
-          )
+          extension_json: buildOpdFlowJsonFilter(OPD_FLOW_STAGE_JSON_PATH, stage)
         }))
       }
     );
@@ -1627,12 +1445,8 @@ const resolveLegacyRoute = async (resource, id) => {
     select: {
       id: true,
       human_friendly_id: true,
-      ...(config.emergencyCaseField && config.emergencyCaseField !== 'id'
-        ? { [config.emergencyCaseField]: true }
-        : {}),
-      ...(config.ambulanceField && config.ambulanceField !== 'id'
-        ? { [config.ambulanceField]: true }
-        : {})
+      ...(config.emergencyCaseField && config.emergencyCaseField !== 'id' ? { [config.emergencyCaseField]: true } : {}),
+      ...(config.ambulanceField && config.ambulanceField !== 'id' ? { [config.ambulanceField]: true } : {})
     }
   });
 
@@ -1683,10 +1497,7 @@ const resolveLegacyRoute = async (resource, id) => {
         where: {
           deleted_at: null,
           encounter_type: 'EMERGENCY',
-          extension_json: buildOpdFlowJsonFilter(
-            OPD_FLOW_EMERGENCY_CASE_ID_JSON_PATH,
-            emergencyCaseInternalId
-          )
+          extension_json: buildOpdFlowJsonFilter(OPD_FLOW_EMERGENCY_CASE_ID_JSON_PATH, emergencyCaseInternalId)
         },
         orderBy: {
           started_at: 'desc'
@@ -1699,27 +1510,18 @@ const resolveLegacyRoute = async (resource, id) => {
     : null;
 
   return {
-    encounter_id:
-      toPublicIdentifier(encounter?.human_friendly_id || encounter?.id) || null,
+    encounter_id: toPublicIdentifier(encounter?.human_friendly_id || encounter?.id) || null,
     emergency_case_id:
       toPublicIdentifier(
         emergencyCase?.human_friendly_id ||
-          (config.emergencyCaseField === 'id'
-            ? resolvedResource.human_friendly_id
-            : null)
+          (config.emergencyCaseField === 'id' ? resolvedResource.human_friendly_id : null)
       ) || null,
     ambulance_id:
       toPublicIdentifier(
-        ambulance?.human_friendly_id ||
-          (config.ambulanceField === 'id'
-            ? resolvedResource.human_friendly_id
-            : null)
+        ambulance?.human_friendly_id || (config.ambulanceField === 'id' ? resolvedResource.human_friendly_id : null)
       ) || null,
     resource: normalizedResource,
-    resource_id:
-      toPublicIdentifier(
-        resolvedResource.human_friendly_id || normalizedIdentifier
-      ) || null,
+    resource_id: toPublicIdentifier(resolvedResource.human_friendly_id || normalizedIdentifier) || null,
     panel: config.panel,
     action: config.action
   };
@@ -1799,69 +1601,59 @@ const getOpdFlowById = async (id) => {
 
       const flow = getOpdFlowState(encounter);
 
-      const [
-        visitQueue,
-        appointment,
-        consultationInvoice,
-        consultationPayment,
-        emergencyCase,
-        triageAssessment
-      ] = await Promise.all([
-        flow.visit_queue_id
-          ? tx.visit_queue.findFirst({
-              where: { id: flow.visit_queue_id, deleted_at: null },
-              include: {
-                provider: PROVIDER_INCLUDE,
-                facility: true,
-                appointment: true
-              }
-            })
-          : null,
-        flow.appointment_id
-          ? tx.appointment.findFirst({
-              where: { id: flow.appointment_id, deleted_at: null },
-              include: { provider: PROVIDER_INCLUDE, facility: true }
-            })
-          : null,
-        flow.consultation?.invoice_id
-          ? tx.invoice.findFirst({
-              where: { id: flow.consultation.invoice_id, deleted_at: null },
-              include: {
-                payments: {
-                  where: { deleted_at: null },
-                  orderBy: { created_at: 'desc' }
+      const [visitQueue, appointment, consultationInvoice, consultationPayment, emergencyCase, triageAssessment] =
+        await Promise.all([
+          flow.visit_queue_id
+            ? tx.visit_queue.findFirst({
+                where: { id: flow.visit_queue_id, deleted_at: null },
+                include: {
+                  provider: PROVIDER_INCLUDE,
+                  facility: true,
+                  appointment: true
                 }
-              }
-            })
-          : null,
-        flow.consultation?.payment_id
-          ? tx.payment.findFirst({
-              where: { id: flow.consultation.payment_id, deleted_at: null }
-            })
-          : null,
-        flow.emergency_case_id
-          ? tx.emergency_case.findFirst({
-              where: { id: flow.emergency_case_id, deleted_at: null }
-            })
-          : null,
-        flow.triage_assessment_id
-          ? tx.triage_assessment.findFirst({
-              where: { id: flow.triage_assessment_id, deleted_at: null }
-            })
-          : null
-      ]);
+              })
+            : null,
+          flow.appointment_id
+            ? tx.appointment.findFirst({
+                where: { id: flow.appointment_id, deleted_at: null },
+                include: { provider: PROVIDER_INCLUDE, facility: true }
+              })
+            : null,
+          flow.consultation?.invoice_id
+            ? tx.invoice.findFirst({
+                where: { id: flow.consultation.invoice_id, deleted_at: null },
+                include: {
+                  payments: {
+                    where: { deleted_at: null },
+                    orderBy: { created_at: 'desc' }
+                  }
+                }
+              })
+            : null,
+          flow.consultation?.payment_id
+            ? tx.payment.findFirst({
+                where: { id: flow.consultation.payment_id, deleted_at: null }
+              })
+            : null,
+          flow.emergency_case_id
+            ? tx.emergency_case.findFirst({
+                where: { id: flow.emergency_case_id, deleted_at: null }
+              })
+            : null,
+          flow.triage_assessment_id
+            ? tx.triage_assessment.findFirst({
+                where: { id: flow.triage_assessment_id, deleted_at: null }
+              })
+            : null
+        ]);
 
       const resolvedAdmission =
         (Array.isArray(encounter.admissions)
-          ? encounter.admissions.find(
-              (item) => item.id === flow.admission_id
-            ) || encounter.admissions[0]
+          ? encounter.admissions.find((item) => item.id === flow.admission_id) || encounter.admissions[0]
           : null) || null;
       const resolvedPharmacyOrder =
         (Array.isArray(encounter.pharmacy_orders)
-          ? encounter.pharmacy_orders.find(
-              (item) => item.id === flow.pharmacy_order_id
-            ) || encounter.pharmacy_orders[0]
+          ? encounter.pharmacy_orders.find((item) => item.id === flow.pharmacy_order_id) || encounter.pharmacy_orders[0]
           : null) || null;
       const consultation = flow.consultation || {};
 
@@ -1869,50 +1661,30 @@ const getOpdFlowById = async (id) => {
         ...flow,
         consultation: {
           ...consultation,
-          consultation_fee: resolveConsultationFeeAmount(
-            consultation,
-            consultationInvoice
-          ),
+          consultation_fee: resolveConsultationFeeAmount(consultation, consultationInvoice),
           paid_amount: resolveConsultationPaymentAmount({
             consultation,
             invoice: consultationInvoice,
             payment: consultationPayment
           }),
-          currency:
-            consultation.currency || consultationInvoice?.currency || null,
-          invoice_id:
-            consultationInvoice?.human_friendly_id ||
-            consultation.invoice_id ||
-            null,
-          payment_id:
-            consultationPayment?.human_friendly_id ||
-            consultation.payment_id ||
-            null,
+          currency: consultation.currency || consultationInvoice?.currency || null,
+          invoice_id: consultationInvoice?.human_friendly_id || consultation.invoice_id || null,
+          payment_id: consultationPayment?.human_friendly_id || consultation.payment_id || null,
           payment_status: resolveConsultationPaymentStatus({
             consultation,
             invoice: consultationInvoice,
             payment: consultationPayment
           })
         },
-        appointment_id:
-          appointment?.human_friendly_id || flow.appointment_id || null,
-        visit_queue_id:
-          visitQueue?.human_friendly_id || flow.visit_queue_id || null,
-        emergency_case_id:
-          emergencyCase?.human_friendly_id || flow.emergency_case_id || null,
-        triage_assessment_id:
-          triageAssessment?.human_friendly_id ||
-          flow.triage_assessment_id ||
-          null,
+        appointment_id: appointment?.human_friendly_id || flow.appointment_id || null,
+        visit_queue_id: visitQueue?.human_friendly_id || flow.visit_queue_id || null,
+        emergency_case_id: emergencyCase?.human_friendly_id || flow.emergency_case_id || null,
+        triage_assessment_id: triageAssessment?.human_friendly_id || flow.triage_assessment_id || null,
         lab_order_ids: Array.isArray(encounter.lab_orders)
-          ? encounter.lab_orders
-              .map((entry) => entry.human_friendly_id)
-              .filter(Boolean)
+          ? encounter.lab_orders.map((entry) => entry.human_friendly_id).filter(Boolean)
           : [],
         radiology_order_ids: Array.isArray(encounter.radiology_orders)
-          ? encounter.radiology_orders
-              .map((entry) => entry.human_friendly_id)
-              .filter(Boolean)
+          ? encounter.radiology_orders.map((entry) => entry.human_friendly_id).filter(Boolean)
           : [],
         pharmacy_order_id: resolvedPharmacyOrder?.human_friendly_id || null,
         admission_id: resolvedAdmission?.human_friendly_id || null
@@ -1977,11 +1749,7 @@ const listOpdFlows = async (
   }
 
   if (filters.facility_id) {
-    const facility = await resolveFacilityByIdentifier(
-      prisma,
-      filters.facility_id,
-      resolvedFilters.tenant_id || null
-    );
+    const facility = await resolveFacilityByIdentifier(prisma, filters.facility_id, resolvedFilters.tenant_id || null);
     if (!facility) {
       return {
         items: [],
@@ -1999,11 +1767,7 @@ const listOpdFlows = async (
   }
 
   if (filters.patient_id) {
-    const patient = await resolvePatientByIdentifier(
-      prisma,
-      filters.patient_id,
-      resolvedFilters.tenant_id || null
-    );
+    const patient = await resolvePatientByIdentifier(prisma, filters.patient_id, resolvedFilters.tenant_id || null);
     if (!patient) {
       return {
         items: [],
@@ -2021,10 +1785,7 @@ const listOpdFlows = async (
   }
 
   const requestedProviderIdentifier =
-    filters.provider_user_id ||
-    (resolvedFilters.queue_scope === QUEUE_SCOPES.ASSIGNED
-      ? context.user_id
-      : null);
+    filters.provider_user_id || (resolvedFilters.queue_scope === QUEUE_SCOPES.ASSIGNED ? context.user_id : null);
 
   if (requestedProviderIdentifier) {
     const provider = await resolveProviderByIdentifier(
@@ -2095,44 +1856,26 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
   let result;
   try {
     result = await prisma.$transaction(async (tx) => {
-      const resolvedTenantFromBody = data.tenant_id
-        ? await resolveTenantByIdentifier(tx, data.tenant_id)
-        : null;
+      const resolvedTenantFromBody = data.tenant_id ? await resolveTenantByIdentifier(tx, data.tenant_id) : null;
       if (data.tenant_id && !resolvedTenantFromBody) {
-        throw new HttpError('errors.tenant.not_found', 404, [
-          { field: 'tenant_id' }
-        ]);
+        throw new HttpError('errors.tenant.not_found', 404, [{ field: 'tenant_id' }]);
       }
 
       const tenantId = resolvedTenantFromBody?.id || context.tenant_id || null;
       if (!tenantId) {
-        throw new HttpError('errors.validation.required', 400, [
-          { field: 'tenant_id' }
-        ]);
+        throw new HttpError('errors.validation.required', 400, [{ field: 'tenant_id' }]);
       }
 
-      const patient = await resolvePatientByIdentifier(
-        tx,
-        data.patient_id,
-        tenantId
-      );
+      const patient = await resolvePatientByIdentifier(tx, data.patient_id, tenantId);
       if (!patient) {
-        throw new HttpError('errors.patient.not_found', 404, [
-          { field: 'patient_id' }
-        ]);
+        throw new HttpError('errors.patient.not_found', 404, [{ field: 'patient_id' }]);
       }
 
       let facilityId = context.facility_id || null;
       if (data.facility_id !== undefined && data.facility_id !== null) {
-        const facility = await resolveFacilityByIdentifier(
-          tx,
-          data.facility_id,
-          tenantId
-        );
+        const facility = await resolveFacilityByIdentifier(tx, data.facility_id, tenantId);
         if (!facility) {
-          throw new HttpError('errors.facility.not_found', 404, [
-            { field: 'facility_id' }
-          ]);
+          throw new HttpError('errors.facility.not_found', 404, [{ field: 'facility_id' }]);
         }
         facilityId = facility.id;
       } else if (data.facility_id === null) {
@@ -2141,16 +1884,9 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
 
       let providerUserId = null;
       if (data.provider_user_id) {
-        const provider = await resolveProviderByIdentifier(
-          tx,
-          data.provider_user_id,
-          tenantId,
-          facilityId
-        );
+        const provider = await resolveProviderByIdentifier(tx, data.provider_user_id, tenantId, facilityId);
         if (!provider) {
-          throw new HttpError('errors.user.not_found', 404, [
-            { field: 'provider_user_id' }
-          ]);
+          throw new HttpError('errors.user.not_found', 404, [{ field: 'provider_user_id' }]);
         }
         providerUserId = provider.id;
       }
@@ -2167,8 +1903,7 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
         }
 
         throwActiveOpdEncounterExists({
-          encounter_id:
-            existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
+          encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
           encounter_type: existingOpenEncounter.encounter_type,
           stage: existingOpenEncounter.extension_json?.opd_flow?.stage || null
         });
@@ -2183,8 +1918,7 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
           patient_id: patient.id,
           provider_user_id: providerUserId || null,
           arrival_mode: encounterType === 'EMERGENCY' ? 'EMERGENCY' : 'WALK_IN',
-          emergency:
-            encounterType === 'EMERGENCY' ? { severity: 'HIGH' } : undefined
+          emergency: encounterType === 'EMERGENCY' ? { severity: 'HIGH' } : undefined
         }
       };
     });
@@ -2207,29 +1941,17 @@ const startOpdFlow = async (data, context = {}) => {
   let startedResult;
   try {
     startedResult = await prisma.$transaction(async (tx) => {
-      const resolvedTenantFromBody = data.tenant_id
-        ? await resolveTenantByIdentifier(tx, data.tenant_id)
-        : null;
+      const resolvedTenantFromBody = data.tenant_id ? await resolveTenantByIdentifier(tx, data.tenant_id) : null;
       if (data.tenant_id && !resolvedTenantFromBody) {
-        throw new HttpError('errors.tenant.not_found', 404, [
-          { field: 'tenant_id' }
-        ]);
+        throw new HttpError('errors.tenant.not_found', 404, [{ field: 'tenant_id' }]);
       }
 
-      const requestedTenantId =
-        resolvedTenantFromBody?.id || context.tenant_id || null;
-      let requestedFacilityId =
-        context.facility_id !== undefined ? context.facility_id : null;
+      const requestedTenantId = resolvedTenantFromBody?.id || context.tenant_id || null;
+      let requestedFacilityId = context.facility_id !== undefined ? context.facility_id : null;
       if (data.facility_id !== undefined && data.facility_id !== null) {
-        const resolvedFacility = await resolveFacilityByIdentifier(
-          tx,
-          data.facility_id,
-          requestedTenantId || null
-        );
+        const resolvedFacility = await resolveFacilityByIdentifier(tx, data.facility_id, requestedTenantId || null);
         if (!resolvedFacility) {
-          throw new HttpError('errors.facility.not_found', 404, [
-            { field: 'facility_id' }
-          ]);
+          throw new HttpError('errors.facility.not_found', 404, [{ field: 'facility_id' }]);
         }
         requestedFacilityId = resolvedFacility.id;
       } else if (data.facility_id === null) {
@@ -2238,12 +1960,7 @@ const startOpdFlow = async (data, context = {}) => {
 
       const appointmentIdentifier = normalizeIdentifier(data.appointment_id);
       let appointment = appointmentIdentifier
-        ? await resolveAppointmentByIdentifier(
-            tx,
-            appointmentIdentifier,
-            requestedTenantId,
-            requestedFacilityId
-          )
+        ? await resolveAppointmentByIdentifier(tx, appointmentIdentifier, requestedTenantId, requestedFacilityId)
         : null;
 
       if (appointmentIdentifier && !appointment) {
@@ -2252,18 +1969,11 @@ const startOpdFlow = async (data, context = {}) => {
 
       const visitQueueIdentifier = normalizeIdentifier(data.visit_queue_id);
       const requestedVisitQueue = visitQueueIdentifier
-        ? await resolveVisitQueueByIdentifier(
-            tx,
-            visitQueueIdentifier,
-            requestedTenantId,
-            requestedFacilityId
-          )
+        ? await resolveVisitQueueByIdentifier(tx, visitQueueIdentifier, requestedTenantId, requestedFacilityId)
         : null;
 
       if (visitQueueIdentifier && !requestedVisitQueue) {
-        throw new HttpError('errors.visit_queue.not_found', 404, [
-          { field: 'visit_queue_id' }
-        ]);
+        throw new HttpError('errors.visit_queue.not_found', 404, [{ field: 'visit_queue_id' }]);
       }
 
       if (!appointment && requestedVisitQueue?.appointment_id) {
@@ -2275,10 +1985,7 @@ const startOpdFlow = async (data, context = {}) => {
         );
       }
 
-      if (
-        appointment &&
-        (appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW')
-      ) {
+      if (appointment && (appointment.status === 'CANCELLED' || appointment.status === 'NO_SHOW')) {
         throw new HttpError('errors.opd_flow.appointment_terminal_status', 400);
       }
 
@@ -2288,10 +1995,7 @@ const startOpdFlow = async (data, context = {}) => {
             deleted_at: null,
             status: 'OPEN',
             encounter_type: { in: ['OPD', 'EMERGENCY'] },
-            extension_json: buildOpdFlowJsonFilter(
-              OPD_FLOW_VISIT_QUEUE_ID_JSON_PATH,
-              requestedVisitQueue.id
-            )
+            extension_json: buildOpdFlowJsonFilter(OPD_FLOW_VISIT_QUEUE_ID_JSON_PATH, requestedVisitQueue.id)
           },
           select: { id: true }
         });
@@ -2307,10 +2011,7 @@ const startOpdFlow = async (data, context = {}) => {
             deleted_at: null,
             status: 'OPEN',
             encounter_type: { in: ['OPD', 'EMERGENCY'] },
-            extension_json: buildOpdFlowJsonFilter(
-              OPD_FLOW_APPOINTMENT_ID_JSON_PATH,
-              appointment.id
-            )
+            extension_json: buildOpdFlowJsonFilter(OPD_FLOW_APPOINTMENT_ID_JSON_PATH, appointment.id)
           },
           select: { id: true }
         });
@@ -2323,10 +2024,7 @@ const startOpdFlow = async (data, context = {}) => {
       const arrivalMode = deriveArrivalMode(data, appointment);
 
       if (arrivalMode === 'ONLINE_APPOINTMENT' && !appointment) {
-        throw new HttpError(
-          'errors.opd_flow.appointment_required_for_online_mode',
-          400
-        );
+        throw new HttpError('errors.opd_flow.appointment_required_for_online_mode', 400);
       }
 
       const tenantId =
@@ -2336,50 +2034,33 @@ const startOpdFlow = async (data, context = {}) => {
         requestedVisitQueue?.tenant_id ||
         null;
       if (!tenantId) {
-        throw new HttpError('errors.validation.required', 400, [
-          { field: 'tenant_id' }
-        ]);
+        throw new HttpError('errors.validation.required', 400, [{ field: 'tenant_id' }]);
       }
 
       let facilityId =
         data.facility_id !== undefined
           ? requestedFacilityId
-          : requestedFacilityId ||
-            appointment?.facility_id ||
-            requestedVisitQueue?.facility_id ||
-            null;
+          : requestedFacilityId || appointment?.facility_id || requestedVisitQueue?.facility_id || null;
       if (data.facility_id === null) {
         facilityId = null;
       }
 
       const requestedPatientIdentifier = normalizeIdentifier(data.patient_id);
-      let patientId =
-        appointment?.patient_id || requestedVisitQueue?.patient_id || null;
+      let patientId = appointment?.patient_id || requestedVisitQueue?.patient_id || null;
 
       if (requestedPatientIdentifier) {
-        const existingPatient = await resolvePatientByIdentifier(
-          tx,
-          requestedPatientIdentifier,
-          tenantId
-        );
+        const existingPatient = await resolvePatientByIdentifier(tx, requestedPatientIdentifier, tenantId);
         if (!existingPatient) {
           throw new HttpError('errors.opd_flow.patient_not_found', 404);
         }
 
         if (appointment && appointment.patient_id !== existingPatient.id) {
-          throw new HttpError(
-            'errors.opd_flow.appointment_patient_mismatch',
-            400
-          );
+          throw new HttpError('errors.opd_flow.appointment_patient_mismatch', 400);
         }
 
         patientId = existingPatient.id;
       } else if (patientId) {
-        const existingPatient = await resolvePatientByIdentifier(
-          tx,
-          patientId,
-          tenantId
-        );
+        const existingPatient = await resolvePatientByIdentifier(tx, patientId, tenantId);
         if (!existingPatient) {
           throw new HttpError('errors.opd_flow.patient_not_found', 404);
         }
@@ -2401,26 +2082,15 @@ const startOpdFlow = async (data, context = {}) => {
         });
         patientId = createdPatient.id;
       } else {
-        throw new HttpError(
-          'errors.opd_flow.patient_or_appointment_required',
-          400
-        );
+        throw new HttpError('errors.opd_flow.patient_or_appointment_required', 400);
       }
 
       if (requestedVisitQueue && requestedVisitQueue.patient_id !== patientId) {
-        throw new HttpError('errors.opd_flow.patient_queue_mismatch', 400, [
-          { field: 'visit_queue_id' }
-        ]);
+        throw new HttpError('errors.opd_flow.patient_queue_mismatch', 400, [{ field: 'visit_queue_id' }]);
       }
 
-      if (
-        appointment &&
-        requestedVisitQueue?.appointment_id &&
-        requestedVisitQueue.appointment_id !== appointment.id
-      ) {
-        throw new HttpError('errors.opd_flow.appointment_queue_mismatch', 400, [
-          { field: 'visit_queue_id' }
-        ]);
+      if (appointment && requestedVisitQueue?.appointment_id && requestedVisitQueue.appointment_id !== appointment.id) {
+        throw new HttpError('errors.opd_flow.appointment_queue_mismatch', 400, [{ field: 'visit_queue_id' }]);
       }
 
       const existingOpenEncounter = await resolveOpenEncounterForPatient(tx, {
@@ -2434,8 +2104,7 @@ const startOpdFlow = async (data, context = {}) => {
         }
 
         throwActiveOpdEncounterExists({
-          encounter_id:
-            existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
+          encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
           encounter_type: existingOpenEncounter.encounter_type,
           stage: existingOpenEncounter.extension_json?.opd_flow?.stage || null
         });
@@ -2447,38 +2116,19 @@ const startOpdFlow = async (data, context = {}) => {
         normalizeIdentifier(appointment?.provider_user_id);
       let resolvedProvider = null;
       if (providerIdentifier) {
-        resolvedProvider = await resolveProviderByIdentifier(
-          tx,
-          providerIdentifier,
-          tenantId,
-          facilityId
-        );
+        resolvedProvider = await resolveProviderByIdentifier(tx, providerIdentifier, tenantId, facilityId);
         if (!resolvedProvider && normalizeIdentifier(data.provider_user_id)) {
-          throw new HttpError('errors.user.not_found', 404, [
-            { field: 'provider_user_id' }
-          ]);
+          throw new HttpError('errors.user.not_found', 404, [{ field: 'provider_user_id' }]);
         }
       }
 
       const providerUserId =
         resolvedProvider?.id ||
-        (normalizeIdentifier(requestedVisitQueue?.provider_user_id)
-          ? requestedVisitQueue.provider_user_id
-          : null) ||
-        (normalizeIdentifier(appointment?.provider_user_id)
-          ? appointment.provider_user_id
-          : null);
-      const providerDefaults =
-        resolveProviderConsultationDefaults(resolvedProvider);
-      const defaultCurrency = await resolveDefaultCurrency(
-        tx,
-        tenantId,
-        facilityId
-      );
-      const consultationFee = normalizeDecimalString(
-        data.consultation_fee,
-        providerDefaults.consultationFee || '0.00'
-      );
+        (normalizeIdentifier(requestedVisitQueue?.provider_user_id) ? requestedVisitQueue.provider_user_id : null) ||
+        (normalizeIdentifier(appointment?.provider_user_id) ? appointment.provider_user_id : null);
+      const providerDefaults = resolveProviderConsultationDefaults(resolvedProvider);
+      const defaultCurrency = await resolveDefaultCurrency(tx, tenantId, facilityId);
+      const consultationFee = normalizeDecimalString(data.consultation_fee, providerDefaults.consultationFee || '0.00');
       const currency = normalizeCurrencyCode(
         data.currency,
         providerDefaults.consultationCurrency || defaultCurrency || 'USD'
@@ -2496,9 +2146,7 @@ const startOpdFlow = async (data, context = {}) => {
       let consultationPayment = null;
       let isConsultationPaid = false;
       let consultationPaidAt = null;
-      let consultationPaymentStatus = requireConsultationPayment
-        ? 'PENDING'
-        : 'NOT_REQUIRED';
+      let consultationPaymentStatus = requireConsultationPayment ? 'PENDING' : 'NOT_REQUIRED';
 
       if (createConsultationInvoice || data.pay_now) {
         consultationInvoice = await tx.invoice.create({
@@ -2518,13 +2166,8 @@ const startOpdFlow = async (data, context = {}) => {
       if (data.pay_now) {
         const paymentStatus = data.pay_now.status || 'COMPLETED';
         consultationPaymentStatus = paymentStatus;
-        const paidAt = data.pay_now.paid_at
-          ? new Date(data.pay_now.paid_at)
-          : startedAt;
-        const amount = normalizeDecimalString(
-          data.pay_now.amount,
-          consultationFee
-        );
+        const paidAt = data.pay_now.paid_at ? new Date(data.pay_now.paid_at) : startedAt;
+        const amount = normalizeDecimalString(data.pay_now.amount, consultationFee);
 
         consultationPayment = await tx.payment.create({
           data: {
@@ -2541,20 +2184,15 @@ const startOpdFlow = async (data, context = {}) => {
         });
 
         if (paymentStatus === 'COMPLETED') {
-          const invoiceAmount = toDecimalNumber(
-            consultationInvoice.total_amount
-          );
+          const invoiceAmount = toDecimalNumber(consultationInvoice.total_amount);
           const paymentAmount = toDecimalNumber(amount);
           isConsultationPaid = paymentAmount >= invoiceAmount;
-          consultationPaidAt = isConsultationPaid
-            ? consultationPayment.paid_at || paidAt
-            : null;
+          consultationPaidAt = isConsultationPaid ? consultationPayment.paid_at || paidAt : null;
           await tx.invoice.update({
             where: { id: consultationInvoice.id },
             data: {
               status: paymentAmount >= invoiceAmount ? 'PAID' : 'SENT',
-              billing_status:
-                paymentAmount >= invoiceAmount ? 'PAID' : 'PARTIAL'
+              billing_status: paymentAmount >= invoiceAmount ? 'PAID' : 'PARTIAL'
             }
           });
         }
@@ -2587,14 +2225,10 @@ const startOpdFlow = async (data, context = {}) => {
       }
 
       const defaultInitialStage =
-        arrivalMode !== 'EMERGENCY' &&
-        requireConsultationPayment &&
-        !isConsultationPaid
+        arrivalMode !== 'EMERGENCY' && requireConsultationPayment && !isConsultationPaid
           ? STAGES.WAITING_CONSULTATION_PAYMENT
           : STAGES.WAITING_VITALS;
-      const requestedInitialStage = normalizeIdentifier(
-        data.initial_stage
-      ).toUpperCase();
+      const requestedInitialStage = normalizeIdentifier(data.initial_stage).toUpperCase();
       const initialStage =
         requestedInitialStage &&
         WORKFLOW_STAGE_SET.has(requestedInitialStage) &&
@@ -2616,13 +2250,10 @@ const startOpdFlow = async (data, context = {}) => {
           payment_status: consultationPaymentStatus,
           is_paid: isConsultationPaid,
           paid_amount:
-            isConsultationPaid && consultationPayment
-              ? consultationPayment.amount?.toString?.() || null
-              : null,
+            isConsultationPaid && consultationPayment ? consultationPayment.amount?.toString?.() || null : null,
           paid_at: consultationPaidAt ? consultationPaidAt.toISOString() : null
         },
-        appointment_id:
-          appointment?.id || requestedVisitQueue?.appointment_id || null,
+        appointment_id: appointment?.id || requestedVisitQueue?.appointment_id || null,
         visit_queue_id: requestedVisitQueue?.id || null,
         emergency_case_id: emergencyCase?.id || null,
         triage_assessment_id: triageAssessment?.id || null,
@@ -2686,16 +2317,13 @@ const startOpdFlow = async (data, context = {}) => {
         );
       }
 
-      const queuedAt = data.queued_at
-        ? new Date(data.queued_at)
-        : requestedVisitQueue?.queued_at || startedAt;
+      const queuedAt = data.queued_at ? new Date(data.queued_at) : requestedVisitQueue?.queued_at || startedAt;
       let visitQueue = requestedVisitQueue || null;
       if (visitQueue) {
         visitQueue = await tx.visit_queue.update({
           where: { id: visitQueue.id },
           data: {
-            provider_user_id:
-              providerUserId || visitQueue.provider_user_id || null,
+            provider_user_id: providerUserId || visitQueue.provider_user_id || null,
             status: 'IN_PROGRESS',
             queued_at: queuedAt
           }
@@ -2787,6 +2415,313 @@ const startOpdFlow = async (data, context = {}) => {
   return snapshot;
 };
 
+const updateActiveEncounterContext = async (id, data, context = {}) => {
+  let updatedResult;
+  try {
+    updatedResult = await prisma.$transaction(async (tx) => {
+      const encounter = await resolveEncounterByIdentifier(tx, id);
+      if (!encounter) {
+        throw new HttpError('errors.opd_flow.not_found', 404);
+      }
+      if (encounter.status !== 'OPEN') {
+        throw new HttpError('errors.opd_flow.already_terminal', 400);
+      }
+
+      const flow = getOpdFlowState(encounter);
+      ensureNonTerminalStage(flow);
+      const stageBefore = flow.stage;
+      const now = new Date();
+      const encounterUpdate = {};
+
+      let facilityId = encounter.facility_id || null;
+      if (data.facility_id !== undefined) {
+        const resolvedFacility = data.facility_id
+          ? await resolveFacilityByIdentifier(tx, data.facility_id, encounter.tenant_id)
+          : null;
+        if (data.facility_id && !resolvedFacility) {
+          throw new HttpError('errors.facility.not_found', 404, [{ field: 'facility_id' }]);
+        }
+        facilityId = resolvedFacility?.id || null;
+        encounterUpdate.facility_id = facilityId;
+      }
+
+      if (data.patient_id) {
+        const requestedPatient = await resolvePatientByIdentifier(tx, data.patient_id, encounter.tenant_id);
+        if (!requestedPatient) {
+          throw new HttpError('errors.opd_flow.patient_not_found', 404);
+        }
+        if (requestedPatient.id !== encounter.patient_id) {
+          throw new HttpError('errors.opd_flow.active_encounter_patient_mismatch', 400, [{ field: 'patient_id' }]);
+        }
+      }
+
+      let appointment = null;
+      if (data.appointment_id !== undefined) {
+        const appointmentIdentifier = normalizeIdentifier(data.appointment_id);
+        appointment = appointmentIdentifier
+          ? await resolveAppointmentByIdentifier(tx, appointmentIdentifier, encounter.tenant_id, facilityId)
+          : null;
+        if (appointmentIdentifier && !appointment) {
+          throw new HttpError('errors.appointment.not_found', 404, [{ field: 'appointment_id' }]);
+        }
+        if (appointment && appointment.patient_id !== encounter.patient_id) {
+          throw new HttpError('errors.opd_flow.appointment_patient_mismatch', 400);
+        }
+        flow.appointment_id = appointment?.id || null;
+      } else if (flow.appointment_id) {
+        appointment = await tx.appointment.findFirst({
+          where: { id: flow.appointment_id, deleted_at: null }
+        });
+      }
+
+      let visitQueue = null;
+      if (data.visit_queue_id !== undefined) {
+        const visitQueueIdentifier = normalizeIdentifier(data.visit_queue_id);
+        visitQueue = visitQueueIdentifier
+          ? await resolveVisitQueueByIdentifier(tx, visitQueueIdentifier, encounter.tenant_id, facilityId)
+          : null;
+        if (visitQueueIdentifier && !visitQueue) {
+          throw new HttpError('errors.visit_queue.not_found', 404, [{ field: 'visit_queue_id' }]);
+        }
+        if (visitQueue && visitQueue.patient_id !== encounter.patient_id) {
+          throw new HttpError('errors.opd_flow.patient_queue_mismatch', 400, [{ field: 'visit_queue_id' }]);
+        }
+        flow.visit_queue_id = visitQueue?.id || flow.visit_queue_id || null;
+      } else if (flow.visit_queue_id) {
+        visitQueue = await tx.visit_queue.findFirst({
+          where: { id: flow.visit_queue_id, deleted_at: null }
+        });
+      }
+
+      const arrivalMode = data.arrival_mode
+        ? deriveArrivalMode(data, appointment)
+        : flow.arrival_mode || encounter.encounter_type || 'WALK_IN';
+      flow.arrival_mode = arrivalMode;
+      if (data.arrival_mode) {
+        encounterUpdate.encounter_type = arrivalMode === 'EMERGENCY' ? 'EMERGENCY' : 'OPD';
+      }
+
+      let provider = null;
+      let providerUserId = encounter.provider_user_id || null;
+      if (data.provider_user_id !== undefined) {
+        const providerIdentifier = normalizeIdentifier(data.provider_user_id);
+        if (providerIdentifier) {
+          provider = await resolveProviderByIdentifier(tx, providerIdentifier, encounter.tenant_id, facilityId);
+          if (!provider) {
+            throw new HttpError('errors.user.not_found', 404, [{ field: 'provider_user_id' }]);
+          }
+          providerUserId = provider.id;
+        } else {
+          providerUserId = null;
+        }
+        encounterUpdate.provider_user_id = providerUserId;
+      } else if (providerUserId) {
+        provider = await resolveProviderByIdentifier(tx, providerUserId, encounter.tenant_id, facilityId);
+      }
+
+      const consultation = { ...(flow.consultation || {}) };
+      const providerDefaults = resolveProviderConsultationDefaults(provider);
+      const defaultCurrency = await resolveDefaultCurrency(tx, encounter.tenant_id, facilityId);
+      const currency = normalizeCurrencyCode(
+        data.currency || consultation.currency,
+        providerDefaults.consultationCurrency || defaultCurrency || 'USD'
+      );
+      if (data.consultation_fee !== undefined) {
+        consultation.consultation_fee = normalizeDecimalString(
+          data.consultation_fee,
+          providerDefaults.consultationFee || consultation.consultation_fee || '0.00'
+        );
+      } else if (!consultation.consultation_fee && providerDefaults.consultationFee) {
+        consultation.consultation_fee = providerDefaults.consultationFee;
+      }
+      consultation.currency = currency;
+      if (data.require_consultation_payment !== undefined) {
+        consultation.require_payment = data.require_consultation_payment;
+      }
+
+      const requiresInvoice =
+        data.create_consultation_invoice === true ||
+        data.pay_now ||
+        consultation.require_payment === true ||
+        Boolean(consultation.consultation_fee);
+      let invoice = consultation.invoice_id
+        ? await tx.invoice.findFirst({
+            where: { id: consultation.invoice_id, deleted_at: null }
+          })
+        : null;
+      if (!invoice && requiresInvoice) {
+        invoice = await tx.invoice.create({
+          data: {
+            tenant_id: encounter.tenant_id,
+            facility_id: facilityId,
+            patient_id: encounter.patient_id,
+            status: 'SENT',
+            billing_status: 'ISSUED',
+            total_amount: normalizeDecimalString(consultation.consultation_fee, '0.00'),
+            currency,
+            issued_at: now
+          }
+        });
+        consultation.invoice_id = invoice.id;
+      } else if (invoice && (data.consultation_fee !== undefined || data.currency)) {
+        invoice = await tx.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            total_amount: normalizeDecimalString(
+              consultation.consultation_fee,
+              invoice.total_amount?.toString?.() || '0.00'
+            ),
+            currency
+          }
+        });
+      }
+
+      if (data.pay_now) {
+        if (!invoice) {
+          throw new HttpError('errors.invoice.not_found', 404);
+        }
+        const paymentStatus = data.pay_now.status || 'COMPLETED';
+        const amount = normalizeDecimalString(
+          data.pay_now.amount,
+          consultation.consultation_fee || normalizeDecimalString(invoice.total_amount, '0.00')
+        );
+        const payment = await tx.payment.create({
+          data: {
+            tenant_id: encounter.tenant_id,
+            facility_id: facilityId,
+            patient_id: encounter.patient_id,
+            invoice_id: invoice.id,
+            status: paymentStatus,
+            method: data.pay_now.method,
+            amount,
+            paid_at:
+              paymentStatus === 'COMPLETED' ? (data.pay_now.paid_at ? new Date(data.pay_now.paid_at) : now) : null,
+            transaction_ref: data.pay_now.transaction_ref || null
+          }
+        });
+        const isPaid =
+          paymentStatus === 'COMPLETED' && toDecimalNumber(amount) >= toDecimalNumber(invoice.total_amount);
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            status: isPaid ? 'PAID' : 'SENT',
+            billing_status: paymentStatus === 'COMPLETED' ? (isPaid ? 'PAID' : 'PARTIAL') : 'ISSUED',
+            currency
+          }
+        });
+        consultation.payment_id = payment.id;
+        consultation.payment_status = paymentStatus;
+        consultation.is_paid = isPaid;
+        consultation.paid_amount = isPaid ? amount : null;
+        consultation.paid_at = isPaid && payment.paid_at ? payment.paid_at.toISOString() : null;
+      } else if (!consultation.payment_status) {
+        consultation.payment_status = consultation.require_payment ? 'PENDING' : 'NOT_REQUIRED';
+      }
+      flow.consultation = consultation;
+
+      const requestedStage = normalizeIdentifier(data.initial_stage).toUpperCase();
+      if (requestedStage && WORKFLOW_STAGE_SET.has(requestedStage) && !TERMINAL_STAGES.has(requestedStage)) {
+        setFlowStage(flow, requestedStage);
+      } else if (consultation.require_payment && !consultation.is_paid) {
+        setFlowStage(flow, STAGES.WAITING_CONSULTATION_PAYMENT);
+      } else if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT) {
+        setFlowStage(flow, STAGES.WAITING_VITALS);
+      }
+
+      if (flow.visit_queue_id) {
+        await tx.visit_queue.update({
+          where: { id: flow.visit_queue_id },
+          data: {
+            provider_user_id: providerUserId,
+            status: 'IN_PROGRESS',
+            queued_at: data.queued_at ? new Date(data.queued_at) : undefined
+          }
+        });
+      }
+
+      if (appointment && appointment.status !== 'IN_PROGRESS') {
+        await tx.appointment.update({
+          where: { id: appointment.id },
+          data: { status: 'IN_PROGRESS', provider_user_id: providerUserId }
+        });
+      } else if (appointment && providerUserId) {
+        await tx.appointment.update({
+          where: { id: appointment.id },
+          data: { provider_user_id: providerUserId }
+        });
+      }
+
+      appendTimelineEvent(
+        flow,
+        'ACTIVE_ENCOUNTER_CONTEXT_UPDATED',
+        context,
+        {
+          provider_user_id: providerUserId,
+          appointment_id: flow.appointment_id || null,
+          visit_queue_id: flow.visit_queue_id || null,
+          arrival_mode: arrivalMode,
+          consultation_fee: consultation.consultation_fee || null,
+          require_consultation_payment: consultation.require_payment,
+          payment_status: consultation.payment_status || null,
+          notes: data.notes || null
+        },
+        now
+      );
+
+      const nextEncounterState = {
+        ...encounter,
+        ...encounterUpdate,
+        tenant_id: encounter.tenant_id,
+        patient_id: encounter.patient_id,
+        status: encounter.status
+      };
+      const updatedEncounter = await tx.encounter.update({
+        where: { id: encounter.id },
+        data: {
+          ...encounterUpdate,
+          active_opd_lock_key: activeOpdLockKeyForEncounter(nextEncounterState),
+          extension_json: {
+            ...(encounter.extension_json || {}),
+            opd_flow: flow
+          }
+        }
+      });
+
+      return {
+        encounter: updatedEncounter,
+        transition: {
+          action: 'UPDATE_ACTIVE_ENCOUNTER_CONTEXT',
+          stage_from: stageBefore,
+          stage_to: flow.stage,
+          provider_user_id: providerUserId,
+          occurred_at: now.toISOString()
+        }
+      };
+    });
+  } catch (error) {
+    throwIfActiveOpdLockError(error);
+    throw error;
+  }
+
+  createAuditLog({
+    tenant_id: updatedResult.encounter.tenant_id,
+    user_id: context.user_id,
+    action: 'UPDATE',
+    entity: 'opd_flow',
+    entity_id: updatedResult.encounter.id,
+    diff: { after: updatedResult.encounter },
+    ip_address: context.ip_address
+  }).catch(() => {});
+
+  const snapshot = await getOpdFlowById(updatedResult.encounter.id);
+  await publishOpdRealtimeUpdates({
+    snapshot,
+    transition: updatedResult.transition,
+    context
+  });
+  return snapshot;
+};
+
 const payConsultation = async (id, data, context = {}) => {
   let updatedResult;
   try {
@@ -2802,8 +2737,7 @@ const payConsultation = async (id, data, context = {}) => {
 
       const consultation = flow.consultation || {};
       const isCorrection =
-        consultation.is_paid === true ||
-        PAID_PAYMENT_STATUSES.has(normalizeUpper(consultation.payment_status));
+        consultation.is_paid === true || PAID_PAYMENT_STATUSES.has(normalizeUpper(consultation.payment_status));
 
       let invoiceId = data.invoice_id || consultation.invoice_id || null;
       let invoice = null;
@@ -2824,17 +2758,10 @@ const payConsultation = async (id, data, context = {}) => {
             patient_id: encounter.patient_id,
             status: 'SENT',
             billing_status: 'ISSUED',
-            total_amount: normalizeDecimalString(
-              data.amount,
-              consultation.consultation_fee || '0.00'
-            ),
+            total_amount: normalizeDecimalString(data.amount, consultation.consultation_fee || '0.00'),
             currency: normalizeCurrencyCode(
               data.currency || consultation.currency,
-              await resolveDefaultCurrency(
-                tx,
-                encounter.tenant_id,
-                encounter.facility_id
-              )
+              await resolveDefaultCurrency(tx, encounter.tenant_id, encounter.facility_id)
             ),
             issued_at: new Date()
           }
@@ -2845,16 +2772,11 @@ const payConsultation = async (id, data, context = {}) => {
       const paymentStatus = data.status || 'COMPLETED';
       const currency = normalizeCurrencyCode(
         data.currency || consultation.currency || invoice.currency,
-        await resolveDefaultCurrency(
-          tx,
-          encounter.tenant_id,
-          encounter.facility_id
-        )
+        await resolveDefaultCurrency(tx, encounter.tenant_id, encounter.facility_id)
       );
       const amount = normalizeDecimalString(
         data.amount,
-        consultation.consultation_fee ||
-          normalizeDecimalString(invoice.total_amount, '0.00')
+        consultation.consultation_fee || normalizeDecimalString(invoice.total_amount, '0.00')
       );
 
       const payment = await tx.payment.create({
@@ -2866,25 +2788,17 @@ const payConsultation = async (id, data, context = {}) => {
           status: paymentStatus,
           method: data.method,
           amount,
-          paid_at:
-            paymentStatus === 'COMPLETED'
-              ? data.paid_at
-                ? new Date(data.paid_at)
-                : new Date()
-              : null,
+          paid_at: paymentStatus === 'COMPLETED' ? (data.paid_at ? new Date(data.paid_at) : new Date()) : null,
           transaction_ref: data.transaction_ref || null
         }
       });
 
       const correctedInvoiceTotal =
-        isCorrection && data.amount
-          ? amount
-          : normalizeDecimalString(invoice.total_amount, amount);
+        isCorrection && data.amount ? amount : normalizeDecimalString(invoice.total_amount, amount);
       if (
         isCorrection &&
         data.amount &&
-        toDecimalNumber(correctedInvoiceTotal) !==
-          toDecimalNumber(invoice.total_amount)
+        toDecimalNumber(correctedInvoiceTotal) !== toDecimalNumber(invoice.total_amount)
       ) {
         invoice = await tx.invoice.update({
           where: { id: invoice.id },
@@ -2897,20 +2811,14 @@ const payConsultation = async (id, data, context = {}) => {
 
       const invoiceTotal = toDecimalNumber(correctedInvoiceTotal);
       const paidAmount = toDecimalNumber(amount);
-      const isPaid =
-        paymentStatus === 'COMPLETED' && paidAmount >= invoiceTotal;
+      const isPaid = paymentStatus === 'COMPLETED' && paidAmount >= invoiceTotal;
 
       await tx.invoice.update({
         where: { id: invoice.id },
         data: {
           status: isPaid ? 'PAID' : 'SENT',
           currency,
-          billing_status:
-            paymentStatus === 'COMPLETED'
-              ? isPaid
-                ? 'PAID'
-                : 'PARTIAL'
-              : 'ISSUED'
+          billing_status: paymentStatus === 'COMPLETED' ? (isPaid ? 'PAID' : 'PARTIAL') : 'ISSUED'
         }
       });
 
@@ -2919,23 +2827,17 @@ const payConsultation = async (id, data, context = {}) => {
       consultation.payment_status = paymentStatus;
       consultation.is_paid = isPaid;
       consultation.paid_amount = isPaid ? amount : null;
-      consultation.paid_at =
-        isPaid && payment.paid_at ? payment.paid_at.toISOString() : null;
+      consultation.paid_at = isPaid && payment.paid_at ? payment.paid_at.toISOString() : null;
       consultation.currency = currency;
       flow.consultation = consultation;
 
-      if (
-        flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT &&
-        consultation.is_paid
-      ) {
+      if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT && consultation.is_paid) {
         setFlowStage(flow, STAGES.WAITING_VITALS);
       }
 
       appendTimelineEvent(
         flow,
-        isCorrection
-          ? 'CONSULTATION_PAYMENT_CORRECTED'
-          : 'CONSULTATION_PAYMENT_RECORDED',
+        isCorrection ? 'CONSULTATION_PAYMENT_CORRECTED' : 'CONSULTATION_PAYMENT_RECORDED',
         context,
         {
           payment_id: payment.id,
@@ -3005,23 +2907,12 @@ const recordVitals = async (id, data, context = {}) => {
       const stageBefore = flow.stage;
 
       const isEmergency = encounter.encounter_type === 'EMERGENCY';
-      if (
-        !isEmergency &&
-        flow.consultation?.require_payment &&
-        !flow.consultation?.is_paid
-      ) {
-        throw new HttpError(
-          'errors.opd_flow.consultation_payment_required',
-          400
-        );
+      if (!isEmergency && flow.consultation?.require_payment && !flow.consultation?.is_paid) {
+        throw new HttpError('errors.opd_flow.consultation_payment_required', 400);
       }
 
       const isVitalsUpdate = data.update_existing === true;
-      if (
-        !isVitalsUpdate &&
-        flow.stage !== STAGES.WAITING_VITALS &&
-        flow.stage !== STAGES.WAITING_DOCTOR_ASSIGNMENT
-      ) {
+      if (!isVitalsUpdate && flow.stage !== STAGES.WAITING_VITALS && flow.stage !== STAGES.WAITING_DOCTOR_ASSIGNMENT) {
         throw new HttpError('errors.opd_flow.invalid_stage_transition', 400);
       }
 
@@ -3035,9 +2926,7 @@ const recordVitals = async (id, data, context = {}) => {
           diastolic_value: normalizedVital.diastolic_value,
           map_value: normalizedVital.map_value,
           unit: vital.unit || null,
-          recorded_at: vital.recorded_at
-            ? new Date(vital.recorded_at)
-            : new Date()
+          recorded_at: vital.recorded_at ? new Date(vital.recorded_at) : new Date()
         };
       });
 
@@ -3076,9 +2965,7 @@ const recordVitals = async (id, data, context = {}) => {
       const requestedTriageValue = data.triage_priority || data.triage_level;
       const triageLevel = mapTriageLevel(requestedTriageValue);
       if (requestedTriageValue && !triageLevel) {
-        throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [
-          { field: 'triage_level' }
-        ]);
+        throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [{ field: 'triage_level' }]);
       }
 
       if (triageLevel) {
@@ -3118,21 +3005,13 @@ const recordVitals = async (id, data, context = {}) => {
         }
       }
 
-      if (
-        flow.stage === STAGES.WAITING_VITALS ||
-        flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT
-      ) {
+      if (flow.stage === STAGES.WAITING_VITALS || flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT) {
         setFlowStage(flow, STAGES.WAITING_DOCTOR_ASSIGNMENT);
       }
-      appendTimelineEvent(
-        flow,
-        isVitalsUpdate ? 'VITALS_UPDATED' : 'VITALS_RECORDED',
-        context,
-        {
-          vitals_count: data.vitals.length,
-          triage_level: data.triage_level || null
-        }
-      );
+      appendTimelineEvent(flow, isVitalsUpdate ? 'VITALS_UPDATED' : 'VITALS_RECORDED', context, {
+        vitals_count: data.vitals.length,
+        triage_level: data.triage_level || null
+      });
 
       if (flow.visit_queue_id) {
         await tx.visit_queue.update({
@@ -3179,9 +3058,7 @@ const recordVitals = async (id, data, context = {}) => {
   }).catch(() => {});
 
   let snapshot = await getOpdFlowById(updatedResult.encounter.id);
-  const savedVitals = Array.isArray(updatedResult.saved_vitals)
-    ? updatedResult.saved_vitals
-    : [];
+  const savedVitals = Array.isArray(updatedResult.saved_vitals) ? updatedResult.saved_vitals : [];
   if (savedVitals.length > 0) {
     await Promise.all(
       savedVitals.map((vital) =>
@@ -3228,9 +3105,7 @@ const assignDoctor = async (id, data, context = {}) => {
       encounter.facility_id
     );
     if (!provider) {
-      throw new HttpError('errors.user.not_found', 404, [
-        { field: 'provider_user_id' }
-      ]);
+      throw new HttpError('errors.user.not_found', 404, [{ field: 'provider_user_id' }]);
     }
 
     const updated = await tx.encounter.update({
@@ -3323,9 +3198,7 @@ const doctorReview = async (id, data, context = {}) => {
 
     const authorUserId = context.user_id || encounter.provider_user_id;
     if (!authorUserId) {
-      throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [
-        { field: 'author_user_id' }
-      ]);
+      throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [{ field: 'author_user_id' }]);
     }
 
     const note = await tx.clinical_note.create({
@@ -3353,9 +3226,7 @@ const doctorReview = async (id, data, context = {}) => {
           encounter_id: encounter.id,
           code: procedure.code || null,
           description: procedure.description,
-          performed_at: procedure.performed_at
-            ? new Date(procedure.performed_at)
-            : null
+          performed_at: procedure.performed_at ? new Date(procedure.performed_at) : null
         }))
       });
     }
@@ -3372,9 +3243,7 @@ const doctorReview = async (id, data, context = {}) => {
             context
           });
           if (!labTest) {
-            throw new HttpError('errors.lab_test.not_found', 404, [
-              { field: `lab_requests.${index}.lab_test_id` }
-            ]);
+            throw new HttpError('errors.lab_test.not_found', 404, [{ field: `lab_requests.${index}.lab_test_id` }]);
           }
 
           if (!seenLabTestIds.has(labTest.id)) {
@@ -3388,10 +3257,7 @@ const doctorReview = async (id, data, context = {}) => {
 
         if (item.lab_panel_id) {
           const normalizedPanelId = normalizeIdentifier(item.lab_panel_id);
-          const standardPanelCode = standardCatalogCodeFromIdentifier(
-            normalizedPanelId,
-            'STD_LAB_PANEL'
-          );
+          const standardPanelCode = standardCatalogCodeFromIdentifier(normalizedPanelId, 'STD_LAB_PANEL');
           if (standardPanelCode) {
             const standardCodes = STANDARD_LAB_PANELS[standardPanelCode] || [];
             for (const standardCode of standardCodes) {
@@ -3424,14 +3290,10 @@ const doctorReview = async (id, data, context = {}) => {
             : null;
 
           if (!labPanel) {
-            throw new HttpError('errors.lab_panel.not_found', 404, [
-              { field: `lab_requests.${index}.lab_panel_id` }
-            ]);
+            throw new HttpError('errors.lab_panel.not_found', 404, [{ field: `lab_requests.${index}.lab_panel_id` }]);
           }
 
-          const panelItems = Array.isArray(labPanel.panel_items)
-            ? labPanel.panel_items
-            : [];
+          const panelItems = Array.isArray(labPanel.panel_items) ? labPanel.panel_items : [];
           panelItems.forEach((panelItem) => {
             const labTestId = panelItem?.lab_test_id || panelItem?.lab_test?.id;
             if (!labTestId || seenLabTestIds.has(labTestId)) return;
@@ -3465,21 +3327,13 @@ const doctorReview = async (id, data, context = {}) => {
     }
 
     const radiologyOrderIds = [];
-    if (
-      Array.isArray(data.radiology_requests) &&
-      data.radiology_requests.length
-    ) {
+    if (Array.isArray(data.radiology_requests) && data.radiology_requests.length) {
       for (const [index, request] of data.radiology_requests.entries()) {
         let radiologyTestId = null;
         if (request.radiology_test_id) {
-          const radiologyTest = await resolveEntityByIdentifier(
-            tx,
-            'radiology_test',
-            request.radiology_test_id,
-            {
-              tenant_id: encounter.tenant_id
-            }
-          );
+          const radiologyTest = await resolveEntityByIdentifier(tx, 'radiology_test', request.radiology_test_id, {
+            tenant_id: encounter.tenant_id
+          });
           if (!radiologyTest) {
             throw new HttpError('errors.radiology_test.not_found', 404, [
               { field: `radiology_requests.${index}.radiology_test_id` }
@@ -3505,18 +3359,11 @@ const doctorReview = async (id, data, context = {}) => {
     const resolvedMedications = [];
     if (Array.isArray(data.medications) && data.medications.length) {
       for (const [index, medication] of data.medications.entries()) {
-        const drug = await resolveEntityByIdentifier(
-          tx,
-          'drug',
-          medication.drug_id,
-          {
-            tenant_id: encounter.tenant_id
-          }
-        );
+        const drug = await resolveEntityByIdentifier(tx, 'drug', medication.drug_id, {
+          tenant_id: encounter.tenant_id
+        });
         if (!drug) {
-          throw new HttpError('errors.drug.not_found', 404, [
-            { field: `medications.${index}.drug_id` }
-          ]);
+          throw new HttpError('errors.drug.not_found', 404, [{ field: `medications.${index}.drug_id` }]);
         }
         resolvedMedications.push({
           ...medication,
@@ -3576,17 +3423,11 @@ const doctorReview = async (id, data, context = {}) => {
 
     appendTimelineEvent(flow, 'DOCTOR_REVIEW_COMPLETED', context, {
       note_id: note.id,
-      diagnosis_count: Array.isArray(data.diagnoses)
-        ? data.diagnoses.length
-        : 0,
-      procedure_count: Array.isArray(data.procedures)
-        ? data.procedures.length
-        : 0,
+      diagnosis_count: Array.isArray(data.diagnoses) ? data.diagnoses.length : 0,
+      procedure_count: Array.isArray(data.procedures) ? data.procedures.length : 0,
       lab_order_count: hasLab ? 1 : 0,
       radiology_order_count: radiologyOrderIds.length,
-      medication_count: Array.isArray(data.medications)
-        ? data.medications.length
-        : 0,
+      medication_count: Array.isArray(data.medications) ? data.medications.length : 0,
       notes: data.notes || null
     });
 
@@ -3663,9 +3504,7 @@ const disposition = async (id, data, context = {}) => {
             encounter.tenant_id
           );
           if (!resolvedFacility) {
-            throw new HttpError('errors.facility.not_found', 404, [
-              { field: 'admission_facility_id' }
-            ]);
+            throw new HttpError('errors.facility.not_found', 404, [{ field: 'admission_facility_id' }]);
           }
           admissionFacilityId = resolvedFacility.id;
         }
@@ -3685,10 +3524,7 @@ const disposition = async (id, data, context = {}) => {
       setFlowStage(flow, STAGES.ADMITTED);
     } else {
       if (data.decision === 'SEND_TO_PHARMACY' && !flow.pharmacy_order_id) {
-        throw new HttpError(
-          'errors.opd_flow.pharmacy_order_required_for_disposition',
-          400
-        );
+        throw new HttpError('errors.opd_flow.pharmacy_order_required_for_disposition', 400);
       }
 
       setFlowStage(flow, STAGES.DISCHARGED);
@@ -3731,11 +3567,7 @@ const disposition = async (id, data, context = {}) => {
       const appointment = await tx.appointment.findFirst({
         where: { id: flow.appointment_id, deleted_at: null }
       });
-      if (
-        appointment &&
-        appointment.status !== 'CANCELLED' &&
-        appointment.status !== 'NO_SHOW'
-      ) {
+      if (appointment && appointment.status !== 'CANCELLED' && appointment.status !== 'NO_SHOW') {
         await tx.appointment.update({
           where: { id: appointment.id },
           data: { status: 'COMPLETED' }
@@ -3785,10 +3617,7 @@ const disposition = async (id, data, context = {}) => {
   if (updatedResult.admission_id) {
     try {
       const ipdFlowService = require('@services/ipd-flow/ipd-flow.service');
-      await ipdFlowService.emitAdmissionRefreshEvent(
-        updatedResult.admission_id,
-        context
-      );
+      await ipdFlowService.emitAdmissionRefreshEvent(updatedResult.admission_id, context);
     } catch (_error) {
       // OPD disposition should not fail when IPD realtime fan-out fails.
     }
@@ -3802,9 +3631,7 @@ const correctStage = async (id, data, context = {}) => {
 
   const stageTo = String(data?.stage_to || '').trim();
   if (!WORKFLOW_STAGE_SET.has(stageTo)) {
-    throw new HttpError('errors.validation.invalid', 400, [
-      { field: 'stage_to' }
-    ]);
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'stage_to' }]);
   }
 
   const correctedAt = new Date();
@@ -3820,14 +3647,10 @@ const correctStage = async (id, data, context = {}) => {
       const flow = getOpdFlowState(encounter);
       const stageBefore = flow.stage || null;
       if (stageBefore === stageTo) {
-        throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [
-          { field: 'stage_to' }
-        ]);
+        throw new HttpError('errors.opd_flow.invalid_stage_transition', 400, [{ field: 'stage_to' }]);
       }
       if (stageCorrectionRequiresReason(stageBefore, stageTo) && !reason) {
-        throw new HttpError('errors.validation.required', 400, [
-          { field: 'reason' }
-        ]);
+        throw new HttpError('errors.validation.required', 400, [{ field: 'reason' }]);
       }
 
       setFlowStage(flow, stageTo);
@@ -3875,11 +3698,7 @@ const correctStage = async (id, data, context = {}) => {
         const appointment = await tx.appointment.findFirst({
           where: { id: flow.appointment_id, deleted_at: null }
         });
-        if (
-          appointment &&
-          appointment.status !== 'CANCELLED' &&
-          appointment.status !== 'NO_SHOW'
-        ) {
+        if (appointment && appointment.status !== 'CANCELLED' && appointment.status !== 'NO_SHOW') {
           await tx.appointment.update({
             where: { id: appointment.id },
             data: { status: isTerminalStage ? 'COMPLETED' : 'IN_PROGRESS' }
@@ -3939,6 +3758,7 @@ module.exports = {
   getOpdFlowById,
   bootstrapOpdFlow,
   startOpdFlow,
+  updateActiveEncounterContext,
   payConsultation,
   recordVitals,
   assignDoctor,

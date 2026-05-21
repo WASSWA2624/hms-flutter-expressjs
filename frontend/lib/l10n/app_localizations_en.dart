@@ -598,7 +598,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdStartEncounterAction => 'Start encounter';
 
   @override
-  String get opdOpenActiveEncounterAction => 'Open active encounter';
+  String get opdOpenActiveEncounterAction => 'Update encounter';
 
   @override
   String get opdStartEncounterTooltip =>

@@ -45,45 +45,13 @@ const VITAL_TYPE_VALUES = [
   'HEIGHT',
   'BMI'
 ];
-const BLOOD_PRESSURE_VALUE_REGEX =
-  /^(\d{2,3}(?:\.\d{1,2})?)\s*\/\s*(\d{2,3}(?:\.\d{1,2})?)$/;
+const BLOOD_PRESSURE_VALUE_REGEX = /^(\d{2,3}(?:\.\d{1,2})?)\s*\/\s*(\d{2,3}(?:\.\d{1,2})?)$/;
 const DIAGNOSIS_TYPE_VALUES = ['PRIMARY', 'SECONDARY', 'DIFFERENTIAL'];
-const LAB_ORDER_STATUS_VALUES = [
-  'ORDERED',
-  'COLLECTED',
-  'IN_PROCESS',
-  'COMPLETED',
-  'CANCELLED'
-];
-const RADIOLOGY_ORDER_STATUS_VALUES = [
-  'ORDERED',
-  'IN_PROCESS',
-  'COMPLETED',
-  'CANCELLED'
-];
-const PRESCRIPTION_STATUS_VALUES = [
-  'DRAFT',
-  'ACTIVE',
-  'COMPLETED',
-  'CANCELLED'
-];
-const MEDICATION_ROUTE_VALUES = [
-  'ORAL',
-  'IV',
-  'IM',
-  'TOPICAL',
-  'INHALATION',
-  'OTHER'
-];
-const MEDICATION_FREQUENCY_VALUES = [
-  'ONCE',
-  'BID',
-  'TID',
-  'QID',
-  'PRN',
-  'STAT',
-  'CUSTOM'
-];
+const LAB_ORDER_STATUS_VALUES = ['ORDERED', 'COLLECTED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED'];
+const RADIOLOGY_ORDER_STATUS_VALUES = ['ORDERED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED'];
+const PRESCRIPTION_STATUS_VALUES = ['DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELLED'];
+const MEDICATION_ROUTE_VALUES = ['ORAL', 'IV', 'IM', 'TOPICAL', 'INHALATION', 'OTHER'];
+const MEDICATION_FREQUENCY_VALUES = ['ONCE', 'BID', 'TID', 'QID', 'PRN', 'STAT', 'CUSTOM'];
 const DISPOSITION_VALUES = ['ADMIT', 'SEND_TO_PHARMACY', 'DISCHARGE'];
 const WORKFLOW_STAGE_VALUES = [
   'WAITING_CONSULTATION_PAYMENT',
@@ -107,8 +75,7 @@ const LEGACY_RESOURCE_VALUES = [
   'ambulance-dispatches',
   'ambulance-trips'
 ];
-const UUID_LIKE_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_LIKE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PATIENT_FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
 const RESOURCE_FRIENDLY_ID_REGEX = /^(?=.*\d)[A-Za-z][A-Za-z0-9_-]*$/;
 
@@ -136,32 +103,17 @@ const standardLabTestIdentifierSchema = z
 const standardLabPanelIdentifierSchema = z
   .string()
   .trim()
-  .regex(
-    /^STD_LAB_PANEL:[A-Za-z0-9_]+$/,
-    'Invalid standard lab panel identifier'
-  )
+  .regex(/^STD_LAB_PANEL:[A-Za-z0-9_]+$/, 'Invalid standard lab panel identifier')
   .transform((value) => value.toUpperCase());
-const labTestIdentifierSchema = z.union([
-  resourceFriendlyIdSchema,
-  standardLabTestIdentifierSchema
-]);
-const labPanelIdentifierSchema = z.union([
-  resourceFriendlyIdSchema,
-  standardLabPanelIdentifierSchema
-]);
+const labTestIdentifierSchema = z.union([resourceFriendlyIdSchema, standardLabTestIdentifierSchema]);
+const labPanelIdentifierSchema = z.union([resourceFriendlyIdSchema, standardLabPanelIdentifierSchema]);
 const scopeIdentifierSchema = z
   .string()
   .trim()
   .min(2)
   .max(64)
-  .refine(
-    (value) =>
-      UUID_LIKE_REGEX.test(value) || RESOURCE_FRIENDLY_ID_REGEX.test(value),
-    'Invalid identifier format'
-  )
-  .transform((value) =>
-    UUID_LIKE_REGEX.test(value) ? value.toLowerCase() : value.toUpperCase()
-  );
+  .refine((value) => UUID_LIKE_REGEX.test(value) || RESOURCE_FRIENDLY_ID_REGEX.test(value), 'Invalid identifier format')
+  .transform((value) => (UUID_LIKE_REGEX.test(value) ? value.toLowerCase() : value.toUpperCase()));
 const providerIdentifierSchema = scopeIdentifierSchema;
 const appointmentIdentifierSchema = resourceFriendlyIdSchema;
 const encounterIdentifierSchema = resourceFriendlyIdSchema;
@@ -211,12 +163,7 @@ const createOpdFlowSchema = z
     queued_at: z.string().datetime().optional()
   })
   .superRefine((data, ctx) => {
-    if (
-      !data.patient_id &&
-      !data.patient_registration &&
-      !data.appointment_id &&
-      !data.visit_queue_id
-    ) {
+    if (!data.patient_id && !data.patient_registration && !data.appointment_id && !data.visit_queue_id) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['patient_id'],
@@ -232,6 +179,24 @@ const createOpdFlowSchema = z
       });
     }
   });
+
+const updateActiveEncounterContextSchema = z.object({
+  facility_id: facilityIdentifierSchema.optional().nullable(),
+  patient_id: patientIdentifierSchema.optional(),
+  appointment_id: appointmentIdentifierSchema.optional().nullable(),
+  visit_queue_id: scopeIdentifierSchema.optional().nullable(),
+  provider_user_id: providerIdentifierSchema.optional().nullable(),
+  arrival_mode: z.enum(ARRIVAL_MODE_VALUES).optional(),
+  initial_stage: z.enum(WORKFLOW_STAGE_VALUES).optional(),
+  consultation_fee: decimalStringSchema.optional(),
+  currency: z.string().trim().min(1).max(10).optional(),
+  create_consultation_invoice: z.boolean().optional(),
+  require_consultation_payment: z.boolean().optional(),
+  pay_now: payNowSchema.optional(),
+  emergency: emergencyPayloadSchema.optional(),
+  notes: z.string().trim().max(65535).optional().nullable(),
+  queued_at: z.string().datetime().optional()
+});
 
 const bootstrapOpdFlowSchema = z.object({
   patient_id: patientIdentifierSchema,
@@ -261,10 +226,7 @@ const payConsultationSchema = z.object({
   notes: z.string().trim().max(10000).optional().nullable()
 });
 
-const decimalInputSchema = z.union([
-  z.coerce.number().positive(),
-  decimalStringSchema
-]);
+const decimalInputSchema = z.union([z.coerce.number().positive(), decimalStringSchema]);
 
 const recordVitalItemSchema = z
   .object({
@@ -278,11 +240,8 @@ const recordVitalItemSchema = z
   })
   .superRefine((vital, ctx) => {
     if (vital.vital_type === 'BLOOD_PRESSURE') {
-      const hasStructuredComponents =
-        vital.systolic_value != null && vital.diastolic_value != null;
-      const hasLegacyValue =
-        typeof vital.value === 'string' &&
-        BLOOD_PRESSURE_VALUE_REGEX.test(vital.value.trim());
+      const hasStructuredComponents = vital.systolic_value != null && vital.diastolic_value != null;
+      const hasLegacyValue = typeof vital.value === 'string' && BLOOD_PRESSURE_VALUE_REGEX.test(vital.value.trim());
 
       if (!hasStructuredComponents && !hasLegacyValue) {
         ctx.addIssue({
@@ -420,6 +379,7 @@ const listOpdFlowsQuerySchema = listQuerySchema.extend({
 
 module.exports = {
   createOpdFlowSchema,
+  updateActiveEncounterContextSchema,
   bootstrapOpdFlowSchema,
   encounterIdParamsSchema,
   resolveLegacyRouteParamsSchema,

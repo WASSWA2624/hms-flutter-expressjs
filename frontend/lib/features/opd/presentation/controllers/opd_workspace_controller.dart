@@ -355,7 +355,12 @@ final class OpdWorkspaceController
     if (existingEncounterId is String &&
         existingEncounterId.trim().isNotEmpty) {
       return _mutateFlow(
-        () => _repository.getOpdFlow(existingEncounterId.trim()),
+        () => _repository.updateActiveEncounter(
+          existingEncounterId.trim(),
+          Map<String, Object?>.from(payload)
+            ..remove('existing_encounter_id')
+            ..remove('reuse_open_encounter'),
+        ),
         refreshAfter: true,
       );
     }

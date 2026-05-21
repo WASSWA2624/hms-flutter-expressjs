@@ -41,8 +41,7 @@ const listOpdFlows = asyncHandler(async (req, res) => {
       tenant_id,
       facility_id,
       patient_id,
-      provider_user_id:
-        queue_scope === 'ASSIGNED' && !provider_user_id ? req.user?.id : provider_user_id,
+      provider_user_id: queue_scope === 'ASSIGNED' && !provider_user_id ? req.user?.id : provider_user_id,
       queue_scope,
       encounter_type,
       stage,
@@ -82,10 +81,15 @@ const bootstrapOpdFlow = asyncHandler(async (req, res) => {
     ...req.body,
     tenant_id: req.user?.tenant_id,
     facility_id: req.body?.facility_id ?? req.user?.facility_id ?? null,
-    provider_user_id: req.body?.provider_user_id ?? req.user?.id ?? null,
+    provider_user_id: req.body?.provider_user_id ?? req.user?.id ?? null
   };
 
   const flow = await opdFlowService.bootstrapOpdFlow(payload, buildAuditContext(req));
+  return sendSuccess(res, 200, 'messages.opd_flow.get.success', flow);
+});
+
+const updateActiveEncounterContext = asyncHandler(async (req, res) => {
+  const flow = await opdFlowService.updateActiveEncounterContext(req.params.id, req.body, buildAuditContext(req));
   return sendSuccess(res, 200, 'messages.opd_flow.get.success', flow);
 });
 
@@ -125,6 +129,7 @@ module.exports = {
   getOpdFlowById,
   startOpdFlow,
   bootstrapOpdFlow,
+  updateActiveEncounterContext,
   payConsultation,
   recordVitals,
   assignDoctor,

@@ -19,7 +19,7 @@ const DOCTOR_INCLUDE = {
   profile: true,
   roles: {
     where: { deleted_at: null },
-    include: { role: true },
+    include: { role: true }
   },
   staff_profile: true,
   provider_schedules: {
@@ -28,11 +28,11 @@ const DOCTOR_INCLUDE = {
       facility: true,
       slots: {
         where: { deleted_at: null },
-        orderBy: [{ override_date: 'asc' }, { start_time: 'asc' }],
-      },
+        orderBy: [{ override_date: 'asc' }, { start_time: 'asc' }]
+      }
     },
-    orderBy: [{ day_of_week: 'asc' }, { start_time: 'asc' }],
-  },
+    orderBy: [{ day_of_week: 'asc' }, { start_time: 'asc' }]
+  }
 };
 
 const normalizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -42,7 +42,7 @@ const buildEmptyPagination = (page, limit) => ({
   total: 0,
   totalPages: 0,
   hasNextPage: false,
-  hasPreviousPage: page > 1,
+  hasPreviousPage: page > 1
 });
 
 const resolveTenantByIdentifier = async (tx, identifier) => doctorRepository.findTenantByIdentifier(identifier, tx);
@@ -108,9 +108,7 @@ const hasMeaningfulValue = (value) => {
 const normalizeConsultationPayload = (inputData = {}, fallbackPractitionerType = null) => {
   const data = { ...inputData };
   const practitionerType =
-    normalizePractitionerType(data.practitioner_type) ||
-    normalizePractitionerType(fallbackPractitionerType) ||
-    'MO';
+    normalizePractitionerType(data.practitioner_type) || normalizePractitionerType(fallbackPractitionerType) || 'MO';
   const hasFee = hasMeaningfulValue(data.consultation_fee);
   const hasCurrency = hasMeaningfulValue(data.consultation_currency);
 
@@ -127,8 +125,7 @@ const normalizeConsultationPayload = (inputData = {}, fallbackPractitionerType =
   }
 
   if (hasFee || hasCurrency) {
-    data.is_fee_overridden =
-      data.is_fee_overridden !== undefined ? Boolean(data.is_fee_overridden) : true;
+    data.is_fee_overridden = data.is_fee_overridden !== undefined ? Boolean(data.is_fee_overridden) : true;
     return data;
   }
 
@@ -144,12 +141,15 @@ const resolveDoctorRole = async (tx, tenantId, facilityId = null) => {
 
   if (role) return role;
 
-  return doctorRepository.createRole({
-    tenant_id: tenantId,
-    facility_id: facilityId,
-    name: ROLE_DOCTOR,
-    description: 'Doctor role (auto-created by doctor onboarding)',
-  }, tx);
+  return doctorRepository.createRole(
+    {
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      name: ROLE_DOCTOR,
+      description: 'Doctor role (auto-created by doctor onboarding)'
+    },
+    tx
+  );
 };
 
 const resolveRoleByIdentifier = async (tx, identifier, tenantId) => {
@@ -178,20 +178,18 @@ const resolveOrCreatePosition = async (tx, { positionId, positionName, tenantId,
   const normalizedName = normalizeIdentifier(positionName);
   if (!normalizedName) return null;
 
-  const existingByName = await doctorRepository.findStaffPositionByName(
-    normalizedName,
-    tenantId,
-    facilityId,
-    tx
-  );
+  const existingByName = await doctorRepository.findStaffPositionByName(normalizedName, tenantId, facilityId, tx);
   if (existingByName) return existingByName;
 
-  return doctorRepository.createStaffPosition({
-    tenant_id: tenantId,
-    facility_id: facilityId,
-    name: normalizedName,
-    is_active: true,
-  }, tx);
+  return doctorRepository.createStaffPosition(
+    {
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      name: normalizedName,
+      is_active: true
+    },
+    tx
+  );
 };
 
 const normalizePasswordPayload = async (data, isUpdate = false) => {
@@ -202,9 +200,7 @@ const normalizePasswordPayload = async (data, isUpdate = false) => {
   if (rawPassword) {
     next.password_hash = await hashPassword(rawPassword);
   } else if (providedHash) {
-    next.password_hash = BCRYPT_PREFIX_REGEX.test(providedHash)
-      ? providedHash
-      : await hashPassword(providedHash);
+    next.password_hash = BCRYPT_PREFIX_REGEX.test(providedHash) ? providedHash : await hashPassword(providedHash);
   } else if (!isUpdate) {
     throw new HttpError('errors.validation.field.required', 400, [{ field: 'password' }]);
   }
@@ -227,7 +223,7 @@ const mapDoctorResponse = (doctor) => {
     ? doctor.roles
         .map((entry) => ({
           id: entry?.role?.human_friendly_id || null,
-          name: entry?.role?.name || null,
+          name: entry?.role?.name || null
         }))
         .filter((entry) => entry.name)
     : [];
@@ -248,9 +244,9 @@ const mapDoctorResponse = (doctor) => {
               override_date: slot.override_date || null,
               start_time: slot.start_time,
               end_time: slot.end_time,
-              is_available: slot.is_available !== false,
+              is_available: slot.is_available !== false
             }))
-          : [],
+          : []
       }))
     : [];
 
@@ -270,8 +266,36 @@ const mapDoctorResponse = (doctor) => {
     roles,
     schedules,
     profile: doctor.profile || null,
-    staff_profile_id: staffProfile.human_friendly_id || null,
+    staff_profile_id: staffProfile.human_friendly_id || null
   };
+};
+
+const uniqueDoctorRows = (rows = []) => {
+  const seen = new Set();
+  const unique = [];
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const keys = [
+      row?.id,
+      row?.human_friendly_id,
+      row?.email,
+      row?.phone,
+      row?.staff_profile?.id,
+      row?.staff_profile?.human_friendly_id,
+      row?.staff_profile?.staff_number
+    ]
+      .map((value) =>
+        String(value || '')
+          .trim()
+          .toUpperCase()
+      )
+      .filter(Boolean);
+    if (keys.some((key) => seen.has(key))) {
+      continue;
+    }
+    keys.forEach((key) => seen.add(key));
+    unique.push(row);
+  }
+  return unique;
 };
 
 const normalizeRecurringSchedules = (entries = []) =>
@@ -312,7 +336,7 @@ const normalizeRecurringSchedules = (entries = []) =>
       end_time: endTime,
       timezone,
       effective_from: effectiveFrom || null,
-      effective_to: effectiveTo || null,
+      effective_to: effectiveTo || null
     };
   });
 
@@ -329,13 +353,11 @@ const normalizeScheduleOverrides = (entries = []) =>
     );
     return {
       schedule_index:
-        entry?.schedule_index !== undefined && entry?.schedule_index !== null
-          ? Number(entry.schedule_index)
-          : null,
+        entry?.schedule_index !== undefined && entry?.schedule_index !== null ? Number(entry.schedule_index) : null,
       override_date: overrideDate,
       start_time: startTime,
       end_time: endTime,
-      is_available: entry?.is_available !== false,
+      is_available: entry?.is_available !== false
     };
   });
 
@@ -350,16 +372,19 @@ const validateRecurringConflictTx = async ({
   timezone,
   effectiveFrom,
   effectiveTo,
-  excludeScheduleIds = [],
+  excludeScheduleIds = []
 }) => {
-  const existing = await doctorRepository.findRecurringSchedules({
-    tenantId,
-    facilityId,
-    providerUserId,
-    dayOfWeek,
-    timezone,
-    excludeScheduleIds,
-  }, tx);
+  const existing = await doctorRepository.findRecurringSchedules(
+    {
+      tenantId,
+      facilityId,
+      providerUserId,
+      dayOfWeek,
+      timezone,
+      excludeScheduleIds
+    },
+    tx
+  );
 
   for (const schedule of existing) {
     const overlapsDates = dateRangesOverlap(
@@ -372,7 +397,10 @@ const validateRecurringConflictTx = async ({
     if (!intervalsOverlap(startTime, endTime, schedule.start_time, schedule.end_time)) continue;
     throw new HttpError('errors.provider_schedule.overlap_detected', 409, [
       { field: 'recurring_schedules' },
-      { field: 'conflicting_schedule_id', value: schedule.human_friendly_id || null },
+      {
+        field: 'conflicting_schedule_id',
+        value: schedule.human_friendly_id || null
+      }
     ]);
   }
 };
@@ -384,7 +412,7 @@ const validateOverrideConflictsTx = async ({
   providerUserId,
   timezone,
   overrides,
-  excludeScheduleIds = [],
+  excludeScheduleIds = []
 }) => {
   if (!Array.isArray(overrides) || overrides.length === 0) return;
 
@@ -393,8 +421,14 @@ const validateOverrideConflictsTx = async ({
     const dateKey = override.override_date.toISOString().slice(0, 10);
     const existing = groupedByDate.get(dateKey) || [];
     for (const row of existing) {
-      if (row.is_available && override.is_available && intervalsOverlap(row.start_time, row.end_time, override.start_time, override.end_time)) {
-        throw new HttpError('errors.provider_schedule.override_overlap_detected', 409, [{ field: 'schedule_overrides' }]);
+      if (
+        row.is_available &&
+        override.is_available &&
+        intervalsOverlap(row.start_time, row.end_time, override.start_time, override.end_time)
+      ) {
+        throw new HttpError('errors.provider_schedule.override_overlap_detected', 409, [
+          { field: 'schedule_overrides' }
+        ]);
       }
     }
     existing.push(override);
@@ -406,20 +440,25 @@ const validateOverrideConflictsTx = async ({
     const dayStart = new Date(`${dateKey}T00:00:00.000Z`);
     const dayEnd = new Date(`${dateKey}T23:59:59.999Z`);
 
-    const existing = await doctorRepository.findAvailabilitySlots({
-      tenantId,
-      facilityId,
-      providerUserId,
-      timezone,
-      dayStart,
-      dayEnd,
-      excludeScheduleIds,
-    }, tx);
+    const existing = await doctorRepository.findAvailabilitySlots(
+      {
+        tenantId,
+        facilityId,
+        providerUserId,
+        timezone,
+        dayStart,
+        dayEnd,
+        excludeScheduleIds
+      },
+      tx
+    );
 
     for (const row of existing) {
       if (!row.is_available || !override.is_available) continue;
       if (intervalsOverlap(override.start_time, override.end_time, row.start_time, row.end_time)) {
-        throw new HttpError('errors.provider_schedule.override_overlap_detected', 409, [{ field: 'schedule_overrides' }]);
+        throw new HttpError('errors.provider_schedule.override_overlap_detected', 409, [
+          { field: 'schedule_overrides' }
+        ]);
       }
     }
   }
@@ -432,7 +471,7 @@ const createSchedulesTx = async ({
   providerUserId,
   recurringSchedules = [],
   scheduleOverrides = [],
-  excludeScheduleIds = [],
+  excludeScheduleIds = []
 }) => {
   const normalizedRecurring = normalizeRecurringSchedules(recurringSchedules || []);
   const normalizedOverrides = normalizeScheduleOverrides(scheduleOverrides || []);
@@ -450,34 +489,42 @@ const createSchedulesTx = async ({
       timezone: schedule.timezone,
       effectiveFrom: schedule.effective_from,
       effectiveTo: schedule.effective_to,
-      excludeScheduleIds,
+      excludeScheduleIds
     });
 
-    const created = await doctorRepository.createProviderSchedule({
-      tenant_id: tenantId,
-      facility_id: facilityId ?? null,
-      provider_user_id: providerUserId,
-      schedule_type: schedule.schedule_type,
-      day_of_week: schedule.day_of_week,
-      start_time: schedule.start_time,
-      end_time: schedule.end_time,
-      timezone: schedule.timezone,
-      effective_from: schedule.effective_from || null,
-      effective_to: schedule.effective_to || null,
-    }, tx);
+    const created = await doctorRepository.createProviderSchedule(
+      {
+        tenant_id: tenantId,
+        facility_id: facilityId ?? null,
+        provider_user_id: providerUserId,
+        schedule_type: schedule.schedule_type,
+        day_of_week: schedule.day_of_week,
+        start_time: schedule.start_time,
+        end_time: schedule.end_time,
+        timezone: schedule.timezone,
+        effective_from: schedule.effective_from || null,
+        effective_to: schedule.effective_to || null
+      },
+      tx
+    );
     createdSchedules.push(created);
   }
 
   if (normalizedOverrides.length > 0) {
-    const targetSchedules = createdSchedules.length > 0
-      ? createdSchedules
-      : await doctorRepository.findProviderSchedules({
-          deleted_at: null,
-          tenant_id: tenantId,
-          facility_id: facilityId ?? null,
-          provider_user_id: providerUserId,
-          ...(excludeScheduleIds.length > 0 ? { id: { notIn: excludeScheduleIds } } : {}),
-        }, [{ day_of_week: 'asc' }, { created_at: 'asc' }], tx);
+    const targetSchedules =
+      createdSchedules.length > 0
+        ? createdSchedules
+        : await doctorRepository.findProviderSchedules(
+            {
+              deleted_at: null,
+              tenant_id: tenantId,
+              facility_id: facilityId ?? null,
+              provider_user_id: providerUserId,
+              ...(excludeScheduleIds.length > 0 ? { id: { notIn: excludeScheduleIds } } : {})
+            },
+            [{ day_of_week: 'asc' }, { created_at: 'asc' }],
+            tx
+          );
 
     if (targetSchedules.length === 0) {
       throw new HttpError('errors.validation.field.required', 400, [{ field: 'recurring_schedules' }]);
@@ -485,9 +532,7 @@ const createSchedulesTx = async ({
 
     for (const override of normalizedOverrides) {
       const scheduleIndex =
-        Number.isInteger(override.schedule_index) && override.schedule_index >= 0
-          ? override.schedule_index
-          : 0;
+        Number.isInteger(override.schedule_index) && override.schedule_index >= 0 ? override.schedule_index : 0;
       const targetSchedule = targetSchedules[scheduleIndex];
       if (!targetSchedule) {
         throw new HttpError('errors.validation.invalid', 400, [{ field: 'schedule_overrides.schedule_index' }]);
@@ -500,16 +545,19 @@ const createSchedulesTx = async ({
         providerUserId,
         timezone: targetSchedule.timezone || 'UTC',
         overrides: [override],
-        excludeScheduleIds,
+        excludeScheduleIds
       });
 
-      await doctorRepository.createAvailabilitySlot({
-        schedule_id: targetSchedule.id,
-        override_date: override.override_date,
-        start_time: override.start_time,
-        end_time: override.end_time,
-        is_available: override.is_available !== false,
-      }, tx);
+      await doctorRepository.createAvailabilitySlot(
+        {
+          schedule_id: targetSchedule.id,
+          override_date: override.override_date,
+          start_time: override.start_time,
+          end_time: override.end_time,
+          is_available: override.is_available !== false
+        },
+        tx
+      );
     }
   }
 };
@@ -561,10 +609,10 @@ const listDoctors = async (filters = {}, page = 1, limit = 20, sortBy = 'created
         deleted_at: null,
         role: {
           deleted_at: null,
-          name: ROLE_DOCTOR,
-        },
-      },
-    },
+          name: ROLE_DOCTOR
+        }
+      }
+    }
   };
 
   if (tenantId) where.tenant_id = tenantId;
@@ -573,8 +621,8 @@ const listDoctors = async (filters = {}, page = 1, limit = 20, sortBy = 'created
   if (filters.practitioner_type) {
     where.staff_profile = {
       is: {
-        practitioner_type: normalizePractitionerType(filters.practitioner_type),
-      },
+        practitioner_type: normalizePractitionerType(filters.practitioner_type)
+      }
     };
   }
 
@@ -592,25 +640,25 @@ const listDoctors = async (filters = {}, page = 1, limit = 20, sortBy = 'created
       { staff_profile: { is: { human_friendly_id: { contains: upper } } } },
       { staff_profile: { is: { position: { contains: term } } } },
       { staff_profile: { is: { staff_number: { contains: term } } } },
-      { staff_profile: { is: { practitioner_type: { contains: upper } } } },
+      { staff_profile: { is: { practitioner_type: { contains: upper } } } }
     ];
   }
 
   const [rows, total] = await Promise.all([
     doctorRepository.findManyDoctors(where, skip, limit, orderBy, DOCTOR_INCLUDE),
-    doctorRepository.countDoctors(where),
+    doctorRepository.countDoctors(where)
   ]);
 
   return {
-    doctors: rows.map(mapDoctorResponse),
+    doctors: uniqueDoctorRows(rows).map(mapDoctorResponse),
     pagination: {
       page,
       limit,
       total,
       totalPages: Math.ceil(total / limit),
       hasNextPage: page < Math.ceil(total / limit),
-      hasPreviousPage: page > 1,
-    },
+      hasPreviousPage: page > 1
+    }
   };
 };
 
@@ -644,32 +692,35 @@ const createDoctor = async (data, actorUserId, ipAddress) => {
     const roleIds = await resolveRoleIds(tx, {
       tenantId,
       facilityId,
-      roleIds: data.role_ids || [],
+      roleIds: data.role_ids || []
     });
 
     const positionCatalog = await resolveOrCreatePosition(tx, {
       positionId: data.position_id,
       positionName: data.position_name,
       tenantId,
-      facilityId,
+      facilityId
     });
 
-    const user = await doctorRepository.createUser({
-      tenant_id: tenantId,
-      facility_id: facilityId,
-      position_title: data.position_title,
-      email: data.email,
-      phone: data.phone || null,
-      password_hash: payloadWithPassword.password_hash,
-      status: data.status || 'ACTIVE',
-    }, tx);
+    const user = await doctorRepository.createUser(
+      {
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        position_title: data.position_title,
+        email: data.email,
+        phone: data.phone || null,
+        password_hash: payloadWithPassword.password_hash,
+        status: data.status || 'ACTIVE'
+      },
+      tx
+    );
 
     await doctorRepository.createUserRoles(
       roleIds.map((roleId) => ({
         user_id: user.id,
         role_id: roleId,
         tenant_id: tenantId,
-        facility_id: facilityId,
+        facility_id: facilityId
       })),
       tx
     );
@@ -679,20 +730,23 @@ const createDoctor = async (data, actorUserId, ipAddress) => {
         practitioner_type: data.practitioner_type || 'MO',
         consultation_fee: data.consultation_fee ?? null,
         consultation_currency: data.consultation_currency ?? null,
-        is_fee_overridden: data.is_fee_overridden,
+        is_fee_overridden: data.is_fee_overridden
       },
       'MO'
     );
 
-    await doctorRepository.createStaffProfile({
-      tenant_id: tenantId,
-      user_id: user.id,
-      position: positionCatalog?.name || data.position_title,
-      practitioner_type: normalizedStaffProfilePayload.practitioner_type,
-      consultation_fee: normalizedStaffProfilePayload.consultation_fee,
-      consultation_currency: normalizedStaffProfilePayload.consultation_currency,
-      is_fee_overridden: normalizedStaffProfilePayload.is_fee_overridden,
-    }, tx);
+    await doctorRepository.createStaffProfile(
+      {
+        tenant_id: tenantId,
+        user_id: user.id,
+        position: positionCatalog?.name || data.position_title,
+        practitioner_type: normalizedStaffProfilePayload.practitioner_type,
+        consultation_fee: normalizedStaffProfilePayload.consultation_fee,
+        consultation_currency: normalizedStaffProfilePayload.consultation_currency,
+        is_fee_overridden: normalizedStaffProfilePayload.is_fee_overridden
+      },
+      tx
+    );
 
     await createSchedulesTx({
       tx,
@@ -700,7 +754,7 @@ const createDoctor = async (data, actorUserId, ipAddress) => {
       facilityId,
       providerUserId: user.id,
       recurringSchedules: data.recurring_schedules || [],
-      scheduleOverrides: data.schedule_overrides || [],
+      scheduleOverrides: data.schedule_overrides || []
     });
 
     return doctorRepository.findDoctorById(user.id, DOCTOR_INCLUDE, tx);
@@ -712,7 +766,7 @@ const createDoctor = async (data, actorUserId, ipAddress) => {
     entity: 'doctor',
     entity_id: created.id,
     diff: { after: mapDoctorResponse(created) },
-    ip_address: ipAddress,
+    ip_address: ipAddress
   }).catch(() => {});
 
   return mapDoctorResponse(created);
@@ -744,42 +798,44 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
       positionId: data.position_id,
       positionName: data.position_name,
       tenantId: before.tenant_id,
-      facilityId: targetFacilityId || null,
+      facilityId: targetFacilityId || null
     });
 
-    await doctorRepository.updateUser(before.id, {
-      facility_id: targetFacilityId,
-      position_title:
-        data.position_title !== undefined ? data.position_title : before.position_title,
-      email: data.email !== undefined ? data.email : before.email,
-      phone: data.phone !== undefined ? data.phone : before.phone,
-      password_hash:
-        payloadWithPassword.password_hash !== undefined
-          ? payloadWithPassword.password_hash
-          : before.password_hash,
-      status: data.status !== undefined ? data.status : before.status,
-    }, tx);
+    await doctorRepository.updateUser(
+      before.id,
+      {
+        facility_id: targetFacilityId,
+        position_title: data.position_title !== undefined ? data.position_title : before.position_title,
+        email: data.email !== undefined ? data.email : before.email,
+        phone: data.phone !== undefined ? data.phone : before.phone,
+        password_hash:
+          payloadWithPassword.password_hash !== undefined ? payloadWithPassword.password_hash : before.password_hash,
+        status: data.status !== undefined ? data.status : before.status
+      },
+      tx
+    );
 
     if (data.role_ids !== undefined) {
       const desiredRoleIds = await resolveRoleIds(tx, {
         tenantId: before.tenant_id,
         facilityId: targetFacilityId || null,
-        roleIds: data.role_ids || [],
+        roleIds: data.role_ids || []
       });
 
-      const existingRoles = await doctorRepository.findUserRoles({
-        deleted_at: null,
-        user_id: before.id,
-        tenant_id: before.tenant_id,
-        facility_id: targetFacilityId || null,
-      }, tx);
+      const existingRoles = await doctorRepository.findUserRoles(
+        {
+          deleted_at: null,
+          user_id: before.id,
+          tenant_id: before.tenant_id,
+          facility_id: targetFacilityId || null
+        },
+        tx
+      );
 
       const existingRoleIds = new Set(existingRoles.map((entry) => entry.role_id));
       const desiredRoleIdSet = new Set(desiredRoleIds);
 
-      const toDelete = existingRoles
-        .filter((entry) => !desiredRoleIdSet.has(entry.role_id))
-        .map((entry) => entry.id);
+      const toDelete = existingRoles.filter((entry) => !desiredRoleIdSet.has(entry.role_id)).map((entry) => entry.id);
 
       if (toDelete.length > 0) {
         await doctorRepository.softDeleteUserRoles(toDelete, tx);
@@ -792,7 +848,7 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
             user_id: before.id,
             role_id: roleId,
             tenant_id: before.tenant_id,
-            facility_id: targetFacilityId || null,
+            facility_id: targetFacilityId || null
           })),
           tx
         );
@@ -808,9 +864,7 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
             ? data.practitioner_type
             : existingStaffProfile?.practitioner_type || 'MO',
         consultation_fee:
-          data.consultation_fee !== undefined
-            ? data.consultation_fee
-            : existingStaffProfile?.consultation_fee || null,
+          data.consultation_fee !== undefined ? data.consultation_fee : existingStaffProfile?.consultation_fee || null,
         consultation_currency:
           data.consultation_currency !== undefined
             ? data.consultation_currency
@@ -818,7 +872,7 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
         is_fee_overridden:
           data.is_fee_overridden !== undefined
             ? data.is_fee_overridden
-            : existingStaffProfile?.is_fee_overridden || false,
+            : existingStaffProfile?.is_fee_overridden || false
       },
       existingStaffProfile?.practitioner_type || 'MO'
     );
@@ -833,25 +887,32 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
       practitioner_type: normalizedStaffProfilePayload.practitioner_type,
       consultation_fee: normalizedStaffProfilePayload.consultation_fee,
       consultation_currency: normalizedStaffProfilePayload.consultation_currency,
-      is_fee_overridden: normalizedStaffProfilePayload.is_fee_overridden,
+      is_fee_overridden: normalizedStaffProfilePayload.is_fee_overridden
     };
 
     if (existingStaffProfile) {
       await doctorRepository.updateStaffProfile(existingStaffProfile.id, staffProfileData, tx);
     } else {
-      await doctorRepository.createStaffProfile({
-        ...staffProfileData,
-        user_id: before.id,
-      }, tx);
+      await doctorRepository.createStaffProfile(
+        {
+          ...staffProfileData,
+          user_id: before.id
+        },
+        tx
+      );
     }
 
     if (data.recurring_schedules !== undefined) {
-      const existingSchedules = await doctorRepository.findProviderSchedules({
-        deleted_at: null,
-        tenant_id: before.tenant_id,
-        facility_id: targetFacilityId || null,
-        provider_user_id: before.id,
-      }, undefined, tx);
+      const existingSchedules = await doctorRepository.findProviderSchedules(
+        {
+          deleted_at: null,
+          tenant_id: before.tenant_id,
+          facility_id: targetFacilityId || null,
+          provider_user_id: before.id
+        },
+        undefined,
+        tx
+      );
       const existingScheduleIds = existingSchedules.map((entry) => entry.id);
 
       if (existingScheduleIds.length > 0) {
@@ -865,7 +926,7 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
         facilityId: targetFacilityId || null,
         providerUserId: before.id,
         recurringSchedules: data.recurring_schedules || [],
-        scheduleOverrides: data.schedule_overrides || [],
+        scheduleOverrides: data.schedule_overrides || []
       });
     } else if (data.schedule_overrides !== undefined) {
       await createSchedulesTx({
@@ -874,7 +935,7 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
         facilityId: targetFacilityId || null,
         providerUserId: before.id,
         recurringSchedules: [],
-        scheduleOverrides: data.schedule_overrides || [],
+        scheduleOverrides: data.schedule_overrides || []
       });
     }
 
@@ -886,8 +947,11 @@ const updateDoctor = async (id, data, actorUserId, ipAddress) => {
     action: 'UPDATE',
     entity: 'doctor',
     entity_id: before.id,
-    diff: { before: mapDoctorResponse(before), after: mapDoctorResponse(updated) },
-    ip_address: ipAddress,
+    diff: {
+      before: mapDoctorResponse(before),
+      after: mapDoctorResponse(updated)
+    },
+    ip_address: ipAddress
   }).catch(() => {});
 
   return mapDoctorResponse(updated);
@@ -897,5 +961,5 @@ module.exports = {
   listDoctors,
   getDoctorById,
   createDoctor,
-  updateDoctor,
+  updateDoctor
 };

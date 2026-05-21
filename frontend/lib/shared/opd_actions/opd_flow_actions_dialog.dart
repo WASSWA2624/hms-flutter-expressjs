@@ -24,6 +24,7 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 const AccessRequirement opdReceptionActionRequirement = AccessRequirement(
@@ -81,7 +82,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
     final OpdWorkspaceState? workspaceState = _workspaceState(ref);
     final OpdFlowDetail? selected = workspaceState?.selectedFlow;
     final OpdFlowDetail? detail =
@@ -103,12 +103,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           OpdActionContextPanel(flow: flow),
         ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-      ],
     );
   }
 
@@ -232,6 +226,20 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                     stage == 'PHARMACY_REQUESTED',
               ),
             ),
+    );
+
+    AppPermissionActionItem disabledDoctorAction({
+      required String label,
+      required IconData icon,
+    }) => AppPermissionActionItem(
+      requirement: opdDoctorActionRequirement,
+      label: label,
+      icon: icon,
+      fullWidth: true,
+      hideWhenDenied: true,
+      enabled: false,
+      tooltip: _apiLabel(stage),
+      onPressed: null,
     );
 
     final String nextActionKey = switch (stage) {
@@ -365,6 +373,62 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     } else {
       addAction('correct_stage', _correctStageAction(context, flow));
     }
+    if (!terminal) {
+      addAction('billing', billingAction());
+      addAction('vitals', vitalsAction());
+      addAction('assign_doctor', assignDoctorAction());
+      addAction('doctor_review', doctorReviewAction());
+      addAction('disposition', dispositionAction());
+    }
+    addAction(
+      'diagnosis',
+      disabledDoctorAction(
+        label: l10n.clinicalAddDiagnosisAction,
+        icon: Icons.rule_outlined,
+      ),
+    );
+    addAction(
+      'lab',
+      disabledDoctorAction(
+        label: l10n.clinicalRequestLabAction,
+        icon: Icons.science_outlined,
+      ),
+    );
+    addAction(
+      'radiology',
+      disabledDoctorAction(
+        label: l10n.clinicalRequestRadiologyAction,
+        icon: Icons.biotech_outlined,
+      ),
+    );
+    addAction(
+      'prescription',
+      disabledDoctorAction(
+        label: l10n.clinicalPrescribeAction,
+        icon: Icons.medication_outlined,
+      ),
+    );
+    addAction(
+      'procedure',
+      disabledDoctorAction(
+        label: l10n.clinicalRequestProcedureAction,
+        icon: Icons.healing_outlined,
+      ),
+    );
+    addAction(
+      'referral',
+      disabledDoctorAction(
+        label: l10n.opdReferAction,
+        icon: Icons.alt_route_outlined,
+      ),
+    );
+    addAction(
+      'follow_up',
+      disabledDoctorAction(
+        label: l10n.opdFollowUpAction,
+        icon: Icons.event_repeat_outlined,
+      ),
+    );
     addAction(
       'print',
       AppPermissionActionItem(
@@ -704,6 +768,7 @@ class _ConsultationPaymentDialogState
       title: Text(actionLabel),
       icon: const Icon(Icons.payments_outlined),
       scrollable: true,
+      closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -759,11 +824,6 @@ class _ConsultationPaymentDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: actionLabel,
           leadingIcon: Icons.payments_outlined,
@@ -849,6 +909,7 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
     return AppDialog(
       title: Text(l10n.opdCorrectStageAction),
       icon: const Icon(Icons.edit_note_outlined),
+      closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -898,11 +959,6 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: l10n.opdSaveAction,
           leadingIcon: Icons.save_outlined,
@@ -976,6 +1032,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
       title: Text(actionLabel),
       icon: const Icon(Icons.assignment_ind_outlined),
       scrollable: true,
+      closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1004,11 +1061,6 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: actionLabel,
           leadingIcon: Icons.assignment_ind_outlined,
@@ -1033,7 +1085,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
     result.when(
       success: (List<OpdProviderOption> providers) {
         setState(() {
-          _providerOptions = providers;
+          _providerOptions = dedupeOpdProviderOptions(providers);
           _isLoadingProviders = false;
         });
       },
@@ -1119,6 +1171,7 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
       icon: const Icon(Icons.edit_note_outlined),
       maxWidth: 760,
       scrollable: true,
+      closeEnabled: !_isSaving,
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
@@ -1140,11 +1193,6 @@ class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: l10n.opdDoctorReviewAction,
           leadingIcon: Icons.save_outlined,
@@ -1222,6 +1270,7 @@ class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
     return AppDialog(
       title: Text(l10n.opdRouteDecisionLabel),
       icon: const Icon(Icons.alt_route_outlined),
+      closeEnabled: !_isSaving,
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null) AppFailureStateView(failure: _failure!),
@@ -1245,11 +1294,6 @@ class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: l10n.opdRouteDecisionLabel,
           leadingIcon: Icons.alt_route_outlined,
@@ -1397,10 +1441,6 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppReportActionButton.copy(
           label: l10n.opdCopySummaryAction,
           onPressed: () async {
@@ -1634,11 +1674,6 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: actionLabel,
           leadingIcon: Icons.save_outlined,
@@ -2123,7 +2158,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     result.when(
       success: (List<OpdProviderOption> providers) {
         setState(() {
-          _providerOptions = providers;
+          _providerOptions = dedupeOpdProviderOptions(providers);
           _isLoadingProviders = false;
         });
       },
@@ -2370,56 +2405,7 @@ List<AppSelectOption<String>> _providerSelectOptions({
   required List<OpdProviderOption> providers,
   required List<OpdProviderSchedule> schedules,
 }) {
-  final Map<String, AppSelectOption<String>> options =
-      <String, AppSelectOption<String>>{};
-
-  for (final OpdProviderOption provider in providers) {
-    final String value = provider.id;
-    if (!_isNonEmpty(value) || options.containsKey(value)) {
-      continue;
-    }
-    options[value] = AppSelectOption<String>(
-      value: value,
-      label: _joinDisplay(<String?>[
-        provider.displayTitle,
-        provider.positionTitle,
-        provider.practitionerType,
-        provider.staffProfileId,
-        value,
-      ]),
-      leadingIcon: const Icon(Icons.person_search_outlined),
-      labelWidget: AppListItemText(
-        title: provider.displayTitle,
-        subtitle: _joinDisplay(<String?>[
-          provider.positionTitle,
-          provider.practitionerType,
-          provider.staffProfileId,
-        ]),
-      ),
-    );
-  }
-
-  for (final OpdProviderSchedule schedule in schedules) {
-    final String value = schedule.providerApiId;
-    if (!_isNonEmpty(value) || options.containsKey(value)) {
-      continue;
-    }
-    options[value] = AppSelectOption<String>(
-      value: value,
-      label: _joinDisplay(<String?>[
-        schedule.providerDisplayName,
-        value,
-        schedule.facilityName,
-      ]),
-      leadingIcon: const Icon(Icons.person_search_outlined),
-      labelWidget: AppListItemText(
-        title: schedule.providerDisplayName ?? value,
-        subtitle: schedule.facilityName,
-      ),
-    );
-  }
-
-  return options.values.toList(growable: false);
+  return opdProviderSelectOptions(providers: providers, schedules: schedules);
 }
 
 String _riskFlagLabel(AppLocalizations l10n, String flag) {

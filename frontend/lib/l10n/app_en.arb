@@ -757,7 +757,7 @@
   "opdSavingStatus": "Saving",
   "opdStartWalkInAction": "Start OPD encounter",
   "opdStartEncounterAction": "Start encounter",
-  "opdOpenActiveEncounterAction": "Open active encounter",
+  "opdOpenActiveEncounterAction": "Update encounter",
   "opdStartEncounterTooltip": "Create or continue an OPD encounter for this patient",
   "opdSavedMessage": "OPD changes saved.",
   "opdArrivalsSummaryLabel": "Arrivals",

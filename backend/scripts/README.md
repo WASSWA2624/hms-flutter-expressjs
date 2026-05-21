@@ -47,6 +47,7 @@ Compatibility wrapper that seeds the curated tenant and account baseline without
 #### Purpose
 
 This script initializes the system with default accounts for:
+
 - **SUPER_ADMIN**: Platform-level administrator (manages multiple hospitals)
 - **TENANT_ADMIN**: Hospital/tenant-level administrator
 - **FACILITY_ADMIN**: Facility-level administrator
@@ -88,28 +89,32 @@ node scripts/setup-default-accounts.js
 #### Default Credentials
 
 **⚠️ SECURITY WARNING**: All accounts are created with the default password:
+
 ```
-Hosspi@2624.
+Hosspi@2624
 ```
 
 **You MUST change all passwords immediately after first login in production!**
 
 #### Notable Accounts Created
 
-| Email | Role | Tenant |
-|-------|------|-------------|
-| `super.admin@hosspi.com` | SUPER_ADMIN | DemoCare General Hospital |
-| `tenant.admin@hosspi.com` | TENANT_ADMIN | DemoCare General Hospital |
+
+| Email                       | Role           | Tenant                    |
+| --------------------------- | -------------- | ------------------------- |
+| `super.admin@hosspi.com`    | SUPER_ADMIN    | DemoCare General Hospital |
+| `tenant.admin@hosspi.com`   | TENANT_ADMIN   | DemoCare General Hospital |
 | `facility.admin@hosspi.com` | FACILITY_ADMIN | DemoCare General Hospital |
-| `doctor@hosspi.com` | DOCTOR | DemoCare General Hospital |
-| `nurse@hosspi.com` | NURSE | DemoCare General Hospital |
-| `lab@hosspi.com` | LAB_TECH | DemoCare General Hospital |
-| `radiology@hosspi.com` | RADIOLOGY_TECH | DemoCare General Hospital |
-| `pharmacy@hosspi.com` | PHARMACIST | DemoCare General Hospital |
+| `doctor@hosspi.com`         | DOCTOR         | DemoCare General Hospital |
+| `nurse@hosspi.com`          | NURSE          | DemoCare General Hospital |
+| `lab@hosspi.com`            | LAB_TECH       | DemoCare General Hospital |
+| `radiology@hosspi.com`      | RADIOLOGY_TECH | DemoCare General Hospital |
+| `pharmacy@hosspi.com`       | PHARMACIST     | DemoCare General Hospital |
+
 
 #### Account Details
 
 Each account includes:
+
 - **Email**: Unique email address
 - **Phone**: Unique phone number (format: +123456789XX)
 - **Status**: ACTIVE (ready to use)
@@ -120,6 +125,7 @@ Each account includes:
 #### Idempotency
 
 The script is **idempotent** - it can be run multiple times safely:
+
 - Existing tenants/facilities are reused
 - Existing users are skipped (not recreated)
 - New users are created only if they don't exist
@@ -131,17 +137,21 @@ To customize the demo baseline, edit `scripts/seeders/seed-catalog.js` and keep 
 #### Troubleshooting
 
 **Error: "Prisma client not found"**
+
 - Run `npx prisma generate` first
 
 **Error: "Invalid DATABASE_URL"**
+
 - Check your `.env` file has a valid `DATABASE_URL`
 - Format: `mysql://user:password@host:port/database`
 
 **Error: "Module alias not found"**
+
 - Ensure you're running from the project root
 - Check that `node_modules` is installed (`npm install`)
 
 **Users not created**
+
 - Check database connection
 - Verify migrations are applied (`npx prisma migrate status`)
 - Check console output for specific errors
@@ -250,6 +260,7 @@ npm run db:reset:demo
 ```
 
 `db:reset:demo` runs:
+
 1. `db:clear:demo`
 2. `db:seed:demo`
 
@@ -329,3 +340,4 @@ if (require.main === module) {
 
 module.exports = { main };
 ```
+

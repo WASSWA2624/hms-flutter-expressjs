@@ -49,6 +49,11 @@ abstract interface class OpdRepository {
 
   Future<Result<OpdFlowDetail>> startOpdFlow(Map<String, Object?> payload);
 
+  Future<Result<OpdFlowDetail>> updateActiveEncounter(
+    String flowId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<OpdFlowDetail>> bootstrapOpdFlow(Map<String, Object?> payload);
 
   Future<Result<OpdFlowDetail>> payConsultation(

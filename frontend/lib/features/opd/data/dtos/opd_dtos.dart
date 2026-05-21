@@ -464,8 +464,7 @@ final class OpdProviderOptionDto {
           _string(profile?['middle_name']),
           _string(profile?['last_name']),
         ]) ??
-        _string(json['display_name']) ??
-        _string(json['email']);
+        _string(json['display_name']);
 
     return OpdProviderOption(
       id: _string(json['id']) ?? '',
@@ -698,8 +697,7 @@ String? _providerDisplayName(OpdJsonMap? provider) {
         _string(profile?['middle_name']),
         _string(profile?['last_name']),
       ]) ??
-      _string(provider['email']) ??
-      _string(provider['human_friendly_id']);
+      _string(provider['display_name']);
 }
 
 String? _join(Iterable<String?> values) {

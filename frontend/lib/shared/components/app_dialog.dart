@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 
@@ -150,7 +151,16 @@ class _AppDialogState extends State<AppDialog> {
       );
     }
 
-    return FocusTraversalGroup(child: dialog);
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.escape): () {
+          if (widget.closeEnabled) {
+            Navigator.of(context).maybePop();
+          }
+        },
+      },
+      child: Focus(autofocus: true, child: FocusTraversalGroup(child: dialog)),
+    );
   }
 
   void _handleDrag(

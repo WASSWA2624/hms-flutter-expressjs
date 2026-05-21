@@ -211,6 +211,18 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
+  Future<Result<OpdFlowDetail>> updateActiveEncounter(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.patch<OpdFlowDetail>(
+      ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>['context']),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
   Future<Result<OpdFlowDetail>> bootstrapOpdFlow(Map<String, Object?> payload) {
     return _apiClient.post<OpdFlowDetail>(
       ApiEndpoints.apiV1(<String>[HmsApiResource.opdFlows.path, 'bootstrap']),

@@ -16,6 +16,7 @@ const { PERMISSIONS } = require('@config/permissions');
 const { ROLES, STAFF_PATIENT_FLOW_DENIED_ROLES } = require('@config/roles');
 const {
   createOpdFlowSchema,
+  updateActiveEncounterContextSchema,
   bootstrapOpdFlowSchema,
   encounterIdParamsSchema,
   resolveLegacyRouteParamsSchema,
@@ -149,12 +150,7 @@ router.post(
   validateRequest({ body: createOpdFlowSchema }),
   authenticate(),
   authorize(
-    [
-      PERMISSIONS.PATIENT_WRITE,
-      PERMISSIONS.CLINICAL_WRITE,
-      PERMISSIONS.OPERATIONS_WRITE,
-      PERMISSIONS.EMERGENCY_WRITE
-    ],
+    [PERMISSIONS.PATIENT_WRITE, PERMISSIONS.CLINICAL_WRITE, PERMISSIONS.OPERATIONS_WRITE, PERMISSIONS.EMERGENCY_WRITE],
     'permission'
   ),
   opdFlowController.startOpdFlow
@@ -194,6 +190,26 @@ router.post(
   opdFlowController.bootstrapOpdFlow
 );
 
+router.patch(
+  '/:id/context',
+  validateRequest({
+    params: encounterIdParamsSchema,
+    body: updateActiveEncounterContextSchema
+  }),
+  authenticate(),
+  authorize(
+    [
+      PERMISSIONS.PATIENT_WRITE,
+      PERMISSIONS.CLINICAL_WRITE,
+      PERMISSIONS.BILLING_WRITE,
+      PERMISSIONS.OPERATIONS_WRITE,
+      PERMISSIONS.EMERGENCY_WRITE
+    ],
+    'permission'
+  ),
+  opdFlowController.updateActiveEncounterContext
+);
+
 /**
  * @description Record consultation payment for an OPD flow
  * @method POST
@@ -216,18 +232,12 @@ router.post(
  */
 router.post(
   '/:id/pay-consultation',
-  validateRequest({ params: encounterIdParamsSchema, body: payConsultationSchema }),
+  validateRequest({
+    params: encounterIdParamsSchema,
+    body: payConsultationSchema
+  }),
   authenticate(),
-  authorize(
-    [
-      ROLES.SUPER_ADMIN,
-      ROLES.TENANT_ADMIN,
-      ROLES.FACILITY_ADMIN,
-      ROLES.RECEPTIONIST,
-      ROLES.BILLING
-    ],
-    'role'
-  ),
+  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.BILLING], 'role'),
   opdFlowController.payConsultation
 );
 
@@ -248,12 +258,12 @@ router.post(
  */
 router.post(
   '/:id/record-vitals',
-  validateRequest({ params: encounterIdParamsSchema, body: recordVitalsSchema }),
+  validateRequest({
+    params: encounterIdParamsSchema,
+    body: recordVitalsSchema
+  }),
   authenticate(),
-  authorize(
-    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR, ROLES.NURSE],
-    'role'
-  ),
+  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR, ROLES.NURSE], 'role'),
   opdFlowController.recordVitals
 );
 
@@ -272,12 +282,12 @@ router.post(
  */
 router.post(
   '/:id/assign-doctor',
-  validateRequest({ params: encounterIdParamsSchema, body: assignDoctorSchema }),
+  validateRequest({
+    params: encounterIdParamsSchema,
+    body: assignDoctorSchema
+  }),
   authenticate(),
-  authorize(
-    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE],
-    'role'
-  ),
+  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE], 'role'),
   opdFlowController.assignDoctor
 );
 
@@ -302,7 +312,10 @@ router.post(
  */
 router.post(
   '/:id/doctor-review',
-  validateRequest({ params: encounterIdParamsSchema, body: doctorReviewSchema }),
+  validateRequest({
+    params: encounterIdParamsSchema,
+    body: doctorReviewSchema
+  }),
   authenticate(),
   authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR], 'role'),
   opdFlowController.doctorReview
@@ -348,12 +361,12 @@ router.post(
  */
 router.post(
   '/:id/correct-stage',
-  validateRequest({ params: encounterIdParamsSchema, body: correctStageSchema }),
+  validateRequest({
+    params: encounterIdParamsSchema,
+    body: correctStageSchema
+  }),
   authenticate(),
-  authorize(
-    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.NURSE, ROLES.DOCTOR],
-    'role'
-  ),
+  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.NURSE, ROLES.DOCTOR], 'role'),
   opdFlowController.correctStage
 );
 

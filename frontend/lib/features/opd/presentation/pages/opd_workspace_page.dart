@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -15,12 +16,14 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 
 class OpdWorkspacePage extends ConsumerWidget {
   const OpdWorkspacePage({super.key});
@@ -1854,25 +1857,10 @@ class _OpdMainTable extends ConsumerWidget {
     BuildContext context,
     _OpdTableItem item,
   ) async {
-    final OpdAppointment? appointment = item.appointment;
-    final OpdQueueEntry? queueEntry = item.queueEntry;
-    final OpdFlowSummary? flow = item.flow;
-
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) {
-        if (appointment != null) {
-          return AppointmentActionsDialog(
-            appointment: appointment,
-            state: state,
-          );
-        }
-        if (queueEntry != null) {
-          return QueueActionsDialog(entry: queueEntry);
-        }
-        return FlowActionsDialog(flow: flow!);
-      },
+      builder: (_) => _OpdPatientActionsDialog(item: item, state: state),
     );
     if (changed == true && context.mounted) {
       ScaffoldMessenger.of(
@@ -2080,6 +2068,367 @@ class _ProviderSelectField extends StatelessWidget {
   }
 }
 
+class _OpdPatientActionsDialog extends ConsumerStatefulWidget {
+  const _OpdPatientActionsDialog({
+    required this.item,
+    required this.state,
+  });
+
+  final _OpdTableItem item;
+  final OpdWorkspaceState state;
+
+  @override
+  ConsumerState<_OpdPatientActionsDialog> createState() =>
+      _OpdPatientActionsDialogState();
+}
+
+class _OpdPatientActionsDialogState
+    extends ConsumerState<_OpdPatientActionsDialog> {
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  Widget build(BuildContext context) {
+    final OpdFlowSummary? flow = widget.item.flow;
+    if (flow != null) {
+      return FlowActionsDialog(flow: flow);
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(widget.item.title),
+      icon: const Icon(Icons.medical_services_outlined),
+      scrollable: true,
+      closeEnabled: !_isSaving,
+      maxWidth: 860,
+      content: AppFormSection(
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          if (_failure != null) AppFailureStateView(failure: _failure!),
+          AppTriageSummaryPanel(
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.opdStatusColumnLabel,
+                value: _apiLabel(widget.item.status ?? ''),
+              ),
+              AppInfoTileData(
+                label: l10n.opdVisitTypeColumnLabel,
+                value: widget.item.visitType ?? l10n.profileUnknownValue,
+              ),
+              AppInfoTileData(
+                label: l10n.opdProviderColumnLabel,
+                value: widget.item.provider ?? l10n.profileUnknownValue,
+              ),
+              AppInfoTileData(
+                label: l10n.opdTimeColumnLabel,
+                value: _formatDateTime(context, widget.item.time),
+              ),
+            ],
+            emptyValue: l10n.profileUnknownValue,
+          ),
+          AppActionSection(
+            title: l10n.opdActionsColumnLabel,
+            minItemWidth: 170,
+            maxColumns: 4,
+            permissionActions: _actions(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<AppPermissionActionItem> _actions(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final OpdAppointment? appointment = widget.item.appointment;
+    final OpdQueueEntry? queueEntry = widget.item.queueEntry;
+    final bool terminal = _isCompletedStatus(widget.item.status);
+    const String inactiveReason = 'Start or update an OPD encounter first.';
+    final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[];
+
+    AppPermissionActionItem action({
+      required AccessRequirement requirement,
+      required String label,
+      required IconData icon,
+      required VoidCallback? onPressed,
+      AppButtonVariant variant = AppButtonVariant.secondary,
+      bool enabled = true,
+      String? tooltip,
+    }) {
+      final bool isEnabled = enabled && !_isSaving && onPressed != null;
+      return AppPermissionActionItem(
+        requirement: requirement,
+        label: label,
+        icon: icon,
+        fullWidth: true,
+        variant: variant,
+        enabled: isEnabled,
+        hideWhenDenied: true,
+        tooltip: isEnabled ? null : tooltip ?? inactiveReason,
+        onPressed: isEnabled ? onPressed : null,
+      );
+    }
+
+    if (appointment != null) {
+      final String status = (appointment.status ?? '').toUpperCase();
+      final bool canCheckIn =
+          !terminal && status != 'IN_PROGRESS' && status != 'COMPLETED';
+      actions.addAll(<AppPermissionActionItem>[
+        action(
+          requirement: opdReceptionActionRequirement,
+          label: l10n.opdCheckInAction,
+          icon: Icons.login_outlined,
+          variant: AppButtonVariant.primary,
+          enabled: canCheckIn,
+          tooltip: terminal ? l10n.opdStatusColumnLabel : null,
+          onPressed: _openAppointmentCheckIn,
+        ),
+        action(
+          requirement: opdReceptionActionRequirement,
+          label: l10n.opdQueueAction,
+          icon: Icons.queue_outlined,
+          enabled:
+              !terminal &&
+              status != 'IN_PROGRESS' &&
+              appointment.patientId != null,
+          onPressed: () => _run(
+            () => ref
+                .read(opdWorkspaceControllerProvider.notifier)
+                .assignAppointmentToQueue(appointment),
+          ),
+        ),
+        action(
+          requirement: opdReceptionActionRequirement,
+          label: l10n.opdRescheduleAction,
+          icon: Icons.edit_calendar_outlined,
+          enabled: !terminal,
+          onPressed: () => _openNested(
+            RescheduleAppointmentDialog(appointment: appointment),
+          ),
+        ),
+        action(
+          requirement: opdReceptionActionRequirement,
+          label: l10n.opdCancelAction,
+          icon: Icons.cancel_outlined,
+          enabled: !terminal && status != 'CANCELLED',
+          onPressed: () =>
+              _openNested(CancelAppointmentDialog(appointment: appointment)),
+        ),
+      ]);
+    }
+
+    if (queueEntry != null) {
+      actions.addAll(<AppPermissionActionItem>[
+        action(
+          requirement: opdReceptionActionRequirement,
+          label: l10n.opdStartConsultationAction,
+          icon: Icons.play_arrow_outlined,
+          variant: AppButtonVariant.primary,
+          enabled: !terminal,
+          onPressed: () => _run(
+            () => ref
+                .read(opdWorkspaceControllerProvider.notifier)
+                .startOpdFromQueue(queueEntry),
+          ),
+        ),
+        action(
+          requirement: opdReceptionActionRequirement,
+          label: l10n.opdPrioritizeAction,
+          icon: Icons.priority_high_outlined,
+          enabled: !terminal,
+          onPressed: () => _run(
+            () => ref
+                .read(opdWorkspaceControllerProvider.notifier)
+                .prioritizeQueueEntry(queueEntry, null),
+          ),
+        ),
+        action(
+          requirement: opdReceptionActionRequirement,
+          label: l10n.opdMoveQueueAction,
+          icon: Icons.sync_alt_outlined,
+          enabled: !terminal,
+          onPressed: () => _openNested(QueueActionsDialog(entry: queueEntry)),
+        ),
+      ]);
+    }
+
+    final List<AppPermissionActionItem> downstream = <AppPermissionActionItem>[
+      action(
+        requirement: opdReceptionActionRequirement,
+        label: l10n.opdOpenActiveEncounterAction,
+        icon: Icons.save_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdBillingActionRequirement,
+        label: l10n.opdManageConsultationBillingAction,
+        icon: Icons.payments_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdTriageActionRequirement,
+        label: l10n.opdRecordVitalsAction,
+        icon: Icons.monitor_heart_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdReceptionActionRequirement,
+        label: l10n.opdAssignDoctorAction,
+        icon: Icons.assignment_ind_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.opdDoctorReviewAction,
+        icon: Icons.edit_note_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.clinicalAddDiagnosisAction,
+        icon: Icons.rule_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.clinicalRequestLabAction,
+        icon: Icons.science_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.clinicalRequestRadiologyAction,
+        icon: Icons.biotech_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.clinicalPrescribeAction,
+        icon: Icons.medication_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.clinicalRequestProcedureAction,
+        icon: Icons.healing_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.opdReferAction,
+        icon: Icons.alt_route_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.opdFollowUpAction,
+        icon: Icons.event_repeat_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.opdCorrectStageAction,
+        icon: Icons.sync_alt_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdDoctorActionRequirement,
+        label: l10n.opdDispositionAction,
+        icon: Icons.task_alt_outlined,
+        onPressed: null,
+      ),
+      action(
+        requirement: opdTriageActionRequirement,
+        label: l10n.opdPrintSummaryAction,
+        icon: Icons.print_outlined,
+        onPressed: null,
+      ),
+    ];
+
+    return <AppPermissionActionItem>[...actions, ...downstream];
+  }
+
+  Future<void> _openAppointmentCheckIn() async {
+    final OpdAppointment? appointment = widget.item.appointment;
+    if (appointment == null) {
+      return;
+    }
+    OpdFlowSummary? activeEncounterToOpen;
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => OpdEncounterDialog(
+        providerSchedules: widget.state.providerSchedules,
+        appointments: widget.state.appointments.items,
+        activeFlows: <OpdFlowSummary>[
+          ...widget.state.flows.items,
+          ...widget.state.triageQueue.items,
+        ],
+        initialAppointment: appointment,
+        initialAppointmentId: appointment.apiId,
+        defaultArrivalMode: 'ONLINE_APPOINTMENT',
+        defaultProviderId: appointment.providerUserId,
+        onSubmit: (Map<String, Object?> payload) {
+          return ref
+              .read(opdWorkspaceControllerProvider.notifier)
+              .startOpdEncounter(payload);
+        },
+        onExistingActiveEncounter: (OpdFlowSummary flow) {
+          activeEncounterToOpen = flow;
+        },
+      ),
+    );
+    if (!mounted || changed != true) {
+      return;
+    }
+    final OpdFlowSummary? activeEncounter = activeEncounterToOpen;
+    if (activeEncounter == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    final bool? activeChanged = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => FlowActionsDialog(flow: activeEncounter),
+    );
+    if (mounted) {
+      Navigator.of(context).pop(activeChanged == true);
+    }
+  }
+
+  Future<void> _openNested(Widget dialog) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => dialog,
+    );
+    if (changed == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _run(Future<AppFailure?> Function() action) async {
+    if (_isSaving) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await action();
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
+  }
+}
+
 class AppointmentActionsDialog extends ConsumerStatefulWidget {
   const AppointmentActionsDialog({
     required this.appointment,
@@ -2152,11 +2501,6 @@ class _AppointmentActionsDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         if (canQueue)
           AppButton.secondary(
             label: l10n.opdQueueAction,
@@ -2496,11 +2840,6 @@ class _CancelAppointmentDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
         AppButton.primary(
           label: l10n.opdCancelAction,
           leadingIcon: Icons.cancel_outlined,
@@ -2697,7 +3036,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
     result.when(
       success: (List<OpdProviderOption> providers) {
         setState(() {
-          _providerOptions = providers;
+          _providerOptions = dedupeOpdProviderOptions(providers);
           _isLoadingProviders = false;
         });
       },
@@ -2771,56 +3110,7 @@ List<AppSelectOption<String>> _providerSelectOptions({
   required List<OpdProviderOption> providers,
   required List<OpdProviderSchedule> schedules,
 }) {
-  final Map<String, AppSelectOption<String>> options =
-      <String, AppSelectOption<String>>{};
-
-  for (final OpdProviderOption provider in providers) {
-    final String value = provider.id;
-    if (!_isNonEmpty(value) || options.containsKey(value)) {
-      continue;
-    }
-    options[value] = AppSelectOption<String>(
-      value: value,
-      label: _joinDisplay(<String?>[
-        provider.displayTitle,
-        provider.positionTitle,
-        provider.practitionerType,
-        provider.staffProfileId,
-        value,
-      ]),
-      leadingIcon: const Icon(Icons.person_search_outlined),
-      labelWidget: AppListItemText(
-        title: provider.displayTitle,
-        subtitle: _joinDisplay(<String?>[
-          provider.positionTitle,
-          provider.practitionerType,
-          provider.staffProfileId,
-        ]),
-      ),
-    );
-  }
-
-  for (final OpdProviderSchedule schedule in schedules) {
-    final String value = schedule.providerApiId;
-    if (!_isNonEmpty(value) || options.containsKey(value)) {
-      continue;
-    }
-    options[value] = AppSelectOption<String>(
-      value: value,
-      label: _joinDisplay(<String?>[
-        schedule.providerDisplayName,
-        value,
-        schedule.facilityName,
-      ]),
-      leadingIcon: const Icon(Icons.person_search_outlined),
-      labelWidget: AppListItemText(
-        title: schedule.providerDisplayName ?? value,
-        subtitle: schedule.facilityName,
-      ),
-    );
-  }
-
-  return options.values.toList(growable: false);
+  return opdProviderSelectOptions(providers: providers, schedules: schedules);
 }
 
 bool _isNonEmpty(String? value) {
