@@ -203,6 +203,8 @@ const QUICK_ACTION_LIBRARY = Object.freeze([
   actionDefinition({ id: 'report_equipment_issue', label: 'Report equipment issue', allowedRoles: [ROLES.BIOMED, ROLES.BIOMED_MANAGER, ROLES.FACILITY_ADMIN, ROLES.OPERATIONS], requiredAnyPermissions: ['biomed:write', 'facility:admin', 'operations:write'], requiredModules: ['biomedical'], scope: 'biomed', target: actionTarget('biomedical', 'work-orders', 'create') }),
   actionDefinition({ id: 'acknowledge_work_order', label: 'Acknowledge work order', allowedRoles: [ROLES.BIOMED], requiredPermissions: ['biomed:write'], requiredModules: ['biomedical'], scope: 'biomed', target: actionTarget('biomedical', 'work-orders') }),
   actionDefinition({ id: 'update_work_order', label: 'Update work order', allowedRoles: [ROLES.BIOMED, ROLES.BIOMED_MANAGER], requiredPermissions: ['biomed:write'], requiredModules: ['biomedical'], scope: 'biomed', target: actionTarget('biomedical', 'work-orders') }),
+  actionDefinition({ id: 'log_calibration', label: 'Log calibration', allowedRoles: [ROLES.BIOMED, ROLES.BIOMED_MANAGER], requiredPermissions: ['biomed:write'], requiredModules: ['biomedical'], scope: 'biomed', target: actionTarget('biomedical', 'calibration-logs', 'create') }),
+  actionDefinition({ id: 'schedule_maintenance', label: 'Schedule maintenance', allowedRoles: [ROLES.BIOMED, ROLES.BIOMED_MANAGER], requiredPermissions: ['biomed:write'], requiredModules: ['biomedical'], scope: 'biomed', target: actionTarget('biomedical', 'maintenance-plans', 'create') }),
   actionDefinition({ id: 'assign_technician', label: 'Assign technician', allowedRoles: [ROLES.BIOMED_MANAGER], requiredPermissions: ['biomed:write'], requiredModules: ['biomedical'], scope: 'biomed_management', target: actionTarget('biomedical', 'work-orders') }),
   actionDefinition({ id: 'dispatch_ambulance', label: 'Dispatch ambulance', allowedRoles: [ROLES.AMBULANCE_OPERATOR], requiredPermissions: ['emergency:write'], requiredModules: ['emergency'], scope: 'ambulance', target: actionTarget('emergency', 'ambulance-dispatches', 'create') }),
   actionDefinition({ id: 'update_trip_status', label: 'Update trip status', allowedRoles: [ROLES.AMBULANCE_OPERATOR], requiredPermissions: ['emergency:write'], requiredModules: ['emergency'], scope: 'ambulance', target: actionTarget('emergency', 'ambulance-trips') }),
@@ -1677,11 +1679,16 @@ const getWorkspace = async (
       },
       panel_summaries: [],
       status_strip: [],
+      summary_cards: [],
+      trend: { title: '', subtitle: '', points: [] },
+      distribution: { title: '', subtitle: '', total: 0, segments: [] },
       quick_actions: tenantContextQuickActions.quickActions,
       quick_action_ids: tenantContextQuickActions.quickActions.map((action) => action.id),
       hidden_reason_map: tenantContextQuickActions.hiddenReasonMap,
       overview: {
         checklist: { completed_count: 0, total_count: 0, items: [] },
+        trend: { title: '', subtitle: '', points: [] },
+        distribution: { title: '', subtitle: '', total: 0, segments: [] },
         alerts: [],
         queue_preview: [],
         value_proof: [],
@@ -1711,6 +1718,79 @@ const getWorkspace = async (
   const packId = baseSummary.roleProfile?.pack || ROLE_PACKS.ADMIN;
   const canManageSubscriptions = ADMIN_ROLES.has(effectiveRole);
   const quickActionResolution = resolveQuickActions(user, 8);
+
+  if (packId === ROLE_PACKS.PATIENT_SAFE) {
+    const facilityContext = await dashboardWorkspaceRepository.findFacilityContext(scope);
+    const statusStrip = buildStatusStrip(baseSummary);
+    const safePlanUsage = { state: 'unavailable', metrics: [], manage_action_allowed: false };
+    const patientAlerts = statusStrip
+      .filter((card) => ['my_open_bills', 'my_released_results', 'my_messages'].includes(card.id))
+      .filter((card) => Number(card.value || 0) > 0)
+      .slice(0, 3)
+      .map((card) => ({
+        id: card.id,
+        kind: card.id,
+        module_slug: 'patient_portal',
+        severity: card.id === 'my_open_bills' ? 'warning' : 'info',
+        count: Number(card.value || 0),
+        target: routeTarget('profile', 'my-care', null, 'open'),
+      }));
+    const patientActivity = (baseSummary.activity || []).slice(0, 6).map((entry) => ({
+      id: entry.id,
+      event_type: entry.title || 'care update',
+      title: entry.title || 'Care update',
+      module_slug: 'patient_portal',
+      human_friendly_id: null,
+      status: null,
+      occurred_at: baseSummary.generatedAt,
+      target: routeTarget('profile', 'my-care', null, 'open'),
+    }));
+
+    return {
+      state: 'ready',
+      generated_at: new Date().toISOString(),
+      role_profile: baseSummary.roleProfile,
+      context: {
+        role: baseSummary.roleProfile,
+        tenant_id: dashboardWorkspaceRepository.safePublicId(scope.tenant_id),
+        facility_id: dashboardWorkspaceRepository.safePublicId(facilityContext?.human_friendly_id, scope.facility_id),
+        facility_name: facilityContext?.name || null,
+        facility_type: facilityContext?.facility_type || null,
+        branch_id: dashboardWorkspaceRepository.safePublicId(scope.branch_id),
+      },
+      panel_summaries: [],
+      status_strip: statusStrip,
+      summary_cards: statusStrip,
+      trend: baseSummary.trend,
+      distribution: baseSummary.distribution,
+      quick_actions: quickActionResolution.quickActions,
+      quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
+      hidden_reason_map: quickActionResolution.hiddenReasonMap,
+      overview: {
+        hero: {
+          role_profile_id: baseSummary.roleProfile?.id || 'patient',
+          role: baseSummary.roleProfile?.role || effectiveRole,
+          facility_name: facilityContext?.name || null,
+          facility_type: facilityContext?.facility_type || null,
+        },
+        checklist: { completed_count: 0, total_count: 0, items: [] },
+        trend: baseSummary.trend,
+        distribution: baseSummary.distribution,
+        alerts: patientAlerts,
+        queue_preview: [],
+        value_proof: [],
+        insights_preview: patientAlerts,
+        module_recommendations: [],
+        plan_usage: safePlanUsage,
+        activity_preview: patientActivity,
+        help_cards: [],
+      },
+      queue: { items: [], pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), 0) },
+      activity: { items: patientActivity, pagination: buildPagination(1, Number(limit || DEFAULT_LIMIT), patientActivity.length) },
+      insights: { signals: patientAlerts, module_recommendations: [], plan_usage: safePlanUsage, help_cards: [] },
+      getting_started: { completed_count: 0, total_count: 0, items: [] },
+    };
+  }
 
   const [facilityContext, subscription, queueItems, activityItems, snapshot] = await Promise.all([
     dashboardWorkspaceRepository.findFacilityContext(scope),
@@ -1754,6 +1834,8 @@ const getWorkspace = async (
     panel_summaries: panelSummaries,
     status_strip: buildStatusStrip(baseSummary),
     summary_cards: buildStatusStrip(baseSummary),
+    trend: baseSummary.trend,
+    distribution: baseSummary.distribution,
     quick_actions: quickActionResolution.quickActions,
     quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
     hidden_reason_map: quickActionResolution.hiddenReasonMap,
@@ -1765,6 +1847,8 @@ const getWorkspace = async (
         facility_type: facilityContext?.facility_type || null,
       },
       checklist,
+      trend: baseSummary.trend,
+      distribution: baseSummary.distribution,
       alerts,
       queue_preview: (queueItems.items || []).slice(0, 5),
       value_proof: valueProof,

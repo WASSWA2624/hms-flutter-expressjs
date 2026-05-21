@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +14,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 class HomePage extends ConsumerWidget {
   const HomePage({this.request = HomeDashboardRequest.empty, super.key});
@@ -198,29 +200,127 @@ class _HomeStatusStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final List<HomeStatusCard> visibleCards = cards
         .take(6)
         .toList(growable: false);
+
+    if (visibleCards.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         const _SectionHeader(title: 'Today at a glance'),
-        SizedBox(height: Theme.of(context).spacing.sm),
-        AppWorkspaceSummaryGrid(
-          compact: true,
-          children: <Widget>[
-            for (final HomeStatusCard card in visibleCards)
-              AppWorkspaceSummaryCard(
-                label: card.label,
-                value: _formatMetricValue(card),
-                icon: _metricIcon(card.id),
-                tone: _metricTone(card),
-                compact: true,
-              ),
-          ],
+        SizedBox(height: theme.spacing.sm),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double gap = theme.spacing.sm;
+            final int columns = constraints.maxWidth >= 1180
+                ? math.min(visibleCards.length, 6)
+                : constraints.maxWidth >= 760
+                    ? 3
+                    : constraints.maxWidth >= 340
+                        ? 2
+                        : 1;
+            final double width =
+                (constraints.maxWidth - (gap * (columns - 1))) / columns;
+
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: <Widget>[
+                for (final HomeStatusCard card in visibleCards)
+                  SizedBox(
+                    width: math.max(0, width),
+                    child: _HomeMetricCard(card: card),
+                  ),
+              ],
+            );
+          },
         ),
       ],
+    );
+  }
+}
+
+class _HomeMetricCard extends StatelessWidget {
+  const _HomeMetricCard({required this.card});
+
+  final HomeStatusCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppWorkspaceStatusTone tone = _metricTone(card);
+    final Color accent = _toneColor(theme, tone);
+    final String value = _formatMetricValue(card);
+
+    return Semantics(
+      label: '${card.label}: $value',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(theme.radius.lg),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.8),
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.04),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(theme.spacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(theme.radius.md),
+                ),
+                child: Icon(_metricIcon(card.id), color: accent, size: 20),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      card.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -233,12 +333,6 @@ class _HomeQuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final List<_HomeActionDefinition> primaryActions = actions
-        .take(4)
-        .toList(growable: false);
-    final List<_HomeActionDefinition> moreActions = actions
-        .skip(4)
-        .toList(growable: false);
 
     if (actions.isEmpty) {
       return const SizedBox.shrink();
@@ -253,42 +347,14 @@ class _HomeQuickActions extends StatelessWidget {
           spacing: theme.spacing.sm,
           runSpacing: theme.spacing.sm,
           children: <Widget>[
-            for (final _HomeActionDefinition action in primaryActions)
-              AppButton.secondary(
+            for (final _HomeActionDefinition action in actions)
+              Semantics(
+                button: true,
                 label: action.label,
-                leadingIcon: action.icon,
-                onPressed: () => _goToRoute(context, action.route),
-              ),
-            if (moreActions.isNotEmpty)
-              PopupMenuButton<_HomeActionDefinition>(
-                tooltip: 'More actions',
-                onSelected: (_HomeActionDefinition action) {
-                  _goToRoute(context, action.route);
-                },
-                itemBuilder: (BuildContext context) {
-                  return <PopupMenuEntry<_HomeActionDefinition>>[
-                    for (final _HomeActionDefinition action in moreActions)
-                      PopupMenuItem<_HomeActionDefinition>(
-                        value: action,
-                        child: Row(
-                          children: <Widget>[
-                            Icon(
-                              action.icon,
-                              size: theme.appTokens.listIconSize,
-                            ),
-                            SizedBox(width: theme.spacing.sm),
-                            Expanded(child: Text(action.label)),
-                          ],
-                        ),
-                      ),
-                  ];
-                },
-                child: IgnorePointer(
-                  child: AppButton.tertiary(
-                    label: 'More actions',
-                    leadingIcon: Icons.more_horiz,
-                    onPressed: () {},
-                  ),
+                child: AppButton.secondary(
+                  label: action.label,
+                  leadingIcon: action.icon,
+                  onPressed: () => _goToRoute(context, action.route),
                 ),
               ),
           ],
@@ -317,47 +383,81 @@ class _HomeMainGrid extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool twoColumns = constraints.maxWidth >= 980;
         final double gap = theme.spacing.lg;
-        final Widget primary = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _PrimaryQueuePanel(
-              items: dashboard.queuePreview,
-              emptyMessage: dashboard.profile.emptyMessage,
-              emptyActions: _visibleEmptyActions(
-                dashboard.profile.emptyActionIds,
-                actions,
-              ),
-            ),
-            SizedBox(height: gap),
-            _ShortcutsSection(shortcuts: shortcuts),
-          ],
+        final Widget trend = _HomeTrendPanel(
+          role: dashboard.profile.role,
+          trend: dashboard.trend,
+        );
+        final Widget distribution = _HomeDistributionPanel(
+          role: dashboard.profile.role,
+          distribution: dashboard.distribution,
+        );
+        final Widget charts = twoColumns
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(flex: 3, child: trend),
+                  SizedBox(width: gap),
+                  Expanded(flex: 2, child: distribution),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  trend,
+                  SizedBox(height: gap),
+                  distribution,
+                ],
+              );
+        final Widget primary = _PrimaryQueuePanel(
+          title: _queueTitle(dashboard.profile.role),
+          description: _queueDescription(dashboard.profile.role),
+          items: dashboard.queuePreview,
+          emptyMessage: dashboard.profile.emptyMessage,
+          emptyActions: _visibleEmptyActions(
+            dashboard.profile.emptyActionIds,
+            actions,
+          ),
         );
         final Widget secondary = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _AlertsPanel(alerts: dashboard.alerts),
+            _AlertsPanel(
+              title: _alertsTitle(dashboard.profile.role),
+              description: _alertsDescription(dashboard.profile.role),
+              alerts: dashboard.alerts,
+            ),
             SizedBox(height: gap),
             _ActivityPanel(activity: dashboard.activity),
           ],
         );
+        final Widget work = twoColumns
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(flex: 3, child: primary),
+                  SizedBox(width: gap),
+                  Expanded(flex: 2, child: secondary),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  primary,
+                  SizedBox(height: gap),
+                  secondary,
+                ],
+              );
 
-        if (!twoColumns) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              primary,
-              SizedBox(height: gap),
-              secondary,
-            ],
-          );
-        }
-
-        return Row(
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Expanded(flex: 3, child: primary),
-            SizedBox(width: gap),
-            Expanded(flex: 2, child: secondary),
+            charts,
+            SizedBox(height: gap),
+            work,
+            if (shortcuts.isNotEmpty) ...<Widget>[
+              SizedBox(height: gap),
+              _ShortcutsSection(shortcuts: shortcuts),
+            ],
           ],
         );
       },
@@ -367,11 +467,15 @@ class _HomeMainGrid extends StatelessWidget {
 
 class _PrimaryQueuePanel extends StatelessWidget {
   const _PrimaryQueuePanel({
+    required this.title,
+    required this.description,
     required this.items,
     required this.emptyMessage,
     required this.emptyActions,
   });
 
+  final String title;
+  final String description;
   final List<HomeQueueItem> items;
   final String emptyMessage;
   final List<_HomeActionDefinition> emptyActions;
@@ -379,8 +483,8 @@ class _PrimaryQueuePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppSectionPanel(
-      title: 'Primary queue',
-      description: 'Pending work routed to your account.',
+      title: title,
+      description: description,
       leadingIcon: Icons.format_list_bulleted,
       trailing: _ViewAllButton(target: _firstQueueTarget(items)),
       children: <Widget>[
@@ -394,15 +498,21 @@ class _PrimaryQueuePanel extends StatelessWidget {
 }
 
 class _AlertsPanel extends StatelessWidget {
-  const _AlertsPanel({required this.alerts});
+  const _AlertsPanel({
+    required this.title,
+    required this.description,
+    required this.alerts,
+  });
 
+  final String title;
+  final String description;
   final List<HomeAlertItem> alerts;
 
   @override
   Widget build(BuildContext context) {
     return AppSectionPanel(
-      title: 'Alerts and insights',
-      description: 'Risk signals, blockers, and reminders.',
+      title: title,
+      description: description,
       leadingIcon: Icons.warning_amber_outlined,
       children: <Widget>[
         if (alerts.isEmpty)
@@ -463,6 +573,393 @@ class _ShortcutsSection extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+
+class _HomeTrendPanel extends StatelessWidget {
+  const _HomeTrendPanel({required this.role, required this.trend});
+
+  final AppRole role;
+  final HomeDashboardTrend trend;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSectionPanel(
+      title: _trendTitle(role, trend.title),
+      description: trend.subtitle.isEmpty
+          ? 'Role-focused changes over the latest reporting window.'
+          : trend.subtitle,
+      leadingIcon: Icons.show_chart_outlined,
+      children: <Widget>[
+        if (trend.points.isEmpty)
+          const _QuietState(message: 'No trend data is available yet.')
+        else
+          _HomeTrendChart(points: trend.points),
+      ],
+    );
+  }
+}
+
+class _HomeTrendChart extends StatelessWidget {
+  const _HomeTrendChart({required this.points});
+
+  final List<HomeTrendPoint> points;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<HomeTrendPoint> visiblePoints = points.take(14).toList();
+
+    return Semantics(
+      label: 'Trend chart with ${visiblePoints.length} points',
+      child: Column(
+        children: <Widget>[
+          SizedBox(
+            height: 180,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: _TrendChartPainter(
+                points: visiblePoints,
+                barColor: colorScheme.primary.withValues(alpha: 0.18),
+                lineColor: colorScheme.primary,
+                gridColor: colorScheme.outlineVariant,
+                labelColor: colorScheme.onSurfaceVariant,
+                textStyle: theme.textTheme.labelSmall,
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Row(
+            children: <Widget>[
+              if (visiblePoints.isNotEmpty)
+                Text(
+                  _trendPointLabel(visiblePoints.first),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              const Spacer(),
+              if (visiblePoints.length > 1)
+                Text(
+                  _trendPointLabel(visiblePoints.last),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeDistributionPanel extends StatelessWidget {
+  const _HomeDistributionPanel({
+    required this.role,
+    required this.distribution,
+  });
+
+  final AppRole role;
+  final HomeDashboardDistribution distribution;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSectionPanel(
+      title: _distributionTitle(role, distribution.title),
+      description: distribution.subtitle.isEmpty
+          ? 'Live mix of the records behind this dashboard.'
+          : distribution.subtitle,
+      leadingIcon: Icons.donut_large_outlined,
+      children: <Widget>[
+        if (!distribution.hasData)
+          const _QuietState(message: 'No distribution data is available yet.')
+        else
+          _HomeDistributionChart(distribution: distribution),
+      ],
+    );
+  }
+}
+
+class _HomeDistributionChart extends StatelessWidget {
+  const _HomeDistributionChart({required this.distribution});
+
+  final HomeDashboardDistribution distribution;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<HomeDistributionSegment> segments = distribution.segments
+        .where((HomeDistributionSegment segment) => segment.value > 0)
+        .toList(growable: false);
+    final num total = distribution.total > 0
+        ? distribution.total
+        : segments.fold<num>(0, (num sum, HomeDistributionSegment segment) {
+            return sum + segment.value;
+          });
+
+    return Semantics(
+      label: 'Distribution chart with total ${NumberFormat.compact().format(total)}',
+      child: Column(
+        children: <Widget>[
+          SizedBox(
+            height: 170,
+            width: double.infinity,
+            child: Center(
+              child: SizedBox(
+                width: 154,
+                height: 154,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    CustomPaint(
+                      size: const Size.square(154),
+                      painter: _DonutChartPainter(
+                        segments: segments,
+                        total: total,
+                        fallbackColor: colorScheme.primary,
+                        trackColor: colorScheme.surfaceContainerHighest,
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          NumberFormat.compact().format(total),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'total',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              for (int index = 0; index < segments.length; index += 1)
+                _DistributionLegendItem(
+                  segment: segments[index],
+                  total: total,
+                  color: _segmentColor(theme, segments[index], index),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DistributionLegendItem extends StatelessWidget {
+  const _DistributionLegendItem({
+    required this.segment,
+    required this.total,
+    required this.color,
+  });
+
+  final HomeDistributionSegment segment;
+  final num total;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double percent = total <= 0 ? 0 : (segment.value / total) * 100;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          SizedBox(width: theme.spacing.xs),
+          Text(
+            '${_formatToken(segment.label)} ${percent.round()}%',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendChartPainter extends CustomPainter {
+  const _TrendChartPainter({
+    required this.points,
+    required this.barColor,
+    required this.lineColor,
+    required this.gridColor,
+    required this.labelColor,
+    required this.textStyle,
+  });
+
+  final List<HomeTrendPoint> points;
+  final Color barColor;
+  final Color lineColor;
+  final Color gridColor;
+  final Color labelColor;
+  final TextStyle? textStyle;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.isEmpty || size.width <= 0 || size.height <= 0) {
+      return;
+    }
+
+    final double chartHeight = math.max(0, size.height - 26);
+    final double maxValue = math.max(
+      1,
+      points.map((HomeTrendPoint point) => point.value.toDouble()).reduce(math.max),
+    );
+    final Paint gridPaint = Paint()
+      ..color = gridColor.withValues(alpha: 0.7)
+      ..strokeWidth = 1;
+    final Paint barPaint = Paint()..color = barColor;
+    final Paint linePaint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final Paint dotPaint = Paint()..color = lineColor;
+    final double slotWidth = size.width / points.length;
+    final double barWidth = math.max(6, math.min(22, slotWidth * 0.42));
+    final Path path = Path();
+
+    for (int i = 0; i <= 3; i += 1) {
+      final double y = chartHeight * (i / 3);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    for (int index = 0; index < points.length; index += 1) {
+      final HomeTrendPoint point = points[index];
+      final double centerX = slotWidth * index + (slotWidth / 2);
+      final double normalized = point.value.toDouble() / maxValue;
+      final double y = chartHeight - (chartHeight * normalized);
+      final Rect barRect = Rect.fromLTWH(
+        centerX - (barWidth / 2),
+        y,
+        barWidth,
+        chartHeight - y,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(barRect, const Radius.circular(8)),
+        barPaint,
+      );
+
+      if (index == 0) {
+        path.moveTo(centerX, y);
+      } else {
+        path.lineTo(centerX, y);
+      }
+      canvas.drawCircle(Offset(centerX, y), 3.5, dotPaint);
+
+      if (points.length <= 7) {
+        final TextPainter painter = TextPainter(
+          text: TextSpan(
+            text: _trendPointLabel(point, compact: true),
+            style: textStyle?.copyWith(color: labelColor) ??
+                TextStyle(color: labelColor, fontSize: 10),
+          ),
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout(maxWidth: slotWidth);
+        painter.paint(
+          canvas,
+          Offset(centerX - (painter.width / 2), chartHeight + 8),
+        );
+      }
+    }
+
+    canvas.drawPath(path, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrendChartPainter oldDelegate) {
+    return oldDelegate.points != points ||
+        oldDelegate.barColor != barColor ||
+        oldDelegate.lineColor != lineColor ||
+        oldDelegate.gridColor != gridColor;
+  }
+}
+
+class _DonutChartPainter extends CustomPainter {
+  const _DonutChartPainter({
+    required this.segments,
+    required this.total,
+    required this.fallbackColor,
+    required this.trackColor,
+  });
+
+  final List<HomeDistributionSegment> segments;
+  final num total;
+  final Color fallbackColor;
+  final Color trackColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset center = size.center(Offset.zero);
+    final double radius = math.min(size.width, size.height) / 2;
+    final Rect rect = Rect.fromCircle(center: center, radius: radius - 10);
+    final Paint paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 18
+      ..strokeCap = StrokeCap.round;
+
+    paint.color = trackColor;
+    canvas.drawArc(rect, -math.pi / 2, math.pi * 2, false, paint);
+
+    if (total <= 0 || segments.isEmpty) {
+      return;
+    }
+
+    double start = -math.pi / 2;
+    for (int index = 0; index < segments.length; index += 1) {
+      final HomeDistributionSegment segment = segments[index];
+      final double sweep = (segment.value / total) * math.pi * 2;
+      paint.color = _segmentColorFromHex(segment.color) ??
+          _fallbackSegmentColor(fallbackColor, index);
+      canvas.drawArc(rect, start, math.max(0.02, sweep), false, paint);
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
+    return oldDelegate.segments != segments ||
+        oldDelegate.total != total ||
+        oldDelegate.fallbackColor != fallbackColor ||
+        oldDelegate.trackColor != trackColor;
   }
 }
 
@@ -1220,6 +1717,24 @@ _actionLibrary = <String, _HomeActionDefinition>{
     requiredPermissions: <AppPermission>[AppPermissions.biomedWrite],
     requiredModules: <String>['biomedical'],
   ),
+  'log_calibration': _HomeActionDefinition(
+    id: 'log_calibration',
+    label: 'Log calibration',
+    icon: Icons.fact_check_outlined,
+    route: AppRoutes.biomedical,
+    allowedRoles: <AppRole>[AppRole.biomed, AppRole.biomedManager],
+    requiredPermissions: <AppPermission>[AppPermissions.biomedWrite],
+    requiredModules: <String>['biomedical'],
+  ),
+  'schedule_maintenance': _HomeActionDefinition(
+    id: 'schedule_maintenance',
+    label: 'Schedule maintenance',
+    icon: Icons.event_repeat_outlined,
+    route: AppRoutes.biomedical,
+    allowedRoles: <AppRole>[AppRole.biomed, AppRole.biomedManager],
+    requiredPermissions: <AppPermission>[AppPermissions.biomedWrite],
+    requiredModules: <String>['biomedical'],
+  ),
   'assign_technician': _HomeActionDefinition(
     id: 'assign_technician',
     label: 'Assign technician',
@@ -1904,9 +2419,159 @@ String _contextLine(HomeDashboard dashboard) {
   return parts.join(' | ');
 }
 
+String _trendTitle(AppRole role, String fallback) {
+  final String title = switch (role) {
+    AppRole.superAdmin => 'Platform signal trend',
+    AppRole.tenantAdmin => 'Facilities performance trend',
+    AppRole.facilityAdmin => 'OPD flow by hour',
+    AppRole.doctor => 'Consultation trend',
+    AppRole.nurse => 'Medication rounds trend',
+    AppRole.labTech => 'Sample throughput trend',
+    AppRole.radiologyTech => 'Imaging throughput trend',
+    AppRole.pharmacist => 'Dispensing throughput trend',
+    AppRole.receptionist => 'Front desk arrivals trend',
+    AppRole.billing => 'Collections trend',
+    AppRole.operations => 'Facility readiness trend',
+    AppRole.hr => 'Staffing coverage trend',
+    AppRole.biomed || AppRole.biomedManager => 'Equipment service trend',
+    AppRole.houseKeeper || AppRole.housekeepingManager =>
+      'Cleaning throughput trend',
+    AppRole.ambulanceOperator => 'Dispatch response trend',
+    AppRole.patient => 'Care activity trend',
+    AppRole.mortuaryStaff || AppRole.mortuaryManager => 'Mortuary activity trend',
+    _ => fallback,
+  };
+  return title.trim().isEmpty ? 'Dashboard trend' : title;
+}
+
+String _distributionTitle(AppRole role, String fallback) {
+  final String title = switch (role) {
+    AppRole.superAdmin => 'Tenant mix donut',
+    AppRole.tenantAdmin => 'Module adoption donut',
+    AppRole.facilityAdmin => 'Bed readiness donut',
+    AppRole.doctor => 'Patient acuity mix',
+    AppRole.nurse => 'Ward distribution',
+    AppRole.labTech => 'Test mix donut',
+    AppRole.radiologyTech => 'Study mix donut',
+    AppRole.pharmacist => 'Stock pressure donut',
+    AppRole.receptionist => 'Queue mix donut',
+    AppRole.billing => 'Revenue mix donut',
+    AppRole.operations => 'Bed readiness mix donut',
+    AppRole.hr => 'Workforce mix donut',
+    AppRole.biomed || AppRole.biomedManager => 'Asset service status donut',
+    AppRole.houseKeeper || AppRole.housekeepingManager => 'Task mix donut',
+    AppRole.ambulanceOperator => 'Fleet readiness donut',
+    AppRole.patient => 'Care summary donut',
+    AppRole.mortuaryStaff || AppRole.mortuaryManager => 'Case status donut',
+    _ => fallback,
+  };
+  return title.trim().isEmpty ? 'Status distribution' : title;
+}
+
+String _queueTitle(AppRole role) {
+  return switch (role) {
+    AppRole.superAdmin => 'Platform review queue',
+    AppRole.tenantAdmin => 'Organization action queue',
+    AppRole.facilityAdmin => 'Facility operations queue',
+    AppRole.doctor => 'Clinical action queue',
+    AppRole.nurse => 'Nursing action queue',
+    AppRole.labTech => 'Laboratory action queue',
+    AppRole.radiologyTech => 'Imaging action queue',
+    AppRole.pharmacist => 'Pharmacy action queue',
+    AppRole.receptionist => 'Front desk action queue',
+    AppRole.billing => 'Billing action queue',
+    AppRole.operations => 'Operations action queue',
+    AppRole.hr => 'Workforce action queue',
+    AppRole.biomed || AppRole.biomedManager => 'Biomedical service queue',
+    AppRole.houseKeeper || AppRole.housekeepingManager =>
+      'Housekeeping action queue',
+    AppRole.ambulanceOperator => 'Ambulance action queue',
+    AppRole.patient => 'My care updates',
+    _ => 'Primary queue',
+  };
+}
+
+String _queueDescription(AppRole role) {
+  return switch (role) {
+    AppRole.patient => 'Care items and updates tied to your account.',
+    AppRole.superAdmin => 'Platform items that need review or follow-up.',
+    AppRole.tenantAdmin => 'Organization items that need attention.',
+    _ => 'Pending work routed to your account and scope.',
+  };
+}
+
+String _alertsTitle(AppRole role) {
+  return switch (role) {
+    AppRole.doctor => 'Critical attention/alerts',
+    _ => 'Alerts and insights',
+  };
+}
+
+String _alertsDescription(AppRole role) {
+  return switch (role) {
+    AppRole.doctor => 'Critical lab, patient, and consultation signals.',
+    AppRole.patient => 'Care reminders and facility messages.',
+    _ => 'Risk signals, blockers, and reminders.',
+  };
+}
+
+String _trendPointLabel(HomeTrendPoint point, {bool compact = false}) {
+  if (_hasText(point.label)) {
+    return point.label!;
+  }
+  if (point.date == null) {
+    return point.id;
+  }
+  return DateFormat(compact ? 'E' : 'MMM d').format(point.date!.toLocal());
+}
+
+Color _toneColor(ThemeData theme, AppWorkspaceStatusTone tone) {
+  final ColorScheme colorScheme = theme.colorScheme;
+  return switch (tone) {
+    AppWorkspaceStatusTone.success => colorScheme.tertiary,
+    AppWorkspaceStatusTone.warning => colorScheme.secondary,
+    AppWorkspaceStatusTone.error => colorScheme.error,
+    AppWorkspaceStatusTone.info => colorScheme.primary,
+    AppWorkspaceStatusTone.neutral => colorScheme.onSurfaceVariant,
+  };
+}
+
+Color _segmentColor(
+  ThemeData theme,
+  HomeDistributionSegment segment,
+  int index,
+) {
+  return _segmentColorFromHex(segment.color) ??
+      _fallbackSegmentColor(theme.colorScheme.primary, index);
+}
+
+Color? _segmentColorFromHex(String? value) {
+  final String normalized = (value ?? '').trim().replaceFirst('#', '');
+  if (normalized.length != 6 && normalized.length != 8) {
+    return null;
+  }
+  final int? parsed = int.tryParse(normalized, radix: 16);
+  if (parsed == null) {
+    return null;
+  }
+  return Color(normalized.length == 6 ? 0xFF000000 | parsed : parsed);
+}
+
+Color _fallbackSegmentColor(Color seed, int index) {
+  final HSLColor hsl = HSLColor.fromColor(seed);
+  final double hue = (hsl.hue + (index * 42)) % 360;
+  return hsl.withHue(hue).withSaturation(math.min(0.86, hsl.saturation + 0.18)).toColor();
+}
+
 String _formatMetricValue(HomeStatusCard card) {
   if (card.format == 'currency') {
     return NumberFormat.compactCurrency(symbol: 'UGX ').format(card.value);
+  }
+  if (card.format == 'percent') {
+    final num value = card.value <= 1 && card.value >= 0
+        ? card.value * 100
+        : card.value;
+    return '${NumberFormat.compact().format(value)}%';
   }
   return NumberFormat.compact().format(card.value);
 }

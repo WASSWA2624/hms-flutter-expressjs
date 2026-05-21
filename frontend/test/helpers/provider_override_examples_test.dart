@@ -81,6 +81,8 @@ HomeDashboard _dashboardFixture() {
     profile: profile,
     context: const HomeDashboardContext(roleValue: 'TENANT_ADMIN'),
     statusCards: profile.fallbackStatusCards(),
+    trend: HomeDashboardTrend.empty,
+    distribution: HomeDashboardDistribution.empty,
     quickActionIds: profile.quickActionIds,
     shortcutIds: profile.shortcutIds,
     queuePreview: const <HomeQueueItem>[],

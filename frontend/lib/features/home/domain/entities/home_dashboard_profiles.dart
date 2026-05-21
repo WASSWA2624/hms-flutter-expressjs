@@ -467,6 +467,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'housekeeping_backlog',
         label: 'Housekeeping backlog',
       ),
+      HomeStatusCardTemplate(
+        id: 'facility_readiness',
+        label: 'Facility readiness',
+        format: 'percent',
+      ),
     ],
     quickActionIds: <String>[
       'create_maintenance_request',
@@ -508,6 +513,11 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'unassigned_shifts',
         label: 'Unassigned shifts',
       ),
+      HomeStatusCardTemplate(
+        id: 'attendance_rate',
+        label: 'Attendance rate',
+        format: 'percent',
+      ),
     ],
     quickActionIds: <String>[
       'add_staff_profile',
@@ -543,11 +553,18 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'high_priority',
         label: 'High-priority work orders',
       ),
+      HomeStatusCardTemplate(
+        id: 'assets_operational',
+        label: 'Assets operational',
+        format: 'percent',
+      ),
     ],
     quickActionIds: <String>[
       'acknowledge_work_order',
       'update_work_order',
       'report_equipment_issue',
+      'log_calibration',
+      'schedule_maintenance',
       'run_report',
     ],
     shortcutIds: <String>['biomedical', 'reports'],
@@ -947,6 +964,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(
         id: 'my_profile_status',
         label: 'My profile status',
+        format: 'percent',
       ),
     ],
     quickActionIds: <String>[

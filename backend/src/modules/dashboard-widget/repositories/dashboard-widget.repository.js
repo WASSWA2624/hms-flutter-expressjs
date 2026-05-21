@@ -54,6 +54,12 @@ const toNumber = (value) => {
   return 0;
 };
 
+const percentOf = (value, total) => {
+  const safeTotal = toNumber(total);
+  if (safeTotal <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((toNumber(value) / safeTotal) * 100)));
+};
+
 const startOfDay = (value = new Date()) => {
   const date = new Date(value);
   date.setHours(0, 0, 0, 0);
@@ -213,6 +219,77 @@ const countLowStock = async (where, factor = 1) => {
     if (reorderLevel <= 0) return false;
     return quantity <= Math.ceil(reorderLevel * factor);
   }).length;
+};
+
+
+const patientPortalZeroSummary = () => ({
+  metrics: {
+    myUpcomingAppointments: 0,
+    myOpenBills: 0,
+    myPrescriptions: 0,
+    myReleasedResults: 0,
+    myMessages: 0,
+    myProfileStatus: 0
+  },
+  trendDates: [],
+  statusCounts: {},
+  activity: {}
+});
+
+const normalizeContactValue = (value) => String(value || '').trim();
+
+const resolvePatientPortalPatient = async ({ scope = {}, userId = null, user = {} }) => {
+  const userEmail = normalizeContactValue(user.email || user.user_email || user.email_address).toLowerCase();
+  const userPhone = normalizeContactValue(user.phone || user.phone_number || user.msisdn);
+  let resolvedEmail = userEmail;
+  let resolvedPhone = userPhone;
+
+  if ((!resolvedEmail && !resolvedPhone) && userId) {
+    const userRecord = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        deleted_at: null,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {})
+      },
+      select: { email: true, phone: true }
+    });
+    resolvedEmail = normalizeContactValue(userRecord?.email).toLowerCase();
+    resolvedPhone = normalizeContactValue(userRecord?.phone);
+  }
+
+  const contactFilters = [];
+  if (resolvedEmail) {
+    contactFilters.push({ contact_type: 'EMAIL', value: resolvedEmail });
+  }
+  if (resolvedPhone) {
+    contactFilters.push({ contact_type: { in: ['PHONE', 'WHATSAPP'] }, value: resolvedPhone });
+  }
+
+  if (!contactFilters.length || !scope.tenant_id) {
+    return null;
+  }
+
+  return prisma.patient.findFirst({
+    where: {
+      deleted_at: null,
+      tenant_id: scope.tenant_id,
+      ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+      contacts: {
+        some: {
+          deleted_at: null,
+          tenant_id: scope.tenant_id,
+          OR: contactFilters
+        }
+      }
+    },
+    select: {
+      id: true,
+      tenant_id: true,
+      facility_id: true,
+      human_friendly_id: true,
+      updated_at: true
+    }
+  });
 };
 
 const resolveBranchFacilityScope = async (tenantId, branchId) => {
@@ -429,7 +506,7 @@ const countUnreadOpdNotifications = async ({ scope = {}, userId = null } = {}) =
   }
 };
 
-const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = null }) => {
+const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = null, user = {} }) => {
   try {
     const now = new Date();
     const todayStart = startOfDay(now);
@@ -467,6 +544,109 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
       encounter: directScope(scope, { includeTenant: true, includeFacility: true })
     };
     const mortuaryWhere = directScope(scope, { includeTenant: true, includeFacility: true });
+
+    if (packId === ROLE_PACKS.PATIENT_SAFE) {
+      const portalPatient = await resolvePatientPortalPatient({ scope, userId, user });
+      if (!portalPatient) return patientPortalZeroSummary();
+
+      const patientId = portalPatient.id;
+      const patientAppointmentWhere = {
+        deleted_at: null,
+        patient_id: patientId,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {})
+      };
+      const patientInvoiceWhere = {
+        deleted_at: null,
+        patient_id: patientId,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {})
+      };
+      const patientLabResultWhere = {
+        deleted_at: null,
+        lab_order_item: {
+          deleted_at: null,
+          lab_order: {
+            deleted_at: null,
+            patient_id: patientId
+          }
+        }
+      };
+      const patientPharmacyOrderWhere = {
+        deleted_at: null,
+        patient_id: patientId
+      };
+      const patientMessageWhere = userId
+        ? { deleted_at: null, user_id: userId }
+        : { deleted_at: null, user_id: '__no_user__' };
+
+      const [
+        myUpcomingAppointments,
+        myOpenBills,
+        myPrescriptions,
+        myReleasedResults,
+        myMessages
+      ] = await Promise.all([
+        prisma.appointment.count({
+          where: {
+            ...patientAppointmentWhere,
+            scheduled_start: { gte: now },
+            status: { in: ['SCHEDULED', 'CONFIRMED'] }
+          }
+        }),
+        prisma.invoice.count({
+          where: {
+            ...patientInvoiceWhere,
+            OR: [
+              { status: { in: ['SENT', 'OVERDUE'] } },
+              { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
+            ]
+          }
+        }),
+        prisma.pharmacy_order.count({
+          where: {
+            ...patientPharmacyOrderWhere,
+            status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] }
+          }
+        }),
+        prisma.lab_result.count({
+          where: {
+            ...patientLabResultWhere,
+            reported_at: { not: null },
+            status: { in: ['NORMAL', 'ABNORMAL', 'CRITICAL'] }
+          }
+        }),
+        prisma.conversation_participant.count({ where: patientMessageWhere })
+      ]);
+
+      return {
+        metrics: {
+          myUpcomingAppointments,
+          myOpenBills,
+          myPrescriptions,
+          myReleasedResults,
+          myMessages,
+          myProfileStatus: 100
+        },
+        trendDates: await selectDateSeries(
+          prisma.appointment,
+          { ...patientAppointmentWhere, scheduled_start: { gte: trendStart } },
+          'scheduled_start'
+        ),
+        statusCounts: await countByStatuses(
+          prisma.appointment,
+          patientAppointmentWhere,
+          ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW', 'CANCELLED']
+        ),
+        activity: {
+          appointments: await prisma.appointment.count({ where: { ...patientAppointmentWhere, updated_at: { gte: window24h } } }),
+          results: await prisma.lab_result.count({ where: { ...patientLabResultWhere, updated_at: { gte: window24h } } }),
+          prescriptions: await prisma.pharmacy_order.count({ where: { ...patientPharmacyOrderWhere, updated_at: { gte: window24h } } }),
+          bills: await prisma.invoice.count({ where: { ...patientInvoiceWhere, updated_at: { gte: window24h } } }),
+          messages: await prisma.conversation_participant.count({ where: { ...patientMessageWhere, last_read_at: { gte: window24h } } })
+        }
+      };
+    }
 
     if (packId === ROLE_PACKS.DOCTOR) {
       const providerWhere = { ...appointmentWhere, provider_user_id: userId || '' };
@@ -620,8 +800,12 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         countLowStock(inventoryStockWhere, 1),
         prisma.housekeeping_task.count({ where: { ...housekeepingWhere, status: { in: ['PENDING', 'IN_PROGRESS'] } } })
       ]);
+      const operationalPressure = openMaintenance + lowStockPressure + housekeepingBacklog;
+      const facilityReadiness = totalBeds + operationalPressure > 0
+        ? Math.max(0, 100 - percentOf(operationalPressure, totalBeds + operationalPressure))
+        : 0;
       return {
-        metrics: { occupiedBeds, totalBeds, openMaintenance, lowStockPressure, housekeepingBacklog },
+        metrics: { occupiedBeds, totalBeds, openMaintenance, lowStockPressure, housekeepingBacklog, facilityReadiness },
         trendDates: await selectDateSeries(prisma.maintenance_request, { ...maintenanceWhere, reported_at: { gte: trendStart } }, 'reported_at'),
         statusCounts: await countByStatuses(prisma.bed, directScope(scope, { includeTenant: true, includeFacility: true }), ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'OUT_OF_SERVICE']),
         activity: {
@@ -648,8 +832,11 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         prisma.staff_position.count({ where: { ...staffPositionScope(scope), is_active: true } }),
         prisma.shift.count({ where: { ...directScope(scope, { includeTenant: true, includeFacility: true }), start_time: { gte: todayStart }, assignments: { none: { deleted_at: null } } } })
       ]);
+      const attendanceRate = shiftsToday > 0
+        ? percentOf(Math.max(0, shiftsToday - unassignedShifts), shiftsToday)
+        : 0;
       return {
-        metrics: { activeStaff, shiftsToday, pendingLeaves, staffingBacklog, unassignedShifts },
+        metrics: { activeStaff, shiftsToday, pendingLeaves, staffingBacklog, unassignedShifts, attendanceRate },
         trendDates: await selectDateSeries(prisma.staff_leave, { ...leaveWhere, created_at: { gte: trendStart } }, 'created_at'),
         statusCounts: await countByStatuses(prisma.staff_leave, leaveWhere, ['REQUESTED', 'APPROVED', 'REJECTED', 'CANCELLED']),
         activity: {
@@ -661,18 +848,29 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     }
 
     if (packId === ROLE_PACKS.BIOMED) {
-      const workOrderWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}) };
-      const incidentWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}) };
-      const downtimeWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}) };
-      const [openWorkOrders, openIncidents, activeDowntime, criticalServiceRisk, highPriority] = await Promise.all([
+      const equipmentRegistryWhere = {
+        deleted_at: null,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {})
+      };
+      const equipmentRegistryScope = scope.facility_id
+        ? { equipment_registry: { is: equipmentRegistryWhere } }
+        : {};
+      const workOrderWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}), ...equipmentRegistryScope };
+      const incidentWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}), ...equipmentRegistryScope };
+      const downtimeWhere = { deleted_at: null, ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}), ...equipmentRegistryScope };
+      const [openWorkOrders, openIncidents, activeDowntime, criticalServiceRisk, highPriority, totalAssets, operationalAssets] = await Promise.all([
         prisma.equipment_work_order.count({ where: { ...workOrderWhere, status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] } } }),
         prisma.equipment_incident_report.count({ where: { ...incidentWhere, status: { in: ['OPEN', 'IN_PROGRESS', 'REPORTED'] } } }),
         prisma.equipment_downtime_log.count({ where: { ...downtimeWhere, ended_at: null } }),
         prisma.equipment_downtime_log.count({ where: { ...downtimeWhere, ended_at: null, is_clinically_critical: true } }),
-        prisma.equipment_work_order.count({ where: { ...workOrderWhere, status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] }, priority: { in: ['HIGH', 'CRITICAL', 'URGENT'] } } })
+        prisma.equipment_work_order.count({ where: { ...workOrderWhere, status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] }, priority: { in: ['HIGH', 'CRITICAL', 'URGENT'] } } }),
+        prisma.equipment_registry.count({ where: equipmentRegistryWhere }),
+        prisma.equipment_registry.count({ where: { ...equipmentRegistryWhere, status: { in: ['OPERATIONAL', 'IN_SERVICE', 'AVAILABLE', 'ACTIVE'] } } })
       ]);
+      const assetsOperational = percentOf(operationalAssets, totalAssets);
       return {
-        metrics: { openWorkOrders, openIncidents, activeDowntime, criticalServiceRisk, highPriority },
+        metrics: { openWorkOrders, openIncidents, activeDowntime, criticalServiceRisk, highPriority, assetsOperational },
         trendDates: await selectDateSeries(prisma.equipment_work_order, { ...workOrderWhere, opened_at: { gte: trendStart } }, 'opened_at'),
         statusCounts: await countByStatuses(prisma.equipment_work_order, workOrderWhere, ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED', 'COMPLETED', 'CLOSED']),
         activity: {

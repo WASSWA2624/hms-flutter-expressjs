@@ -48,6 +48,8 @@ final class HomeDashboard {
     required this.profile,
     required this.context,
     required this.statusCards,
+    required this.trend,
+    required this.distribution,
     required this.quickActionIds,
     required this.shortcutIds,
     required this.queuePreview,
@@ -62,6 +64,8 @@ final class HomeDashboard {
   final HomeDashboardProfile profile;
   final HomeDashboardContext context;
   final List<HomeStatusCard> statusCards;
+  final HomeDashboardTrend trend;
+  final HomeDashboardDistribution distribution;
   final List<String> quickActionIds;
   final List<String> shortcutIds;
   final List<HomeQueueItem> queuePreview;
@@ -75,6 +79,8 @@ final class HomeDashboard {
     HomeDashboardProfile? profile,
     HomeDashboardContext? context,
     List<HomeStatusCard>? statusCards,
+    HomeDashboardTrend? trend,
+    HomeDashboardDistribution? distribution,
     List<String>? quickActionIds,
     List<String>? shortcutIds,
     List<HomeQueueItem>? queuePreview,
@@ -89,6 +95,8 @@ final class HomeDashboard {
       profile: profile ?? this.profile,
       context: context ?? this.context,
       statusCards: statusCards ?? this.statusCards,
+      trend: trend ?? this.trend,
+      distribution: distribution ?? this.distribution,
       quickActionIds: quickActionIds ?? this.quickActionIds,
       shortcutIds: shortcutIds ?? this.shortcutIds,
       queuePreview: queuePreview ?? this.queuePreview,
@@ -106,6 +114,8 @@ final class HomeDashboard {
 
   bool get hasLiveContent {
     return statusCards.any((HomeStatusCard card) => card.numericValue > 0) ||
+        trend.hasData ||
+        distribution.hasData ||
         queuePreview.isNotEmpty ||
         alerts.any((HomeAlertItem alert) => alert.count > 0) ||
         activity.isNotEmpty;
@@ -195,6 +205,83 @@ final class HomeStatusCard {
   final String format;
 
   int get numericValue => value.round();
+}
+
+
+final class HomeDashboardTrend {
+  const HomeDashboardTrend({
+    required this.title,
+    required this.subtitle,
+    required this.points,
+  });
+
+  static const empty = HomeDashboardTrend(
+    title: '',
+    subtitle: '',
+    points: <HomeTrendPoint>[],
+  );
+
+  final String title;
+  final String subtitle;
+  final List<HomeTrendPoint> points;
+
+  bool get hasData {
+    return points.any((HomeTrendPoint point) => point.value > 0);
+  }
+}
+
+final class HomeTrendPoint {
+  const HomeTrendPoint({
+    required this.id,
+    required this.date,
+    required this.value,
+    this.label,
+  });
+
+  final String id;
+  final DateTime? date;
+  final num value;
+  final String? label;
+}
+
+final class HomeDashboardDistribution {
+  const HomeDashboardDistribution({
+    required this.title,
+    required this.subtitle,
+    required this.total,
+    required this.segments,
+  });
+
+  static const empty = HomeDashboardDistribution(
+    title: '',
+    subtitle: '',
+    total: 0,
+    segments: <HomeDistributionSegment>[],
+  );
+
+  final String title;
+  final String subtitle;
+  final num total;
+  final List<HomeDistributionSegment> segments;
+
+  bool get hasData {
+    return total > 0 ||
+        segments.any((HomeDistributionSegment segment) => segment.value > 0);
+  }
+}
+
+final class HomeDistributionSegment {
+  const HomeDistributionSegment({
+    required this.id,
+    required this.label,
+    required this.value,
+    this.color,
+  });
+
+  final String id;
+  final String label;
+  final num value;
+  final String? color;
 }
 
 final class HomeQueueItem {

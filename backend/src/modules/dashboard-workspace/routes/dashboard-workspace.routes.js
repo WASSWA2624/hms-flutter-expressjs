@@ -11,7 +11,8 @@ const {
 } = require('@validations/dashboard-workspace/dashboard-workspace.schema');
 
 const router = express.Router();
-const DASHBOARD_WORKSPACE_ROLES = ROLE_VALUES.filter(
+const DASHBOARD_WORKSPACE_ROLES = ROLE_VALUES.filter((role) => role !== ROLES.OTHER);
+const DASHBOARD_LOOKUP_ROLES = ROLE_VALUES.filter(
   (role) => role !== ROLES.PATIENT && role !== ROLES.OTHER
 );
 
@@ -34,7 +35,7 @@ router.get(
 router.get(
   '/lookups',
   validateRequest({ query: lookupsQuerySchema }),
-  authorize(DASHBOARD_WORKSPACE_ROLES, 'role'),
+  authorize(DASHBOARD_LOOKUP_ROLES, 'role'),
   dashboardWorkspaceController.getLookups
 );
 

@@ -12819,9 +12819,58 @@ paths:
                   - $ref: '#/components/schemas/PaginatedEnvelope'
                   - properties:
                       data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/GenericRecord'
+                        type: object
+                        additionalProperties: true
+                        properties:
+                          state:
+                            type: string
+                            enum:
+                              - ready
+                              - tenant_context_required
+                          generated_at:
+                            type: string
+                            format: date-time
+                          profile:
+                            $ref: '#/components/schemas/GenericRecord'
+                          hero:
+                            $ref: '#/components/schemas/GenericRecord'
+                          status_strip:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/GenericRecord'
+                          quick_action_ids:
+                            type: array
+                            items:
+                              type: string
+                          trend:
+                            type: object
+                            additionalProperties: true
+                            properties:
+                              title:
+                                type: string
+                              subtitle:
+                                type: string
+                              points:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/GenericRecord'
+                          distribution:
+                            type: object
+                            additionalProperties: true
+                            properties:
+                              title:
+                                type: string
+                              subtitle:
+                                type: string
+                              total:
+                                type: number
+                              segments:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/GenericRecord'
+                          overview:
+                            type: object
+                            additionalProperties: true
         '401':
           $ref: '#/components/responses/UnauthorizedProblem'
         '403':

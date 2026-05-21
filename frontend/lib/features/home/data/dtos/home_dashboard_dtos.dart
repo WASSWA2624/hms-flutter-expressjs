@@ -24,6 +24,8 @@ final class HomeDashboardDto {
         profile: profile,
         context: HomeDashboardContext(roleValue: roleValue),
         statusCards: profile.fallbackStatusCards(),
+        trend: HomeDashboardTrend.empty,
+        distribution: HomeDashboardDistribution.empty,
         quickActionIds: _quickActionIds(json, fallback: profile.quickActionIds),
         shortcutIds: profile.shortcutIds,
         queuePreview: const <HomeQueueItem>[],
@@ -71,6 +73,12 @@ final class HomeDashboardDto {
         .map((HomeActivityItemDto dto) => dto.toEntity())
         .where((HomeActivityItem item) => item.id.isNotEmpty)
         .toList(growable: false);
+    final HomeDashboardTrend trend = HomeTrendDto(
+      _firstMap(<Object?>[json['trend'], overview['trend']]),
+    ).toEntity();
+    final HomeDashboardDistribution distribution = HomeDistributionDto(
+      _firstMap(<Object?>[json['distribution'], overview['distribution']]),
+    ).toEntity();
 
     return HomeDashboard(
       state: HomeDashboardLoadState.ready,
@@ -88,6 +96,8 @@ final class HomeDashboardDto {
       statusCards: statusCards.isEmpty
           ? profile.fallbackStatusCards()
           : statusCards,
+      trend: trend,
+      distribution: distribution,
       quickActionIds: _quickActionIds(json, fallback: profile.quickActionIds),
       shortcutIds: profile.shortcutIds,
       queuePreview: queuePreview,
@@ -95,6 +105,84 @@ final class HomeDashboardDto {
       activity: activity,
       tenantOptions: const <HomeTenantOption>[],
       generatedAt: _date(json['generated_at']),
+    );
+  }
+}
+
+
+final class HomeTrendDto {
+  const HomeTrendDto(this.json);
+
+  final HomeJsonMap json;
+
+  HomeDashboardTrend toEntity() {
+    final List<HomeTrendPoint> points = _list(json['points'])
+        .map(HomeTrendPointDto.new)
+        .map((HomeTrendPointDto dto) => dto.toEntity())
+        .where((HomeTrendPoint point) => point.id.isNotEmpty)
+        .toList(growable: false);
+
+    return HomeDashboardTrend(
+      title: _string(json['title']) ?? 'Dashboard trend',
+      subtitle: _string(json['subtitle']) ?? '',
+      points: points,
+    );
+  }
+}
+
+final class HomeTrendPointDto {
+  const HomeTrendPointDto(this.json);
+
+  final HomeJsonMap json;
+
+  HomeTrendPoint toEntity() {
+    final String? dateText = _string(json['date']) ?? _string(json['id']);
+    return HomeTrendPoint(
+      id: _string(json['id']) ?? dateText ?? '',
+      date: _date(dateText),
+      value: _num(json['value']) ?? 0,
+      label: _string(json['label']),
+    );
+  }
+}
+
+final class HomeDistributionDto {
+  const HomeDistributionDto(this.json);
+
+  final HomeJsonMap json;
+
+  HomeDashboardDistribution toEntity() {
+    final List<HomeDistributionSegment> segments = _list(json['segments'])
+        .map(HomeDistributionSegmentDto.new)
+        .map((HomeDistributionSegmentDto dto) => dto.toEntity())
+        .where((HomeDistributionSegment segment) => segment.id.isNotEmpty)
+        .toList(growable: false);
+    final num total = _num(json['total']) ??
+        segments.fold<num>(0, (num sum, HomeDistributionSegment segment) {
+          return sum + segment.value;
+        });
+
+    return HomeDashboardDistribution(
+      title: _string(json['title']) ?? 'Status distribution',
+      subtitle: _string(json['subtitle']) ?? '',
+      total: total,
+      segments: segments,
+    );
+  }
+}
+
+final class HomeDistributionSegmentDto {
+  const HomeDistributionSegmentDto(this.json);
+
+  final HomeJsonMap json;
+
+  HomeDistributionSegment toEntity() {
+    final String id = _string(json['id']) ?? _string(json['label']) ?? '';
+    return HomeDistributionSegment(
+      id: id,
+      label: _string(json['label']) ?? _friendlyToken(id),
+      value: _num(json['value']) ?? 0,
+      color: _string(json['color']),
     );
   }
 }
@@ -179,11 +267,13 @@ final class HomeActivityItemDto {
     final String displayId =
         _string(json['human_friendly_id']) ?? _string(json['id']) ?? '';
     final String eventType = _string(json['event_type']) ?? '';
+    final String? title = _string(json['title']);
+    final String fallbackLabel = displayId.isEmpty
+        ? _friendlyToken(eventType)
+        : '${_friendlyToken(eventType)} $displayId'.trim();
     return HomeActivityItem(
       id: _string(json['id']) ?? displayId,
-      label: displayId.isEmpty
-          ? _friendlyToken(eventType)
-          : '${_friendlyToken(eventType)} $displayId',
+      label: title ?? fallbackLabel,
       moduleSlug: _string(json['module_slug']) ?? '',
       status: _string(json['status']),
       occurredAt: _date(json['occurred_at']),
@@ -279,6 +369,17 @@ HomeJsonMap _dataMap(Object? responseData) {
   final HomeJsonMap response = _map(responseData);
   final HomeJsonMap data = _map(response['data']);
   return data.isNotEmpty ? data : response;
+}
+
+
+HomeJsonMap _firstMap(Iterable<Object?> values) {
+  for (final Object? value in values) {
+    final HomeJsonMap mapped = _map(value);
+    if (mapped.isNotEmpty) {
+      return mapped;
+    }
+  }
+  return <String, Object?>{};
 }
 
 HomeJsonMap _map(Object? value) {

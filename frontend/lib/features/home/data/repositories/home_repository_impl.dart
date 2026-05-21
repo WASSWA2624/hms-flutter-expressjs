@@ -84,7 +84,7 @@ final class HomeRepositoryImpl implements HomeRepository {
     HomeDashboardProfile profile,
     HomeDashboardRequest request,
   ) {
-    if (profile.role == AppRole.patient || profile.role == AppRole.other) {
+    if (profile.role == AppRole.other) {
       return true;
     }
     if (_session == null) {
@@ -126,6 +126,8 @@ final class HomeRepositoryImpl implements HomeRepository {
         branchId: _accessPolicy.branchId,
       ),
       statusCards: profile.fallbackStatusCards(),
+      trend: HomeDashboardTrend.empty,
+      distribution: HomeDashboardDistribution.empty,
       quickActionIds: quickActions,
       shortcutIds: shortcuts,
       queuePreview: const <HomeQueueItem>[],

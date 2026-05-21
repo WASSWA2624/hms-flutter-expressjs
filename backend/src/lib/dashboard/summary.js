@@ -625,6 +625,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'maintenance_open', label: 'Open maintenance requests', value: metrics.openMaintenance || 0 },
       { id: 'low_stock_pressure', label: 'Low stock pressure', value: metrics.lowStockPressure || 0 },
       { id: 'housekeeping_backlog', label: 'Housekeeping backlog', value: metrics.housekeepingBacklog || 0 },
+      { id: 'facility_readiness', label: 'Facility readiness', value: metrics.facilityReadiness || 0, format: 'percent' },
     ];
   }
 
@@ -635,6 +636,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'pending_leaves', label: 'Pending leave approvals', value: metrics.pendingLeaves || 0 },
       { id: 'staffing_backlog', label: 'Staffing backlog', value: metrics.staffingBacklog || 0 },
       { id: 'unassigned_shifts', label: 'Unassigned shifts', value: metrics.unassignedShifts || 0 },
+      { id: 'attendance_rate', label: 'Attendance rate', value: metrics.attendanceRate || 0, format: 'percent' },
     ];
   }
 
@@ -645,6 +647,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'active_downtime', label: 'Active downtime events', value: metrics.activeDowntime || 0 },
       { id: 'critical_service_risk', label: 'Critical service-risk indicators', value: metrics.criticalServiceRisk || 0 },
       { id: 'high_priority', label: 'High-priority work orders', value: metrics.highPriority || 0 },
+      { id: 'assets_operational', label: 'Assets operational', value: metrics.assetsOperational || 0, format: 'percent' },
     ];
   }
 
@@ -763,7 +766,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'my_prescriptions', label: 'My prescriptions', value: metrics.myPrescriptions || 0 },
       { id: 'my_released_results', label: 'My released results', value: metrics.myReleasedResults || 0 },
       { id: 'my_messages', label: 'My messages', value: metrics.myMessages || 0 },
-      { id: 'my_profile_status', label: 'My profile status', value: metrics.myProfileStatus || 0 },
+      { id: 'my_profile_status', label: 'My profile status', value: metrics.myProfileStatus || 0, format: 'percent' },
     ];
   }
 
@@ -804,6 +807,7 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
         scope,
         days,
         userId: resolvedUserId,
+        user,
       }),
       includeOpdNotificationSignals
         ? repository
