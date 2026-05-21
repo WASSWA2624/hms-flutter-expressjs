@@ -3241,13 +3241,13 @@ abstract class AppLocalizations {
   /// Patient quick action label for creating or continuing an OPD encounter.
   ///
   /// In en, this message translates to:
-  /// **'Start OPD encounter'**
+  /// **'Start / Check in OPD'**
   String get patientsQuickOpdCheckInAction;
 
   /// Patient quick action label for opening the active OPD encounter actions.
   ///
   /// In en, this message translates to:
-  /// **'View active OPD encounter'**
+  /// **'Continue OPD flow'**
   String get patientsQuickViewActiveOpdAction;
 
   /// Patient quick triage action label.
