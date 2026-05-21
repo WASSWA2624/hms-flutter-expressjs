@@ -368,12 +368,12 @@ void main() {
       expect(find.text('Active OPD encounter found'), findsOneWidget);
       expect(
         find.text(
-          'This patient already has an active OPD encounter. Open the active encounter instead of creating a duplicate.',
+          'This patient already has an active OPD encounter. Update the active encounter instead of creating a duplicate.',
         ),
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Open active encounter').last);
+      await tester.tap(find.text('Update encounter').last);
       await tester.pumpAndSettle();
 
       expect(submittedPayload?['existing_encounter_id'], 'ENC000001');

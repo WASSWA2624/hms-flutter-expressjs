@@ -1225,7 +1225,7 @@ abstract class AppLocalizations {
   /// Primary button label when a selected patient already has an active OPD encounter.
   ///
   /// In en, this message translates to:
-  /// **'Open active encounter'**
+  /// **'Update encounter'**
   String get opdOpenActiveEncounterAction;
 
   /// Tooltip for the shared OPD encounter start action.
@@ -1873,8 +1873,14 @@ abstract class AppLocalizations {
   /// Body text shown when an OPD encounter selection matches an already active encounter.
   ///
   /// In en, this message translates to:
-  /// **'This patient already has an active OPD encounter. Open the active encounter instead of creating a duplicate.'**
+  /// **'This patient already has an active OPD encounter. Update the active encounter instead of creating a duplicate.'**
   String get opdActiveEncounterFoundBody;
+
+  /// Tooltip shown when OPD actions need an active encounter before they can run.
+  ///
+  /// In en, this message translates to:
+  /// **'Start or update an OPD encounter first.'**
+  String get opdInactiveEncounterActionReason;
 
   /// Searchable provider field label in OPD.
   ///

@@ -21,6 +21,7 @@ describe('opd-flow.routes contract', () => {
       'GET /',
       'GET /:id',
       'GET /resolve-legacy/:resource/:id',
+      'PATCH /:id/context',
       'POST /:id/assign-doctor',
       'POST /:id/correct-stage',
       'POST /:id/disposition',

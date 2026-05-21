@@ -789,7 +789,7 @@ final class OpdProviderOption {
   final String? consultationCurrency;
 
   String get displayTitle {
-    return _firstNonEmpty(<String?>[displayName, email]) ?? 'Unknown provider';
+    return _firstNonEmpty(<String?>[displayName]) ?? 'Unknown provider';
   }
 }
 

@@ -2069,10 +2069,7 @@ class _ProviderSelectField extends StatelessWidget {
 }
 
 class _OpdPatientActionsDialog extends ConsumerStatefulWidget {
-  const _OpdPatientActionsDialog({
-    required this.item,
-    required this.state,
-  });
+  const _OpdPatientActionsDialog({required this.item, required this.state});
 
   final _OpdTableItem item;
   final OpdWorkspaceState state;
@@ -2142,7 +2139,7 @@ class _OpdPatientActionsDialogState
     final OpdAppointment? appointment = widget.item.appointment;
     final OpdQueueEntry? queueEntry = widget.item.queueEntry;
     final bool terminal = _isCompletedStatus(widget.item.status);
-    const String inactiveReason = 'Start or update an OPD encounter first.';
+    final String inactiveReason = l10n.opdInactiveEncounterActionReason;
     final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[];
 
     AppPermissionActionItem action({

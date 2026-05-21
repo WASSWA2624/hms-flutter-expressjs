@@ -946,7 +946,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdActiveEncounterFoundBody =>
-      'This patient already has an active OPD encounter. Open the active encounter instead of creating a duplicate.';
+      'This patient already has an active OPD encounter. Update the active encounter instead of creating a duplicate.';
+
+  @override
+  String get opdInactiveEncounterActionReason =>
+      'Start or update an OPD encounter first.';
 
   @override
   String get opdSearchProviderLabel => 'Search provider';
