@@ -313,7 +313,7 @@ final class OpdWorkspaceController
     }
 
     _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
-    final Result<OpdFlowDetail> result = await _repository.getTriageCase(
+    final Result<OpdFlowDetail> result = await _repository.getOpdFlow(
       flow.apiId,
     );
     return result.when(
@@ -469,7 +469,7 @@ final class OpdWorkspaceController
 
   Future<AppFailure?> assignDoctor(OpdFlowSummary flow, String providerUserId) {
     return _mutateFlow(
-      () => _repository.assignTriageProvider(flow.apiId, <String, Object?>{
+      () => _repository.assignDoctor(flow.apiId, <String, Object?>{
         'provider_user_id': providerUserId,
       }),
       refreshAfter: true,
@@ -491,7 +491,7 @@ final class OpdWorkspaceController
     Map<String, Object?> payload,
   ) {
     return _mutateFlow(
-      () => _repository.recordTriageVitals(flow.apiId, payload),
+      () => _repository.recordVitals(flow.apiId, payload),
       refreshAfter: true,
     );
   }
@@ -501,7 +501,10 @@ final class OpdWorkspaceController
     List<Map<String, Object?>> vitals,
   ) {
     return _mutateFlow(
-      () => _repository.updateVitals(detail, vitals),
+      () => _repository.recordVitals(detail.summary.apiId, <String, Object?>{
+        'vitals': vitals,
+        'update_existing': true,
+      }),
       refreshAfter: true,
     );
   }
@@ -512,7 +515,7 @@ final class OpdWorkspaceController
     String? reason,
   ) {
     return _mutateFlow(
-      () => _repository.correctTriageStage(flow.apiId, <String, Object?>{
+      () => _repository.correctStage(flow.apiId, <String, Object?>{
         'stage_to': stage,
         'reason': reason,
       }),
@@ -719,31 +722,6 @@ final class OpdWorkspaceController
         }
       }
 
-      final OpdFlowDetail? selectedFlow = _currentState?.selectedFlow;
-      if (selectedFlow != null) {
-        final Result<OpdFlowDetail> detailResult = await _repository.getOpdFlow(
-          selectedFlow.summary.apiId,
-        );
-        detailResult.when(
-          success: (OpdFlowDetail detail) {
-            final OpdWorkspaceState? latest = _currentState;
-            if (latest != null) {
-              _emit(
-                latest.copyWith(
-                  selectedFlow: detail,
-                  flows: _replaceFlow(latest.flows, detail.summary),
-                  triageQueue: _upsertOrRemoveTriageFlow(
-                    latest.triageQueue,
-                    detail.summary,
-                  ),
-                ),
-              );
-            }
-          },
-          failure: (_) {},
-        );
-      }
-
       return null;
     } finally {
       final OpdWorkspaceState? latest = _currentState;
@@ -777,12 +755,19 @@ final class OpdWorkspaceController
         .listOpdFlows(current.flowQuery);
     final Future<Result<AppPage<OpdFlowSummary>>> triageFuture = _repository
         .listTriageQueue(current.triageQueueQuery);
+    final OpdFlowDetail? currentSelectedFlow = current.selectedFlow;
+    final Future<Result<OpdFlowDetail>>? selectedDetailFuture =
+        currentSelectedFlow == null
+        ? null
+        : _repository.getOpdFlow(currentSelectedFlow.summary.apiId);
 
     final Result<AppPage<OpdAppointment>> appointmentsResult =
         await appointmentsFuture;
     final Result<AppPage<OpdQueueEntry>> queueResult = await queueFuture;
     final Result<AppPage<OpdFlowSummary>> flowsResult = await flowsFuture;
     final Result<AppPage<OpdFlowSummary>> triageResult = await triageFuture;
+    final Result<OpdFlowDetail>? selectedDetailResult =
+        selectedDetailFuture == null ? null : await selectedDetailFuture;
 
     OpdWorkspaceState nextState = current;
 
@@ -806,12 +791,16 @@ final class OpdWorkspaceController
 
     flowsResult.when(
       success: (AppPage<OpdFlowSummary> page) {
-        final OpdFlowDetail? selected = _selectedAfterFlowRefresh(
+        final AppPage<OpdFlowSummary> stablePage = _stableFlowPage(
           page,
+          current.flows,
+        );
+        final OpdFlowDetail? selected = _selectedAfterFlowRefresh(
+          stablePage,
           nextState.selectedFlow,
         );
         nextState = nextState.copyWith(
-          flows: page,
+          flows: stablePage,
           selectedFlow: selected,
           clearSelectedFlow: selected == null,
         );
@@ -823,11 +812,28 @@ final class OpdWorkspaceController
 
     triageResult.when(
       success: (AppPage<OpdFlowSummary> page) {
-        nextState = nextState.copyWith(triageQueue: page);
+        nextState = nextState.copyWith(
+          triageQueue: _stableFlowPage(page, current.triageQueue),
+        );
       },
       failure: (AppFailure failure) {
         firstFailure ??= failure;
       },
+    );
+
+    selectedDetailResult?.when(
+      success: (OpdFlowDetail detail) {
+        nextState = nextState.copyWith(
+          selectedFlow: detail.summary.isTerminal ? null : detail,
+          clearSelectedFlow: detail.summary.isTerminal,
+          flows: _upsertOrRemoveFlow(nextState.flows, detail.summary),
+          triageQueue: _upsertOrRemoveTriageFlow(
+            nextState.triageQueue,
+            detail.summary,
+          ),
+        );
+      },
+      failure: (_) {},
     );
 
     _emit(
@@ -1063,6 +1069,98 @@ final class OpdWorkspaceController
     }
 
     return selected;
+  }
+
+  AppPage<OpdFlowSummary> _stableFlowPage(
+    AppPage<OpdFlowSummary> next,
+    AppPage<OpdFlowSummary> previous,
+  ) {
+    final List<OpdFlowSummary> items = next.items
+        .map(
+          (OpdFlowSummary flow) =>
+              _mergeSparseBilling(flow, _matchingPreviousFlow(previous, flow)),
+        )
+        .toList(growable: true);
+
+    for (final OpdFlowSummary previousFlow in previous.items) {
+      if (previousFlow.isTerminal ||
+          isOpdTerminalStatus(previousFlow.status ?? previousFlow.stage)) {
+        continue;
+      }
+      if (items.any((OpdFlowSummary item) => _isSameFlow(item, previousFlow))) {
+        continue;
+      }
+      if (!_hasBillingSignal(previousFlow)) {
+        continue;
+      }
+      items.add(previousFlow);
+    }
+
+    return AppPage<OpdFlowSummary>(
+      items: items.take(next.request.pageSize).toList(growable: false),
+      request: next.request,
+      totalItemCount: next.totalItemCount,
+    );
+  }
+
+  OpdFlowSummary? _matchingPreviousFlow(
+    AppPage<OpdFlowSummary> previous,
+    OpdFlowSummary flow,
+  ) {
+    for (final OpdFlowSummary item in previous.items) {
+      if (_isSameFlow(item, flow)) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  OpdFlowSummary _mergeSparseBilling(
+    OpdFlowSummary next,
+    OpdFlowSummary? previous,
+  ) {
+    if (previous == null || !_hasBillingSignal(previous)) {
+      return next;
+    }
+
+    final bool nextHasBillingSignal = _hasBillingSignal(next);
+    if (!nextHasBillingSignal) {
+      return next.copyWith(
+        consultationPaid: previous.consultationPaid,
+        consultationPaymentRequired: previous.consultationPaymentRequired,
+        consultationFee: previous.consultationFee,
+        consultationPaidAmount: previous.consultationPaidAmount,
+        consultationCurrency: previous.consultationCurrency,
+        consultationInvoiceId: previous.consultationInvoiceId,
+        consultationPaymentId: previous.consultationPaymentId,
+        consultationPaymentStatus: previous.consultationPaymentStatus,
+      );
+    }
+
+    return next.copyWith(
+      consultationFee: next.consultationFee ?? previous.consultationFee,
+      consultationPaidAmount:
+          next.consultationPaidAmount ?? previous.consultationPaidAmount,
+      consultationCurrency:
+          next.consultationCurrency ?? previous.consultationCurrency,
+      consultationInvoiceId:
+          next.consultationInvoiceId ?? previous.consultationInvoiceId,
+      consultationPaymentId:
+          next.consultationPaymentId ?? previous.consultationPaymentId,
+      consultationPaymentStatus:
+          next.consultationPaymentStatus ?? previous.consultationPaymentStatus,
+    );
+  }
+
+  bool _hasBillingSignal(OpdFlowSummary flow) {
+    return flow.consultationPaid ||
+        flow.consultationPaymentRequired ||
+        flow.consultationFee != null ||
+        flow.consultationPaidAmount != null ||
+        flow.consultationCurrency != null ||
+        flow.consultationInvoiceId != null ||
+        flow.consultationPaymentId != null ||
+        flow.consultationPaymentStatus != null;
   }
 
   AppPage<OpdAppointment> _upsertAppointment(

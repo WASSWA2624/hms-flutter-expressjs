@@ -2313,7 +2313,8 @@ const payConsultation = async (id, data, context = {}) => {
     const stageBefore = flow.stage;
 
     const consultation = flow.consultation || {};
-    const isCorrection = consultation.is_paid === true;
+    const isCorrection =
+      consultation.is_paid === true || PAID_PAYMENT_STATUSES.has(normalizeUpper(consultation.payment_status));
 
     let invoiceId = data.invoice_id || consultation.invoice_id || null;
     let invoice = null;
@@ -2481,7 +2482,12 @@ const recordVitals = async (id, data, context = {}) => {
       throw new HttpError('errors.opd_flow.consultation_payment_required', 400);
     }
 
-    if (flow.stage !== STAGES.WAITING_VITALS && flow.stage !== STAGES.WAITING_DOCTOR_ASSIGNMENT) {
+    const isVitalsUpdate = data.update_existing === true;
+    if (
+      !isVitalsUpdate &&
+      flow.stage !== STAGES.WAITING_VITALS &&
+      flow.stage !== STAGES.WAITING_DOCTOR_ASSIGNMENT
+    ) {
       throw new HttpError('errors.opd_flow.invalid_stage_transition', 400);
     }
 
@@ -2574,8 +2580,10 @@ const recordVitals = async (id, data, context = {}) => {
       }
     }
 
-    setFlowStage(flow, STAGES.WAITING_DOCTOR_ASSIGNMENT);
-    appendTimelineEvent(flow, 'VITALS_RECORDED', context, {
+    if (flow.stage === STAGES.WAITING_VITALS || flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT) {
+      setFlowStage(flow, STAGES.WAITING_DOCTOR_ASSIGNMENT);
+    }
+    appendTimelineEvent(flow, isVitalsUpdate ? 'VITALS_UPDATED' : 'VITALS_RECORDED', context, {
       vitals_count: data.vitals.length,
       triage_level: data.triage_level || null
     });
@@ -2661,10 +2669,6 @@ const assignDoctor = async (id, data, context = {}) => {
     ensureNonTerminalStage(flow);
     const stageBefore = flow.stage;
 
-    if (flow.stage !== STAGES.WAITING_DOCTOR_ASSIGNMENT && flow.stage !== STAGES.WAITING_DOCTOR_REVIEW) {
-      throw new HttpError('errors.opd_flow.invalid_stage_transition', 400);
-    }
-
     const provider = await resolveProviderByIdentifier(
       tx,
       data.provider_user_id,
@@ -2692,7 +2696,9 @@ const assignDoctor = async (id, data, context = {}) => {
       });
     }
 
-    setFlowStage(flow, STAGES.WAITING_DOCTOR_REVIEW);
+    if (flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT) {
+      setFlowStage(flow, STAGES.WAITING_DOCTOR_REVIEW);
+    }
     appendTimelineEvent(flow, 'DOCTOR_ASSIGNED', context, {
       provider_user_id: provider.id
     });
@@ -2749,7 +2755,15 @@ const doctorReview = async (id, data, context = {}) => {
     ensureNonTerminalStage(flow);
     const stageBefore = flow.stage;
 
-    if (flow.stage !== STAGES.WAITING_DOCTOR_REVIEW) {
+    const reviewUpdateStages = new Set([
+      STAGES.WAITING_DOCTOR_REVIEW,
+      STAGES.LAB_REQUESTED,
+      STAGES.RADIOLOGY_REQUESTED,
+      STAGES.LAB_AND_RADIOLOGY_REQUESTED,
+      STAGES.PHARMACY_REQUESTED,
+      STAGES.WAITING_DISPOSITION
+    ]);
+    if (!reviewUpdateStages.has(flow.stage)) {
       throw new HttpError('errors.opd_flow.invalid_stage_transition', 400);
     }
 
@@ -2941,7 +2955,7 @@ const doctorReview = async (id, data, context = {}) => {
       setFlowStage(flow, STAGES.RADIOLOGY_REQUESTED);
     } else if (hasMedication) {
       setFlowStage(flow, STAGES.PHARMACY_REQUESTED);
-    } else {
+    } else if (flow.stage === STAGES.WAITING_DOCTOR_REVIEW) {
       setFlowStage(flow, STAGES.WAITING_DISPOSITION);
     }
 

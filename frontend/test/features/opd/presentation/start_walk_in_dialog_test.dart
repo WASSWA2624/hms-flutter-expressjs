@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/patients/domain/repositories/patient_reposit
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockPatientRepository extends Mock implements PatientRepository {}
@@ -538,6 +539,24 @@ void main() {
       consultationFee: 25000,
       consultationCurrency: 'UGX',
     );
+    final OpdFlowSummary paidFlow = OpdFlowSummary(
+      id: 'encounter-2',
+      publicId: 'ENC000002',
+      patientDisplayName: 'Grace Nanyonga',
+      patientIdentifier: 'PAT000002',
+      encounterType: 'OPD',
+      status: 'OPEN',
+      arrivalMode: 'WALK_IN',
+      stage: 'WAITING_DOCTOR_REVIEW',
+      nextStep: 'DOCTOR_REVIEW',
+      queuedAt: queuedAt.subtract(const Duration(minutes: 4)),
+      providerDisplayName: 'Dr Baker',
+      consultationPaid: true,
+      consultationFee: 20000,
+      consultationPaidAmount: 20000,
+      consultationCurrency: 'UGX',
+      consultationPaymentStatus: 'PAID',
+    );
 
     when(() => opdRepository.listAppointments(any())).thenAnswer(
       (invocation) async => Result<AppPage<OpdAppointment>>.success(
@@ -563,10 +582,10 @@ void main() {
     when(() => opdRepository.listOpdFlows(any())).thenAnswer(
       (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
         AppPage<OpdFlowSummary>(
-          items: <OpdFlowSummary>[flow],
+          items: <OpdFlowSummary>[flow, paidFlow],
           request: (invocation.positionalArguments.single as OpdFlowQuery)
               .pageRequest,
-          totalItemCount: 1,
+          totalItemCount: 2,
         ),
       ),
     );
@@ -615,6 +634,10 @@ void main() {
     expect(find.text('Payer / billing'), findsOneWidget);
     expect(find.text('Wait time'), findsOneWidget);
     expect(find.textContaining('Payment required'), findsWidgets);
+    expect(find.textContaining('Paid'), findsWidgets);
+    expect(find.textContaining('UGX'), findsWidgets);
+    expect(find.textContaining('25,000'), findsWidgets);
+    expect(find.textContaining('20,000'), findsWidgets);
 
     final Finder tableFilterButton = find.byTooltip('Filter OPD table').last;
     await tester.ensureVisible(tableFilterButton);

@@ -243,7 +243,8 @@ const recordVitalsSchema = z.object({
   triage_priority: z.enum(TRIAGE_LEVEL_VALUES).optional(),
   chief_complaint: z.string().trim().max(65535).optional().nullable(),
   emergency: z.boolean().optional(),
-  triage_notes: z.string().trim().max(65535).optional().nullable()
+  triage_notes: z.string().trim().max(65535).optional().nullable(),
+  update_existing: z.boolean().optional()
 });
 
 const assignDoctorSchema = z.object({

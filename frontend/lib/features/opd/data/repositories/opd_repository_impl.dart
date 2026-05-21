@@ -304,7 +304,7 @@ final class OpdRepositoryImpl implements OpdRepository {
       }
     }
 
-    return getTriageCase(detail.summary.apiId);
+    return getOpdFlow(detail.summary.apiId);
   }
 
   @override

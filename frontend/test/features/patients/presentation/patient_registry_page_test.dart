@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,20 @@ void main() {
     registerFallbackValue(const PatientListQuery());
     registerFallbackValue(const OpdAppointmentQuery());
     registerFallbackValue(const OpdFlowQuery());
+  });
+
+  test('Patient Registry depends on shared OPD actions, not the OPD page', () {
+    final String source = File(
+      'lib/features/patients/presentation/pages/patient_registry_page.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('shared/opd_actions/opd_actions.dart'));
+    expect(
+      source,
+      isNot(
+        contains('features/opd/presentation/pages/opd_workspace_page.dart'),
+      ),
+    );
   });
 
   testWidgets('PatientFormDialog warns before saving duplicate candidates', (

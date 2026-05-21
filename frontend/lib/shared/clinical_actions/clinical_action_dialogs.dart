@@ -126,7 +126,11 @@ class _ClinicalFreeTextActionDialogState
 }
 
 class ClinicalReferralActionDialog extends StatefulWidget {
-  const ClinicalReferralActionDialog({required this.onSubmit, super.key});
+  const ClinicalReferralActionDialog({
+    required this.onSubmit,
+    this.leadingContent = const <Widget>[],
+    super.key,
+  });
 
   final Future<AppFailure?> Function({
     required String externalFacilityName,
@@ -134,6 +138,7 @@ class ClinicalReferralActionDialog extends StatefulWidget {
     required String notes,
   })
   onSubmit;
+  final List<Widget> leadingContent;
 
   @override
   State<ClinicalReferralActionDialog> createState() =>
@@ -177,6 +182,7 @@ class _ClinicalReferralActionDialogState
         child: AppFormSection(
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
+            ...widget.leadingContent,
             AppTextField(
               controller: _facilityController,
               labelText: l10n.opdExternalFacilityLabel,
@@ -245,13 +251,18 @@ class _ClinicalReferralActionDialogState
 }
 
 class ClinicalFollowUpActionDialog extends StatefulWidget {
-  const ClinicalFollowUpActionDialog({required this.onSubmit, super.key});
+  const ClinicalFollowUpActionDialog({
+    required this.onSubmit,
+    this.leadingContent = const <Widget>[],
+    super.key,
+  });
 
   final Future<AppFailure?> Function({
     required DateTime scheduledAt,
     required String notes,
   })
   onSubmit;
+  final List<Widget> leadingContent;
 
   @override
   State<ClinicalFollowUpActionDialog> createState() =>
@@ -295,6 +306,7 @@ class _ClinicalFollowUpActionDialogState
         child: AppFormSection(
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
+            ...widget.leadingContent,
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
               left: AppDateField(
@@ -675,6 +687,7 @@ class ClinicalDispositionActionDialog extends StatefulWidget {
     this.submitLabel,
     this.initialReason,
     this.icon = const Icon(Icons.task_alt_outlined),
+    this.leadingContent = const <Widget>[],
     super.key,
   });
 
@@ -685,6 +698,7 @@ class ClinicalDispositionActionDialog extends StatefulWidget {
   final String? submitLabel;
   final String? initialReason;
   final Widget icon;
+  final List<Widget> leadingContent;
   final Future<AppFailure?> Function({
     required String reason,
     required String notes,
@@ -737,6 +751,7 @@ class _ClinicalDispositionActionDialogState
         child: AppFormSection(
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
+            ...widget.leadingContent,
             AppSelectField<String>.searchable(
               value: _reason,
               labelText:

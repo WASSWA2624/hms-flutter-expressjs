@@ -33,6 +33,7 @@ import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 
 const IconData opdEncounterIcon = Icons.person_add_alt_1_outlined;
 
@@ -1515,75 +1516,11 @@ List<AppSelectOption<String>> _providerSelectOptions({
 }
 
 String _flowBillingLabel(BuildContext context, OpdFlowSummary flow) {
-  final String status = _flowBillingStatusLabel(context, flow);
-  final bool isPaid = _flowBillingState(flow) == _opdBillingStatePaid;
-  final num? billingAmount = isPaid
-      ? flow.consultationPaidAmount
-      : flow.consultationFee;
-  final String? amount = _moneyLabel(
-    context,
-    billingAmount,
-    flow.consultationCurrency,
-  );
-  return _joinDisplay(<String?>[status, amount]);
-}
-
-String _flowBillingStatusLabel(BuildContext context, OpdFlowSummary flow) {
-  return _billingStateLabel(context, _flowBillingState(flow));
-}
-
-String _flowBillingState(OpdFlowSummary flow) {
-  final String stage = (flow.stage ?? '').toUpperCase();
-  final String paymentStatus = (flow.consultationPaymentStatus ?? '')
-      .trim()
-      .toUpperCase();
-  final num? paidAmount = flow.consultationPaidAmount;
-  final num? fee = flow.consultationFee;
-  final bool paymentCoversFee =
-      paidAmount != null &&
-      paidAmount > 0 &&
-      (fee == null || fee <= 0 || paidAmount >= fee);
-  if (flow.consultationPaid ||
-      paymentStatus == 'PAID' ||
-      paymentStatus == 'CLEARED' ||
-      (paymentStatus == 'COMPLETED' && paymentCoversFee)) {
-    return _opdBillingStatePaid;
-  }
-  if (flow.consultationPaymentRequired ||
-      stage == 'WAITING_CONSULTATION_PAYMENT') {
-    return _opdBillingStateRequired;
-  }
-  return _opdBillingStateNotRequired;
-}
-
-String _billingStateLabel(BuildContext context, String value) {
-  return switch (value) {
-    _opdBillingStatePaid => context.l10n.opdPaymentPaidLabel,
-    _opdBillingStateRequired => context.l10n.opdPaymentRequiredLabel,
-    _opdBillingStateNotRequired => context.l10n.opdPaymentNotRequiredLabel,
-    _ => context.l10n.profileUnknownValue,
-  };
-}
-
-String? _moneyLabel(BuildContext context, num? amount, String? currency) {
-  if (amount == null || amount == 0) {
-    return null;
-  }
-  return AppFormatters.currency(
-    amount,
-    Localizations.localeOf(context),
-    currencyCode: currency,
-  );
+  return opdFlowBillingDisplay(context, flow).label;
 }
 
 String _currencyAmountInput(num? amount) {
-  if (amount == null) {
-    return '';
-  }
-  if (amount is int || amount == amount.roundToDouble()) {
-    return amount.toStringAsFixed(0);
-  }
-  return amount.toString();
+  return opdCurrencyAmountInput(amount);
 }
 
 bool _isCompletedStatus(String? status) {
@@ -1625,10 +1562,6 @@ String _formatDateTime(BuildContext context, DateTime? value) {
 String _joinDisplay(Iterable<String?> values) {
   return AppDisplay.joinNonEmpty(values, separator: ' | ');
 }
-
-const String _opdBillingStatePaid = 'PAID';
-const String _opdBillingStateRequired = 'REQUIRED';
-const String _opdBillingStateNotRequired = 'NOT_REQUIRED';
 
 const List<String> _arrivalModeOptions = <String>['WALK_IN', 'EMERGENCY'];
 

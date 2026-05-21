@@ -6,6 +6,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 
 class OpdActionContextPanel extends StatelessWidget {
   const OpdActionContextPanel({
@@ -70,7 +71,7 @@ class OpdActionContextPanel extends StatelessWidget {
             ),
             AppInfoTileData(
               label: l10n.opdPaymentStatusLabel,
-              value: opdFlowBillingStatusLabel(l10n, flow),
+              value: opdFlowBillingDisplay(context, flow).label,
             ),
             AppInfoTileData(
               label: l10n.opdProviderColumnLabel,
@@ -81,44 +82,6 @@ class OpdActionContextPanel extends StatelessWidget {
       ],
     );
   }
-}
-
-String opdFlowBillingStatusLabel(AppLocalizations l10n, OpdFlowSummary flow) {
-  final String state = opdFlowBillingState(flow);
-  if (state == _opdBillingStatePaid &&
-      (_isTerminalStatus(flow.stage) || _isTerminalStatus(flow.status))) {
-    return l10n.opdCompletedFlowSummaryLabel;
-  }
-  return switch (state) {
-    _opdBillingStatePaid => l10n.opdPaymentPaidLabel,
-    _opdBillingStateRequired => l10n.opdPaymentRequiredLabel,
-    _opdBillingStateNotRequired => l10n.opdPaymentNotRequiredLabel,
-    _ => l10n.profileUnknownValue,
-  };
-}
-
-String opdFlowBillingState(OpdFlowSummary flow) {
-  final String stage = (flow.stage ?? '').toUpperCase();
-  final String paymentStatus = (flow.consultationPaymentStatus ?? '')
-      .trim()
-      .toUpperCase();
-  final num? paidAmount = flow.consultationPaidAmount;
-  final num? fee = flow.consultationFee;
-  final bool paymentCoversFee =
-      paidAmount != null &&
-      paidAmount > 0 &&
-      (fee == null || fee <= 0 || paidAmount >= fee);
-  if (flow.consultationPaid ||
-      paymentStatus == 'PAID' ||
-      paymentStatus == 'CLEARED' ||
-      (paymentStatus == 'COMPLETED' && paymentCoversFee)) {
-    return _opdBillingStatePaid;
-  }
-  if (flow.consultationPaymentRequired ||
-      stage == 'WAITING_CONSULTATION_PAYMENT') {
-    return _opdBillingStateRequired;
-  }
-  return _opdBillingStateNotRequired;
 }
 
 String _apiLabel(String? value) {
@@ -147,19 +110,3 @@ Future<void> _copyTextToClipboard(
   }
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
-
-bool _isTerminalStatus(String? status) {
-  return switch ((status ?? '').toUpperCase()) {
-    'COMPLETED' ||
-    'CANCELLED' ||
-    'NO_SHOW' ||
-    'DISCHARGED' ||
-    'ADMITTED' ||
-    'CLOSED' => true,
-    _ => false,
-  };
-}
-
-const String _opdBillingStatePaid = 'PAID';
-const String _opdBillingStateRequired = 'REQUIRED';
-const String _opdBillingStateNotRequired = 'NOT_REQUIRED';
