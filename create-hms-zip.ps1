@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$OutputPath = (Join-Path $PSScriptRoot 'hms.zip')
 )
 
@@ -111,8 +111,7 @@ try {
   Add-FilteredFolder -Archive $archive -SourceRoot $appPlannerRoot -TargetFolder 'app-planner' -IncludeFile {
     param($file, $sourceRoot)
 
-    $relativePath = Get-RelativePath -BasePath $sourceRoot -Path $file.FullName
-    return !(Test-PathPart -RelativePath $relativePath -Names @('dashboard-screens'))
+    return $true
   }
 
   $backendRoot = Join-Path $root 'backend'

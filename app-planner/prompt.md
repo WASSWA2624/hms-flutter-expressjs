@@ -1,4 +1,4 @@
-# HMS OPD Screen + Active Encounter Workflow Refactor
+﻿# HMS OPD Screen + Active Encounter Workflow Refactor
 
 You are working in the HMS/HOSSPI codebase from `hms.zip`.
 
