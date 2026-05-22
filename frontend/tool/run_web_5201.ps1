@@ -4,6 +4,7 @@ param(
   [int]$Port = 5201,
   [string]$Device = 'chrome',
   [string]$DartDefineFile = 'env/development.json.example',
+  [switch]$EnableExpressionEvaluation,
   [switch]$ReleaseOnly
 )
 
@@ -75,10 +76,18 @@ if ($ReleaseOnly) {
   exit 0
 }
 
-flutter run `
-  -d $Device `
-  --web-hostname=$HostName `
-  --web-port=$Port `
-  --dart-define-from-file=$DartDefineFile
+$flutterArgs = @(
+  'run',
+  '-d', $Device,
+  "--web-hostname=$HostName",
+  "--web-port=$Port",
+  "--dart-define-from-file=$DartDefineFile"
+)
+
+if (-not $EnableExpressionEvaluation) {
+  $flutterArgs += '--no-web-enable-expression-evaluation'
+}
+
+flutter @flutterArgs
 
 exit $LASTEXITCODE

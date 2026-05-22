@@ -44,13 +44,13 @@ usernames, passwords, tokens, or other credentials.
 Development can use a local HTTP endpoint:
 
 ```sh
-flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation
 ```
 
 Staging and production should use public HTTPS endpoints:
 
 ```sh
-flutter run -d chrome --dart-define-from-file=env/staging.json.example
+flutter run -d chrome --dart-define-from-file=env/staging.json.example --no-web-enable-expression-evaluation
 ```
 
 ```sh

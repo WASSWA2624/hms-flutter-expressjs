@@ -6,7 +6,7 @@ These example files contain public, non-secret compile-time values consumed thro
 Run or build with Flutter's define file flag:
 
 ```sh
-flutter run -d chrome --dart-define-from-file=env/development.json.example
+flutter run -d chrome --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation
 flutter build web --release --dart-define-from-file=env/production.json.example
 ```
 

@@ -60,12 +60,13 @@ hot reload on save for active debug sessions.
 Run the starter app on Chrome:
 
 ```sh
-flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example
+flutter run -d chrome --web-hostname=127.0.0.1 --web-port=5201 --dart-define-from-file=env/development.json.example --no-web-enable-expression-evaluation
 ```
 
 On Windows PowerShell, prefer the project launcher when reusing port `5201`.
 It releases any existing listener on that port, waits for the port to be free,
-then starts the same Flutter Chrome command:
+then starts the Flutter Chrome command with web debugger expression evaluation
+disabled:
 
 ```powershell
 .\tool\run_web_5201.ps1
@@ -73,7 +74,7 @@ then starts the same Flutter Chrome command:
 
 The VS Code `Flutter: Web Chrome (development)` launch target uses the same
 fixed address: `http://127.0.0.1:5201` and runs the same port-release task
-before launching.
+before launching with the same web debugger setting.
 
 Run the starter app on Windows desktop:
 
