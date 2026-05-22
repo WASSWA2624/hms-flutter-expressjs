@@ -169,6 +169,9 @@ final class ClinicalRelatedRecordDto {
     if (kind == 'radiology_order') {
       return _toRadiologyOrderEntity();
     }
+    if (kind == 'pharmacy_order') {
+      return _toPharmacyOrderEntity();
+    }
 
     return ClinicalRelatedRecord(
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
@@ -263,16 +266,19 @@ final class ClinicalRelatedRecordDto {
 
   ClinicalRelatedRecord _toRadiologyOrderEntity() {
     final List<ClinicalJsonMap> requestedTests = _list(json['requested_tests']);
+    final List<ClinicalJsonMap> requestedItems = requestedTests.isEmpty
+        ? <ClinicalJsonMap>[json]
+        : requestedTests;
+    final List<ClinicalRadiologyOrderItem> items = requestedItems
+        .map(_radiologyOrderItemFromJson)
+        .where((ClinicalRadiologyOrderItem item) => item.id.isNotEmpty)
+        .toList(growable: false);
     final String? requestedTitle = _joinDisplay(
-      requestedTests
+      items
           .take(3)
-          .map(
-            (ClinicalJsonMap item) =>
-                _string(item['radiology_test_display_name']) ??
-                _string(item['test_display_name']) ??
-                _string(item['radiology_test_id']),
-          ),
+          .map((ClinicalRadiologyOrderItem item) => item.displayTitle),
     );
+    final ClinicalJsonMap requestDetails = _map(json['request_details']);
 
     return ClinicalRelatedRecord(
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
@@ -287,13 +293,120 @@ final class ClinicalRelatedRecordDto {
           _string(json['id']),
       subtitle: _joinDisplay(<String?>[
         _string(json['modality']),
+        _string(requestDetails['body_region']),
+        _string(requestDetails['laterality']),
         _string(json['clinical_note']),
       ]),
       occurredAt:
           _date(json['ordered_at']) ??
           _date(json['created_at']) ??
           _date(json['updated_at']),
-      itemCount: requestedTests.isEmpty ? 1 : requestedTests.length,
+      radiologyOrderItems: items,
+      itemCount: items.isEmpty ? 1 : items.length,
+    );
+  }
+
+  ClinicalRadiologyOrderItem _radiologyOrderItemFromJson(
+    ClinicalJsonMap item,
+  ) {
+    final ClinicalJsonMap requestDetails = _map(json['request_details']);
+    final String? radiologyTestId =
+        _string(item['radiology_test_id']) ??
+        _string(json['radiology_test_id']);
+    final String? testDisplayName =
+        _string(item['radiology_test_display_name']) ??
+        _string(item['test_display_name']) ??
+        _string(json['radiology_test_display_name']) ??
+        _string(json['test_display_name']);
+    final String? modality =
+        _string(item['modality']) ??
+        _string(json['modality']) ??
+        _string(requestDetails['modality']);
+    return ClinicalRadiologyOrderItem(
+      id:
+          _string(item['human_friendly_id']) ??
+          _string(item['display_id']) ??
+          radiologyTestId ??
+          testDisplayName ??
+          _string(json['human_friendly_id']) ??
+          _string(json['id']) ??
+          '',
+      testDisplayName: testDisplayName,
+      modality: modality,
+      bodyRegion:
+          _string(item['body_region']) ?? _string(requestDetails['body_region']),
+      laterality:
+          _string(item['laterality']) ?? _string(requestDetails['laterality']),
+      priority: _string(item['priority']) ?? _string(requestDetails['priority']),
+      clinicalNote: _string(item['clinical_note']) ?? _string(json['clinical_note']),
+    );
+  }
+
+  ClinicalRelatedRecord _toPharmacyOrderEntity() {
+    final List<ClinicalPharmacyOrderItem> items = _list(json['items'])
+        .map(_pharmacyOrderItemFromJson)
+        .where((ClinicalPharmacyOrderItem item) => item.id.isNotEmpty)
+        .toList(growable: false);
+    final String? title = _joinDisplay(
+      items.take(3).map((ClinicalPharmacyOrderItem item) => item.displayTitle),
+    );
+
+    return ClinicalRelatedRecord(
+      id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
+      kind: kind,
+      status: _string(json['status']),
+      title:
+          title ??
+          _string(json['display_id']) ??
+          _string(json['human_friendly_id']) ??
+          _string(json['id']) ??
+          '',
+      subtitle: _joinDisplay(<String?>[
+        _string(json['order_source']),
+        _string(json['priority']),
+      ]),
+      occurredAt:
+          _date(json['ordered_at']) ??
+          _date(json['created_at']) ??
+          _date(json['updated_at']),
+      pharmacyOrderItems: items,
+      itemCount: _int(json['item_count']) == 0
+          ? items.length
+          : _int(json['item_count']),
+    );
+  }
+
+  ClinicalPharmacyOrderItem _pharmacyOrderItemFromJson(ClinicalJsonMap item) {
+    final String? drugDisplayName =
+        _string(item['drug_display_name']) ??
+        _string(item['medicine_name']) ??
+        _string(item['drug_name']) ??
+        _string(item['name']);
+    final String? drugId = _string(item['drug_id']);
+    return ClinicalPharmacyOrderItem(
+      id:
+          _string(item['human_friendly_id']) ??
+          _string(item['display_id']) ??
+          _string(item['id']) ??
+          drugId ??
+          drugDisplayName ??
+          '',
+      status: _string(item['status']),
+      drugId: drugId,
+      drugDisplayName: drugDisplayName,
+      customPrescription: _string(item['custom_prescription']),
+      dosage: _string(item['dosage']),
+      doseAmount: _string(item['dose_amount']),
+      doseUnit: _string(item['dose_unit']),
+      route: _string(item['route']),
+      frequency: _string(item['frequency']),
+      durationValue: _string(item['duration_value']),
+      durationUnit: _string(item['duration_unit']),
+      quantity: _string(item['quantity']),
+      quantityUnit: _string(item['quantity_unit']),
+      instructions: _string(item['instructions']),
+      createdAt: _date(item['created_at']),
+      updatedAt: _date(item['updated_at']),
     );
   }
 }

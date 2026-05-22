@@ -46,6 +46,13 @@ abstract interface class ClinicalRepository {
 
   Future<Result<void>> createPharmacyOrder(Map<String, Object?> payload);
 
+  Future<Result<void>> updatePharmacyOrder(
+    String pharmacyOrderId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deletePharmacyOrder(String pharmacyOrderId);
+
   Future<Result<void>> createReferral(Map<String, Object?> payload);
 
   Future<Result<void>> createFollowUp(Map<String, Object?> payload);

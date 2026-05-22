@@ -379,6 +379,8 @@ final class ClinicalRelatedRecord {
     this.subtitle,
     this.occurredAt,
     this.labOrderItems = const <ClinicalLabOrderItem>[],
+    this.radiologyOrderItems = const <ClinicalRadiologyOrderItem>[],
+    this.pharmacyOrderItems = const <ClinicalPharmacyOrderItem>[],
     this.itemCount = 0,
     this.pendingItemCount = 0,
     this.inProcessItemCount = 0,
@@ -393,6 +395,8 @@ final class ClinicalRelatedRecord {
   final String? subtitle;
   final DateTime? occurredAt;
   final List<ClinicalLabOrderItem> labOrderItems;
+  final List<ClinicalRadiologyOrderItem> radiologyOrderItems;
+  final List<ClinicalPharmacyOrderItem> pharmacyOrderItems;
   final int itemCount;
   final int pendingItemCount;
   final int inProcessItemCount;
@@ -434,6 +438,110 @@ final class ClinicalLabOrderItem {
 
   String? get displaySubtitle {
     return _joinDisplay(<String?>[category, specimenType, unit, status]);
+  }
+}
+
+@immutable
+final class ClinicalRadiologyOrderItem {
+  const ClinicalRadiologyOrderItem({
+    required this.id,
+    this.testDisplayName,
+    this.modality,
+    this.bodyRegion,
+    this.laterality,
+    this.priority,
+    this.clinicalNote,
+  });
+
+  final String id;
+  final String? testDisplayName;
+  final String? modality;
+  final String? bodyRegion;
+  final String? laterality;
+  final String? priority;
+  final String? clinicalNote;
+
+  String get displayTitle {
+    return _firstNonEmpty(<String?>[testDisplayName, id]) ?? id;
+  }
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[modality, bodyRegion, laterality, priority]);
+  }
+}
+
+@immutable
+final class ClinicalPharmacyOrderItem {
+  const ClinicalPharmacyOrderItem({
+    required this.id,
+    this.status,
+    this.drugId,
+    this.drugDisplayName,
+    this.customPrescription,
+    this.dosage,
+    this.doseAmount,
+    this.doseUnit,
+    this.route,
+    this.frequency,
+    this.durationValue,
+    this.durationUnit,
+    this.quantity,
+    this.quantityUnit,
+    this.instructions,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String? status;
+  final String? drugId;
+  final String? drugDisplayName;
+  final String? customPrescription;
+  final String? dosage;
+  final String? doseAmount;
+  final String? doseUnit;
+  final String? route;
+  final String? frequency;
+  final String? durationValue;
+  final String? durationUnit;
+  final String? quantity;
+  final String? quantityUnit;
+  final String? instructions;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  String get displayTitle {
+    return _firstNonEmpty(<String?>[
+          drugDisplayName,
+          customPrescription,
+          drugId,
+        ]) ??
+        id;
+  }
+
+  String? get doseLabel {
+    return _firstNonEmpty(<String?>[
+      dosage,
+      _joinTextParts(<String?>[doseAmount, doseUnit]),
+    ]);
+  }
+
+  String? get durationLabel {
+    return _joinTextParts(<String?>[durationValue, durationUnit]);
+  }
+
+  String? get quantityLabel {
+    return _joinTextParts(<String?>[quantity, quantityUnit]);
+  }
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[
+      doseLabel,
+      route,
+      frequency,
+      durationLabel,
+      quantityLabel,
+    ]);
   }
 }
 
@@ -824,5 +932,13 @@ String? _joinDisplay(Iterable<String?> values) {
       .map((String? value) => value?.trim() ?? '')
       .where((String value) => value.isNotEmpty)
       .join(' | ');
+  return joined.isEmpty ? null : joined;
+}
+
+String? _joinTextParts(Iterable<String?> values) {
+  final String joined = values
+      .map((String? value) => value?.trim() ?? '')
+      .where((String value) => value.isNotEmpty)
+      .join(' ');
   return joined.isEmpty ? null : joined;
 }

@@ -6412,6 +6412,66 @@ abstract class AppLocalizations {
   /// **'Delete this lab order from the active patient record?'**
   String get clinicalDeleteLabOrderDialogBody;
 
+  /// Clinical patient detail radiology orders section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology orders'**
+  String get clinicalRadiologyOrdersTitle;
+
+  /// Clinical radiology order requested test count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tests'**
+  String clinicalRadiologyOrderItemCount(int count);
+
+  /// Clinical patient detail pharmacy orders section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy orders'**
+  String get clinicalPharmacyOrdersTitle;
+
+  /// Clinical pharmacy order medicine count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} medicines'**
+  String clinicalPharmacyOrderItemCount(int count);
+
+  /// Clinical cancel pharmacy order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get clinicalCancelPharmacyOrderAction;
+
+  /// Clinical delete pharmacy order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete order'**
+  String get clinicalDeletePharmacyOrderAction;
+
+  /// Clinical cancel pharmacy order confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel pharmacy order'**
+  String get clinicalCancelPharmacyOrderDialogTitle;
+
+  /// Clinical cancel pharmacy order confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this pharmacy order and mark it as cancelled?'**
+  String get clinicalCancelPharmacyOrderDialogBody;
+
+  /// Clinical delete pharmacy order confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete pharmacy order'**
+  String get clinicalDeletePharmacyOrderDialogTitle;
+
+  /// Clinical delete pharmacy order confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this pharmacy order from the active patient record?'**
+  String get clinicalDeletePharmacyOrderDialogBody;
+
   /// Clinical request radiology action label.
   ///
   /// In en, this message translates to:

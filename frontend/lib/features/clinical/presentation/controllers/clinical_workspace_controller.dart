@@ -481,6 +481,20 @@ final class ClinicalWorkspaceController
     );
   }
 
+  Future<AppFailure?> cancelPharmacyOrder(String pharmacyOrderId) {
+    return _mutateSelectedEncounter(
+      () => _repository.updatePharmacyOrder(pharmacyOrderId, <String, Object?>{
+        'status': 'CANCELLED',
+      }),
+    );
+  }
+
+  Future<AppFailure?> deletePharmacyOrder(String pharmacyOrderId) {
+    return _mutateSelectedEncounter(
+      () => _repository.deletePharmacyOrder(pharmacyOrderId),
+    );
+  }
+
   Future<AppFailure?> refer({
     required String externalFacilityName,
     required String reason,

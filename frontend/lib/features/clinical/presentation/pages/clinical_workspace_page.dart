@@ -419,7 +419,7 @@ class _ClinicalQueueCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceStatusBadge(
+    return _ClinicalStatusText(
       status: AppWorkspaceStatus(
         label: _apiLabel(item.sourceQueue),
         tone: _sourceQueueTone(item.sourceQueue),
@@ -442,9 +442,9 @@ class _ClinicalStatusCell extends StatelessWidget {
       runSpacing: Theme.of(context).spacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        AppWorkspaceStatusBadge(status: _entryStatus(item)),
+        _ClinicalStatusText(status: _entryStatus(item)),
         if (item.isUrgent)
-          AppWorkspaceStatusBadge(
+          _ClinicalStatusText(
             status: AppWorkspaceStatus(
               label: l10n.clinicalUrgentSummaryLabel,
               tone: AppWorkspaceStatusTone.error,
@@ -452,7 +452,7 @@ class _ClinicalStatusCell extends StatelessWidget {
             ),
           ),
         if (item.resultsReady)
-          AppWorkspaceStatusBadge(
+          _ClinicalStatusText(
             status: AppWorkspaceStatus(
               label: l10n.clinicalResultsReadySummaryLabel,
               tone: AppWorkspaceStatusTone.success,
@@ -460,6 +460,39 @@ class _ClinicalStatusCell extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ClinicalStatusText extends StatelessWidget {
+  const _ClinicalStatusText({required this.status, this.textStyle});
+
+  final AppWorkspaceStatus status;
+  final TextStyle? textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color color = _clinicalToneColor(theme, status.tone);
+    final TextStyle? effectiveStyle = (textStyle ?? theme.textTheme.labelLarge)
+        ?.copyWith(color: color, fontWeight: FontWeight.w700);
+
+    return Semantics(
+      label: status.label,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (status.icon != null) ...<Widget>[
+            Icon(status.icon, size: theme.appTokens.listIconSize, color: color),
+            SizedBox(width: theme.spacing.xs),
+          ],
+          Text(
+            status.label,
+            overflow: TextOverflow.ellipsis,
+            style: effectiveStyle,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -631,47 +664,46 @@ class _ClinicalDetailPanel extends ConsumerWidget {
     final ClinicalWorklistEntry entry = bundle.entry;
     final String patientId = entry.patientPublicId ?? entry.patientId ?? '';
     final String patientNumber = patientId.isEmpty ? entry.id : patientId;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppWorkspacePatientContextHeader(
-          patientName: entry.patientDisplayName ?? entry.displayTitle,
-          patientNumber: patientNumber,
-          patientNumberLabel: patientId.isEmpty ? null : l10n.opdPatientIdLabel,
-          status: _entryStatus(entry),
-          alerts: <AppWorkspaceStatus>[
-            if (entry.isUrgent)
-              AppWorkspaceStatus(
-                label: l10n.clinicalUrgentSummaryLabel,
-                tone: AppWorkspaceStatusTone.error,
-              ),
-            if (bundle.hasResultsReady)
-              AppWorkspaceStatus(
-                label: l10n.clinicalResultsReadySummaryLabel,
-                tone: AppWorkspaceStatusTone.success,
-              ),
-          ],
-          fields: _clinicalPatientContextFields(context, l10n, entry),
-          onCopyPatientNumber: patientId.isEmpty
-              ? null
-              : () => _copyClinicalPatientId(context, patientId),
-        ),
-        SizedBox(height: Theme.of(context).spacing.md),
-        if (bundle.triageHandoff?.hasContent ?? false) ...<Widget>[
-          _ClinicalTriageHandoffPanel(handoff: bundle.triageHandoff!),
-          SizedBox(height: Theme.of(context).spacing.md),
+    final List<Widget> sections = <Widget>[
+      AppWorkspacePatientContextHeader(
+        patientName: entry.patientDisplayName ?? entry.displayTitle,
+        patientNumber: patientNumber,
+        patientNumberLabel: patientId.isEmpty ? null : l10n.opdPatientIdLabel,
+        status: _entryStatus(entry),
+        alerts: <AppWorkspaceStatus>[
+          if (entry.isUrgent)
+            AppWorkspaceStatus(
+              label: l10n.clinicalUrgentSummaryLabel,
+              tone: AppWorkspaceStatusTone.error,
+            ),
+          if (bundle.hasResultsReady)
+            AppWorkspaceStatus(
+              label: l10n.clinicalResultsReadySummaryLabel,
+              tone: AppWorkspaceStatusTone.success,
+            ),
         ],
-        _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
-        SizedBox(height: Theme.of(context).spacing.md),
+        fields: _clinicalPatientContextFields(context, l10n, entry),
+        fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
+        onCopyPatientNumber: patientId.isEmpty
+            ? null
+            : () => _copyClinicalPatientId(context, patientId),
+      ),
+      if (bundle.triageHandoff?.hasContent ?? false)
+        _ClinicalTriageHandoffPanel(handoff: bundle.triageHandoff!),
+      _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
+      if (bundle.labOrders.isNotEmpty)
         _ClinicalLabOrdersPanel(
           bundle: bundle,
           referenceData: state.referenceData,
         ),
-        SizedBox(height: Theme.of(context).spacing.md),
+      if (_clinicalCompletedResults(bundle).isNotEmpty)
         _ClinicalResultReview(bundle: bundle),
-        SizedBox(height: Theme.of(context).spacing.md),
-        _ClinicalRecordSections(bundle: bundle),
-      ],
+      if (_clinicalHasRecordSections(bundle)) _ClinicalRecordSections(bundle: bundle),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: _withClinicalSectionSpacing(context, sections),
     );
   }
 }
@@ -691,104 +723,299 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
       final String status = vital.status.toUpperCase();
       return status == 'ABNORMAL' || status == 'CRITICAL';
     }).length;
+    final AppWorkspaceStatus vitalStatus = AppWorkspaceStatus(
+      label: _apiLabel(abnormalVitalCount > 0 ? 'ABNORMAL' : 'NORMAL'),
+      tone: abnormalVitalCount > 0
+          ? AppWorkspaceStatusTone.warning
+          : AppWorkspaceStatusTone.success,
+    );
+    final List<AppWorkspacePatientContextField> facts =
+        <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: l10n.opdTriageLevelLabel,
+            value: _apiLabel(handoff.triageLevel ?? ''),
+            icon: Icons.priority_high_outlined,
+            tone: appTriageToneForValue(handoff.triageLevel),
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdRouteDecisionLabel,
+            value: _apiLabel(handoff.routeTo ?? ''),
+            icon: Icons.alt_route_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdChiefComplaintLabel,
+            value: handoff.chiefComplaint ?? '',
+            icon: Icons.sick_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdStageLabel,
+            value: _apiLabel(handoff.stage ?? ''),
+            icon: Icons.timeline_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdNextStepColumnLabel,
+            value: _apiLabel(handoff.nextStep ?? ''),
+            icon: Icons.trending_flat_outlined,
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdTimeColumnLabel,
+            value: handoff.queuedAt == null
+                ? ''
+                : _dateTimeLabel(context, handoff.queuedAt),
+            icon: Icons.schedule_outlined,
+          ),
+          if (handoff.emergencyIndicator)
+            AppWorkspacePatientContextField(
+              label: l10n.opdEmergencyIndicatorsLabel,
+              value: l10n.opdTriageScopeEmergency,
+              icon: Icons.emergency_outlined,
+              tone: AppWorkspaceStatusTone.error,
+            ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdTriageNotesLabel,
+            value: handoff.triageNotes ?? '',
+            icon: Icons.notes_outlined,
+          ),
+        ];
 
     return AppWorkspaceDetailPanel(
       title: l10n.opdWorkflowTriageTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppTriageSummaryPanel(
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.opdTriageLevelLabel,
-                value: _apiLabel(handoff.triageLevel ?? ''),
-                icon: Icons.priority_high_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.opdRouteDecisionLabel,
-                value: _apiLabel(handoff.routeTo ?? ''),
-                icon: Icons.alt_route_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.opdChiefComplaintLabel,
-                value: handoff.chiefComplaint,
-                icon: Icons.sick_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.opdStageLabel,
-                value: _apiLabel(handoff.stage ?? ''),
-                icon: Icons.timeline_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.opdNextStepColumnLabel,
-                value: _apiLabel(handoff.nextStep ?? ''),
-                icon: Icons.trending_flat_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.opdTimeColumnLabel,
-                value: _dateTimeLabel(context, handoff.queuedAt),
-                icon: Icons.schedule_outlined,
-              ),
-            ],
-            statuses: <AppWorkspaceStatus>[
-              if ((handoff.triageLevel ?? '').trim().isNotEmpty)
-                AppWorkspaceStatus(
-                  label: _apiLabel(handoff.triageLevel!),
-                  tone: appTriageToneForValue(handoff.triageLevel),
-                  icon: appTriageIconForValue(handoff.triageLevel),
+          _ClinicalFactWrap(fields: facts),
+          if (handoff.vitalSigns.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(
+                  l10n.opdVitalsSummaryLabel,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              if (handoff.emergencyIndicator)
-                AppWorkspaceStatus(
-                  label: l10n.opdTriageScopeEmergency,
-                  tone: AppWorkspaceStatusTone.error,
-                  icon: Icons.emergency_outlined,
-                ),
-            ],
-            notesLabel: l10n.opdTriageNotesLabel,
-            notes: handoff.triageNotes,
-            emptyValue: l10n.profileUnknownValue,
-          ),
-          SizedBox(height: theme.spacing.md),
-          AppVitalsSummaryPanel(
-            title: l10n.opdVitalsSummaryLabel,
-            status: AppWorkspaceStatus(
-              label: _apiLabel(abnormalVitalCount > 0 ? 'ABNORMAL' : 'NORMAL'),
-              tone: abnormalVitalCount > 0
-                  ? AppWorkspaceStatusTone.warning
-                  : AppWorkspaceStatusTone.success,
+                _ClinicalStatusText(status: vitalStatus),
+              ],
             ),
-            emptyLabel: l10n.opdNoRelatedRecordsLabel,
-            items: <AppVitalSummaryItem>[
-              for (final ClinicalVitalSummary vital in handoff.vitalSigns)
-                AppVitalSummaryItem(
-                  label: _apiLabel(vital.vitalType),
-                  value: vital.displayValue,
-                  recordedAtLabel: _dateTimeLabel(context, vital.recordedAt),
-                  status: AppWorkspaceStatus(
-                    label: _apiLabel(vital.status),
-                    tone: _clinicalVitalTone(vital.status),
+            SizedBox(height: theme.spacing.sm),
+            _ClinicalVitalsGrid(vitals: handoff.vitalSigns),
+          ],
+          if (handoff.alerts.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            Text(
+              l10n.opdClinicalAlertsSummaryLabel,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: theme.spacing.xs),
+            _ClinicalAlertsWrap(alerts: handoff.alerts),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ClinicalFactWrap extends StatelessWidget {
+  const _ClinicalFactWrap({required this.fields});
+
+  final List<AppWorkspacePatientContextField> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<AppWorkspacePatientContextField> visibleFields = fields
+        .where((AppWorkspacePatientContextField field) => field.hasValue)
+        .toList(growable: false);
+    if (visibleFields.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(
+      spacing: theme.spacing.lg,
+      runSpacing: theme.spacing.sm,
+      children: <Widget>[
+        for (final AppWorkspacePatientContextField field in visibleFields)
+          _ClinicalInlineFact(field: field),
+      ],
+    );
+  }
+}
+
+class _ClinicalInlineFact extends StatelessWidget {
+  const _ClinicalInlineFact({required this.field});
+
+  final AppWorkspacePatientContextField field;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color accentColor = field.tone == AppWorkspaceStatusTone.neutral
+        ? colorScheme.primary
+        : _clinicalToneColor(theme, field.tone);
+
+    return Semantics(
+      label: '${field.label}: ${field.value}',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (field.icon != null) ...<Widget>[
+            Icon(
+              field.icon,
+              size: theme.appTokens.listIconSize,
+              color: accentColor,
+            ),
+            SizedBox(width: theme.spacing.xs),
+          ],
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Text.rich(
+              TextSpan(
+                children: <InlineSpan>[
+                  TextSpan(
+                    text: '${field.label}: ',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-            ],
-            alerts: <AppClinicalAlertSummary>[
-              for (final ClinicalAlertSummary alert in handoff.alerts)
-                AppClinicalAlertSummary(
-                  status: AppWorkspaceStatus(
-                    label: _joinDisplay(<String?>[
-                      _apiLabel(alert.severity ?? ''),
-                      alert.message,
-                    ]),
-                    tone: _clinicalAlertTone(alert.severity),
+                  TextSpan(
+                    text: field.value,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: field.tone == AppWorkspaceStatusTone.neutral
+                          ? colorScheme.onSurface
+                          : accentColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  description: _joinDisplay(<String?>[
-                    alert.message,
-                    _dateTimeLabel(context, alert.createdAt),
-                  ]),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ClinicalVitalsGrid extends StatelessWidget {
+  const _ClinicalVitalsGrid({required this.vitals});
+
+  final List<ClinicalVitalSummary> vitals;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int columns = constraints.maxWidth >= 900
+            ? 4
+            : constraints.maxWidth >= 620
+            ? 3
+            : constraints.maxWidth >= 420
+            ? 2
+            : 1;
+        final double gap = theme.spacing.md;
+        final double itemWidth =
+            (constraints.maxWidth - (gap * (columns - 1))) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            for (final ClinicalVitalSummary vital in vitals)
+              SizedBox(width: itemWidth, child: _ClinicalVitalSummary(vital: vital)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ClinicalVitalSummary extends StatelessWidget {
+  const _ClinicalVitalSummary({required this.vital});
+
+  final ClinicalVitalSummary vital;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color valueColor = _clinicalToneColor(
+      theme,
+      _clinicalVitalTone(vital.status),
+    );
+    final String recordedAtLabel = vital.recordedAt == null
+        ? ''
+        : _dateTimeLabel(context, vital.recordedAt);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          _apiLabel(vital.vitalType),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          vital.displayValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: valueColor,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (recordedAtLabel.isNotEmpty)
+          Text(
+            recordedAtLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ClinicalAlertsWrap extends StatelessWidget {
+  const _ClinicalAlertsWrap({required this.alerts});
+
+  final List<ClinicalAlertSummary> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Wrap(
+      spacing: theme.spacing.md,
+      runSpacing: theme.spacing.xs,
+      children: <Widget>[
+        for (final ClinicalAlertSummary alert in alerts)
+          _ClinicalStatusText(
+            status: AppWorkspaceStatus(
+              label: _joinDisplay(<String?>[
+                _apiLabel(alert.severity ?? ''),
+                alert.message,
+                alert.createdAt == null
+                    ? null
+                    : _dateTimeLabel(context, alert.createdAt),
+              ]),
+              tone: _clinicalAlertTone(alert.severity),
+              icon: Icons.warning_amber_outlined,
+            ),
+            textStyle: theme.textTheme.bodySmall,
+          ),
+      ],
     );
   }
 }
@@ -927,18 +1154,16 @@ class _ClinicalResultReview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<ClinicalRelatedRecord> results =
-        <ClinicalRelatedRecord>[...bundle.labOrders, ...bundle.radiologyOrders]
-            .where((ClinicalRelatedRecord record) {
-              return (record.status ?? '').toUpperCase() == 'COMPLETED';
-            })
-            .toList(growable: false);
+    final List<ClinicalRelatedRecord> results = _clinicalCompletedResults(
+      bundle,
+    );
+    if (results.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalResultReviewTitle,
-      description: results.isEmpty
-          ? l10n.clinicalNoResultsReadyBody
-          : l10n.clinicalResultReviewBody,
+      description: l10n.clinicalResultReviewBody,
       child: _ClinicalRecordList(
         records: results,
         emptyLabel: l10n.clinicalNoResultsReadyBody,
@@ -959,31 +1184,25 @@ class _ClinicalLabOrdersPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final List<ClinicalRelatedRecord> orders = bundle.labOrders;
+    if (orders.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return AppWorkspaceDetailPanel(
       title: l10n.clinicalLabOrdersTitle,
-      description: orders.isEmpty
-          ? l10n.clinicalNoLabOrdersLabel
-          : l10n.clinicalLabOrdersBody,
-      child: orders.isEmpty
-          ? Text(
-              l10n.clinicalNoLabOrdersLabel,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : Column(
-              children: <Widget>[
-                for (var index = 0; index < orders.length; index += 1) ...[
-                  if (index > 0) const Divider(height: 1),
-                  _ClinicalLabOrderRow(
-                    order: orders[index],
-                    referenceData: referenceData,
-                  ),
-                ],
-              ],
+      description: l10n.clinicalLabOrdersBody,
+      child: Column(
+        children: <Widget>[
+          for (var index = 0; index < orders.length; index += 1) ...[
+            if (index > 0) const Divider(height: 1),
+            _ClinicalLabOrderRow(
+              order: orders[index],
+              referenceData: referenceData,
             ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1018,18 +1237,12 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(theme.spacing.xs),
-              child: Icon(
-                Icons.science_outlined,
-                size: theme.appTokens.listIconSize,
-                color: theme.colorScheme.primary,
-              ),
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Icon(
+              Icons.science_outlined,
+              size: theme.appTokens.listIconSize,
+              color: theme.colorScheme.primary,
             ),
           ),
           SizedBox(width: theme.spacing.sm),
@@ -1048,12 +1261,13 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    AppWorkspaceStatusBadge(
-                      status: AppWorkspaceStatus(
-                        label: _apiLabel(status),
-                        tone: _statusTone(status),
+                    if (_hasText(status))
+                      _ClinicalStatusText(
+                        status: AppWorkspaceStatus(
+                          label: _apiLabel(status),
+                          tone: _statusTone(status),
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 SizedBox(height: theme.spacing.xs),
@@ -1179,17 +1393,11 @@ class _ClinicalLabOrderDetailList extends StatelessWidget {
           )
         else
           Wrap(
-            spacing: theme.spacing.xs,
+            spacing: theme.spacing.sm,
             runSpacing: theme.spacing.xs,
             children: <Widget>[
               for (final String value in values)
-                Chip(
-                  label: Text(value),
-                  visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
-                ),
+                _ClinicalTextToken(label: value),
             ],
           ),
       ],
@@ -1261,65 +1469,63 @@ class _ClinicalLabOrderTestRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final String status = _effectiveLabOrderItemStatus(item, orderStatus);
     final String? resultStatus = _resultStatusLabel(item, status);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Icon(
               Icons.science_outlined,
               size: theme.appTokens.listIconSize * 0.82,
               color: theme.colorScheme.primary,
             ),
-            SizedBox(width: theme.spacing.xs),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    item.displayTitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (_hasText(item.displaySubtitle))
-                    Text(
-                      item.displaySubtitle!,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            SizedBox(width: theme.spacing.xs),
-            Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
+          ),
+          SizedBox(width: theme.spacing.xs),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: _apiLabel(status),
-                    tone: _statusTone(status),
+                Text(
+                  item.displayTitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (resultStatus != null)
-                  AppWorkspaceStatusBadge(
-                    status: AppWorkspaceStatus(
-                      label: resultStatus,
-                      tone: _statusTone(item.resultStatus),
+                if (_hasText(item.displaySubtitle))
+                  Text(
+                    item.displaySubtitle!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
               ],
             ),
-          ],
-        ),
+          ),
+          SizedBox(width: theme.spacing.xs),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              _ClinicalStatusText(
+                status: AppWorkspaceStatus(
+                  label: _apiLabel(status),
+                  tone: _statusTone(status),
+                ),
+                textStyle: theme.textTheme.labelMedium,
+              ),
+              if (resultStatus != null)
+                _ClinicalStatusText(
+                  status: AppWorkspaceStatus(
+                    label: resultStatus,
+                    tone: _statusTone(item.resultStatus),
+                  ),
+                  textStyle: theme.textTheme.labelMedium,
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1333,88 +1539,100 @@ class _ClinicalRecordSections extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
+    final List<Widget> sections = <Widget>[
+      if (bundle.clinicalNotes.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.clinicalPatientNotesTitle,
           records: bundle.clinicalNotes,
-          emptyLabel: l10n.clinicalNoPatientNotesLabel,
         ),
-        SizedBox(height: theme.spacing.md),
+      if (bundle.diagnoses.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.clinicalPatientDiagnosesTitle,
           records: bundle.diagnoses,
-          emptyLabel: l10n.clinicalNoPatientDiagnosesLabel,
         ),
-        SizedBox(height: theme.spacing.md),
+      if (bundle.procedures.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.opdProceduresSummaryLabel,
           records: bundle.procedures,
         ),
-        SizedBox(height: theme.spacing.md),
+      if (bundle.carePlans.isNotEmpty)
         _ClinicalRecordSection(
           title: l10n.clinicalCarePlansTitle,
           records: bundle.carePlans,
         ),
-        SizedBox(height: theme.spacing.md),
+      if (bundle.radiologyOrders.isNotEmpty)
         _ClinicalRecordSection(
-          title: l10n.clinicalOrdersTitle,
-          records: <ClinicalRelatedRecord>[
-            ...bundle.radiologyOrders,
-            ...bundle.pharmacyOrders,
-          ],
+          title: l10n.clinicalRadiologyOrdersTitle,
+          records: bundle.radiologyOrders,
         ),
-        SizedBox(height: theme.spacing.md),
+      if (bundle.pharmacyOrders.isNotEmpty)
         _ClinicalRecordSection(
-          title: l10n.clinicalHandoffsTitle,
-          records: <ClinicalRelatedRecord>[
-            ...bundle.referrals,
-            ...bundle.followUps,
-            ...bundle.admissions,
-          ],
+          title: l10n.clinicalPharmacyOrdersTitle,
+          records: bundle.pharmacyOrders,
         ),
-      ],
+      if (bundle.referrals.isNotEmpty)
+        _ClinicalRecordSection(
+          title: l10n.opdReferralsTitle,
+          records: bundle.referrals,
+        ),
+      if (bundle.followUps.isNotEmpty)
+        _ClinicalRecordSection(
+          title: l10n.opdFollowUpsTitle,
+          records: bundle.followUps,
+        ),
+      if (bundle.admissions.isNotEmpty)
+        _ClinicalRecordSection(
+          title: l10n.patientsAdmissionsSectionTitle,
+          records: bundle.admissions,
+        ),
+    ];
+
+    if (sections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: _withClinicalSectionSpacing(context, sections),
     );
   }
 }
 
 class _ClinicalRecordSection extends StatelessWidget {
-  const _ClinicalRecordSection({
-    required this.title,
-    required this.records,
-    this.emptyLabel,
-  });
+  const _ClinicalRecordSection({required this.title, required this.records});
 
   final String title;
   final List<ClinicalRelatedRecord> records;
-  final String? emptyLabel;
 
   @override
   Widget build(BuildContext context) {
+    if (records.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return AppWorkspaceDetailPanel(
       title: title,
-      child: _ClinicalRecordList(
-        records: records,
-        emptyLabel: emptyLabel ?? context.l10n.opdNoRelatedRecordsLabel,
-      ),
+      child: _ClinicalRecordList(records: records),
     );
   }
 }
 
 class _ClinicalRecordList extends StatelessWidget {
-  const _ClinicalRecordList({required this.records, required this.emptyLabel});
+  const _ClinicalRecordList({required this.records, this.emptyLabel});
 
   final List<ClinicalRelatedRecord> records;
-  final String emptyLabel;
+  final String? emptyLabel;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     if (records.isEmpty) {
+      final String? label = emptyLabel;
+      if (label == null || label.trim().isEmpty) {
+        return const SizedBox.shrink();
+      }
       return Text(
-        emptyLabel,
+        label,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -1439,24 +1657,34 @@ class _ClinicalRecordRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return switch (record.kind) {
+      'radiology_order' => _ClinicalRadiologyOrderRow(record: record),
+      'pharmacy_order' => _ClinicalPharmacyOrderRow(record: record),
+      _ => _ClinicalGenericRecordRow(record: record),
+    };
+  }
+}
+
+class _ClinicalGenericRecordRow extends StatelessWidget {
+  const _ClinicalGenericRecordRow({required this.record});
+
+  final ClinicalRelatedRecord record;
+
+  @override
+  Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final String? status = record.status;
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(theme.spacing.xs),
-              child: Icon(
-                _recordIcon(record.kind),
-                size: theme.appTokens.listIconSize,
-                color: theme.colorScheme.primary,
-              ),
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Icon(
+              _recordIcon(record.kind),
+              size: theme.appTokens.listIconSize,
+              color: theme.colorScheme.primary,
             ),
           ),
           SizedBox(width: theme.spacing.sm),
@@ -1473,22 +1701,398 @@ class _ClinicalRecordRow extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: theme.spacing.xs),
-                Text(
-                  _joinDisplay(<String?>[
-                    _apiLabel(record.kind),
-                    record.status == null ? null : _apiLabel(record.status!),
-                    _dateTimeLabel(context, record.occurredAt),
-                  ]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      _joinDisplay(<String?>[
+                        _apiLabel(record.kind),
+                        _dateTimeLabel(context, record.occurredAt),
+                      ]),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (_hasText(status))
+                      _ClinicalStatusText(
+                        status: AppWorkspaceStatus(
+                          label: _apiLabel(status!),
+                          tone: _statusTone(status),
+                        ),
+                        textStyle: theme.textTheme.labelMedium,
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ClinicalRadiologyOrderRow extends StatelessWidget {
+  const _ClinicalRadiologyOrderRow({required this.record});
+
+  final ClinicalRelatedRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String status = record.status ?? '';
+    final List<ClinicalRadiologyOrderItem> items = record.radiologyOrderItems;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Icon(
+              Icons.biotech_outlined,
+              size: theme.appTokens.listIconSize,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      record.title ?? record.id,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (_hasText(status))
+                      _ClinicalStatusText(
+                        status: AppWorkspaceStatus(
+                          label: _apiLabel(status),
+                          tone: _statusTone(status),
+                        ),
+                        textStyle: theme.textTheme.labelMedium,
+                      ),
+                  ],
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  _joinDisplay(<String?>[
+                    l10n.clinicalRadiologyOrderItemCount(record.itemCount),
+                    _dateTimeLabel(context, record.occurredAt),
+                  ]),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (items.isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.sm),
+                  Column(
+                    children: <Widget>[
+                      for (var index = 0; index < items.length; index += 1)
+                        _ClinicalRadiologyOrderItemRow(item: items[index]),
+                    ],
+                  ),
+                ] else if (_hasText(record.subtitle)) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    record.subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClinicalRadiologyOrderItemRow extends StatelessWidget {
+  const _ClinicalRadiologyOrderItemRow({required this.item});
+
+  final ClinicalRadiologyOrderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<AppWorkspacePatientContextField> facts =
+        <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: l10n.radiologyModalityLabel,
+            value: _apiLabel(item.modality ?? ''),
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.clinicalRadiologyBodyRegionLabel,
+            value: _apiLabel(item.bodyRegion ?? ''),
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.clinicalRadiologyLateralityLabel,
+            value: _apiLabel(item.laterality ?? ''),
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.clinicalRadiologyPriorityLabel,
+            value: _apiLabel(item.priority ?? ''),
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdClinicalNoteLabel,
+            value: item.clinicalNote ?? '',
+          ),
+        ];
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: theme.spacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            item.displayTitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs),
+          _ClinicalFactWrap(fields: facts),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClinicalPharmacyOrderRow extends ConsumerWidget {
+  const _ClinicalPharmacyOrderRow({required this.record});
+
+  final ClinicalRelatedRecord record;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ClinicalWorkspaceController controller = ref.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    final String status = record.status ?? '';
+    final bool canCancel = _canCancelPharmacyOrder(status);
+    final bool canDelete = _canDeletePharmacyOrder(status);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Icon(
+              Icons.medication_outlined,
+              size: theme.appTokens.listIconSize,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      record.title ?? record.id,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (_hasText(status))
+                      _ClinicalStatusText(
+                        status: AppWorkspaceStatus(
+                          label: _apiLabel(status),
+                          tone: _statusTone(status),
+                        ),
+                        textStyle: theme.textTheme.labelMedium,
+                      ),
+                  ],
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  _joinDisplay(<String?>[
+                    l10n.clinicalPharmacyOrderItemCount(record.itemCount),
+                    _dateTimeLabel(context, record.occurredAt),
+                  ]),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (record.pharmacyOrderItems.isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.sm),
+                  Column(
+                    children: <Widget>[
+                      for (
+                        var index = 0;
+                        index < record.pharmacyOrderItems.length;
+                        index += 1
+                      )
+                        _ClinicalPharmacyOrderItemRow(
+                          item: record.pharmacyOrderItems[index],
+                        ),
+                    ],
+                  ),
+                ] else if (_hasText(record.subtitle)) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    record.subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          AppAccessActionGate(
+            requirement: _ClinicalWorkspaceContentState._writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  AppIconButton(
+                    icon: Icons.block_outlined,
+                    semanticLabel: l10n.clinicalCancelPharmacyOrderAction,
+                    tooltip: l10n.clinicalCancelPharmacyOrderAction,
+                    enabled: isAllowed && canCancel,
+                    onPressed: () => _confirmLabOrderMutation(
+                      context: context,
+                      title: l10n.clinicalCancelPharmacyOrderDialogTitle,
+                      body: l10n.clinicalCancelPharmacyOrderDialogBody,
+                      confirmLabel: l10n.clinicalCancelPharmacyOrderAction,
+                      action: () => controller.cancelPharmacyOrder(record.id),
+                    ),
+                  ),
+                  AppIconButton(
+                    icon: Icons.delete_outline,
+                    semanticLabel: l10n.clinicalDeletePharmacyOrderAction,
+                    tooltip: l10n.clinicalDeletePharmacyOrderAction,
+                    enabled: isAllowed && canDelete,
+                    onPressed: () => _confirmLabOrderMutation(
+                      context: context,
+                      title: l10n.clinicalDeletePharmacyOrderDialogTitle,
+                      body: l10n.clinicalDeletePharmacyOrderDialogBody,
+                      confirmLabel: l10n.clinicalDeletePharmacyOrderAction,
+                      action: () => controller.deletePharmacyOrder(record.id),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
+  const _ClinicalPharmacyOrderItemRow({required this.item});
+
+  final ClinicalPharmacyOrderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final List<AppWorkspacePatientContextField> facts =
+        <AppWorkspacePatientContextField>[
+          AppWorkspacePatientContextField(
+            label: l10n.pharmacyDoseColumnLabel,
+            value: item.doseLabel ?? '',
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdMedicationRouteLabel,
+            value: _apiLabel(item.route ?? ''),
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdFrequencyLabel,
+            value: _apiLabel(item.frequency ?? ''),
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.clinicalDurationValueLabel,
+            value: item.durationLabel ?? '',
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.opdDrugQuantityLabel,
+            value: item.quantityLabel ?? '',
+          ),
+          AppWorkspacePatientContextField(
+            label: l10n.clinicalInstructionsLabel,
+            value: item.instructions ?? '',
+          ),
+        ];
+    final String status = item.status ?? '';
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: theme.spacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              Text(
+                item.displayTitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (_hasText(status))
+                _ClinicalStatusText(
+                  status: AppWorkspaceStatus(
+                    label: _apiLabel(status),
+                    tone: _statusTone(status),
+                  ),
+                  textStyle: theme.textTheme.labelMedium,
+                ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.xs),
+          _ClinicalFactWrap(fields: facts),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClinicalTextToken extends StatelessWidget {
+  const _ClinicalTextToken({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Text(
+      label,
+      style: theme.textTheme.labelMedium?.copyWith(
+        color: theme.colorScheme.primary,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
@@ -2187,6 +2791,52 @@ bool _isSameWorklistEntry(
       left.encounterId == right.encounterId;
 }
 
+List<Widget> _withClinicalSectionSpacing(
+  BuildContext context,
+  List<Widget> sections,
+) {
+  final double spacing = Theme.of(context).spacing.md;
+  return <Widget>[
+    for (var index = 0; index < sections.length; index += 1) ...<Widget>[
+      if (index > 0) SizedBox(height: spacing),
+      sections[index],
+    ],
+  ];
+}
+
+List<ClinicalRelatedRecord> _clinicalCompletedResults(
+  ClinicalEncounterBundle bundle,
+) {
+  return <ClinicalRelatedRecord>[...bundle.labOrders, ...bundle.radiologyOrders]
+      .where((ClinicalRelatedRecord record) {
+        return (record.status ?? '').toUpperCase() == 'COMPLETED';
+      })
+      .toList(growable: false);
+}
+
+bool _clinicalHasRecordSections(ClinicalEncounterBundle bundle) {
+  return bundle.clinicalNotes.isNotEmpty ||
+      bundle.diagnoses.isNotEmpty ||
+      bundle.procedures.isNotEmpty ||
+      bundle.carePlans.isNotEmpty ||
+      bundle.radiologyOrders.isNotEmpty ||
+      bundle.pharmacyOrders.isNotEmpty ||
+      bundle.referrals.isNotEmpty ||
+      bundle.followUps.isNotEmpty ||
+      bundle.admissions.isNotEmpty;
+}
+
+Color _clinicalToneColor(ThemeData theme, AppWorkspaceStatusTone tone) {
+  final ColorScheme colorScheme = theme.colorScheme;
+  return switch (tone) {
+    AppWorkspaceStatusTone.success => colorScheme.tertiary,
+    AppWorkspaceStatusTone.warning => colorScheme.secondary,
+    AppWorkspaceStatusTone.error => colorScheme.error,
+    AppWorkspaceStatusTone.info => colorScheme.primary,
+    AppWorkspaceStatusTone.neutral => colorScheme.onSurfaceVariant,
+  };
+}
+
 AppWorkspaceStatusTone _sourceQueueTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
     'OPD' => AppWorkspaceStatusTone.info,
@@ -2341,6 +2991,20 @@ bool _canDeleteLabOrder(String? status) {
   };
 }
 
+bool _canCancelPharmacyOrder(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'ORDERED' || 'PARTIALLY_DISPENSED' => true,
+    _ => false,
+  };
+}
+
+bool _canDeletePharmacyOrder(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'ORDERED' || 'CANCELLED' => true,
+    _ => false,
+  };
+}
+
 String _countLabel(BuildContext context, int value) {
   return AppFormatters.compactNumber(value, Localizations.localeOf(context));
 }
@@ -2396,41 +3060,65 @@ String _consultationSummaryHtml(
   ClinicalEncounterBundle bundle,
 ) {
   final AppLocalizations l10n = context.l10n;
-  final StringBuffer buffer = StringBuffer()
-    ..write(
+  final List<String> sections = <String>[];
+
+  void addSection(String title, List<ClinicalRelatedRecord> records) {
+    if (records.isEmpty) {
+      return;
+    }
+    sections.add(
       PrintFormTemplate.section(
-        title: l10n.clinicalPatientNotesTitle,
-        bodyHtml: _recordsHtml(bundle.clinicalNotes),
-      ),
-    )
-    ..write(
-      PrintFormTemplate.section(
-        title: l10n.clinicalPatientDiagnosesTitle,
-        bodyHtml: _recordsHtml(bundle.diagnoses),
-      ),
-    )
-    ..write(
-      PrintFormTemplate.section(
-        title: l10n.clinicalOrdersTitle,
-        bodyHtml: _recordsHtml(<ClinicalRelatedRecord>[
-          ...bundle.labOrders,
-          ...bundle.radiologyOrders,
-          ...bundle.pharmacyOrders,
-        ]),
+        title: title,
+        bodyHtml: _recordsHtml(records),
       ),
     );
-  return buffer.toString();
+  }
+
+  addSection(l10n.clinicalPatientNotesTitle, bundle.clinicalNotes);
+  addSection(l10n.clinicalPatientDiagnosesTitle, bundle.diagnoses);
+  addSection(l10n.opdProceduresSummaryLabel, bundle.procedures);
+  addSection(l10n.clinicalCarePlansTitle, bundle.carePlans);
+  addSection(l10n.clinicalLabOrdersTitle, bundle.labOrders);
+  addSection(l10n.clinicalRadiologyOrdersTitle, bundle.radiologyOrders);
+  addSection(l10n.clinicalPharmacyOrdersTitle, bundle.pharmacyOrders);
+  addSection(l10n.opdReferralsTitle, bundle.referrals);
+  addSection(l10n.opdFollowUpsTitle, bundle.followUps);
+  addSection(l10n.patientsAdmissionsSectionTitle, bundle.admissions);
+
+  return sections.join();
 }
 
 String _recordsHtml(List<ClinicalRelatedRecord> records) {
   return PrintFormTemplate.unorderedList(<String>[
     for (final ClinicalRelatedRecord record in records)
-      _joinDisplay(<String?>[
-        record.title,
-        record.subtitle,
-        record.status == null ? null : _apiLabel(record.status!),
-      ]),
+      _clinicalRecordSummaryText(record),
   ], emptyText: 'No records.');
+}
+
+String _clinicalRecordSummaryText(ClinicalRelatedRecord record) {
+  return _joinDisplay(<String?>[
+    record.title,
+    record.subtitle,
+    if (record.labOrderItems.isNotEmpty)
+      _joinDisplay(
+        record.labOrderItems
+            .take(4)
+            .map((ClinicalLabOrderItem item) => item.displayTitle),
+      ),
+    if (record.radiologyOrderItems.isNotEmpty)
+      _joinDisplay(
+        record.radiologyOrderItems
+            .take(4)
+            .map((ClinicalRadiologyOrderItem item) => item.displayTitle),
+      ),
+    if (record.pharmacyOrderItems.isNotEmpty)
+      _joinDisplay(
+        record.pharmacyOrderItems
+            .take(4)
+            .map((ClinicalPharmacyOrderItem item) => item.displayTitle),
+      ),
+    record.status == null ? null : _apiLabel(record.status!),
+  ]);
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {

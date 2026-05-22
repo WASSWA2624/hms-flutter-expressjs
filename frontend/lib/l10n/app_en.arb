@@ -4422,6 +4422,56 @@
   "@clinicalDeleteLabOrderDialogBody": {
     "description": "Clinical delete lab order confirmation body."
   },
+  "clinicalRadiologyOrdersTitle": "Radiology orders",
+  "@clinicalRadiologyOrdersTitle": {
+    "description": "Clinical patient detail radiology orders section title."
+  },
+  "clinicalRadiologyOrderItemCount": "{count} tests",
+  "@clinicalRadiologyOrderItemCount": {
+    "description": "Clinical radiology order requested test count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalPharmacyOrdersTitle": "Pharmacy orders",
+  "@clinicalPharmacyOrdersTitle": {
+    "description": "Clinical patient detail pharmacy orders section title."
+  },
+  "clinicalPharmacyOrderItemCount": "{count} medicines",
+  "@clinicalPharmacyOrderItemCount": {
+    "description": "Clinical pharmacy order medicine count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalCancelPharmacyOrderAction": "Cancel order",
+  "@clinicalCancelPharmacyOrderAction": {
+    "description": "Clinical cancel pharmacy order action label."
+  },
+  "clinicalDeletePharmacyOrderAction": "Delete order",
+  "@clinicalDeletePharmacyOrderAction": {
+    "description": "Clinical delete pharmacy order action label."
+  },
+  "clinicalCancelPharmacyOrderDialogTitle": "Cancel pharmacy order",
+  "@clinicalCancelPharmacyOrderDialogTitle": {
+    "description": "Clinical cancel pharmacy order confirmation title."
+  },
+  "clinicalCancelPharmacyOrderDialogBody": "Cancel this pharmacy order and mark it as cancelled?",
+  "@clinicalCancelPharmacyOrderDialogBody": {
+    "description": "Clinical cancel pharmacy order confirmation body."
+  },
+  "clinicalDeletePharmacyOrderDialogTitle": "Delete pharmacy order",
+  "@clinicalDeletePharmacyOrderDialogTitle": {
+    "description": "Clinical delete pharmacy order confirmation title."
+  },
+  "clinicalDeletePharmacyOrderDialogBody": "Delete this pharmacy order from the active patient record?",
+  "@clinicalDeletePharmacyOrderDialogBody": {
+    "description": "Clinical delete pharmacy order confirmation body."
+  },
   "clinicalRequestRadiologyAction": "Request radiology",
   "@clinicalRequestRadiologyAction": {
     "description": "Clinical request radiology action label."

@@ -3429,6 +3429,42 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delete this lab order from the active patient record?';
 
   @override
+  String get clinicalRadiologyOrdersTitle => 'Radiology orders';
+
+  @override
+  String clinicalRadiologyOrderItemCount(int count) {
+    return '$count tests';
+  }
+
+  @override
+  String get clinicalPharmacyOrdersTitle => 'Pharmacy orders';
+
+  @override
+  String clinicalPharmacyOrderItemCount(int count) {
+    return '$count medicines';
+  }
+
+  @override
+  String get clinicalCancelPharmacyOrderAction => 'Cancel order';
+
+  @override
+  String get clinicalDeletePharmacyOrderAction => 'Delete order';
+
+  @override
+  String get clinicalCancelPharmacyOrderDialogTitle => 'Cancel pharmacy order';
+
+  @override
+  String get clinicalCancelPharmacyOrderDialogBody =>
+      'Cancel this pharmacy order and mark it as cancelled?';
+
+  @override
+  String get clinicalDeletePharmacyOrderDialogTitle => 'Delete pharmacy order';
+
+  @override
+  String get clinicalDeletePharmacyOrderDialogBody =>
+      'Delete this pharmacy order from the active patient record?';
+
+  @override
   String get clinicalRequestRadiologyAction => 'Request radiology';
 
   @override
