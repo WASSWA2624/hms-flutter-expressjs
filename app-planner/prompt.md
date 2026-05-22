@@ -1,27 +1,31 @@
-﻿You are working on the Hospital Management System archive with this project root structure:
+﻿
+You are working inside the attached hms Hospital Management System codebase containing: app-planner, backend, frontend.
 
-```txt
-hms/
-  app-planner/
-  backend/
-  frontend/
-```
+Implement the requested changes directly against the existing codebase.
 
-Refine and implement the requested changes directly against the existing codebase. Use the actual project architecture, naming conventions, UI patterns, localization style, backend module style, and app-planner rules as the source of truth. Do not introduce unrelated rewrites.
+Use the actual project structure, architecture, naming conventions, UI patterns, localization style, backend module style, and app-planner rules as the source of truth.
 
-No task-specific screenshots were present in the archive beyond standard app icon/logo assets, so the written UI/UX requirements below are the complete UI source of truth.
+Do not introduce unrelated rewrites.
 
-## Main problem
+---
 
-Across the HMS app, displayed user IDs, patient IDs, patient numbers, patient identifiers, encounter IDs, admission IDs, and patient/encounter-related public identifiers are not consistently copyable. Some are rendered as plain `Text`, some have separate copy buttons, and many areas still fall back to raw/internal IDs such as `id` when `displayId`, `publicId`, `patientDisplayId`, `patientIdentifier`, or `human_friendly_id` is unavailable.
+## Core Objective
 
-Also, several production-facing workflows still expose “backend gap”, placeholder, or temporary states to users instead of real backend-backed behavior.
+Across the HMS app:
 
-Implement an app-wide cleanup so identifiers are safe, consistent, clickable/copyable, visually confirm copy success, and production UI no longer exposes avoidable backend-gap/placeholder states.
+1. Make all visible patient, encounter, admission, user, and public identifiers consistently clickable/copyable.
+2. Prevent raw/internal IDs from appearing in production UI when public identifiers are unavailable.
+3. Remove production-facing “Backend gap”, placeholder, and temporary-record states.
+4. Integrate the existing backend settings workspace into the frontend Settings page.
+5. Align route entitlement gating with backend module subscriptions.
+6. Remove unused example scaffold code from production storage/source.
+7. Add focused frontend and backend tests for all changed behavior.
 
-## Project rules to follow
+---
 
-Before editing, inspect and follow these files:
+## Mandatory Project Rules
+
+Before editing, inspect these files:
 
 ```txt
 app-planner/dev-plan/37-quality-release.md
@@ -56,36 +60,22 @@ frontend/lib/features/<feature>/data|domain|presentation
 frontend/lib/shared/components
 frontend/lib/shared/layout
 frontend/lib/core/network
+
 backend/src/modules/<module>/controllers|repositories|routes|schemas|services
+
 backend CommonJS style
-Flutter package imports: package:hosspi_hms/...
-Dart file names: snake_case.dart
-Backend module folders: kebab-case
+Flutter imports: package:hosspi_hms/...
+Dart files: snake_case.dart
+Backend folders: kebab-case
 ```
 
-Do not import anything from `app-planner/` into application source code.
+Do not import anything from `app-planner/` into runtime source code.
 
-## Scope limits
+---
 
-Modify only files required for this task.
+# Part 1: Shared Copyable Identifier Component
 
-Do not:
-
-* Rewrite unrelated screens.
-* Replace existing state management patterns.
-* Replace Riverpod, Dio, Drift, GoRouter, or shared layout architecture.
-* Add duplicate UI components when an existing shared component can be extended.
-* Hide backend gaps by only deleting UI text while leaving broken workflows.
-* Expose raw UUID/internal IDs in production UI unless the codebase explicitly treats that value as the public identifier.
-* Change unrelated routes, permissions, seed data, or schemas.
-
-If a referenced gap is already fixed in the current codebase, leave that area unchanged except for tests if needed.
-
-## Part 1: App-wide clickable/copyable identifiers
-
-Implement a shared reusable solution for copyable identifiers instead of repeating private copy helpers in feature pages.
-
-Relevant existing files to inspect first:
+## Files to inspect first
 
 ```txt
 frontend/lib/shared/layout/app_workspace.dart
@@ -101,49 +91,85 @@ frontend/lib/l10n/app_localizations.dart
 frontend/lib/l10n/app_localizations_en.dart
 ```
 
-Suggested implementation direction:
+## Required implementation
 
-* Add or extend a shared component for copyable identifiers, for example `AppCopyableIdentifier`, and export it from `frontend/lib/shared/components/components.dart`.
-* Extend `AppWorkspacePatientContextField` and `AppInfoTileData`/`AppInfoTile` so identifier fields can opt into copy behavior.
-* Update `AppWorkspacePatientContextHeader` so:
-
-  * `patientNumber` can be clickable/copyable when non-empty.
-  * encounter/admission/patient identifier fields can be copyable through field metadata.
-  * tile and inline field styles both support the same copy behavior.
-* Reuse the shared copy behavior in OPD/clinical/patient registry areas that currently have custom copy functions, where doing so does not remove existing useful quick actions.
-
-Behavior requirements:
-
-* The displayed ID text/token itself must be clickable/tappable, not only a tiny icon.
-* Copy exactly the visible identifier value unless an existing action explicitly copies a different API value.
-* Do not copy placeholder values such as empty string, `Unknown`, `N/A`, or localized missing-value labels.
-* On copy, use `Clipboard.setData`.
-* Show immediate visual confirmation:
-
-  * a localized `SnackBar`, and
-  * a short-lived visible state such as a check icon, changed tooltip, or “copied” affordance on the clicked token.
-* Use existing theme spacing, colors, typography, icon sizes, and Material controls.
-* Support mouse, touch, keyboard focus, and screen readers.
-* Use localized tooltips, semantic labels, and SnackBar messages. Do not hard-code user-facing text.
-* Keep tap targets accessible; use the existing app token sizes where practical.
-* Use `MaterialLocalizations.copyButtonLabel` only where appropriate, otherwise add HMS-specific localization keys.
-
-Add localization keys as needed for:
+Create or extend a reusable shared component, for example:
 
 ```txt
-Copy patient ID
-Copy encounter ID
-Copy admission ID
-Copy user ID
-Copy identifier
-Patient ID copied.
-Encounter ID copied.
-Admission ID copied.
-User ID copied.
-Identifier copied.
+frontend/lib/shared/components/app_copyable_identifier.dart
 ```
 
-Use existing keys where they already exist:
+Export it from:
+
+```txt
+frontend/lib/shared/components/components.dart
+```
+
+The component must:
+
+* Render the visible identifier as the clickable/tappable target.
+* Support optional copy icon.
+* Use `Clipboard.setData`.
+* Copy exactly the visible identifier value.
+* Refuse to copy empty or placeholder values.
+* Show a localized `SnackBar` after copy.
+* Show short-lived visual success state, such as check icon or changed tooltip.
+* Support mouse, touch, keyboard focus, and screen readers.
+* Use HMS theme spacing, colors, typography, icon sizes, and Material controls.
+* Use localized tooltip, semantic label, and copied message.
+
+Do not copy placeholder values such as:
+
+```txt
+empty string
+Unknown
+N/A
+localized unknown values
+localized missing values
+```
+
+---
+
+## Extend existing shared models
+
+Update:
+
+```txt
+frontend/lib/shared/layout/app_workspace.dart
+frontend/lib/shared/components/app_info_tile.dart
+```
+
+Extend these APIs with optional copy metadata:
+
+```dart
+AppWorkspacePatientContextField
+AppInfoTileData
+AppInfoTile
+```
+
+Support copy behavior in:
+
+```dart
+AppWorkspacePatientContextHeader
+_PatientContextNumberToken
+_PatientContextInlineFact
+_PatientContextFieldTile
+AppInfoTileGrid
+AppInfoTile
+```
+
+Requirements:
+
+* `patientNumber` must be copyable when non-empty.
+* Encounter/admission/patient/user identifier fields must be copyable through field metadata.
+* Tile and inline field layouts must support the same copy behavior.
+* Existing non-copyable behavior must remain unchanged unless explicitly opted in.
+
+---
+
+## Localization
+
+Use existing keys where already available:
 
 ```txt
 clinicalPatientIdCopiedMessage
@@ -152,11 +178,35 @@ opdCopyPatientIdAction
 opdCopyEncounterIdAction
 ```
 
-Regenerate localization files after editing ARB files.
+Add missing localization keys for:
 
-## Part 2: App-wide scan and update identifier displays
+```txt
+Copy admission ID
+Copy user ID
+Copy identifier
+Admission ID copied.
+User ID copied.
+Identifier copied.
+```
 
-Perform a full frontend scan for displayed identifiers using labels and variables such as:
+Update:
+
+```txt
+frontend/lib/l10n/app_en.arb
+```
+
+Then regenerate localization files:
+
+```bash
+cd frontend
+flutter gen-l10n
+```
+
+---
+
+# Part 2: App-Wide Identifier Scan and Fixes
+
+Perform a full frontend scan for displayed identifiers using:
 
 ```txt
 patientId
@@ -172,9 +222,11 @@ humanFriendlyId
 human_friendly_id
 userId
 user_id
+effectiveDisplayId
+effectiveIdentifier
 ```
 
-At minimum inspect and update these files where identifiers are displayed:
+At minimum inspect and update:
 
 ```txt
 frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart
@@ -196,53 +248,72 @@ frontend/lib/features/communications/presentation/pages/communications_workspace
 frontend/lib/features/profile/presentation/pages/user_profile_page.dart
 ```
 
-Known current patterns to fix include but are not limited to:
+## Identifier display rules
+
+Prefer public/human-friendly identifiers:
 
 ```txt
-displayId ?? id
-publicId ?? id
-patientId ?? displayId ?? id
-encounterId rendered as plain text
-patientNumber rendered without copy behavior
-AppInfoTileData identifier values rendered as plain text
-AppWorkspacePatientContextField identifier values rendered as plain text
+displayId
+publicId
+patientDisplayId
+patientIdentifier
+encounterPublicId
+human_friendly_id
+effective public display fields
 ```
 
-Specific examples currently present in the codebase:
+Keep raw/internal IDs only for:
 
 ```txt
-frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart
-frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.dart
-frontend/lib/features/ipd/presentation/pages/ipd_workspace_page.dart
-frontend/lib/features/discharge/presentation/pages/discharge_workspace_page.dart
-frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart
-frontend/lib/features/patients/presentation/pages/patient_registry_page.dart
-frontend/lib/features/communications/presentation/pages/communications_workspace_page.dart
+API calls
+repository methods
+route params
+equality checks
+keys
+internal state
 ```
 
-Display requirements:
+Do not render raw UUID/internal `id` in production UI unless the codebase clearly treats that value as the public identifier.
 
-* Prefer human-friendly/public identifiers in UI:
+When no public identifier exists:
 
-  * `displayId`
-  * `publicId`
-  * `patientDisplayId`
-  * `patientIdentifier`
-  * `encounterPublicId`
-  * `human_friendly_id`
-  * existing `effective...` public display fields
-* Keep internal IDs available for API calls, keys, route params, repository methods, and equality checks.
-* Do not use raw `id` as a UI fallback unless the codebase proves that field is already a public/human-friendly ID for that entity.
-* When no public identifier exists, show the feature’s existing localized missing/unknown value or omit the identifier field.
-* Ensure every visible patient, encounter, admission, and user identifier is copyable after this change.
+* show the feature’s existing localized missing/unknown value, or
+* omit the identifier field.
 
-## Part 3: Remove production-facing backend-gap states where real contracts can be wired
+Every visible patient, encounter, admission, and user identifier must be copyable.
 
-Inspect frontend and backend together. Replace backend-gap panels/states with real backend-backed data or minimal backend endpoints where required.
+---
 
-### Rooms, beds, housekeeping, and discharge-to-housekeeping
+# Part 3: Remove Production-Facing Backend-Gap States
 
-Relevant frontend files:
+Search the frontend and backend for phrases like:
+
+```txt
+Backend gap
+Backend gaps
+Backend endpoint required
+Not exposed by API
+Pending payment - backend gap
+Partial stock - backend gap
+placeholder
+temporary record
+```
+
+Users must not see developer-facing backend-gap text.
+
+Replace these with:
+
+* real backend-backed workflow state,
+* empty states,
+* permission states,
+* unavailable states,
+* disabled actions with business-facing explanations.
+
+---
+
+## Rooms, Beds, Housekeeping, and Discharge
+
+Inspect frontend:
 
 ```txt
 frontend/lib/features/rooms_beds/presentation/pages/rooms_beds_workspace_page.dart
@@ -252,7 +323,7 @@ frontend/lib/features/discharge/domain/entities/discharge_entities.dart
 frontend/lib/features/discharge/presentation/pages/discharge_workspace_page.dart
 ```
 
-Relevant backend modules to inspect:
+Inspect backend:
 
 ```txt
 backend/src/modules/bed
@@ -267,24 +338,26 @@ backend/src/modules/ipd-flow
 backend/src/modules/admission
 ```
 
-Fix requirements:
+Required fixes:
 
-* Remove or replace the rooms/beds backend gap notice currently shown through `roomsBedsBackendGapsTitle` / `roomsBedsBackendGapsBody`.
-* Replace hard-coded `housekeepingBackendGaps` with backend-backed capability/readiness state.
-* Support bed cleaning/readiness states without exposing “Backend gap” to users.
-* Wire final discharge/bed release to housekeeping task creation atomically where the backend contract supports it, or add the minimal backend contract needed.
-* Replace `DischargeClearanceState.backendGap` for insurance/housekeeping with real states derived from backend-backed data or explicit unavailable states that are not described as “backend gaps”.
-* Preserve existing statuses and permissions where they already work.
+* Remove rooms/beds backend gap notice.
+* Replace hard-coded housekeeping backend gaps with backend-backed readiness/capability state.
+* Support real bed cleaning/readiness state.
+* Wire final discharge/bed release to housekeeping task creation atomically where supported.
+* If needed, add the smallest backend contract required.
+* Replace `DischargeClearanceState.backendGap` with real states or explicit unavailable states.
 
-### Pharmacy
+---
 
-Relevant frontend file:
+## Pharmacy
+
+Inspect frontend:
 
 ```txt
 frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart
 ```
 
-Relevant backend modules to inspect:
+Inspect backend:
 
 ```txt
 backend/src/modules/pharmacy-workspace
@@ -301,18 +374,20 @@ backend/src/modules/report-definition
 backend/src/modules/report-run
 ```
 
-Fix requirements:
+Required fixes:
 
-* Remove `_BillingGapPanel` as a production-facing gap panel.
-* Replace payment authorization/billing gate gap with actual invoice/payment/billing status where available.
+* Remove `_BillingGapPanel`.
+* Replace billing/payment authorization gap with real invoice/payment status.
 * Replace batch availability gap with real drug batch/inventory availability.
-* Replace hold/substitution gap with real supported order/item state if backend supports it; otherwise implement the smallest backend-backed status needed.
+* Replace hold/substitution gap with backend-backed order/item status.
 * Replace report-template gap with existing report/print template integration where available.
-* Do not enable unsafe dispense actions when stock, batch, payment, or authorization state blocks them.
+* Do not enable unsafe dispense actions when stock, batch, payment, or authorization blocks them.
 
-### Physiotherapy
+---
 
-Relevant frontend files:
+## Physiotherapy
+
+Inspect frontend:
 
 ```txt
 frontend/lib/features/physiotherapy/data/repositories/physiotherapy_repository_impl.dart
@@ -320,7 +395,7 @@ frontend/lib/features/physiotherapy/domain/entities/physiotherapy_entities.dart
 frontend/lib/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart
 ```
 
-Relevant backend modules to inspect:
+Inspect backend:
 
 ```txt
 backend/src/modules/encounter
@@ -333,22 +408,25 @@ backend/src/modules/report-definition
 backend/src/modules/report-run
 ```
 
-Fix requirements:
+Required fixes:
 
 * Remove hard-coded `_backendGapCodes`.
-* Remove `_BackendGapsPanel` as a production-facing panel.
-* Provide backend-backed status, billing authorization, and report behavior using existing clinical/procedure/care-plan/follow-up/billing/report contracts where possible.
-* If a dedicated physiotherapy endpoint is truly required, add the smallest backend module/route/schema/service/repository changes needed and tests for that contract.
+* Remove `_BackendGapsPanel`.
+* Replace fake status, billing, and report behavior with backend-backed behavior.
+* If a physiotherapy-specific backend endpoint is truly required, add the smallest backend module/route/schema/service/repository changes needed.
 
-### Integrations / interop readiness
+---
 
-Relevant frontend file:
+## Integrations / Interop
+
+Inspect frontend:
 
 ```txt
 frontend/lib/features/integrations/data/repositories/integrations_repository_impl.dart
+frontend/lib/features/integrations/presentation/pages/integrations_workspace_page.dart
 ```
 
-Relevant backend modules to inspect:
+Inspect backend:
 
 ```txt
 backend/src/modules/integration
@@ -358,15 +436,23 @@ backend/src/modules/webhook-subscription
 backend/src/modules/api-key
 ```
 
-Fix requirements:
+Required fixes:
 
-* Remove hard-coded `BACKEND_GAP` readiness capability.
-* Derive interop readiness from actual integration status, API key/webhook state, sanitized logs, and interop route availability.
+* Remove hard-coded `BACKEND_GAP` readiness.
+* Derive readiness from:
+
+  * integration status,
+  * API key state,
+  * webhook state,
+  * sanitized logs,
+  * interop route availability.
 * Keep error states safe and non-PHI.
 
-## Part 4: Remove placeholder/temporary production records
+---
 
-Relevant backend files:
+# Part 4: Remove Placeholder Production Records
+
+Inspect:
 
 ```txt
 backend/src/modules/dashboard-workspace/services/dashboard-workspace.service.js
@@ -374,17 +460,44 @@ backend/src/modules/biomedical-workspace/services/biomedical-workspace.service.j
 backend/src/modules/biomedical-workspace/repositories/biomedical-workspace.repository.js
 ```
 
-Fix requirements:
+Required fixes:
 
-* Dashboard must not emit fake/placeholder entities such as a guide signal with `meta: { placeholder: true }` as production workflow data.
-* Replace the empty-dashboard fallback with a real empty state, real recommendation payload, or safe non-entity guidance that the frontend can render without treating it as operational data.
-* Biomedical fault reporting must not create placeholder equipment registry records that can appear as real assets.
-* If a fault report is submitted without equipment, store the reported equipment text as contextual report data or require selecting/creating a real equipment record through the proper equipment registry workflow.
-* Preserve audit logging and notifications without marking placeholder equipment as real equipment.
+## Dashboard
 
-## Part 5: Integrate backend settings workspace into frontend settings
+Do not emit fake/placeholder workflow entities such as:
 
-Backend settings workspace already exists:
+```js
+meta: { placeholder: true }
+```
+
+Replace placeholder operational data with:
+
+* real empty state,
+* real recommendation payload, or
+* safe non-entity guidance that frontend can render without treating it as operational data.
+
+## Biomedical fault reporting
+
+Do not create placeholder equipment registry records.
+
+If a fault report is submitted without selected equipment:
+
+* store reported equipment text as contextual report data, or
+* require selecting/creating a real equipment record through the proper equipment registry workflow.
+
+Preserve:
+
+* audit logging,
+* notifications,
+* WebSocket updates.
+
+Do not mark placeholder equipment as real equipment.
+
+---
+
+# Part 5: Integrate Backend Settings Workspace into Frontend Settings
+
+Backend already exists:
 
 ```txt
 backend/src/modules/settings-workspace/controllers/settings-workspace.controller.js
@@ -394,66 +507,109 @@ backend/src/modules/settings-workspace/schemas/settings-workspace.schema.js
 backend/src/modules/settings-workspace/services/settings-workspace.service.js
 ```
 
-Frontend already has:
+Frontend currently has:
 
 ```txt
 frontend/lib/core/network/api_endpoints.dart
 frontend/lib/features/settings/presentation/pages/settings_page.dart
 ```
 
-`HmsApiResource.settingsWorkspace` already exists in `api_endpoints.dart`.
+`HmsApiResource.settingsWorkspace` already exists.
 
-Implement frontend integration using the project’s clean architecture style. Add files under `frontend/lib/features/settings/` as needed:
+Implement frontend clean architecture files under:
 
 ```txt
-data/dtos
-data/repositories
-domain/entities
-domain/repositories
-presentation/controllers
-presentation/state
-presentation/pages
-presentation/widgets
+frontend/lib/features/settings/data/dtos
+frontend/lib/features/settings/data/repositories
+frontend/lib/features/settings/domain/entities
+frontend/lib/features/settings/domain/repositories
+frontend/lib/features/settings/presentation/controllers
+frontend/lib/features/settings/presentation/state
+frontend/lib/features/settings/presentation/widgets
 ```
 
-Requirements:
+## Required API calls
 
-* Fetch `/settings-workspace/workspace`.
-* Fetch `/settings-workspace/reference-data` where needed.
-* Render backend-backed settings workspace content inside the existing Settings page or a focused settings workspace section.
-* Support backend states:
+Fetch:
 
-  * `ready`
-  * `tenant_context_required`
-* Render:
+```txt
+GET /settings-workspace/workspace
+GET /settings-workspace/reference-data
+```
 
-  * context summary
-  * summary cards
-  * setup checklist
-  * quick actions
-  * module groups
-  * filters/search where appropriate
-  * tenant/facility selector if required by backend state
-* Preserve local preferences already in `settings_page.dart`:
+## Required backend states
 
-  * language
-  * theme mode
-  * profile action
-  * change password action
-  * admin navigation actions
-* Use shared components: `AppScreen`, `AppScreenSection`, `AppWorkspace`, `AppInfoTile`, `AppButton`, `AppSelectField`, state/error views, and existing theme tokens.
-* Do not hard-code settings labels from backend `label_key`; map known backend label keys to localized frontend strings or add localization keys where required.
-* If a backend route points to a frontend route that does not exist, do not create fake navigation. Route to the closest existing setup page only if supported by the router; otherwise show a disabled/clear unavailable action and mark the missing route mapping in code comments/tests.
+Support:
 
-## Part 6: Route entitlement gating consistency
+```txt
+ready
+tenant_context_required
+```
 
-Relevant file:
+## Required UI
+
+Render backend-backed settings workspace content inside the existing Settings page or a focused settings workspace section.
+
+Render:
+
+```txt
+context summary
+summary cards
+setup checklist
+quick actions
+module groups
+filters/search
+tenant/facility selector when required
+loading state
+error state
+empty/unavailable state
+```
+
+Preserve existing local settings behavior:
+
+```txt
+language
+theme mode
+profile action
+change password action
+admin navigation actions
+```
+
+Use shared components:
+
+```txt
+AppScreen
+AppScreenSection
+AppWorkspace
+AppInfoTile
+AppButton
+AppSelectField
+state/error views
+existing theme tokens
+```
+
+Do not display backend `label_key` directly.
+
+Map known backend label keys to localized frontend strings or add localization keys.
+
+If a backend route points to a frontend route that does not exist:
+
+* do not create fake navigation,
+* route only to the closest real supported route,
+* otherwise show a disabled action with clear localized unavailable text,
+* add code comments/tests where route mapping is intentionally unavailable.
+
+---
+
+# Part 6: Route Entitlement Gating Consistency
+
+Inspect:
 
 ```txt
 frontend/lib/app/router/app_routes.dart
 ```
 
-Current inconsistent areas to verify:
+Verify and align these routes:
 
 ```txt
 communications
@@ -462,86 +618,35 @@ subscriptions
 settings
 ```
 
-Requirements:
+Use backend/app-planner sources to derive module slugs.
 
-* Align route gating with the module-subscription model used by operational workspaces where supported by existing module slugs.
-* Do not guess module slugs. Derive them from backend seeders, module catalog, route definitions, or app-planner docs.
-* If a route is intentionally platform/core/auth-only, preserve that behavior and make the intention explicit in code through existing route metadata/comment style only if the codebase already uses such comments.
-* Ensure route guards still pass for tenant/facility context requirements.
-
-Missing details to verify from codebase:
+Known module slugs to verify from codebase before use:
 
 ```txt
-Exact active module slug for communications, if any.
-Exact active module slug for reports/audit, if any.
-Exact active module slug for subscriptions, if any.
-Whether settings is intentionally core/auth-only or should require tenant/admin entitlement.
+notifications-communications
+reporting-analytics
+subscription-controls
+compliance-audit-core
+integrations-core
 ```
 
-## Part 7: Frontend test coverage
+Expected direction:
 
-Existing missing feature test folders include:
+* `communications` should require `notifications-communications` if the module exists.
+* `reports` should require `reporting-analytics` if the module exists.
+* `subscriptions` should require `subscription-controls` if the module exists.
+* Keep `/settings` authenticated/core if it contains user-level preferences.
+* Gate only backend/admin settings workspace content by role, permission, or backend state.
 
-```txt
-frontend/test/features/discharge
-frontend/test/features/emergency
-frontend/test/features/housekeeping
-frontend/test/features/hr
-frontend/test/features/icu
-frontend/test/features/integrations
-frontend/test/features/ipd
-frontend/test/features/lab
-frontend/test/features/pharmacy
-frontend/test/features/physiotherapy
-frontend/test/features/profile
-frontend/test/features/settings
-frontend/test/features/tenant_facility
-```
+Do not guess module slugs.
 
-Add focused tests for the changed behavior. At minimum:
+Do not add multiple active modules unless the route truly requires all of them or the existing guard supports OR logic.
 
-* Shared copyable identifier widget/component tests.
-* `AppWorkspacePatientContextHeader` tests proving patient number and encounter/admission fields are copyable.
-* `AppInfoTile` tests proving identifier fields are copyable when configured and non-copyable when empty/missing.
-* Feature smoke/widget/controller/DTO tests for every feature folder you create or modify.
-* Settings workspace DTO/repository/controller tests.
-* Tests proving production UI no longer renders “Backend gap” panels in the updated workspaces.
-* Tests proving raw/internal ID fallback does not appear when public display IDs are absent.
+---
 
-Use existing test helpers and style:
+# Part 7: Remove Example Scaffold from Production Storage
 
-```txt
-frontend/test/shared/components/component_test_app.dart
-frontend/test/helpers/test_harness.dart
-frontend/test/shared/layout/app_workspace_test.dart
-```
-
-## Part 8: Backend tests
-
-Add or update backend tests for every backend contract changed.
-
-Relevant commands and patterns are in:
-
-```txt
-backend/package.json
-backend/src/tests
-backend/app-planner/app-rules/testing.md
-```
-
-Cover:
-
-* Settings workspace frontend contract if backend payload changes.
-* Rooms/beds/housekeeping/discharge atomic handoff if changed.
-* Pharmacy payment/batch/hold/report contract if changed.
-* Physiotherapy status/billing/report contract if changed.
-* Integrations interop readiness contract if changed.
-* Dashboard no-placeholder behavior.
-* Biomedical no-placeholder-equipment behavior.
-* Validation errors for missing required IDs.
-
-## Part 9: Remove example scaffold from production storage
-
-Current production example scaffold files include:
+Inspect:
 
 ```txt
 frontend/lib/features/example/
@@ -553,56 +658,139 @@ frontend/test/helpers/provider_override_examples_test.dart
 frontend/test/core/storage/database/app_database_test.dart
 ```
 
-Fix requirements:
+Required fixes:
 
-* Remove `features/example` from production source if still unused by routes/features.
+* Remove unused production example feature code.
 * Remove `ExampleResourceCacheEntries` from `AppDatabase`.
-* Update Drift generated code by running build generation.
-* Update database tests so they test real production tables such as `SyncQueueEntries` instead of the example table.
-* Update or remove provider override example tests that import production example feature code.
-* If deleting files/folders, include a PowerShell deletion script as described in the final packaging section.
+* Update Drift generated code.
+* Update database tests to use real production tables such as `SyncQueueEntries`.
+* Remove or rewrite provider override tests that import example production code.
 
-## UI/UX requirements
+Run:
+
+```bash
+cd frontend
+dart run build_runner build --delete-conflicting-outputs
+```
+
+If files/folders are deleted, include a safe PowerShell deletion script:
+
+```txt
+scripts/remove-example-scaffold.ps1
+```
+
+Script requirements:
+
+* use paths relative to project root,
+* check existence before deleting,
+* delete only intended files/folders,
+* do not use unsafe wildcards,
+* do not delete user data or environment files.
+
+---
+
+# Part 8: Frontend Tests
+
+Add or update focused tests.
+
+Minimum coverage:
+
+```txt
+frontend/test/shared/components/app_copyable_identifier_test.dart
+frontend/test/shared/components/app_info_tile_test.dart
+frontend/test/shared/layout/app_workspace_test.dart
+frontend/test/features/settings/...
+```
+
+Use existing test helpers:
+
+```txt
+frontend/test/shared/components/component_test_app.dart
+frontend/test/helpers/test_harness.dart
+frontend/test/shared/layout/app_workspace_test.dart
+```
+
+Test:
+
+* copyable identifier copies visible value,
+* placeholder values are not copyable,
+* SnackBar appears after copy,
+* success/check state appears after copy,
+* `AppWorkspacePatientContextHeader` copy behavior,
+* `AppInfoTile` identifier copy behavior,
+* modified workspaces no longer render backend-gap text,
+* raw/internal ID fallback is not displayed when public ID is absent,
+* settings workspace DTO parsing,
+* settings repository API integration,
+* settings controller/state transitions,
+* settings workspace UI states.
+
+---
+
+# Part 9: Backend Tests
+
+Add or update backend tests for every backend contract changed.
+
+Cover:
+
+* settings workspace frontend contract if changed,
+* rooms/beds/housekeeping/discharge atomic handoff if changed,
+* pharmacy payment/batch/hold/report contract if changed,
+* physiotherapy status/billing/report contract if changed,
+* integrations interop readiness if changed,
+* dashboard no-placeholder behavior,
+* biomedical no-placeholder-equipment behavior,
+* validation errors for missing required IDs.
+
+Use existing backend test style under:
+
+```txt
+backend/src/tests
+backend/package.json
+backend/app-planner/app-rules/testing.md
+```
+
+---
+
+# Part 10: UI/UX Requirements
 
 For copyable identifiers:
 
-* Use a compact identifier chip/token style consistent with existing HMS panels.
-* Keep the ID readable and selectable-looking without making the layout noisy.
+* Use compact identifier chip/token style consistent with HMS panels.
+* Keep IDs readable.
+* Do not make layouts noisy.
 * Use hover/focus affordance on desktop/web.
-* Use `Icons.copy_outlined` before copy and a success/check affordance after copy.
-* SnackBar text must be localized and specific where possible:
+* Use `Icons.copy_outlined` before copy.
+* Use success/check affordance after copy.
+* SnackBar text must be localized and specific where possible.
+* Support use in:
 
-  * patient ID copied
-  * encounter ID copied
-  * admission ID copied
-  * user ID copied
-  * identifier copied
-* The component must work in:
+  * patient context headers,
+  * info tiles,
+  * table/list cells,
+  * detail panels,
+  * inline metadata rows.
+* Avoid large padding or visual styles that conflict with:
 
-  * patient context headers
-  * info tiles
-  * table/list cells
-  * detail panels
-  * inline metadata rows
-* Avoid huge padding or new visual styles that conflict with existing `AppWorkspace`, `AppContentPanel`, `AppInfoTile`, and `AppListTable` patterns.
+  * `AppWorkspace`,
+  * `AppContentPanel`,
+  * `AppInfoTile`,
+  * `AppListTable`.
 
 For backend-gap cleanup:
 
-* Users should see real workflow state, unavailable/permission states, empty states, or actionable disabled states.
-* Users should not see developer-facing phrases such as:
+* Do not show developer-facing phrases to users.
+* Show real workflow state, permission state, empty state, or disabled action with business reason.
+* Business-facing unavailable explanations are acceptable.
+* Developer-facing backend-gap labels are not acceptable.
 
-  * “Backend gap”
-  * “Backend endpoint required”
-  * “Not exposed by API”
-  * “placeholder”
-  * “temporary record”
-* If an action is unavailable because business preconditions are not met, explain the business reason in user-facing language.
+---
 
-## Verification commands
+# Part 11: Verification Commands
 
-Run all relevant commands from the correct directories.
+Run from the correct directories.
 
-Frontend:
+## Frontend
 
 ```bash
 cd frontend
@@ -614,7 +802,9 @@ flutter analyze
 flutter test
 ```
 
-Backend, if backend files changed:
+## Backend
+
+Run if backend files changed:
 
 ```bash
 cd backend
@@ -625,20 +815,22 @@ npm run openapi:generate
 npm run openapi:validate
 ```
 
-Also run focused tests for changed areas while developing.
+Fix all issues introduced by this task.
 
-All analyzer, linter, localization, generated-code, and test issues introduced by this task must be fixed.
+---
 
-## Final delivery format
+# Final Delivery Format
 
-Return a single zipped archive containing only files and folders that were created or updated.
+Return a single zipped archive containing only files and folders created or changed.
 
-The archive must preserve correct relative paths, for example:
+Preserve relative paths, for example:
 
 ```txt
 frontend/lib/shared/components/app_copyable_identifier.dart
 frontend/lib/shared/layout/app_workspace.dart
+frontend/lib/features/settings/...
 backend/src/modules/...
+scripts/remove-example-scaffold.ps1
 ```
 
 Do not include:
@@ -653,19 +845,16 @@ ios/Pods/
 entire unchanged project folders
 ```
 
-If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts in the zip, for example:
+If any file or folder is deleted or renamed, include one or more safe `.ps1` scripts, for example:
 
 ```txt
 scripts/remove-example-scaffold.ps1
-scripts/rename-old-file.ps1
 ```
 
-PowerShell script requirements:
+The zip must include:
 
-* Use only correct relative paths from the project root.
-* Check existence before deleting or renaming.
-* Delete or rename only the intended files/folders.
-* Do not use wildcards that could remove unrelated files.
-* Do not delete user data, environment files, or unrelated generated assets.
-
-The zip must include all changed source, generated localization/Drift files when applicable, tests, and safe `.ps1` delete/rename scripts when needed.
+* changed source files,
+* generated localization files,
+* generated Drift files when applicable,
+* tests,
+* safe PowerShell delete/rename scripts when needed.
