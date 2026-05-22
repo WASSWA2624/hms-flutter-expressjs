@@ -3336,8 +3336,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get clinicalDiagnosisNoCatalogOptions =>
-      'No matching diagnosis terms';
+  String get clinicalDiagnosisNoCatalogOptions => 'No matching diagnosis terms';
 
   @override
   String get clinicalRequestLabAction => 'Request lab';
@@ -3465,14 +3464,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalDeleteRadiologyOrderAction => 'Delete order';
 
   @override
-  String get clinicalCancelRadiologyOrderDialogTitle => 'Cancel radiology order';
+  String get clinicalCancelRadiologyOrderDialogTitle =>
+      'Cancel radiology order';
 
   @override
   String get clinicalCancelRadiologyOrderDialogBody =>
       'Cancel this radiology order and mark it as cancelled?';
 
   @override
-  String get clinicalDeleteRadiologyOrderDialogTitle => 'Delete radiology order';
+  String get clinicalDeleteRadiologyOrderDialogTitle =>
+      'Delete radiology order';
 
   @override
   String get clinicalDeleteRadiologyOrderDialogBody =>
