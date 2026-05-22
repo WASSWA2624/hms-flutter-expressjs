@@ -137,18 +137,6 @@ class _MortuaryWorkspaceContentState
             ? AppWorkspaceStatusTone.success
             : AppWorkspaceStatusTone.warning,
       ),
-      primaryAction: AppPermissionActionButton(
-        requirement: _exportRequirement,
-        label: l10n.mortuaryPrintDocumentsAction,
-        icon: Icons.print_outlined,
-        variant: AppButtonVariant.primary,
-        enabled: state.selectedItem != null,
-        onPressed: state.selectedItem == null
-            ? null
-            : () {
-                unawaited(_printItem(context, ref, state.selectedItem!));
-              },
-      ),
       secondaryActions: <Widget>[
         AppPermissionActionButton(
           requirement: _writeRequirement,
@@ -203,14 +191,54 @@ class _MortuaryWorkspaceContentState
         controller: controller,
         searchController: _searchController,
         tableColumnController: _tableColumnController,
+        onItemSelected: (MortuaryWorkspaceItem item) {
+          unawaited(_openMortuaryDetailDialog(context, item));
+        },
       ),
-      detail: _MortuaryDetailPanel(
-        state: state,
-        onPrint: state.selectedItem == null
-            ? null
-            : () {
-                unawaited(_printItem(context, ref, state.selectedItem!));
-              },
+    );
+  }
+
+  Future<void> _openMortuaryDetailDialog(
+    BuildContext context,
+    MortuaryWorkspaceItem item,
+  ) async {
+    final MortuaryWorkspaceController controller = ref.read(
+      mortuaryWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.selectItem(item);
+    if (!context.mounted) {
+      return;
+    }
+    if (failure != null) {
+      _showFailureIfNeeded(context, failure);
+      return;
+    }
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (_) => Consumer(
+        builder: (BuildContext dialogContext, WidgetRef dialogRef, _) {
+          final MortuaryWorkspaceState dialogState =
+              _mortuaryStateFromAsync(
+                dialogRef.watch(mortuaryWorkspaceControllerProvider),
+              ) ??
+              widget.state;
+          final MortuaryWorkspaceItem? selected = dialogState.selectedItem;
+          return AppDialog(
+            title: Text(dialogContext.l10n.mortuaryDetailTitle),
+            icon: const Icon(Icons.inventory_2_outlined),
+            scrollable: true,
+            maxWidth: 980,
+            content: _MortuaryDetailPanel(
+              state: dialogState,
+              onPrint: selected == null
+                  ? null
+                  : () {
+                      unawaited(_printItem(dialogContext, dialogRef, selected));
+                    },
+            ),
+          );
+        },
       ),
     );
   }
@@ -222,6 +250,7 @@ class _MortuaryWorklist extends StatelessWidget {
     required this.controller,
     required this.searchController,
     required this.tableColumnController,
+    required this.onItemSelected,
   });
 
   final MortuaryWorkspaceState state;
@@ -229,6 +258,7 @@ class _MortuaryWorklist extends StatelessWidget {
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<MortuaryWorkspaceItem>
   tableColumnController;
+  final ValueChanged<MortuaryWorkspaceItem> onItemSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -253,9 +283,7 @@ class _MortuaryWorklist extends StatelessWidget {
         isLoading: state.isRefreshing,
         itemKeyBuilder: (MortuaryWorkspaceItem item) =>
             ValueKey<String>('${item.resource}:${item.id}'),
-        onRowSelected: (MortuaryWorkspaceItem item) {
-          unawaited(controller.selectItem(item));
-        },
+        onRowSelected: onItemSelected,
         onPageChanged: (AppPageRequest request) {
           unawaited(controller.changePage(request));
         },
@@ -299,16 +327,6 @@ class _MortuaryWorklist extends StatelessWidget {
           onFilterChanged: (AppSearchBarFilterValue value) {
             unawaited(_applyFilterValue(controller, value));
           },
-          trailingActions: <AppSearchBarAction>[
-            tableColumnController.settingsAction(
-              context,
-              label: l10n.commonTableSettingsActionLabel,
-              title: l10n.commonTableSettingsActionLabel,
-              applyLabel: l10n.mortuaryApplyFiltersAction,
-              resetLabel: l10n.mortuaryResetFiltersAction,
-              cancelLabel: l10n.commonCancelActionLabel,
-            ),
-          ],
         ),
         emptyBuilder: (BuildContext context) {
           return AppWorkspaceStatePanel.empty(
@@ -365,10 +383,7 @@ class _MortuaryWorklist extends StatelessWidget {
         id: 'source',
         label: l10n.mortuarySourceColumnLabel,
         cellBuilder: (_, MortuaryWorkspaceItem item) {
-          return _TwoLineCell(
-            title: item.sourceLabel ?? l10n.mortuaryUnknownValueLabel,
-            subtitle: item.receivedFrom,
-          );
+          return _SourceCell(item: item);
         },
       ),
       AppListTableColumn<MortuaryWorkspaceItem>(
@@ -511,7 +526,8 @@ class _MortuaryDetailPanel extends StatelessWidget {
             patientName:
                 item.effectiveDeceasedLabel ??
                 l10n.mortuaryUnknownDeceasedLabel,
-            patientNumber: _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
+            patientNumber:
+                _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
             patientNumberLabel: l10n.mortuaryCaseNumberLabel,
             copyPatientNumberMessage: l10n.identifierCopiedMessage,
             copyPatientNumberSemanticLabel: l10n.copyIdentifierAction,
@@ -695,6 +711,7 @@ class _IdentitySection extends StatelessWidget {
               label: l10n.mortuaryPatientFieldLabel,
               value: item.patientLabel,
               icon: Icons.assignment_ind_outlined,
+              copyable: true,
             ),
             AppInfoTileData(
               label: l10n.mortuaryFacilityFieldLabel,
@@ -730,6 +747,7 @@ class _IdentitySection extends StatelessWidget {
               label: l10n.mortuarySourceReferenceFieldLabel,
               value: item.sourceReferenceId,
               icon: Icons.link_outlined,
+              copyable: true,
             ),
             AppInfoTileData(
               label: l10n.mortuaryReceivedFromFieldLabel,
@@ -1015,6 +1033,39 @@ class _DocumentsSection extends StatelessWidget {
   }
 }
 
+class _SourceCell extends StatelessWidget {
+  const _SourceCell({required this.item});
+
+  final MortuaryWorkspaceItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String title = item.sourceLabel ?? l10n.mortuaryUnknownValueLabel;
+    final bool copyable = (item.sourceReferenceId ?? '').trim().isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (copyable)
+          AppCopyableIdentifier(value: title)
+        else
+          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        if ((item.receivedFrom ?? '').trim().isNotEmpty)
+          Text(
+            item.receivedFrom!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _ReferenceCell extends StatelessWidget {
   const _ReferenceCell({required this.item});
 
@@ -1023,9 +1074,22 @@ class _ReferenceCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return _TwoLineCell(
-      title: _mortuaryPublicIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
-      subtitle: _resourceLabel(l10n, item.resource),
+    final String value =
+        _mortuaryPublicIdentifier(item) ?? l10n.mortuaryUnknownValueLabel;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        AppCopyableIdentifier(value: value),
+        Text(
+          _resourceLabel(l10n, item.resource),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1505,7 +1569,8 @@ String _reportBodyHtml(
       bodyHtml: PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
         PrintFormMetadataItem(
           label: l10n.mortuaryCaseFieldLabel,
-          value: _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
+          value:
+              _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
         ),
         PrintFormMetadataItem(
           label: l10n.mortuaryDeceasedFieldLabel,
@@ -1678,6 +1743,15 @@ String? _joinValues(Iterable<String?> values) {
       .where((String value) => value.isNotEmpty)
       .toList(growable: false);
   return visible.isEmpty ? null : visible.join(' | ');
+}
+
+MortuaryWorkspaceState? _mortuaryStateFromAsync(
+  AsyncValue<Result<MortuaryWorkspaceState>> asyncState,
+) {
+  return asyncState.asData?.value.when(
+    success: (MortuaryWorkspaceState state) => state,
+    failure: (_) => null,
+  );
 }
 
 const AccessRequirement _writeRequirement = AccessRequirement(

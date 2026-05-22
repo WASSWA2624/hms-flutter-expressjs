@@ -257,28 +257,8 @@ final class MortuaryWorkspaceController
 
     return result.when(
       success: (MortuaryWorkspacePayload payload) async {
-        MortuaryWorkspaceItem? selected;
-        if (payload.items.items.isNotEmpty) {
-          final MortuaryWorkspaceItem first = payload.items.items.first;
-          final Result<MortuaryWorkspaceItem> detailResult = await _repository
-              .getItem(
-                resource: first.resource,
-                id: first.effectiveDisplayId,
-                baseQuery: payload.filters ?? query,
-              );
-          selected = detailResult.when(
-            success: (MortuaryWorkspaceItem detail) => detail,
-            failure: (_) => first,
-          );
-        }
-
         return Result<MortuaryWorkspaceState>.success(
-          _stateFromPayload(payload, query).copyWith(
-            items: selected == null
-                ? payload.items
-                : _replaceItem(payload.items, selected),
-            selectedItem: selected,
-          ),
+          _stateFromPayload(payload, query),
         );
       },
       failure: (AppFailure failure) =>
@@ -317,29 +297,6 @@ final class MortuaryWorkspaceController
         return failure;
       }
 
-      final MortuaryWorkspaceItem? selected = _currentState?.selectedItem;
-      if (selected != null) {
-        final Result<MortuaryWorkspaceItem> detailResult = await _repository
-            .getItem(
-              resource: selected.resource,
-              id: selected.effectiveDisplayId,
-              baseQuery: _currentState?.query ?? current.query,
-            );
-        detailResult.when(
-          success: (MortuaryWorkspaceItem detail) {
-            final MortuaryWorkspaceState? latest = _currentState;
-            if (latest != null) {
-              _emit(
-                latest.copyWith(
-                  selectedItem: detail,
-                  items: _replaceItem(latest.items, detail),
-                ),
-              );
-            }
-          },
-          failure: (_) {},
-        );
-      }
       return null;
     } finally {
       final MortuaryWorkspaceState? latest = _currentState;
@@ -419,11 +376,11 @@ final class MortuaryWorkspaceController
     MortuaryWorkspaceItem? selected,
   ) {
     if (selected == null) {
-      return page.items.isEmpty ? null : page.items.first;
+      return null;
     }
     for (final MortuaryWorkspaceItem item in page.items) {
       if (_isSameItem(item, selected)) {
-        return selected;
+        return item;
       }
     }
     return selected;

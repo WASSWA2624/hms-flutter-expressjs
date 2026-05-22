@@ -128,6 +128,20 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           : null,
       secondaryActions: <Widget>[
         AppButton.secondary(
+          label: l10n.hrWorkQueuesTitle,
+          leadingIcon: Icons.pending_actions_outlined,
+          onPressed: state.isRefreshing
+              ? null
+              : () => _showWorkQueueDialog(context),
+        ),
+        AppButton.secondary(
+          label: l10n.hrActivityTitle,
+          leadingIcon: Icons.timeline_outlined,
+          onPressed: state.isRefreshing
+              ? null
+              : () => _showActivityDialog(context),
+        ),
+        AppButton.secondary(
           label: l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
           isLoading: state.isRefreshing,
@@ -151,18 +165,136 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             searchController: _searchController,
             columnVisibilityController: _staffColumnController,
             onPageChanged: controller.changeStaffPage,
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _HrWorkQueuePanel(
-            state: state,
-            columnVisibilityController: _queueColumnController,
-            onPageChanged: controller.changeWorkItemsPage,
+            onStaffSelected: (HrStaffProfile item) {
+              unawaited(_openStaffDetailDialog(context, item));
+            },
           ),
         ],
       ),
-      detail: _HrStaffDetailPanel(state: state),
-      activity: _HrActivityPanel(state: state),
     );
+  }
+
+  Future<void> _openStaffDetailDialog(
+    BuildContext context,
+    HrStaffProfile staff,
+  ) async {
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.selectStaff(staff);
+    if (failure != null || !context.mounted) {
+      if (context.mounted) {
+        _showMutationResult(context, failure ?? AppFailure.validation());
+      }
+      return;
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(l10n.hrStaffDetailTitle),
+        icon: const Icon(Icons.badge_outlined),
+        scrollable: true,
+        maxWidth: 980,
+        content: Consumer(
+          builder: (BuildContext context, WidgetRef dialogRef, _) {
+            final HrWorkspaceState dialogState =
+                _hrStateFromAsync(
+                  dialogRef.watch(hrWorkspaceControllerProvider),
+                ) ??
+                widget.state;
+            return _HrStaffDetailPanel(state: dialogState);
+          },
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(dialogContext).maybePop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showWorkQueueDialog(BuildContext context) async {
+    final AppLocalizations l10n = context.l10n;
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(l10n.hrWorkQueuesTitle),
+        icon: const Icon(Icons.pending_actions_outlined),
+        scrollable: true,
+        maxWidth: 980,
+        content: Consumer(
+          builder: (BuildContext context, WidgetRef dialogRef, _) {
+            final HrWorkspaceState dialogState =
+                _hrStateFromAsync(
+                  dialogRef.watch(hrWorkspaceControllerProvider),
+                ) ??
+                widget.state;
+            return _HrWorkQueuePanel(
+              state: dialogState,
+              columnVisibilityController: _queueColumnController,
+              onPageChanged: ref
+                  .read(hrWorkspaceControllerProvider.notifier)
+                  .changeWorkItemsPage,
+            );
+          },
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(dialogContext).maybePop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showActivityDialog(BuildContext context) async {
+    final AppLocalizations l10n = context.l10n;
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(l10n.hrActivityTitle),
+        icon: const Icon(Icons.timeline_outlined),
+        scrollable: true,
+        maxWidth: 720,
+        content: Consumer(
+          builder: (BuildContext context, WidgetRef dialogRef, _) {
+            final HrWorkspaceState dialogState =
+                _hrStateFromAsync(
+                  dialogRef.watch(hrWorkspaceControllerProvider),
+                ) ??
+                widget.state;
+            return _HrActivityPanel(state: dialogState);
+          },
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(dialogContext).maybePop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _applyQueueAndShow(
+    BuildContext context,
+    HrWorkspaceController controller,
+    HrQueue queue,
+  ) async {
+    final AppFailure? failure = await controller.applyQueue(queue);
+    if (!context.mounted) {
+      return;
+    }
+    if (failure != null) {
+      _showMutationResult(context, failure);
+      return;
+    }
+    await _showWorkQueueDialog(context);
   }
 
   List<Widget> _summaryCards(
@@ -189,14 +321,22 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             ? AppWorkspaceStatusTone.warning
             : AppWorkspaceStatusTone.neutral,
         compact: true,
-        onPressed: () => controller.applyQueue(HrQueue.leaveRequests),
+        onPressed: () {
+          unawaited(
+            _applyQueueAndShow(context, controller, HrQueue.leaveRequests),
+          );
+        },
       ),
       AppWorkspaceSummaryCard(
         label: l10n.hrRosterDraftsSummaryLabel,
         value: summary.draftRosters.toString(),
         icon: Icons.calendar_month_outlined,
         compact: true,
-        onPressed: () => controller.applyQueue(HrQueue.rosterDrafts),
+        onPressed: () {
+          unawaited(
+            _applyQueueAndShow(context, controller, HrQueue.rosterDrafts),
+          );
+        },
       ),
       AppWorkspaceSummaryCard(
         label: l10n.hrUnassignedShiftsSummaryLabel,
@@ -206,14 +346,22 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             ? AppWorkspaceStatusTone.info
             : AppWorkspaceStatusTone.neutral,
         compact: true,
-        onPressed: () => controller.applyQueue(HrQueue.unassignedShifts),
+        onPressed: () {
+          unawaited(
+            _applyQueueAndShow(context, controller, HrQueue.unassignedShifts),
+          );
+        },
       ),
       AppWorkspaceSummaryCard(
         label: l10n.hrPayrollDraftsSummaryLabel,
         value: summary.payrollDraftRuns.toString(),
         icon: Icons.payments_outlined,
         compact: true,
-        onPressed: () => controller.applyQueue(HrQueue.payrollDrafts),
+        onPressed: () {
+          unawaited(
+            _applyQueueAndShow(context, controller, HrQueue.payrollDrafts),
+          );
+        },
       ),
     ];
   }
@@ -225,6 +373,7 @@ class _HrStaffDirectory extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
+    required this.onStaffSelected,
   });
 
   final HrWorkspaceState state;
@@ -232,6 +381,7 @@ class _HrStaffDirectory extends ConsumerWidget {
   final AppListTableColumnVisibilityController<HrStaffProfile>
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
+  final ValueChanged<HrStaffProfile> onStaffSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -305,9 +455,7 @@ class _HrStaffDirectory extends ConsumerWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemKeyBuilder: (HrStaffProfile item) => ValueKey<String>(item.id),
-        onRowSelected: (HrStaffProfile item) {
-          unawaited(controller.selectStaff(item));
-        },
+        onRowSelected: onStaffSelected,
         previousPageLabel: l10n.hrPreviousPageLabel,
         nextPageLabel: l10n.hrNextPageLabel,
         pageLabelBuilder: (AppPage<HrStaffProfile> page) {
@@ -331,12 +479,9 @@ class _HrStaffDirectory extends ConsumerWidget {
             sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
                 appListTableCompareText(left.displayName, right.displayName),
             cellBuilder: (BuildContext context, HrStaffProfile item) {
-              return _TwoLineCell(
+              return _CopyableIdentifierCell(
                 title: item.displayName,
-                subtitle: _joinDisplay(<String?>[
-                  item.staffNumber,
-                  item.displayId,
-                ]),
+                identifier: item.staffNumber ?? item.displayId,
               );
             },
           ),
@@ -456,6 +601,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
               label: l10n.hrStaffNumberLabel,
               value: profile.staffNumber ?? profile.displayId,
               icon: Icons.badge_outlined,
+              copyable: true,
             ),
             AppInfoTileData(
               label: l10n.hrStaffNameLabel,
@@ -718,9 +864,9 @@ class _HrWorkQueuePanel extends ConsumerWidget {
           AppListTableColumn<HrWorkItem>(
             label: l10n.hrQueueItemColumnLabel,
             cellBuilder: (BuildContext context, HrWorkItem item) {
-              return _TwoLineCell(
+              return _CopyableIdentifierCell(
                 title: _workItemTitle(context, item),
-                subtitle: item.effectiveId,
+                identifier: item.effectiveId,
               );
             },
           ),
@@ -909,6 +1055,54 @@ class _RecordLineTile extends StatelessWidget {
   }
 }
 
+class _CopyableIdentifierCell extends StatelessWidget {
+  const _CopyableIdentifierCell({
+    required this.title,
+    this.identifier,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? identifier;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle? titleStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: titleStyle,
+        ),
+        if ((identifier ?? '').trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          AppCopyableIdentifier(
+            value: identifier,
+            textStyle: theme.textTheme.bodySmall,
+          ),
+        ],
+        if ((subtitle ?? '').trim().isNotEmpty)
+          Text(
+            subtitle!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _TwoLineCell extends StatelessWidget {
   const _TwoLineCell({required this.title, this.subtitle});
 
@@ -975,10 +1169,10 @@ class _HrStaffListTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
-            child: _TwoLineCell(
+            child: _CopyableIdentifierCell(
               title: staff.displayName,
+              identifier: staff.staffNumber ?? staff.displayId,
               subtitle: _joinDisplay(<String?>[
-                staff.staffNumber,
                 staff.position,
                 staff.departmentName ?? staff.departmentDisplayId,
               ]),
@@ -1289,6 +1483,12 @@ class _WorkItemActions extends ConsumerWidget {
         AppInfoTileGrid(
           emptyValue: l10n.profileUnknownValue,
           items: <AppInfoTileData>[
+            AppInfoTileData(
+              label: l10n.hrQueueItemColumnLabel,
+              value: item.effectiveId,
+              icon: Icons.confirmation_number_outlined,
+              copyable: true,
+            ),
             AppInfoTileData(
               label: l10n.hrQueueColumnLabel,
               value: _queueLabel(l10n, item.queue),
@@ -2508,6 +2708,15 @@ class _ProcessPayrollFormState extends State<_ProcessPayrollForm> {
       ],
     );
   }
+}
+
+HrWorkspaceState? _hrStateFromAsync(
+  AsyncValue<Result<HrWorkspaceState>> asyncState,
+) {
+  return asyncState.asData?.value.when(
+    success: (HrWorkspaceState state) => state,
+    failure: (_) => null,
+  );
 }
 
 HrWorkspaceState? _readHrState(WidgetRef ref) {

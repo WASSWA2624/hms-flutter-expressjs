@@ -161,10 +161,12 @@ class _OperationsWorkspaceContentState
             state: state,
             searchController: _searchController,
             columnVisibilityController: _tableColumnController,
+            onItemSelected: (OperationsWorkItem item) {
+              unawaited(_openRequestDetailDialog(context, item, canMutate));
+            },
           ),
         ],
       ),
-      detail: _OperationsDetailPanel(state: state, canMutate: canMutate),
     );
   }
 
@@ -232,6 +234,47 @@ class _OperationsWorkspaceContentState
         ),
     ];
   }
+
+  Future<void> _openRequestDetailDialog(
+    BuildContext context,
+    OperationsWorkItem item,
+    bool canMutate,
+  ) async {
+    final OperationsWorkspaceController controller = ref.read(
+      operationsWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.selectItem(item);
+    if (!context.mounted) {
+      return;
+    }
+    if (failure != null) {
+      _showFailureIfNeeded(context, failure);
+      return;
+    }
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (_) => Consumer(
+        builder: (BuildContext dialogContext, WidgetRef dialogRef, _) {
+          final OperationsWorkspaceState dialogState =
+              _operationsStateFromAsync(
+                dialogRef.watch(operationsWorkspaceControllerProvider),
+              ) ??
+              widget.state;
+          return AppDialog(
+            title: Text(dialogContext.l10n.operationsDetailTitle),
+            icon: const Icon(Icons.engineering_outlined),
+            scrollable: true,
+            maxWidth: 980,
+            content: _OperationsDetailPanel(
+              state: dialogState,
+              canMutate: canMutate,
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _OperationsQueuePanel extends ConsumerWidget {
@@ -239,12 +282,14 @@ class _OperationsQueuePanel extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.onItemSelected,
   });
 
   final OperationsWorkspaceState state;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<OperationsWorkItem>
   columnVisibilityController;
+  final ValueChanged<OperationsWorkItem> onItemSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -320,9 +365,7 @@ class _OperationsQueuePanel extends ConsumerWidget {
           },
         ),
         itemKeyBuilder: (OperationsWorkItem item) => ValueKey<String>(item.id),
-        onRowSelected: (OperationsWorkItem item) {
-          unawaited(controller.selectItem(item));
-        },
+        onRowSelected: onItemSelected,
         previousPageLabel: l10n.opdPreviousPageLabel,
         nextPageLabel: l10n.opdNextPageLabel,
         pageLabelBuilder: (AppPage<OperationsWorkItem> page) {
@@ -416,6 +459,12 @@ class _OperationsDetailBody extends ConsumerWidget {
         maxColumns: 2,
         items: <AppInfoTileData>[
           AppInfoTileData(
+            label: l10n.operationsRequestColumnLabel,
+            value: item.effectiveDisplayId,
+            icon: Icons.confirmation_number_outlined,
+            copyable: true,
+          ),
+          AppInfoTileData(
             label: l10n.operationsStatusColumnLabel,
             value: _statusLabel(l10n, item.status),
             icon: Icons.fact_check_outlined,
@@ -438,6 +487,13 @@ class _OperationsDetailBody extends ConsumerWidget {
             ),
             icon: Icons.assignment_ind_outlined,
           ),
+          if (_hasValue(item.assetId))
+            AppInfoTileData(
+              label: l10n.operationsAssetFilterLabel,
+              value: item.assetId,
+              icon: Icons.precision_manufacturing_outlined,
+              copyable: true,
+            ),
           AppInfoTileData(
             label: l10n.operationsLocationColumnLabel,
             value: _locationLabel(l10n, item),
@@ -685,6 +741,15 @@ class _ServiceLogTile extends StatelessWidget {
         log.assetId ?? l10n.operationsUnknownValue,
       ),
       children: <Widget>[
+        AppCopyableIdentifier(
+          value: log.effectiveDisplayId,
+          textStyle: Theme.of(context).textTheme.bodySmall,
+        ),
+        if (_hasValue(log.assetId))
+          AppCopyableIdentifier(
+            value: log.assetId,
+            textStyle: Theme.of(context).textTheme.bodySmall,
+          ),
         Text(_display(log.notes, l10n.operationsNoNotesValue)),
       ],
     );
@@ -703,12 +768,15 @@ class _OperationsRequestListTile extends StatelessWidget {
       leadingIcon: _statusIcon(item.status),
       title: _issueLabel(l10n, item),
       subtitle: _joinDisplay(<String>[
-        item.effectiveDisplayId,
         _locationLabel(l10n, item),
         _priorityLabel(l10n, item.metadata.priority),
       ]),
       trailing: _OperationStatusBadge(status: item.status),
       details: <Widget>[
+        AppCopyableIdentifier(
+          value: item.effectiveDisplayId,
+          textStyle: Theme.of(context).textTheme.bodySmall,
+        ),
         AppInlineMetaText(
           icon: Icons.next_plan_outlined,
           label: _nextActionLabel(l10n, item),
@@ -764,6 +832,48 @@ class _TwoLineCell extends StatelessWidget {
       title: title,
       subtitle: subtitle,
       titleStyle: Theme.of(context).textTheme.bodyMedium,
+    );
+  }
+}
+
+class _CopyableSubtitleCell extends StatelessWidget {
+  const _CopyableSubtitleCell({
+    required this.title,
+    required this.identifier,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? identifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium,
+        ),
+        AppCopyableIdentifier(
+          value: identifier,
+          textStyle: theme.textTheme.bodySmall,
+        ),
+        if ((subtitle ?? '').trim().isNotEmpty)
+          Text(
+            subtitle!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1295,6 +1405,15 @@ class _NoteFormState extends State<_NoteForm> {
   }
 }
 
+OperationsWorkspaceState? _operationsStateFromAsync(
+  AsyncValue<Result<OperationsWorkspaceState>> asyncState,
+) {
+  return switch (asyncState.asData?.value) {
+    ResultSuccess<OperationsWorkspaceState>(value: final value) => value,
+    _ => null,
+  };
+}
+
 Future<void> _showOperationsReportDialog(
   BuildContext context,
   OperationsWorkspaceState state,
@@ -1395,9 +1514,9 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
             _issueLabel(l10n, right),
           ),
       cellBuilder: (BuildContext context, OperationsWorkItem item) {
-        return _TwoLineCell(
+        return _CopyableSubtitleCell(
           title: _issueLabel(l10n, item),
-          subtitle: item.effectiveDisplayId,
+          identifier: item.effectiveDisplayId,
         );
       },
     ),
@@ -1409,10 +1528,15 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
             _categoryLabel(l10n, right.metadata.category),
           ),
       cellBuilder: (BuildContext context, OperationsWorkItem item) {
-        return _TwoLineCell(
-          title: _categoryLabel(l10n, item.metadata.category),
-          subtitle: _display(item.assetLabel, item.assetId ?? ''),
-        );
+        final String category = _categoryLabel(l10n, item.metadata.category);
+        if (_hasValue(item.assetId)) {
+          return _CopyableSubtitleCell(
+            title: category,
+            subtitle: item.assetLabel,
+            identifier: item.assetId,
+          );
+        }
+        return _TwoLineCell(title: category, subtitle: item.assetLabel);
       },
     ),
     AppListTableColumn<OperationsWorkItem>(

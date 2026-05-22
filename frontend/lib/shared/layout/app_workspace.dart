@@ -330,7 +330,7 @@ class AppWorkspaceTitleIcon extends StatelessWidget {
 class AppWorkspaceSummaryGrid extends StatelessWidget {
   const AppWorkspaceSummaryGrid({
     required this.children,
-    this.maxColumns = 4,
+    this.maxColumns = 6,
     this.compact = false,
     this.compactItemWidth = 218,
     super.key,
@@ -2717,8 +2717,10 @@ int _compactSummaryColumnCount(double width, int childCount, int maxColumns) {
   }
 
   final int breakpointColumns = switch (width) {
-    >= 920 => 4,
-    >= 700 => 3,
+    >= 1200 => 6,
+    >= 1040 => 5,
+    >= 860 => 4,
+    >= 640 => 3,
     >= 480 => 2,
     _ => 1,
   };

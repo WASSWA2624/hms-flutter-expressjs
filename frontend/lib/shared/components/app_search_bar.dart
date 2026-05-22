@@ -614,7 +614,7 @@ class _AttachedFilterButton extends StatelessWidget {
               onPressed: enabled ? onPressed : null,
               color: foreground,
               icon: Icon(
-                active ? Icons.filter_alt : Icons.tune,
+                active ? Icons.filter_alt : Icons.filter_alt_outlined,
                 size: theme.appTokens.listIconSize,
               ),
             ),
@@ -708,7 +708,7 @@ class _AppSearchBarFiltersDialogState
 
     return AppDialog(
       title: Text(widget.title),
-      icon: const Icon(Icons.tune),
+      icon: const Icon(Icons.filter_alt_outlined),
       scrollable: true,
       maxWidth: 760,
       content: AppFieldRequirementScope(

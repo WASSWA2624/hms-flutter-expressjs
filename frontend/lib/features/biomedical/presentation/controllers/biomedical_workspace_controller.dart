@@ -315,9 +315,6 @@ final class BiomedicalWorkspaceController
           BiomedicalWorkspaceState(
             workbench: workbench,
             query: query,
-            selectedAsset: workbench.assets.items.isEmpty
-                ? null
-                : workbench.assets.items.first,
           ),
         );
       },
@@ -462,11 +459,8 @@ final class BiomedicalWorkspaceController
     AppPage<BiomedicalAsset> page,
     BiomedicalAsset? selected,
   ) {
-    if (page.items.isEmpty) {
+    if (page.items.isEmpty || selected == null) {
       return null;
-    }
-    if (selected == null) {
-      return page.items.first;
     }
     for (final BiomedicalAsset asset in page.items) {
       if (_isSameAsset(asset, selected)) {

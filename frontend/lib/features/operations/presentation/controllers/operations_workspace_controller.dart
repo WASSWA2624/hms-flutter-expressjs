@@ -305,18 +305,12 @@ final class OperationsWorkspaceController
           },
         );
 
-        final OperationsWorkItem? selectedItem = workItems.items.firstOrNull;
-        final AppPage<OperationsServiceLog> serviceLogs = selectedItem == null
-            ? _emptyServiceLogs()
-            : await _serviceLogsFor(selectedItem);
-
         return Result<OperationsWorkspaceState>.success(
           OperationsWorkspaceState(
             query: query,
             workItems: workItems,
             assets: assets,
-            serviceLogs: serviceLogs,
-            selectedItem: selectedItem,
+            serviceLogs: _emptyServiceLogs(),
             lastFailure: nonBlockingFailure,
           ),
         );
@@ -365,10 +359,6 @@ final class OperationsWorkspaceController
         return failure;
       }
 
-      final OperationsWorkItem? selected = _currentState?.selectedItem;
-      if (selected != null) {
-        await selectItem(selected);
-      }
       return null;
     } finally {
       final OperationsWorkspaceState? latest = _currentState;
@@ -495,7 +485,7 @@ final class OperationsWorkspaceController
     OperationsWorkItem? selected,
   ) {
     if (selected == null) {
-      return page.items.firstOrNull;
+      return null;
     }
     for (final OperationsWorkItem item in page.items) {
       if (_isSameWorkItem(item, selected)) {

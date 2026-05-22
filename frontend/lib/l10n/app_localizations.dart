@@ -160,10 +160,10 @@ abstract class AppLocalizations {
   /// **'ICU stay'**
   String get icuStayDialogTitle;
 
-  /// Label for actions that navigate back to the home route.
+  /// Label for actions that navigate back to the dashboard route.
   ///
   /// In en, this message translates to:
-  /// **'Go home'**
+  /// **'Go to dashboard'**
   String get commonGoHomeActionLabel;
 
   /// Label for actions that dismiss the current dialog or flow.
@@ -340,10 +340,10 @@ abstract class AppLocalizations {
   /// **'Signed in'**
   String get appUserMenuSignedInLabel;
 
-  /// Navigation label for the home destination.
+  /// Navigation label for the dashboard destination.
   ///
   /// In en, this message translates to:
-  /// **'Home'**
+  /// **'Dashboard'**
   String get navigationHomeLabel;
 
   /// Navigation label for the settings destination.
@@ -4303,7 +4303,7 @@ abstract class AppLocalizations {
   /// Title shown while the home feature controller loads readiness state.
   ///
   /// In en, this message translates to:
-  /// **'Preparing home'**
+  /// **'Preparing dashboard'**
   String get homeLoadingTitle;
 
   /// Body shown while the home feature controller loads readiness state.
@@ -4315,7 +4315,7 @@ abstract class AppLocalizations {
   /// Title shown when the home feature controller fails.
   ///
   /// In en, this message translates to:
-  /// **'Home could not load'**
+  /// **'Dashboard could not load'**
   String get homeLoadErrorTitle;
 
   /// Body shown when the home feature controller fails.

@@ -37,7 +37,6 @@ final class HousekeepingWorkspaceController
             query: query,
             overview: load.overview,
             items: load.items,
-            selectedItem: load.items.items.firstOrNull,
           ),
         );
       },
@@ -381,7 +380,7 @@ final class HousekeepingWorkspaceController
         }
       }
     }
-    return items.firstOrNull;
+    return null;
   }
 
   HousekeepingWorkspaceState? get _currentState {

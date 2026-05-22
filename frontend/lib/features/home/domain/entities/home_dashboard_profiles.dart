@@ -979,7 +979,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     id: 'other',
     role: AppRole.other,
     roleLabel: 'Limited account',
-    homeTitle: 'Account home',
+    homeTitle: 'Account dashboard',
     homeSubtitle: 'Access the areas assigned to your account.',
     emptyMessage:
         'Your account has limited access. Contact an administrator if you need more modules.',

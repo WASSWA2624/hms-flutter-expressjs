@@ -42,7 +42,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icuStayDialogTitle => 'ICU stay';
 
   @override
-  String get commonGoHomeActionLabel => 'Go home';
+  String get commonGoHomeActionLabel => 'Go to dashboard';
 
   @override
   String get commonCancelActionLabel => 'Cancel';
@@ -141,7 +141,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appUserMenuSignedInLabel => 'Signed in';
 
   @override
-  String get navigationHomeLabel => 'Home';
+  String get navigationHomeLabel => 'Dashboard';
 
   @override
   String get navigationSettingsLabel => 'Settings';
@@ -2230,13 +2230,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Coordinate wards, beds, departments, equipment, housekeeping, maintenance, and staff rosters.';
 
   @override
-  String get homeLoadingTitle => 'Preparing home';
+  String get homeLoadingTitle => 'Preparing dashboard';
 
   @override
   String get homeLoadingBody => 'Loading readiness.';
 
   @override
-  String get homeLoadErrorTitle => 'Home could not load';
+  String get homeLoadErrorTitle => 'Dashboard could not load';
 
   @override
   String get homeLoadErrorBody => 'Try the request again.';

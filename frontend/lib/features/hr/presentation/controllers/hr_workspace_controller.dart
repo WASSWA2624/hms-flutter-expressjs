@@ -440,9 +440,6 @@ final class HrWorkspaceController
     final AppPage<HrWorkItem> workItems = await _loadWorkItemsOrEmpty(
       workItemsQuery,
     );
-    final HrStaffDetail? selectedStaff = staff.items.isEmpty
-        ? null
-        : await _loadDetailOrNull(staff.items.first);
 
     return Result<HrWorkspaceState>.success(
       HrWorkspaceState(
@@ -452,7 +449,6 @@ final class HrWorkspaceController
         workItemsQuery: workItemsQuery,
         workItems: workItems,
         referenceData: referenceData,
-        selectedStaff: selectedStaff,
       ),
     );
   }
@@ -479,7 +475,6 @@ final class HrWorkspaceController
           isRefreshing: true,
           isRefreshingStaff: true,
           isRefreshingWorkItems: true,
-          isRefreshingDetail: current.selectedStaff != null,
           clearLastFailure: true,
         ),
       );
@@ -496,11 +491,6 @@ final class HrWorkspaceController
       AppFailure? referencesFailure;
       if (refreshReferences) {
         referencesFailure = await _refreshReferences();
-      }
-
-      final HrStaffDetail? selected = _currentState?.selectedStaff;
-      if (selected != null) {
-        await _refreshSelectedDetail(selected.profile);
       }
 
       return overviewFailure ??
@@ -778,16 +768,6 @@ final class HrWorkspaceController
         request: query.pageRequest,
         totalItemCount: 0,
       ),
-    );
-  }
-
-  Future<HrStaffDetail?> _loadDetailOrNull(HrStaffProfile profile) async {
-    final Result<HrStaffDetail> result = await _repository.loadStaffDetail(
-      profile,
-    );
-    return result.when(
-      success: (HrStaffDetail detail) => detail,
-      failure: (_) => null,
     );
   }
 

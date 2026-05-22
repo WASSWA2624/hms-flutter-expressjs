@@ -139,7 +139,6 @@ abstract final class AppRoutes {
       AppPermissions.tenantAdmin,
       AppPermissions.systemAdmin,
     ],
-    requiredActiveModules: <String>['subscription-controls'],
   );
   static const AppRouteData opd = AppRouteData(
     name: 'opd',

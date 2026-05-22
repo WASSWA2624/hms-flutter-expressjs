@@ -225,14 +225,11 @@ class _BiomedicalWorkspaceContentState
       ],
       body: _BiomedicalWorklistPanel(
         state: state,
-        canWrite: canWrite,
         searchController: _searchController,
         columnVisibilityController: _tableColumnController,
-      ),
-      detail: _BiomedicalDetailPanel(
-        state: state,
-        canWrite: canWrite,
-        canPrint: canPrint,
+        onAssetSelected: (BiomedicalAsset asset) {
+          unawaited(_openAssetDetailDialog(context, asset, canWrite, canPrint));
+        },
       ),
     );
   }
@@ -270,21 +267,53 @@ class _BiomedicalWorkspaceContentState
       }
     }
   }
+
+  Future<void> _openAssetDetailDialog(
+    BuildContext context,
+    BiomedicalAsset asset,
+    bool canWrite,
+    bool canPrint,
+  ) async {
+    ref.read(biomedicalWorkspaceControllerProvider.notifier).selectAsset(asset);
+    await showAppDialog<void>(
+      context: context,
+      builder: (_) => Consumer(
+        builder: (BuildContext dialogContext, WidgetRef dialogRef, _) {
+          final BiomedicalWorkspaceState dialogState =
+              _biomedicalStateFromAsync(
+                dialogRef.watch(biomedicalWorkspaceControllerProvider),
+              ) ??
+              widget.state;
+          return AppDialog(
+            title: Text(dialogContext.l10n.biomedicalDetailTitle),
+            icon: const Icon(Icons.biotech_outlined),
+            scrollable: true,
+            maxWidth: 980,
+            content: _BiomedicalDetailPanel(
+              state: dialogState,
+              canWrite: canWrite,
+              canPrint: canPrint,
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _BiomedicalWorklistPanel extends ConsumerWidget {
   const _BiomedicalWorklistPanel({
     required this.state,
-    required this.canWrite,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.onAssetSelected,
   });
 
   final BiomedicalWorkspaceState state;
-  final bool canWrite;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<BiomedicalAsset>
   columnVisibilityController;
+  final ValueChanged<BiomedicalAsset> onAssetSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -363,17 +392,6 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
               ),
             );
           },
-          trailingActions: <AppSearchBarAction>[
-            AppSearchBarAction(
-              icon: Icons.filter_alt_off_outlined,
-              label: l10n.opdClearFiltersAction,
-              tooltip: l10n.opdClearFiltersAction,
-              active: state.query.hasActiveFilters,
-              onPressed: () {
-                unawaited(controller.clearFilters());
-              },
-            ),
-          ],
         ),
         previousPageLabel: l10n.biomedicalPreviousPageLabel,
         nextPageLabel: l10n.biomedicalNextPageLabel,
@@ -385,7 +403,7 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
           );
         },
         onPageChanged: controller.changePage,
-        onRowSelected: controller.selectAsset,
+        onRowSelected: onAssetSelected,
         itemKeyBuilder: (BiomedicalAsset item) =>
             ValueKey<String>('${item.resource}:${item.displayId}'),
         emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
@@ -403,7 +421,7 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
             sortComparator: (BiomedicalAsset left, BiomedicalAsset right) =>
                 appListTableCompareText(left.displayId, right.displayId),
             cellBuilder: (_, BiomedicalAsset item) {
-              return Text(item.displayId);
+              return AppCopyableIdentifier(value: item.displayId);
             },
           ),
           AppListTableColumn<BiomedicalAsset>(
@@ -526,6 +544,7 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
                 AppWorkspacePatientContextField(
                   label: l10n.biomedicalAssetTagLabel,
                   value: asset.displayId,
+                  copyable: true,
                 ),
                 AppWorkspacePatientContextField(
                   label: l10n.biomedicalFacilityLabel,
@@ -559,6 +578,7 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
                       label: l10n.biomedicalAssetTagLabel,
                       value: asset.displayId,
                       icon: Icons.tag_outlined,
+                      copyable: true,
                     ),
                     AppInfoTileData(
                       label: l10n.biomedicalEquipmentLabel,
@@ -574,6 +594,7 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
                       label: l10n.biomedicalTargetPathLabel,
                       value: asset.targetPath,
                       icon: Icons.link_outlined,
+                      copyable: true,
                     ),
                   ],
                 ),
@@ -1113,6 +1134,15 @@ enum _BiomedicalActionKind {
   disposal,
   fault,
   report,
+}
+
+BiomedicalWorkspaceState? _biomedicalStateFromAsync(
+  AsyncValue<Result<BiomedicalWorkspaceState>> asyncState,
+) {
+  return switch (asyncState.asData?.value) {
+    ResultSuccess<BiomedicalWorkspaceState>(value: final value) => value,
+    _ => null,
+  };
 }
 
 Future<void> _openActionDialog(

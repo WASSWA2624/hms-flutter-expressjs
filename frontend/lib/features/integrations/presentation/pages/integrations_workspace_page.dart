@@ -278,8 +278,57 @@ class _IntegrationsWorkspaceContentState
         state: state,
         searchController: _searchController,
         columnVisibilityController: _tableColumnController,
+        onItemSelected: (IntegrationWorkItem item) {
+          unawaited(_openIntegrationDetailDialog(context, item, canManage));
+        },
       ),
-      detail: _IntegrationDetailPanel(state: state, canManage: canManage),
+    );
+  }
+
+  Future<void> _openIntegrationDetailDialog(
+    BuildContext context,
+    IntegrationWorkItem item,
+    bool canManage,
+  ) async {
+    final IntegrationsWorkspaceController controller = ref.read(
+      integrationsWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.selectItem(item);
+    if (failure != null || !context.mounted) {
+      if (context.mounted) {
+        _showFailureIfNeeded(context, failure ?? const AppFailure.unexpected());
+      }
+      return;
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(_detailTitle(context, item)),
+        icon: Icon(_kindIcon(item.kind)),
+        scrollable: true,
+        maxWidth: 980,
+        content: Consumer(
+          builder: (BuildContext context, WidgetRef dialogRef, _) {
+            final IntegrationWorkspaceState dialogState =
+                _integrationStateFromAsync(
+                  dialogRef.watch(integrationsWorkspaceControllerProvider),
+                ) ??
+                widget.state;
+            return _IntegrationDetailPanel(
+              state: dialogState,
+              canManage: canManage,
+            );
+          },
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(dialogContext).maybePop(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -299,12 +348,14 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.onItemSelected,
   });
 
   final IntegrationWorkspaceState state;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<IntegrationWorkItem>
   columnVisibilityController;
+  final ValueChanged<IntegrationWorkItem> onItemSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -316,165 +367,160 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.integrationsWorklistTitle,
       description: l10n.integrationsWorklistDescription,
-      child: SizedBox(
-        height: 560,
-        child: AppListTable<IntegrationWorkItem>(
-          page: state.workItemsPage,
-          isLoading: state.isRefreshing,
-          columnVisibilityController: columnVisibilityController,
-          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          search: AppListTableSearch<IntegrationWorkItem>(
-            controller: searchController,
-            semanticLabel: l10n.integrationsSearchLabel,
-            hintText: l10n.integrationsSearchHint,
-            matcher: (_, _) => true,
-            onSubmitted: (String value) async {
-              final AppFailure? failure = await controller.applySearch(value);
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-            onClear: () async {
-              final AppFailure? failure = await controller.applySearch('');
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-            showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.integrationsFiltersLabel,
-            advancedFilterTitle: l10n.integrationsFiltersLabel,
-            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-            advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            advancedFilterCancelLabel: l10n.commonCancelActionLabel,
-            enableDateFilter: false,
-            allFieldsLabel: l10n.integrationsFilterAll,
-            filterGroups: <AppSearchBarFilterGroup>[
-              AppSearchBarFilterGroup(
-                key: _integrationFilterKey,
-                label: l10n.integrationsFilterGroupLabel,
-                allLabel: l10n.integrationsFilterAll,
-                choices: _filterChoices(l10n),
-              ),
-            ],
-            filterValue: _filterValue(state.query),
-            hasActiveFilters:
-                state.query.filter != IntegrationWorkspaceFilter.all,
-            onFilterChanged: (AppSearchBarFilterValue value) async {
-              final AppFailure? failure = await controller.applyFilter(
-                _filterFromValue(value.option(_integrationFilterKey)),
-              );
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-          ),
-          previousPageLabel: l10n.integrationsPreviousPageLabel,
-          nextPageLabel: l10n.integrationsNextPageLabel,
-          pageLabelBuilder: (AppPage<IntegrationWorkItem> page) {
-            return l10n.integrationsPageLabel(
-              page.firstItemNumber,
-              page.lastItemNumber,
-              page.totalItemCount ?? page.items.length,
-            );
+      child: AppListTable<IntegrationWorkItem>(
+        page: state.workItemsPage,
+        isLoading: state.isRefreshing,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<IntegrationWorkItem>(
+          controller: searchController,
+          semanticLabel: l10n.integrationsSearchLabel,
+          hintText: l10n.integrationsSearchHint,
+          matcher: (_, _) => true,
+          onSubmitted: (String value) async {
+            final AppFailure? failure = await controller.applySearch(value);
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
-          onPageChanged: (AppPageRequest request) {
-            unawaited(controller.changePage(request));
+          onClear: () async {
+            final AppFailure? failure = await controller.applySearch('');
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
-          onRowSelected: (IntegrationWorkItem item) {
-            unawaited(controller.selectItem(item));
-          },
-          emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-            title: l10n.integrationsEmptyTitle,
-            body: l10n.integrationsEmptyBody,
-            icon: Icons.hub_outlined,
-          ),
-          columns: <AppListTableColumn<IntegrationWorkItem>>[
-            AppListTableColumn<IntegrationWorkItem>(
-              label: l10n.integrationsTypeColumnLabel,
-              sortComparator:
-                  (IntegrationWorkItem left, IntegrationWorkItem right) {
-                    return appListTableCompareText(
-                      _kindLabel(l10n, left.kind),
-                      _kindLabel(l10n, right.kind),
-                    );
-                  },
-              cellBuilder: (BuildContext context, IntegrationWorkItem item) {
-                return Text(_kindLabel(context.l10n, item.kind));
-              },
-            ),
-            AppListTableColumn<IntegrationWorkItem>(
-              label: l10n.integrationsNameColumnLabel,
-              sortComparator:
-                  (IntegrationWorkItem left, IntegrationWorkItem right) {
-                    return appListTableCompareText(left.title, right.title);
-                  },
-              cellBuilder: (BuildContext context, IntegrationWorkItem item) {
-                return Text(item.title);
-              },
-            ),
-            AppListTableColumn<IntegrationWorkItem>(
-              label: l10n.integrationsStatusColumnLabel,
-              sortComparator:
-                  (IntegrationWorkItem left, IntegrationWorkItem right) {
-                    return appListTableCompareText(left.status, right.status);
-                  },
-              cellBuilder: (BuildContext context, IntegrationWorkItem item) {
-                return AppWorkspaceStatusBadge(
-                  status: _statusFor(context, item),
-                );
-              },
-            ),
-            AppListTableColumn<IntegrationWorkItem>(
-              label: l10n.integrationsOwnerColumnLabel,
-              sortComparator:
-                  (IntegrationWorkItem left, IntegrationWorkItem right) {
-                    return appListTableCompareText(left.owner, right.owner);
-                  },
-              cellBuilder: (BuildContext context, IntegrationWorkItem item) {
-                return Text(_fallback(context, item.owner));
-              },
-            ),
-            AppListTableColumn<IntegrationWorkItem>(
-              label: l10n.integrationsScopeColumnLabel,
-              sortComparator:
-                  (IntegrationWorkItem left, IntegrationWorkItem right) {
-                    return appListTableCompareText(left.scope, right.scope);
-                  },
-              cellBuilder: (BuildContext context, IntegrationWorkItem item) {
-                return Text(_scopeLabel(context, item.scope));
-              },
-            ),
-            AppListTableColumn<IntegrationWorkItem>(
-              label: l10n.integrationsLastEventColumnLabel,
-              sortComparator:
-                  (IntegrationWorkItem left, IntegrationWorkItem right) {
-                    return appListTableCompareDateTime(
-                      left.lastEventAt,
-                      right.lastEventAt,
-                    );
-                  },
-              cellBuilder: (BuildContext context, IntegrationWorkItem item) {
-                return Text(_dateTimeLabel(context, item.lastEventAt));
-              },
-            ),
-            AppListTableColumn<IntegrationWorkItem>(
-              label: l10n.integrationsNextActionColumnLabel,
-              sortComparator:
-                  (IntegrationWorkItem left, IntegrationWorkItem right) {
-                    return appListTableCompareText(
-                      left.nextAction,
-                      right.nextAction,
-                    );
-                  },
-              cellBuilder: (BuildContext context, IntegrationWorkItem item) {
-                return Text(_nextActionLabel(context, item.nextAction));
-              },
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.integrationsFiltersLabel,
+          advancedFilterTitle: l10n.integrationsFiltersLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          advancedFilterCancelLabel: l10n.commonCancelActionLabel,
+          enableDateFilter: false,
+          allFieldsLabel: l10n.integrationsFilterAll,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _integrationFilterKey,
+              label: l10n.integrationsFilterGroupLabel,
+              allLabel: l10n.integrationsFilterAll,
+              choices: _filterChoices(l10n),
             ),
           ],
-          mobileItemBuilder: (BuildContext context, IntegrationWorkItem item) {
-            return _MobileIntegrationItem(item: item);
+          filterValue: _filterValue(state.query),
+          hasActiveFilters:
+              state.query.filter != IntegrationWorkspaceFilter.all,
+          onFilterChanged: (AppSearchBarFilterValue value) async {
+            final AppFailure? failure = await controller.applyFilter(
+              _filterFromValue(value.option(_integrationFilterKey)),
+            );
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
         ),
+        previousPageLabel: l10n.integrationsPreviousPageLabel,
+        nextPageLabel: l10n.integrationsNextPageLabel,
+        pageLabelBuilder: (AppPage<IntegrationWorkItem> page) {
+          return l10n.integrationsPageLabel(
+            page.firstItemNumber,
+            page.lastItemNumber,
+            page.totalItemCount ?? page.items.length,
+          );
+        },
+        onPageChanged: (AppPageRequest request) {
+          unawaited(controller.changePage(request));
+        },
+        onRowSelected: onItemSelected,
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.integrationsEmptyTitle,
+          body: l10n.integrationsEmptyBody,
+          icon: Icons.hub_outlined,
+        ),
+        columns: <AppListTableColumn<IntegrationWorkItem>>[
+          AppListTableColumn<IntegrationWorkItem>(
+            label: l10n.integrationsTypeColumnLabel,
+            sortComparator:
+                (IntegrationWorkItem left, IntegrationWorkItem right) {
+                  return appListTableCompareText(
+                    _kindLabel(l10n, left.kind),
+                    _kindLabel(l10n, right.kind),
+                  );
+                },
+            cellBuilder: (BuildContext context, IntegrationWorkItem item) {
+              return Text(_kindLabel(context.l10n, item.kind));
+            },
+          ),
+          AppListTableColumn<IntegrationWorkItem>(
+            label: l10n.integrationsNameColumnLabel,
+            sortComparator:
+                (IntegrationWorkItem left, IntegrationWorkItem right) {
+                  return appListTableCompareText(left.title, right.title);
+                },
+            cellBuilder: (BuildContext context, IntegrationWorkItem item) {
+              return Text(item.title);
+            },
+          ),
+          AppListTableColumn<IntegrationWorkItem>(
+            label: l10n.integrationsStatusColumnLabel,
+            sortComparator:
+                (IntegrationWorkItem left, IntegrationWorkItem right) {
+                  return appListTableCompareText(left.status, right.status);
+                },
+            cellBuilder: (BuildContext context, IntegrationWorkItem item) {
+              return AppWorkspaceStatusBadge(status: _statusFor(context, item));
+            },
+          ),
+          AppListTableColumn<IntegrationWorkItem>(
+            label: l10n.integrationsOwnerColumnLabel,
+            sortComparator:
+                (IntegrationWorkItem left, IntegrationWorkItem right) {
+                  return appListTableCompareText(left.owner, right.owner);
+                },
+            cellBuilder: (BuildContext context, IntegrationWorkItem item) {
+              return Text(_fallback(context, item.owner));
+            },
+          ),
+          AppListTableColumn<IntegrationWorkItem>(
+            label: l10n.integrationsScopeColumnLabel,
+            sortComparator:
+                (IntegrationWorkItem left, IntegrationWorkItem right) {
+                  return appListTableCompareText(left.scope, right.scope);
+                },
+            cellBuilder: (BuildContext context, IntegrationWorkItem item) {
+              return Text(_scopeLabel(context, item.scope));
+            },
+          ),
+          AppListTableColumn<IntegrationWorkItem>(
+            label: l10n.integrationsLastEventColumnLabel,
+            sortComparator:
+                (IntegrationWorkItem left, IntegrationWorkItem right) {
+                  return appListTableCompareDateTime(
+                    left.lastEventAt,
+                    right.lastEventAt,
+                  );
+                },
+            cellBuilder: (BuildContext context, IntegrationWorkItem item) {
+              return Text(_dateTimeLabel(context, item.lastEventAt));
+            },
+          ),
+          AppListTableColumn<IntegrationWorkItem>(
+            label: l10n.integrationsNextActionColumnLabel,
+            sortComparator:
+                (IntegrationWorkItem left, IntegrationWorkItem right) {
+                  return appListTableCompareText(
+                    left.nextAction,
+                    right.nextAction,
+                  );
+                },
+            cellBuilder: (BuildContext context, IntegrationWorkItem item) {
+              return Text(_nextActionLabel(context, item.nextAction));
+            },
+          ),
+        ],
+        mobileItemBuilder: (BuildContext context, IntegrationWorkItem item) {
+          return _MobileIntegrationItem(item: item);
+        },
       ),
     );
   }
@@ -731,6 +777,7 @@ Widget _detailBody(
           label: l10n.integrationsReferenceLabel,
           value: item.displayId ?? item.id,
           icon: Icons.tag_outlined,
+          copyable: true,
         ),
         AppInfoTileData(
           label: l10n.integrationsStatusColumnLabel,
@@ -812,6 +859,7 @@ Widget _detailBody(
                 label: l10n.integrationsIntegrationLabel,
                 value: webhook.integrationLabel ?? webhook.integrationDisplayId,
                 icon: Icons.hub_outlined,
+                copyable: webhook.integrationDisplayId != null,
               ),
             ],
           ),
@@ -2257,6 +2305,15 @@ void _showResult(BuildContext context, Result<IntegrationActionResult> result) {
     failure: (AppFailure failure) {
       _showFailureIfNeeded(context, failure);
     },
+  );
+}
+
+IntegrationWorkspaceState? _integrationStateFromAsync(
+  AsyncValue<Result<IntegrationWorkspaceState>> asyncState,
+) {
+  return asyncState.asData?.value.when(
+    success: (IntegrationWorkspaceState state) => state,
+    failure: (_) => null,
   );
 }
 

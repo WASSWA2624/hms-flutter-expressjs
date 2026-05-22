@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
@@ -134,13 +136,53 @@ class _SubscriptionsWorkspaceContentState
           SizedBox(height: Theme.of(context).spacing.md),
           _SubscriptionsWorklistPanel(
             state: state,
-            canWrite: canWrite,
             searchController: _searchController,
             columnVisibilityController: _tableColumnController,
+            onItemSelected: (SubscriptionItem item) {
+              unawaited(_openSubscriptionDetailDialog(context, item, canWrite));
+            },
           ),
         ],
       ),
-      detail: _SubscriptionDetailPanel(state: state, canWrite: canWrite),
+    );
+  }
+
+  Future<void> _openSubscriptionDetailDialog(
+    BuildContext context,
+    SubscriptionItem item,
+    bool canWrite,
+  ) async {
+    ref
+        .read(subscriptionsWorkspaceControllerProvider.notifier)
+        .selectItem(item);
+    final l10n = context.l10n;
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: const Text(_SubscriptionsText.detailTitle),
+        icon: Icon(_resourceIcon(item.resource)),
+        scrollable: true,
+        maxWidth: 980,
+        content: Consumer(
+          builder: (BuildContext context, WidgetRef dialogRef, _) {
+            final SubscriptionsWorkspaceState dialogState =
+                _subscriptionsStateFromAsync(
+                  dialogRef.watch(subscriptionsWorkspaceControllerProvider),
+                ) ??
+                widget.state;
+            return _SubscriptionDetailPanel(
+              state: dialogState,
+              canWrite: canWrite,
+            );
+          },
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: l10n.commonCloseActionLabel,
+            onPressed: () => Navigator.of(dialogContext).maybePop(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -445,16 +487,16 @@ class _RecommendationList extends StatelessWidget {
 class _SubscriptionsWorklistPanel extends ConsumerWidget {
   const _SubscriptionsWorklistPanel({
     required this.state,
-    required this.canWrite,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.onItemSelected,
   });
 
   final SubscriptionsWorkspaceState state;
-  final bool canWrite;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<SubscriptionItem>
   columnVisibilityController;
+  final ValueChanged<SubscriptionItem> onItemSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -519,21 +561,10 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
               ),
             );
           },
-          trailingActions: <AppSearchBarAction>[
-            AppSearchBarAction(
-              icon: Icons.filter_alt_off_outlined,
-              label: _SubscriptionsText.clearFilters,
-              enabled: state.query.hasActiveFilters,
-              active: state.query.hasActiveFilters,
-              onPressed: state.query.hasActiveFilters
-                  ? controller.resetFilters
-                  : null,
-            ),
-          ],
         ),
         itemKeyBuilder: (SubscriptionItem item) =>
             ValueKey<String>('${item.resource.serverValue}:${item.id}'),
-        onRowSelected: controller.selectItem,
+        onRowSelected: onItemSelected,
         previousPageLabel: _SubscriptionsText.previousPage,
         nextPageLabel: _SubscriptionsText.nextPage,
         pageLabelBuilder: (AppPage<SubscriptionItem> page) {
@@ -559,12 +590,10 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
               return appListTableCompareText(left.title, right.title);
             },
             cellBuilder: (BuildContext context, SubscriptionItem item) {
-              return _TwoLineCell(
+              return _CopyableRecordCell(
                 title: item.title,
-                subtitle: _joinDisplay(<String?>[
-                  item.subtitle,
-                  item.effectiveDisplayId,
-                ]),
+                subtitle: item.subtitle,
+                identifier: item.effectiveDisplayId,
               );
             },
           ),
@@ -693,13 +722,13 @@ class _DetailHeader extends StatelessWidget {
           Icon(_resourceIcon(item.resource), size: 28),
           SizedBox(width: Theme.of(context).spacing.sm),
           Expanded(
-            child: _TwoLineCell(
+            child: _CopyableRecordCell(
               title: item.title,
               subtitle: _joinDisplay(<String?>[
                 _resourceLabel(item.resource),
-                item.effectiveDisplayId,
                 item.subtitle,
               ]),
+              identifier: item.effectiveDisplayId,
             ),
           ),
           _StatusBadge(status: item.primaryStatus),
@@ -908,17 +937,49 @@ class _SubscriptionMobileTile extends StatelessWidget {
         Icon(_resourceIcon(item.resource), size: 22),
         SizedBox(width: Theme.of(context).spacing.sm),
         Expanded(
-          child: _TwoLineCell(
+          child: _CopyableRecordCell(
             title: item.title,
             subtitle: _joinDisplay(<String?>[
               item.subtitle,
               _planModuleText(item),
               _date(context, _timelineDate(item)),
             ]),
+            identifier: item.effectiveDisplayId,
           ),
         ),
         SizedBox(width: Theme.of(context).spacing.sm),
         _StatusBadge(status: item.primaryStatus),
+      ],
+    );
+  }
+}
+
+class _CopyableRecordCell extends StatelessWidget {
+  const _CopyableRecordCell({
+    required this.title,
+    this.subtitle,
+    this.identifier,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? identifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        _TwoLineCell(title: title, subtitle: subtitle),
+        if ((identifier ?? '').trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          AppCopyableIdentifier(
+            value: identifier,
+            textStyle: theme.textTheme.bodySmall,
+          ),
+        ],
       ],
     );
   }
@@ -1941,6 +2002,15 @@ Future<void> _showRetryInvoiceDialog(
   if (context.mounted) {
     _showMutationResult(context, failure);
   }
+}
+
+SubscriptionsWorkspaceState? _subscriptionsStateFromAsync(
+  AsyncValue<Result<SubscriptionsWorkspaceState>> asyncState,
+) {
+  return asyncState.asData?.value.when(
+    success: (SubscriptionsWorkspaceState state) => state,
+    failure: (_) => null,
+  );
 }
 
 Future<void> _submitAndNotify(

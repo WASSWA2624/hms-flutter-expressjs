@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -167,14 +169,11 @@ class _HousekeepingWorkspaceContentState
             capabilities: capabilities,
             searchController: _searchController,
             columnVisibilityController: _tableColumnController,
+            onItemSelected: (HousekeepingWorkItem item) {
+              unawaited(_openTaskDetailDialog(context, item, capabilities));
+            },
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _UnavailableWorkflowsPanel(workflows: state.unavailableWorkflows),
         ],
-      ),
-      detail: _HousekeepingDetailPanel(
-        state: state,
-        capabilities: capabilities,
       ),
     );
   }
@@ -260,6 +259,36 @@ class _HousekeepingWorkspaceContentState
       ),
     ];
   }
+
+  Future<void> _openTaskDetailDialog(
+    BuildContext context,
+    HousekeepingWorkItem item,
+    _HousekeepingCapabilities capabilities,
+  ) async {
+    ref.read(housekeepingWorkspaceControllerProvider.notifier).selectItem(item);
+    await showAppDialog<void>(
+      context: context,
+      builder: (_) => Consumer(
+        builder: (BuildContext dialogContext, WidgetRef dialogRef, _) {
+          final HousekeepingWorkspaceState dialogState =
+              _housekeepingStateFromAsync(
+                dialogRef.watch(housekeepingWorkspaceControllerProvider),
+              ) ??
+              widget.state;
+          return AppDialog(
+            title: Text(dialogContext.l10n.housekeepingDetailTitle),
+            icon: const Icon(Icons.cleaning_services_outlined),
+            scrollable: true,
+            maxWidth: 980,
+            content: _HousekeepingDetailPanel(
+              state: dialogState,
+              capabilities: capabilities,
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _HousekeepingWorklistPanel extends ConsumerWidget {
@@ -268,6 +297,7 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
     required this.capabilities,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.onItemSelected,
   });
 
   final HousekeepingWorkspaceState state;
@@ -275,6 +305,7 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HousekeepingWorkItem>
   columnVisibilityController;
+  final ValueChanged<HousekeepingWorkItem> onItemSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -329,7 +360,7 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
         ),
         itemKeyBuilder: (HousekeepingWorkItem item) =>
             ValueKey<String>('${item.resource.serverValue}:${item.id}'),
-        onRowSelected: controller.selectItem,
+        onRowSelected: onItemSelected,
         previousPageLabel: l10n.housekeepingPreviousPageLabel,
         nextPageLabel: l10n.housekeepingNextPageLabel,
         pageLabelBuilder: (AppPage<HousekeepingWorkItem> page) {
@@ -356,9 +387,9 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
                   return appListTableCompareText(left.title, right.title);
                 },
             cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
-              return AppListItemText(
+              return _CopyableTaskCell(
                 title: item.title,
-                subtitle: item.effectiveDisplayId,
+                identifier: item.effectiveDisplayId,
               );
             },
           ),
@@ -421,13 +452,14 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
         mobileItemBuilder: (BuildContext context, HousekeepingWorkItem item) {
           return AppListItemRow(
             title: item.title,
-            subtitle: _joinDisplay(<String?>[
-              item.effectiveDisplayId,
-              _locationLabel(l10n, item),
-            ]),
+            subtitle: _locationLabel(l10n, item),
             leadingIcon: _resourceIcon(item.resource),
             trailing: _HousekeepingStatusBadge(item: item),
             details: <Widget>[
+              AppCopyableIdentifier(
+                value: item.effectiveDisplayId,
+                textStyle: Theme.of(context).textTheme.bodySmall,
+              ),
               AppInlineMetaText(
                 icon: Icons.person_outline,
                 label: item.assigneeLabel ?? l10n.housekeepingUnassigned,
@@ -482,6 +514,7 @@ class _HousekeepingDetailPanel extends ConsumerWidget {
                 label: l10n.housekeepingReferenceLabel,
                 value: item.effectiveDisplayId,
                 icon: Icons.tag_outlined,
+                copyable: true,
               ),
               AppInfoTileData(
                 label: l10n.housekeepingLocationLabel,
@@ -701,32 +734,30 @@ class _ReadinessPreview extends StatelessWidget {
   }
 }
 
-class _UnavailableWorkflowsPanel extends StatelessWidget {
-  const _UnavailableWorkflowsPanel({required this.workflows});
+class _CopyableTaskCell extends StatelessWidget {
+  const _CopyableTaskCell({required this.title, required this.identifier});
 
-  final List<HousekeepingUnavailableWorkflow> workflows;
+  final String title;
+  final String identifier;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    return AppWorkspaceDetailPanel(
-      title: l10n.housekeepingUnavailableWorkflowsTitle,
-      description: l10n.housekeepingUnavailableWorkflowsBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          for (final HousekeepingUnavailableWorkflow gap in workflows) ...<Widget>[
-            AppInfoTile(
-              label: gap.title,
-              value: gap.body,
-              icon: Icons.info_outline,
-              maxLines: 4,
-            ),
-            if (gap != workflows.last) SizedBox(height: theme.spacing.sm),
-          ],
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium,
+        ),
+        AppCopyableIdentifier(
+          value: identifier,
+          textStyle: theme.textTheme.bodySmall,
+        ),
+      ],
     );
   }
 }
@@ -1190,6 +1221,15 @@ class _HousekeepingDateField extends StatelessWidget {
       onChanged: onChanged,
     );
   }
+}
+
+HousekeepingWorkspaceState? _housekeepingStateFromAsync(
+  AsyncValue<Result<HousekeepingWorkspaceState>> asyncState,
+) {
+  return switch (asyncState.asData?.value) {
+    ResultSuccess<HousekeepingWorkspaceState>(value: final value) => value,
+    _ => null,
+  };
 }
 
 Future<void> _showTaskDialog(
@@ -1820,13 +1860,6 @@ bool _isMaintenanceTerminal(HousekeepingWorkItem item) {
 
 String _normalizedStatus(HousekeepingWorkItem item) {
   return (item.status ?? '').trim().toUpperCase();
-}
-
-String _joinDisplay(Iterable<String?> values) {
-  return values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty)
-      .join(' | ');
 }
 
 String? _emptyToNull(String value) {
