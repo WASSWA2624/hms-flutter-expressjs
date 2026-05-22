@@ -11,6 +11,9 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
+import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
+import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -30,6 +33,7 @@ void main() {
     registerFallbackValue(const PatientListQuery());
     registerFallbackValue(const OpdAppointmentQuery());
     registerFallbackValue(const OpdFlowQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   test('Patient Registry depends on shared OPD actions, not the OPD page', () {
@@ -485,6 +489,115 @@ void main() {
     expect(find.text('Manage consultation billing'), findsNothing);
   });
 
+  testWidgets('active admission quick action opens discharge dialog', (
+    WidgetTester tester,
+  ) async {
+    final patientRepository = _MockPatientRepository();
+    final opdRepository = _MockOpdRepository();
+    final ipdRepository = _MockIpdRepository();
+    const patient = Patient(
+      id: 'patient-1',
+      publicId: 'PAT-1001',
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      firstName: 'Amina',
+      lastName: 'Kato',
+      gender: 'FEMALE',
+      primaryPhone: '+256700000000',
+      primaryIdentifierType: 'MRN',
+      primaryIdentifierValue: 'MRN-10024',
+      currentVisit: PatientVisitContext(
+        kind: 'admission',
+        publicId: 'admission-1',
+        status: 'ADMITTED',
+        title: 'Admission',
+      ),
+    );
+    const detail = PatientDetail(
+      patient: patient,
+      workspace: PatientWorkspaceSnapshot(
+        admissions: <PatientSummaryRecord>[
+          PatientSummaryRecord(
+            id: 'admission-1',
+            kind: 'admission',
+            status: 'ADMITTED',
+            title: 'Medical ward',
+            subtitle: 'Bed A2',
+          ),
+        ],
+      ),
+    );
+
+    _stubPatientRegistry(patientRepository, patient, detail: detail);
+    _stubProviderLookup(opdRepository);
+    when(
+      () => ipdRepository.finalizeDischarge('admission-1', any()),
+    ).thenAnswer(
+      (_) async => const Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(
+          summary: IpdAdmissionSummary(
+            id: 'admission-1',
+            stage: 'DISCHARGED',
+            admissionStatus: 'DISCHARGED',
+          ),
+        ),
+      ),
+    );
+
+    await _pumpPatientRegistry(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      ipdRepository: ipdRepository,
+      size: const Size(1100, 960),
+      roles: const <String>['SUPER_ADMIN'],
+    );
+
+    await tester.tap(find.text('Amina Kato').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Complete discharge'), findsOneWidget);
+
+    await tester.tap(find.text('Complete discharge'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discharge'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppTextField && widget.labelText == 'Summary',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'I confirm the patient has exited and documents were handed over.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byType(EditableText).last,
+      'Ready for home care.',
+    );
+    await tester.tap(
+      find.text(
+        'I confirm the patient has exited and documents were handed over.',
+      ),
+    );
+    await tester.tap(find.text('Finalize discharge'));
+    await tester.pumpAndSettle();
+
+    final captured =
+        verify(
+              () =>
+                  ipdRepository.finalizeDischarge('admission-1', captureAny()),
+            ).captured.single
+            as Map<String, Object?>;
+    expect(captured['summary'], 'Ready for home care.');
+    expect(captured['discharged_at'], isA<String>());
+  });
+
   testWidgets('patient report opens configurable paginated print preview', (
     WidgetTester tester,
   ) async {
@@ -640,6 +753,8 @@ final class _MockPatientRepository extends Mock implements PatientRepository {}
 
 final class _MockOpdRepository extends Mock implements OpdRepository {}
 
+final class _MockIpdRepository extends Mock implements IpdRepository {}
+
 void _stubPatientRegistry(
   _MockPatientRepository patientRepository,
   Patient patient, {
@@ -685,6 +800,7 @@ Future<void> _pumpPatientRegistry(
   WidgetTester tester, {
   required PatientRepository patientRepository,
   required OpdRepository opdRepository,
+  IpdRepository? ipdRepository,
   required Size size,
   List<String> roles = const <String>['DOCTOR'],
 }) async {
@@ -707,6 +823,8 @@ Future<void> _pumpPatientRegistry(
         ),
         patientRepositoryProvider.overrideWithValue(patientRepository),
         opdRepositoryProvider.overrideWithValue(opdRepository),
+        if (ipdRepository != null)
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
       ],
       child: MaterialApp(
         theme: AppTheme.light,

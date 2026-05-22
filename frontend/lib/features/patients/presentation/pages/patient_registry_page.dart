@@ -1490,7 +1490,7 @@ class _PatientDetailDialog extends ConsumerWidget {
             const LinearProgressIndicator(),
           _PatientContextHeader(detail: detail),
           const Divider(),
-          _QuickActions(patient: patient),
+          _QuickActions(detail: detail),
           const Divider(),
           AppExpandableRecordSection<PatientIdentifier>(
             title: l10n.patientsIdentifiersSectionTitle,
@@ -1851,16 +1851,18 @@ class _PatientContextHeader extends StatelessWidget {
 }
 
 class _QuickActions extends ConsumerWidget {
-  const _QuickActions({required this.patient});
+  const _QuickActions({required this.detail});
 
-  final Patient patient;
+  final PatientDetail detail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
+    final Patient patient = detail.patient;
     final PatientVisitContext? visit = patient.currentVisit;
     final bool hasActiveOpdEncounter = _isActiveOpdVisit(visit);
+    final bool hasActiveAdmission = _activeAdmissionId(detail) != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1912,6 +1914,21 @@ class _QuickActions extends ConsumerWidget {
                   _PatientQuickAction.opdCheckIn,
                 ),
                 requirement: opdEncounterPermissionRequirement,
+              ),
+            if (hasActiveAdmission)
+              AppPermissionActionItem(
+                label: l10n.dischargeCompleteAction,
+                icon: Icons.logout_outlined,
+                onPressed: () => _openQuickAction(
+                  context,
+                  ref,
+                  patient,
+                  _PatientQuickAction.discharge,
+                ),
+                requirement: const AccessRequirement(
+                  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+                  activeModules: <String>['inpatient-bed-management'],
+                ),
               ),
             AppPermissionActionItem(
               label: l10n.patientsQuickReportAction,
@@ -1973,6 +1990,7 @@ enum _PatientQuickAction {
   triage,
   billing,
   admission,
+  discharge,
   report,
   copyPatientId,
   copyEncounterId,
@@ -2015,6 +2033,9 @@ Future<void> _openQuickAction(
     await _openActiveOpdActions(context, ref, patient);
     return;
   }
+  if (action == _PatientQuickAction.discharge && detail == null) {
+    return;
+  }
 
   final bool? changed = await showAppDialog<bool>(
     context: context,
@@ -2032,6 +2053,9 @@ Future<void> _openQuickAction(
         _PatientQuickAction.admission => _PatientAdmissionQuickDialog(
           patient: patient,
           referenceData: referenceData,
+        ),
+        _PatientQuickAction.discharge => _PatientDischargeQuickDialog(
+          detail: detail!,
         ),
         _PatientQuickAction.report => _PatientReportPrintPreviewDialog(
           detail: detail,
@@ -2107,6 +2131,52 @@ bool _isActiveOpdVisit(PatientVisitContext? visit) {
       !isOpdTerminalStatus(status);
 }
 
+String? _activeAdmissionId(PatientDetail detail) {
+  final PatientSummaryRecord? admission = _activeAdmissionRecord(
+    detail.workspace.admissions,
+  );
+  if (admission != null) {
+    return admission.id.trim();
+  }
+
+  final PatientVisitContext? visit = detail.patient.currentVisit;
+  if (_isActiveAdmissionVisit(visit)) {
+    return visit!.publicId!.trim();
+  }
+  return null;
+}
+
+PatientSummaryRecord? _activeAdmissionRecord(
+  Iterable<PatientSummaryRecord> admissions,
+) {
+  for (final PatientSummaryRecord admission in admissions) {
+    if (admission.id.trim().isNotEmpty &&
+        _isActiveAdmissionStatus(admission.status)) {
+      return admission;
+    }
+  }
+  return null;
+}
+
+bool _isActiveAdmissionVisit(PatientVisitContext? visit) {
+  return visit?.kind == 'admission' &&
+      (visit?.publicId ?? '').trim().isNotEmpty &&
+      _isActiveAdmissionStatus(visit?.status);
+}
+
+bool _isActiveAdmissionStatus(String? status) {
+  return switch ((status ?? '').trim().toUpperCase()) {
+    'ACTIVE' ||
+    'ADMITTED' ||
+    'ADMITTED_PENDING_BED' ||
+    'ADMITTED_IN_BED' ||
+    'TRANSFER_REQUESTED' ||
+    'TRANSFER_IN_PROGRESS' ||
+    'DISCHARGE_PLANNED' => true,
+    _ => false,
+  };
+}
+
 Future<void> _openActiveOpdActions(
   BuildContext context,
   WidgetRef ref,
@@ -2141,6 +2211,132 @@ Future<void> _openActiveOpdActions(
     await ref
         .read(patientRegistryControllerProvider.notifier)
         .selectPatient(patient.id);
+  }
+}
+
+class _PatientDischargeQuickDialog extends ConsumerStatefulWidget {
+  const _PatientDischargeQuickDialog({required this.detail});
+
+  final PatientDetail detail;
+
+  @override
+  ConsumerState<_PatientDischargeQuickDialog> createState() =>
+      _PatientDischargeQuickDialogState();
+}
+
+class _PatientDischargeQuickDialogState
+    extends ConsumerState<_PatientDischargeQuickDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _summaryController = TextEditingController();
+  bool _confirmed = false;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void dispose() {
+    _summaryController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final String? admissionId = _activeAdmissionId(widget.detail);
+    final bool canSubmit = admissionId != null;
+
+    return AppDialog(
+      title: Text(l10n.dischargeCompleteDialogTitle),
+      icon: const Icon(Icons.logout_outlined),
+      scrollable: true,
+      closeEnabled: !_isSaving,
+      maxWidth: 680,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        formStatus: _failure == null
+            ? null
+            : AppFailureStateView(failure: _failure!),
+        children: <Widget>[
+          AppFormSection(
+            title: l10n.ipdDischargeSectionTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              Text(l10n.dischargeCompleteDialogBody),
+              AppTextField(
+                controller: _summaryController,
+                labelText: l10n.ipdSummaryFieldLabel,
+                enabled: !_isSaving,
+                isRequired: true,
+                minLines: 3,
+                maxLines: 6,
+                textCapitalization: TextCapitalization.sentences,
+                validator: AppValidators.requiredText(l10n.validationRequired),
+              ),
+              AppCheckboxField(
+                title: l10n.dischargeCompleteConfirmLabel,
+                value: _confirmed,
+                enabled: !_isSaving && canSubmit,
+                validator: AppValidators.requiredTrue(
+                  l10n.dischargeCompleteConfirmRequiredMessage,
+                ),
+                onChanged: (bool value) => setState(() {
+                  _confirmed = value;
+                }),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).maybePop(false),
+        ),
+        AppButton.primary(
+          label: l10n.dischargeCompleteSubmitAction,
+          leadingIcon: Icons.logout_outlined,
+          enabled: canSubmit,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    final String? admissionId = _activeAdmissionId(widget.detail);
+    if (admissionId == null) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+
+    final result = await ref
+        .read(ipdRepositoryProvider)
+        .finalizeDischarge(admissionId, <String, Object?>{
+          'summary': _summaryController.text.trim(),
+          'discharged_at': DateTime.now().toUtc().toIso8601String(),
+        });
+
+    if (!mounted) {
+      return;
+    }
+    final AppFailure? failure = _failureOrNull(result);
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
   }
 }
 

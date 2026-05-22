@@ -2336,7 +2336,7 @@ const startOpdFlow = async (data, context = {}) => {
             patient_id: patientId,
             appointment_id: appointment?.id || null,
             provider_user_id: providerUserId,
-            status: 'CONFIRMED',
+            status: 'IN_PROGRESS',
             queued_at: queuedAt
           }
         });

@@ -474,6 +474,14 @@ describe('opd-flow.service', () => {
       where: { id: 'apt-1' },
       data: { status: 'IN_PROGRESS' }
     });
+    expect(tx.visit_queue.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          appointment_id: 'apt-1',
+          status: 'IN_PROGRESS'
+        })
+      })
+    );
     expect(result.flow.appointment_id).toBe('apt-1');
   });
 

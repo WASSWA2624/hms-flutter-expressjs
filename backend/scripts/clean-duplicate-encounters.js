@@ -50,6 +50,9 @@ const { assertDemoTaskAllowed } = require('./demo-safety');
 
 const ACTIVE_OPD_TYPES = ['OPD', 'EMERGENCY'];
 const FACILITY_FALLBACK = 'GLOBAL';
+const TERMINAL_OPD_STAGES = new Set(['ADMITTED', 'DISCHARGED']);
+const CLOSED_WORK_STATUSES = ['COMPLETED', 'CANCELLED', 'NO_SHOW'];
+const NON_REOPENABLE_WORK_STATUSES = ['CANCELLED', 'NO_SHOW'];
 
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has('--dry-run') || !args.has('--yes');
@@ -75,6 +78,49 @@ const groupKeyFor = (encounter) =>
 
 const getFlow = (encounter) => encounter?.extension_json?.opd_flow || null;
 
+const normalizeUpper = (value) =>
+  String(value || '')
+    .trim()
+    .toUpperCase();
+
+const isTerminalFlow = (encounter) => {
+  const flow = getFlow(encounter);
+  return (
+    encounter.status !== 'OPEN' ||
+    TERMINAL_OPD_STAGES.has(normalizeUpper(flow?.stage))
+  );
+};
+
+const sortedIds = (ids) => [...ids].filter(Boolean).sort();
+
+const rowsNeedingStatus = async ({
+  model,
+  ids,
+  status,
+  excludedStatuses = []
+}) => {
+  const idList = sortedIds(ids);
+  if (idList.length === 0) {
+    return [];
+  }
+
+  return prisma[model].findMany({
+    where: {
+      id: { in: idList },
+      deleted_at: null,
+      status:
+        excludedStatuses.length > 0
+          ? { notIn: [...new Set([status, ...excludedStatuses])] }
+          : { not: status }
+    },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      status: true
+    }
+  });
+};
+
 const cleanupDuplicateEncounters = async () => {
   const safety = assertDemoTaskAllowed('duplicate encounter cleanup');
   if (!safety.allowed) {
@@ -83,7 +129,10 @@ const cleanupDuplicateEncounters = async () => {
       reason: safety.reason,
       duplicateEncountersClosed: 0,
       lockKeysBackfilled: 0,
-      visitQueuesCompleted: 0
+      visitQueuesCompleted: 0,
+      visitQueuesMarkedInProgress: 0,
+      appointmentsCompleted: 0,
+      appointmentsMarkedInProgress: 0
     };
   }
 
@@ -135,13 +184,90 @@ const cleanupDuplicateEncounters = async () => {
     }
   }
 
-  const visitQueueIds = [
-    ...new Set(
-      duplicateEncounters
-        .map((encounter) => getFlow(encounter)?.visit_queue_id)
-        .filter(Boolean)
-    )
-  ];
+  const flowEncounters = await prisma.encounter.findMany({
+    where: {
+      deleted_at: null,
+      encounter_type: { in: ACTIVE_OPD_TYPES }
+    },
+    select: {
+      id: true,
+      status: true,
+      extension_json: true
+    }
+  });
+
+  const duplicateEncounterIds = new Set(
+    duplicateEncounters.map((encounter) => encounter.id)
+  );
+  const visitQueueIdsToComplete = new Set();
+  const visitQueueIdsToMarkInProgress = new Set();
+  const appointmentIdsToComplete = new Set();
+  const appointmentIdsToMarkInProgress = new Set();
+
+  for (const encounter of flowEncounters) {
+    const flow = getFlow(encounter);
+    if (!flow) {
+      continue;
+    }
+
+    const shouldCompleteWork =
+      duplicateEncounterIds.has(encounter.id) || isTerminalFlow(encounter);
+
+    if (flow.visit_queue_id) {
+      if (shouldCompleteWork) {
+        visitQueueIdsToComplete.add(flow.visit_queue_id);
+      } else {
+        visitQueueIdsToMarkInProgress.add(flow.visit_queue_id);
+      }
+    }
+
+    if (flow.appointment_id) {
+      if (shouldCompleteWork) {
+        appointmentIdsToComplete.add(flow.appointment_id);
+      } else {
+        appointmentIdsToMarkInProgress.add(flow.appointment_id);
+      }
+    }
+  }
+
+  for (const id of visitQueueIdsToMarkInProgress) {
+    visitQueueIdsToComplete.delete(id);
+  }
+  for (const id of appointmentIdsToMarkInProgress) {
+    appointmentIdsToComplete.delete(id);
+  }
+
+  const [
+    visitQueuesToComplete,
+    visitQueuesToMarkInProgress,
+    appointmentsToComplete,
+    appointmentsToMarkInProgress
+  ] = await Promise.all([
+    rowsNeedingStatus({
+      model: 'visit_queue',
+      ids: visitQueueIdsToComplete,
+      status: 'COMPLETED',
+      excludedStatuses: CLOSED_WORK_STATUSES
+    }),
+    rowsNeedingStatus({
+      model: 'visit_queue',
+      ids: visitQueueIdsToMarkInProgress,
+      status: 'IN_PROGRESS',
+      excludedStatuses: NON_REOPENABLE_WORK_STATUSES
+    }),
+    rowsNeedingStatus({
+      model: 'appointment',
+      ids: appointmentIdsToComplete,
+      status: 'COMPLETED',
+      excludedStatuses: CLOSED_WORK_STATUSES
+    }),
+    rowsNeedingStatus({
+      model: 'appointment',
+      ids: appointmentIdsToMarkInProgress,
+      status: 'IN_PROGRESS',
+      excludedStatuses: NON_REOPENABLE_WORK_STATUSES
+    })
+  ]);
 
   if (!dryRun) {
     const closedAt = new Date();
@@ -157,13 +283,51 @@ const cleanupDuplicateEncounters = async () => {
         });
       }
 
-      if (visitQueueIds.length > 0) {
+      if (visitQueuesToComplete.length > 0) {
         await tx.visit_queue.updateMany({
           where: {
-            id: { in: visitQueueIds },
+            id: {
+              in: visitQueuesToComplete.map((entry) => entry.id)
+            },
             deleted_at: null
           },
           data: { status: 'COMPLETED' }
+        });
+      }
+
+      if (visitQueuesToMarkInProgress.length > 0) {
+        await tx.visit_queue.updateMany({
+          where: {
+            id: {
+              in: visitQueuesToMarkInProgress.map((entry) => entry.id)
+            },
+            deleted_at: null
+          },
+          data: { status: 'IN_PROGRESS' }
+        });
+      }
+
+      if (appointmentsToComplete.length > 0) {
+        await tx.appointment.updateMany({
+          where: {
+            id: {
+              in: appointmentsToComplete.map((entry) => entry.id)
+            },
+            deleted_at: null
+          },
+          data: { status: 'COMPLETED' }
+        });
+      }
+
+      if (appointmentsToMarkInProgress.length > 0) {
+        await tx.appointment.updateMany({
+          where: {
+            id: {
+              in: appointmentsToMarkInProgress.map((entry) => entry.id)
+            },
+            deleted_at: null
+          },
+          data: { status: 'IN_PROGRESS' }
         });
       }
 
@@ -180,9 +344,24 @@ const cleanupDuplicateEncounters = async () => {
     dryRun,
     duplicateEncountersClosed: duplicateEncounters.length,
     lockKeysBackfilled: lockUpdates.length,
-    visitQueuesCompleted: visitQueueIds.length,
+    visitQueuesCompleted: visitQueuesToComplete.length,
+    visitQueuesMarkedInProgress: visitQueuesToMarkInProgress.length,
+    appointmentsCompleted: appointmentsToComplete.length,
+    appointmentsMarkedInProgress: appointmentsToMarkInProgress.length,
     duplicateEncounterIds: duplicateEncounters.map(
       (encounter) => encounter.human_friendly_id || encounter.id
+    ),
+    completedVisitQueueIds: visitQueuesToComplete.map(
+      (entry) => entry.human_friendly_id || entry.id
+    ),
+    inProgressVisitQueueIds: visitQueuesToMarkInProgress.map(
+      (entry) => entry.human_friendly_id || entry.id
+    ),
+    completedAppointmentIds: appointmentsToComplete.map(
+      (entry) => entry.human_friendly_id || entry.id
+    ),
+    inProgressAppointmentIds: appointmentsToMarkInProgress.map(
+      (entry) => entry.human_friendly_id || entry.id
     )
   };
 };
