@@ -393,6 +393,41 @@ const resolveVisitQueueByIdentifier = async (tx, identifier, tenantId = null, fa
   });
 };
 
+const resolveEmergencyCaseByIdentifier = async (
+  tx,
+  identifier,
+  tenantId = null,
+  facilityId = null,
+  patientId = null
+) => {
+  const normalized = normalizeIdentifier(identifier);
+  if (!normalized) return null;
+  if (!tx?.emergency_case?.findFirst) return null;
+
+  const where = {
+    deleted_at: null,
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+    ...(facilityId ? { facility_id: facilityId } : {}),
+    ...(patientId ? { patient_id: patientId } : {})
+  };
+
+  if (isUuid(normalized)) {
+    return tx.emergency_case.findFirst({
+      where: {
+        ...where,
+        id: normalized
+      }
+    });
+  }
+
+  return tx.emergency_case.findFirst({
+    where: {
+      ...where,
+      human_friendly_id: normalized.toUpperCase()
+    }
+  });
+};
+
 const resolveEncounterByIdentifier = async (tx, identifier, options = {}) => {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return null;
@@ -2200,20 +2235,35 @@ const startOpdFlow = async (data, context = {}) => {
 
       let emergencyCase = null;
       let triageAssessment = null;
+      let linkedExistingEmergencyCase = false;
 
       if (arrivalMode === 'EMERGENCY') {
-        emergencyCase = await tx.emergency_case.create({
-          data: {
-            tenant_id: tenantId,
-            facility_id: facilityId,
-            patient_id: patientId,
-            severity: data.emergency?.severity || 'HIGH',
-            status: 'OPEN'
-          }
-        });
+        const emergencyCaseIdentifier = normalizeIdentifier(data.emergency_case_id);
+        emergencyCase = emergencyCaseIdentifier
+          ? await resolveEmergencyCaseByIdentifier(tx, emergencyCaseIdentifier, tenantId, facilityId, patientId)
+          : null;
+        if (emergencyCaseIdentifier && !emergencyCase) {
+          throw new HttpError('errors.emergency_case.not_found', 404, [
+            { field: 'emergency_case_id' }
+          ]);
+        }
 
-        const triageLevel = mapTriageLevel(data.emergency?.triage_level);
-        if (triageLevel) {
+        if (!emergencyCase) {
+          emergencyCase = await tx.emergency_case.create({
+            data: {
+              tenant_id: tenantId,
+              facility_id: facilityId,
+              patient_id: patientId,
+              severity: data.emergency?.severity || 'HIGH',
+              status: 'OPEN'
+            }
+          });
+        } else {
+          linkedExistingEmergencyCase = true;
+        }
+
+        const triageLevel = emergencyCaseIdentifier ? null : mapTriageLevel(data.emergency?.triage_level);
+        if (!emergencyCaseIdentifier && triageLevel) {
           triageAssessment = await tx.triage_assessment.create({
             data: {
               emergency_case_id: emergencyCase.id,
@@ -2306,7 +2356,7 @@ const startOpdFlow = async (data, context = {}) => {
       if (emergencyCase) {
         appendTimelineEvent(
           flowState,
-          'EMERGENCY_CASE_OPENED',
+          linkedExistingEmergencyCase ? 'EMERGENCY_CASE_LINKED' : 'EMERGENCY_CASE_OPENED',
           context,
           {
             emergency_case_id: emergencyCase.id,

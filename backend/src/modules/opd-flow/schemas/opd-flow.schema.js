@@ -158,6 +158,7 @@ const createOpdFlowSchema = z
     require_consultation_payment: z.boolean().optional(),
     reuse_open_encounter: z.boolean().optional(),
     pay_now: payNowSchema.optional(),
+    emergency_case_id: scopeIdentifierSchema.optional(),
     emergency: emergencyPayloadSchema.optional(),
     notes: z.string().trim().max(65535).optional().nullable(),
     queued_at: z.string().datetime().optional()

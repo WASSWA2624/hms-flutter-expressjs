@@ -376,6 +376,111 @@ describe('opd-flow.service', () => {
     expect(result.flow.stage).toBe('WAITING_VITALS');
   });
 
+  it('starts an OPD-visible emergency flow for an existing emergency case', async () => {
+    const existingEmergencyCase = {
+      id: 'ec-existing',
+      human_friendly_id: 'EME0000004',
+      severity: 'CRITICAL'
+    };
+    const tx = {
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      patient: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'pat-1' }),
+        create: jest.fn()
+      },
+      invoice: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      payment: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      emergency_case: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(existingEmergencyCase),
+        update: jest.fn()
+      },
+      triage_assessment: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      visit_queue: {
+        create: jest.fn().mockResolvedValue({ id: 'vq-1' }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      encounter: {
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'enc-1', tenant_id: 'tenant-1' }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'enc-1',
+          encounter_type: 'EMERGENCY',
+          extension_json: {
+            opd_flow: {
+              stage: 'WAITING_VITALS',
+              visit_queue_id: 'vq-1',
+              appointment_id: null,
+              emergency_case_id: 'ec-existing',
+              triage_assessment_id: null,
+              consultation: {
+                invoice_id: null,
+                payment_id: null
+              }
+            }
+          }
+        }),
+        update: jest.fn()
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    const result = await opdFlowService.startOpdFlow(
+      {
+        tenant_id: 'tenant-1',
+        patient_id: 'pat0000004',
+        arrival_mode: 'EMERGENCY',
+        emergency_case_id: 'EME0000004',
+        require_consultation_payment: false,
+        create_consultation_invoice: false
+      },
+      { user_id: 'usr-1', tenant_id: 'tenant-1' }
+    );
+
+    expect(tx.emergency_case.findFirst).toHaveBeenCalledWith({
+      where: {
+        deleted_at: null,
+        tenant_id: 'TENANT-1',
+        patient_id: 'pat-1',
+        human_friendly_id: 'EME0000004'
+      }
+    });
+    expect(tx.emergency_case.create).not.toHaveBeenCalled();
+    expect(tx.triage_assessment.create).not.toHaveBeenCalled();
+    expect(tx.encounter.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          encounter_type: 'EMERGENCY',
+          extension_json: {
+            opd_flow: expect.objectContaining({
+              emergency_case_id: 'ec-existing',
+              stage: 'WAITING_VITALS'
+            })
+          }
+        })
+      })
+    );
+    expect(result.flow.emergency_case_id).toBe('EME0000004');
+  });
+
   it('starts an online appointment flow and moves appointment to IN_PROGRESS', async () => {
     const tx = {
       appointment: {

@@ -38,6 +38,7 @@ class AppDialog extends StatefulWidget {
 class _AppDialogState extends State<AppDialog> {
   static const double _desktopMinWidth = 360;
   static const double _desktopMinHeight = 280;
+  static const double _snackBarClearance = 88;
 
   Offset _dragOffset = Offset.zero;
   Size? _desktopSize;
@@ -49,9 +50,15 @@ class _AppDialogState extends State<AppDialog> {
     final Size viewport = MediaQuery.sizeOf(context);
     final bool compact = viewport.width < 600;
     final bool desktopInteractive = !compact;
-    final EdgeInsets insetPadding = EdgeInsets.symmetric(
-      horizontal: compact ? theme.spacing.md : theme.spacing.xl,
-      vertical: compact ? theme.spacing.md : theme.spacing.xl,
+    final double horizontalInset = compact
+        ? theme.spacing.md
+        : theme.spacing.xl;
+    final double topInset = compact ? theme.spacing.md : theme.spacing.xl;
+    final EdgeInsets insetPadding = EdgeInsets.only(
+      left: horizontalInset,
+      top: topInset,
+      right: horizontalInset,
+      bottom: topInset + _snackBarClearance,
     );
     final double maxHeight = math.max(
       theme.spacing.none,

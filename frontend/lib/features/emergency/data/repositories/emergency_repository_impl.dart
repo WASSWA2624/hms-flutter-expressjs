@@ -450,6 +450,15 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
       return Result<EmergencyCaseDetail>.failure(responseFailure);
     }
 
+    final AppFailure? receivingFailure = await _recordReceivingDepartmentWork(
+      detail: detail,
+      destination: destination,
+      notes: handoffNote,
+    );
+    if (receivingFailure != null) {
+      return Result<EmergencyCaseDetail>.failure(receivingFailure);
+    }
+
     if (!closeCase) {
       return _loadDetailForCase(detail.summary);
     }
@@ -469,6 +478,44 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
       return Result<EmergencyCaseDetail>.failure(_failureOrNull(caseResult)!);
     }
     return _loadDetailForCase(updated);
+  }
+
+  Future<AppFailure?> _recordReceivingDepartmentWork({
+    required EmergencyCaseDetail detail,
+    required String destination,
+    required String notes,
+  }) async {
+    final String normalizedDestination = destination.trim().toUpperCase();
+    if (normalizedDestination != 'OPD') {
+      return null;
+    }
+
+    final EmergencyCaseSummary summary = detail.summary;
+    if ((summary.patientId ?? '').trim().isEmpty) {
+      return AppFailure.validation(
+        validationFields: const <String>{'patient_id'},
+      );
+    }
+
+    final Result<void> result = await _apiClient.post<void>(
+      ApiEndpoints.apiV1(<String>[HmsApiResource.opdFlows.path, 'start']),
+      data: _withoutEmpty(<String, Object?>{
+        'tenant_id': summary.tenantId,
+        'facility_id': summary.facilityId,
+        'patient_id': summary.patientId,
+        'arrival_mode': 'EMERGENCY',
+        'emergency_case_id': summary.apiId,
+        'initial_stage': 'WAITING_VITALS',
+        'require_consultation_payment': false,
+        'create_consultation_invoice': false,
+        'reuse_open_encounter': true,
+        'queued_at': DateTime.now().toUtc().toIso8601String(),
+        'notes': notes,
+      }),
+      decoder: (_) {},
+    );
+
+    return _failureOrNull(result);
   }
 
   Future<Result<EmergencyCaseDetail>> _loadDetailForCase(
