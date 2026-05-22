@@ -10,7 +10,10 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { withActivePatient } = require('@lib/patient-query-filters');
-const { throwIfActiveOpdLockError } = require('@lib/opd-active-encounter');
+const {
+  ACTIVE_OPD_ENCOUNTER_TYPES,
+  throwIfActiveOpdLockError
+} = require('@lib/opd-active-encounter');
 
 /**
  * Find encounter by ID
@@ -77,6 +80,40 @@ const count = async (filters = {}) => {
     const where = withActivePatient(filters);
 
     return await prisma.encounter.count({ where });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
+  }
+};
+
+const findOpenActiveEncounterForPatient = async ({
+  tenantId,
+  facilityId,
+  patientId,
+  encounterTypes = ACTIVE_OPD_ENCOUNTER_TYPES
+} = {}) => {
+  try {
+    if (!tenantId || !patientId) {
+      return null;
+    }
+
+    return await prisma.encounter.findFirst({
+      where: withActivePatient({
+        tenant_id: tenantId,
+        facility_id: facilityId || null,
+        patient_id: patientId,
+        status: 'OPEN',
+        encounter_type: { in: encounterTypes }
+      }),
+      orderBy: { started_at: 'asc' },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        encounter_type: true,
+        extension_json: true
+      }
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [
       { originalError: error.message }
@@ -185,6 +222,7 @@ module.exports = {
   findById,
   findMany,
   count,
+  findOpenActiveEncounterForPatient,
   create,
   update,
   softDelete

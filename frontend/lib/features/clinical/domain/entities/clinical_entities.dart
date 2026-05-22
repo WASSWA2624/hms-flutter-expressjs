@@ -814,6 +814,23 @@ bool clinicalWorklistEntryMatchesScope(
   };
 }
 
+List<ClinicalWorklistEntry> deduplicateClinicalWorklistEntries(
+  Iterable<ClinicalWorklistEntry> entries,
+) {
+  final Map<String, ClinicalWorklistEntry> byEncounter =
+      <String, ClinicalWorklistEntry>{};
+
+  for (final ClinicalWorklistEntry entry in entries) {
+    final String key = _worklistDeduplicationKey(entry);
+    final ClinicalWorklistEntry? existing = byEncounter[key];
+    byEncounter[key] = existing == null
+        ? entry
+        : _mergeClinicalWorklistEntries(existing, entry);
+  }
+
+  return byEncounter.values.toList(growable: false);
+}
+
 bool _isToday(DateTime? value) {
   if (value == null) {
     return false;
@@ -823,6 +840,160 @@ bool _isToday(DateTime? value) {
   return localValue.year == now.year &&
       localValue.month == now.month &&
       localValue.day == now.day;
+}
+
+String _worklistDeduplicationKey(ClinicalWorklistEntry entry) {
+  return (_firstNonEmpty(<String?>[
+            entry.encounterId,
+            entry.encounterPublicId,
+            entry.id,
+          ]) ??
+          entry.hashCode.toString())
+      .toUpperCase();
+}
+
+ClinicalWorklistEntry _mergeClinicalWorklistEntries(
+  ClinicalWorklistEntry left,
+  ClinicalWorklistEntry right,
+) {
+  final int leftPriority = _worklistSourcePriority(left);
+  final int rightPriority = _worklistSourcePriority(right);
+  final ClinicalWorklistEntry preferred =
+      rightPriority > leftPriority ||
+          (rightPriority == leftPriority &&
+              _entryUpdatedAt(right).isAfter(_entryUpdatedAt(left)))
+      ? right
+      : left;
+  final ClinicalWorklistEntry fallback = identical(preferred, left)
+      ? right
+      : left;
+
+  return ClinicalWorklistEntry(
+    id: preferred.id,
+    sourceQueue: preferred.sourceQueue,
+    encounterId:
+        _firstNonEmpty(<String?>[
+          preferred.encounterId,
+          fallback.encounterId,
+        ]) ??
+        preferred.encounterId,
+    encounterPublicId: _firstNonEmpty(<String?>[
+      preferred.encounterPublicId,
+      fallback.encounterPublicId,
+    ]),
+    tenantId: _firstNonEmpty(<String?>[preferred.tenantId, fallback.tenantId]),
+    facilityId: _firstNonEmpty(<String?>[
+      preferred.facilityId,
+      fallback.facilityId,
+    ]),
+    patientId: _firstNonEmpty(<String?>[
+      preferred.patientId,
+      fallback.patientId,
+    ]),
+    patientPublicId: _firstNonEmpty(<String?>[
+      preferred.patientPublicId,
+      fallback.patientPublicId,
+    ]),
+    patientDisplayName: _firstNonEmpty(<String?>[
+      preferred.patientDisplayName,
+      fallback.patientDisplayName,
+    ]),
+    patientPhone: _firstNonEmpty(<String?>[
+      preferred.patientPhone,
+      fallback.patientPhone,
+    ]),
+    patientAgeSex: _firstNonEmpty(<String?>[
+      preferred.patientAgeSex,
+      fallback.patientAgeSex,
+    ]),
+    patientDateOfBirth:
+        preferred.patientDateOfBirth ?? fallback.patientDateOfBirth,
+    patientGender: _firstNonEmpty(<String?>[
+      preferred.patientGender,
+      fallback.patientGender,
+    ]),
+    encounterType: _firstNonEmpty(<String?>[
+      preferred.encounterType,
+      fallback.encounterType,
+    ]),
+    status: _firstNonEmpty(<String?>[preferred.status, fallback.status]),
+    stage: _firstNonEmpty(<String?>[preferred.stage, fallback.stage]),
+    nextStep: _firstNonEmpty(<String?>[preferred.nextStep, fallback.nextStep]),
+    currentLocation: _firstNonEmpty(<String?>[
+      preferred.currentLocation,
+      fallback.currentLocation,
+    ]),
+    providerUserId: _firstNonEmpty(<String?>[
+      preferred.providerUserId,
+      fallback.providerUserId,
+    ]),
+    providerDisplayName: _firstNonEmpty(<String?>[
+      preferred.providerDisplayName,
+      fallback.providerDisplayName,
+    ]),
+    startedAt: preferred.startedAt ?? fallback.startedAt,
+    updatedAt: _latestDateTime(preferred.updatedAt, fallback.updatedAt),
+    admissionId: _firstNonEmpty(<String?>[
+      preferred.admissionId,
+      fallback.admissionId,
+    ]),
+    admissionPublicId: _firstNonEmpty(<String?>[
+      preferred.admissionPublicId,
+      fallback.admissionPublicId,
+    ]),
+    opdFlowApiId: _firstNonEmpty(<String?>[
+      preferred.opdFlowApiId,
+      fallback.opdFlowApiId,
+    ]),
+    isUrgent: preferred.isUrgent || fallback.isUrgent,
+    resultsReady: preferred.resultsReady || fallback.resultsReady,
+  );
+}
+
+int _worklistSourcePriority(ClinicalWorklistEntry entry) {
+  final String source = entry.sourceQueue.toUpperCase();
+  if (source == 'IPD') {
+    return 500;
+  }
+  if (source == 'TRIAGE' && _isTriageQueueStage(entry.stage)) {
+    return 450;
+  }
+  if (source == 'OPD') {
+    return 400;
+  }
+  if (source == 'TRIAGE') {
+    return 350;
+  }
+  if (_hasText(entry.opdFlowApiId)) {
+    return 300;
+  }
+  if (source == 'ENCOUNTER') {
+    return 100;
+  }
+  return 200;
+}
+
+bool _isTriageQueueStage(String? stage) {
+  return switch ((stage ?? '').toUpperCase()) {
+    'WAITING_VITALS' || 'WAITING_DOCTOR_ASSIGNMENT' => true,
+    _ => false,
+  };
+}
+
+DateTime _entryUpdatedAt(ClinicalWorklistEntry entry) {
+  return entry.updatedAt ??
+      entry.startedAt ??
+      DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+DateTime? _latestDateTime(DateTime? left, DateTime? right) {
+  if (left == null) {
+    return right;
+  }
+  if (right == null) {
+    return left;
+  }
+  return right.isAfter(left) ? right : left;
 }
 
 bool _matchesDateRange(DateTime? value, DateTime? from, DateTime? to) {

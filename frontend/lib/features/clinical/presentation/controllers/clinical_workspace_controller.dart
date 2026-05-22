@@ -917,17 +917,16 @@ final class ClinicalWorkspaceController
     }
 
     final List<ClinicalWorklistEntry> items =
-        <ClinicalWorklistEntry>[
-              for (final Result<AppPage<ClinicalWorklistEntry>> result
-                  in results)
-                ..._successOrEmpty(result).items,
-            ]
-            .where((ClinicalWorklistEntry item) {
-              return item.matchesSearch(query.search, filters: query.filters) &&
-                  item.matchesFilters(query.filters) &&
-                  clinicalWorklistEntryMatchesScope(item, query.scope);
-            })
-            .toList(growable: false);
+        deduplicateClinicalWorklistEntries(
+          <ClinicalWorklistEntry>[
+            for (final Result<AppPage<ClinicalWorklistEntry>> result in results)
+              ..._successOrEmpty(result).items,
+          ].where((ClinicalWorklistEntry item) {
+            return item.matchesSearch(query.search, filters: query.filters) &&
+                item.matchesFilters(query.filters) &&
+                clinicalWorklistEntryMatchesScope(item, query.scope);
+          }),
+        );
 
     final List<ClinicalWorklistEntry> sorted = items.toList(growable: true)
       ..sort(_compareEntries);

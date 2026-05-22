@@ -9,6 +9,9 @@ const encounterRepository = require('@repositories/encounter/encounter.repositor
 describe('encounter.service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    encounterRepository.findOpenActiveEncounterForPatient.mockResolvedValue(
+      null
+    );
   });
 
   it('exports service methods', () => {
@@ -145,6 +148,45 @@ describe('encounter.service', () => {
         active_opd_lock_key: 'opd:tenant-1:facility-1:patient-1'
       })
     );
+    expect(
+      encounterRepository.findOpenActiveEncounterForPatient
+    ).toHaveBeenCalledWith({
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
+      patientId: 'patient-1'
+    });
+  });
+
+  it('rejects duplicate open OPD encounters before insert', async () => {
+    encounterRepository.findOpenActiveEncounterForPatient.mockResolvedValue({
+      id: 'enc-existing',
+      human_friendly_id: 'ENC0000010',
+      encounter_type: 'OPD',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_VITALS'
+        }
+      }
+    });
+
+    await expect(
+      subject.createEncounter(
+        {
+          tenant_id: 'tenant-1',
+          facility_id: 'facility-1',
+          patient_id: 'patient-1',
+          encounter_type: 'OPD',
+          status: 'OPEN',
+          started_at: '2026-05-21T08:00:00.000Z'
+        },
+        'user-1',
+        '127.0.0.1'
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.active_encounter_exists',
+      statusCode: 409
+    });
+    expect(encounterRepository.create).not.toHaveBeenCalled();
   });
 
   it('clears active OPD lock key when closing an encounter', async () => {

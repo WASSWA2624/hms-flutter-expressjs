@@ -10,7 +10,10 @@
 const encounterRepository = require('@repositories/encounter/encounter.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { activeOpdLockKeyForEncounter } = require('@lib/opd-active-encounter');
+const {
+  activeOpdLockKeyForEncounter,
+  throwActiveOpdEncounterExists
+} = require('@lib/opd-active-encounter');
 
 const PATIENT_CONTACT_LOOKUP_TYPES = ['PHONE', 'EMAIL'];
 
@@ -232,6 +235,24 @@ const createEncounter = async (data, userId, ipAddress) => {
       ended_at: data.ended_at ? new Date(data.ended_at) : null
     };
     payload.active_opd_lock_key = activeOpdLockKeyForEncounter(payload);
+    if (payload.active_opd_lock_key) {
+      const existingActiveEncounter =
+        await encounterRepository.findOpenActiveEncounterForPatient({
+          tenantId: payload.tenant_id,
+          facilityId: payload.facility_id || null,
+          patientId: payload.patient_id
+        });
+
+      if (existingActiveEncounter) {
+        throwActiveOpdEncounterExists({
+          encounter_id:
+            existingActiveEncounter.human_friendly_id ||
+            existingActiveEncounter.id,
+          encounter_type: existingActiveEncounter.encounter_type,
+          stage: existingActiveEncounter.extension_json?.opd_flow?.stage || null
+        });
+      }
+    }
 
     const encounter = await encounterRepository.create(payload);
 

@@ -85,26 +85,86 @@ void main() {
         isFalse,
       );
     });
+
+    test(
+      'deduplicates one encounter across generic, OPD, and triage queues',
+      () {
+        final List<ClinicalWorklistEntry> entries =
+            deduplicateClinicalWorklistEntries(<ClinicalWorklistEntry>[
+              _entry(
+                sourceQueue: 'ENCOUNTER',
+                encounterId: 'enc-1',
+                patientDisplayName: 'Joshua Suuna',
+                patientGender: 'MALE',
+                status: 'OPEN',
+              ),
+              _entry(
+                encounterId: 'enc-1',
+                encounterPublicId: 'ENC0000010',
+                stage: 'WAITING_VITALS',
+                opdFlowApiId: 'ENC0000010',
+              ),
+              _entry(
+                sourceQueue: 'TRIAGE',
+                encounterId: 'enc-1',
+                encounterPublicId: 'ENC0000010',
+                stage: 'WAITING_VITALS',
+                opdFlowApiId: 'ENC0000010',
+              ),
+            ]);
+
+        expect(entries, hasLength(1));
+        expect(entries.single.sourceQueue, 'TRIAGE');
+        expect(entries.single.opdFlowApiId, 'ENC0000010');
+        expect(entries.single.patientDisplayName, 'Joshua Suuna');
+        expect(entries.single.patientGender, 'MALE');
+      },
+    );
+
+    test(
+      'prefers OPD flow rows over generic encounter rows for disposition',
+      () {
+        final List<ClinicalWorklistEntry> entries =
+            deduplicateClinicalWorklistEntries(<ClinicalWorklistEntry>[
+              _entry(sourceQueue: 'ENCOUNTER', encounterId: 'enc-1'),
+              _entry(
+                encounterId: 'enc-1',
+                stage: 'WAITING_DOCTOR_REVIEW',
+                opdFlowApiId: 'ENC0000010',
+              ),
+            ]);
+
+        expect(entries, hasLength(1));
+        expect(entries.single.sourceQueue, 'OPD');
+        expect(entries.single.opdFlowApiId, 'ENC0000010');
+      },
+    );
   });
 }
 
 ClinicalWorklistEntry _entry({
   String sourceQueue = 'OPD',
   String encounterId = 'encounter-1',
+  String? encounterPublicId,
   String? patientDisplayName,
+  String? patientGender,
   String? providerDisplayName,
   String? status,
   String? stage,
+  String? opdFlowApiId,
   DateTime? updatedAt,
 }) {
   return ClinicalWorklistEntry(
     id: encounterId,
     sourceQueue: sourceQueue,
     encounterId: encounterId,
+    encounterPublicId: encounterPublicId,
     patientDisplayName: patientDisplayName,
+    patientGender: patientGender,
     providerDisplayName: providerDisplayName,
     status: status,
     stage: stage,
+    opdFlowApiId: opdFlowApiId,
     updatedAt: updatedAt,
   );
 }
