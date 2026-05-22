@@ -1,474 +1,671 @@
-﻿Implement the HMS clinical action fixes and UI refresh improvements described below.
-
-## Objective
-
-Fix and improve the existing clinical action workflows in the Hospital Management System so that diagnosis, lab request, radiology request, admission request, follow-up, disposition, clinical notes, prescriptions/pharmacy orders, and radiology orders behave consistently, update the UI immediately after successful actions, and follow the existing HMS architecture and UI patterns.
-
-Use the actual project codebase as the source of truth. Preserve the existing architecture, folder structure, naming conventions, coding style, localization approach, Riverpod/state management patterns, backend service/controller/schema patterns, and shared UI components.
-
-No task-specific screenshots were found in the archive. Any UI/UX requirements below are derived from the raw implementation task and the existing code patterns.
-
----
-
-## Project areas to inspect first
-
-Inspect these files and related modules before making changes.
-
-### App planner
-
-Use these planning documents to understand the intended architecture and flows:
-
-* `app-planner/dev-plan/01-policy.md`
-* `app-planner/dev-plan/10-workspace-ui.md`
-* `app-planner/dev-plan/14-clinical.md`
-* `app-planner/dev-plan/21-lab.md`
-* `app-planner/dev-plan/22-radiology.md`
-* `app-planner/dev-plan/23-pharmacy.md`
-* `app-planner/dev-plan/29-rooms-beds.md`
-* `app-planner/opd-flow.md`
-* `app-planner/ipd-flow.md`
-* `frontend/app-planner/app-rules/`
-* `backend/app-planner/app-rules/`
-
-### Frontend
-
-Main files to inspect and modify where required:
-
-* `frontend/lib/shared/clinical_actions/clinical_order_action_dialogs.dart`
-* `frontend/lib/shared/clinical_actions/clinical_action_dialogs.dart`
-* `frontend/lib/shared/clinical_actions/clinical_action_models.dart`
-* `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
-* `frontend/lib/features/clinical/presentation/controllers/clinical_workspace_controller.dart`
-* `frontend/lib/features/clinical/data/repositories/clinical_repository_impl.dart`
-* `frontend/lib/features/clinical/data/dtos/clinical_dtos.dart`
-* `frontend/lib/features/clinical/domain/clinical_entities.dart`
-* `frontend/lib/features/opd/shared/opd_flow_actions_dialog.dart`
-* `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
-* `frontend/lib/features/opd/data/repositories/opd_repository_impl.dart`
-* `frontend/lib/features/opd/data/dtos/opd_dtos.dart`
-* `frontend/lib/core/network/api_endpoints.dart`
-* `frontend/lib/l10n/app_en.arb`
-* generated localization files, if this project checks them in
-
-Also inspect related tests under:
-
-* `frontend/test/features/clinical/`
-* `frontend/test/features/opd/`
-* `frontend/test/features/radiology/`
-* `frontend/test/features/rooms_beds/`
-* `frontend/test/shared/`
-
-### Backend
-
-Inspect and modify backend only where needed to support the frontend correctly:
-
-* `backend/src/modules/diagnosis/`
-* `backend/src/modules/clinical-note/`
-* `backend/src/modules/clinical-term/`
-* `backend/src/modules/lab-order/`
-* `backend/src/modules/radiology-order/`
-* `backend/src/modules/pharmacy-order/`
-* `backend/src/modules/admission/`
-* `backend/src/modules/follow-up/`
-* `backend/src/modules/opd-flow/`
-* `backend/src/modules/bed/`
-* `backend/src/modules/room/`
-* `backend/src/modules/ward/`
-* `backend/prisma/schema.prisma`, only if a schema change is truly required
-* `backend/docs/api/v1/openapi.yaml`, only if API contracts are changed
-* related backend tests under `backend/src/tests/modules/`
-
----
-
-## Required implementation
-
-### 1. Rename “Add note” to “Add clinical note”
-
-Update the clinical note action label from:
-
-* `Add note`
-
-to:
-
-* `Add clinical note`
-
-Use the existing localization system. Do not hard-code this visible string directly in widgets.
-
-Relevant current localization key to inspect:
-
-* `clinicalAddNoteAction`
-
-Keep existing dialog title and clinical note behavior unless a code issue is found.
-
----
-
-### 2. Redesign diagnosis creation to use the shared reusable diagnosis/search component
-
-The current diagnosis action must use the existing shared clinical term/diagnosis mechanism instead of a standalone or non-reusable implementation.
-
-Requirements:
-
-* Use the existing shared clinical action dialog/component architecture.
-* Use existing clinical term suggestions for diagnosis search.
-* Search diagnosis terms using the existing clinical terms API/repository flow with `term_type` / `termType` set to diagnosis.
-* Diagnosis search must be searchable by diagnosis name and code where available.
-* Support selecting more than one diagnosis before submission.
-* Redesign the diagnosis dialog similarly to the existing lab request and radiology request dialogs:
-
-  * left side: searchable existing/predefined diagnosis results
-  * right side: selected diagnoses
-  * allow adding/removing selected diagnoses before submission
-  * clearly show selected diagnosis name, code, and type/status where available
-* Preserve or reuse the existing visual pattern from `ClinicalLabOrderActionDialog`.
-* Do not create a separate modal family if the shared clinical action dialogs already support the pattern.
-* If the backend endpoint only creates one diagnosis at a time, submit selected diagnoses sequentially using the existing endpoint and refresh the selected patient/encounter bundle only after all successful creations.
-* Continue creating/updating shared clinical term favorites where the existing flow already does so.
-* Ensure diagnosis creation updates the patient details dialog/clinical workspace in real time after success, without requiring a manual page refresh or reopening the encounter.
-
-Apply this behavior consistently anywhere the shared diagnosis dialog is used, including clinical workspace and OPD flow actions.
-
----
-
-### 3. Fix real-time UI updates after successful actions
-
-After these actions succeed, the currently selected patient/encounter/OPD details must update immediately in the visible UI:
-
-* add clinical note
-* add diagnosis
-* request lab
-* request radiology
-* request admission
-* create follow-up
-* complete disposition
-* prescribe/create pharmacy order
-* cancel/delete/update lab order
-* cancel/delete/update radiology order where supported
-* cancel/delete pharmacy order where supported
-
-Requirements:
-
-* Use the existing controller/repository refresh patterns.
-* Do not force full app reloads.
-* Refresh only the affected selected detail/worklist data where possible.
-* Ensure modal dialogs only report success after persistence succeeds and the relevant state has been refreshed.
-* Fix stale DTO/entity mapping if the backend response already includes the new records but the frontend does not display them.
-* Fix backend list/detail endpoints only if they are not returning newly created records correctly.
-* Ensure loading/saving states are always cleared on success and failure.
-* Show useful error messages instead of vague messages such as “check the details” when the backend provides or can provide a clearer validation error.
-
----
-
-### 4. Improve radiology request dialog globally
-
-Update the shared radiology request dialog so all callers benefit.
-
-Relevant existing component:
-
-* `ClinicalRadiologyOrderActionDialog`
-
-Requirements:
-
-* Keep the existing multi-select request pattern.
-* Add a searchable select for modality.
-
-  * Label it `Modality`.
-  * Example modality: `CT`.
-* Add a searchable select for body region.
-
-  * Label it `Body region`.
-* Keep or improve the existing laterality select.
-* Keep the clinical notes text field.
-* Keep the priority/urgency field if it already exists.
-* Move the free-text search/matching study list below the modality, body region, and laterality selectors.
-* The matching radiology studies section must only show studies that match the selected modality/body region/laterality and the entered search text.
-* Derive modality/body-region/laterality options from existing radiology catalog/reference data where possible.
-* Do not hard-code a fixed radiology catalog.
-* Use existing `ClinicalActionCatalogOption` fields such as category, secondary text, status, search text, and related metadata where appropriate.
-* Add appropriate existing project icons to make the dialog visually clear and consistent with the lab request dialog.
-* Preserve the selected radiology requests panel on the right.
-* Allow selecting more than one radiology request.
-* Each selected radiology request must clearly show:
-
-  * study name
-  * modality where available
-  * body region where available
-  * laterality where available
-  * priority/urgency
-  * clinical notes if provided
-* When `Request radiology` succeeds, update the patient details/dialog/tables in real time.
-
-Backend/API requirement:
-
-* Verify whether radiology order payloads and DTOs already support modality.
-* If modality is catalog-derived only, use it for filtering/display without changing the backend payload.
-* If the backend supports or should persist modality in `request_details`, update frontend DTOs and backend schemas/services consistently.
-* Do not invent unsupported API fields without checking the backend schema and service first.
-
-Also verify frontend DTO mapping for radiology requested test items. If per-item `request_details` are returned by the backend, ensure body region, laterality, priority, clinical note, and modality are decoded from the correct item-level or parent-level location.
-
----
-
-### 5. Fix lab request real-time refresh
-
-The lab request dialog is mostly working, but after clicking `Request lab`, the UI does not update immediately.
-
-Requirements:
-
-* Keep the existing lab request dialog design unless a bug requires a small adjustment.
-* Fix the controller/repository/backend refresh path so new lab orders appear immediately in:
-
-  * patient details
-  * clinical workspace sections
-  * lab order tables/panels
-  * OPD flow details where applicable
-* Preserve existing edit/cancel/delete behavior for lab orders.
-
----
-
-### 6. Fix admission request dialog and admission creation
-
-Improve the admission request UI and fix admission submission failures.
-
-Relevant existing component:
-
-* `ClinicalAdmissionActionDialog`
-
-Requirements:
-
-* Do not show raw row IDs/UUIDs to users when a human-readable ward, room, or bed label/name is available.
-* Ward selection should narrow the next options to rooms with available beds.
-* Room selection should narrow the next options to beds available in that room.
-* Bed options should show availability/status directly inside the bed option display.
-* Remove or avoid a separate “Bed availability” display if the same information can be cleanly merged into the bed row/selection.
-* If no available rooms or beds exist for the selected ward/room, show a clear empty-state message.
-* If a selected bed is unavailable, show a clear message such as “This bed is no longer available. Please choose another bed.”
-* Improve the visual layout so ward, room, bed, and availability/status fields do not wrap awkwardly into two-line cramped controls.
-* Use existing shared components such as:
-
-  * `AppDialog`
-  * `AppFormSection`
-  * `AppResponsiveFieldRow`
-  * `AppSelectField.searchable`
-  * `AppTextField`
-  * `AppInfoTileGrid`
-  * existing status badges/chips where available
-* Fix the admission request submission so a valid available bed creates the admission successfully.
-* Verify the frontend payload against the backend admission schema/service.
-* Include reason/notes only if the backend supports them or the existing domain model expects them.
-* If backend validation fails, surface the actual useful validation message to the user.
-* After a successful admission request, update the clinical/OPD patient details in real time.
-
----
-
-### 7. Fix follow-up creation/update behavior
-
-Ensure follow-up actions work correctly and persist to the database.
-
-Requirements:
-
-* Verify the frontend follow-up dialog payload.
-* Verify backend follow-up endpoint/schema/service behavior.
-* After creating a follow-up, update the visible clinical/OPD details immediately.
-* Show follow-up records in the correct patient detail section.
-* Avoid duplicate follow-up rows after refresh.
-
----
-
-### 8. Fix disposition completion and indefinite loading
-
-The disposition flow can enter an indefinite loading state, especially when completing disposition with “admission not required” and notes such as “patient is stable”.
-
-Requirements:
-
-* Fix the loading state so it always stops after success or failure.
-* Verify the OPD disposition backend schema and accepted decision values.
-* Map frontend disposition values to backend-supported values correctly.
-* For “admission not required”, complete the disposition using the correct backend decision, likely the discharge/close-flow equivalent after verifying the backend schema.
-* Preserve notes/reason.
-* Show a useful success or failure message.
-* Update selected patient/OPD/clinical details immediately after success.
-* Do not hard-code incorrect disposition decisions.
-* Do not remove required clinical review behavior unless the backend flow requires it.
-
----
-
-### 9. Improve clinical notes, prescriptions, radiology orders, and pharmacy orders display
-
-Improve the patient details/clinical record sections.
-
-Requirements:
-
-* Label the clinical notes section clearly as patient clinical notes.
-* Keep clinical notes visually separate from prescriptions/pharmacy orders.
-* Improve prescription/pharmacy order display so it is human-readable.
-
-  * Show medication name, dose, route, frequency, duration, quantity, and instructions clearly where available.
-  * Avoid confusing duplicate rows/items.
-  * If one pharmacy order contains multiple items, render them cleanly without repeating unnecessary parent information.
-* Improve radiology order display.
-
-  * Show study name, status, priority, modality/body region/laterality, clinical notes, and date where available.
-  * Add edit/cancel/delete actions for radiology orders only where supported by existing backend routes/API contracts.
-  * If backend supports cancellation but not hard delete, implement cancel and do not fake deletion.
-  * Match the existing lab order action style as closely as possible.
-* Keep lab order display behavior intact, including existing edit/cancel/delete support.
-
----
-
-### 10. Backend/API changes, only if required
-
-Only modify backend code if the frontend cannot correctly support the requested behavior with existing APIs.
-
-When backend changes are required:
-
-* Preserve existing Express/Prisma module architecture.
-* Preserve controller/service/repository/schema separation.
-* Update validation schemas.
-* Update services with tenant/facility/patient/encounter scoping preserved.
-* Update OpenAPI documentation if request/response contracts change.
-* Add or update backend tests for changed behavior.
-* Do not create duplicate endpoints if an existing endpoint should be fixed or extended.
-* Do not bypass authorization, tenant scoping, facility scoping, or audit behavior.
-
----
-
-## UI/UX requirements
-
-Follow existing HMS UI patterns.
-
-Use existing shared frontend components and visual conventions. Do not introduce a new design system.
-
-Specific UI requirements:
-
-* Diagnosis dialog should visually match the lab request dialog pattern:
-
-  * searchable results on the left
-  * selected items on the right
-  * clear selected count
-  * easy remove action
-  * empty states
-* Radiology dialog should visually match the lab request dialog pattern while adding:
-
-  * modality searchable select
-  * body region searchable select
-  * laterality select
-  * clinical notes
-  * filtered matching studies below the selectors
-* Admission dialog should be cleaner and less cramped:
-
-  * ward, room, and bed controls should be readable
-  * bed status should be visible in the bed option itself
-  * no raw IDs should be visible when labels exist
-  * clear empty and unavailable states
-* Use existing icons already used in the project where possible.
-* Use localization for user-facing strings.
-* Maintain responsive behavior for desktop and smaller widths.
-
----
-
-## Testing and verification
-
-Add or update tests where practical and relevant.
-
-At minimum, verify:
-
-### Frontend
-
-Run:
-
-* `cd frontend`
-* `flutter test`
-
-Add/update targeted tests for:
-
-* diagnosis multi-select dialog behavior
-* clinical workspace refresh after diagnosis/lab/radiology/admission/follow-up/disposition actions
-* radiology DTO mapping for request details
-* admission option filtering and unavailable-bed validation
-* pharmacy/prescription display formatting where practical
-* OPD flow action refresh behavior where applicable
-
-### Backend
-
-If backend files are changed, run:
-
-* `cd backend`
-* `npm run lint`
-* `npm run test:backend`
-* `npm run validate`
-
-If OpenAPI is changed, also run:
-
-* `npm run openapi:validate`
-
-Add/update targeted backend tests for any changed module, especially:
-
-* diagnosis
-* lab order
-* radiology order
-* admission
-* follow-up
-* OPD disposition
-* pharmacy order
-
-### Manual verification scenarios
-
-Verify these flows manually in the running app:
-
-1. Open a patient/encounter clinical detail.
-2. Click `Add clinical note`; save a note; confirm it appears immediately.
-3. Click `Add diagnosis`; search diagnosis terms; select multiple diagnoses; save; confirm they appear immediately.
-4. Click `Request lab`; select tests/panels; submit; confirm lab orders appear immediately.
-5. Click `Request radiology`; select modality/body region/laterality; confirm matches filter correctly; select one or more studies; submit; confirm radiology orders appear immediately.
-6. Request admission:
-
-   * select ward
-   * confirm rooms are filtered to those with available beds
-   * select room
-   * confirm beds are filtered to available beds
-   * submit
-   * confirm the admission appears immediately
-7. Try admission when no available bed exists and confirm a clear message is shown.
-8. Create a follow-up and confirm it persists and appears immediately.
-9. Complete disposition with “admission not required” and notes; confirm no indefinite loading occurs.
-10. Review clinical notes, prescriptions/pharmacy orders, lab orders, and radiology orders for clean display and no confusing duplicates.
-11. Verify radiology edit/cancel/delete behavior only where supported by the backend.
-
----
+﻿You are working on the Hospital Management System archive with this project root structure:
+
+```txt
+hms/
+  app-planner/
+  backend/
+  frontend/
+```
+
+Refine and implement the requested changes directly against the existing codebase. Use the actual project architecture, naming conventions, UI patterns, localization style, backend module style, and app-planner rules as the source of truth. Do not introduce unrelated rewrites.
+
+No task-specific screenshots were present in the archive beyond standard app icon/logo assets, so the written UI/UX requirements below are the complete UI source of truth.
+
+## Main problem
+
+Across the HMS app, displayed user IDs, patient IDs, patient numbers, patient identifiers, encounter IDs, admission IDs, and patient/encounter-related public identifiers are not consistently copyable. Some are rendered as plain `Text`, some have separate copy buttons, and many areas still fall back to raw/internal IDs such as `id` when `displayId`, `publicId`, `patientDisplayId`, `patientIdentifier`, or `human_friendly_id` is unavailable.
+
+Also, several production-facing workflows still expose “backend gap”, placeholder, or temporary states to users instead of real backend-backed behavior.
+
+Implement an app-wide cleanup so identifiers are safe, consistent, clickable/copyable, visually confirm copy success, and production UI no longer exposes avoidable backend-gap/placeholder states.
+
+## Project rules to follow
+
+Before editing, inspect and follow these files:
+
+```txt
+app-planner/dev-plan/37-quality-release.md
+app-planner/dev-plan/10-workspace-ui.md
+app-planner/dev-plan/19-discharge.md
+app-planner/dev-plan/23-pharmacy.md
+app-planner/dev-plan/24-billing.md
+app-planner/dev-plan/26-physiotherapy.md
+app-planner/dev-plan/29-rooms-beds.md
+app-planner/dev-plan/32-housekeeping.md
+app-planner/dev-plan/36-integrations.md
+
+frontend/app-planner/app-rules/architecture.md
+frontend/app-planner/app-rules/project_structure.md
+frontend/app-planner/app-rules/coding_conventions.md
+frontend/app-planner/app-rules/reusable_components.md
+frontend/app-planner/app-rules/localization_i18n.md
+frontend/app-planner/app-rules/accessibility.md
+frontend/app-planner/app-rules/testing.md
+frontend/app-planner/app-rules/network_api.md
+
+backend/app-planner/app-rules/project-structure.md
+backend/app-planner/app-rules/coding-standards.md
+backend/app-planner/app-rules/testing.md
+backend/app-planner/app-rules/response-format.md
+```
+
+Preserve:
+
+```txt
+frontend/lib/features/<feature>/data|domain|presentation
+frontend/lib/shared/components
+frontend/lib/shared/layout
+frontend/lib/core/network
+backend/src/modules/<module>/controllers|repositories|routes|schemas|services
+backend CommonJS style
+Flutter package imports: package:hosspi_hms/...
+Dart file names: snake_case.dart
+Backend module folders: kebab-case
+```
+
+Do not import anything from `app-planner/` into application source code.
 
 ## Scope limits
 
-Do not implement printing in this task.
+Modify only files required for this task.
 
-Do not perform unrelated rewrites, broad refactors, dependency changes, route restructuring, theme redesigns, or database schema changes unless absolutely required for the requested behavior.
+Do not:
 
-Do not replace the existing Riverpod/controller/repository/DTO architecture.
+* Rewrite unrelated screens.
+* Replace existing state management patterns.
+* Replace Riverpod, Dio, Drift, GoRouter, or shared layout architecture.
+* Add duplicate UI components when an existing shared component can be extended.
+* Hide backend gaps by only deleting UI text while leaving broken workflows.
+* Expose raw UUID/internal IDs in production UI unless the codebase explicitly treats that value as the public identifier.
+* Change unrelated routes, permissions, seed data, or schemas.
 
-Do not create new duplicate modal/dialog families when existing shared clinical action dialogs should be extended.
+If a referenced gap is already fixed in the current codebase, leave that area unchanged except for tests if needed.
 
-Do not hard-code catalog data.
+## Part 1: App-wide clickable/copyable identifiers
 
-Do not hard-code user-facing strings.
+Implement a shared reusable solution for copyable identifiers instead of repeating private copy helpers in feature pages.
 
-Do not modify unrelated modules.
+Relevant existing files to inspect first:
 
-Do not include generated build artifacts, caches, `node_modules`, `.dart_tool`, build output, or full project copies in the final deliverable.
+```txt
+frontend/lib/shared/layout/app_workspace.dart
+frontend/lib/shared/components/app_info_tile.dart
+frontend/lib/shared/components/components.dart
+frontend/lib/shared/components/app_list_item_text.dart
+frontend/lib/shared/components/app_list_table.dart
+frontend/lib/shared/opd_actions/opd_action_context.dart
+frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart
+frontend/lib/features/patients/presentation/pages/patient_registry_page.dart
+frontend/lib/l10n/app_en.arb
+frontend/lib/l10n/app_localizations.dart
+frontend/lib/l10n/app_localizations_en.dart
+```
 
-Modify only the files required for this requested change.
+Suggested implementation direction:
 
----
+* Add or extend a shared component for copyable identifiers, for example `AppCopyableIdentifier`, and export it from `frontend/lib/shared/components/components.dart`.
+* Extend `AppWorkspacePatientContextField` and `AppInfoTileData`/`AppInfoTile` so identifier fields can opt into copy behavior.
+* Update `AppWorkspacePatientContextHeader` so:
 
-## Final deliverable
+  * `patientNumber` can be clickable/copyable when non-empty.
+  * encounter/admission/patient identifier fields can be copyable through field metadata.
+  * tile and inline field styles both support the same copy behavior.
+* Reuse the shared copy behavior in OPD/clinical/patient registry areas that currently have custom copy functions, where doing so does not remove existing useful quick actions.
 
-Return a `.zip` archive containing only the files and folders that were created or updated, placed in their correct relative project directories.
+Behavior requirements:
 
-If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts in the archive that safely perform those delete or rename operations.
+* The displayed ID text/token itself must be clickable/tappable, not only a tiny icon.
+* Copy exactly the visible identifier value unless an existing action explicitly copies a different API value.
+* Do not copy placeholder values such as empty string, `Unknown`, `N/A`, or localized missing-value labels.
+* On copy, use `Clipboard.setData`.
+* Show immediate visual confirmation:
 
-PowerShell scripts must:
+  * a localized `SnackBar`, and
+  * a short-lived visible state such as a check icon, changed tooltip, or “copied” affordance on the clicked token.
+* Use existing theme spacing, colors, typography, icon sizes, and Material controls.
+* Support mouse, touch, keyboard focus, and screen readers.
+* Use localized tooltips, semantic labels, and SnackBar messages. Do not hard-code user-facing text.
+* Keep tap targets accessible; use the existing app token sizes where practical.
+* Use `MaterialLocalizations.copyButtonLabel` only where appropriate, otherwise add HMS-specific localization keys.
 
-* use correct relative paths
-* check that the target exists before deleting or renaming
-* not delete unrelated files
-* not use broad wildcards that could remove unrelated project content
+Add localization keys as needed for:
 
-Also include a concise implementation summary and verification results inside the archive as a small text or markdown file, unless the calling workflow explicitly forbids summary files.
+```txt
+Copy patient ID
+Copy encounter ID
+Copy admission ID
+Copy user ID
+Copy identifier
+Patient ID copied.
+Encounter ID copied.
+Admission ID copied.
+User ID copied.
+Identifier copied.
+```
+
+Use existing keys where they already exist:
+
+```txt
+clinicalPatientIdCopiedMessage
+opdEncounterIdCopiedMessage
+opdCopyPatientIdAction
+opdCopyEncounterIdAction
+```
+
+Regenerate localization files after editing ARB files.
+
+## Part 2: App-wide scan and update identifier displays
+
+Perform a full frontend scan for displayed identifiers using labels and variables such as:
+
+```txt
+patientId
+patientIdentifier
+patientNumber
+patientDisplayId
+encounterId
+encounterPublicId
+admissionId
+displayId
+publicId
+humanFriendlyId
+human_friendly_id
+userId
+user_id
+```
+
+At minimum inspect and update these files where identifiers are displayed:
+
+```txt
+frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart
+frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.dart
+frontend/lib/features/ipd/presentation/pages/ipd_workspace_page.dart
+frontend/lib/features/discharge/presentation/pages/discharge_workspace_page.dart
+frontend/lib/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart
+frontend/lib/features/nursing/presentation/pages/nursing_workspace_page.dart
+frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart
+frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart
+frontend/lib/features/claims/presentation/pages/claims_workspace_page.dart
+frontend/lib/features/icu/presentation/pages/icu_workspace_page.dart
+frontend/lib/features/mortuary/presentation/pages/mortuary_workspace_page.dart
+frontend/lib/features/theater/presentation/pages/theater_workspace_page.dart
+frontend/lib/features/patients/presentation/pages/patient_registry_page.dart
+frontend/lib/features/emergency/presentation/pages/emergency_workspace_page.dart
+frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart
+frontend/lib/features/communications/presentation/pages/communications_workspace_page.dart
+frontend/lib/features/profile/presentation/pages/user_profile_page.dart
+```
+
+Known current patterns to fix include but are not limited to:
+
+```txt
+displayId ?? id
+publicId ?? id
+patientId ?? displayId ?? id
+encounterId rendered as plain text
+patientNumber rendered without copy behavior
+AppInfoTileData identifier values rendered as plain text
+AppWorkspacePatientContextField identifier values rendered as plain text
+```
+
+Specific examples currently present in the codebase:
+
+```txt
+frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart
+frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.dart
+frontend/lib/features/ipd/presentation/pages/ipd_workspace_page.dart
+frontend/lib/features/discharge/presentation/pages/discharge_workspace_page.dart
+frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart
+frontend/lib/features/patients/presentation/pages/patient_registry_page.dart
+frontend/lib/features/communications/presentation/pages/communications_workspace_page.dart
+```
+
+Display requirements:
+
+* Prefer human-friendly/public identifiers in UI:
+
+  * `displayId`
+  * `publicId`
+  * `patientDisplayId`
+  * `patientIdentifier`
+  * `encounterPublicId`
+  * `human_friendly_id`
+  * existing `effective...` public display fields
+* Keep internal IDs available for API calls, keys, route params, repository methods, and equality checks.
+* Do not use raw `id` as a UI fallback unless the codebase proves that field is already a public/human-friendly ID for that entity.
+* When no public identifier exists, show the feature’s existing localized missing/unknown value or omit the identifier field.
+* Ensure every visible patient, encounter, admission, and user identifier is copyable after this change.
+
+## Part 3: Remove production-facing backend-gap states where real contracts can be wired
+
+Inspect frontend and backend together. Replace backend-gap panels/states with real backend-backed data or minimal backend endpoints where required.
+
+### Rooms, beds, housekeeping, and discharge-to-housekeeping
+
+Relevant frontend files:
+
+```txt
+frontend/lib/features/rooms_beds/presentation/pages/rooms_beds_workspace_page.dart
+frontend/lib/features/housekeeping/domain/entities/housekeeping_entities.dart
+frontend/lib/features/housekeeping/presentation/pages/housekeeping_workspace_page.dart
+frontend/lib/features/discharge/domain/entities/discharge_entities.dart
+frontend/lib/features/discharge/presentation/pages/discharge_workspace_page.dart
+```
+
+Relevant backend modules to inspect:
+
+```txt
+backend/src/modules/bed
+backend/src/modules/bed-assignment
+backend/src/modules/room
+backend/src/modules/ward
+backend/src/modules/housekeeping-task
+backend/src/modules/housekeeping-schedule
+backend/src/modules/housekeeping-workspace
+backend/src/modules/discharge-summary
+backend/src/modules/ipd-flow
+backend/src/modules/admission
+```
+
+Fix requirements:
+
+* Remove or replace the rooms/beds backend gap notice currently shown through `roomsBedsBackendGapsTitle` / `roomsBedsBackendGapsBody`.
+* Replace hard-coded `housekeepingBackendGaps` with backend-backed capability/readiness state.
+* Support bed cleaning/readiness states without exposing “Backend gap” to users.
+* Wire final discharge/bed release to housekeeping task creation atomically where the backend contract supports it, or add the minimal backend contract needed.
+* Replace `DischargeClearanceState.backendGap` for insurance/housekeeping with real states derived from backend-backed data or explicit unavailable states that are not described as “backend gaps”.
+* Preserve existing statuses and permissions where they already work.
+
+### Pharmacy
+
+Relevant frontend file:
+
+```txt
+frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart
+```
+
+Relevant backend modules to inspect:
+
+```txt
+backend/src/modules/pharmacy-workspace
+backend/src/modules/pharmacy-order
+backend/src/modules/pharmacy-order-item
+backend/src/modules/dispense-log
+backend/src/modules/drug
+backend/src/modules/drug-batch
+backend/src/modules/inventory-item
+backend/src/modules/inventory-stock
+backend/src/modules/invoice
+backend/src/modules/payment
+backend/src/modules/report-definition
+backend/src/modules/report-run
+```
+
+Fix requirements:
+
+* Remove `_BillingGapPanel` as a production-facing gap panel.
+* Replace payment authorization/billing gate gap with actual invoice/payment/billing status where available.
+* Replace batch availability gap with real drug batch/inventory availability.
+* Replace hold/substitution gap with real supported order/item state if backend supports it; otherwise implement the smallest backend-backed status needed.
+* Replace report-template gap with existing report/print template integration where available.
+* Do not enable unsafe dispense actions when stock, batch, payment, or authorization state blocks them.
+
+### Physiotherapy
+
+Relevant frontend files:
+
+```txt
+frontend/lib/features/physiotherapy/data/repositories/physiotherapy_repository_impl.dart
+frontend/lib/features/physiotherapy/domain/entities/physiotherapy_entities.dart
+frontend/lib/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart
+```
+
+Relevant backend modules to inspect:
+
+```txt
+backend/src/modules/encounter
+backend/src/modules/procedure
+backend/src/modules/care-plan
+backend/src/modules/follow-up
+backend/src/modules/clinical-note
+backend/src/modules/invoice
+backend/src/modules/report-definition
+backend/src/modules/report-run
+```
+
+Fix requirements:
+
+* Remove hard-coded `_backendGapCodes`.
+* Remove `_BackendGapsPanel` as a production-facing panel.
+* Provide backend-backed status, billing authorization, and report behavior using existing clinical/procedure/care-plan/follow-up/billing/report contracts where possible.
+* If a dedicated physiotherapy endpoint is truly required, add the smallest backend module/route/schema/service/repository changes needed and tests for that contract.
+
+### Integrations / interop readiness
+
+Relevant frontend file:
+
+```txt
+frontend/lib/features/integrations/data/repositories/integrations_repository_impl.dart
+```
+
+Relevant backend modules to inspect:
+
+```txt
+backend/src/modules/integration
+backend/src/modules/integration-log
+backend/src/modules/interop
+backend/src/modules/webhook-subscription
+backend/src/modules/api-key
+```
+
+Fix requirements:
+
+* Remove hard-coded `BACKEND_GAP` readiness capability.
+* Derive interop readiness from actual integration status, API key/webhook state, sanitized logs, and interop route availability.
+* Keep error states safe and non-PHI.
+
+## Part 4: Remove placeholder/temporary production records
+
+Relevant backend files:
+
+```txt
+backend/src/modules/dashboard-workspace/services/dashboard-workspace.service.js
+backend/src/modules/biomedical-workspace/services/biomedical-workspace.service.js
+backend/src/modules/biomedical-workspace/repositories/biomedical-workspace.repository.js
+```
+
+Fix requirements:
+
+* Dashboard must not emit fake/placeholder entities such as a guide signal with `meta: { placeholder: true }` as production workflow data.
+* Replace the empty-dashboard fallback with a real empty state, real recommendation payload, or safe non-entity guidance that the frontend can render without treating it as operational data.
+* Biomedical fault reporting must not create placeholder equipment registry records that can appear as real assets.
+* If a fault report is submitted without equipment, store the reported equipment text as contextual report data or require selecting/creating a real equipment record through the proper equipment registry workflow.
+* Preserve audit logging and notifications without marking placeholder equipment as real equipment.
+
+## Part 5: Integrate backend settings workspace into frontend settings
+
+Backend settings workspace already exists:
+
+```txt
+backend/src/modules/settings-workspace/controllers/settings-workspace.controller.js
+backend/src/modules/settings-workspace/repositories/settings-workspace.repository.js
+backend/src/modules/settings-workspace/routes/settings-workspace.routes.js
+backend/src/modules/settings-workspace/schemas/settings-workspace.schema.js
+backend/src/modules/settings-workspace/services/settings-workspace.service.js
+```
+
+Frontend already has:
+
+```txt
+frontend/lib/core/network/api_endpoints.dart
+frontend/lib/features/settings/presentation/pages/settings_page.dart
+```
+
+`HmsApiResource.settingsWorkspace` already exists in `api_endpoints.dart`.
+
+Implement frontend integration using the project’s clean architecture style. Add files under `frontend/lib/features/settings/` as needed:
+
+```txt
+data/dtos
+data/repositories
+domain/entities
+domain/repositories
+presentation/controllers
+presentation/state
+presentation/pages
+presentation/widgets
+```
+
+Requirements:
+
+* Fetch `/settings-workspace/workspace`.
+* Fetch `/settings-workspace/reference-data` where needed.
+* Render backend-backed settings workspace content inside the existing Settings page or a focused settings workspace section.
+* Support backend states:
+
+  * `ready`
+  * `tenant_context_required`
+* Render:
+
+  * context summary
+  * summary cards
+  * setup checklist
+  * quick actions
+  * module groups
+  * filters/search where appropriate
+  * tenant/facility selector if required by backend state
+* Preserve local preferences already in `settings_page.dart`:
+
+  * language
+  * theme mode
+  * profile action
+  * change password action
+  * admin navigation actions
+* Use shared components: `AppScreen`, `AppScreenSection`, `AppWorkspace`, `AppInfoTile`, `AppButton`, `AppSelectField`, state/error views, and existing theme tokens.
+* Do not hard-code settings labels from backend `label_key`; map known backend label keys to localized frontend strings or add localization keys where required.
+* If a backend route points to a frontend route that does not exist, do not create fake navigation. Route to the closest existing setup page only if supported by the router; otherwise show a disabled/clear unavailable action and mark the missing route mapping in code comments/tests.
+
+## Part 6: Route entitlement gating consistency
+
+Relevant file:
+
+```txt
+frontend/lib/app/router/app_routes.dart
+```
+
+Current inconsistent areas to verify:
+
+```txt
+communications
+reports
+subscriptions
+settings
+```
+
+Requirements:
+
+* Align route gating with the module-subscription model used by operational workspaces where supported by existing module slugs.
+* Do not guess module slugs. Derive them from backend seeders, module catalog, route definitions, or app-planner docs.
+* If a route is intentionally platform/core/auth-only, preserve that behavior and make the intention explicit in code through existing route metadata/comment style only if the codebase already uses such comments.
+* Ensure route guards still pass for tenant/facility context requirements.
+
+Missing details to verify from codebase:
+
+```txt
+Exact active module slug for communications, if any.
+Exact active module slug for reports/audit, if any.
+Exact active module slug for subscriptions, if any.
+Whether settings is intentionally core/auth-only or should require tenant/admin entitlement.
+```
+
+## Part 7: Frontend test coverage
+
+Existing missing feature test folders include:
+
+```txt
+frontend/test/features/discharge
+frontend/test/features/emergency
+frontend/test/features/housekeeping
+frontend/test/features/hr
+frontend/test/features/icu
+frontend/test/features/integrations
+frontend/test/features/ipd
+frontend/test/features/lab
+frontend/test/features/pharmacy
+frontend/test/features/physiotherapy
+frontend/test/features/profile
+frontend/test/features/settings
+frontend/test/features/tenant_facility
+```
+
+Add focused tests for the changed behavior. At minimum:
+
+* Shared copyable identifier widget/component tests.
+* `AppWorkspacePatientContextHeader` tests proving patient number and encounter/admission fields are copyable.
+* `AppInfoTile` tests proving identifier fields are copyable when configured and non-copyable when empty/missing.
+* Feature smoke/widget/controller/DTO tests for every feature folder you create or modify.
+* Settings workspace DTO/repository/controller tests.
+* Tests proving production UI no longer renders “Backend gap” panels in the updated workspaces.
+* Tests proving raw/internal ID fallback does not appear when public display IDs are absent.
+
+Use existing test helpers and style:
+
+```txt
+frontend/test/shared/components/component_test_app.dart
+frontend/test/helpers/test_harness.dart
+frontend/test/shared/layout/app_workspace_test.dart
+```
+
+## Part 8: Backend tests
+
+Add or update backend tests for every backend contract changed.
+
+Relevant commands and patterns are in:
+
+```txt
+backend/package.json
+backend/src/tests
+backend/app-planner/app-rules/testing.md
+```
+
+Cover:
+
+* Settings workspace frontend contract if backend payload changes.
+* Rooms/beds/housekeeping/discharge atomic handoff if changed.
+* Pharmacy payment/batch/hold/report contract if changed.
+* Physiotherapy status/billing/report contract if changed.
+* Integrations interop readiness contract if changed.
+* Dashboard no-placeholder behavior.
+* Biomedical no-placeholder-equipment behavior.
+* Validation errors for missing required IDs.
+
+## Part 9: Remove example scaffold from production storage
+
+Current production example scaffold files include:
+
+```txt
+frontend/lib/features/example/
+frontend/test/features/example/
+frontend/lib/core/storage/database/tables/example_resource_cache_entries.dart
+frontend/lib/core/storage/database/app_database.dart
+frontend/lib/core/storage/database/app_database.g.dart
+frontend/test/helpers/provider_override_examples_test.dart
+frontend/test/core/storage/database/app_database_test.dart
+```
+
+Fix requirements:
+
+* Remove `features/example` from production source if still unused by routes/features.
+* Remove `ExampleResourceCacheEntries` from `AppDatabase`.
+* Update Drift generated code by running build generation.
+* Update database tests so they test real production tables such as `SyncQueueEntries` instead of the example table.
+* Update or remove provider override example tests that import production example feature code.
+* If deleting files/folders, include a PowerShell deletion script as described in the final packaging section.
+
+## UI/UX requirements
+
+For copyable identifiers:
+
+* Use a compact identifier chip/token style consistent with existing HMS panels.
+* Keep the ID readable and selectable-looking without making the layout noisy.
+* Use hover/focus affordance on desktop/web.
+* Use `Icons.copy_outlined` before copy and a success/check affordance after copy.
+* SnackBar text must be localized and specific where possible:
+
+  * patient ID copied
+  * encounter ID copied
+  * admission ID copied
+  * user ID copied
+  * identifier copied
+* The component must work in:
+
+  * patient context headers
+  * info tiles
+  * table/list cells
+  * detail panels
+  * inline metadata rows
+* Avoid huge padding or new visual styles that conflict with existing `AppWorkspace`, `AppContentPanel`, `AppInfoTile`, and `AppListTable` patterns.
+
+For backend-gap cleanup:
+
+* Users should see real workflow state, unavailable/permission states, empty states, or actionable disabled states.
+* Users should not see developer-facing phrases such as:
+
+  * “Backend gap”
+  * “Backend endpoint required”
+  * “Not exposed by API”
+  * “placeholder”
+  * “temporary record”
+* If an action is unavailable because business preconditions are not met, explain the business reason in user-facing language.
+
+## Verification commands
+
+Run all relevant commands from the correct directories.
+
+Frontend:
+
+```bash
+cd frontend
+flutter pub get
+flutter gen-l10n
+dart run build_runner build --delete-conflicting-outputs
+dart format lib test integration_test
+flutter analyze
+flutter test
+```
+
+Backend, if backend files changed:
+
+```bash
+cd backend
+npm install
+npm run lint
+npm run test:backend
+npm run openapi:generate
+npm run openapi:validate
+```
+
+Also run focused tests for changed areas while developing.
+
+All analyzer, linter, localization, generated-code, and test issues introduced by this task must be fixed.
+
+## Final delivery format
+
+Return a single zipped archive containing only files and folders that were created or updated.
+
+The archive must preserve correct relative paths, for example:
+
+```txt
+frontend/lib/shared/components/app_copyable_identifier.dart
+frontend/lib/shared/layout/app_workspace.dart
+backend/src/modules/...
+```
+
+Do not include:
+
+```txt
+node_modules/
+build/
+.dart_tool/
+coverage/
+android/.gradle/
+ios/Pods/
+entire unchanged project folders
+```
+
+If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts in the zip, for example:
+
+```txt
+scripts/remove-example-scaffold.ps1
+scripts/rename-old-file.ps1
+```
+
+PowerShell script requirements:
+
+* Use only correct relative paths from the project root.
+* Check existence before deleting or renaming.
+* Delete or rename only the intended files/folders.
+* Do not use wildcards that could remove unrelated files.
+* Do not delete user data, environment files, or unrelated generated assets.
+
+The zip must include all changed source, generated localization/Drift files when applicable, tests, and safe `.ps1` delete/rename scripts when needed.
