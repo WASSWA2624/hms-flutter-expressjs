@@ -27,7 +27,7 @@ void main() {
         ],
         child: const SettingsWorkspaceSection(),
       ),
-      size: const Size(1100, 900),
+      size: const Size(1280, 1200),
     );
     await tester.pumpAndSettle();
 
@@ -63,7 +63,7 @@ void main() {
 
     expect(find.text('Tenant context required'), findsOneWidget);
     expect(find.text('Tenant'), findsWidgets);
-    expect(find.text('Facility'), findsWidgets);
+    expect(find.text('Tenant context'), findsWidgets);
   });
 }
 
