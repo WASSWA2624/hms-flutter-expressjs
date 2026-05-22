@@ -1122,9 +1122,13 @@ class _ClinicalActionBar extends ConsumerWidget {
     final ClinicalWorkspaceController controller = ref.read(
       clinicalWorkspaceControllerProvider.notifier,
     );
-    final String dispositionActionLabel = _clinicalDispositionActionLabel(
+    final String dispositionActionLabel = clinicalDispositionActionLabel(
       l10n,
-      bundle.entry,
+      sourceQueue: bundle.entry.sourceQueue,
+      status: bundle.entry.status,
+      stage: bundle.entry.stage,
+      location: bundle.entry.currentLocation,
+      hasAdmission: bundle.entry.admissionId?.trim().isNotEmpty ?? false,
     );
     return AppAccessActionGate(
       requirement: _ClinicalWorkspaceContentState._writeRequirement,
@@ -2282,31 +2286,6 @@ const List<String> _clinicalDispositionReasons = <String>[
   'PATIENT_DECLINED_CARE',
   'OTHER',
 ];
-
-String _clinicalDispositionActionLabel(
-  AppLocalizations l10n,
-  ClinicalWorklistEntry entry,
-) {
-  final String sourceQueue = entry.sourceQueue.toUpperCase();
-  final String status = (entry.status ?? entry.stage ?? '').toUpperCase();
-  final String location = (entry.currentLocation ?? '').toUpperCase();
-  final bool hasAdmission = entry.admissionId?.trim().isNotEmpty ?? false;
-  final bool hasInpatientLocation =
-      location.contains('WARD') || location.contains('BED');
-
-  if (hasAdmission && status == 'DISCHARGE_PLANNED') {
-    return l10n.ipdFinalizeDischargeAction;
-  }
-  if (hasAdmission &&
-      status == 'ADMITTED' &&
-      (sourceQueue == 'IPD' || hasInpatientLocation)) {
-    return l10n.navigationDischargeLabel;
-  }
-  if (sourceQueue == 'OPD') {
-    return l10n.opdDispositionAction;
-  }
-  return l10n.clinicalCompleteDispositionAction;
-}
 
 Future<void> _openNoteDialog(
   BuildContext context,

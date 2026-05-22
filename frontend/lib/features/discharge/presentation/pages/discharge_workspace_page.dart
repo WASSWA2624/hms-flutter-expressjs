@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_disposition_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -452,6 +453,14 @@ class _DischargeDetailContent extends ConsumerWidget {
     final DischargeWorkspaceController controller = ref.read(
       dischargeWorkspaceControllerProvider.notifier,
     );
+    final String completeDischargeLabel = clinicalDispositionActionLabel(
+      l10n,
+      sourceQueue: 'IPD',
+      status: detail.summary.admissionStatus,
+      stage: detail.summary.stage,
+      location: detail.summary.location,
+      hasAdmission: true,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -509,7 +518,7 @@ class _DischargeDetailContent extends ConsumerWidget {
               onPressed: () => _openPharmacyDialog(context, controller, state),
             ),
             AppButton.primary(
-              label: l10n.dischargeCompleteAction,
+              label: completeDischargeLabel,
               leadingIcon: Icons.exit_to_app_outlined,
               isLoading: state.isSaving,
               enabled:
@@ -1169,9 +1178,14 @@ class _PharmacyDialogState extends State<_PharmacyDialog> {
 }
 
 class _CompleteDialog extends StatefulWidget {
-  const _CompleteDialog({required this.detail, required this.onSubmit});
+  const _CompleteDialog({
+    required this.detail,
+    required this.submitLabel,
+    required this.onSubmit,
+  });
 
   final DischargeAdmissionDetail detail;
+  final String submitLabel;
   final Future<AppFailure?> Function() onSubmit;
 
   @override
@@ -1216,7 +1230,7 @@ class _CompleteDialogState extends State<_CompleteDialog> {
         ),
         AppFormActions(
           cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.dischargeCompleteSubmitAction,
+          submitLabel: widget.submitLabel,
           submitIcon: Icons.exit_to_app_outlined,
           isSubmitting: _isSubmitting,
           enabled: widget.detail.blockingItems.isEmpty,
@@ -1322,11 +1336,20 @@ Future<void> _openCompleteDialog(
   DischargeAdmissionDetail detail,
 ) async {
   final AppLocalizations l10n = context.l10n;
+  final String actionLabel = clinicalDispositionActionLabel(
+    l10n,
+    sourceQueue: 'IPD',
+    status: detail.summary.admissionStatus,
+    stage: detail.summary.stage,
+    location: detail.summary.location,
+    hasAdmission: true,
+  );
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
-    title: Text(l10n.dischargeCompleteDialogTitle),
+    title: Text(actionLabel),
     content: _CompleteDialog(
       detail: detail,
+      submitLabel: actionLabel,
       onSubmit: controller.completeDischarge,
     ),
   );

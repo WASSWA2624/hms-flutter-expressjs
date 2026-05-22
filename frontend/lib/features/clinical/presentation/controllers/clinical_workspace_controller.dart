@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_reposi
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_disposition_actions.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final clinicalWorkspaceControllerProvider =
@@ -663,17 +664,13 @@ final class ClinicalWorkspaceController
   }
 
   bool _isActiveAdmissionEntry(ClinicalWorklistEntry entry) {
-    final String? admissionId = entry.admissionId;
-    if (admissionId == null || admissionId.trim().isEmpty) {
-      return false;
-    }
-    final String sourceQueue = entry.sourceQueue.toUpperCase();
-    final String status = (entry.status ?? '').toUpperCase();
-    final String location = (entry.currentLocation ?? '').toUpperCase();
-    return status == 'ADMITTED' &&
-        (sourceQueue == 'IPD' ||
-            location.contains('WARD') ||
-            location.contains('BED'));
+    return isClinicalAdmissionDischargeContext(
+      sourceQueue: entry.sourceQueue,
+      status: entry.status,
+      stage: entry.stage,
+      location: entry.currentLocation,
+      hasAdmission: entry.admissionId?.trim().isNotEmpty ?? false,
+    );
   }
 
   Future<Result<ClinicalWorkspaceState>> _loadInitialState() async {

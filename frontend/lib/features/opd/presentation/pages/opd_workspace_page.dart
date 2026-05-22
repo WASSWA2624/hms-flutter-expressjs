@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_c
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_disposition_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -2329,7 +2330,11 @@ class _OpdPatientActionsDialogState
       ),
       action(
         requirement: opdDoctorActionRequirement,
-        label: l10n.opdDispositionAction,
+        label: clinicalDispositionActionLabel(
+          l10n,
+          sourceQueue: 'OPD',
+          isOpdContext: true,
+        ),
         icon: Icons.task_alt_outlined,
         onPressed: null,
       ),

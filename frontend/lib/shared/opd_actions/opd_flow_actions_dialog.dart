@@ -209,24 +209,33 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           : () => _openNested(context, DoctorReviewDialog(flow: flow)),
     );
 
-    AppPermissionActionItem dispositionAction() => AppPermissionActionItem(
-      requirement: opdDoctorActionRequirement,
-      label: l10n.opdDispositionAction,
-      icon: Icons.task_alt_outlined,
-      fullWidth: true,
-      hideWhenDenied: true,
-      onPressed: terminal
-          ? null
-          : () => _openNested(
-              context,
-              OpdDispositionDialog(
-                flow: flow,
-                hasPharmacyOrder:
-                    detail?.pharmacyOrders.isNotEmpty ??
-                    stage == 'PHARMACY_REQUESTED',
+    AppPermissionActionItem dispositionAction() {
+      final String label = clinicalDispositionActionLabel(
+        l10n,
+        sourceQueue: 'OPD',
+        status: flow.status,
+        stage: flow.stage,
+        isOpdContext: true,
+      );
+      return AppPermissionActionItem(
+        requirement: opdDoctorActionRequirement,
+        label: label,
+        icon: Icons.task_alt_outlined,
+        fullWidth: true,
+        hideWhenDenied: true,
+        onPressed: terminal
+            ? null
+            : () => _openNested(
+                context,
+                OpdDispositionDialog(
+                  flow: flow,
+                  hasPharmacyOrder:
+                      detail?.pharmacyOrders.isNotEmpty ??
+                      stage == 'PHARMACY_REQUESTED',
+                ),
               ),
-            ),
-    );
+      );
+    }
 
     AppPermissionActionItem disabledDoctorAction({
       required String label,
@@ -521,23 +530,30 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               required String diagnosisType,
               required List<ClinicalActionCatalogOption> diagnoses,
             }) {
-              final List<Map<String, Object?>> payload = <Map<String, Object?>>[
-                for (final ClinicalActionCatalogOption diagnosis in diagnoses)
-                  <String, Object?>{
-                    'diagnosis_type': diagnosisType,
-                    'code': _trimmedOrNull(diagnosis.code),
-                    'description':
-                        _trimmedOrNull(diagnosis.name) ?? diagnosis.displayTitle,
-                  },
-              ].where((Map<String, Object?> item) {
-                return _isNonEmpty(item['description']?.toString());
-              }).toList(growable: false);
+              final List<Map<String, Object?>> payload =
+                  <Map<String, Object?>>[
+                        for (final ClinicalActionCatalogOption diagnosis
+                            in diagnoses)
+                          <String, Object?>{
+                            'diagnosis_type': diagnosisType,
+                            'code': _trimmedOrNull(diagnosis.code),
+                            'description':
+                                _trimmedOrNull(diagnosis.name) ??
+                                diagnosis.displayTitle,
+                          },
+                      ]
+                      .where((Map<String, Object?> item) {
+                        return _isNonEmpty(item['description']?.toString());
+                      })
+                      .toList(growable: false);
               return ref
                   .read(opdWorkspaceControllerProvider.notifier)
                   .doctorReview(flow, <String, Object?>{
                     'note': payload
-                        .map((Map<String, Object?> item) =>
-                            item['description']?.toString() ?? '')
+                        .map(
+                          (Map<String, Object?> item) =>
+                              item['description']?.toString() ?? '',
+                        )
                         .where(_isNonEmpty)
                         .join(', '),
                     'diagnoses': payload,
@@ -1348,11 +1364,18 @@ class OpdDispositionDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final String actionLabel = clinicalDispositionActionLabel(
+      l10n,
+      sourceQueue: 'OPD',
+      status: flow.status,
+      stage: flow.stage,
+      isOpdContext: true,
+    );
     return ClinicalDispositionActionDialog(
-      title: l10n.opdDispositionAction,
+      title: actionLabel,
       reasonLabel: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
       notesLabel: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-      submitLabel: l10n.opdDispositionAction,
+      submitLabel: actionLabel,
       initialReason: hasPharmacyOrder ? 'SEND_TO_PHARMACY' : 'DISCHARGE',
       reasons: _opdDispositionOptions(hasPharmacyOrder: hasPharmacyOrder),
       leadingContent: <Widget>[

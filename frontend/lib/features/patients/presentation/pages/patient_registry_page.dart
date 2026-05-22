@@ -1862,7 +1862,22 @@ class _QuickActions extends ConsumerWidget {
     final Patient patient = detail.patient;
     final PatientVisitContext? visit = patient.currentVisit;
     final bool hasActiveOpdEncounter = _isActiveOpdVisit(visit);
-    final bool hasActiveAdmission = _activeAdmissionId(detail) != null;
+    final PatientSummaryRecord? activeAdmission = _activeAdmissionRecord(
+      detail.workspace.admissions,
+    );
+    final PatientVisitContext? activeAdmissionVisit = _activeAdmissionVisit(
+      visit,
+    );
+    final bool hasActiveAdmission =
+        activeAdmission != null || activeAdmissionVisit != null;
+    final String dischargeActionLabel = clinicalDispositionActionLabel(
+      l10n,
+      sourceQueue: 'IPD',
+      status: activeAdmission?.status ?? activeAdmissionVisit?.status,
+      stage: activeAdmission?.status ?? activeAdmissionVisit?.status,
+      location: activeAdmission?.subtitle ?? activeAdmissionVisit?.title,
+      hasAdmission: hasActiveAdmission,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1917,7 +1932,7 @@ class _QuickActions extends ConsumerWidget {
               ),
             if (hasActiveAdmission)
               AppPermissionActionItem(
-                label: l10n.dischargeCompleteAction,
+                label: dischargeActionLabel,
                 icon: Icons.logout_outlined,
                 onPressed: () => _openQuickAction(
                   context,
@@ -2056,6 +2071,7 @@ Future<void> _openQuickAction(
         ),
         _PatientQuickAction.discharge => _PatientDischargeQuickDialog(
           detail: detail!,
+          actionLabel: _patientDischargeActionLabel(context.l10n, detail),
         ),
         _PatientQuickAction.report => _PatientReportPrintPreviewDialog(
           detail: detail,
@@ -2146,6 +2162,26 @@ String? _activeAdmissionId(PatientDetail detail) {
   return null;
 }
 
+String _patientDischargeActionLabel(
+  AppLocalizations l10n,
+  PatientDetail detail,
+) {
+  final PatientSummaryRecord? activeAdmission = _activeAdmissionRecord(
+    detail.workspace.admissions,
+  );
+  final PatientVisitContext? activeAdmissionVisit = _activeAdmissionVisit(
+    detail.patient.currentVisit,
+  );
+  return clinicalDispositionActionLabel(
+    l10n,
+    sourceQueue: 'IPD',
+    status: activeAdmission?.status ?? activeAdmissionVisit?.status,
+    stage: activeAdmission?.status ?? activeAdmissionVisit?.status,
+    location: activeAdmission?.subtitle ?? activeAdmissionVisit?.title,
+    hasAdmission: activeAdmission != null || activeAdmissionVisit != null,
+  );
+}
+
 PatientSummaryRecord? _activeAdmissionRecord(
   Iterable<PatientSummaryRecord> admissions,
 ) {
@@ -2156,6 +2192,10 @@ PatientSummaryRecord? _activeAdmissionRecord(
     }
   }
   return null;
+}
+
+PatientVisitContext? _activeAdmissionVisit(PatientVisitContext? visit) {
+  return _isActiveAdmissionVisit(visit) ? visit : null;
 }
 
 bool _isActiveAdmissionVisit(PatientVisitContext? visit) {
@@ -2215,9 +2255,13 @@ Future<void> _openActiveOpdActions(
 }
 
 class _PatientDischargeQuickDialog extends ConsumerStatefulWidget {
-  const _PatientDischargeQuickDialog({required this.detail});
+  const _PatientDischargeQuickDialog({
+    required this.detail,
+    required this.actionLabel,
+  });
 
   final PatientDetail detail;
+  final String actionLabel;
 
   @override
   ConsumerState<_PatientDischargeQuickDialog> createState() =>
@@ -2245,7 +2289,7 @@ class _PatientDischargeQuickDialogState
     final bool canSubmit = admissionId != null;
 
     return AppDialog(
-      title: Text(l10n.dischargeCompleteDialogTitle),
+      title: Text(widget.actionLabel),
       icon: const Icon(Icons.logout_outlined),
       scrollable: true,
       closeEnabled: !_isSaving,
@@ -2294,7 +2338,7 @@ class _PatientDischargeQuickDialogState
           onPressed: () => Navigator.of(context).maybePop(false),
         ),
         AppButton.primary(
-          label: l10n.dischargeCompleteSubmitAction,
+          label: widget.actionLabel,
           leadingIcon: Icons.logout_outlined,
           enabled: canSubmit,
           isLoading: _isSaving,
