@@ -169,7 +169,7 @@ class _HousekeepingWorkspaceContentState
             columnVisibilityController: _tableColumnController,
           ),
           SizedBox(height: Theme.of(context).spacing.md),
-          _BackendGapPanel(gaps: state.backendGaps),
+          _UnavailableWorkflowsPanel(workflows: state.unavailableWorkflows),
         ],
       ),
       detail: _HousekeepingDetailPanel(
@@ -701,29 +701,29 @@ class _ReadinessPreview extends StatelessWidget {
   }
 }
 
-class _BackendGapPanel extends StatelessWidget {
-  const _BackendGapPanel({required this.gaps});
+class _UnavailableWorkflowsPanel extends StatelessWidget {
+  const _UnavailableWorkflowsPanel({required this.workflows});
 
-  final List<HousekeepingBackendGap> gaps;
+  final List<HousekeepingUnavailableWorkflow> workflows;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     return AppWorkspaceDetailPanel(
-      title: l10n.housekeepingBackendGapsTitle,
-      description: l10n.housekeepingBackendGapsBody,
+      title: l10n.housekeepingUnavailableWorkflowsTitle,
+      description: l10n.housekeepingUnavailableWorkflowsBody,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          for (final HousekeepingBackendGap gap in gaps) ...<Widget>[
+          for (final HousekeepingUnavailableWorkflow gap in workflows) ...<Widget>[
             AppInfoTile(
               label: gap.title,
               value: gap.body,
               icon: Icons.info_outline,
               maxLines: 4,
             ),
-            if (gap != gaps.last) SizedBox(height: theme.spacing.sm),
+            if (gap != workflows.last) SizedBox(height: theme.spacing.sm),
           ],
         ],
       ),

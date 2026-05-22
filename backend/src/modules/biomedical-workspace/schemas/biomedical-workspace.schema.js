@@ -73,14 +73,10 @@ const faultReportSchema = z.object({
   context: z.object({}).passthrough().optional().default({}),
 }).superRefine((value, context) => {
   const hasEquipmentId = Boolean(String(value.equipment_id || '').trim());
-  const hasReportedEquipmentName = Boolean(
-    String(value.reported_equipment_name || '').trim()
-  );
-
-  if (!hasEquipmentId && !hasReportedEquipmentName) {
+  if (!hasEquipmentId) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Equipment selection or a temporary equipment name is required',
+      message: 'Registered equipment selection is required',
       path: ['equipment_id'],
     });
   }

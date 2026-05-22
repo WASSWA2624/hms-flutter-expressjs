@@ -341,15 +341,18 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       children: <Widget>[
         AppWorkspacePatientContextHeader(
           patientName: item.displayTitle,
-          patientNumber: _value(item.patientPublicId ?? item.patientId, l10n),
+          patientNumber: _value(item.patientPublicId, l10n),
           patientNumberLabel: l10n.physiotherapyPatientNumberLabel,
           demographics: item.displaySubtitle,
           status: _workspaceStatusForStatus(l10n, item.status),
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.physiotherapyEncounterLabel,
-              value: _value(item.encounterPublicId ?? item.encounterId, l10n),
+              value: item.encounterPublicId ?? '',
               icon: Icons.medical_information_outlined,
+              copyable: true,
+              copyTooltip: l10n.opdCopyEncounterIdAction,
+              copiedMessage: l10n.opdEncounterIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.physiotherapySessionLabel,
@@ -411,7 +414,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           icon: Icons.notification_add_outlined,
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        _BackendGapsPanel(detail: detail),
+        _UnavailableWorkflowsPanel(detail: detail),
       ],
     );
   }
@@ -941,8 +944,8 @@ class _RecordsPanel extends StatelessWidget {
   }
 }
 
-class _BackendGapsPanel extends StatelessWidget {
-  const _BackendGapsPanel({required this.detail});
+class _UnavailableWorkflowsPanel extends StatelessWidget {
+  const _UnavailableWorkflowsPanel({required this.detail});
 
   final PhysiotherapyDetail detail;
 
@@ -956,7 +959,7 @@ class _BackendGapsPanel extends StatelessWidget {
         children: <Widget>[
           Text(l10n.physiotherapyBackendGapBody),
           SizedBox(height: Theme.of(context).spacing.sm),
-          for (final String code in detail.backendGaps)
+          for (final String code in detail.unavailableWorkflows)
             Padding(
               padding: EdgeInsets.only(bottom: Theme.of(context).spacing.xs),
               child: Row(
@@ -964,7 +967,7 @@ class _BackendGapsPanel extends StatelessWidget {
                 children: <Widget>[
                   const Icon(Icons.info_outline),
                   SizedBox(width: Theme.of(context).spacing.sm),
-                  Expanded(child: Text(_backendGapLabel(l10n, code))),
+                  Expanded(child: Text(_unavailableWorkflowLabel(l10n, code))),
                 ],
               ),
             ),
@@ -1933,7 +1936,7 @@ String _attendanceLabel(AppLocalizations l10n, String? status) {
 
 String _billingLabel(AppLocalizations l10n, String? status) {
   return switch ((status ?? '').toUpperCase()) {
-    'BACKEND_GAP' => l10n.physiotherapyBillingBackendGap,
+    'UNAVAILABLE' => l10n.physiotherapyBillingBackendGap,
     _ => l10n.physiotherapyMissingValueLabel,
   };
 }
@@ -1953,13 +1956,13 @@ String _nextActionLabel(AppLocalizations l10n, String status) {
   };
 }
 
-String _backendGapLabel(AppLocalizations l10n, String code) {
+String _unavailableWorkflowLabel(AppLocalizations l10n, String code) {
   return switch (code) {
-    'PHYSIOTHERAPY_STATUS_ENDPOINT' =>
+    'THERAPY_STATUS_UNAVAILABLE' =>
       l10n.physiotherapyBackendGapStatusEndpoint,
-    'BILLING_AUTHORIZATION_ENDPOINT' =>
+    'BILLING_AUTHORIZATION_UNAVAILABLE' =>
       l10n.physiotherapyBackendGapBillingEndpoint,
-    'PHYSIOTHERAPY_REPORT_ENDPOINT' =>
+    'THERAPY_REPORT_UNAVAILABLE' =>
       l10n.physiotherapyBackendGapReportEndpoint,
     _ => l10n.physiotherapyBackendGapUnknown,
   };
@@ -2017,7 +2020,7 @@ Future<void> _printInstructions(
         ),
         PrintFormMetadataItem(
           label: l10n.physiotherapyReportEncounterLabel,
-          value: item.encounterPublicId ?? item.encounterId,
+          value: item.encounterPublicId ?? l10n.profileUnknownValue,
         ),
         PrintFormMetadataItem(
           label: l10n.physiotherapyStatusLabel,
@@ -2072,7 +2075,7 @@ Future<void> _printInstructions(
       ),
       PrintFormMetadataItem(
         label: l10n.physiotherapyReportEncounterLabel,
-        value: item.encounterPublicId ?? item.encounterId,
+        value: item.encounterPublicId ?? l10n.profileUnknownValue,
       ),
     ],
     footerNote: l10n.physiotherapyReportFooterNote,

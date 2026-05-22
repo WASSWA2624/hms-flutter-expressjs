@@ -3,325 +3,6 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $ExampleResourceCacheEntriesTable extends ExampleResourceCacheEntries
-    with
-        TableInfo<
-          $ExampleResourceCacheEntriesTable,
-          ExampleResourceCacheEntry
-        > {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ExampleResourceCacheEntriesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
-    'title',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-    'updated_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [id, title, createdAt, updatedAt];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'example_resource_cache_entries';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ExampleResourceCacheEntry> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('title')) {
-      context.handle(
-        _titleMeta,
-        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_titleMeta);
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
-    }
-    if (data.containsKey('updated_at')) {
-      context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  ExampleResourceCacheEntry map(
-    Map<String, dynamic> data, {
-    String? tablePrefix,
-  }) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ExampleResourceCacheEntry(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      title: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}title'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-      updatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}updated_at'],
-      )!,
-    );
-  }
-
-  @override
-  $ExampleResourceCacheEntriesTable createAlias(String alias) {
-    return $ExampleResourceCacheEntriesTable(attachedDatabase, alias);
-  }
-}
-
-class ExampleResourceCacheEntry extends DataClass
-    implements Insertable<ExampleResourceCacheEntry> {
-  final String id;
-  final String title;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  const ExampleResourceCacheEntry({
-    required this.id,
-    required this.title,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['title'] = Variable<String>(title);
-    map['created_at'] = Variable<DateTime>(createdAt);
-    map['updated_at'] = Variable<DateTime>(updatedAt);
-    return map;
-  }
-
-  ExampleResourceCacheEntriesCompanion toCompanion(bool nullToAbsent) {
-    return ExampleResourceCacheEntriesCompanion(
-      id: Value(id),
-      title: Value(title),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
-    );
-  }
-
-  factory ExampleResourceCacheEntry.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ExampleResourceCacheEntry(
-      id: serializer.fromJson<String>(json['id']),
-      title: serializer.fromJson<String>(json['title']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'title': serializer.toJson<String>(title),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-    };
-  }
-
-  ExampleResourceCacheEntry copyWith({
-    String? id,
-    String? title,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) => ExampleResourceCacheEntry(
-    id: id ?? this.id,
-    title: title ?? this.title,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-  );
-  ExampleResourceCacheEntry copyWithCompanion(
-    ExampleResourceCacheEntriesCompanion data,
-  ) {
-    return ExampleResourceCacheEntry(
-      id: data.id.present ? data.id.value : this.id,
-      title: data.title.present ? data.title.value : this.title,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExampleResourceCacheEntry(')
-          ..write('id: $id, ')
-          ..write('title: $title, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, title, createdAt, updatedAt);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ExampleResourceCacheEntry &&
-          other.id == this.id &&
-          other.title == this.title &&
-          other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
-}
-
-class ExampleResourceCacheEntriesCompanion
-    extends UpdateCompanion<ExampleResourceCacheEntry> {
-  final Value<String> id;
-  final Value<String> title;
-  final Value<DateTime> createdAt;
-  final Value<DateTime> updatedAt;
-  final Value<int> rowid;
-  const ExampleResourceCacheEntriesCompanion({
-    this.id = const Value.absent(),
-    this.title = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ExampleResourceCacheEntriesCompanion.insert({
-    required String id,
-    required String title,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       title = Value(title),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt);
-  static Insertable<ExampleResourceCacheEntry> custom({
-    Expression<String>? id,
-    Expression<String>? title,
-    Expression<DateTime>? createdAt,
-    Expression<DateTime>? updatedAt,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (title != null) 'title': title,
-      if (createdAt != null) 'created_at': createdAt,
-      if (updatedAt != null) 'updated_at': updatedAt,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ExampleResourceCacheEntriesCompanion copyWith({
-    Value<String>? id,
-    Value<String>? title,
-    Value<DateTime>? createdAt,
-    Value<DateTime>? updatedAt,
-    Value<int>? rowid,
-  }) {
-    return ExampleResourceCacheEntriesCompanion(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (title.present) {
-      map['title'] = Variable<String>(title.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (updatedAt.present) {
-      map['updated_at'] = Variable<DateTime>(updatedAt.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExampleResourceCacheEntriesCompanion(')
-          ..write('id: $id, ')
-          ..write('title: $title, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $SyncQueueEntriesTable extends SyncQueueEntries
     with TableInfo<$SyncQueueEntriesTable, SyncQueueEntryRow> {
   @override
@@ -922,18 +603,333 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
   }
 }
 
+class $ExampleResourceCacheEntriesTable extends ExampleResourceCacheEntries
+    with
+        TableInfo<
+          $ExampleResourceCacheEntriesTable,
+          ExampleResourceCacheEntry
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExampleResourceCacheEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, title, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'example_resource_cache_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExampleResourceCacheEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExampleResourceCacheEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExampleResourceCacheEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ExampleResourceCacheEntriesTable createAlias(String alias) {
+    return $ExampleResourceCacheEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class ExampleResourceCacheEntry extends DataClass
+    implements Insertable<ExampleResourceCacheEntry> {
+  final String id;
+  final String title;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const ExampleResourceCacheEntry({
+    required this.id,
+    required this.title,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ExampleResourceCacheEntriesCompanion toCompanion(bool nullToAbsent) {
+    return ExampleResourceCacheEntriesCompanion(
+      id: Value(id),
+      title: Value(title),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ExampleResourceCacheEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExampleResourceCacheEntry(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ExampleResourceCacheEntry copyWith({
+    String? id,
+    String? title,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => ExampleResourceCacheEntry(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ExampleResourceCacheEntry copyWithCompanion(
+    ExampleResourceCacheEntriesCompanion data,
+  ) {
+    return ExampleResourceCacheEntry(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExampleResourceCacheEntry(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, title, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExampleResourceCacheEntry &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ExampleResourceCacheEntriesCompanion
+    extends UpdateCompanion<ExampleResourceCacheEntry> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ExampleResourceCacheEntriesCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExampleResourceCacheEntriesCompanion.insert({
+    required String id,
+    required String title,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<ExampleResourceCacheEntry> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExampleResourceCacheEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ExampleResourceCacheEntriesCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExampleResourceCacheEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $ExampleResourceCacheEntriesTable exampleResourceCacheEntries =
-      $ExampleResourceCacheEntriesTable(this);
   late final $SyncQueueEntriesTable syncQueueEntries = $SyncQueueEntriesTable(
     this,
   );
-  late final Index exampleResourceCacheEntriesUpdatedAtIdx = Index(
-    'example_resource_cache_entries_updated_at_idx',
-    'CREATE INDEX example_resource_cache_entries_updated_at_idx ON example_resource_cache_entries (updated_at)',
-  );
+  late final $ExampleResourceCacheEntriesTable exampleResourceCacheEntries =
+      $ExampleResourceCacheEntriesTable(this);
   late final Index syncQueueEntriesStatusUpdatedAtIdx = Index(
     'sync_queue_entries_status_updated_at_idx',
     'CREATE INDEX sync_queue_entries_status_updated_at_idx ON sync_queue_entries (status, updated_at)',
@@ -942,219 +938,23 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'sync_queue_entries_operation_idx',
     'CREATE INDEX sync_queue_entries_operation_idx ON sync_queue_entries (operation)',
   );
+  late final Index exampleResourceCacheEntriesUpdatedAtIdx = Index(
+    'example_resource_cache_entries_updated_at_idx',
+    'CREATE INDEX example_resource_cache_entries_updated_at_idx ON example_resource_cache_entries (updated_at)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    exampleResourceCacheEntries,
     syncQueueEntries,
-    exampleResourceCacheEntriesUpdatedAtIdx,
+    exampleResourceCacheEntries,
     syncQueueEntriesStatusUpdatedAtIdx,
     syncQueueEntriesOperationIdx,
+    exampleResourceCacheEntriesUpdatedAtIdx,
   ];
 }
 
-typedef $$ExampleResourceCacheEntriesTableCreateCompanionBuilder =
-    ExampleResourceCacheEntriesCompanion Function({
-      required String id,
-      required String title,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$ExampleResourceCacheEntriesTableUpdateCompanionBuilder =
-    ExampleResourceCacheEntriesCompanion Function({
-      Value<String> id,
-      Value<String> title,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
-
-class $$ExampleResourceCacheEntriesTableFilterComposer
-    extends Composer<_$AppDatabase, $ExampleResourceCacheEntriesTable> {
-  $$ExampleResourceCacheEntriesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get title => $composableBuilder(
-    column: $table.title,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$ExampleResourceCacheEntriesTableOrderingComposer
-    extends Composer<_$AppDatabase, $ExampleResourceCacheEntriesTable> {
-  $$ExampleResourceCacheEntriesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get title => $composableBuilder(
-    column: $table.title,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$ExampleResourceCacheEntriesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ExampleResourceCacheEntriesTable> {
-  $$ExampleResourceCacheEntriesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get title =>
-      $composableBuilder(column: $table.title, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-}
-
-class $$ExampleResourceCacheEntriesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ExampleResourceCacheEntriesTable,
-          ExampleResourceCacheEntry,
-          $$ExampleResourceCacheEntriesTableFilterComposer,
-          $$ExampleResourceCacheEntriesTableOrderingComposer,
-          $$ExampleResourceCacheEntriesTableAnnotationComposer,
-          $$ExampleResourceCacheEntriesTableCreateCompanionBuilder,
-          $$ExampleResourceCacheEntriesTableUpdateCompanionBuilder,
-          (
-            ExampleResourceCacheEntry,
-            BaseReferences<
-              _$AppDatabase,
-              $ExampleResourceCacheEntriesTable,
-              ExampleResourceCacheEntry
-            >,
-          ),
-          ExampleResourceCacheEntry,
-          PrefetchHooks Function()
-        > {
-  $$ExampleResourceCacheEntriesTableTableManager(
-    _$AppDatabase db,
-    $ExampleResourceCacheEntriesTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ExampleResourceCacheEntriesTableFilterComposer(
-                $db: db,
-                $table: table,
-              ),
-          createOrderingComposer: () =>
-              $$ExampleResourceCacheEntriesTableOrderingComposer(
-                $db: db,
-                $table: table,
-              ),
-          createComputedFieldComposer: () =>
-              $$ExampleResourceCacheEntriesTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> title = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExampleResourceCacheEntriesCompanion(
-                id: id,
-                title: title,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String title,
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                Value<int> rowid = const Value.absent(),
-              }) => ExampleResourceCacheEntriesCompanion.insert(
-                id: id,
-                title: title,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$ExampleResourceCacheEntriesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ExampleResourceCacheEntriesTable,
-      ExampleResourceCacheEntry,
-      $$ExampleResourceCacheEntriesTableFilterComposer,
-      $$ExampleResourceCacheEntriesTableOrderingComposer,
-      $$ExampleResourceCacheEntriesTableAnnotationComposer,
-      $$ExampleResourceCacheEntriesTableCreateCompanionBuilder,
-      $$ExampleResourceCacheEntriesTableUpdateCompanionBuilder,
-      (
-        ExampleResourceCacheEntry,
-        BaseReferences<
-          _$AppDatabase,
-          $ExampleResourceCacheEntriesTable,
-          ExampleResourceCacheEntry
-        >,
-      ),
-      ExampleResourceCacheEntry,
-      PrefetchHooks Function()
-    >;
 typedef $$SyncQueueEntriesTableCreateCompanionBuilder =
     SyncQueueEntriesCompanion Function({
       required String localId,
@@ -1451,16 +1251,216 @@ typedef $$SyncQueueEntriesTableProcessedTableManager =
       SyncQueueEntryRow,
       PrefetchHooks Function()
     >;
+typedef $$ExampleResourceCacheEntriesTableCreateCompanionBuilder =
+    ExampleResourceCacheEntriesCompanion Function({
+      required String id,
+      required String title,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ExampleResourceCacheEntriesTableUpdateCompanionBuilder =
+    ExampleResourceCacheEntriesCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$ExampleResourceCacheEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $ExampleResourceCacheEntriesTable> {
+  $$ExampleResourceCacheEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExampleResourceCacheEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExampleResourceCacheEntriesTable> {
+  $$ExampleResourceCacheEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExampleResourceCacheEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExampleResourceCacheEntriesTable> {
+  $$ExampleResourceCacheEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ExampleResourceCacheEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExampleResourceCacheEntriesTable,
+          ExampleResourceCacheEntry,
+          $$ExampleResourceCacheEntriesTableFilterComposer,
+          $$ExampleResourceCacheEntriesTableOrderingComposer,
+          $$ExampleResourceCacheEntriesTableAnnotationComposer,
+          $$ExampleResourceCacheEntriesTableCreateCompanionBuilder,
+          $$ExampleResourceCacheEntriesTableUpdateCompanionBuilder,
+          (
+            ExampleResourceCacheEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $ExampleResourceCacheEntriesTable,
+              ExampleResourceCacheEntry
+            >,
+          ),
+          ExampleResourceCacheEntry,
+          PrefetchHooks Function()
+        > {
+  $$ExampleResourceCacheEntriesTableTableManager(
+    _$AppDatabase db,
+    $ExampleResourceCacheEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExampleResourceCacheEntriesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ExampleResourceCacheEntriesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ExampleResourceCacheEntriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExampleResourceCacheEntriesCompanion(
+                id: id,
+                title: title,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ExampleResourceCacheEntriesCompanion.insert(
+                id: id,
+                title: title,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExampleResourceCacheEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExampleResourceCacheEntriesTable,
+      ExampleResourceCacheEntry,
+      $$ExampleResourceCacheEntriesTableFilterComposer,
+      $$ExampleResourceCacheEntriesTableOrderingComposer,
+      $$ExampleResourceCacheEntriesTableAnnotationComposer,
+      $$ExampleResourceCacheEntriesTableCreateCompanionBuilder,
+      $$ExampleResourceCacheEntriesTableUpdateCompanionBuilder,
+      (
+        ExampleResourceCacheEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $ExampleResourceCacheEntriesTable,
+          ExampleResourceCacheEntry
+        >,
+      ),
+      ExampleResourceCacheEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$SyncQueueEntriesTableTableManager get syncQueueEntries =>
+      $$SyncQueueEntriesTableTableManager(_db, _db.syncQueueEntries);
   $$ExampleResourceCacheEntriesTableTableManager
   get exampleResourceCacheEntries =>
       $$ExampleResourceCacheEntriesTableTableManager(
         _db,
         _db.exampleResourceCacheEntries,
       );
-  $$SyncQueueEntriesTableTableManager get syncQueueEntries =>
-      $$SyncQueueEntriesTableTableManager(_db, _db.syncQueueEntries);
 }

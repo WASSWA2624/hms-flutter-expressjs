@@ -380,9 +380,7 @@ class _IcuPatientCell extends StatelessWidget {
         SizedBox(height: theme.spacing.xs),
         Text(
           _joinDisplay(<String?>[
-            item.patientId,
             item.displayId,
-            item.encounterId,
           ]),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -421,13 +419,14 @@ class _IcuDetailPanel extends ConsumerWidget {
     }
 
     final IcuPatientSummary summary = detail.summary;
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppWorkspacePatientContextHeader(
           patientName: summary.displayTitle,
-          patientNumber: summary.patientId ?? summary.displayId ?? summary.id,
+          patientNumber: summary.displayId ?? '',
           demographics: _joinDisplay(<String?>[
             _apiLabel(detail.patientGender ?? ''),
             _dateLabel(context, detail.patientDateOfBirth),
@@ -449,8 +448,11 @@ class _IcuDetailPanel extends ConsumerWidget {
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: _IcuText.admission,
-              value: summary.displayId ?? summary.admissionId,
+              value: summary.displayId ?? '',
               icon: Icons.tag_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyAdmissionIdAction,
+              copiedMessage: l10n.admissionIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: _IcuText.location,
@@ -636,7 +638,7 @@ class _IcuActionPanel extends ConsumerWidget {
                   PrintFormMetadataItem(
                     label: _IcuText.admission,
                     value:
-                        detail.summary.displayId ?? detail.summary.admissionId,
+                        detail.summary.displayId ?? context.l10n.profileUnknownValue,
                   ),
                   PrintFormMetadataItem(
                     label: _IcuText.location,
@@ -836,7 +838,7 @@ class _IcuTransferPanel extends StatelessWidget {
         _CareItem(
           title: item.isActive ? 'Active ICU stay' : 'Previous ICU stay',
           subtitle: _joinDisplay(<String?>[
-            item.displayId ?? item.id,
+            item.displayId,
             _dateTimeLabel(context, item.startedAt),
             item.endedAt == null
                 ? null

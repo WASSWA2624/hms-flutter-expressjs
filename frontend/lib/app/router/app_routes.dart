@@ -139,6 +139,7 @@ abstract final class AppRoutes {
       AppPermissions.tenantAdmin,
       AppPermissions.systemAdmin,
     ],
+    requiredActiveModules: <String>['subscription-controls'],
   );
   static const AppRouteData opd = AppRouteData(
     name: 'opd',
@@ -323,6 +324,7 @@ abstract final class AppRoutes {
       AppPermissions.communicationsRead,
       AppPermissions.communicationsWrite,
     ],
+    requiredActiveModules: <String>['notifications-communications'],
   );
   static const AppRouteData integrations = AppRouteData(
     name: 'integrations',
@@ -375,6 +377,7 @@ abstract final class AppRoutes {
       AppPermissions.facilityAdmin,
       AppPermissions.systemAdmin,
     ],
+    requiredActiveModules: <String>['reporting-analytics'],
   );
   static const AppRouteData mortuary = AppRouteData(
     name: 'mortuary',

@@ -84,7 +84,6 @@ const buildFaultNotificationContent = ({
   severity,
   priority,
   patientSafetyRisk,
-  isPlaceholderEquipment = false,
 }) => {
   const normalizedEquipmentLabel = normalizeString(equipmentLabel) || 'equipment';
   const normalizedSeverity = normalizeString(severity) || 'HIGH';
@@ -96,9 +95,6 @@ const buildFaultNotificationContent = ({
     `${normalizedEquipmentLabel} needs biomedical attention.`,
     `Severity: ${normalizedSeverity}.`,
     `Priority: ${normalizedPriority}.`,
-    isPlaceholderEquipment
-      ? 'A temporary inventory record was created because the equipment was not yet registered.'
-      : null,
   ].filter(Boolean);
 
   return {
@@ -116,7 +112,6 @@ const createAndEmitFaultNotifications = async ({
   severity,
   priority,
   patientSafetyRisk,
-  isPlaceholderEquipment = false,
 }) => {
   if (!Array.isArray(recipientUserIds) || recipientUserIds.length === 0) {
     return [];
@@ -131,7 +126,6 @@ const createAndEmitFaultNotifications = async ({
     severity,
     priority,
     patientSafetyRisk,
-    isPlaceholderEquipment,
   });
   const notificationPriority =
     patientSafetyRisk || severity === 'CRITICAL'
@@ -504,30 +498,16 @@ const createFaultReport = async (payload = {}, user = {}, ipAddress = null) => {
       })
     : null;
 
-  let equipment;
-  let isPlaceholderEquipment = false;
-
-  if (equipmentId) {
-    equipment = await biomedicalWorkspaceRepository.resolveEquipmentRegistry({
-      tenantId,
-      equipmentId,
-    });
-  } else if (reportedEquipmentName) {
-    equipment =
-      await biomedicalWorkspaceRepository.createPlaceholderEquipmentRegistry({
-        tenantId,
-        facilityId,
-        reportedEquipmentName,
-        description: payload.description,
-        sourceScope: payload.source_scope,
-        sourceRoute: payload.source_route,
-      });
-    isPlaceholderEquipment = true;
-  } else {
+  if (!equipmentId) {
     throw new HttpError('errors.validation.field.required', 400, [
       { field: 'equipment_id' },
     ]);
   }
+
+  const equipment = await biomedicalWorkspaceRepository.resolveEquipmentRegistry({
+    tenantId,
+    equipmentId,
+  });
 
   const result = await biomedicalWorkspaceRepository.createFaultReport({
     tenantId,
@@ -557,7 +537,7 @@ const createFaultReport = async (payload = {}, user = {}, ipAddress = null) => {
       after: {
         equipment_work_order_id: result.workOrder.id,
         equipment_registry_id: equipment.id,
-        is_placeholder_equipment: isPlaceholderEquipment,
+        reported_equipment_name: reportedEquipmentName || null,
         severity: payload.severity,
         priority: payload.priority,
       },
@@ -584,7 +564,7 @@ const createFaultReport = async (payload = {}, user = {}, ipAddress = null) => {
     severity: payload.severity,
     priority: payload.priority,
     patient_safety_risk: Boolean(payload.patient_safety_risk),
-    is_placeholder_equipment: isPlaceholderEquipment,
+    reported_equipment_name: reportedEquipmentName || null,
   };
 
   if (recipientIds.length > 0) {
@@ -599,7 +579,6 @@ const createFaultReport = async (payload = {}, user = {}, ipAddress = null) => {
       severity: payload.severity,
       priority: payload.priority,
       patientSafetyRisk: Boolean(payload.patient_safety_risk),
-      isPlaceholderEquipment,
     });
   }
 

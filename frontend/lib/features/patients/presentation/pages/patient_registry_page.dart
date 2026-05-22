@@ -905,8 +905,8 @@ class _PatientList extends ConsumerWidget {
           label: l10n.patientsPatientNumberColumnLabel,
           sortComparator: (Patient left, Patient right) =>
               appListTableCompareText(
-                left.publicId ?? left.id,
-                right.publicId ?? right.id,
+                left.effectiveIdentifier ?? left.publicId,
+                right.effectiveIdentifier ?? right.publicId,
               ),
           cellBuilder: (_, Patient patient) =>
               _PatientNumberCell(patient: patient),
@@ -1076,10 +1076,11 @@ class _PatientNumberCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      patient.publicId ?? patient.id,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    final AppLocalizations l10n = context.l10n;
+    return AppCopyableIdentifier(
+      value: patient.effectiveIdentifier ?? patient.publicId,
+      tooltip: l10n.opdCopyPatientIdAction,
+      copiedMessage: l10n.clinicalPatientIdCopiedMessage,
     );
   }
 }
@@ -1789,7 +1790,7 @@ class _PatientContextHeader extends StatelessWidget {
 
     return AppWorkspacePatientContextHeader(
       patientName: patient.effectiveDisplayName,
-      patientNumber: patient.effectiveIdentifier ?? patient.id,
+      patientNumber: patient.effectiveIdentifier ?? '',
       demographics: demographics,
       semanticLabel: l10n.patientsDetailTitle,
       status: AppWorkspaceStatus(
@@ -1837,13 +1838,12 @@ class _PatientContextHeader extends StatelessWidget {
         if (visit != null)
           AppWorkspacePatientContextField(
             label: l10n.patientsVisitColumnLabel,
-            value: _joinDisplay(<String?>[
-              visit.title,
-              visit.publicId,
-              visit.status == null ? null : _apiLabel(visit.status!),
-            ]),
+            value: visit.publicId ?? '',
             icon: Icons.assignment_turned_in_outlined,
             tone: AppWorkspaceStatusTone.info,
+            copyable: true,
+            copyTooltip: l10n.copyIdentifierAction,
+            copiedMessage: l10n.identifierCopiedMessage,
           ),
       ],
     );
@@ -4393,7 +4393,7 @@ _PatientReportDocument _buildPatientReportDocument(
         ),
         _PatientReportRow(
           label: l10n.patientsIdentifierLabel,
-          value: patient.effectiveIdentifier ?? patient.id,
+          value: patient.effectiveIdentifier ?? l10n.profileUnknownValue,
         ),
         _PatientReportRow(
           label: l10n.patientsDobLabel,
@@ -4623,7 +4623,7 @@ _PatientReportDocument _buildPatientReportDocument(
     title: l10n.patientsReportDialogTitle,
     hospitalName: hospitalName,
     patientName: patient.effectiveDisplayName,
-    patientIdentifier: patient.effectiveIdentifier ?? patient.id,
+    patientIdentifier: patient.effectiveIdentifier ?? l10n.profileUnknownValue,
     periodLabel: _patientReportPeriodLabel(context, selection),
     generatedAtLabel: AppFormatters.dateTime(generatedAt, locale),
     pages: _paginatePatientReportBlocks(leadingBlocks, bodyBlocks),

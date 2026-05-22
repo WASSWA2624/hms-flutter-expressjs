@@ -136,7 +136,7 @@ final class PhysiotherapyWorkItem {
     this.referralReason,
     this.status = 'REFERRAL',
     this.attendanceStatus,
-    this.billingStatus = 'BACKEND_GAP',
+    this.billingStatus = 'UNAVAILABLE',
     this.therapistUserId,
     this.therapistName,
     this.appointmentId,
@@ -420,7 +420,7 @@ final class PhysiotherapyDetail {
     this.carePlans = const <PhysiotherapyRecord>[],
     this.progressNotes = const <PhysiotherapyRecord>[],
     this.followUps = const <PhysiotherapyRecord>[],
-    this.backendGaps = const <String>[],
+    this.unavailableWorkflows = const <String>[],
   });
 
   final PhysiotherapyWorkItem item;
@@ -429,14 +429,14 @@ final class PhysiotherapyDetail {
   final List<PhysiotherapyRecord> carePlans;
   final List<PhysiotherapyRecord> progressNotes;
   final List<PhysiotherapyRecord> followUps;
-  final List<String> backendGaps;
+  final List<String> unavailableWorkflows;
 
   List<PhysiotherapyRecord> get sessionHistory {
     return <PhysiotherapyRecord>[...appointments, ...procedures]
       ..sort(_newestFirst);
   }
 
-  bool get hasBackendGaps => backendGaps.isNotEmpty;
+  bool get hasUnavailableWorkflows => unavailableWorkflows.isNotEmpty;
 
   PhysiotherapyDetail copyWith({
     PhysiotherapyWorkItem? item,
@@ -445,7 +445,7 @@ final class PhysiotherapyDetail {
     List<PhysiotherapyRecord>? carePlans,
     List<PhysiotherapyRecord>? progressNotes,
     List<PhysiotherapyRecord>? followUps,
-    List<String>? backendGaps,
+    List<String>? unavailableWorkflows,
   }) {
     return PhysiotherapyDetail(
       item: item ?? this.item,
@@ -454,7 +454,7 @@ final class PhysiotherapyDetail {
       carePlans: carePlans ?? this.carePlans,
       progressNotes: progressNotes ?? this.progressNotes,
       followUps: followUps ?? this.followUps,
-      backendGaps: backendGaps ?? this.backendGaps,
+      unavailableWorkflows: unavailableWorkflows ?? this.unavailableWorkflows,
     );
   }
 }

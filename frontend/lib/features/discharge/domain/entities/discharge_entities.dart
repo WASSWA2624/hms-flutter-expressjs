@@ -25,7 +25,7 @@ enum DischargeClearanceCode {
   housekeeping,
 }
 
-enum DischargeClearanceState { complete, pending, backendGap, unavailable }
+enum DischargeClearanceState { complete, pending, unavailable }
 
 @immutable
 final class DischargeWorklistQuery {
@@ -249,7 +249,7 @@ final class DischargeAdmissionDetail {
       ),
       const DischargeClearanceItem(
         code: DischargeClearanceCode.insurance,
-        state: DischargeClearanceState.backendGap,
+        state: DischargeClearanceState.unavailable,
       ),
       DischargeClearanceItem(
         code: DischargeClearanceCode.documents,
@@ -269,7 +269,7 @@ final class DischargeAdmissionDetail {
       ),
       const DischargeClearanceItem(
         code: DischargeClearanceCode.housekeeping,
-        state: DischargeClearanceState.backendGap,
+        state: DischargeClearanceState.unavailable,
       ),
     ];
   }

@@ -67,8 +67,10 @@ class UserProfilePage extends ConsumerWidget {
                   ),
                   _ProfileDetailItem(
                     label: l10n.profileUserIdLabel,
-                    value: _value(profile.displayId ?? profile.id, l10n),
+                    value: _value(profile.displayId, l10n),
                     selectable: true,
+                    copyTooltip: l10n.copyUserIdAction,
+                    copiedMessage: l10n.userIdCopiedMessage,
                   ),
                 ],
               ),
@@ -109,6 +111,8 @@ class UserProfilePage extends ConsumerWidget {
                     label: l10n.profileStaffNumberLabel,
                     value: _value(profile.staffNumber, l10n),
                     selectable: true,
+                    copyTooltip: l10n.copyIdentifierAction,
+                    copiedMessage: l10n.identifierCopiedMessage,
                   ),
                 ],
               ),
@@ -279,8 +283,13 @@ class _ProfileDetailRow extends StatelessWidget {
             color: colorScheme.onSurfaceVariant,
           ),
         );
-        final value = item.selectable
-            ? SelectableText(item.value, style: valueStyle)
+        final Widget value = item.selectable
+            ? AppCopyableIdentifier(
+                value: item.value,
+                tooltip: item.copyTooltip,
+                copiedMessage: item.copiedMessage,
+                textStyle: valueStyle,
+              )
             : Text(item.value, style: valueStyle);
 
         if (constraints.maxWidth < 520) {
@@ -312,11 +321,15 @@ class _ProfileDetailItem {
     required this.label,
     required this.value,
     this.selectable = false,
+    this.copyTooltip,
+    this.copiedMessage,
   });
 
   final String label;
   final String value;
   final bool selectable;
+  final String? copyTooltip;
+  final String? copiedMessage;
 }
 
 class _ProfileSectionGrid extends StatelessWidget {

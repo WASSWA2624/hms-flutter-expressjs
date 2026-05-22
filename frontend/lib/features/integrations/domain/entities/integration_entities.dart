@@ -278,7 +278,7 @@ final class InteropCapabilityStatus {
     required this.scope,
     required this.status,
     required this.nextAction,
-    this.backendGap,
+    this.unavailableReason,
     this.updatedAt,
   });
 
@@ -287,10 +287,10 @@ final class InteropCapabilityStatus {
   final String scope;
   final String status;
   final String nextAction;
-  final String? backendGap;
+  final String? unavailableReason;
   final DateTime? updatedAt;
 
-  bool get requiresAttention => backendGap != null;
+  bool get requiresAttention => unavailableReason != null;
 }
 
 @immutable
@@ -425,7 +425,7 @@ final class IntegrationWorkItem {
       status: record.status,
       scope: record.scope,
       lastEventAt: record.updatedAt,
-      errorSummary: record.backendGap,
+      errorSummary: record.unavailableReason,
       nextAction: record.nextAction,
       interop: record,
     );

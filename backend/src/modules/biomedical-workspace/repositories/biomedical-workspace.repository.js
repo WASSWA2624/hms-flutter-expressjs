@@ -632,52 +632,6 @@ const resolveEquipmentRegistry = async ({ tenantId, equipmentId }) => {
   return equipment;
 };
 
-const createPlaceholderEquipmentRegistry = async ({
-  tenantId,
-  facilityId = null,
-  reportedEquipmentName,
-  description = '',
-  sourceScope = '',
-  sourceRoute = '',
-}) => {
-  try {
-    const normalizedName = String(reportedEquipmentName || '').trim();
-    const normalizedDescription = String(description || '').trim();
-    const detailLines = [
-      'Placeholder equipment record created from fault report.',
-      normalizedDescription ? `fault_report_description=${normalizedDescription}` : null,
-      sourceScope ? `source_scope=${sourceScope}` : null,
-      sourceRoute ? `source_route=${sourceRoute}` : null,
-    ].filter(Boolean);
-
-    return await prisma.equipment_registry.create({
-      data: {
-        tenant_id: tenantId,
-        facility_id: facilityId || null,
-        equipment_name: normalizedName,
-        name: normalizedName,
-        description: detailLines.join('\n'),
-        status: 'PENDING_IDENTIFICATION',
-        criticality_level: null,
-      },
-      select: {
-        id: true,
-        human_friendly_id: true,
-        asset_id: true,
-        facility_id: true,
-        equipment_name: true,
-        equipment_code: true,
-      },
-    });
-  } catch (error) {
-    if (error.code === 'P2003') {
-      const target = error.meta?.field_name || 'field';
-      throw new HttpError('errors.database.foreign_key_field', 400, [{ field: target }]);
-    }
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
-  }
-};
-
 const findNotificationRecipients = async ({ tenantId }) => {
   const rows = await prisma.user_role.findMany({
     where: {
@@ -802,7 +756,6 @@ module.exports = {
   findItems,
   findLookups,
   resolveEquipmentRegistry,
-  createPlaceholderEquipmentRegistry,
   findNotificationRecipients,
   createFaultReport,
 };

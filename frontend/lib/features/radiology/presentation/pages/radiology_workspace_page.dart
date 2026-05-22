@@ -337,15 +337,14 @@ class _RadiologyOrderBoard extends ConsumerWidget {
             label: l10n.radiologyPatientColumnLabel,
             sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
                 appListTableCompareText(
-                  left.patientDisplayName ?? left.patientId,
-                  right.patientDisplayName ?? right.patientId,
+                  left.patientDisplayName,
+                  right.patientDisplayName,
                 ),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return _TwoLineCell(
                 title: item.patientDisplayName ?? l10n.profileUnknownValue,
                 subtitle: _joinDisplay(<String?>[
-                  item.patientId,
-                  item.encounterId,
+                  item.displayId,
                 ]),
               );
             },
@@ -609,8 +608,7 @@ class _RadiologyDetailBody extends ConsumerWidget {
       children: <Widget>[
         AppWorkspacePatientContextHeader(
           patientName: order.patientDisplayName ?? l10n.profileUnknownValue,
-          patientNumber:
-              order.patientId ?? order.encounterId ?? order.effectiveDisplayId,
+          patientNumber: '',
           semanticLabel: l10n.radiologyPatientContextLabel,
           status: _orderStatus(context, order),
           alerts: <AppWorkspaceStatus>[
@@ -624,8 +622,11 @@ class _RadiologyDetailBody extends ConsumerWidget {
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.radiologyEncounterLabel,
-              value: order.encounterId ?? '',
+              value: '',
               icon: Icons.assignment_outlined,
+              copyable: true,
+              copyTooltip: l10n.opdCopyEncounterIdAction,
+              copiedMessage: l10n.opdEncounterIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.radiologyOrderedAtLabel,
@@ -989,7 +990,7 @@ class _StudyBlock extends StatelessWidget {
             else
               for (final ImagingAsset asset in study.assets)
                 _DetailLine(
-                  label: asset.displayId ?? asset.id,
+                  label: asset.displayId ?? l10n.profileUnknownValue,
                   value: _joinDisplay(<String?>[
                     asset.fileName,
                     asset.contentType,
@@ -1012,7 +1013,7 @@ class _StudyBlock extends StatelessWidget {
             else
               for (final PacsLink link in study.pacsLinks)
                 SelectableText(
-                  link.url ?? link.displayId ?? link.id,
+                  link.url ?? link.displayId ?? l10n.profileUnknownValue,
                   style: theme.textTheme.bodyMedium,
                 ),
           ],

@@ -309,7 +309,11 @@ class _LabWorklistPanel extends ConsumerWidget {
             sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
                 appListTableCompareText(left.apiId, right.apiId),
             cellBuilder: (BuildContext context, LabOrderSummary item) {
-              return Text(item.displayId ?? item.id);
+              return AppCopyableIdentifier(
+                value: item.displayId,
+                tooltip: context.l10n.copyIdentifierAction,
+                copiedMessage: context.l10n.identifierCopiedMessage,
+              );
             },
           ),
           AppListTableColumn<LabOrderSummary>(
@@ -520,7 +524,7 @@ class _LabDetailPanel extends ConsumerWidget {
         children: <Widget>[
           AppWorkspacePatientContextHeader(
             patientName: order.patientDisplayName ?? l10n.profileUnknownValue,
-            patientNumber: order.patientId ?? l10n.profileUnknownValue,
+            patientNumber: l10n.profileUnknownValue,
             semanticLabel: l10n.labPatientContextLabel,
             status: _orderStatus(context, order.status),
             alerts: <AppWorkspaceStatus>[
@@ -540,13 +544,19 @@ class _LabDetailPanel extends ConsumerWidget {
             fields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.labOrderFieldLabel,
-                value: order.displayId ?? order.id,
+                value: order.displayId ?? '',
                 icon: Icons.tag_outlined,
+                copyable: true,
+                copyTooltip: l10n.copyIdentifierAction,
+                copiedMessage: l10n.identifierCopiedMessage,
               ),
               AppWorkspacePatientContextField(
                 label: l10n.labEncounterFieldLabel,
-                value: order.encounterId ?? '',
+                value: '',
                 icon: Icons.medical_information_outlined,
+                copyable: true,
+                copyTooltip: l10n.opdCopyEncounterIdAction,
+                copiedMessage: l10n.opdEncounterIdCopiedMessage,
               ),
               AppWorkspacePatientContextField(
                 label: l10n.labOrderedAtFieldLabel,
@@ -696,7 +706,7 @@ class _LabSampleList extends StatelessWidget {
       children: <Widget>[
         for (final LabSample sample in samples)
           _CompactRecordRow(
-            title: sample.displayId ?? sample.id,
+            title: sample.displayId ?? context.l10n.profileUnknownValue,
             subtitle: _joinDisplay(<String?>[
               _dateTimeLabel(context, sample.collectedAt),
               _dateTimeLabel(context, sample.receivedAt),
@@ -752,7 +762,7 @@ class _LabTimelineList extends StatelessWidget {
       children: <Widget>[
         for (final LabWorkflowTimelineItem item in items)
           _CompactRecordRow(
-            title: item.label ?? item.type ?? item.id,
+            title: item.label ?? item.type ?? context.l10n.profileUnknownValue,
             subtitle: _dateTimeLabel(context, item.occurredAt),
             leading: Icons.timeline_outlined,
           ),
@@ -878,18 +888,15 @@ class _LabReportPreview extends StatelessWidget {
             children: <Widget>[
               _ReportLine(
                 label: l10n.labReportPatientLabel,
-                value: _joinDisplay(<String?>[
-                  order.patientDisplayName,
-                  order.patientId,
-                ]),
+                value: order.patientDisplayName ?? l10n.profileUnknownValue,
               ),
               _ReportLine(
                 label: l10n.labReportOrderLabel,
-                value: order.displayId ?? order.id,
+                value: order.displayId ?? l10n.profileUnknownValue,
               ),
               _ReportLine(
                 label: l10n.labEncounterFieldLabel,
-                value: order.encounterId,
+                value: l10n.profileUnknownValue,
               ),
               const Divider(height: 24),
               for (final LabResult result in workflow.results)
@@ -1132,7 +1139,7 @@ class _ReceiveSampleDialogState extends ConsumerState<_ReceiveSampleDialog> {
                     ))
                   AppSelectOption<String>(
                     value: sample.apiId,
-                    label: sample.displayId ?? sample.id,
+                    label: sample.displayId ?? l10n.profileUnknownValue,
                   ),
               ],
               onChanged: (String? value) => setState(() => _sampleId = value),
@@ -1255,7 +1262,7 @@ class _RejectSampleDialogState extends ConsumerState<_RejectSampleDialog> {
                     ))
                   AppSelectOption<String>(
                     value: sample.apiId,
-                    label: sample.displayId ?? sample.id,
+                    label: sample.displayId ?? l10n.profileUnknownValue,
                   ),
               ],
               onChanged: (String? value) => setState(() => _sampleId = value),
@@ -2100,9 +2107,9 @@ String _reportText(BuildContext context, LabOrderWorkflow workflow) {
   final LabOrderSummary order = workflow.order;
   final List<String> lines = <String>[
     l10n.labReportTitle,
-    '${l10n.labReportPatientLabel}: ${_joinDisplay(<String?>[order.patientDisplayName, order.patientId]) ?? l10n.profileUnknownValue}',
-    '${l10n.labReportOrderLabel}: ${order.displayId ?? order.id}',
-    '${l10n.labEncounterFieldLabel}: ${order.encounterId ?? l10n.profileUnknownValue}',
+    '${l10n.labReportPatientLabel}: ${order.patientDisplayName ?? l10n.profileUnknownValue}',
+    '${l10n.labReportOrderLabel}: ${order.displayId ?? l10n.profileUnknownValue}',
+    '${l10n.labEncounterFieldLabel}: ${l10n.profileUnknownValue}',
     for (final LabResult result in workflow.results) ...<String>[
       result.displayTitle,
       '${l10n.labReportResultLabel}: ${result.displayValue ?? l10n.profileUnknownValue}',

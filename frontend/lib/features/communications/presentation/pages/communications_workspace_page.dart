@@ -680,7 +680,7 @@ class _DeliveriesTable extends ConsumerWidget {
                   ),
           cellBuilder: (_, NotificationDelivery item) {
             return AppListItemText(
-              title: item.notificationTitle ?? item.id,
+              title: item.notificationTitle ?? context.l10n.profileUnknownValue,
               subtitle: item.errorMessage,
             );
           },
@@ -733,7 +733,7 @@ class _DeliveriesTable extends ConsumerWidget {
       ],
       mobileItemBuilder: (BuildContext context, NotificationDelivery item) {
         return AppListItemRow(
-          title: item.notificationTitle ?? item.id,
+          title: item.notificationTitle ?? context.l10n.profileUnknownValue,
           subtitle: _deliveryRecipient(item),
           leadingIcon: Icons.mark_email_read_outlined,
           details: <Widget>[
@@ -1587,7 +1587,7 @@ String _participantsLabel(
 ) {
   final String joined = participants
       .map((CommunicationsParticipant participant) {
-        return participant.user?.displayName ?? participant.userId;
+        return participant.user?.displayName ?? '';
       })
       .where((String value) => value.trim().isNotEmpty)
       .take(3)
@@ -1600,7 +1600,7 @@ String _deliveryRecipient(NotificationDelivery delivery) {
         delivery.recipient?.displayName,
         delivery.recipientTarget,
       ]) ??
-      delivery.id;
+      '';
 }
 
 String _dateTimeLabel(BuildContext context, DateTime? value) {

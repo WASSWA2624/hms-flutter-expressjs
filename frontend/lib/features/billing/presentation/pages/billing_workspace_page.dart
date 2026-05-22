@@ -396,14 +396,14 @@ Future<void> _showBillingDetailDialog(
           label: _BillingText.invoice,
           enabled: item.isInvoice,
           tooltip: item.isInvoice
-              ? 'Generated invoice document is available from the backend.'
+              ? 'Generated invoice document is available.'
               : 'Document output is only available for invoices.',
           onPressed: item.isInvoice
               ? () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
-                        'Generated document endpoint confirmed; browser download is pending platform wiring.',
+                        'Generated document is ready. Browser download is not available in this build yet.',
                       ),
                     ),
                   );
@@ -429,13 +429,14 @@ class _BillingDetailBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppWorkspacePatientContextHeader(
           patientName: item.effectivePatientName,
-          patientNumber: item.effectivePatientNumber ?? item.effectiveDisplayId,
+          patientNumber: item.effectivePatientNumber ?? item.displayId ?? item.invoiceDisplayId ?? '',
           status: AppWorkspaceStatus(
             label: _clearanceLabel(item.clearanceState),
             tone: _clearanceTone(item.clearanceState),
@@ -443,8 +444,11 @@ class _BillingDetailBody extends ConsumerWidget {
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: _BillingText.invoice,
-              value: item.effectiveDisplayId,
+              value: item.displayId ?? item.invoiceDisplayId ?? '',
               icon: Icons.receipt_long_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyIdentifierAction,
+              copiedMessage: l10n.identifierCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: _BillingText.status,
@@ -546,7 +550,7 @@ class _DepositPanel extends StatelessWidget {
           SizedBox(width: Theme.of(context).spacing.sm),
           const Expanded(
             child: Text(
-              'Admission deposits are not exposed by the current backend route set, so the cashier UI does not create local deposit records.',
+              'Admission deposit recording is unavailable in this workspace, so cashier actions do not create local deposit records.',
             ),
           ),
         ],
@@ -642,7 +646,7 @@ class _AdjustmentsSection extends StatelessWidget {
         children: <Widget>[
           for (final BillingAdjustment adjustment in item.adjustments)
             _DetailRow(
-              title: adjustment.displayId ?? adjustment.id,
+              title: adjustment.displayId ?? context.l10n.profileUnknownValue,
               subtitle: _joinDisplay(<String?>[
                 _apiLabel(adjustment.status),
                 adjustment.reason,

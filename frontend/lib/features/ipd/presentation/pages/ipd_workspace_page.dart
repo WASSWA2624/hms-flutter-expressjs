@@ -370,8 +370,7 @@ class _IpdPatientCell extends StatelessWidget {
           ),
         ),
         Text(
-          _joinDisplay(<String?>[admission.patientId, admission.displayId]) ??
-              context.l10n.profileUnknownValue,
+          admission.displayId ?? context.l10n.profileUnknownValue,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
@@ -450,7 +449,7 @@ class _IpdDetailPanel extends ConsumerWidget {
 
     return AppWorkspaceDetailPanel(
       title: l10n.ipdAdmissionDetailTitle,
-      description: admission.summary.displayId ?? admission.summary.id,
+      description: admission.summary.displayId ?? '',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -459,8 +458,7 @@ class _IpdDetailPanel extends ConsumerWidget {
           AppWorkspacePatientContextHeader(
             semanticLabel: l10n.ipdPatientContextLabel,
             patientName: admission.patientDisplayName,
-            patientNumber:
-                admission.summary.patientId ?? l10n.profileUnknownValue,
+            patientNumber: '',
             demographics: _joinDisplay(<String?>[
               admission.patientGender == null
                   ? null
@@ -484,14 +482,19 @@ class _IpdDetailPanel extends ConsumerWidget {
             fields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.ipdAdmissionIdLabel,
-                value: admission.summary.displayId ?? admission.summary.id,
+                value: admission.summary.displayId ?? '',
                 icon: Icons.confirmation_number_outlined,
+                copyable: true,
+                copyTooltip: l10n.copyAdmissionIdAction,
+                copiedMessage: l10n.admissionIdCopiedMessage,
               ),
               AppWorkspacePatientContextField(
                 label: l10n.ipdEncounterIdLabel,
-                value:
-                    admission.summary.encounterId ?? l10n.profileUnknownValue,
+                value: '',
                 icon: Icons.assignment_outlined,
+                copyable: true,
+                copyTooltip: l10n.opdCopyEncounterIdAction,
+                copiedMessage: l10n.opdEncounterIdCopiedMessage,
               ),
               AppWorkspacePatientContextField(
                 label: l10n.ipdWardBedLabel,

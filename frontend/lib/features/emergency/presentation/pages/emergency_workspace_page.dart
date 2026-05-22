@@ -429,11 +429,7 @@ class _EmergencyCaseCell extends StatelessWidget {
         ),
         SizedBox(height: theme.spacing.xs),
         Text(
-          _joinDisplay(<String?>[
-            item.patientId,
-            item.patientDisplayId,
-            item.caseLabel,
-          ]),
+          _joinDisplay(<String?>[item.patientDisplayId, item.caseLabel]),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
@@ -474,13 +470,14 @@ class _EmergencyDetailPanel extends ConsumerWidget {
     }
 
     final EmergencyCaseSummary summary = detail.summary;
+    final l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppWorkspacePatientContextHeader(
           patientName: summary.displayTitle,
-          patientNumber: summary.patientDisplayId ?? summary.patientId ?? '',
+          patientNumber: summary.patientDisplayId ?? '',
           demographics: summary.patientLabel,
           status: _caseStatus(summary),
           alerts: <AppWorkspaceStatus>[
@@ -497,8 +494,11 @@ class _EmergencyDetailPanel extends ConsumerWidget {
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: _EmergencyText.caseLabel,
-              value: summary.caseLabel,
+              value: summary.displayId ?? '',
               icon: Icons.tag_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyIdentifierAction,
+              copiedMessage: l10n.identifierCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: _EmergencyText.arrival,
@@ -1941,7 +1941,7 @@ String _emergencySummaryHtml(BuildContext context, EmergencyCaseDetail detail) {
         ),
         PrintFormMetadataItem(
           label: _EmergencyText.patientNumber,
-          value: summary.patientDisplayId ?? summary.patientId ?? '',
+          value: summary.patientDisplayId ?? '',
         ),
         PrintFormMetadataItem(
           label: _EmergencyText.facility,

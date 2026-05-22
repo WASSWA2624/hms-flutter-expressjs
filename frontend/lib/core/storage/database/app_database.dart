@@ -7,7 +7,7 @@ part 'migrations/app_database_migrations.dart';
 part 'tables/example_resource_cache_entries.dart';
 part 'tables/sync_queue_entries.dart';
 
-@DriftDatabase(tables: [ExampleResourceCacheEntries, SyncQueueEntries])
+@DriftDatabase(tables: [SyncQueueEntries, ExampleResourceCacheEntries])
 final class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
     : super(executor ?? driftDatabase(name: 'app_database'));

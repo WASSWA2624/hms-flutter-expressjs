@@ -215,7 +215,7 @@ final class Patient {
       first,
       last,
     ].where((String value) => value.isNotEmpty).join(' ');
-    return _firstNonEmpty(<String?>[displayName, joined, publicId, id]) ?? id;
+    return _firstNonEmpty(<String?>[displayName, joined, publicId]) ?? '';
   }
 
   String? get effectiveIdentifier {
@@ -223,7 +223,7 @@ final class Patient {
       primaryIdentifierType,
       primaryIdentifierValue,
     ]);
-    return _firstNonEmpty(<String?>[typedIdentifier, publicId, id]);
+    return _firstNonEmpty(<String?>[typedIdentifier, publicId]);
   }
 
   Patient copyWith({

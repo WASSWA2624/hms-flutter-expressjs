@@ -15,17 +15,7 @@ void main() {
       await database.close();
     });
 
-    test('creates initial schema tables explicitly', () async {
-      await database
-          .into(database.exampleResourceCacheEntries)
-          .insert(
-            ExampleResourceCacheEntriesCompanion.insert(
-              id: 'example-1',
-              title: 'Example resource',
-              createdAt: DateTime.utc(2026),
-              updatedAt: DateTime.utc(2026),
-            ),
-          );
+    test('creates production sync queue storage explicitly', () async {
       await database
           .into(database.syncQueueEntries)
           .insert(
@@ -39,12 +29,12 @@ void main() {
           );
 
       expect(
-        await database.select(database.exampleResourceCacheEntries).get(),
+        await database.select(database.syncQueueEntries).get(),
         hasLength(1),
       );
       expect(
-        await database.select(database.syncQueueEntries).get(),
-        hasLength(1),
+        database.allSchemaEntities.map((entity) => entity.entityName),
+        isNot(contains('example_resource_cache_entries')),
       );
     });
   });

@@ -1,10 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hosspi_hms/core/network/api_result.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/features/example/data/datasources/example_resource_remote_data_source.dart';
-import 'package:hosspi_hms/features/example/data/dtos/example_resource_dto.dart';
-import 'package:hosspi_hms/features/example/data/repositories/example_resource_repository_impl.dart';
 import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
@@ -43,33 +39,6 @@ void main() {
       expect(repository.callCount, 1);
       expect(repository.lastRequest, HomeDashboardRequest.empty);
     });
-
-    test('overrides a data source dependency for repository tests', () async {
-      final remoteDataSource = _FakeExampleResourceRemoteDataSource(
-        const Result<ExampleResourceDto>.success(
-          ExampleResourceDto(id: 'resource-1', title: 'Starter resource'),
-        ),
-      );
-      final container = createTestContainer(
-        overrides: <Object?>[
-          exampleResourceRemoteDataSourceProvider.overrideWithValue(
-            remoteDataSource,
-          ),
-        ],
-      );
-
-      final repository = container.read(exampleResourceRepositoryProvider);
-      final result = await repository.fetchById('resource-1');
-
-      result.when(
-        success: (resource) {
-          expect(resource.id, 'resource-1');
-          expect(resource.title, 'Starter resource');
-        },
-        failure: (_) => fail('Expected overridden data source success.'),
-      );
-      expect(remoteDataSource.requestedIds, <String>['resource-1']);
-    });
   });
 }
 
@@ -105,24 +74,6 @@ final class _FakeHomeRepository implements HomeRepository {
   ) async {
     callCount += 1;
     lastRequest = request;
-
-    return result;
-  }
-}
-
-final class _FakeExampleResourceRemoteDataSource
-    implements ExampleResourceRemoteDataSource {
-  _FakeExampleResourceRemoteDataSource(this.result);
-
-  final ApiResult<ExampleResourceDto> result;
-  final List<String> requestedIds = <String>[];
-
-  @override
-  Future<ApiResult<ExampleResourceDto>> fetchById(
-    String id, {
-    CancelToken? cancelToken,
-  }) async {
-    requestedIds.add(id);
 
     return result;
   }

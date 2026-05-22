@@ -367,6 +367,8 @@ describe('dashboard-workspace service', () => {
         reason: 'guided_setup',
       })
     );
+    expect(result.overview.insights_preview).toEqual([]);
+    expect(result.overview.alerts).toEqual([]);
   });
 
   it('builds maintenance queue items from status when the model has no priority field', async () => {

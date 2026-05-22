@@ -182,11 +182,9 @@ final class PharmacyOrder {
   String get displayTitle {
     return _firstNonEmpty(<String?>[
           patientDisplayName,
-          patientId,
           displayId,
-          id,
         ]) ??
-        id;
+        '';
   }
 
   bool get hasPendingAttestation {
@@ -367,9 +365,8 @@ final class PharmacyOrderItem {
           customPrescription,
           drugCode,
           displayId,
-          id,
         ]) ??
-        id;
+        '';
   }
 
   String get doseLine {

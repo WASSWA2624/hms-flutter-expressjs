@@ -2566,7 +2566,7 @@ abstract final class _SubscriptionsText {
   static const String overviewDescription =
       'Current plan, renewal, entitlement, invoice, and license state.';
   static const String worklistDescription =
-      'Search and filter subscription records backed by confirmed APIs.';
+      'Search and filter subscription records.';
   static const String activePlan = 'Active plan';
   static const String activeSubscriptions = 'Active subscriptions';
   static const String subscriptionStatus = 'Subscription status';
@@ -2627,7 +2627,7 @@ abstract final class _SubscriptionsText {
   static const String retryInvoice = 'Retry invoice';
   static const String printInvoice = 'Print invoice';
   static const String reportEndpointPending =
-      'Generated subscription invoice report endpoint is pending the reports implementation.';
+      'Generated subscription invoice reports are not available yet.';
   static const String tenant = 'Tenant';
   static const String plan = 'Plan';
   static const String module = 'Module';

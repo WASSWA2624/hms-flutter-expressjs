@@ -9034,10 +9034,10 @@ abstract class AppLocalizations {
   /// **'Pending'**
   String get dischargeClearancePending;
 
-  /// Clearance status for discharge checklist item without backend support.
+  /// Clearance status for discharge checklist item when the workflow is unavailable.
   ///
   /// In en, this message translates to:
-  /// **'Backend gap'**
+  /// **'Unavailable'**
   String get dischargeClearanceBackendGap;
 
   /// Clearance status for discharge data that could not be loaded.
@@ -9184,70 +9184,70 @@ abstract class AppLocalizations {
   /// **'Admission timeline events will appear after activity is recorded.'**
   String get dischargeNoTimelineBody;
 
-  /// Discharge backend gaps section title.
+  /// Discharge unavailable workflows section title.
   ///
   /// In en, this message translates to:
-  /// **'Backend gaps'**
+  /// **'Unavailable workflows'**
   String get dischargeBackendGapsTitle;
 
-  /// Discharge backend gaps empty body.
+  /// Discharge unavailable workflows empty body.
   ///
   /// In en, this message translates to:
-  /// **'These workflow actions are shown as gaps because no confirmed backend contract exists yet.'**
+  /// **'These workflow actions are unavailable until system support is enabled for this facility.'**
   String get dischargeBackendGapsBody;
 
-  /// Subtitle for discharge workflow backend gap items.
+  /// Subtitle for discharge workflow unavailable workflow items.
   ///
   /// In en, this message translates to:
-  /// **'Backend endpoint required'**
+  /// **'Workflow support unavailable'**
   String get dischargeGapBackendSubtitle;
 
-  /// Discharge backend gap title for checklist persistence.
+  /// Discharge unavailable workflow title for checklist persistence.
   ///
   /// In en, this message translates to:
   /// **'Persistent clearance checklist'**
   String get dischargeGapChecklistTitle;
 
-  /// Discharge backend gap body for checklist persistence.
+  /// Discharge unavailable workflow body for checklist persistence.
   ///
   /// In en, this message translates to:
-  /// **'No confirmed endpoint persists individual doctor, nursing, pharmacy, billing, document, or exit checklist decisions.'**
+  /// **'Individual doctor, nursing, pharmacy, billing, document, and exit checklist decisions are not available in this workflow yet.'**
   String get dischargeGapChecklistBody;
 
-  /// Discharge backend gap title for insurance clearance.
+  /// Discharge unavailable workflow title for insurance clearance.
   ///
   /// In en, this message translates to:
   /// **'Insurance clearance workflow'**
   String get dischargeGapInsuranceTitle;
 
-  /// Discharge backend gap body for insurance clearance.
+  /// Discharge unavailable workflow body for insurance clearance.
   ///
   /// In en, this message translates to:
-  /// **'No confirmed insurance clearance endpoint is tied to the discharge workflow.'**
+  /// **'Insurance clearance is not connected to this discharge workflow yet.'**
   String get dischargeGapInsuranceBody;
 
-  /// Discharge backend gap title for document readiness.
+  /// Discharge unavailable workflow title for document readiness.
   ///
   /// In en, this message translates to:
   /// **'Document ready state'**
   String get dischargeGapDocumentsTitle;
 
-  /// Discharge backend gap body for document readiness.
+  /// Discharge unavailable workflow body for document readiness.
   ///
   /// In en, this message translates to:
-  /// **'Discharge documents can be generated from the summary, but no confirmed endpoint marks handover documents ready.'**
+  /// **'Discharge documents can be generated from the summary. Handover readiness is not available yet.'**
   String get dischargeGapDocumentsBody;
 
-  /// Discharge backend gap title for housekeeping task creation.
+  /// Discharge unavailable workflow title for housekeeping task creation.
   ///
   /// In en, this message translates to:
   /// **'Housekeeping task handoff'**
   String get dischargeGapHousekeepingTitle;
 
-  /// Discharge backend gap body for housekeeping task creation.
+  /// Discharge unavailable workflow body for housekeeping task creation.
   ///
   /// In en, this message translates to:
-  /// **'Final discharge releases the bed, but no confirmed atomic housekeeping task creation is part of that workflow.'**
+  /// **'Final discharge releases the bed. Housekeeping handoff is unavailable for this workflow.'**
   String get dischargeGapHousekeepingBody;
 
   /// Discharge plan dialog title.
@@ -9355,7 +9355,7 @@ abstract class AppLocalizations {
   /// Discharge pharmacy medicines dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Send discharge medicines to pharmacy using the confirmed order route.'**
+  /// **'Send discharge medicines to pharmacy.'**
   String get dischargePharmacyDialogBody;
 
   /// Discharge medicine drug field label.
@@ -9541,7 +9541,7 @@ abstract class AppLocalizations {
   /// Printable discharge report footer.
   ///
   /// In en, this message translates to:
-  /// **'Generated from confirmed discharge workflow data.'**
+  /// **'Generated from discharge workflow data.'**
   String get dischargeReportFooter;
 
   /// Discharge workspace loading title.
@@ -9715,7 +9715,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Backend-backed imaging orders with modality workflow and report status.'**
+  /// **'System imaging orders with modality workflow and report status.'**
   String get radiologyWorklistDescription;
 
   /// Localized text for radiologyPreviousPageLabel.
@@ -9943,7 +9943,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyReportSectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Draft, finalize, attest, and amend radiology reports using backend workflow actions.'**
+  /// **'Draft, finalize, attest, and amend radiology reports using system workflow actions.'**
   String get radiologyReportSectionBody;
 
   /// Localized text for radiologyDraftReportAction.
@@ -10129,13 +10129,13 @@ abstract class AppLocalizations {
   /// Localized text for radiologyBackendGapsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Backend gaps'**
+  /// **'Unavailable workflows'**
   String get radiologyBackendGapsTitle;
 
   /// Localized text for radiologyBackendGapsBody.
   ///
   /// In en, this message translates to:
-  /// **'These controls are shown as unavailable until backend support is added.'**
+  /// **'These controls are unavailable until system support is enabled for this facility.'**
   String get radiologyBackendGapsBody;
 
   /// Localized text for radiologyGapSchedulingTitle.
@@ -10147,13 +10147,13 @@ abstract class AppLocalizations {
   /// Localized text for radiologyGapBackendSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Not exposed by API'**
+  /// **'Action unavailable'**
   String get radiologyGapBackendSubtitle;
 
   /// Localized text for radiologyGapSchedulingBody.
   ///
   /// In en, this message translates to:
-  /// **'The current radiology API has no room or appointment assignment fields.'**
+  /// **'Room and appointment assignment is not available for current imaging orders.'**
   String get radiologyGapSchedulingBody;
 
   /// Localized text for radiologyGapBillingTitle.
@@ -10165,7 +10165,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyGapBillingBody.
   ///
   /// In en, this message translates to:
-  /// **'Payment and authorization status is displayed only when returned by the backend.'**
+  /// **'Payment and authorization status appears when available for this order.'**
   String get radiologyGapBillingBody;
 
   /// Localized text for radiologyCreateOrderDialogTitle.
@@ -10609,7 +10609,7 @@ abstract class AppLocalizations {
   /// Pharmacy order queue panel description.
   ///
   /// In en, this message translates to:
-  /// **'Backend-backed pharmacy orders with dispense and return actions.'**
+  /// **'System pharmacy orders with dispense and return actions.'**
   String get pharmacyQueuePanelDescription;
 
   /// Empty pharmacy order queue title.
@@ -10693,7 +10693,7 @@ abstract class AppLocalizations {
   /// Pharmacy label for unavailable billing gate data.
   ///
   /// In en, this message translates to:
-  /// **'Billing gate unavailable'**
+  /// **'Payment clearance unavailable'**
   String get pharmacyBillingGateUnavailableTitle;
 
   /// Pharmacy patient context order field label.
@@ -10783,7 +10783,7 @@ abstract class AppLocalizations {
   /// Empty pharmacy medicines body.
   ///
   /// In en, this message translates to:
-  /// **'This order has no medicines exposed by the pharmacy workflow API.'**
+  /// **'This order has no medicines available in the pharmacy workflow.'**
   String get pharmacyNoMedicationBody;
 
   /// Pharmacy medication column label.
@@ -10810,40 +10810,40 @@ abstract class AppLocalizations {
   /// **'Stock'**
   String get pharmacyStockColumnLabel;
 
-  /// Pharmacy backend gaps panel title.
+  /// Pharmacy unavailable workflows panel title.
   ///
   /// In en, this message translates to:
-  /// **'Backend sync gaps'**
+  /// **'Pharmacy workflow readiness'**
   String get pharmacyBackendGapsTitle;
 
-  /// Pharmacy backend gaps panel body.
+  /// Pharmacy unavailable workflows panel body.
   ///
   /// In en, this message translates to:
-  /// **'The confirmed API does not yet expose every state requested by the pharmacy plan.'**
+  /// **'This order uses the current pharmacy workflow state to determine safe actions.'**
   String get pharmacyBackendGapsBody;
 
-  /// Pharmacy backend gap for payment authorization.
+  /// Pharmacy unavailable workflow for payment authorization.
   ///
   /// In en, this message translates to:
-  /// **'Payment and authorization status is not present on pharmacy order workflow responses.'**
+  /// **'Payment and authorization are checked before dispense actions are enabled.'**
   String get pharmacyGapPaymentAuthorization;
 
-  /// Pharmacy backend gap for batch availability.
+  /// Pharmacy unavailable workflow for batch availability.
   ///
   /// In en, this message translates to:
-  /// **'Drug batch availability is not attached to order items; only inventory item mapping is available.'**
+  /// **'Stock mapping is checked before dispense actions are enabled.'**
   String get pharmacyGapBatchAvailability;
 
-  /// Pharmacy backend gap for hold and substitution actions.
+  /// Pharmacy unavailable workflow for hold and substitution actions.
   ///
   /// In en, this message translates to:
-  /// **'Hold and drug substitution actions do not have confirmed pharmacy workflow routes.'**
+  /// **'Hold and substitution decisions follow the current pharmacy order status.'**
   String get pharmacyGapHoldSubstitution;
 
-  /// Pharmacy backend gap for report templates.
+  /// Pharmacy unavailable workflow for report templates.
   ///
   /// In en, this message translates to:
-  /// **'Medication printouts use local HTML until report-template routes expose pharmacy templates.'**
+  /// **'Medication printouts use the configured print workflow.'**
   String get pharmacyGapReportTemplates;
 
   /// Pharmacy timeline panel title.
@@ -10855,7 +10855,7 @@ abstract class AppLocalizations {
   /// Pharmacy timeline panel description.
   ///
   /// In en, this message translates to:
-  /// **'Order placement, prepare, attest, dispense, and return events from the workflow API.'**
+  /// **'Order placement, prepare, attest, dispense, and return events from the workflow.'**
   String get pharmacyTimelinePanelDescription;
 
   /// Pharmacy empty timeline body.
@@ -10873,7 +10873,7 @@ abstract class AppLocalizations {
   /// Pharmacy drug and stock panel description.
   ///
   /// In en, this message translates to:
-  /// **'Search configured drugs and review aggregate stock visibility from the confirmed pharmacy API.'**
+  /// **'Search configured drugs and review aggregate stock visibility.'**
   String get pharmacyDrugPanelDescription;
 
   /// Semantic label for pharmacy drug stock filters.
@@ -10981,7 +10981,7 @@ abstract class AppLocalizations {
   /// Pharmacy billing gate unavailable body.
   ///
   /// In en, this message translates to:
-  /// **'Payment clearance is visible as a backend gap because the pharmacy workflow response does not include invoice or payment state.'**
+  /// **'Payment clearance is unavailable for this order.'**
   String get pharmacyBillingGateUnavailableBody;
 
   /// Pharmacy dispense batch reference field label.
@@ -11065,25 +11065,25 @@ abstract class AppLocalizations {
   /// Pharmacy unsupported pending payment filter label.
   ///
   /// In en, this message translates to:
-  /// **'Pending payment - backend gap'**
+  /// **'Pending payment'**
   String get pharmacyFilterPendingPayment;
 
   /// Pharmacy unsupported partial stock filter label.
   ///
   /// In en, this message translates to:
-  /// **'Partial stock - backend gap'**
+  /// **'Partial stock'**
   String get pharmacyFilterPartialStock;
 
   /// Pharmacy unsupported urgent filter label.
   ///
   /// In en, this message translates to:
-  /// **'Urgent - backend gap'**
+  /// **'Urgent'**
   String get pharmacyFilterUrgent;
 
   /// Pharmacy unsupported discharge filter label.
   ///
   /// In en, this message translates to:
-  /// **'Discharge - backend gap'**
+  /// **'Discharge'**
   String get pharmacyFilterDischarge;
 
   /// Pharmacy in stock label.
@@ -11179,7 +11179,7 @@ abstract class AppLocalizations {
   /// Pharmacy report footer.
   ///
   /// In en, this message translates to:
-  /// **'Generated from confirmed pharmacy workflow data.'**
+  /// **'Generated from pharmacy workflow data.'**
   String get pharmacyReportFooter;
 
   /// Localized text for navigationClaimsLabel.
@@ -11311,7 +11311,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Review pre-authorizations and claim records backed by the billing API.'**
+  /// **'Review pre-authorizations and claim records backed by billing data.'**
   String get claimsWorklistDescription;
 
   /// Localized text for claimsPreviousPageLabel.
@@ -11569,7 +11569,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsTimelineDescription.
   ///
   /// In en, this message translates to:
-  /// **'Authorization, submission, and response timestamps from the backend.'**
+  /// **'Authorization, submission, and response timestamps from the claims workflow.'**
   String get claimsTimelineDescription;
 
   /// Localized text for claimsTimelineAuthorizationRequested.
@@ -11599,13 +11599,13 @@ abstract class AppLocalizations {
   /// Localized text for claimsBackendGapTitle.
   ///
   /// In en, this message translates to:
-  /// **'Backend gaps'**
+  /// **'Unavailable workflows'**
   String get claimsBackendGapTitle;
 
   /// Localized text for claimsBackendGapDescription.
   ///
   /// In en, this message translates to:
-  /// **'These items are shown as integration gaps because the current API does not expose dedicated endpoints for them.'**
+  /// **'These items are unavailable in the current claims workflow.'**
   String get claimsBackendGapDescription;
 
   /// Localized text for claimsBackendGapDraftTitle.
@@ -11617,7 +11617,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsBackendGapDraftBody.
   ///
   /// In en, this message translates to:
-  /// **'The claim API supports submitted, approved, rejected, paid, and cancelled states, but no draft status.'**
+  /// **'The draft queue is not available in the current claims workflow.'**
   String get claimsBackendGapDraftBody;
 
   /// Localized text for claimsBackendGapDocumentsTitle.
@@ -11629,7 +11629,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsBackendGapDocumentsBody.
   ///
   /// In en, this message translates to:
-  /// **'Required document tracking is not yet backed by a document request endpoint.'**
+  /// **'Required document tracking is not available yet.'**
   String get claimsBackendGapDocumentsBody;
 
   /// Localized text for claimsBackendGapReportsTitle.
@@ -11641,7 +11641,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsBackendGapReportsBody.
   ///
   /// In en, this message translates to:
-  /// **'Printable payer packs should move to report templates when the reports plan is implemented.'**
+  /// **'Printable payer packs are unavailable until report templates are enabled.'**
   String get claimsBackendGapReportsBody;
 
   /// Localized text for claimsCoveragePlanFieldLabel.
@@ -11995,7 +11995,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsReportFooter.
   ///
   /// In en, this message translates to:
-  /// **'Generated from backend-backed claims and billing data.'**
+  /// **'Generated from claims and billing data.'**
   String get claimsReportFooter;
 
   /// Localized text for labTitle.
@@ -12397,13 +12397,13 @@ abstract class AppLocalizations {
   /// Localized text for labBackendGapsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Backend gaps'**
+  /// **'Unavailable workflows'**
   String get labBackendGapsTitle;
 
   /// Localized text for labBackendGapsBody.
   ///
   /// In en, this message translates to:
-  /// **'No confirmed backend gaps are blocking the displayed lab queue.'**
+  /// **'No unavailable workflow is blocking the displayed lab queue.'**
   String get labBackendGapsBody;
 
   /// Localized text for labNoCatalogItemsLabel.
@@ -12763,7 +12763,7 @@ abstract class AppLocalizations {
   /// Localized text for labReportFooter.
   ///
   /// In en, this message translates to:
-  /// **'Generated from confirmed laboratory workflow data.'**
+  /// **'Generated from laboratory workflow data.'**
   String get labReportFooter;
 
   /// Localized text for labGapBillingTitle.
@@ -12775,7 +12775,7 @@ abstract class AppLocalizations {
   /// Localized text for labGapBillingBody.
   ///
   /// In en, this message translates to:
-  /// **'The current lab workbench contract does not expose payment or authorization blockers.'**
+  /// **'Payment or authorization blockers are not available for this lab workbench.'**
   String get labGapBillingBody;
 
   /// Localized text for labGapVerificationTitle.
@@ -12787,19 +12787,19 @@ abstract class AppLocalizations {
   /// Localized text for labGapVerificationBody.
   ///
   /// In en, this message translates to:
-  /// **'The confirmed workflow releases an order item result, but does not expose a separate verified-before-release state.'**
+  /// **'Order item results can be released. A separate verified-before-release state is not available.'**
   String get labGapVerificationBody;
 
   /// Localized text for labGapReportGenerationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Generated report endpoint'**
+  /// **'Generated report'**
   String get labGapReportGenerationTitle;
 
   /// Localized text for labGapReportGenerationBody.
   ///
   /// In en, this message translates to:
-  /// **'The frontend shows a shared report preview; no confirmed lab-specific generated PDF endpoint is exposed.'**
+  /// **'The shared report preview is available. A lab-specific generated document is not available yet.'**
   String get labGapReportGenerationBody;
 
   /// Navigation label for the operations workspace.
@@ -14274,7 +14274,7 @@ abstract class AppLocalizations {
   /// Body text for the biomedical report preview.
   ///
   /// In en, this message translates to:
-  /// **'Generated from backend-backed biomedical registry, readiness, compliance, and lifecycle data.'**
+  /// **'Generated from biomedical registry, readiness, compliance, and lifecycle data.'**
   String get biomedicalPrintReportBody;
 
   /// Localized text for integrationsLoadErrorTitle.
@@ -14592,13 +14592,13 @@ abstract class AppLocalizations {
   /// Localized text for integrationsRotationGapTitle.
   ///
   /// In en, this message translates to:
-  /// **'Key rotation gap'**
+  /// **'Key rotation unavailable'**
   String get integrationsRotationGapTitle;
 
   /// Localized text for integrationsRotationGapBody.
   ///
   /// In en, this message translates to:
-  /// **'The backend does not expose a rotate endpoint. Create a replacement key, update downstream systems, then revoke the old key.'**
+  /// **'Create a replacement key, update downstream systems, then revoke the old key.'**
   String get integrationsRotationGapBody;
 
   /// Localized text for integrationsEventLabel.
@@ -14628,7 +14628,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsInteropReadyBody.
   ///
   /// In en, this message translates to:
-  /// **'Interoperability actions are available through the backend action endpoints.'**
+  /// **'Interoperability actions are available.'**
   String get integrationsInteropReadyBody;
 
   /// Localized text for integrationsConfigurationTitle.
@@ -14640,7 +14640,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsConfigurationMaskedBody.
   ///
   /// In en, this message translates to:
-  /// **'Sensitive values are masked by the backend response.'**
+  /// **'Sensitive values are masked in this response.'**
   String get integrationsConfigurationMaskedBody;
 
   /// Localized text for integrationsConfigurationEmptyBody.
@@ -14940,7 +14940,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsTestConnectionDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'The backend will run the integration connection test.'**
+  /// **'The system will run the integration connection test.'**
   String get integrationsTestConnectionDialogBody;
 
   /// Localized text for integrationsSyncNowDialogTitle.
@@ -14952,7 +14952,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsSyncNowDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'The backend will enqueue an immediate integration sync.'**
+  /// **'The system will enqueue an immediate integration sync.'**
   String get integrationsSyncNowDialogBody;
 
   /// Localized text for integrationsEnableIntegrationDialogTitle.
@@ -15048,7 +15048,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsReplayWebhookDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'The backend will replay the webhook delivery.'**
+  /// **'The system will replay the webhook delivery.'**
   String get integrationsReplayWebhookDialogBody;
 
   /// Localized text for integrationsReplayLogDialogTitle.
@@ -15060,7 +15060,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsReplayLogDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'The backend will retry the logged integration event.'**
+  /// **'The system will retry the logged integration event.'**
   String get integrationsReplayLogDialogBody;
 
   /// Localized text for integrationsFilterIntegrations.
@@ -15186,7 +15186,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsStatusBackendGap.
   ///
   /// In en, this message translates to:
-  /// **'Backend gap'**
+  /// **'Unavailable'**
   String get integrationsStatusBackendGap;
 
   /// Localized text for integrationsStatusQueued.
@@ -15336,7 +15336,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsNextActionRunEndpoint.
   ///
   /// In en, this message translates to:
-  /// **'Run endpoint'**
+  /// **'Run action'**
   String get integrationsNextActionRunEndpoint;
 
   /// Localized text for integrationsNextActionUseStatusLogs.
@@ -15378,7 +15378,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsInteropReadinessGapBody.
   ///
   /// In en, this message translates to:
-  /// **'No dedicated interoperability readiness endpoint is exposed. Use integration status and sanitized logs until the backend adds one.'**
+  /// **'No dedicated interoperability readiness signal is available. Use integration status and sanitized logs.'**
   String get integrationsInteropReadinessGapBody;
 
   /// Localized text for integrationsSavedMessage.
@@ -15624,7 +15624,7 @@ abstract class AppLocalizations {
   /// Description for the report worklist panel.
   ///
   /// In en, this message translates to:
-  /// **'Search, filter, preview, run, schedule, print, and export backend-backed report records.'**
+  /// **'Search, filter, preview, run, schedule, print, and export report records.'**
   String get reportsWorklistDescription;
 
   /// Description for compliance log worklists.
@@ -15642,7 +15642,7 @@ abstract class AppLocalizations {
   /// Description for report schedule list.
   ///
   /// In en, this message translates to:
-  /// **'Saved schedules stay backend-backed and refresh independently from report runs.'**
+  /// **'Saved schedules refresh independently from report runs.'**
   String get reportsSchedulesDescription;
 
   /// Empty state title for report records.
@@ -15654,7 +15654,7 @@ abstract class AppLocalizations {
   /// Empty state body for report records.
   ///
   /// In en, this message translates to:
-  /// **'No backend report records match the current filters.'**
+  /// **'No report records match the current filters.'**
   String get reportsNoItemsBody;
 
   /// Empty state title for report schedules.
@@ -15876,7 +15876,7 @@ abstract class AppLocalizations {
   /// Description for recent report activity panel.
   ///
   /// In en, this message translates to:
-  /// **'Latest backend report runs, schedules, KPI snapshots, and analytics events.'**
+  /// **'Latest report runs, schedules, KPI snapshots, and analytics events.'**
   String get reportsTimelineDescription;
 
   /// Dialog title for running a report.
@@ -15966,7 +15966,7 @@ abstract class AppLocalizations {
   /// Dialog body for canceling a report run.
   ///
   /// In en, this message translates to:
-  /// **'Cancel this queued or processing report run? The run row will refresh after the backend confirms the change.'**
+  /// **'Cancel this queued or processing report run? The run row will refresh after the system confirms the change.'**
   String get reportsCancelRunDialogBody;
 
   /// Dialog title for exporting evidence.
@@ -15978,7 +15978,7 @@ abstract class AppLocalizations {
   /// Dialog body for exporting evidence.
   ///
   /// In en, this message translates to:
-  /// **'Generate a facility-branded evidence document from this backend log record.'**
+  /// **'Generate a facility-branded evidence document from this audit record.'**
   String get reportsExportEvidenceDialogBody;
 
   /// Success message after reports workspace actions.
@@ -15990,7 +15990,7 @@ abstract class AppLocalizations {
   /// Message after requesting report download.
   ///
   /// In en, this message translates to:
-  /// **'Report download was requested from the backend.'**
+  /// **'Report download was requested.'**
   String get reportsDownloadRequestedMessage;
 
   /// Subtitle for printed report metadata.
@@ -16014,13 +16014,13 @@ abstract class AppLocalizations {
   /// Footer for printed report documents.
   ///
   /// In en, this message translates to:
-  /// **'Confidential report document generated from backend data.'**
+  /// **'Confidential report document generated from system data.'**
   String get reportsPrintFooter;
 
   /// Footer for printed evidence documents.
   ///
   /// In en, this message translates to:
-  /// **'Compliance evidence generated from backend audit data.'**
+  /// **'Compliance evidence generated from audit data.'**
   String get reportsEvidenceFooter;
 
   /// Navigation label for the physiotherapy workspace.
@@ -16992,7 +16992,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingCompleteDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Mark this cleaning task as completed and refresh readiness from the backend.'**
+  /// **'Mark this cleaning task as completed and refresh readiness.'**
   String get housekeepingCompleteDialogBody;
 
   /// Localized text for housekeepingCancelAction.
@@ -17022,7 +17022,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingBackendGapTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Backend support is not available yet.'**
+  /// **'This workflow is not available yet.'**
   String get housekeepingBackendGapTooltip;
 
   /// Localized text for housekeepingTriageAction.
@@ -17085,17 +17085,17 @@ abstract class AppLocalizations {
   /// **'Maintenance handoffs keep cleaning issues visible without losing location context.'**
   String get housekeepingMaintenanceReadinessBody;
 
-  /// Localized text for housekeepingBackendGapsTitle.
+  /// Localized text for housekeepingUnavailableWorkflowsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Backend gaps'**
-  String get housekeepingBackendGapsTitle;
+  /// **'Unavailable workflows'**
+  String get housekeepingUnavailableWorkflowsTitle;
 
-  /// Localized text for housekeepingBackendGapsBody.
+  /// Localized text for housekeepingUnavailableWorkflowsBody.
   ///
   /// In en, this message translates to:
-  /// **'The workspace only exposes actions backed by confirmed API routes.'**
-  String get housekeepingBackendGapsBody;
+  /// **'This workspace only exposes actions available for the current facility.'**
+  String get housekeepingUnavailableWorkflowsBody;
 
   /// Localized text for housekeepingFacilityFieldLabel.
   ///
@@ -17304,7 +17304,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingReportPreviewBody.
   ///
   /// In en, this message translates to:
-  /// **'Generated housekeeping report templates are pending backend report-run support.'**
+  /// **'Generated housekeeping report templates are not available yet.'**
   String get housekeepingReportPreviewBody;
 
   /// Localized text for housekeepingResourceFilterLabel.
@@ -17646,7 +17646,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Referrals, therapy sessions, plans, notes, and follow-up work from confirmed clinical endpoints.'**
+  /// **'Referrals, therapy sessions, plans, notes, and follow-up work from available clinical records.'**
   String get physiotherapyWorklistDescription;
 
   /// Localized text for physiotherapySearchLabel.
@@ -17988,13 +17988,13 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyBackendGapsPanelTitle.
   ///
   /// In en, this message translates to:
-  /// **'Backend gaps'**
+  /// **'Unavailable workflows'**
   String get physiotherapyBackendGapsPanelTitle;
 
   /// Localized text for physiotherapyBackendGapBody.
   ///
   /// In en, this message translates to:
-  /// **'This workspace uses confirmed shared clinical endpoints and records unavailable dedicated physiotherapy contracts here.'**
+  /// **'This workspace uses available shared clinical records and lists unavailable dedicated physiotherapy workflows here.'**
   String get physiotherapyBackendGapBody;
 
   /// Localized text for physiotherapyNoRecordsLabel.
@@ -18348,7 +18348,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyBillingBackendGap.
   ///
   /// In en, this message translates to:
-  /// **'No confirmed billing gate'**
+  /// **'Billing authorization unavailable'**
   String get physiotherapyBillingBackendGap;
 
   /// Localized text for physiotherapyMissingValueLabel.
@@ -18360,25 +18360,25 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyBackendGapStatusEndpoint.
   ///
   /// In en, this message translates to:
-  /// **'Dedicated physiotherapy episode and therapy status endpoints are not available; status is derived from procedures, care plans, appointments, and follow-ups.'**
+  /// **'Dedicated physiotherapy episode and therapy status are not available. Status is derived from procedures, care plans, appointments, and follow-ups.'**
   String get physiotherapyBackendGapStatusEndpoint;
 
   /// Localized text for physiotherapyBackendGapBillingEndpoint.
   ///
   /// In en, this message translates to:
-  /// **'A physiotherapy-specific billing authorization gate is not available; billing is shown as a documented backend gap.'**
+  /// **'Billing authorization is unavailable for this physiotherapy context.'**
   String get physiotherapyBackendGapBillingEndpoint;
 
   /// Localized text for physiotherapyBackendGapReportEndpoint.
   ///
   /// In en, this message translates to:
-  /// **'Generated physiotherapy assessment and discharge report endpoints are not available; printing uses the shared report template.'**
+  /// **'Generated physiotherapy assessment and discharge reports are not available. Printing uses the shared report template.'**
   String get physiotherapyBackendGapReportEndpoint;
 
   /// Localized text for physiotherapyBackendGapUnknown.
   ///
   /// In en, this message translates to:
-  /// **'An unavailable physiotherapy backend contract was recorded.'**
+  /// **'An unavailable physiotherapy workflow was recorded.'**
   String get physiotherapyBackendGapUnknown;
 
   /// Localized text for physiotherapyInstructionsReportTitle.
@@ -18420,7 +18420,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyReportFooterNote.
   ///
   /// In en, this message translates to:
-  /// **'Generated from confirmed shared clinical workflow data.'**
+  /// **'Generated from shared clinical workflow data.'**
   String get physiotherapyReportFooterNote;
 
   /// Title for the mortuary workspace.
@@ -18519,10 +18519,10 @@ abstract class AppLocalizations {
   /// **'Confirm release'**
   String get mortuaryConfirmReleaseAction;
 
-  /// Tooltip for mortuary actions that are not supported by the current backend.
+  /// Tooltip for mortuary actions that are not available yet.
   ///
   /// In en, this message translates to:
-  /// **'This action is waiting for a backend action endpoint.'**
+  /// **'This action is not available yet.'**
   String get mortuaryActionsUnavailableTooltip;
 
   /// Title for the mortuary worklist.
@@ -18972,13 +18972,13 @@ abstract class AppLocalizations {
   /// Title for unsupported mortuary action notice.
   ///
   /// In en, this message translates to:
-  /// **'Backend actions pending'**
+  /// **'Actions unavailable'**
   String get mortuaryActionGapTitle;
 
   /// Body for unsupported mortuary action notice.
   ///
   /// In en, this message translates to:
-  /// **'The current backend exposes mortuary workspace and lookup data only. Action buttons are shown for permissions and audit planning, but remain disabled until backend action endpoints are mounted.'**
+  /// **'Mortuary lookup data is available. Action buttons remain disabled until the workflow is enabled for this facility.'**
   String get mortuaryActionGapBody;
 
   /// Section title for mortuary identity and source details.
@@ -19140,7 +19140,7 @@ abstract class AppLocalizations {
   /// Empty body for custody events.
   ///
   /// In en, this message translates to:
-  /// **'Custody movements and handovers will appear here when recorded by the backend.'**
+  /// **'Custody movements and handovers will appear here when recorded.'**
   String get mortuaryNoCustodyEventsBody;
 
   /// Empty label for mortuary viewings.
@@ -19266,7 +19266,7 @@ abstract class AppLocalizations {
   /// Footer text for generated mortuary documents.
   ///
   /// In en, this message translates to:
-  /// **'Generated from confirmed mortuary workspace data.'**
+  /// **'Generated from mortuary workspace data.'**
   String get mortuaryReportFooter;
 
   /// Snackbar message after generating a mortuary document.
@@ -19311,16 +19311,16 @@ abstract class AppLocalizations {
   /// **'Total beds'**
   String get roomsBedsTotalSummaryLabel;
 
-  /// Title for the rooms and beds backend gap notice.
+  /// Title for the rooms and beds unavailable workflow notice.
   ///
   /// In en, this message translates to:
-  /// **'Backend status gaps'**
+  /// **'Bed readiness status unavailable'**
   String get roomsBedsBackendGapsTitle;
 
-  /// Body for the rooms and beds backend gap notice.
+  /// Body for the rooms and beds unavailable workflow notice.
   ///
   /// In en, this message translates to:
-  /// **'Cleaning, maintenance, block, isolation, and detailed readiness states depend on backend support. Current actions use mounted ward, room, bed, bed assignment, and IPD flow endpoints only.'**
+  /// **'Cleaning, maintenance, block, isolation, and detailed readiness states are not available for this facility. Current actions use available ward, room, bed, bed assignment, and IPD flow workflows only.'**
   String get roomsBedsBackendGapsBody;
 
   /// Title for the rooms and beds board panel.
@@ -19578,7 +19578,7 @@ abstract class AppLocalizations {
   /// Body text for the release bed dialog.
   ///
   /// In en, this message translates to:
-  /// **'Releasing the bed sends the admission through the backend bed release flow.'**
+  /// **'Releasing the bed sends the admission through the bed release flow.'**
   String get roomsBedsReleaseDialogBody;
 
   /// Dialog title for requesting a bed transfer.
@@ -19590,7 +19590,7 @@ abstract class AppLocalizations {
   /// Body text for the transfer request dialog.
   ///
   /// In en, this message translates to:
-  /// **'Choose the destination ward. Bed selection is completed by the IPD transfer workflow when the backend approves and starts the transfer.'**
+  /// **'Choose the destination ward. Bed selection is completed by the IPD transfer workflow after approval.'**
   String get roomsBedsTransferDialogBody;
 
   /// Display label for a bed assignment linked to an admission.
@@ -19641,10 +19641,10 @@ abstract class AppLocalizations {
   /// **'Unavailable'**
   String get roomsBedsUnavailableLabel;
 
-  /// Readiness fallback when the backend does not expose detailed readiness status.
+  /// Readiness fallback when detailed readiness status is unavailable.
   ///
   /// In en, this message translates to:
-  /// **'Readiness pending backend status'**
+  /// **'Readiness status unavailable'**
   String get roomsBedsReadinessBackendGapLabel;
 
   /// Snackbar message after rooms and beds changes are saved.
@@ -20588,6 +20588,528 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Work queues'**
   String get hrWorkQueuesTitle;
+
+  /// Tooltip and action label for copying an admission identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy admission ID'**
+  String get copyAdmissionIdAction;
+
+  /// Tooltip and action label for copying a user identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy user ID'**
+  String get copyUserIdAction;
+
+  /// Generic tooltip and action label for copying a visible public identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy identifier'**
+  String get copyIdentifierAction;
+
+  /// Snackbar shown after copying an admission identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission ID copied.'**
+  String get admissionIdCopiedMessage;
+
+  /// Snackbar shown after copying a user identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID copied.'**
+  String get userIdCopiedMessage;
+
+  /// Generic snackbar shown after copying a visible public identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifier copied.'**
+  String get identifierCopiedMessage;
+
+  /// Settings workspace SectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrative setup workspace'**
+  String get settingsWorkspaceSectionTitle;
+
+  /// Settings workspace SectionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Review tenant, facility, access, and security setup readiness.'**
+  String get settingsWorkspaceSectionBody;
+
+  /// Settings workspace LoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading settings workspace'**
+  String get settingsWorkspaceLoadingTitle;
+
+  /// Settings workspace LoadingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading setup readiness, actions, and reference data.'**
+  String get settingsWorkspaceLoadingBody;
+
+  /// Settings workspace ErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings workspace unavailable'**
+  String get settingsWorkspaceErrorTitle;
+
+  /// Settings workspace EmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No setup modules found'**
+  String get settingsWorkspaceEmptyTitle;
+
+  /// Settings workspace EmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No setup modules match the current filters.'**
+  String get settingsWorkspaceEmptyBody;
+
+  /// Settings workspace ContextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Context summary'**
+  String get settingsWorkspaceContextTitle;
+
+  /// Settings workspace TenantLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant'**
+  String get settingsWorkspaceTenantLabel;
+
+  /// Settings workspace FacilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get settingsWorkspaceFacilityLabel;
+
+  /// Settings workspace FacilityTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility type'**
+  String get settingsWorkspaceFacilityTypeLabel;
+
+  /// Settings workspace RolesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get settingsWorkspaceRolesLabel;
+
+  /// Settings workspace GeneratedAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated'**
+  String get settingsWorkspaceGeneratedAtLabel;
+
+  /// Settings workspace RecordsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get settingsWorkspaceRecordsLabel;
+
+  /// Settings workspace AttentionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get settingsWorkspaceAttentionLabel;
+
+  /// Settings workspace ConfiguredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured'**
+  String get settingsWorkspaceConfiguredLabel;
+
+  /// Settings workspace TotalRecordsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total records'**
+  String get settingsWorkspaceTotalRecordsLabel;
+
+  /// Settings workspace ChecklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup checklist'**
+  String get settingsWorkspaceChecklistTitle;
+
+  /// Settings workspace QuickActionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get settingsWorkspaceQuickActionsTitle;
+
+  /// Settings workspace ModuleGroupsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Module groups'**
+  String get settingsWorkspaceModuleGroupsTitle;
+
+  /// Settings workspace SearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search setup modules'**
+  String get settingsWorkspaceSearchLabel;
+
+  /// Settings workspace SearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by module, group, or route'**
+  String get settingsWorkspaceSearchHint;
+
+  /// Settings workspace GroupFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get settingsWorkspaceGroupFilterLabel;
+
+  /// Settings workspace StateFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get settingsWorkspaceStateFilterLabel;
+
+  /// Settings workspace AllGroupsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All groups'**
+  String get settingsWorkspaceAllGroupsLabel;
+
+  /// Settings workspace AllStatesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All states'**
+  String get settingsWorkspaceAllStatesLabel;
+
+  /// Settings workspace ActionableOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Actionable only'**
+  String get settingsWorkspaceActionableOnlyLabel;
+
+  /// Settings workspace TenantSelectorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant context'**
+  String get settingsWorkspaceTenantSelectorLabel;
+
+  /// Settings workspace FacilitySelectorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility context'**
+  String get settingsWorkspaceFacilitySelectorLabel;
+
+  /// Settings workspace ApplyContextAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply context'**
+  String get settingsWorkspaceApplyContextAction;
+
+  /// Settings workspace OpenAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get settingsWorkspaceOpenAction;
+
+  /// Settings workspace CreateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get settingsWorkspaceCreateAction;
+
+  /// Settings workspace RouteUnavailableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get settingsWorkspaceRouteUnavailableLabel;
+
+  /// Settings workspace RouteUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This setup action is not available from this page yet.'**
+  String get settingsWorkspaceRouteUnavailableBody;
+
+  /// Settings workspace TenantContextRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant context required'**
+  String get settingsWorkspaceTenantContextRequiredTitle;
+
+  /// Settings workspace TenantContextRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant to load administrative setup readiness.'**
+  String get settingsWorkspaceTenantContextRequiredBody;
+
+  /// Settings workspace ReadyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get settingsWorkspaceReadyStatus;
+
+  /// Settings workspace InProgressStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get settingsWorkspaceInProgressStatus;
+
+  /// Settings workspace AttentionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention'**
+  String get settingsWorkspaceAttentionStatus;
+
+  /// Settings workspace EmptyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get settingsWorkspaceEmptyStatus;
+
+  /// Settings workspace ConfiguredStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured'**
+  String get settingsWorkspaceConfiguredStatus;
+
+  /// Settings workspace OrganizationGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get settingsWorkspaceOrganizationGroup;
+
+  /// Settings workspace UsersAndAccessGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Users and access'**
+  String get settingsWorkspaceUsersAndAccessGroup;
+
+  /// Settings workspace SecurityGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get settingsWorkspaceSecurityGroup;
+
+  /// Settings workspace UnknownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get settingsWorkspaceUnknownLabel;
+
+  /// Settings workspace DependencyBlockedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for required setup'**
+  String get settingsWorkspaceDependencyBlockedLabel;
+
+  /// Settings workspace RequiredSetupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Required setup'**
+  String get settingsWorkspaceRequiredSetupLabel;
+
+  /// Settings workspace OptionalSetupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional setup'**
+  String get settingsWorkspaceOptionalSetupLabel;
+
+  /// Settings workspace NoQuickActionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No setup action is currently available for the selected context.'**
+  String get settingsWorkspaceNoQuickActionsBody;
+
+  /// Settings workspace NoModulesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No modules match the selected filters.'**
+  String get settingsWorkspaceNoModulesBody;
+
+  /// Settings workspace SelectTenantAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Select tenant'**
+  String get settingsWorkspaceSelectTenantAction;
+
+  /// Settings workspace ModuleTenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant'**
+  String get settingsWorkspaceModuleTenant;
+
+  /// Settings workspace ModuleFacility.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get settingsWorkspaceModuleFacility;
+
+  /// Settings workspace ModuleBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get settingsWorkspaceModuleBranch;
+
+  /// Settings workspace ModuleDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get settingsWorkspaceModuleDepartment;
+
+  /// Settings workspace ModuleUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get settingsWorkspaceModuleUnit;
+
+  /// Settings workspace ModuleRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get settingsWorkspaceModuleRoom;
+
+  /// Settings workspace ModuleWard.
+  ///
+  /// In en, this message translates to:
+  /// **'Ward'**
+  String get settingsWorkspaceModuleWard;
+
+  /// Settings workspace ModuleBed.
+  ///
+  /// In en, this message translates to:
+  /// **'Bed'**
+  String get settingsWorkspaceModuleBed;
+
+  /// Settings workspace ModuleAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get settingsWorkspaceModuleAddress;
+
+  /// Settings workspace ModuleContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get settingsWorkspaceModuleContact;
+
+  /// Settings workspace ModuleUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get settingsWorkspaceModuleUser;
+
+  /// Settings workspace ModuleUserProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'User profile'**
+  String get settingsWorkspaceModuleUserProfile;
+
+  /// Settings workspace ModuleRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get settingsWorkspaceModuleRole;
+
+  /// Settings workspace ModulePermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission'**
+  String get settingsWorkspaceModulePermission;
+
+  /// Settings workspace ModuleRolePermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Role permission'**
+  String get settingsWorkspaceModuleRolePermission;
+
+  /// Settings workspace ModuleUserRole.
+  ///
+  /// In en, this message translates to:
+  /// **'User role'**
+  String get settingsWorkspaceModuleUserRole;
+
+  /// Settings workspace ModuleUserSession.
+  ///
+  /// In en, this message translates to:
+  /// **'User session'**
+  String get settingsWorkspaceModuleUserSession;
+
+  /// Settings workspace ModuleApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get settingsWorkspaceModuleApiKey;
+
+  /// Settings workspace ModuleApiKeyPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'API key permission'**
+  String get settingsWorkspaceModuleApiKeyPermission;
+
+  /// Settings workspace ModuleUserMfa.
+  ///
+  /// In en, this message translates to:
+  /// **'User MFA'**
+  String get settingsWorkspaceModuleUserMfa;
+
+  /// Settings workspace ModuleOauthAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'OAuth account'**
+  String get settingsWorkspaceModuleOauthAccount;
+
+  /// Localized text for pharmacyWorkflowReadinessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy workflow readiness'**
+  String get pharmacyWorkflowReadinessTitle;
+
+  /// Localized text for pharmacyWorkflowReadinessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions below follow the current order, stock, batch, and attestation state.'**
+  String get pharmacyWorkflowReadinessBody;
+
+  /// Localized text for pharmacyReadinessDispenseAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense is available for the current order state.'**
+  String get pharmacyReadinessDispenseAvailable;
+
+  /// Localized text for pharmacyReadinessDispenseBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense is blocked by the current order, payment, stock, or authorization state.'**
+  String get pharmacyReadinessDispenseBlocked;
+
+  /// Localized text for pharmacyReadinessStockMapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication items have stock mapping available.'**
+  String get pharmacyReadinessStockMapped;
+
+  /// Localized text for pharmacyReadinessStockMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Some medication items need stock mapping before dispense.'**
+  String get pharmacyReadinessStockMissing;
+
+  /// Localized text for pharmacyReadinessAttestationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared batches require attestation before completion.'**
+  String get pharmacyReadinessAttestationRequired;
+
+  /// Localized text for pharmacyReadinessAttestationClear.
+  ///
+  /// In en, this message translates to:
+  /// **'No prepared batch attestation is pending.'**
+  String get pharmacyReadinessAttestationClear;
+
+  /// Localized text for pharmacyReadinessPrintReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication printouts use the configured print workflow.'**
+  String get pharmacyReadinessPrintReady;
 }
 
 class _AppLocalizationsDelegate

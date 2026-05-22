@@ -664,8 +664,11 @@ class _ClaimsDetailContent extends ConsumerWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.claimsInvoiceFieldLabel,
-              value: _fallback(context, detail.claim?.invoiceDisplayId),
+              value: detail.claim?.invoiceDisplayId ?? '',
               icon: Icons.receipt_long_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyIdentifierAction,
+              copiedMessage: l10n.identifierCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.claimsAmountFieldLabel,

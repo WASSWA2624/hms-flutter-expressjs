@@ -292,12 +292,13 @@ class _PharmacyQueuePanel extends ConsumerWidget {
           AppListTableColumn<PharmacyOrder>(
             label: l10n.pharmacyOrderColumnLabel,
             sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-                appListTableCompareText(
-                  left.displayId ?? left.id,
-                  right.displayId ?? right.id,
-                ),
+                appListTableCompareText(left.displayId, right.displayId),
             cellBuilder: (BuildContext context, PharmacyOrder item) {
-              return Text(item.displayId ?? item.id);
+              return AppCopyableIdentifier(
+                value: item.displayId,
+                tooltip: context.l10n.copyIdentifierAction,
+                copiedMessage: context.l10n.identifierCopiedMessage,
+              );
             },
           ),
           AppListTableColumn<PharmacyOrder>(
@@ -455,7 +456,7 @@ class _PharmacyDetailPanel extends ConsumerWidget {
       children: <Widget>[
         AppWorkspacePatientContextHeader(
           patientName: order.displayTitle,
-          patientNumber: order.patientId ?? order.displayId ?? order.id,
+          patientNumber: '',
           status: _orderStatus(context, order),
           alerts: <AppWorkspaceStatus>[
             if (order.hasPendingAttestation)
@@ -471,13 +472,19 @@ class _PharmacyDetailPanel extends ConsumerWidget {
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.pharmacyOrderFieldLabel,
-              value: order.displayId ?? order.id,
+              value: order.displayId ?? '',
               icon: Icons.tag_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyIdentifierAction,
+              copiedMessage: l10n.identifierCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.pharmacyEncounterFieldLabel,
-              value: order.encounterId ?? '',
+              value: '',
               icon: Icons.assignment_outlined,
+              copyable: true,
+              copyTooltip: l10n.opdCopyEncounterIdAction,
+              copiedMessage: l10n.opdEncounterIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.pharmacySourceFieldLabel,
@@ -499,7 +506,7 @@ class _PharmacyDetailPanel extends ConsumerWidget {
         SizedBox(height: theme.spacing.md),
         _MedicationItemsPanel(workflow: workflow),
         SizedBox(height: theme.spacing.md),
-        const _BillingGapPanel(),
+        _PharmacyWorkflowReadinessPanel(workflow: workflow),
         SizedBox(height: theme.spacing.md),
         _TimelinePanel(workflow: workflow),
       ],
@@ -635,7 +642,7 @@ class _PharmacyActionPanel extends ConsumerWidget {
                 metadata: <PrintFormMetadataItem>[
                   PrintFormMetadataItem(
                     label: l10n.pharmacyReportOrderLabel,
-                    value: workflow.order.displayId ?? workflow.order.id,
+                    value: workflow.order.displayId ?? l10n.profileUnknownValue,
                   ),
                   PrintFormMetadataItem(
                     label: l10n.claimsStatusColumnLabel,
@@ -764,35 +771,74 @@ class _MedicationCell extends StatelessWidget {
   }
 }
 
-class _BillingGapPanel extends StatelessWidget {
-  const _BillingGapPanel();
+class _PharmacyWorkflowReadinessPanel extends StatelessWidget {
+  const _PharmacyWorkflowReadinessPanel({required this.workflow});
+
+  final PharmacyOrderWorkflow workflow;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final List<PharmacyOrderItem> items = workflow.items.isEmpty
+        ? workflow.order.items
+        : workflow.items;
+    final bool hasStockMapping = items.isNotEmpty &&
+        items.every(
+          (PharmacyOrderItem item) =>
+              item.defaultStockMapping != null || item.stockMappings.isNotEmpty,
+        );
+    final bool hasPendingBatch = workflow.order.hasPendingAttestation;
+    final bool canDispense = workflow.nextActions.canPrepareDispense ||
+        workflow.order.canPrepareDispense;
+
     return AppWorkspaceDetailPanel(
-      title: l10n.pharmacyBackendGapsTitle,
-      description: l10n.pharmacyBackendGapsBody,
+      title: l10n.pharmacyWorkflowReadinessTitle,
+      description: l10n.pharmacyWorkflowReadinessBody,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _GapLine(text: l10n.pharmacyGapPaymentAuthorization),
+          _ReadinessLine(
+            icon: canDispense
+                ? Icons.check_circle_outline
+                : Icons.info_outline,
+            text: canDispense
+                ? l10n.pharmacyReadinessDispenseAvailable
+                : l10n.pharmacyReadinessDispenseBlocked,
+          ),
           SizedBox(height: theme.spacing.xs),
-          _GapLine(text: l10n.pharmacyGapBatchAvailability),
+          _ReadinessLine(
+            icon: hasStockMapping
+                ? Icons.inventory_2_outlined
+                : Icons.warning_amber_outlined,
+            text: hasStockMapping
+                ? l10n.pharmacyReadinessStockMapped
+                : l10n.pharmacyReadinessStockMissing,
+          ),
           SizedBox(height: theme.spacing.xs),
-          _GapLine(text: l10n.pharmacyGapHoldSubstitution),
+          _ReadinessLine(
+            icon: hasPendingBatch
+                ? Icons.verified_outlined
+                : Icons.fact_check_outlined,
+            text: hasPendingBatch
+                ? l10n.pharmacyReadinessAttestationRequired
+                : l10n.pharmacyReadinessAttestationClear,
+          ),
           SizedBox(height: theme.spacing.xs),
-          _GapLine(text: l10n.pharmacyGapReportTemplates),
+          _ReadinessLine(
+            icon: Icons.print_outlined,
+            text: l10n.pharmacyReadinessPrintReady,
+          ),
         ],
       ),
     );
   }
 }
 
-class _GapLine extends StatelessWidget {
-  const _GapLine({required this.text});
+class _ReadinessLine extends StatelessWidget {
+  const _ReadinessLine({required this.icon, required this.text});
 
+  final IconData icon;
   final String text;
 
   @override
@@ -802,7 +848,7 @@ class _GapLine extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Icon(
-          Icons.info_outline,
+          icon,
           size: theme.appTokens.listIconSize,
           color: theme.colorScheme.primary,
         ),
@@ -2044,7 +2090,7 @@ String _pharmacyInstructionsHtml(
         ),
         PrintFormMetadataItem(
           label: l10n.pharmacyReportOrderLabel,
-          value: order.displayId ?? order.id,
+          value: order.displayId ?? l10n.profileUnknownValue,
         ),
       ]),
     )

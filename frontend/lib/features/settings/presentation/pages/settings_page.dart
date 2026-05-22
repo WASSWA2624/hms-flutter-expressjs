@@ -13,6 +13,8 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
+import 'package:hosspi_hms/features/settings/presentation/controllers/settings_workspace_controller.dart';
+import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -46,7 +48,8 @@ class SettingsPage extends ConsumerWidget {
             ref
               ..invalidate(appLocaleProvider)
               ..invalidate(appThemeModeProvider)
-              ..invalidate(appAccessPolicyProvider);
+              ..invalidate(appAccessPolicyProvider)
+              ..invalidate(settingsWorkspaceControllerProvider);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(l10n.commonRefreshActionLabel)),
             );
@@ -143,6 +146,10 @@ class SettingsPage extends ConsumerWidget {
               ),
           ],
         ),
+        if (adminActions.isNotEmpty) ...<Widget>[
+          SizedBox(height: Theme.of(context).spacing.md),
+          const SettingsWorkspaceSection(),
+        ],
       ],
     );
   }

@@ -4824,7 +4824,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dischargeClearancePending => 'Pending';
 
   @override
-  String get dischargeClearanceBackendGap => 'Backend gap';
+  String get dischargeClearanceBackendGap => 'Unavailable';
 
   @override
   String get dischargeClearanceUnavailable => 'Unavailable';
@@ -4906,42 +4906,42 @@ class AppLocalizationsEn extends AppLocalizations {
       'Admission timeline events will appear after activity is recorded.';
 
   @override
-  String get dischargeBackendGapsTitle => 'Backend gaps';
+  String get dischargeBackendGapsTitle => 'Unavailable workflows';
 
   @override
   String get dischargeBackendGapsBody =>
-      'These workflow actions are shown as gaps because no confirmed backend contract exists yet.';
+      'These workflow actions are unavailable until system support is enabled for this facility.';
 
   @override
-  String get dischargeGapBackendSubtitle => 'Backend endpoint required';
+  String get dischargeGapBackendSubtitle => 'Workflow support unavailable';
 
   @override
   String get dischargeGapChecklistTitle => 'Persistent clearance checklist';
 
   @override
   String get dischargeGapChecklistBody =>
-      'No confirmed endpoint persists individual doctor, nursing, pharmacy, billing, document, or exit checklist decisions.';
+      'Individual doctor, nursing, pharmacy, billing, document, and exit checklist decisions are not available in this workflow yet.';
 
   @override
   String get dischargeGapInsuranceTitle => 'Insurance clearance workflow';
 
   @override
   String get dischargeGapInsuranceBody =>
-      'No confirmed insurance clearance endpoint is tied to the discharge workflow.';
+      'Insurance clearance is not connected to this discharge workflow yet.';
 
   @override
   String get dischargeGapDocumentsTitle => 'Document ready state';
 
   @override
   String get dischargeGapDocumentsBody =>
-      'Discharge documents can be generated from the summary, but no confirmed endpoint marks handover documents ready.';
+      'Discharge documents can be generated from the summary. Handover readiness is not available yet.';
 
   @override
   String get dischargeGapHousekeepingTitle => 'Housekeeping task handoff';
 
   @override
   String get dischargeGapHousekeepingBody =>
-      'Final discharge releases the bed, but no confirmed atomic housekeeping task creation is part of that workflow.';
+      'Final discharge releases the bed. Housekeeping handoff is unavailable for this workflow.';
 
   @override
   String get dischargePlanDialogTitle => 'Discharge plan';
@@ -5001,7 +5001,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dischargePharmacyDialogBody =>
-      'Send discharge medicines to pharmacy using the confirmed order route.';
+      'Send discharge medicines to pharmacy.';
 
   @override
   String get dischargeDrugFieldLabel => 'Medicine';
@@ -5102,8 +5102,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dischargeNurseSignatureLabel => 'Nurse signature';
 
   @override
-  String get dischargeReportFooter =>
-      'Generated from confirmed discharge workflow data.';
+  String get dischargeReportFooter => 'Generated from discharge workflow data.';
 
   @override
   String get dischargeLoadingTitle => 'Loading discharge workspace';
@@ -5196,7 +5195,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyWorklistDescription =>
-      'Backend-backed imaging orders with modality workflow and report status.';
+      'System imaging orders with modality workflow and report status.';
 
   @override
   String get radiologyPreviousPageLabel => 'Previous orders';
@@ -5315,7 +5314,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyReportSectionBody =>
-      'Draft, finalize, attest, and amend radiology reports using backend workflow actions.';
+      'Draft, finalize, attest, and amend radiology reports using system workflow actions.';
 
   @override
   String get radiologyDraftReportAction => 'Draft report';
@@ -5416,28 +5415,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Workflow events will appear as the order progresses.';
 
   @override
-  String get radiologyBackendGapsTitle => 'Backend gaps';
+  String get radiologyBackendGapsTitle => 'Unavailable workflows';
 
   @override
   String get radiologyBackendGapsBody =>
-      'These controls are shown as unavailable until backend support is added.';
+      'These controls are unavailable until system support is enabled for this facility.';
 
   @override
   String get radiologyGapSchedulingTitle => 'Room scheduling';
 
   @override
-  String get radiologyGapBackendSubtitle => 'Not exposed by API';
+  String get radiologyGapBackendSubtitle => 'Action unavailable';
 
   @override
   String get radiologyGapSchedulingBody =>
-      'The current radiology API has no room or appointment assignment fields.';
+      'Room and appointment assignment is not available for current imaging orders.';
 
   @override
   String get radiologyGapBillingTitle => 'Billing authorization';
 
   @override
   String get radiologyGapBillingBody =>
-      'Payment and authorization status is displayed only when returned by the backend.';
+      'Payment and authorization status appears when available for this order.';
 
   @override
   String get radiologyCreateOrderDialogTitle => 'Request imaging';
@@ -5667,7 +5666,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyQueuePanelDescription =>
-      'Backend-backed pharmacy orders with dispense and return actions.';
+      'System pharmacy orders with dispense and return actions.';
 
   @override
   String get pharmacyNoOrdersTitle => 'No pharmacy orders';
@@ -5712,7 +5711,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select an order to review medicines, stock mapping, billing gate visibility, and dispense history.';
 
   @override
-  String get pharmacyBillingGateUnavailableTitle => 'Billing gate unavailable';
+  String get pharmacyBillingGateUnavailableTitle =>
+      'Payment clearance unavailable';
 
   @override
   String get pharmacyOrderFieldLabel => 'Order';
@@ -5759,7 +5759,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyNoMedicationBody =>
-      'This order has no medicines exposed by the pharmacy workflow API.';
+      'This order has no medicines available in the pharmacy workflow.';
 
   @override
   String get pharmacyMedicationColumnLabel => 'Medication';
@@ -5774,34 +5774,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyStockColumnLabel => 'Stock';
 
   @override
-  String get pharmacyBackendGapsTitle => 'Backend sync gaps';
+  String get pharmacyBackendGapsTitle => 'Pharmacy workflow readiness';
 
   @override
   String get pharmacyBackendGapsBody =>
-      'The confirmed API does not yet expose every state requested by the pharmacy plan.';
+      'This order uses the current pharmacy workflow state to determine safe actions.';
 
   @override
   String get pharmacyGapPaymentAuthorization =>
-      'Payment and authorization status is not present on pharmacy order workflow responses.';
+      'Payment and authorization are checked before dispense actions are enabled.';
 
   @override
   String get pharmacyGapBatchAvailability =>
-      'Drug batch availability is not attached to order items; only inventory item mapping is available.';
+      'Stock mapping is checked before dispense actions are enabled.';
 
   @override
   String get pharmacyGapHoldSubstitution =>
-      'Hold and drug substitution actions do not have confirmed pharmacy workflow routes.';
+      'Hold and substitution decisions follow the current pharmacy order status.';
 
   @override
   String get pharmacyGapReportTemplates =>
-      'Medication printouts use local HTML until report-template routes expose pharmacy templates.';
+      'Medication printouts use the configured print workflow.';
 
   @override
   String get pharmacyTimelinePanelTitle => 'Dispense history';
 
   @override
   String get pharmacyTimelinePanelDescription =>
-      'Order placement, prepare, attest, dispense, and return events from the workflow API.';
+      'Order placement, prepare, attest, dispense, and return events from the workflow.';
 
   @override
   String get pharmacyNoTimelineBody => 'No dispense history is available yet.';
@@ -5811,7 +5811,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugPanelDescription =>
-      'Search configured drugs and review aggregate stock visibility from the confirmed pharmacy API.';
+      'Search configured drugs and review aggregate stock visibility.';
 
   @override
   String get pharmacyDrugFiltersSemanticLabel => 'Drug stock filters';
@@ -5872,7 +5872,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyBillingGateUnavailableBody =>
-      'Payment clearance is visible as a backend gap because the pharmacy workflow response does not include invoice or payment state.';
+      'Payment clearance is unavailable for this order.';
 
   @override
   String get pharmacyBatchRefLabel => 'Batch reference';
@@ -5916,16 +5916,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyFilterCancelled => 'Cancelled';
 
   @override
-  String get pharmacyFilterPendingPayment => 'Pending payment - backend gap';
+  String get pharmacyFilterPendingPayment => 'Pending payment';
 
   @override
-  String get pharmacyFilterPartialStock => 'Partial stock - backend gap';
+  String get pharmacyFilterPartialStock => 'Partial stock';
 
   @override
-  String get pharmacyFilterUrgent => 'Urgent - backend gap';
+  String get pharmacyFilterUrgent => 'Urgent';
 
   @override
-  String get pharmacyFilterDischarge => 'Discharge - backend gap';
+  String get pharmacyFilterDischarge => 'Discharge';
 
   @override
   String get pharmacyStockInStock => 'In stock';
@@ -5979,8 +5979,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyReportGeneratedLabel => 'Generated';
 
   @override
-  String get pharmacyReportFooter =>
-      'Generated from confirmed pharmacy workflow data.';
+  String get pharmacyReportFooter => 'Generated from pharmacy workflow data.';
 
   @override
   String get navigationClaimsLabel => 'Claims';
@@ -6049,7 +6048,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get claimsWorklistDescription =>
-      'Review pre-authorizations and claim records backed by the billing API.';
+      'Review pre-authorizations and claim records backed by billing data.';
 
   @override
   String get claimsPreviousPageLabel => 'Previous claims page';
@@ -6196,7 +6195,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get claimsTimelineDescription =>
-      'Authorization, submission, and response timestamps from the backend.';
+      'Authorization, submission, and response timestamps from the claims workflow.';
 
   @override
   String get claimsTimelineAuthorizationRequested => 'Authorization requested';
@@ -6211,32 +6210,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsTimelineCurrentStatus => 'Current status';
 
   @override
-  String get claimsBackendGapTitle => 'Backend gaps';
+  String get claimsBackendGapTitle => 'Unavailable workflows';
 
   @override
   String get claimsBackendGapDescription =>
-      'These items are shown as integration gaps because the current API does not expose dedicated endpoints for them.';
+      'These items are unavailable in the current claims workflow.';
 
   @override
   String get claimsBackendGapDraftTitle => 'Claim draft queue';
 
   @override
   String get claimsBackendGapDraftBody =>
-      'The claim API supports submitted, approved, rejected, paid, and cancelled states, but no draft status.';
+      'The draft queue is not available in the current claims workflow.';
 
   @override
   String get claimsBackendGapDocumentsTitle => 'Document upload and requests';
 
   @override
   String get claimsBackendGapDocumentsBody =>
-      'Required document tracking is not yet backed by a document request endpoint.';
+      'Required document tracking is not available yet.';
 
   @override
   String get claimsBackendGapReportsTitle => 'Generated payer packs';
 
   @override
   String get claimsBackendGapReportsBody =>
-      'Printable payer packs should move to report templates when the reports plan is implemented.';
+      'Printable payer packs are unavailable until report templates are enabled.';
 
   @override
   String get claimsCoveragePlanFieldLabel => 'Coverage plan';
@@ -6419,8 +6418,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsReportGeneratedLabel => 'Generated';
 
   @override
-  String get claimsReportFooter =>
-      'Generated from backend-backed claims and billing data.';
+  String get claimsReportFooter => 'Generated from claims and billing data.';
 
   @override
   String get labTitle => 'Laboratory';
@@ -6630,11 +6628,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labQcTitle => 'Quality control';
 
   @override
-  String get labBackendGapsTitle => 'Backend gaps';
+  String get labBackendGapsTitle => 'Unavailable workflows';
 
   @override
   String get labBackendGapsBody =>
-      'No confirmed backend gaps are blocking the displayed lab queue.';
+      'No unavailable workflow is blocking the displayed lab queue.';
 
   @override
   String get labNoCatalogItemsLabel => 'No catalog items found';
@@ -6815,29 +6813,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labReportVerifiedLabel => 'Released';
 
   @override
-  String get labReportFooter =>
-      'Generated from confirmed laboratory workflow data.';
+  String get labReportFooter => 'Generated from laboratory workflow data.';
 
   @override
   String get labGapBillingTitle => 'Payment and authorization gate';
 
   @override
   String get labGapBillingBody =>
-      'The current lab workbench contract does not expose payment or authorization blockers.';
+      'Payment or authorization blockers are not available for this lab workbench.';
 
   @override
   String get labGapVerificationTitle => 'Separate verification step';
 
   @override
   String get labGapVerificationBody =>
-      'The confirmed workflow releases an order item result, but does not expose a separate verified-before-release state.';
+      'Order item results can be released. A separate verified-before-release state is not available.';
 
   @override
-  String get labGapReportGenerationTitle => 'Generated report endpoint';
+  String get labGapReportGenerationTitle => 'Generated report';
 
   @override
   String get labGapReportGenerationBody =>
-      'The frontend shows a shared report preview; no confirmed lab-specific generated PDF endpoint is exposed.';
+      'The shared report preview is available. A lab-specific generated document is not available yet.';
 
   @override
   String get navigationOperationsLabel => 'Operations';
@@ -7601,7 +7598,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get biomedicalPrintReportBody =>
-      'Generated from backend-backed biomedical registry, readiness, compliance, and lifecycle data.';
+      'Generated from biomedical registry, readiness, compliance, and lifecycle data.';
 
   @override
   String get integrationsLoadErrorTitle => 'Integrations could not load';
@@ -7770,11 +7767,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get integrationsMaskedSecretTitle => 'Masked key';
 
   @override
-  String get integrationsRotationGapTitle => 'Key rotation gap';
+  String get integrationsRotationGapTitle => 'Key rotation unavailable';
 
   @override
   String get integrationsRotationGapBody =>
-      'The backend does not expose a rotate endpoint. Create a replacement key, update downstream systems, then revoke the old key.';
+      'Create a replacement key, update downstream systems, then revoke the old key.';
 
   @override
   String get integrationsEventLabel => 'Event';
@@ -7790,14 +7787,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get integrationsInteropReadyBody =>
-      'Interoperability actions are available through the backend action endpoints.';
+      'Interoperability actions are available.';
 
   @override
   String get integrationsConfigurationTitle => 'Configuration';
 
   @override
   String get integrationsConfigurationMaskedBody =>
-      'Sensitive values are masked by the backend response.';
+      'Sensitive values are masked in this response.';
 
   @override
   String get integrationsConfigurationEmptyBody =>
@@ -7955,14 +7952,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get integrationsTestConnectionDialogBody =>
-      'The backend will run the integration connection test.';
+      'The system will run the integration connection test.';
 
   @override
   String get integrationsSyncNowDialogTitle => 'Sync now?';
 
   @override
   String get integrationsSyncNowDialogBody =>
-      'The backend will enqueue an immediate integration sync.';
+      'The system will enqueue an immediate integration sync.';
 
   @override
   String get integrationsEnableIntegrationDialogTitle => 'Enable integration?';
@@ -8019,14 +8016,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get integrationsReplayWebhookDialogBody =>
-      'The backend will replay the webhook delivery.';
+      'The system will replay the webhook delivery.';
 
   @override
   String get integrationsReplayLogDialogTitle => 'Replay log?';
 
   @override
   String get integrationsReplayLogDialogBody =>
-      'The backend will retry the logged integration event.';
+      'The system will retry the logged integration event.';
 
   @override
   String get integrationsFilterIntegrations => 'Integrations';
@@ -8089,7 +8086,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get integrationsStatusReady => 'Ready';
 
   @override
-  String get integrationsStatusBackendGap => 'Backend gap';
+  String get integrationsStatusBackendGap => 'Unavailable';
 
   @override
   String get integrationsStatusQueued => 'Queued';
@@ -8166,7 +8163,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get integrationsNextActionReview => 'Review';
 
   @override
-  String get integrationsNextActionRunEndpoint => 'Run endpoint';
+  String get integrationsNextActionRunEndpoint => 'Run action';
 
   @override
   String get integrationsNextActionUseStatusLogs => 'Use status logs';
@@ -8188,7 +8185,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get integrationsInteropReadinessGapBody =>
-      'No dedicated interoperability readiness endpoint is exposed. Use integration status and sanitized logs until the backend adds one.';
+      'No dedicated interoperability readiness signal is available. Use integration status and sanitized logs.';
 
   @override
   String get integrationsSavedMessage => 'Integration changes saved.';
@@ -8315,7 +8312,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsWorklistDescription =>
-      'Search, filter, preview, run, schedule, print, and export backend-backed report records.';
+      'Search, filter, preview, run, schedule, print, and export report records.';
 
   @override
   String get reportsComplianceDescription =>
@@ -8326,14 +8323,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsSchedulesDescription =>
-      'Saved schedules stay backend-backed and refresh independently from report runs.';
+      'Saved schedules refresh independently from report runs.';
 
   @override
   String get reportsNoItemsTitle => 'No report records';
 
   @override
   String get reportsNoItemsBody =>
-      'No backend report records match the current filters.';
+      'No report records match the current filters.';
 
   @override
   String get reportsNoSchedulesTitle => 'No schedules';
@@ -8451,7 +8448,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsTimelineDescription =>
-      'Latest backend report runs, schedules, KPI snapshots, and analytics events.';
+      'Latest report runs, schedules, KPI snapshots, and analytics events.';
 
   @override
   String get reportsRunDialogTitle => 'Run report';
@@ -8497,21 +8494,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsCancelRunDialogBody =>
-      'Cancel this queued or processing report run? The run row will refresh after the backend confirms the change.';
+      'Cancel this queued or processing report run? The run row will refresh after the system confirms the change.';
 
   @override
   String get reportsExportEvidenceDialogTitle => 'Export evidence';
 
   @override
   String get reportsExportEvidenceDialogBody =>
-      'Generate a facility-branded evidence document from this backend log record.';
+      'Generate a facility-branded evidence document from this audit record.';
 
   @override
   String get reportsSavedMessage => 'Reports workspace updated.';
 
   @override
   String get reportsDownloadRequestedMessage =>
-      'Report download was requested from the backend.';
+      'Report download was requested.';
 
   @override
   String get reportsPrintSubtitle => 'Generated report metadata';
@@ -8524,11 +8521,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsPrintFooter =>
-      'Confidential report document generated from backend data.';
+      'Confidential report document generated from system data.';
 
   @override
   String get reportsEvidenceFooter =>
-      'Compliance evidence generated from backend audit data.';
+      'Compliance evidence generated from audit data.';
 
   @override
   String get navigationPhysiotherapyLabel => 'Physiotherapy';
@@ -9045,7 +9042,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get housekeepingCompleteDialogBody =>
-      'Mark this cleaning task as completed and refresh readiness from the backend.';
+      'Mark this cleaning task as completed and refresh readiness.';
 
   @override
   String get housekeepingCancelAction => 'Cancel';
@@ -9061,7 +9058,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get housekeepingBackendGapTooltip =>
-      'Backend support is not available yet.';
+      'This workflow is not available yet.';
 
   @override
   String get housekeepingTriageAction => 'Triage';
@@ -9101,11 +9098,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Maintenance handoffs keep cleaning issues visible without losing location context.';
 
   @override
-  String get housekeepingBackendGapsTitle => 'Backend gaps';
+  String get housekeepingUnavailableWorkflowsTitle => 'Unavailable workflows';
 
   @override
-  String get housekeepingBackendGapsBody =>
-      'The workspace only exposes actions backed by confirmed API routes.';
+  String get housekeepingUnavailableWorkflowsBody =>
+      'This workspace only exposes actions available for the current facility.';
 
   @override
   String get housekeepingFacilityFieldLabel => 'Facility';
@@ -9215,7 +9212,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get housekeepingReportPreviewBody =>
-      'Generated housekeeping report templates are pending backend report-run support.';
+      'Generated housekeeping report templates are not available yet.';
 
   @override
   String get housekeepingResourceFilterLabel => 'Resource';
@@ -9388,7 +9385,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get physiotherapyWorklistDescription =>
-      'Referrals, therapy sessions, plans, notes, and follow-up work from confirmed clinical endpoints.';
+      'Referrals, therapy sessions, plans, notes, and follow-up work from available clinical records.';
 
   @override
   String get physiotherapySearchLabel => 'Search physiotherapy worklist';
@@ -9563,11 +9560,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get physiotherapyFollowUpPanelTitle => 'Follow-ups';
 
   @override
-  String get physiotherapyBackendGapsPanelTitle => 'Backend gaps';
+  String get physiotherapyBackendGapsPanelTitle => 'Unavailable workflows';
 
   @override
   String get physiotherapyBackendGapBody =>
-      'This workspace uses confirmed shared clinical endpoints and records unavailable dedicated physiotherapy contracts here.';
+      'This workspace uses available shared clinical records and lists unavailable dedicated physiotherapy workflows here.';
 
   @override
   String get physiotherapyNoRecordsLabel => 'No records yet.';
@@ -9749,26 +9746,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get physiotherapyAttendanceNoShow => 'No-show';
 
   @override
-  String get physiotherapyBillingBackendGap => 'No confirmed billing gate';
+  String get physiotherapyBillingBackendGap =>
+      'Billing authorization unavailable';
 
   @override
   String get physiotherapyMissingValueLabel => 'Not recorded';
 
   @override
   String get physiotherapyBackendGapStatusEndpoint =>
-      'Dedicated physiotherapy episode and therapy status endpoints are not available; status is derived from procedures, care plans, appointments, and follow-ups.';
+      'Dedicated physiotherapy episode and therapy status are not available. Status is derived from procedures, care plans, appointments, and follow-ups.';
 
   @override
   String get physiotherapyBackendGapBillingEndpoint =>
-      'A physiotherapy-specific billing authorization gate is not available; billing is shown as a documented backend gap.';
+      'Billing authorization is unavailable for this physiotherapy context.';
 
   @override
   String get physiotherapyBackendGapReportEndpoint =>
-      'Generated physiotherapy assessment and discharge report endpoints are not available; printing uses the shared report template.';
+      'Generated physiotherapy assessment and discharge reports are not available. Printing uses the shared report template.';
 
   @override
   String get physiotherapyBackendGapUnknown =>
-      'An unavailable physiotherapy backend contract was recorded.';
+      'An unavailable physiotherapy workflow was recorded.';
 
   @override
   String get physiotherapyInstructionsReportTitle =>
@@ -9791,7 +9789,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get physiotherapyReportFooterNote =>
-      'Generated from confirmed shared clinical workflow data.';
+      'Generated from shared clinical workflow data.';
 
   @override
   String get mortuaryTitle => 'Mortuary';
@@ -9845,7 +9843,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mortuaryActionsUnavailableTooltip =>
-      'This action is waiting for a backend action endpoint.';
+      'This action is not available yet.';
 
   @override
   String get mortuaryWorklistTitle => 'Mortuary worklist';
@@ -10078,11 +10076,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mortuaryFacilityFieldLabel => 'Facility';
 
   @override
-  String get mortuaryActionGapTitle => 'Backend actions pending';
+  String get mortuaryActionGapTitle => 'Actions unavailable';
 
   @override
   String get mortuaryActionGapBody =>
-      'The current backend exposes mortuary workspace and lookup data only. Action buttons are shown for permissions and audit planning, but remain disabled until backend action endpoints are mounted.';
+      'Mortuary lookup data is available. Action buttons remain disabled until the workflow is enabled for this facility.';
 
   @override
   String get mortuaryIdentitySectionTitle => 'Identity and source';
@@ -10164,7 +10162,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mortuaryNoCustodyEventsBody =>
-      'Custody movements and handovers will appear here when recorded by the backend.';
+      'Custody movements and handovers will appear here when recorded.';
 
   @override
   String get mortuaryNoViewingsLabel => 'No viewings scheduled';
@@ -10232,8 +10230,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mortuaryReportTitle => 'Mortuary case record';
 
   @override
-  String get mortuaryReportFooter =>
-      'Generated from confirmed mortuary workspace data.';
+  String get mortuaryReportFooter => 'Generated from mortuary workspace data.';
 
   @override
   String get mortuaryReportGeneratedMessage => 'Mortuary document generated.';
@@ -10258,11 +10255,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roomsBedsTotalSummaryLabel => 'Total beds';
 
   @override
-  String get roomsBedsBackendGapsTitle => 'Backend status gaps';
+  String get roomsBedsBackendGapsTitle => 'Bed readiness status unavailable';
 
   @override
   String get roomsBedsBackendGapsBody =>
-      'Cleaning, maintenance, block, isolation, and detailed readiness states depend on backend support. Current actions use mounted ward, room, bed, bed assignment, and IPD flow endpoints only.';
+      'Cleaning, maintenance, block, isolation, and detailed readiness states are not available for this facility. Current actions use available ward, room, bed, bed assignment, and IPD flow workflows only.';
 
   @override
   String get roomsBedsBoardTitle => 'Bed board';
@@ -10397,14 +10394,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roomsBedsReleaseDialogBody =>
-      'Releasing the bed sends the admission through the backend bed release flow.';
+      'Releasing the bed sends the admission through the bed release flow.';
 
   @override
   String get roomsBedsTransferDialogTitle => 'Request transfer';
 
   @override
   String get roomsBedsTransferDialogBody =>
-      'Choose the destination ward. Bed selection is completed by the IPD transfer workflow when the backend approves and starts the transfer.';
+      'Choose the destination ward. Bed selection is completed by the IPD transfer workflow after approval.';
 
   @override
   String roomsBedsAdmissionAssignment(String admissionId) {
@@ -10434,7 +10431,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roomsBedsReadinessBackendGapLabel =>
-      'Readiness pending backend status';
+      'Readiness status unavailable';
 
   @override
   String get roomsBedsSavedMessage => 'Rooms and beds updated.';
@@ -10916,4 +10913,282 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrWorkQueuesTitle => 'Work queues';
+
+  @override
+  String get copyAdmissionIdAction => 'Copy admission ID';
+
+  @override
+  String get copyUserIdAction => 'Copy user ID';
+
+  @override
+  String get copyIdentifierAction => 'Copy identifier';
+
+  @override
+  String get admissionIdCopiedMessage => 'Admission ID copied.';
+
+  @override
+  String get userIdCopiedMessage => 'User ID copied.';
+
+  @override
+  String get identifierCopiedMessage => 'Identifier copied.';
+
+  @override
+  String get settingsWorkspaceSectionTitle => 'Administrative setup workspace';
+
+  @override
+  String get settingsWorkspaceSectionBody =>
+      'Review tenant, facility, access, and security setup readiness.';
+
+  @override
+  String get settingsWorkspaceLoadingTitle => 'Loading settings workspace';
+
+  @override
+  String get settingsWorkspaceLoadingBody =>
+      'Loading setup readiness, actions, and reference data.';
+
+  @override
+  String get settingsWorkspaceErrorTitle => 'Settings workspace unavailable';
+
+  @override
+  String get settingsWorkspaceEmptyTitle => 'No setup modules found';
+
+  @override
+  String get settingsWorkspaceEmptyBody =>
+      'No setup modules match the current filters.';
+
+  @override
+  String get settingsWorkspaceContextTitle => 'Context summary';
+
+  @override
+  String get settingsWorkspaceTenantLabel => 'Tenant';
+
+  @override
+  String get settingsWorkspaceFacilityLabel => 'Facility';
+
+  @override
+  String get settingsWorkspaceFacilityTypeLabel => 'Facility type';
+
+  @override
+  String get settingsWorkspaceRolesLabel => 'Roles';
+
+  @override
+  String get settingsWorkspaceGeneratedAtLabel => 'Generated';
+
+  @override
+  String get settingsWorkspaceRecordsLabel => 'Records';
+
+  @override
+  String get settingsWorkspaceAttentionLabel => 'Needs attention';
+
+  @override
+  String get settingsWorkspaceConfiguredLabel => 'Configured';
+
+  @override
+  String get settingsWorkspaceTotalRecordsLabel => 'Total records';
+
+  @override
+  String get settingsWorkspaceChecklistTitle => 'Setup checklist';
+
+  @override
+  String get settingsWorkspaceQuickActionsTitle => 'Quick actions';
+
+  @override
+  String get settingsWorkspaceModuleGroupsTitle => 'Module groups';
+
+  @override
+  String get settingsWorkspaceSearchLabel => 'Search setup modules';
+
+  @override
+  String get settingsWorkspaceSearchHint => 'Search by module, group, or route';
+
+  @override
+  String get settingsWorkspaceGroupFilterLabel => 'Group';
+
+  @override
+  String get settingsWorkspaceStateFilterLabel => 'State';
+
+  @override
+  String get settingsWorkspaceAllGroupsLabel => 'All groups';
+
+  @override
+  String get settingsWorkspaceAllStatesLabel => 'All states';
+
+  @override
+  String get settingsWorkspaceActionableOnlyLabel => 'Actionable only';
+
+  @override
+  String get settingsWorkspaceTenantSelectorLabel => 'Tenant context';
+
+  @override
+  String get settingsWorkspaceFacilitySelectorLabel => 'Facility context';
+
+  @override
+  String get settingsWorkspaceApplyContextAction => 'Apply context';
+
+  @override
+  String get settingsWorkspaceOpenAction => 'Open';
+
+  @override
+  String get settingsWorkspaceCreateAction => 'Create';
+
+  @override
+  String get settingsWorkspaceRouteUnavailableLabel => 'Unavailable';
+
+  @override
+  String get settingsWorkspaceRouteUnavailableBody =>
+      'This setup action is not available from this page yet.';
+
+  @override
+  String get settingsWorkspaceTenantContextRequiredTitle =>
+      'Tenant context required';
+
+  @override
+  String get settingsWorkspaceTenantContextRequiredBody =>
+      'Select a tenant to load administrative setup readiness.';
+
+  @override
+  String get settingsWorkspaceReadyStatus => 'Ready';
+
+  @override
+  String get settingsWorkspaceInProgressStatus => 'In progress';
+
+  @override
+  String get settingsWorkspaceAttentionStatus => 'Attention';
+
+  @override
+  String get settingsWorkspaceEmptyStatus => 'Empty';
+
+  @override
+  String get settingsWorkspaceConfiguredStatus => 'Configured';
+
+  @override
+  String get settingsWorkspaceOrganizationGroup => 'Organization';
+
+  @override
+  String get settingsWorkspaceUsersAndAccessGroup => 'Users and access';
+
+  @override
+  String get settingsWorkspaceSecurityGroup => 'Security';
+
+  @override
+  String get settingsWorkspaceUnknownLabel => 'Unavailable';
+
+  @override
+  String get settingsWorkspaceDependencyBlockedLabel =>
+      'Waiting for required setup';
+
+  @override
+  String get settingsWorkspaceRequiredSetupLabel => 'Required setup';
+
+  @override
+  String get settingsWorkspaceOptionalSetupLabel => 'Optional setup';
+
+  @override
+  String get settingsWorkspaceNoQuickActionsBody =>
+      'No setup action is currently available for the selected context.';
+
+  @override
+  String get settingsWorkspaceNoModulesBody =>
+      'No modules match the selected filters.';
+
+  @override
+  String get settingsWorkspaceSelectTenantAction => 'Select tenant';
+
+  @override
+  String get settingsWorkspaceModuleTenant => 'Tenant';
+
+  @override
+  String get settingsWorkspaceModuleFacility => 'Facility';
+
+  @override
+  String get settingsWorkspaceModuleBranch => 'Branch';
+
+  @override
+  String get settingsWorkspaceModuleDepartment => 'Department';
+
+  @override
+  String get settingsWorkspaceModuleUnit => 'Unit';
+
+  @override
+  String get settingsWorkspaceModuleRoom => 'Room';
+
+  @override
+  String get settingsWorkspaceModuleWard => 'Ward';
+
+  @override
+  String get settingsWorkspaceModuleBed => 'Bed';
+
+  @override
+  String get settingsWorkspaceModuleAddress => 'Address';
+
+  @override
+  String get settingsWorkspaceModuleContact => 'Contact';
+
+  @override
+  String get settingsWorkspaceModuleUser => 'User';
+
+  @override
+  String get settingsWorkspaceModuleUserProfile => 'User profile';
+
+  @override
+  String get settingsWorkspaceModuleRole => 'Role';
+
+  @override
+  String get settingsWorkspaceModulePermission => 'Permission';
+
+  @override
+  String get settingsWorkspaceModuleRolePermission => 'Role permission';
+
+  @override
+  String get settingsWorkspaceModuleUserRole => 'User role';
+
+  @override
+  String get settingsWorkspaceModuleUserSession => 'User session';
+
+  @override
+  String get settingsWorkspaceModuleApiKey => 'API key';
+
+  @override
+  String get settingsWorkspaceModuleApiKeyPermission => 'API key permission';
+
+  @override
+  String get settingsWorkspaceModuleUserMfa => 'User MFA';
+
+  @override
+  String get settingsWorkspaceModuleOauthAccount => 'OAuth account';
+
+  @override
+  String get pharmacyWorkflowReadinessTitle => 'Pharmacy workflow readiness';
+
+  @override
+  String get pharmacyWorkflowReadinessBody =>
+      'Actions below follow the current order, stock, batch, and attestation state.';
+
+  @override
+  String get pharmacyReadinessDispenseAvailable =>
+      'Dispense is available for the current order state.';
+
+  @override
+  String get pharmacyReadinessDispenseBlocked =>
+      'Dispense is blocked by the current order, payment, stock, or authorization state.';
+
+  @override
+  String get pharmacyReadinessStockMapped =>
+      'Medication items have stock mapping available.';
+
+  @override
+  String get pharmacyReadinessStockMissing =>
+      'Some medication items need stock mapping before dispense.';
+
+  @override
+  String get pharmacyReadinessAttestationRequired =>
+      'Prepared batches require attestation before completion.';
+
+  @override
+  String get pharmacyReadinessAttestationClear =>
+      'No prepared batch attestation is pending.';
+
+  @override
+  String get pharmacyReadinessPrintReady =>
+      'Medication printouts use the configured print workflow.';
 }

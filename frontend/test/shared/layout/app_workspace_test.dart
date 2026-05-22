@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -490,6 +491,56 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Patient details'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'AppWorkspacePatientContextHeader copies patient and encounter identifiers',
+    (WidgetTester tester) async {
+      final List<String> copiedValues = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'Clipboard.setData') {
+            final arguments = Map<Object?, Object?>.from(
+              methodCall.arguments as Map,
+            );
+            copiedValues.add(arguments['text']! as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await pumpComponent(
+        tester,
+        const AppWorkspacePatientContextHeader(
+          patientName: 'Amina Kato',
+          patientNumber: 'MRN-10024',
+          fields: <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: 'Encounter',
+              value: 'OPD-2026-0007',
+              copyable: true,
+              copiedMessage: 'Encounter ID copied.',
+            ),
+          ],
+        ),
+        size: const Size(900, 500),
+      );
+
+      await tester.tap(find.text('MRN-10024'));
+      await tester.pump();
+      await tester.tap(find.text('OPD-2026-0007'));
+      await tester.pump();
+
+      expect(copiedValues, <String>['MRN-10024', 'OPD-2026-0007']);
+      expect(find.byIcon(Icons.check), findsWidgets);
     },
   );
 }

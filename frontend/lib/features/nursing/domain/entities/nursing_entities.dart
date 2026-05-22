@@ -224,11 +224,9 @@ final class NursingPatientSummary {
     return _firstNonEmpty(<String?>[
           patientDisplayName,
           patientDisplayId,
-          patientId,
           displayId,
-          admissionId,
         ]) ??
-        admissionId;
+        '';
   }
 
   String? get locationLabel {

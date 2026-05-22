@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
+import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 
 class AppResponsiveWrap extends StatelessWidget {
   const AppResponsiveWrap({
@@ -84,6 +85,12 @@ class AppInfoTileGrid extends StatelessWidget {
             icon: item.icon,
             emptyValue: emptyValue,
             bordered: borderedTiles,
+            copyable: item.copyable,
+            copyTooltip: item.copyTooltip,
+            copiedMessage: item.copiedMessage,
+            copySemanticLabel: item.copySemanticLabel,
+            showCopyIcon: item.showCopyIcon,
+            copyPlaceholderValues: item.copyPlaceholderValues,
           ),
       ],
     );
@@ -92,11 +99,27 @@ class AppInfoTileGrid extends StatelessWidget {
 
 @immutable
 final class AppInfoTileData {
-  const AppInfoTileData({required this.label, this.value, this.icon});
+  const AppInfoTileData({
+    required this.label,
+    this.value,
+    this.icon,
+    this.copyable = false,
+    this.copyTooltip,
+    this.copiedMessage,
+    this.copySemanticLabel,
+    this.showCopyIcon = true,
+    this.copyPlaceholderValues = const <String>{},
+  });
 
   final String label;
   final String? value;
   final IconData? icon;
+  final bool copyable;
+  final String? copyTooltip;
+  final String? copiedMessage;
+  final String? copySemanticLabel;
+  final bool showCopyIcon;
+  final Set<String> copyPlaceholderValues;
 }
 
 class AppInfoTile extends StatelessWidget {
@@ -107,6 +130,12 @@ class AppInfoTile extends StatelessWidget {
     this.emptyValue = '',
     this.bordered = true,
     this.maxLines = 2,
+    this.copyable = false,
+    this.copyTooltip,
+    this.copiedMessage,
+    this.copySemanticLabel,
+    this.showCopyIcon = true,
+    this.copyPlaceholderValues = const <String>{},
     super.key,
   });
 
@@ -116,6 +145,12 @@ class AppInfoTile extends StatelessWidget {
   final String emptyValue;
   final bool bordered;
   final int maxLines;
+  final bool copyable;
+  final String? copyTooltip;
+  final String? copiedMessage;
+  final String? copySemanticLabel;
+  final bool showCopyIcon;
+  final Set<String> copyPlaceholderValues;
 
   @override
   Widget build(BuildContext context) {
@@ -125,6 +160,12 @@ class AppInfoTile extends StatelessWidget {
       icon: icon,
       emptyValue: emptyValue,
       maxLines: maxLines,
+      copyable: copyable,
+      copyTooltip: copyTooltip,
+      copiedMessage: copiedMessage,
+      copySemanticLabel: copySemanticLabel,
+      showCopyIcon: showCopyIcon,
+      copyPlaceholderValues: copyPlaceholderValues,
     );
 
     if (!bordered) {
@@ -145,6 +186,12 @@ class _AppInfoTileContent extends StatelessWidget {
     required this.icon,
     required this.emptyValue,
     required this.maxLines,
+    required this.copyable,
+    required this.showCopyIcon,
+    required this.copyPlaceholderValues,
+    this.copyTooltip,
+    this.copiedMessage,
+    this.copySemanticLabel,
   });
 
   final String label;
@@ -152,6 +199,12 @@ class _AppInfoTileContent extends StatelessWidget {
   final IconData? icon;
   final String emptyValue;
   final int maxLines;
+  final bool copyable;
+  final String? copyTooltip;
+  final String? copiedMessage;
+  final String? copySemanticLabel;
+  final bool showCopyIcon;
+  final Set<String> copyPlaceholderValues;
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +212,17 @@ class _AppInfoTileContent extends StatelessWidget {
     final String displayValue = _resolvedValue(value, emptyValue);
 
     if (icon == null) {
-      return _InfoText(label: label, value: displayValue, maxLines: maxLines);
+      return _InfoText(
+        label: label,
+        value: displayValue,
+        maxLines: maxLines,
+        copyable: copyable,
+        copyTooltip: copyTooltip,
+        copiedMessage: copiedMessage,
+        copySemanticLabel: copySemanticLabel,
+        showCopyIcon: showCopyIcon,
+        copyPlaceholderValues: copyPlaceholderValues,
+      );
     }
 
     return Row(
@@ -176,6 +239,12 @@ class _AppInfoTileContent extends StatelessWidget {
             label: label,
             value: displayValue,
             maxLines: maxLines,
+            copyable: copyable,
+            copyTooltip: copyTooltip,
+            copiedMessage: copiedMessage,
+            copySemanticLabel: copySemanticLabel,
+            showCopyIcon: showCopyIcon,
+            copyPlaceholderValues: copyPlaceholderValues,
           ),
         ),
       ],
@@ -188,11 +257,23 @@ class _InfoText extends StatelessWidget {
     required this.label,
     required this.value,
     required this.maxLines,
+    required this.copyable,
+    required this.showCopyIcon,
+    required this.copyPlaceholderValues,
+    this.copyTooltip,
+    this.copiedMessage,
+    this.copySemanticLabel,
   });
 
   final String label;
   final String value;
   final int maxLines;
+  final bool copyable;
+  final String? copyTooltip;
+  final String? copiedMessage;
+  final String? copySemanticLabel;
+  final bool showCopyIcon;
+  final Set<String> copyPlaceholderValues;
 
   @override
   Widget build(BuildContext context) {
@@ -212,14 +293,27 @@ class _InfoText extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.xs),
-        Text(
-          value,
-          maxLines: maxLines,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        copyable
+            ? AppCopyableIdentifier(
+                value: value,
+                tooltip: copyTooltip,
+                copiedMessage: copiedMessage,
+                semanticLabel: copySemanticLabel,
+                showCopyIcon: showCopyIcon,
+                maxLines: maxLines,
+                placeholderValues: copyPlaceholderValues,
+                textStyle: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            : Text(
+                value,
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ],
     );
   }
@@ -231,7 +325,7 @@ String _resolvedValue(String? value, String emptyValue) {
     return emptyValue;
   }
 
-  return value!;
+  return normalized;
 }
 
 double _itemWidth({

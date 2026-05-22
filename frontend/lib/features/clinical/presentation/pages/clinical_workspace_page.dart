@@ -1240,7 +1240,7 @@ class _ClinicalActionBar extends ConsumerWidget {
                       label: l10n.patientsIdentifierLabel,
                       value:
                           bundle.entry.encounterPublicId ??
-                          bundle.entry.encounterId,
+                          l10n.profileUnknownValue,
                     ),
                     PrintFormMetadataItem(
                       label: l10n.opdStageLabel,
@@ -1368,7 +1368,7 @@ class _ClinicalLabOrderRow extends ConsumerWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: <Widget>[
                     Text(
-                      order.title ?? order.id,
+                      order.title ?? context.l10n.profileUnknownValue,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -2826,8 +2826,11 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
   return <AppWorkspacePatientContextField>[
     AppWorkspacePatientContextField(
       label: l10n.clinicalEncounterNumberLabel,
-      value: entry.encounterPublicId ?? entry.encounterId,
+      value: entry.encounterPublicId ?? '',
       icon: Icons.tag_outlined,
+      copyable: true,
+      copyTooltip: l10n.opdCopyEncounterIdAction,
+      copiedMessage: l10n.opdEncounterIdCopiedMessage,
     ),
     AppWorkspacePatientContextField(
       label: l10n.clinicalEncounterQueueLabel,
@@ -2859,6 +2862,9 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
       label: l10n.clinicalAdmissionNumberLabel,
       value: entry.admissionPublicId ?? '',
       icon: Icons.bed_outlined,
+      copyable: true,
+      copyTooltip: l10n.copyAdmissionIdAction,
+      copiedMessage: l10n.admissionIdCopiedMessage,
     ),
     AppWorkspacePatientContextField(
       label: l10n.clinicalAgeLabel,
@@ -2898,11 +2904,6 @@ String _clinicalPatientNumber(ClinicalWorklistEntry entry) {
   final String? publicId = entry.patientPublicId?.trim();
   if (publicId != null && publicId.isNotEmpty) {
     return publicId;
-  }
-
-  final String? patientId = entry.patientId?.trim();
-  if (patientId != null && patientId.isNotEmpty) {
-    return patientId;
   }
 
   return '';

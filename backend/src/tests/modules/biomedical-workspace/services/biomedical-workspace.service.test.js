@@ -155,77 +155,40 @@ describe('biomedical-workspace.service', () => {
     );
   });
 
-  it('creates a placeholder equipment record when the reporter provides a temporary equipment name', async () => {
+  it('rejects fault reports without a selected registered equipment record', async () => {
     resolveIdentifierForFilter.mockImplementation(async ({ model, value }) => {
       if (model === 'equipment_registry') return undefined;
       return value || undefined;
     });
-    biomedicalWorkspaceRepository.createPlaceholderEquipmentRegistry.mockResolvedValue({
-      id: 'placeholder-equipment-uuid',
-      human_friendly_id: 'EQ-NEW',
-      equipment_name: 'Portable suction trolley',
-      equipment_code: null,
-    });
-    biomedicalWorkspaceRepository.createFaultReport.mockResolvedValue({
-      workOrder: {
-        id: 'work-order-uuid',
-        human_friendly_id: 'BWO-002',
-        status: 'OPEN',
-        priority: 'HIGH',
-      },
-      incidentReport: {
-        id: 'incident-uuid',
-        human_friendly_id: 'BIR-002',
-        status: 'OPEN',
-        severity: 'HIGH',
-      },
-      downtimeLog: null,
-      clinicalAlert: null,
-    });
-    biomedicalWorkspaceRepository.findNotificationRecipients.mockResolvedValue([
-      'biomed-user-1',
-    ]);
 
-    const result = await biomedicalWorkspaceService.createFaultReport(
-      {
-        reported_equipment_name: 'Portable suction trolley',
-        facility_id: 'FAC-001',
-        source_scope: 'dashboard_workspace',
-        source_route: '/dashboard',
-        severity: 'HIGH',
-        priority: 'HIGH',
-        symptoms: '',
-        description: '',
-        patient_safety_risk: false,
-      },
-      {
-        id: 'user-77',
-        tenant_id: 'tenant-1',
-        facility_id: 'FAC-001',
-      },
-      '127.0.0.1'
-    );
+    await expect(
+      biomedicalWorkspaceService.createFaultReport(
+        {
+          reported_equipment_name: 'Portable suction trolley',
+          facility_id: 'FAC-001',
+          source_scope: 'dashboard_workspace',
+          source_route: '/dashboard',
+          severity: 'HIGH',
+          priority: 'HIGH',
+          symptoms: '',
+          description: '',
+          patient_safety_risk: false,
+        },
+        {
+          id: 'user-77',
+          tenant_id: 'tenant-1',
+          facility_id: 'FAC-001',
+        },
+        '127.0.0.1'
+      )
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      details: expect.arrayContaining([expect.objectContaining({ field: 'equipment_id' })]),
+    });
 
-    expect(
-      biomedicalWorkspaceRepository.createPlaceholderEquipmentRegistry
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tenantId: 'tenant-1',
-        facilityId: 'FAC-001',
-        reportedEquipmentName: 'Portable suction trolley',
-      })
-    );
-    expect(
-      biomedicalWorkspaceRepository.resolveEquipmentRegistry
-    ).not.toHaveBeenCalled();
-    expect(biomedicalWorkspaceRepository.createFaultReport).toHaveBeenCalledWith(
-      expect.objectContaining({
-        equipment: expect.objectContaining({
-          id: 'placeholder-equipment-uuid',
-          equipment_name: 'Portable suction trolley',
-        }),
-      })
-    );
-    expect(result.equipment_work_order.id).toBe('BWO-002');
+    expect(biomedicalWorkspaceRepository.resolveEquipmentRegistry).not.toHaveBeenCalled();
+    expect(biomedicalWorkspaceRepository.createFaultReport).not.toHaveBeenCalled();
+    expect(createAuditLog).not.toHaveBeenCalled();
+    expect(emitToUsers).not.toHaveBeenCalled();
   });
 });

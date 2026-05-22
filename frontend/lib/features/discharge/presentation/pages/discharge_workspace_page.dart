@@ -407,11 +407,13 @@ Future<void> _openDischargeDetailDialog(
                     metadata: <PrintFormMetadataItem>[
                       PrintFormMetadataItem(
                         label: l10n.dischargeReportPatientNoLabel,
-                        value: detail.patientId ?? l10n.profileUnknownValue,
+                        value: l10n.profileUnknownValue,
                       ),
                       PrintFormMetadataItem(
                         label: l10n.dischargeReportAdmissionLabel,
-                        value: detail.summary.displayId ?? detail.summary.id,
+                        value:
+                            detail.summary.displayId ??
+                            l10n.profileUnknownValue,
                       ),
                       PrintFormMetadataItem(
                         label: l10n.dischargeReportLocationLabel,
@@ -467,20 +469,26 @@ class _DischargeDetailContent extends ConsumerWidget {
       children: <Widget>[
         AppWorkspacePatientContextHeader(
           patientName: detail.ipd.patientDisplayName,
-          patientNumber: detail.patientId ?? l10n.profileUnknownValue,
+          patientNumber: l10n.profileUnknownValue,
           demographics: _patientDemographics(context, detail),
           semanticLabel: l10n.dischargePatientContextLabel,
           status: _statusFor(context, detail.summary),
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.dischargeAdmissionFieldLabel,
-              value: detail.summary.displayId ?? detail.summary.id,
+              value: detail.summary.displayId ?? '',
               icon: Icons.local_hotel_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyAdmissionIdAction,
+              copiedMessage: l10n.admissionIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.dischargeEncounterFieldLabel,
-              value: detail.encounterId ?? '',
+              value: '',
               icon: Icons.assignment_outlined,
+              copyable: true,
+              copyTooltip: l10n.opdCopyEncounterIdAction,
+              copiedMessage: l10n.opdEncounterIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.dischargeLocationFieldLabel,
@@ -751,6 +759,7 @@ class _QueuePatientCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -763,7 +772,7 @@ class _QueuePatientCell extends StatelessWidget {
           style: theme.textTheme.labelLarge,
         ),
         Text(
-          item.patientId ?? item.displayId ?? item.id,
+          item.displayId ?? l10n.profileUnknownValue,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
@@ -1486,11 +1495,6 @@ AppWorkspaceStatus _clearanceStatus(
       label: context.l10n.dischargeClearancePending,
       tone: AppWorkspaceStatusTone.warning,
       icon: Icons.schedule_outlined,
-    ),
-    DischargeClearanceState.backendGap => AppWorkspaceStatus(
-      label: context.l10n.dischargeClearanceBackendGap,
-      tone: AppWorkspaceStatusTone.info,
-      icon: Icons.api_outlined,
     ),
     DischargeClearanceState.unavailable => AppWorkspaceStatus(
       label: context.l10n.dischargeClearanceUnavailable,

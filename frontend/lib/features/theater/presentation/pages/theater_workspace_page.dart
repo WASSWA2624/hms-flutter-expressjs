@@ -443,7 +443,7 @@ class _TheaterCaseDetail extends ConsumerWidget {
 
     return AppWorkspaceDetailPanel(
       title: l10n.theaterCaseDetailTitle,
-      description: selected.effectiveDisplayId,
+      description: selected.displayId,
       actions: canWrite
           ? <Widget>[
               AppIconButton(
@@ -546,10 +546,7 @@ class _TheaterCaseDetailBody extends ConsumerWidget {
         AppWorkspacePatientContextHeader(
           patientName:
               theaterCase.patientDisplayName ?? l10n.profileUnknownValue,
-          patientNumber:
-              theaterCase.patientDisplayId ??
-              theaterCase.encounterDisplayId ??
-              theaterCase.effectiveDisplayId,
+          patientNumber: theaterCase.patientDisplayId ?? l10n.profileUnknownValue,
           status: AppWorkspaceStatus(
             label: _caseStatusLabel(l10n, theaterCase.status),
             tone: _statusTone(theaterCase.status),
@@ -557,8 +554,11 @@ class _TheaterCaseDetailBody extends ConsumerWidget {
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.theaterEncounterLabel,
-              value: theaterCase.encounterDisplayId ?? l10n.profileUnknownValue,
+              value: theaterCase.encounterDisplayId ?? '',
               icon: Icons.assignment_outlined,
+              copyable: true,
+              copyTooltip: l10n.opdCopyEncounterIdAction,
+              copiedMessage: l10n.opdEncounterIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.theaterScheduledAtLabel,

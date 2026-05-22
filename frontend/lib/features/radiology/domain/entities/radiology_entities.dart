@@ -242,7 +242,7 @@ final class RadiologyOrder {
   final List<RadiologyResult> results;
   final List<ImagingStudy> imagingStudies;
 
-  String get effectiveDisplayId => displayId ?? id;
+  String get effectiveDisplayId => displayId ?? '';
 
   String get normalizedStatus => (status ?? '').trim().toUpperCase();
 
@@ -371,7 +371,7 @@ final class RadiologyResult {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  String get effectiveDisplayId => displayId ?? id;
+  String get effectiveDisplayId => displayId ?? '';
 
   String get normalizedStatus => (status ?? '').trim().toUpperCase();
 
@@ -462,7 +462,7 @@ final class ImagingStudy {
   final List<ImagingAsset> assets;
   final List<PacsLink> pacsLinks;
 
-  String get effectiveDisplayId => displayId ?? id;
+  String get effectiveDisplayId => displayId ?? '';
 
   bool get hasAssets => assets.isNotEmpty || assetCount > 0;
 

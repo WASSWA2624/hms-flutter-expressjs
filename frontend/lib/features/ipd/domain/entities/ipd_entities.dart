@@ -269,7 +269,7 @@ final class IpdAdmissionSummary {
   String get apiId => id;
 
   String get displayTitle {
-    return _firstNonEmpty(<String?>[patientDisplayName, patientId, id]) ?? id;
+    return _firstNonEmpty(<String?>[patientDisplayName, displayId]) ?? '';
   }
 
   String? get location {

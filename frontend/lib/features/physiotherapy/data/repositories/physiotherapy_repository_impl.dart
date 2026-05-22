@@ -23,10 +23,10 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
   static const AppPageRequest _appointmentFetchRequest = AppPageRequest(
     pageSize: 100,
   );
-  static const List<String> _backendGapCodes = <String>[
-    'PHYSIOTHERAPY_STATUS_ENDPOINT',
-    'BILLING_AUTHORIZATION_ENDPOINT',
-    'PHYSIOTHERAPY_REPORT_ENDPOINT',
+  static const List<String> _unavailableWorkflowCodes = <String>[
+    'THERAPY_STATUS_UNAVAILABLE',
+    'BILLING_AUTHORIZATION_UNAVAILABLE',
+    'THERAPY_REPORT_UNAVAILABLE',
   ];
 
   final ApiClient _apiClient;
@@ -130,7 +130,7 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
         PhysiotherapyDetail(
           item: item,
           appointments: _successValue(appointmentsResult),
-          backendGaps: _backendGapCodes,
+          unavailableWorkflows: _unavailableWorkflowCodes,
         ),
       );
     }
@@ -567,7 +567,7 @@ final class PhysiotherapyRepositoryImpl implements PhysiotherapyRepository {
       carePlans: _therapyOrAll(bundle.carePlans),
       progressNotes: _therapyOrAll(bundle.progressNotes),
       followUps: _therapyOrAll(bundle.followUps),
-      backendGaps: _backendGapCodes,
+      unavailableWorkflows: _unavailableWorkflowCodes,
     );
   }
 

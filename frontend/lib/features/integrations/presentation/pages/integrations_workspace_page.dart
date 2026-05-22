@@ -835,11 +835,11 @@ Widget _detailBody(
         children.add(
           AppMessagePanel(
             title: _interopTitle(l10n, status.title),
-            message: status.backendGap == null
+            message: status.unavailableReason == null
                 ? l10n.integrationsInteropReadyBody
-                : _interopGap(l10n, status.backendGap!),
+                : _interopUnavailableReason(l10n, status.unavailableReason!),
             icon: Icons.compare_arrows_outlined,
-            tone: status.backendGap == null
+            tone: status.unavailableReason == null
                 ? AppWorkspaceStatusTone.success
                 : AppWorkspaceStatusTone.warning,
           ),
@@ -2103,7 +2103,7 @@ String _statusLabelForValue(BuildContext context, String? value) {
     'ERROR' => l10n.integrationsStatusError,
     'FAILED' => l10n.integrationsStatusFailed,
     'READY' => l10n.integrationsStatusReady,
-    'BACKEND_GAP' => l10n.integrationsStatusBackendGap,
+    'UNAVAILABLE' => l10n.integrationsStatusBackendGap,
     'QUEUED' => l10n.integrationsStatusQueued,
     'CONNECTED' => l10n.integrationsStatusConnected,
     'UNKNOWN' => l10n.profileUnknownValue,
@@ -2116,7 +2116,7 @@ AppWorkspaceStatusTone _statusTone(IntegrationWorkItem item) {
   if (status == 'ERROR' || status == 'FAILED') {
     return AppWorkspaceStatusTone.error;
   }
-  if (status == 'INACTIVE' || status == 'BACKEND_GAP') {
+  if (status == 'INACTIVE' || status == 'UNAVAILABLE') {
     return AppWorkspaceStatusTone.warning;
   }
   if (status == 'ACTIVE' || status == 'READY' || status == 'CONNECTED') {
@@ -2128,7 +2128,7 @@ AppWorkspaceStatusTone _statusTone(IntegrationWorkItem item) {
 IconData _statusIcon(IntegrationWorkItem item) {
   return switch (item.status.toUpperCase()) {
     'ACTIVE' || 'READY' || 'CONNECTED' => Icons.check_circle_outline,
-    'INACTIVE' || 'BACKEND_GAP' => Icons.warning_amber_outlined,
+    'INACTIVE' || 'UNAVAILABLE' => Icons.warning_amber_outlined,
     'ERROR' || 'FAILED' => Icons.error_outline,
     'QUEUED' => Icons.schedule_outlined,
     _ => Icons.info_outline,
@@ -2172,7 +2172,7 @@ String _nextActionLabel(BuildContext context, String value) {
     'monitor_delivery' => l10n.integrationsNextActionMonitorDelivery,
     'replay_or_escalate' => l10n.integrationsNextActionReplayOrEscalate,
     'review' => l10n.integrationsNextActionReview,
-    'RUN_FROM_ACTION_ENDPOINT' => l10n.integrationsNextActionRunEndpoint,
+    'RUN_AVAILABLE_ACTION' => l10n.integrationsNextActionRunEndpoint,
     'USE_INTEGRATION_STATUS_AND_LOGS' =>
       l10n.integrationsNextActionUseStatusLogs,
     _ => _apiLabel(value),
@@ -2190,9 +2190,9 @@ String _interopTitle(AppLocalizations l10n, String value) {
   };
 }
 
-String _interopGap(AppLocalizations l10n, String value) {
+String _interopUnavailableReason(AppLocalizations l10n, String value) {
   return switch (value) {
-    'NO_DEDICATED_INTEROP_READINESS_ENDPOINT' =>
+    'INTEROP_READINESS_SIGNAL_UNAVAILABLE' =>
       l10n.integrationsInteropReadinessGapBody,
     _ => _apiLabel(value),
   };

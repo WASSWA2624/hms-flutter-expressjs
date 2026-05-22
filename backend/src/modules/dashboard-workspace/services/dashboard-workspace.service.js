@@ -18,7 +18,6 @@ const { getUserPermissions } = require('@middlewares/auth.middleware');
 
 const ADMIN_ROLES = new Set([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN]);
 const DEFAULT_LIMIT = 20;
-const GUIDE_SIGNAL_ID = 'guide_signal';
 
 const DATE_PRESET_LOOKUPS = Object.freeze([
   { id: 'today', label_key: 'dashboard.filters.datePresets.today' },
@@ -1465,17 +1464,6 @@ const buildInsights = ({ snapshot, subscription, facilityContext, canManageSubsc
     });
   }
 
-  if (!signals.length) {
-    signals.push({
-      id: GUIDE_SIGNAL_ID,
-      kind: 'guide_signal',
-      module_slug: 'dashboard',
-      severity: 'info',
-      count: 0,
-      target: routeTarget('dashboard', 'getting-started', null, 'open'),
-      meta: { placeholder: true },
-    });
-  }
 
   const activeModuleSlugs = new Set(
     (subscription?.module_subscriptions || [])

@@ -2,6 +2,7 @@ export 'app_action_label_scope.dart';
 export 'app_button.dart';
 export 'app_checkbox_field.dart';
 export 'app_content_panel.dart';
+export 'app_copyable_identifier.dart';
 export 'app_currency_amount_field.dart';
 export 'app_date_field.dart';
 export 'app_dialog.dart';

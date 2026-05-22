@@ -310,8 +310,8 @@ final class HousekeepingWorkspaceOverview {
 }
 
 @immutable
-final class HousekeepingBackendGap {
-  const HousekeepingBackendGap({required this.title, required this.body});
+final class HousekeepingUnavailableWorkflow {
+  const HousekeepingUnavailableWorkflow({required this.title, required this.body});
 
   final String title;
   final String body;
@@ -327,7 +327,7 @@ final class HousekeepingWorkspaceState {
     this.lastFailure,
     this.isRefreshing = false,
     this.isSaving = false,
-    this.backendGaps = housekeepingBackendGaps,
+    this.unavailableWorkflows = housekeepingUnavailableWorkflows,
   });
 
   final HousekeepingWorkspaceQuery query;
@@ -337,7 +337,7 @@ final class HousekeepingWorkspaceState {
   final Object? lastFailure;
   final bool isRefreshing;
   final bool isSaving;
-  final List<HousekeepingBackendGap> backendGaps;
+  final List<HousekeepingUnavailableWorkflow> unavailableWorkflows;
 
   int get workloadCount => overview.workloadCount;
 
@@ -362,7 +362,7 @@ final class HousekeepingWorkspaceState {
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isSaving: isSaving ?? this.isSaving,
-      backendGaps: backendGaps,
+      unavailableWorkflows: unavailableWorkflows,
     );
   }
 }
@@ -449,27 +449,27 @@ const List<String> housekeepingMaintenanceStatusValues = <String>[
   'CANCELLED',
 ];
 
-const List<HousekeepingBackendGap>
-housekeepingBackendGaps = <HousekeepingBackendGap>[
-  HousekeepingBackendGap(
+const List<HousekeepingUnavailableWorkflow>
+housekeepingUnavailableWorkflows = <HousekeepingUnavailableWorkflow>[
+  HousekeepingUnavailableWorkflow(
     title: 'Discharge-to-cleaning automation',
     body:
-        'No confirmed atomic endpoint links final discharge, bed release, and housekeeping task creation.',
+        'Final discharge, bed release, and cleaning handoff are not connected for this facility yet.',
   ),
-  HousekeepingBackendGap(
+  HousekeepingUnavailableWorkflow(
     title: 'Bed cleaning status',
     body:
-        'The beds API currently supports AVAILABLE, OCCUPIED, RESERVED, and OUT_OF_SERVICE only; CLEANING and room-ready transitions are not exposed.',
+        'Detailed CLEANING and room-ready transitions are unavailable for this facility.',
   ),
-  HousekeepingBackendGap(
+  HousekeepingUnavailableWorkflow(
     title: 'Inspection and rework',
     body:
-        'Housekeeping tasks do not expose inspection pending, failed, rework, sanitation checklist, or task note fields.',
+        'Inspection, rework, sanitation checklist, and task note states are not available yet.',
   ),
-  HousekeepingBackendGap(
+  HousekeepingUnavailableWorkflow(
     title: 'Generated housekeeping reports',
     body:
-        'No dedicated housekeeping report template/run contract is exposed yet for turnaround and readiness reports.',
+        'Generated turnaround and readiness reports are not available yet.',
   ),
 ];
 

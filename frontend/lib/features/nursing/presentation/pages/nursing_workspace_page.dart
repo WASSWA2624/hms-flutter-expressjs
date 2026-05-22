@@ -467,8 +467,8 @@ List<AppListTableColumn<NursingWorkItem>> _nursingWorklistColumnChoices(
       label: l10n.nursingAdmissionColumnLabel,
       sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
           appListTableCompareText(
-            left.displayId ?? left.admissionId,
-            right.displayId ?? right.admissionId,
+            left.displayId,
+            right.displayId,
           ),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
         return Text(_admissionLabel(context, item));
@@ -578,7 +578,7 @@ class _NursingPatientDetailContent extends StatelessWidget {
       children: <Widget>[
         AppWorkspacePatientContextHeader(
           patientName: summary.displayTitle,
-          patientNumber: summary.patientDisplayId ?? summary.admissionId,
+          patientNumber: summary.patientDisplayId ?? '',
           demographics: _joinDisplay(<String?>[
             detail.patientGender == null
                 ? null
@@ -612,13 +612,19 @@ class _NursingPatientDetailContent extends StatelessWidget {
           fields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.nursingAdmissionLabel,
-              value: summary.admissionId,
+              value: summary.displayId ?? '',
               icon: Icons.tag_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyAdmissionIdAction,
+              copiedMessage: l10n.admissionIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.nursingEncounterLabel,
               value: summary.encounterDisplayId ?? '',
               icon: Icons.medical_information_outlined,
+              copyable: true,
+              copyTooltip: l10n.opdCopyEncounterIdAction,
+              copiedMessage: l10n.opdEncounterIdCopiedMessage,
             ),
             AppWorkspacePatientContextField(
               label: l10n.nursingLocationLabel,
@@ -795,14 +801,14 @@ class _NursingPatientCell extends StatelessWidget {
         if (_joinDisplay(<String?>[
           item.patientDisplayId,
           item.encounterDisplayId,
-          item.admissionId,
+          item.displayId,
         ]).isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.xs),
           Text(
             _joinDisplay(<String?>[
               item.patientDisplayId,
               item.encounterDisplayId,
-              item.admissionId,
+              item.displayId,
             ]),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -1209,7 +1215,7 @@ class _PrintNursingSummaryDialog extends ConsumerWidget {
               metadata: <PrintFormMetadataItem>[
                 PrintFormMetadataItem(
                   label: l10n.nursingAdmissionLabel,
-                  value: summary.admissionId,
+                  value: summary.displayId ?? '',
                 ),
                 PrintFormMetadataItem(
                   label: l10n.nursingLocationLabel,
@@ -1800,7 +1806,7 @@ String _nursingSummaryText(BuildContext context, NursingPatientDetail detail) {
     l10n.nursingReportTitle,
     '',
     '${l10n.nursingPatientFilterLabel}: ${summary.displayTitle}',
-    '${l10n.nursingAdmissionLabel}: ${summary.admissionId}',
+    '${l10n.nursingAdmissionLabel}: ${summary.displayId ?? l10n.profileUnknownValue}',
     '${l10n.nursingLocationLabel}: ${summary.locationLabel ?? l10n.profileUnknownValue}',
     '${l10n.nursingPriorityColumnLabel}: ${_priorityStatus(context, summary).label}',
     '${l10n.nursingTaskTypeColumnLabel}: ${_taskTypeLabel(context, summary)}',
@@ -1982,7 +1988,7 @@ List<AppNursingRecordEntry> _handoverRecords(
   return detail.handovers
       .map(
         (NursingHandover handover) => AppNursingRecordEntry(
-          title: handover.toUserId ?? handover.id,
+          title: context.l10n.profileUnknownValue,
           subtitle: _dateTimeLabel(context, handover.createdAt),
           body: handover.signoffNotes,
           icon: Icons.swap_horiz_outlined,
@@ -2098,7 +2104,7 @@ List<AppWardActivityEntry> _handoverActivityEntries(
   return handovers
       .map(
         (NursingHandover handover) => AppWardActivityEntry(
-          title: handover.toUserId ?? handover.id,
+          title: context.l10n.profileUnknownValue,
           subtitle: _dateTimeLabel(context, handover.createdAt),
           body: handover.signoffNotes,
           icon: Icons.swap_horiz_outlined,
@@ -2508,17 +2514,11 @@ IconData _timelineIcon(String type) {
 }
 
 String _admissionLabel(BuildContext context, NursingPatientSummary item) {
-  return _joinDisplay(<String?>[
-        item.admissionId,
-        item.admissionStatus == null ? null : _apiLabel(item.admissionStatus!),
-      ]).trim().isEmpty
-      ? context.l10n.profileUnknownValue
-      : _joinDisplay(<String?>[
-          item.admissionId,
-          item.admissionStatus == null
-              ? null
-              : _apiLabel(item.admissionStatus!),
-        ]);
+  final String label = _joinDisplay(<String?>[
+    item.displayId,
+    item.admissionStatus == null ? null : _apiLabel(item.admissionStatus!),
+  ]);
+  return label.trim().isEmpty ? context.l10n.profileUnknownValue : label;
 }
 
 String _taskTypeLabel(BuildContext context, NursingPatientSummary item) {

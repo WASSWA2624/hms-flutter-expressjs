@@ -458,7 +458,7 @@ class _MortuaryMobileListItem extends StatelessWidget {
       ),
       subtitle: Text(
         <String>[
-          item.effectiveDisplayId,
+          _mortuaryPublicIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
           if (item.storageLabel != null) item.storageLabel!,
           _displayCode(item.caseStatus ?? item.status) ??
               l10n.mortuaryUnknownValueLabel,
@@ -494,7 +494,7 @@ class _MortuaryDetailPanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return AppWorkspaceDetailPanel(
       title: l10n.mortuaryDetailTitle,
-      description: item.effectiveDisplayId,
+      description: _mortuaryPublicIdentifier(item),
       actions: <Widget>[
         AppPermissionActionButton(
           requirement: _exportRequirement,
@@ -511,8 +511,10 @@ class _MortuaryDetailPanel extends StatelessWidget {
             patientName:
                 item.effectiveDeceasedLabel ??
                 l10n.mortuaryUnknownDeceasedLabel,
-            patientNumber: item.caseId ?? item.effectiveDisplayId,
+            patientNumber: _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
             patientNumberLabel: l10n.mortuaryCaseNumberLabel,
+            copyPatientNumberMessage: l10n.identifierCopiedMessage,
+            copyPatientNumberSemanticLabel: l10n.copyIdentifierAction,
             semanticLabel: l10n.mortuaryDeceasedContextLabel,
             status: AppWorkspaceStatus(
               label:
@@ -678,8 +680,11 @@ class _IdentitySection extends StatelessWidget {
           items: <AppInfoTileData>[
             AppInfoTileData(
               label: l10n.mortuaryCaseFieldLabel,
-              value: item.caseId ?? item.effectiveDisplayId,
+              value: _mortuaryCaseIdentifier(item),
               icon: Icons.tag_outlined,
+              copyable: true,
+              copyTooltip: l10n.copyIdentifierAction,
+              copiedMessage: l10n.identifierCopiedMessage,
             ),
             AppInfoTileData(
               label: l10n.mortuaryDeceasedFieldLabel,
@@ -688,7 +693,7 @@ class _IdentitySection extends StatelessWidget {
             ),
             AppInfoTileData(
               label: l10n.mortuaryPatientFieldLabel,
-              value: item.patientLabel ?? item.patientId,
+              value: item.patientLabel,
               icon: Icons.assignment_ind_outlined,
             ),
             AppInfoTileData(
@@ -1017,9 +1022,10 @@ class _ReferenceCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return _TwoLineCell(
-      title: item.effectiveDisplayId,
-      subtitle: _resourceLabel(context.l10n, item.resource),
+      title: _mortuaryPublicIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
+      subtitle: _resourceLabel(l10n, item.resource),
     );
   }
 }
@@ -1461,11 +1467,11 @@ Future<void> _printItem(
     ref: ref,
     context: context,
     title: l10n.mortuaryReportTitle,
-    subtitle: item.effectiveDisplayId,
+    subtitle: _mortuaryPublicIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
     metadata: <PrintFormMetadataItem>[
       PrintFormMetadataItem(
         label: l10n.mortuaryCaseFieldLabel,
-        value: item.caseId ?? item.effectiveDisplayId,
+        value: _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
       ),
       PrintFormMetadataItem(
         label: l10n.mortuaryDeceasedFieldLabel,
@@ -1499,7 +1505,7 @@ String _reportBodyHtml(
       bodyHtml: PrintFormTemplate.keyValueGrid(<PrintFormMetadataItem>[
         PrintFormMetadataItem(
           label: l10n.mortuaryCaseFieldLabel,
-          value: item.caseId ?? item.effectiveDisplayId,
+          value: _mortuaryCaseIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
         ),
         PrintFormMetadataItem(
           label: l10n.mortuaryDeceasedFieldLabel,
@@ -1618,6 +1624,22 @@ String? _formatAmount(BuildContext context, String? amount, String? currency) {
     Localizations.localeOf(context),
     currencyCode: currency,
   );
+}
+
+String? _mortuaryPublicIdentifier(MortuaryWorkspaceItem item) {
+  return _nonEmpty(item.displayId);
+}
+
+String? _mortuaryCaseIdentifier(MortuaryWorkspaceItem item) {
+  if (item.isCase) {
+    return _nonEmpty(item.displayId);
+  }
+  return _nonEmpty(item.mortuaryCase?.id);
+}
+
+String? _nonEmpty(String? value) {
+  final String? normalized = value?.trim();
+  return normalized == null || normalized.isEmpty ? null : normalized;
 }
 
 String? _displayCode(String? value) {
