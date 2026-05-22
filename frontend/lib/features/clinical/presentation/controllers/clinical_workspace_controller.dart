@@ -616,6 +616,20 @@ final class ClinicalWorkspaceController
       }, removeSelectedOnSuccess: true);
     }
 
+    if (_isActiveAdmissionEntry(entry)) {
+      final String? admissionId = entry.admissionId;
+      if (admissionId == null || admissionId.trim().isEmpty) {
+        return AppFailure.validation();
+      }
+
+      return _mutateSelectedEncounter(
+        () => _repository.dischargeAdmission(admissionId, <String, Object?>{
+          'discharged_at': DateTime.now().toUtc().toIso8601String(),
+        }),
+        removeSelectedOnSuccess: true,
+      );
+    }
+
     final Result<ClinicalWorklistEntry> result = await _repository
         .updateEncounter(entry.encounterId, <String, Object?>{
           'status': 'CLOSED',
@@ -646,6 +660,20 @@ final class ClinicalWorkspaceController
 
   Future<AppFailure?> completeConsultation(String notes) {
     return completeDisposition(reason: 'CONSULTATION_COMPLETED', notes: notes);
+  }
+
+  bool _isActiveAdmissionEntry(ClinicalWorklistEntry entry) {
+    final String? admissionId = entry.admissionId;
+    if (admissionId == null || admissionId.trim().isEmpty) {
+      return false;
+    }
+    final String sourceQueue = entry.sourceQueue.toUpperCase();
+    final String status = (entry.status ?? '').toUpperCase();
+    final String location = (entry.currentLocation ?? '').toUpperCase();
+    return status == 'ADMITTED' &&
+        (sourceQueue == 'IPD' ||
+            location.contains('WARD') ||
+            location.contains('BED'));
   }
 
   Future<Result<ClinicalWorkspaceState>> _loadInitialState() async {

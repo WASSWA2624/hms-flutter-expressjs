@@ -309,6 +309,22 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   }
 
   @override
+  Future<Result<void>> dischargeAdmission(
+    String admissionId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.admissions,
+        admissionId,
+        const <String>['discharge'],
+      ),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<ClinicalWorklistEntry>> updateEncounter(
     String encounterId,
     Map<String, Object?> payload,

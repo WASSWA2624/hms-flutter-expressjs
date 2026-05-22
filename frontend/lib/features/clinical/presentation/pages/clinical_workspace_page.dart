@@ -1122,6 +1122,10 @@ class _ClinicalActionBar extends ConsumerWidget {
     final ClinicalWorkspaceController controller = ref.read(
       clinicalWorkspaceControllerProvider.notifier,
     );
+    final String dispositionActionLabel = _clinicalDispositionActionLabel(
+      l10n,
+      bundle.entry,
+    );
     return AppAccessActionGate(
       requirement: _ClinicalWorkspaceContentState._writeRequirement,
       builder: (BuildContext context, bool isAllowed) {
@@ -1197,11 +1201,14 @@ class _ClinicalActionBar extends ConsumerWidget {
             ),
             ClinicalActionItem(
               kind: ClinicalActionKind.completeDisposition,
-              label: l10n.clinicalCompleteDispositionAction,
+              label: dispositionActionLabel,
               icon: Icons.task_alt_outlined,
               enabled: isAllowed && !bundle.entry.isTerminal,
-              onPressed: () =>
-                  _openCompleteDispositionDialog(context, controller),
+              onPressed: () => _openCompleteDispositionDialog(
+                context,
+                controller,
+                actionLabel: dispositionActionLabel,
+              ),
             ),
             ClinicalActionItem(
               kind: ClinicalActionKind.printSummary,
@@ -2276,6 +2283,31 @@ const List<String> _clinicalDispositionReasons = <String>[
   'OTHER',
 ];
 
+String _clinicalDispositionActionLabel(
+  AppLocalizations l10n,
+  ClinicalWorklistEntry entry,
+) {
+  final String sourceQueue = entry.sourceQueue.toUpperCase();
+  final String status = (entry.status ?? entry.stage ?? '').toUpperCase();
+  final String location = (entry.currentLocation ?? '').toUpperCase();
+  final bool hasAdmission = entry.admissionId?.trim().isNotEmpty ?? false;
+  final bool hasInpatientLocation =
+      location.contains('WARD') || location.contains('BED');
+
+  if (hasAdmission && status == 'DISCHARGE_PLANNED') {
+    return l10n.ipdFinalizeDischargeAction;
+  }
+  if (hasAdmission &&
+      status == 'ADMITTED' &&
+      (sourceQueue == 'IPD' || hasInpatientLocation)) {
+    return l10n.navigationDischargeLabel;
+  }
+  if (sourceQueue == 'OPD') {
+    return l10n.opdDispositionAction;
+  }
+  return l10n.clinicalCompleteDispositionAction;
+}
+
 Future<void> _openNoteDialog(
   BuildContext context,
   ClinicalWorkspaceController controller,
@@ -2301,13 +2333,16 @@ Future<void> _openNoteDialog(
 
 Future<void> _openCompleteDispositionDialog(
   BuildContext context,
-  ClinicalWorkspaceController controller,
-) async {
+  ClinicalWorkspaceController controller, {
+  required String actionLabel,
+}) async {
   final bool? saved = await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => ClinicalDispositionActionDialog(
+      title: actionLabel,
       reasons: _clinicalDispositionReasons,
+      submitLabel: actionLabel,
       onSubmit: ({required String reason, required String notes}) {
         return controller.completeDisposition(reason: reason, notes: notes);
       },
