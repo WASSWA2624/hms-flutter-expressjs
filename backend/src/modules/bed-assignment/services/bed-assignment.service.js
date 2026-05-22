@@ -10,6 +10,34 @@
 const bedAssignmentRepository = require('@repositories/bed-assignment/bed-assignment.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
+
+const bedAssignmentDisplayInclude = {
+  admission: {
+    select: {
+      human_friendly_id: true,
+    },
+  },
+  bed: {
+    select: {
+      human_friendly_id: true,
+    },
+  },
+};
+
+const mapBedAssignmentDisplayFields = (assignment) => {
+  if (!assignment) return assignment;
+
+  const { admission, bed, ...publicAssignment } = assignment;
+  const admissionDisplayId = resolvePublicIdentifier(admission?.human_friendly_id);
+  const bedDisplayId = resolvePublicIdentifier(bed?.human_friendly_id);
+
+  return {
+    ...publicAssignment,
+    ...(admissionDisplayId ? { admission_display_id: admissionDisplayId } : {}),
+    ...(bedDisplayId ? { bed_display_id: bedDisplayId } : {}),
+  };
+};
 
 /**
  * List bed assignments with pagination and filtering
@@ -34,12 +62,18 @@ const listBedAssignments = async (filters, page, limit, sortBy, order, userId, i
     if (filters.bed_id) whereClause.bed_id = filters.bed_id;
 
     const [bedAssignments, total] = await Promise.all([
-      bedAssignmentRepository.findMany(whereClause, skip, limit, orderBy),
+      bedAssignmentRepository.findMany(
+        whereClause,
+        skip,
+        limit,
+        orderBy,
+        bedAssignmentDisplayInclude,
+      ),
       bedAssignmentRepository.count(whereClause)
     ]);
 
     return {
-      bedAssignments,
+      bedAssignments: bedAssignments.map(mapBedAssignmentDisplayFields),
       pagination: {
         page,
         limit,
@@ -65,13 +99,16 @@ const listBedAssignments = async (filters, page, limit, sortBy, order, userId, i
  */
 const getBedAssignmentById = async (id, userId, ipAddress) => {
   try {
-    const bedAssignment = await bedAssignmentRepository.findById(id);
+    const bedAssignment = await bedAssignmentRepository.findById(
+      id,
+      bedAssignmentDisplayInclude,
+    );
 
     if (!bedAssignment) {
       throw new HttpError('errors.bed_assignment.not_found', 404);
     }
 
-    return bedAssignment;
+    return mapBedAssignmentDisplayFields(bedAssignment);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

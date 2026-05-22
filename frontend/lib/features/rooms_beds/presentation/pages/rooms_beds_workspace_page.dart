@@ -377,10 +377,7 @@ class _BedBoardPanel extends ConsumerWidget {
               cellBuilder: (BuildContext context, BedBoardItem item) {
                 return _TwoLineCell(
                   title: item.label,
-                  subtitle: _joinDisplay(<String?>[
-                    item.id,
-                    item.facility?.name,
-                  ]),
+                  subtitle: _joinDisplay(<String?>[item.facility?.name]),
                 );
               },
             ),
@@ -515,6 +512,7 @@ class _BedDetailContent extends ConsumerWidget {
       roomsBedsWorkspaceControllerProvider.notifier,
     );
     final String? admissionId = item.currentAdmissionId;
+    final String? admissionDisplayId = item.currentAdmissionDisplayId;
 
     return AppFormSection(
       children: <Widget>[
@@ -543,7 +541,7 @@ class _BedDetailContent extends ConsumerWidget {
             ),
             AppInfoTileData(
               label: l10n.roomsBedsCurrentAdmissionLabel,
-              value: admissionId,
+              value: _readableDisplayText(admissionDisplayId),
               icon: Icons.assignment_ind_outlined,
             ),
             AppInfoTileData(
@@ -620,6 +618,7 @@ class _BedDetailContent extends ConsumerWidget {
                     controller,
                     item,
                     admissionId,
+                    admissionDisplayId: admissionDisplayId,
                   ),
                 ),
               if (canIpdWrite)
@@ -634,6 +633,7 @@ class _BedDetailContent extends ConsumerWidget {
                     state,
                     item,
                     admissionId,
+                    admissionDisplayId: admissionDisplayId,
                   ),
                 ),
             ],
@@ -663,6 +663,7 @@ class _AssignmentListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final String title = _assignmentTitle(context, assignment);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(
@@ -670,7 +671,7 @@ class _AssignmentListItem extends StatelessWidget {
             ? Icons.person_pin_circle_outlined
             : Icons.history_outlined,
       ),
-      title: Text(assignment.admissionId),
+      title: Text(title),
       subtitle: Text(
         _joinDisplay(<String?>[
           _dateLabel(context, assignment.assignedAt),
@@ -1188,12 +1189,14 @@ class _AdmissionActionForm extends StatefulWidget {
     required this.submitIcon,
     required this.onSubmit,
     this.initialAdmissionId,
+    this.fallbackAdmissionId,
     this.body,
   });
 
   final String submitLabel;
   final IconData submitIcon;
   final String? initialAdmissionId;
+  final String? fallbackAdmissionId;
   final String? body;
   final Future<AppFailure?> Function(String admissionId) onSubmit;
 
@@ -1224,6 +1227,8 @@ class _AdmissionActionFormState extends State<_AdmissionActionForm> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool requiresAdmissionInput =
+        (widget.fallbackAdmissionId?.trim() ?? '').isEmpty;
 
     return AppFormShell(
       formKey: _formKey,
@@ -1236,10 +1241,14 @@ class _AdmissionActionFormState extends State<_AdmissionActionForm> {
           controller: _admissionController,
           labelText: l10n.roomsBedsAdmissionFieldLabel,
           hintText: l10n.roomsBedsAdmissionFieldHint,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.roomsBedsRequiredMessage(l10n.roomsBedsAdmissionFieldLabel),
-          ),
+          isRequired: requiresAdmissionInput,
+          validator: requiresAdmissionInput
+              ? AppValidators.requiredText(
+                  l10n.roomsBedsRequiredMessage(
+                    l10n.roomsBedsAdmissionFieldLabel,
+                  ),
+                )
+              : null,
         ),
         AppFormActions(
           cancelLabel: l10n.commonCancelActionLabel,
@@ -1261,9 +1270,11 @@ class _AdmissionActionFormState extends State<_AdmissionActionForm> {
       _isSubmitting = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget.onSubmit(
-      _admissionController.text.trim(),
-    );
+    final String enteredAdmissionId = _admissionController.text.trim();
+    final String admissionId = enteredAdmissionId.isNotEmpty
+        ? enteredAdmissionId
+        : widget.fallbackAdmissionId?.trim() ?? '';
+    final AppFailure? failure = await widget.onSubmit(admissionId);
     if (!mounted) {
       return;
     }
@@ -1282,11 +1293,13 @@ class _TransferForm extends StatefulWidget {
   const _TransferForm({
     required this.state,
     required this.initialAdmissionId,
+    this.fallbackAdmissionId,
     required this.onSubmit,
   });
 
   final RoomsBedsWorkspaceState state;
   final String initialAdmissionId;
+  final String? fallbackAdmissionId;
   final Future<AppFailure?> Function({
     required String admissionId,
     required String toWardId,
@@ -1321,6 +1334,8 @@ class _TransferFormState extends State<_TransferForm> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool requiresAdmissionInput =
+        (widget.fallbackAdmissionId?.trim() ?? '').isEmpty;
 
     return AppFormShell(
       formKey: _formKey,
@@ -1333,10 +1348,14 @@ class _TransferFormState extends State<_TransferForm> {
           controller: _admissionController,
           labelText: l10n.roomsBedsAdmissionFieldLabel,
           hintText: l10n.roomsBedsAdmissionFieldHint,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            l10n.roomsBedsRequiredMessage(l10n.roomsBedsAdmissionFieldLabel),
-          ),
+          isRequired: requiresAdmissionInput,
+          validator: requiresAdmissionInput
+              ? AppValidators.requiredText(
+                  l10n.roomsBedsRequiredMessage(
+                    l10n.roomsBedsAdmissionFieldLabel,
+                  ),
+                )
+              : null,
         ),
         AppSelectField<String>(
           labelText: l10n.roomsBedsDestinationWardLabel,
@@ -1371,8 +1390,12 @@ class _TransferFormState extends State<_TransferForm> {
       _isSubmitting = true;
       _failure = null;
     });
+    final String enteredAdmissionId = _admissionController.text.trim();
+    final String admissionId = enteredAdmissionId.isNotEmpty
+        ? enteredAdmissionId
+        : widget.fallbackAdmissionId?.trim() ?? '';
     final AppFailure? failure = await widget.onSubmit(
-      admissionId: _admissionController.text.trim(),
+      admissionId: admissionId,
       toWardId: _toWardId!,
     );
     if (!mounted) {
@@ -1487,8 +1510,9 @@ Future<void> _showReleaseDialog(
   BuildContext context,
   RoomsBedsWorkspaceController controller,
   BedBoardItem item,
-  String? admissionId,
-) async {
+  String? admissionId, {
+  String? admissionDisplayId,
+}) async {
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
@@ -1496,7 +1520,8 @@ Future<void> _showReleaseDialog(
     content: _AdmissionActionForm(
       submitLabel: l10n.roomsBedsReleaseAction,
       submitIcon: Icons.logout_outlined,
-      initialAdmissionId: admissionId,
+      initialAdmissionId: _readableDisplayText(admissionDisplayId),
+      fallbackAdmissionId: admissionId,
       body: l10n.roomsBedsReleaseDialogBody,
       onSubmit: (String admissionId) {
         return controller.releaseBed(item: item, admissionId: admissionId);
@@ -1513,15 +1538,17 @@ Future<void> _showTransferDialog(
   RoomsBedsWorkspaceController controller,
   RoomsBedsWorkspaceState state,
   BedBoardItem item,
-  String? admissionId,
-) async {
+  String? admissionId, {
+  String? admissionDisplayId,
+}) async {
   final AppLocalizations l10n = context.l10n;
   final bool? saved = await showAppWorkspaceActionDialog<bool>(
     context: context,
     title: Text(l10n.roomsBedsTransferDialogTitle),
     content: _TransferForm(
       state: state,
-      initialAdmissionId: admissionId ?? '',
+      initialAdmissionId: _readableDisplayText(admissionDisplayId) ?? '',
+      fallbackAdmissionId: admissionId,
       onSubmit: ({required String admissionId, required String toWardId}) {
         return controller.requestTransfer(
           item: item,
@@ -1616,9 +1643,14 @@ String _locationLabel(BuildContext context, BedBoardItem item) {
 }
 
 String _assignmentLabel(BuildContext context, BedBoardItem item) {
-  final String? admissionId = item.currentAdmissionId;
+  final String? admissionId = _readableDisplayText(
+    item.currentAdmissionDisplayId,
+  );
   if (admissionId != null) {
     return context.l10n.roomsBedsAdmissionAssignment(admissionId);
+  }
+  if (item.currentAdmissionId != null) {
+    return context.l10n.roomsBedsCurrentAssignmentLabel;
   }
   if (item.isOccupied || item.isReserved) {
     return context.l10n.roomsBedsAssignmentNotLinked;
@@ -1654,6 +1686,18 @@ String _dateLabel(BuildContext context, DateTime? value) {
     value.toLocal(),
     Localizations.localeOf(context),
   );
+}
+
+String _assignmentTitle(BuildContext context, BedAssignmentRecord assignment) {
+  final String? admissionId = _readableDisplayText(
+    assignment.admissionDisplayId ?? assignment.admissionId,
+  );
+  if (admissionId != null) {
+    return context.l10n.roomsBedsAdmissionAssignment(admissionId);
+  }
+  return assignment.isActive
+      ? context.l10n.roomsBedsCurrentAssignmentLabel
+      : context.l10n.roomsBedsReleasedAssignmentLabel;
 }
 
 List<AppSearchBarFilterChoice> _facilityChoices(
@@ -1731,6 +1775,23 @@ String _joinDisplay(Iterable<String?> values) {
       .where((String value) => value.isNotEmpty)
       .join(' | ');
 }
+
+String? _readableDisplayText(String? value) {
+  final String normalized = value?.trim() ?? '';
+  if (normalized.isEmpty || _isNonHumanReadableId(normalized)) {
+    return null;
+  }
+  return normalized;
+}
+
+bool _isNonHumanReadableId(String value) {
+  return _uuidPattern.hasMatch(value) || _longHexPattern.hasMatch(value);
+}
+
+final RegExp _uuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+final RegExp _longHexPattern = RegExp(r'^[0-9a-fA-F]{24,}$');
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   if (failure == null || !context.mounted) {

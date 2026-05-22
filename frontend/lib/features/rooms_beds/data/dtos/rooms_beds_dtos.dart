@@ -8,10 +8,16 @@ final class BedAssignmentRecordDto {
   final RoomsBedsJsonMap json;
 
   BedAssignmentRecord toEntity() {
+    final RoomsBedsJsonMap? admission = _optionalMap(json['admission']);
     return BedAssignmentRecord(
       id: _string(json['id']) ?? '',
       admissionId: _string(json['admission_id']) ?? '',
       bedId: _string(json['bed_id']) ?? '',
+      admissionDisplayId:
+          _string(json['admission_display_id']) ??
+          _string(json['admission_public_id']) ??
+          _string(admission?['human_friendly_id']) ??
+          _string(admission?['display_id']),
       assignedAt: _date(json['assigned_at']),
       releasedAt: _date(json['released_at']),
     );
@@ -49,6 +55,10 @@ List<RoomsBedsJsonMap> _list(Object? value) {
   }
 
   return value.whereType<RoomsBedsJsonMap>().toList(growable: false);
+}
+
+RoomsBedsJsonMap? _optionalMap(Object? value) {
+  return value is RoomsBedsJsonMap ? value : null;
 }
 
 String? _string(Object? value) {

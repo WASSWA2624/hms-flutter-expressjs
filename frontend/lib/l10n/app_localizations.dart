@@ -19545,16 +19545,16 @@ abstract class AppLocalizations {
   /// **'Released'**
   String get roomsBedsReleasedAssignmentLabel;
 
-  /// Field label for admission ID in bed action dialogs.
+  /// Field label for admission number in bed action dialogs.
   ///
   /// In en, this message translates to:
-  /// **'Admission ID'**
+  /// **'Admission number'**
   String get roomsBedsAdmissionFieldLabel;
 
-  /// Hint text for admission ID in bed action dialogs.
+  /// Hint text for admission number in bed action dialogs.
   ///
   /// In en, this message translates to:
-  /// **'Enter the admission ID'**
+  /// **'Enter the admission number'**
   String get roomsBedsAdmissionFieldHint;
 
   /// Field label for transfer destination ward.

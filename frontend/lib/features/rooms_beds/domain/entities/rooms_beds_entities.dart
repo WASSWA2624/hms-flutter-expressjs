@@ -57,6 +57,7 @@ final class BedAssignmentRecord {
     required this.id,
     required this.admissionId,
     required this.bedId,
+    this.admissionDisplayId,
     this.assignedAt,
     this.releasedAt,
   });
@@ -64,6 +65,7 @@ final class BedAssignmentRecord {
   final String id;
   final String admissionId;
   final String bedId;
+  final String? admissionDisplayId;
   final DateTime? assignedAt;
   final DateTime? releasedAt;
 
@@ -95,6 +97,8 @@ final class BedBoardItem {
   String? get wardId => bed.wardId;
   String? get roomId => bed.roomId;
   String? get currentAdmissionId => activeAssignment?.admissionId;
+  String? get currentAdmissionDisplayId =>
+      activeAssignment?.admissionDisplayId ?? activeAssignment?.admissionId;
 
   bool get isAvailable => status == BedSetupStatus.available;
   bool get isOccupied => status == BedSetupStatus.occupied;

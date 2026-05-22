@@ -40,6 +40,7 @@ void main() {
       expect(state.beds.items, hasLength(2));
       expect(state.beds.items.first.activeAssignment, isNull);
       expect(state.beds.items.last.currentAdmissionId, 'ADM-001');
+      expect(state.beds.items.last.currentAdmissionDisplayId, 'Admission 001');
       verify(
         () => repository.loadSetup(facilityId: any(named: 'facilityId')),
       ).called(1);
@@ -144,6 +145,7 @@ void _stubAssignments(_MockRoomsBedsRepository repository) {
         BedAssignmentRecord(
           id: 'BAS-001',
           admissionId: 'ADM-001',
+          admissionDisplayId: 'Admission 001',
           bedId: 'BED-002',
         ),
       ],

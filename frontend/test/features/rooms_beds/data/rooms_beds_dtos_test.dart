@@ -10,7 +10,8 @@ void main() {
           'data': <Object?>[
             <String, Object?>{
               'id': 'BAS-001',
-              'admission_id': 'ADM-001',
+              'admission_id': '88eda54e-151e-46a0-9d20-5a7b170dec7d',
+              'admission_display_id': 'ADM-001',
               'bed_id': 'BED-001',
               'assigned_at': '2026-05-21T08:30:00.000Z',
               'released_at': null,
@@ -27,7 +28,11 @@ void main() {
 
       expect(records, hasLength(1));
       expect(records.single.id, 'BAS-001');
-      expect(records.single.admissionId, 'ADM-001');
+      expect(
+        records.single.admissionId,
+        '88eda54e-151e-46a0-9d20-5a7b170dec7d',
+      );
+      expect(records.single.admissionDisplayId, 'ADM-001');
       expect(records.single.bedId, 'BED-001');
       expect(records.single.isActive, isTrue);
       expect(

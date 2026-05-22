@@ -13448,13 +13448,13 @@
   "@roomsBedsReleasedAssignmentLabel": {
     "description": "Status label for a released bed assignment."
   },
-  "roomsBedsAdmissionFieldLabel": "Admission ID",
+  "roomsBedsAdmissionFieldLabel": "Admission number",
   "@roomsBedsAdmissionFieldLabel": {
-    "description": "Field label for admission ID in bed action dialogs."
+    "description": "Field label for admission number in bed action dialogs."
   },
-  "roomsBedsAdmissionFieldHint": "Enter the admission ID",
+  "roomsBedsAdmissionFieldHint": "Enter the admission number",
   "@roomsBedsAdmissionFieldHint": {
-    "description": "Hint text for admission ID in bed action dialogs."
+    "description": "Hint text for admission number in bed action dialogs."
   },
   "roomsBedsDestinationWardLabel": "Destination ward",
   "@roomsBedsDestinationWardLabel": {

@@ -10381,10 +10381,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roomsBedsReleasedAssignmentLabel => 'Released';
 
   @override
-  String get roomsBedsAdmissionFieldLabel => 'Admission ID';
+  String get roomsBedsAdmissionFieldLabel => 'Admission number';
 
   @override
-  String get roomsBedsAdmissionFieldHint => 'Enter the admission ID';
+  String get roomsBedsAdmissionFieldHint => 'Enter the admission number';
 
   @override
   String get roomsBedsDestinationWardLabel => 'Destination ward';

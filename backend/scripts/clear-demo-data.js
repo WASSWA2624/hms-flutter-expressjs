@@ -50,6 +50,7 @@ const prisma = require('@prisma/client');
 const { assertDemoTaskAllowed } = require('./demo-safety');
 
 const PROTECTED_TABLES = new Set(['_prisma_migrations']);
+const CLEAR_TRANSACTION_TIMEOUT_MS = 300000;
 
 const normalizeTableName = (row) =>
   row?.TABLE_NAME || row?.table_name || row?.tableName || row?.Table_name || null;
@@ -95,18 +96,21 @@ const clearDemoData = async ({ dryRun = false, confirm = false } = {}) => {
 
   console.log(`Clearing ${targetTables.length} table(s)...`);
 
-  await prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
-    try {
-      for (const tableName of targetTables) {
-        const safeTableName = tableName.replace(/`/g, '');
-        await tx.$executeRawUnsafe(`DELETE FROM \`${safeTableName}\``);
-        console.log(`  - cleared ${safeTableName}`);
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+      try {
+        for (const tableName of targetTables) {
+          const safeTableName = tableName.replace(/`/g, '');
+          await tx.$executeRawUnsafe(`DELETE FROM \`${safeTableName}\``);
+          console.log(`  - cleared ${safeTableName}`);
+        }
+      } finally {
+        await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
       }
-    } finally {
-      await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
-    }
-  });
+    },
+    { timeout: CLEAR_TRANSACTION_TIMEOUT_MS }
+  );
 
   console.log('Database data cleared successfully.');
   return { skipped: false, dryRun: false, tables: targetTables };
