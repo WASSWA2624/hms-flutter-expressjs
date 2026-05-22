@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
@@ -262,30 +263,41 @@ final class ClinicalWorkspaceController
 
   Future<AppFailure?> addDiagnosis({
     required String diagnosisType,
-    required String description,
-    String? code,
+    required List<ClinicalCatalogOption> diagnoses,
   }) {
-    final String normalizedCode = code?.trim() ?? '';
-    final String normalizedDescription = description.trim();
-    return _mutateSelectedEncounter(() async {
-      final Result<void> diagnosisResult = await _repository
-          .createDiagnosis(<String, Object?>{
-            'encounter_id': _selectedEntry!.encounterId,
-            'diagnosis_type': diagnosisType,
-            'code': normalizedCode,
-            'description': normalizedDescription,
-          });
-      final AppFailure? diagnosisFailure = _failureOrNull(diagnosisResult);
-      if (diagnosisFailure != null) {
-        return Result<void>.failure(diagnosisFailure);
-      }
+    final List<ClinicalCatalogOption> normalizedDiagnoses = diagnoses
+        .where(
+          (ClinicalCatalogOption diagnosis) =>
+              _diagnosisDescription(diagnosis).isNotEmpty,
+        )
+        .toList(growable: false);
+    if (normalizedDiagnoses.isEmpty) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
 
-      await _repository.createClinicalTermFavorite(<String, Object?>{
-        'term_type': 'DIAGNOSIS',
-        'scope': 'SHARED',
-        'code': normalizedCode,
-        'description': normalizedDescription,
-      });
+    return _mutateSelectedEncounter(() async {
+      for (final ClinicalCatalogOption diagnosis in normalizedDiagnoses) {
+        final String description = _diagnosisDescription(diagnosis);
+        final String? code = _normalizedOptionalText(diagnosis.code);
+        final Result<void> diagnosisResult = await _repository
+            .createDiagnosis(<String, Object?>{
+              'encounter_id': _selectedEntry!.encounterId,
+              'diagnosis_type': diagnosisType,
+              'code': code,
+              'description': description,
+            });
+        final AppFailure? diagnosisFailure = _failureOrNull(diagnosisResult);
+        if (diagnosisFailure != null) {
+          return Result<void>.failure(diagnosisFailure);
+        }
+
+        await _repository.createClinicalTermFavorite(<String, Object?>{
+          'term_type': 'DIAGNOSIS',
+          'scope': 'SHARED',
+          'code': code,
+          'description': description,
+        });
+      }
       return const Result<void>.success(null);
     });
   }
@@ -455,6 +467,7 @@ final class ClinicalWorkspaceController
               'radiology_test_id': request.radiologyTestId,
               'clinical_note': request.clinicalNote,
               'request_details': <String, Object?>{
+                'modality': request.modality,
                 'body_region': request.bodyRegion,
                 'laterality': request.laterality,
                 'priority': request.priority,
@@ -462,6 +475,21 @@ final class ClinicalWorkspaceController
             },
         ],
       }),
+    );
+  }
+
+  Future<AppFailure?> cancelRadiologyOrder(String radiologyOrderId) {
+    return _mutateSelectedEncounter(
+      () => _repository.updateRadiologyOrder(
+        radiologyOrderId,
+        <String, Object?>{'status': 'CANCELLED'},
+      ),
+    );
+  }
+
+  Future<AppFailure?> deleteRadiologyOrder(String radiologyOrderId) {
+    return _mutateSelectedEncounter(
+      () => _repository.deleteRadiologyOrder(radiologyOrderId),
     );
   }
 
@@ -529,7 +557,7 @@ final class ClinicalWorkspaceController
     final String bedStatus = (bed.status ?? 'AVAILABLE').trim().toUpperCase();
     if (entry == null ||
         entry.tenantId == null ||
-        entry.patientId == null ||
+        entry.apiPatientId == null ||
         bed.parentId == null ||
         bed.secondaryId == null ||
         (bedStatus.isNotEmpty && bedStatus != 'AVAILABLE')) {
@@ -1102,64 +1130,71 @@ final class ClinicalWorkspaceController
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<void> result = await action();
-    return result.when(
-      success: (_) async {
-        if (removeSelectedOnSuccess) {
-          final ClinicalWorkspaceState? latest = _currentState;
-          if (latest != null) {
-            _emit(
-              latest.copyWith(
-                clearSelectedBundle: true,
-                worklist: _removeEntry(latest.worklist, entry),
-                isSaving: false,
-              ),
-            );
-          }
-          unawaited(_refreshWorklist(showLoading: false));
-          return null;
-        }
-
-        final Result<ClinicalEncounterBundle> detailResult = await _repository
-            .loadEncounterBundle(entry);
-        return detailResult.when<Future<AppFailure?>>(
-          success: (ClinicalEncounterBundle bundle) async {
-            final ClinicalEncounterBundle hydrated = await _withTriageHandoff(
-              bundle,
-            );
+    try {
+      final Result<void> result = await action();
+      return result.when(
+        success: (_) async {
+          if (removeSelectedOnSuccess) {
             final ClinicalWorkspaceState? latest = _currentState;
             if (latest != null) {
               _emit(
                 latest.copyWith(
-                  selectedBundle: hydrated.entry.isTerminal ? null : hydrated,
-                  clearSelectedBundle: hydrated.entry.isTerminal,
-                  worklist: hydrated.entry.isTerminal
-                      ? _removeEntry(latest.worklist, hydrated.entry)
-                      : _replaceEntry(latest.worklist, hydrated.entry),
+                  clearSelectedBundle: true,
+                  worklist: _removeEntry(latest.worklist, entry),
                   isSaving: false,
                 ),
               );
             }
             unawaited(_refreshWorklist(showLoading: false));
             return null;
-          },
-          failure: (AppFailure failure) async {
-            final ClinicalWorkspaceState? latest = _currentState;
-            if (latest != null) {
-              _emit(latest.copyWith(isSaving: false, lastFailure: failure));
-            }
-            return failure;
-          },
-        );
-      },
-      failure: (AppFailure failure) async {
-        final ClinicalWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
-        }
-        return failure;
-      },
-    );
+          }
+
+          final Result<ClinicalEncounterBundle> detailResult = await _repository
+              .loadEncounterBundle(entry);
+          return detailResult.when<Future<AppFailure?>>(
+            success: (ClinicalEncounterBundle bundle) async {
+              final ClinicalEncounterBundle hydrated = await _withTriageHandoff(
+                bundle,
+              );
+              final ClinicalWorkspaceState? latest = _currentState;
+              if (latest != null) {
+                _emit(
+                  latest.copyWith(
+                    selectedBundle: hydrated.entry.isTerminal ? null : hydrated,
+                    clearSelectedBundle: hydrated.entry.isTerminal,
+                    worklist: hydrated.entry.isTerminal
+                        ? _removeEntry(latest.worklist, hydrated.entry)
+                        : _replaceEntry(latest.worklist, hydrated.entry),
+                    isSaving: false,
+                  ),
+                );
+              }
+              unawaited(_refreshWorklist(showLoading: false));
+              return null;
+            },
+            failure: (AppFailure failure) async {
+              _emitMutationFailure(failure);
+              return failure;
+            },
+          );
+        },
+        failure: (AppFailure failure) async {
+          _emitMutationFailure(failure);
+          return failure;
+        },
+      );
+    } catch (error, stackTrace) {
+      final AppFailure failure = mapToFailure(error, stackTrace);
+      _emitMutationFailure(failure);
+      return failure;
+    }
+  }
+
+  void _emitMutationFailure(AppFailure failure) {
+    final ClinicalWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+    }
   }
 
   int _compareEntries(ClinicalWorklistEntry left, ClinicalWorklistEntry right) {
@@ -1258,6 +1293,12 @@ final class ClinicalWorkspaceController
 
   T? _successOrNull<T>(Result<T> result) {
     return result.when(success: (T value) => value, failure: (_) => null);
+  }
+
+  String _diagnosisDescription(ClinicalCatalogOption diagnosis) {
+    return _normalizedOptionalText(diagnosis.name) ??
+        _normalizedOptionalText(diagnosis.displayTitle) ??
+        '';
   }
 
   String _procedureDescription(ClinicalCatalogOption procedure) {

@@ -7,7 +7,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_action_dialogs.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -27,8 +26,7 @@ class ClinicalDiagnosisActionDialog extends StatefulWidget {
   onSearchClinicalTerms;
   final Future<AppFailure?> Function({
     required String diagnosisType,
-    required String description,
-    String? code,
+    required List<ClinicalActionCatalogOption> diagnoses,
   })
   onSubmit;
 
@@ -36,62 +34,68 @@ class ClinicalDiagnosisActionDialog extends StatefulWidget {
   State<ClinicalDiagnosisActionDialog> createState() => _DiagnosisDialogState();
 }
 
-class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
-  static const int _lookupMinLength = 2;
-  static const Duration _lookupDebounceDuration = Duration(milliseconds: 350);
+final class _DiagnosisCatalogSearchResults {
+  const _DiagnosisCatalogSearchResults({
+    required this.options,
+    required this.totalMatches,
+  });
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _termController;
-  late final TextEditingController _codeController;
-  late final TextEditingController _descriptionController;
-  Timer? _termLookupDebounce;
-  Timer? _codeLookupDebounce;
+  final List<ClinicalActionCatalogOption> options;
+  final int totalMatches;
+}
+
+class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
+  static const int _searchLimit = 80;
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 160);
+
+  late final TextEditingController _searchController;
+  Timer? _searchDebounce;
   String _diagnosisType = 'PRIMARY';
-  List<ClinicalActionCatalogOption> _termOptions =
+  String _searchQuery = '';
+  int _searchRequest = 0;
+  List<ClinicalActionCatalogOption> _catalogOptions =
       const <ClinicalActionCatalogOption>[];
-  List<ClinicalActionCatalogOption> _codeOptions =
-      const <ClinicalActionCatalogOption>[];
-  _DiagnosisLookupTarget? _activeLookup;
+  final List<ClinicalActionCatalogOption> _selectedDiagnoses =
+      <ClinicalActionCatalogOption>[];
+  bool _isSearching = false;
   bool _isSaving = false;
-  bool _isTermSearching = false;
-  bool _isCodeSearching = false;
-  bool _termHasText = false;
-  bool _codeHasText = false;
-  int _termLookupRequest = 0;
-  int _codeLookupRequest = 0;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
-    _termController = TextEditingController();
-    _codeController = TextEditingController();
-    _descriptionController = TextEditingController();
+    _searchController = TextEditingController();
+    _searchRequest += 1;
+    unawaited(_loadDiagnosisCatalog('', _searchRequest));
   }
 
   @override
   void dispose() {
-    _termLookupDebounce?.cancel();
-    _codeLookupDebounce?.cancel();
-    _termController.dispose();
-    _codeController.dispose();
-    _descriptionController.dispose();
+    _searchDebounce?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final double bodyHeight = (MediaQuery.sizeOf(context).height * 0.64)
+        .clamp(420.0, 640.0)
+        .toDouble();
+    final _DiagnosisCatalogSearchResults searchResults = _searchCatalog(
+      _catalogOptions,
+    );
+
     return AppDialog(
       title: Text(l10n.clinicalAddDiagnosisAction),
       icon: const Icon(Icons.rule_outlined),
-      scrollable: true,
-      maxWidth: 760,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          title: l10n.clinicalDiagnosisFormTitle,
-          density: AppFormSectionDensity.spacious,
+      maxWidth: 920,
+      closeEnabled: !_isSaving,
+      content: SizedBox(
+        height: bodyHeight,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
             AppSelectField<String>(
@@ -106,247 +110,207 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                 }
               },
             ),
-            _DiagnosisLookupField(
-              controller: _termController,
-              labelText: l10n.clinicalTermSearchLabel,
-              clearLabel: MaterialLocalizations.of(context).clearButtonTooltip,
-              options: _activeLookup == _DiagnosisLookupTarget.term
-                  ? _termOptions
-                  : const <ClinicalActionCatalogOption>[],
-              isLoading:
-                  _activeLookup == _DiagnosisLookupTarget.term &&
-                  _isTermSearching,
-              hasText: _termHasText,
-              enabled: !_isSaving,
-              onChanged: _handleTermLookupChanged,
-              onClear: _clearTermLookup,
-              onFocusChanged: (bool hasFocus) =>
-                  _setActiveLookup(_DiagnosisLookupTarget.term, hasFocus),
-              onSelected: _applyTerm,
-              titleBuilder: _diagnosisTermLabel,
-              subtitleBuilder: _diagnosisTermSubtitle,
-            ),
-            _DiagnosisLookupField(
-              controller: _codeController,
-              labelText: l10n.opdDiagnosisCodeLabel,
-              clearLabel: MaterialLocalizations.of(context).clearButtonTooltip,
-              options: _activeLookup == _DiagnosisLookupTarget.code
-                  ? _codeOptions
-                  : const <ClinicalActionCatalogOption>[],
-              isLoading:
-                  _activeLookup == _DiagnosisLookupTarget.code &&
-                  _isCodeSearching,
-              hasText: _codeHasText,
-              enabled: !_isSaving,
-              textCapitalization: TextCapitalization.characters,
-              onChanged: _handleCodeLookupChanged,
-              onClear: _clearCodeLookup,
-              onFocusChanged: (bool hasFocus) =>
-                  _setActiveLookup(_DiagnosisLookupTarget.code, hasFocus),
-              onSelected: _applyCodeTerm,
-              titleBuilder: _diagnosisCodeLabel,
-              subtitleBuilder: _diagnosisCodeSubtitle,
-            ),
+            SizedBox(height: theme.spacing.md),
             AppTextField(
-              controller: _descriptionController,
-              labelText: l10n.opdDiagnosisLabel,
-              prefixIcon: const Icon(Icons.medical_information_outlined),
-              maxLines: 4,
+              controller: _searchController,
+              labelText: l10n.clinicalDiagnosisSearchLabel,
+              hintText: l10n.clinicalDiagnosisSearchHint,
               enabled: !_isSaving,
-              isRequired: true,
-              textCapitalization: TextCapitalization.sentences,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+              prefixIcon: const Icon(Icons.manage_search_outlined),
+              suffixIcon: _searchController.text.isEmpty
+                  ? null
+                  : AppIconButton(
+                      icon: Icons.close,
+                      semanticLabel: MaterialLocalizations.of(
+                        context,
+                      ).clearButtonTooltip,
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).clearButtonTooltip,
+                      onPressed: _isSaving ? null : _clearSearch,
+                    ),
+              onChanged: _scheduleSearch,
+            ),
+            if (_isSearching) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              const LinearProgressIndicator(),
+            ],
+            SizedBox(height: theme.spacing.md),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool twoColumns = constraints.maxWidth >= 760;
+                  final Widget catalogPanel = _DiagnosisCatalogResultsPanel(
+                    results: searchResults,
+                    isSaving: _isSaving,
+                    onSelected: _addDiagnosis,
+                    isDuplicate: _isDuplicateSelection,
+                  );
+                  final Widget selectedPanel = _DiagnosisSelectedPanel(
+                    diagnoses: _selectedDiagnoses,
+                    diagnosisType: _diagnosisType,
+                    isSaving: _isSaving,
+                    onDelete: _removeDiagnosis,
+                  );
+
+                  if (!twoColumns) {
+                    return Column(
+                      children: <Widget>[
+                        Expanded(child: catalogPanel),
+                        SizedBox(height: theme.spacing.md),
+                        Expanded(child: selectedPanel),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Expanded(child: catalogPanel),
+                      SizedBox(width: theme.spacing.md),
+                      Expanded(child: selectedPanel),
+                    ],
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.clinicalAddDiagnosisAction,
-        _isSaving,
-        _submit,
-      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.clinicalAddDiagnosisAction,
+          isLoading: _isSaving,
+          enabled: !_isSaving && _selectedDiagnoses.isNotEmpty,
+          onPressed: _submit,
+        ),
+      ],
     );
   }
 
-  void _handleTermLookupChanged(String value) {
-    final String query = value.trim();
-    final bool hasText = query.isNotEmpty;
-    if (_activeLookup != _DiagnosisLookupTarget.term ||
-        _termHasText != hasText) {
-      setState(() {
-        _activeLookup = _DiagnosisLookupTarget.term;
-        _termHasText = hasText;
-      });
+  _DiagnosisCatalogSearchResults _searchCatalog(
+    List<ClinicalActionCatalogOption> catalog,
+  ) {
+    final List<String> tokens = _searchQuery
+        .trim()
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((String token) => token.isNotEmpty)
+        .toList(growable: false);
+    if (tokens.isEmpty) {
+      return _DiagnosisCatalogSearchResults(
+        options: catalog.take(_searchLimit).toList(growable: false),
+        totalMatches: catalog.length,
+      );
     }
-    _scheduleTermLookup(query);
-  }
 
-  void _handleCodeLookupChanged(String value) {
-    final String query = value.trim();
-    final bool hasText = query.isNotEmpty;
-    if (_activeLookup != _DiagnosisLookupTarget.code ||
-        _codeHasText != hasText) {
-      setState(() {
-        _activeLookup = _DiagnosisLookupTarget.code;
-        _codeHasText = hasText;
-      });
-    }
-    _scheduleCodeLookup(query);
-  }
-
-  void _setActiveLookup(_DiagnosisLookupTarget target, bool hasFocus) {
-    if (!hasFocus || _activeLookup == target) {
-      return;
-    }
-    setState(() => _activeLookup = target);
-  }
-
-  void _scheduleTermLookup(String query) {
-    _termLookupDebounce?.cancel();
-    _termLookupRequest += 1;
-    final int requestId = _termLookupRequest;
-    if (query.length < _lookupMinLength) {
-      if (_termOptions.isNotEmpty || _isTermSearching) {
-        setState(() {
-          _termOptions = const <ClinicalActionCatalogOption>[];
-          _isTermSearching = false;
-        });
+    final List<ClinicalActionCatalogOption> visible =
+        <ClinicalActionCatalogOption>[];
+    var totalMatches = 0;
+    for (final ClinicalActionCatalogOption option in catalog) {
+      final String searchText = _diagnosisSearchText(option).toLowerCase();
+      final bool isMatch = tokens.every(searchText.contains);
+      if (!isMatch) {
+        continue;
       }
-      return;
-    }
-    _termLookupDebounce = Timer(
-      _lookupDebounceDuration,
-      () => _loadTermLookup(query, requestId),
-    );
-  }
-
-  void _scheduleCodeLookup(String query) {
-    _codeLookupDebounce?.cancel();
-    _codeLookupRequest += 1;
-    final int requestId = _codeLookupRequest;
-    if (query.length < _lookupMinLength) {
-      if (_codeOptions.isNotEmpty || _isCodeSearching) {
-        setState(() {
-          _codeOptions = const <ClinicalActionCatalogOption>[];
-          _isCodeSearching = false;
-        });
+      totalMatches += 1;
+      if (visible.length < _searchLimit) {
+        visible.add(option);
       }
-      return;
     }
-    _codeLookupDebounce = Timer(
-      _lookupDebounceDuration,
-      () => _loadCodeLookup(query, requestId),
+
+    return _DiagnosisCatalogSearchResults(
+      options: visible,
+      totalMatches: totalMatches,
     );
   }
 
-  Future<void> _loadTermLookup(String query, int requestId) async {
-    if (!mounted || requestId != _termLookupRequest) {
-      return;
-    }
-    setState(() {
-      _termOptions = const <ClinicalActionCatalogOption>[];
-      _isTermSearching = true;
+  void _scheduleSearch(String value) {
+    _searchDebounce?.cancel();
+    final String query = value.trim();
+    _searchDebounce = Timer(_searchDebounceDuration, () {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _searchQuery = query);
+      _searchRequest += 1;
+      unawaited(_loadDiagnosisCatalog(query, _searchRequest));
     });
+  }
+
+  Future<void> _loadDiagnosisCatalog(String query, int requestId) async {
+    if (!mounted || requestId != _searchRequest) {
+      return;
+    }
+    setState(() => _isSearching = true);
     final Result<List<ClinicalActionCatalogOption>> result = await widget
-        .onSearchClinicalTerms(termType: 'DIAGNOSIS', query: query);
-    if (!mounted || requestId != _termLookupRequest) {
+        .onSearchClinicalTerms(
+          termType: 'DIAGNOSIS',
+          query: query.isEmpty ? null : query,
+          limit: _searchLimit,
+        );
+    if (!mounted || requestId != _searchRequest) {
       return;
     }
     setState(() {
-      _termOptions = result.when(
-        success: (List<ClinicalActionCatalogOption> value) => value,
+      _catalogOptions = result.when(
+        success: _dedupeDiagnosisOptions,
         failure: (_) => const <ClinicalActionCatalogOption>[],
       );
-      _isTermSearching = false;
+      _isSearching = false;
     });
   }
 
-  Future<void> _loadCodeLookup(String query, int requestId) async {
-    if (!mounted || requestId != _codeLookupRequest) {
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchRequest += 1;
+    setState(() {
+      _searchController.clear();
+      _searchQuery = '';
+      _failure = null;
+    });
+    unawaited(_loadDiagnosisCatalog('', _searchRequest));
+  }
+
+  void _addDiagnosis(ClinicalActionCatalogOption option) {
+    if (_isDuplicateSelection(option)) {
       return;
     }
     setState(() {
-      _codeOptions = const <ClinicalActionCatalogOption>[];
-      _isCodeSearching = true;
+      _selectedDiagnoses.add(option);
+      _failure = null;
     });
-    final Result<List<ClinicalActionCatalogOption>> result = await widget
-        .onSearchClinicalTerms(termType: 'DIAGNOSIS', query: query);
-    if (!mounted || requestId != _codeLookupRequest) {
+  }
+
+  void _removeDiagnosis(int index) {
+    if (index < 0 || index >= _selectedDiagnoses.length) {
       return;
     }
     setState(() {
-      _codeOptions = result.when(
-        success: (List<ClinicalActionCatalogOption> value) => value
-            .where(
-              (ClinicalActionCatalogOption option) =>
-                  _trimmedOrNull(option.code) != null,
-            )
-            .toList(growable: false),
-        failure: (_) => const <ClinicalActionCatalogOption>[],
-      );
-      _isCodeSearching = false;
+      _selectedDiagnoses.removeAt(index);
+      _failure = null;
     });
   }
 
-  void _applyTerm(ClinicalActionCatalogOption term) {
-    setState(() {
-      _termController.text = _diagnosisTermLabel(term);
-      _termHasText = true;
-      _codeOptions = _mergeCatalogOption(_codeOptions, term);
-      _codeController.text = term.code ?? '';
-      _codeHasText = _trimmedOrNull(term.code) != null;
-      _descriptionController.text = term.name ?? '';
-      _termOptions = const <ClinicalActionCatalogOption>[];
-      _isTermSearching = false;
-      _activeLookup = null;
-    });
-  }
-
-  void _applyCodeTerm(ClinicalActionCatalogOption term) {
-    setState(() {
-      _termOptions = _mergeCatalogOption(_termOptions, term);
-      _termController.text = _diagnosisTermLabel(term);
-      _termHasText = true;
-      _codeController.text = term.code ?? '';
-      _codeHasText = _trimmedOrNull(term.code) != null;
-      _descriptionController.text = term.name ?? '';
-      _codeOptions = const <ClinicalActionCatalogOption>[];
-      _isCodeSearching = false;
-      _activeLookup = null;
-    });
-  }
-
-  void _clearTermLookup() {
-    _termLookupDebounce?.cancel();
-    _termLookupRequest += 1;
-    setState(() {
-      _termController.clear();
-      _termHasText = false;
-      _termOptions = const <ClinicalActionCatalogOption>[];
-      _isTermSearching = false;
-      if (_activeLookup == _DiagnosisLookupTarget.term) {
-        _activeLookup = null;
-      }
-    });
-  }
-
-  void _clearCodeLookup() {
-    _codeLookupDebounce?.cancel();
-    _codeLookupRequest += 1;
-    setState(() {
-      _codeController.clear();
-      _codeHasText = false;
-      _codeOptions = const <ClinicalActionCatalogOption>[];
-      _isCodeSearching = false;
-      if (_activeLookup == _DiagnosisLookupTarget.code) {
-        _activeLookup = null;
-      }
-    });
+  bool _isDuplicateSelection(ClinicalActionCatalogOption option) {
+    final String key = _diagnosisDedupKey(option);
+    return _selectedDiagnoses.any(
+      (ClinicalActionCatalogOption item) => _diagnosisDedupKey(item) == key,
+    );
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (_selectedDiagnoses.isEmpty) {
+      setState(
+        () => _failure = AppFailure.validation(
+          validationFields: const <String>{'diagnosis'},
+        ),
+      );
       return;
     }
     setState(() {
@@ -355,8 +319,9 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
     });
     final AppFailure? failure = await widget.onSubmit(
       diagnosisType: _diagnosisType,
-      code: _codeController.text.trim(),
-      description: _descriptionController.text.trim(),
+      diagnoses: List<ClinicalActionCatalogOption>.unmodifiable(
+        _selectedDiagnoses,
+      ),
     );
     _finishSubmit(failure);
   }
@@ -376,182 +341,276 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   }
 }
 
-enum _DiagnosisLookupTarget { term, code }
-
-class _DiagnosisLookupField extends StatelessWidget {
-  const _DiagnosisLookupField({
-    required this.controller,
-    required this.labelText,
-    required this.clearLabel,
-    required this.options,
-    required this.hasText,
-    required this.isLoading,
-    required this.enabled,
-    required this.onChanged,
-    required this.onClear,
-    required this.onFocusChanged,
+class _DiagnosisCatalogResultsPanel extends StatelessWidget {
+  const _DiagnosisCatalogResultsPanel({
+    required this.results,
+    required this.isSaving,
     required this.onSelected,
-    required this.titleBuilder,
-    required this.subtitleBuilder,
-    this.textCapitalization = TextCapitalization.sentences,
+    required this.isDuplicate,
   });
 
-  final TextEditingController controller;
-  final String labelText;
-  final String clearLabel;
-  final List<ClinicalActionCatalogOption> options;
-  final bool hasText;
-  final bool isLoading;
-  final bool enabled;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-  final ValueChanged<bool> onFocusChanged;
+  final _DiagnosisCatalogSearchResults results;
+  final bool isSaving;
   final ValueChanged<ClinicalActionCatalogOption> onSelected;
-  final String Function(ClinicalActionCatalogOption option) titleBuilder;
-  final String Function(ClinicalActionCatalogOption option) subtitleBuilder;
-  final TextCapitalization textCapitalization;
+  final bool Function(ClinicalActionCatalogOption option) isDuplicate;
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final AppSpacingTokens spacing = theme.spacing;
-    final bool showResults = isLoading || options.isNotEmpty;
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<ClinicalActionCatalogOption> options = results.options;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppTextField(
-          controller: controller,
-          labelText: labelText,
-          enabled: enabled,
-          textCapitalization: textCapitalization,
-          suffixIcon: _buildClearButton(context),
-          onChanged: onChanged,
-          onFocusChanged: onFocusChanged,
-        ),
-        if (showResults) ...<Widget>[
-          SizedBox(height: spacing.xs),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 220),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border.all(color: theme.colorScheme.outlineVariant),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(theme.spacing.sm),
+            child: Text(
+              l10n.clinicalDiagnosisMatchesLabel(
+                options.length,
+                results.totalMatches,
               ),
-              child: options.isEmpty
-                  ? SizedBox(
-                      height: 48,
-                      child: Center(
-                        child: SizedBox.square(
-                          dimension: theme.appTokens.listIconSize,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      shrinkWrap: true,
-                      itemCount: options.length,
-                      separatorBuilder: (_, _) => Divider(
-                        height: 1,
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                      itemBuilder: (BuildContext context, int index) {
-                        final ClinicalActionCatalogOption option =
-                            options[index];
-                        return _DiagnosisLookupResult(
-                          title: titleBuilder(option),
-                          subtitle: subtitleBuilder(option),
-                          enabled: enabled,
-                          onSelected: () => onSelected(option),
-                        );
-                      },
-                    ),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ],
-      ],
-    );
-  }
-
-  Widget? _buildClearButton(BuildContext context) {
-    if (!enabled || !hasText) {
-      return null;
-    }
-    final ThemeData theme = Theme.of(context);
-    return SizedBox(
-      width: 104,
-      child: Center(
-        child: TextButton(
-          onPressed: onClear,
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
-            minimumSize: const Size(72, 32),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          Expanded(
+            child: options.isEmpty
+                ? Center(child: Text(l10n.clinicalDiagnosisNoCatalogOptions))
+                : ListView.separated(
+                    itemCount: options.length,
+                    separatorBuilder: (_, _) =>
+                        Divider(height: 1, color: colorScheme.outlineVariant),
+                    itemBuilder: (BuildContext context, int index) {
+                      final ClinicalActionCatalogOption option = options[index];
+                      final bool duplicate = isDuplicate(option);
+                      return _DiagnosisCatalogOptionRow(
+                        option: option,
+                        isSaving: isSaving,
+                        isDuplicate: duplicate,
+                        onSelected: duplicate ? null : () => onSelected(option),
+                      );
+                    },
+                  ),
           ),
-          child: Text(clearLabel, overflow: TextOverflow.ellipsis),
-        ),
+        ],
       ),
     );
   }
 }
 
-class _DiagnosisLookupResult extends StatelessWidget {
-  const _DiagnosisLookupResult({
-    required this.title,
-    required this.subtitle,
-    required this.enabled,
+class _DiagnosisCatalogOptionRow extends StatelessWidget {
+  const _DiagnosisCatalogOptionRow({
+    required this.option,
+    required this.isSaving,
+    required this.isDuplicate,
     required this.onSelected,
   });
 
-  final String title;
-  final String subtitle;
-  final bool enabled;
-  final VoidCallback onSelected;
+  final ClinicalActionCatalogOption option;
+  final bool isSaving;
+  final bool isDuplicate;
+  final VoidCallback? onSelected;
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final AppSpacingTokens spacing = theme.spacing;
-    return Material(
-      color: theme.colorScheme.surface,
-      child: InkWell(
-        onTap: enabled ? onSelected : null,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: spacing.md,
-            vertical: spacing.sm,
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String subtitle = _diagnosisSubtitle(option);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.medical_information_outlined,
+            color: colorScheme.primary,
+            size: theme.appTokens.listIconSize,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (subtitle.isNotEmpty) ...<Widget>[
-                SizedBox(height: spacing.xs),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
                 Text(
-                  subtitle,
+                  _diagnosisTitle(option),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          TextButton.icon(
+            onPressed: isSaving || isDuplicate ? null : onSelected,
+            icon: Icon(Icons.add, size: theme.appTokens.listIconSize),
+            label: Text(l10n.clinicalLabRequestAddSelectionAction),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiagnosisSelectedPanel extends StatelessWidget {
+  const _DiagnosisSelectedPanel({
+    required this.diagnoses,
+    required this.diagnosisType,
+    required this.isSaving,
+    required this.onDelete,
+  });
+
+  final List<ClinicalActionCatalogOption> diagnoses;
+  final String diagnosisType;
+  final bool isSaving;
+  final ValueChanged<int> onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(theme.spacing.sm),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.clinicalDiagnosisSelectedTitle,
+                    style: theme.textTheme.labelLarge,
+                  ),
+                ),
+                Text(
+                  l10n.clinicalDiagnosisSelectedCount(diagnoses.length),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          Expanded(
+            child: diagnoses.isEmpty
+                ? Center(child: Text(l10n.clinicalDiagnosisNoSelection))
+                : ListView.separated(
+                    itemCount: diagnoses.length,
+                    separatorBuilder: (_, _) =>
+                        Divider(height: 1, color: colorScheme.outlineVariant),
+                    itemBuilder: (BuildContext context, int index) {
+                      return _DiagnosisSelectedRow(
+                        option: diagnoses[index],
+                        diagnosisType: diagnosisType,
+                        isSaving: isSaving,
+                        onDelete: () => onDelete(index),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiagnosisSelectedRow extends StatelessWidget {
+  const _DiagnosisSelectedRow({
+    required this.option,
+    required this.diagnosisType,
+    required this.isSaving,
+    required this.onDelete,
+  });
+
+  final ClinicalActionCatalogOption option;
+  final String diagnosisType;
+  final bool isSaving;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String subtitle = _joinDisplay(<String?>[
+      _apiLabel(diagnosisType),
+      _diagnosisSubtitle(option),
+    ]);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.rule_outlined,
+            color: colorScheme.primary,
+            size: theme.appTokens.listIconSize,
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _diagnosisTitle(option),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.clinicalLabRequestDeleteSelectionAction,
+            onPressed: isSaving ? null : onDelete,
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
       ),
     );
   }
@@ -1293,7 +1352,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
               ? l10n.clinicalUpdateLabOrderAction
               : l10n.clinicalRequestLabAction,
           isLoading: _isSaving,
-          enabled: _requests.isNotEmpty,
+          enabled: !_isSaving && _requests.isNotEmpty,
           onPressed: _submit,
         ),
       ],
@@ -1915,6 +1974,7 @@ final class _PendingRadiologyRequest {
     this.bodyRegion,
     this.laterality,
     this.priority,
+    this.modality,
   });
 
   final ClinicalActionCatalogOption option;
@@ -1922,6 +1982,7 @@ final class _PendingRadiologyRequest {
   final String? bodyRegion;
   final String? laterality;
   final String? priority;
+  final String? modality;
 
   String get id => option.apiId;
 }
@@ -1943,9 +2004,10 @@ class _RadiologyOrderDialogState
 
   late final TextEditingController _searchController;
   late final TextEditingController _noteController;
-  late final TextEditingController _bodyRegionController;
   Timer? _searchDebounce;
   String _searchQuery = '';
+  String? _modality;
+  String? _bodyRegion;
   String? _laterality;
   String? _priority;
   final List<_PendingRadiologyRequest> _requests = <_PendingRadiologyRequest>[];
@@ -1958,7 +2020,6 @@ class _RadiologyOrderDialogState
     super.initState();
     _searchController = TextEditingController();
     _noteController = TextEditingController();
-    _bodyRegionController = TextEditingController();
   }
 
   @override
@@ -1966,7 +2027,6 @@ class _RadiologyOrderDialogState
     _searchDebounce?.cancel();
     _searchController.dispose();
     _noteController.dispose();
-    _bodyRegionController.dispose();
     super.dispose();
   }
 
@@ -1980,6 +2040,14 @@ class _RadiologyOrderDialogState
     final _RadiologyCatalogSearchResults searchResults = _searchCatalog(
       widget.referenceData.radiologyTests,
     );
+    final List<AppSelectOption<String>> modalityOptions =
+        _radiologyModalityOptions(widget.referenceData.radiologyTests);
+    final List<AppSelectOption<String>> bodyRegionOptions =
+        _radiologyBodyRegionOptions(
+          widget.referenceData.radiologyTests,
+          modality: _modality,
+          laterality: _laterality,
+        );
     return AppDialog(
       title: Text(l10n.clinicalRequestRadiologyAction),
       icon: const Icon(Icons.biotech_outlined),
@@ -1991,6 +2059,111 @@ class _RadiologyOrderDialogState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final bool compact = constraints.maxWidth < 760;
+                final List<Widget> firstRowFields = <Widget>[
+                  AppSelectField<String>.searchable(
+                    value: _modality,
+                    labelText: l10n.radiologyModalityLabel,
+                    hintText: l10n.radiologyModalityLabel,
+                    enabled: !_isSaving,
+                    options: modalityOptions,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _modality = value;
+                        if (!_bodyRegionAvailable(value, _bodyRegion)) {
+                          _bodyRegion = null;
+                        }
+                      });
+                    },
+                  ),
+                  AppSelectField<String>.searchable(
+                    value: _bodyRegion,
+                    labelText: l10n.clinicalRadiologyBodyRegionLabel,
+                    hintText: l10n.clinicalRadiologyBodyRegionLabel,
+                    enabled: !_isSaving,
+                    options: bodyRegionOptions,
+                    onChanged: (String? value) {
+                      setState(() => _bodyRegion = value);
+                    },
+                  ),
+                  AppSelectField<String>(
+                    value: _laterality,
+                    labelText: l10n.clinicalRadiologyLateralityLabel,
+                    enabled: !_isSaving,
+                    options: _statusOptions(_radiologyLateralityValues),
+                    onChanged: (String? value) {
+                      setState(() {
+                        _laterality = value;
+                        if (!_bodyRegionAvailable(_modality, _bodyRegion)) {
+                          _bodyRegion = null;
+                        }
+                      });
+                    },
+                  ),
+                ];
+                final List<Widget> secondRowFields = <Widget>[
+                  AppSelectField<String>(
+                    value: _priority,
+                    labelText: l10n.clinicalRadiologyPriorityLabel,
+                    enabled: !_isSaving,
+                    options: _statusOptions(const <String>[
+                      'ROUTINE',
+                      'URGENT',
+                      'STAT',
+                    ]),
+                    onChanged: (String? value) {
+                      setState(() => _priority = value);
+                    },
+                  ),
+                  AppTextField(
+                    controller: _noteController,
+                    labelText: l10n.opdClinicalNoteLabel,
+                    enabled: !_isSaving,
+                    maxLines: compact ? 2 : 1,
+                  ),
+                ];
+
+                if (compact) {
+                  return Column(
+                    children: <Widget>[
+                      for (final Widget field in <Widget>[
+                        ...firstRowFields,
+                        ...secondRowFields,
+                      ]) ...<Widget>[field, SizedBox(height: theme.spacing.sm)],
+                    ],
+                  );
+                }
+
+                return Column(
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        for (
+                          var index = 0;
+                          index < firstRowFields.length;
+                          index += 1
+                        ) ...<Widget>[
+                          Expanded(child: firstRowFields[index]),
+                          if (index < firstRowFields.length - 1)
+                            SizedBox(width: theme.spacing.sm),
+                        ],
+                      ],
+                    ),
+                    SizedBox(height: theme.spacing.sm),
+                    Row(
+                      children: <Widget>[
+                        SizedBox(width: 220, child: secondRowFields.first),
+                        SizedBox(width: theme.spacing.sm),
+                        Expanded(child: secondRowFields.last),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+            SizedBox(height: theme.spacing.md),
             AppTextField(
               controller: _searchController,
               labelText: l10n.clinicalRadiologyRequestSearchLabel,
@@ -2010,79 +2183,6 @@ class _RadiologyOrderDialogState
                       onPressed: _isSaving ? null : _clearSearch,
                     ),
               onChanged: _scheduleSearch,
-            ),
-            SizedBox(height: theme.spacing.md),
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final bool compact = constraints.maxWidth < 720;
-                final List<Widget> fields = <Widget>[
-                  AppSelectField<String>(
-                    value: _priority,
-                    labelText: l10n.clinicalRadiologyPriorityLabel,
-                    enabled: !_isSaving,
-                    options: _statusOptions(const <String>[
-                      'ROUTINE',
-                      'URGENT',
-                      'STAT',
-                    ]),
-                    onChanged: (String? value) {
-                      setState(() => _priority = value);
-                    },
-                  ),
-                  AppSelectField<String>(
-                    value: _laterality,
-                    labelText: l10n.clinicalRadiologyLateralityLabel,
-                    enabled: !_isSaving,
-                    options: _statusOptions(const <String>[
-                      'LEFT',
-                      'RIGHT',
-                      'BILATERAL',
-                      'MIDLINE',
-                      'NOT_APPLICABLE',
-                    ]),
-                    onChanged: (String? value) {
-                      setState(() => _laterality = value);
-                    },
-                  ),
-                  AppTextField(
-                    controller: _bodyRegionController,
-                    labelText: l10n.clinicalRadiologyBodyRegionLabel,
-                    enabled: !_isSaving,
-                  ),
-                ];
-
-                if (compact) {
-                  return Column(
-                    children: <Widget>[
-                      for (final Widget field in fields) ...<Widget>[
-                        field,
-                        SizedBox(height: theme.spacing.sm),
-                      ],
-                    ],
-                  );
-                }
-
-                return Row(
-                  children: <Widget>[
-                    for (
-                      var index = 0;
-                      index < fields.length;
-                      index += 1
-                    ) ...<Widget>[
-                      Expanded(child: fields[index]),
-                      if (index < fields.length - 1)
-                        SizedBox(width: theme.spacing.sm),
-                    ],
-                  ],
-                );
-              },
-            ),
-            SizedBox(height: theme.spacing.sm),
-            AppTextField(
-              controller: _noteController,
-              labelText: l10n.opdClinicalNoteLabel,
-              enabled: !_isSaving,
-              maxLines: 2,
             ),
             if (_editingIndex != null) ...<Widget>[
               SizedBox(height: theme.spacing.xs),
@@ -2149,7 +2249,7 @@ class _RadiologyOrderDialogState
         AppButton.primary(
           label: l10n.clinicalRequestRadiologyAction,
           isLoading: _isSaving,
-          enabled: _requests.isNotEmpty,
+          enabled: !_isSaving && _requests.isNotEmpty,
           onPressed: _submit,
         ),
       ],
@@ -2165,21 +2265,15 @@ class _RadiologyOrderDialogState
         .split(RegExp(r'\s+'))
         .where((String token) => token.isNotEmpty)
         .toList(growable: false);
-    if (tokens.isEmpty) {
-      return _RadiologyCatalogSearchResults(
-        options: catalog
-            .take(_maxVisibleCatalogOptions)
-            .toList(growable: false),
-        totalMatches: catalog.length,
-      );
-    }
-
     final List<ClinicalActionCatalogOption> visible =
         <ClinicalActionCatalogOption>[];
     var totalMatches = 0;
     for (final ClinicalActionCatalogOption option in catalog) {
+      if (!_matchesRadiologyFilters(option)) {
+        continue;
+      }
       final String searchText = _catalogSearchText(option);
-      final bool isMatch = tokens.every(searchText.contains);
+      final bool isMatch = tokens.isEmpty || tokens.every(searchText.contains);
       if (!isMatch) {
         continue;
       }
@@ -2195,6 +2289,28 @@ class _RadiologyOrderDialogState
     );
   }
 
+  bool _matchesRadiologyFilters(ClinicalActionCatalogOption option) {
+    final String? selectedModality = _trimmedOrNull(_modality);
+    final String? selectedBodyRegion = _trimmedOrNull(_bodyRegion);
+    final String? selectedLaterality = _trimmedOrNull(_laterality);
+    if (selectedModality != null &&
+        _normalizedCatalogToken(_radiologyOptionModality(option) ?? '') !=
+            _normalizedCatalogToken(selectedModality)) {
+      return false;
+    }
+    if (selectedBodyRegion != null &&
+        _normalizedCatalogToken(_radiologyOptionBodyRegion(option) ?? '') !=
+            _normalizedCatalogToken(selectedBodyRegion)) {
+      return false;
+    }
+    if (selectedLaterality != null &&
+        _normalizedCatalogToken(_radiologyOptionLaterality(option) ?? '') !=
+            _normalizedCatalogToken(selectedLaterality)) {
+      return false;
+    }
+    return true;
+  }
+
   String _catalogSearchText(ClinicalActionCatalogOption option) {
     return _joinDisplay(<String?>[
       option.apiId,
@@ -2202,11 +2318,30 @@ class _RadiologyOrderDialogState
       option.displaySubtitle,
       option.name,
       option.code,
+      _radiologyOptionModality(option),
+      _radiologyOptionBodyRegion(option),
+      _radiologyOptionLaterality(option),
       option.category,
       option.secondaryText,
       option.status,
       option.searchText,
     ]).toLowerCase();
+  }
+
+  bool _bodyRegionAvailable(String? modality, String? bodyRegion) {
+    final String? normalizedBodyRegion = _trimmedOrNull(bodyRegion);
+    if (normalizedBodyRegion == null) {
+      return true;
+    }
+    return _radiologyBodyRegionOptions(
+      widget.referenceData.radiologyTests,
+      modality: modality,
+      laterality: _laterality,
+    ).any(
+      (AppSelectOption<String> option) =>
+          _normalizedCatalogToken(option.value) ==
+          _normalizedCatalogToken(normalizedBodyRegion),
+    );
   }
 
   void _scheduleSearch(String value) {
@@ -2234,9 +2369,11 @@ class _RadiologyOrderDialogState
     final _PendingRadiologyRequest request = _PendingRadiologyRequest(
       option: option,
       clinicalNote: _trimmedOrNull(_noteController.text),
-      bodyRegion: _trimmedOrNull(_bodyRegionController.text),
-      laterality: _laterality,
+      bodyRegion:
+          _trimmedOrNull(_bodyRegion) ?? _radiologyOptionBodyRegion(option),
+      laterality: _laterality ?? _radiologyOptionLaterality(option),
       priority: _priority,
+      modality: _trimmedOrNull(_modality) ?? _radiologyOptionModality(option),
     );
 
     setState(() {
@@ -2266,7 +2403,9 @@ class _RadiologyOrderDialogState
       _searchController.text = request.option.displayTitle;
       _searchQuery = request.option.displayTitle;
       _noteController.text = request.clinicalNote ?? '';
-      _bodyRegionController.text = request.bodyRegion ?? '';
+      _modality = request.modality ?? _radiologyOptionModality(request.option);
+      _bodyRegion =
+          request.bodyRegion ?? _radiologyOptionBodyRegion(request.option);
       _laterality = request.laterality;
       _priority = request.priority;
     });
@@ -2301,7 +2440,8 @@ class _RadiologyOrderDialogState
 
   void _resetRequestDetails() {
     _noteController.clear();
-    _bodyRegionController.clear();
+    _modality = null;
+    _bodyRegion = null;
     _laterality = null;
     _priority = null;
   }
@@ -2337,6 +2477,7 @@ class _RadiologyOrderDialogState
             bodyRegion: request.bodyRegion,
             laterality: request.laterality,
             priority: request.priority,
+            modality: request.modality,
           ),
       ],
     );
@@ -2478,15 +2619,28 @@ class _RadiologyCatalogOptionRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (option.displaySubtitle != null)
-                  Text(
-                    option.displaySubtitle!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                Builder(
+                  builder: (BuildContext context) {
+                    final String subtitle = _joinDisplay(<String?>[
+                      _radiologyOptionModality(option),
+                      _radiologyOptionBodyRegion(option),
+                      _radiologyOptionLaterality(option),
+                      option.status,
+                      option.displaySubtitle,
+                    ]);
+                    if (subtitle.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -2597,10 +2751,11 @@ class _RadiologySelectedRequestRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String subtitle = _joinDisplay(<String?>[
-      request.option.displaySubtitle,
-      request.priority == null ? null : _apiLabel(request.priority!),
+      request.modality ?? _radiologyOptionModality(request.option),
+      request.bodyRegion ?? _radiologyOptionBodyRegion(request.option),
       request.laterality == null ? null : _apiLabel(request.laterality!),
-      request.bodyRegion,
+      request.priority == null ? null : _apiLabel(request.priority!),
+      request.option.status,
     ]);
 
     return DecoratedBox(
@@ -3492,20 +3647,54 @@ List<ClinicalActionCatalogOption> _mergeCatalogOption(
   return <ClinicalActionCatalogOption>[option, ...options];
 }
 
-String _diagnosisTermLabel(ClinicalActionCatalogOption option) {
+List<ClinicalActionCatalogOption> _dedupeDiagnosisOptions(
+  List<ClinicalActionCatalogOption> options,
+) {
+  final Set<String> seen = <String>{};
+  final List<ClinicalActionCatalogOption> deduped =
+      <ClinicalActionCatalogOption>[];
+  for (final ClinicalActionCatalogOption option in options) {
+    final String key = _diagnosisDedupKey(option);
+    if (seen.add(key)) {
+      deduped.add(option);
+    }
+  }
+  return deduped;
+}
+
+String _diagnosisTitle(ClinicalActionCatalogOption option) {
   return _trimmedOrNull(option.name) ?? option.displayTitle;
 }
 
-String _diagnosisTermSubtitle(ClinicalActionCatalogOption option) {
-  return _joinDisplay(<String?>[option.code, option.displaySubtitle]);
+String _diagnosisSubtitle(ClinicalActionCatalogOption option) {
+  return _joinDisplay(<String?>[
+    option.code,
+    option.category,
+    option.secondaryText,
+    option.status,
+  ]);
 }
 
-String _diagnosisCodeLabel(ClinicalActionCatalogOption option) {
-  return _trimmedOrNull(option.code) ?? option.displayTitle;
+String _diagnosisSearchText(ClinicalActionCatalogOption option) {
+  return _joinDisplay(<String?>[
+    option.apiId,
+    option.publicId,
+    option.name,
+    option.code,
+    option.category,
+    option.secondaryText,
+    option.status,
+    option.searchText,
+  ]);
 }
 
-String _diagnosisCodeSubtitle(ClinicalActionCatalogOption option) {
-  return _joinDisplay(<String?>[option.name, option.displaySubtitle]);
+String _diagnosisDedupKey(ClinicalActionCatalogOption option) {
+  final String code = _trimmedOrNull(option.code)?.toUpperCase() ?? '';
+  final String title = _diagnosisTitle(option).toUpperCase();
+  if (code.isNotEmpty || title.isNotEmpty) {
+    return '$code::$title';
+  }
+  return _trimmedOrNull(option.apiId)?.toUpperCase() ?? '';
 }
 
 List<ClinicalActionCatalogOption> _dedupeProcedureOptions(
@@ -3554,6 +3743,155 @@ List<AppSelectOption<String>> _statusOptions(List<String> values) {
     for (final String value in values)
       AppSelectOption<String>(value: value, label: _apiLabel(value)),
   ];
+}
+
+List<AppSelectOption<String>> _radiologyModalityOptions(
+  List<ClinicalActionCatalogOption> catalog,
+) {
+  final List<String> values = _sortedRadiologyValues(
+    catalog.map(_radiologyOptionModality),
+  );
+  return <AppSelectOption<String>>[
+    for (final String value in values)
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: Icon(
+          _radiologyCatalogIcon(
+            ClinicalActionCatalogOption(
+              id: value,
+              name: value,
+              category: value,
+            ),
+          ),
+        ),
+      ),
+  ];
+}
+
+List<AppSelectOption<String>> _radiologyBodyRegionOptions(
+  List<ClinicalActionCatalogOption> catalog, {
+  String? modality,
+  String? laterality,
+}) {
+  final String? selectedModality = _trimmedOrNull(modality);
+  final String? selectedLaterality = _trimmedOrNull(laterality);
+  final Iterable<ClinicalActionCatalogOption> filtered = catalog.where((
+    ClinicalActionCatalogOption option,
+  ) {
+    if (selectedModality != null &&
+        _normalizedCatalogToken(_radiologyOptionModality(option) ?? '') !=
+            _normalizedCatalogToken(selectedModality)) {
+      return false;
+    }
+    if (selectedLaterality != null &&
+        _normalizedCatalogToken(_radiologyOptionLaterality(option) ?? '') !=
+            _normalizedCatalogToken(selectedLaterality)) {
+      return false;
+    }
+    return true;
+  });
+  final List<String> values = _sortedRadiologyValues(
+    filtered.map(_radiologyOptionBodyRegion),
+  );
+  return <AppSelectOption<String>>[
+    for (final String value in values)
+      AppSelectOption<String>(
+        value: value,
+        label: _apiLabel(value),
+        leadingIcon: const Icon(Icons.accessibility_new_outlined),
+      ),
+  ];
+}
+
+List<String> _sortedRadiologyValues(Iterable<String?> values) {
+  final Set<String> seen = <String>{};
+  final List<String> unique = <String>[];
+  for (final String? value in values) {
+    final String? normalized = _trimmedOrNull(value);
+    if (normalized == null) {
+      continue;
+    }
+    final String key = _normalizedCatalogToken(normalized);
+    if (seen.add(key)) {
+      unique.add(normalized);
+    }
+  }
+  unique.sort(
+    (String left, String right) => _apiLabel(left).compareTo(_apiLabel(right)),
+  );
+  return unique;
+}
+
+String? _radiologyOptionModality(ClinicalActionCatalogOption option) {
+  return _trimmedOrNull(_radiologyMetadataText(option, 'modality')) ??
+      _trimmedOrNull(option.category);
+}
+
+String? _radiologyOptionBodyRegion(ClinicalActionCatalogOption option) {
+  return _trimmedOrNull(_radiologyMetadataText(option, 'body_region')) ??
+      _trimmedOrNull(_radiologyMetadataText(option, 'bodyRegion')) ??
+      _radiologySecondaryFragment(
+        option,
+        exclude: <String?>[
+          _radiologyOptionModality(option),
+          _radiologyOptionLaterality(option),
+          option.status,
+        ],
+      );
+}
+
+String? _radiologyOptionLaterality(ClinicalActionCatalogOption option) {
+  final String? metadataValue = _trimmedOrNull(
+    _radiologyMetadataText(option, 'laterality'),
+  );
+  if (metadataValue != null) {
+    return metadataValue;
+  }
+  final String haystack = _joinDisplay(<String?>[
+    option.secondaryText,
+    option.searchText,
+    option.name,
+  ]).toUpperCase();
+  for (final String value in _radiologyLateralityValues) {
+    if (haystack.contains(value)) {
+      return value;
+    }
+  }
+  return null;
+}
+
+String? _radiologyMetadataText(ClinicalActionCatalogOption option, String key) {
+  final Object? value = option.metadata[key];
+  final String? normalized = _trimmedOrNull(value?.toString());
+  return normalized;
+}
+
+String? _radiologySecondaryFragment(
+  ClinicalActionCatalogOption option, {
+  required Iterable<String?> exclude,
+}) {
+  final Set<String> excluded = exclude
+      .whereType<String>()
+      .map(_normalizedCatalogToken)
+      .where((String value) => value.isNotEmpty)
+      .toSet();
+  final List<String> fragments = <String>[
+    ...?_trimmedOrNull(option.secondaryText)?.split(RegExp(r'[|,;/]+')),
+  ];
+  for (final String fragment in fragments) {
+    final String? normalized = _trimmedOrNull(fragment);
+    if (normalized == null) {
+      continue;
+    }
+    final String token = _normalizedCatalogToken(normalized);
+    if (excluded.contains(token) ||
+        _radiologyLateralityValues.contains(token)) {
+      continue;
+    }
+    return normalized;
+  }
+  return null;
 }
 
 IconData _radiologyCatalogIcon(ClinicalActionCatalogOption option) {
@@ -3647,6 +3985,12 @@ const List<String> _diagnosisTypes = <String>[
   'PRIMARY',
   'SECONDARY',
   'DIFFERENTIAL',
+];
+
+const List<String> _radiologyLateralityValues = <String>[
+  'LEFT',
+  'RIGHT',
+  'BILATERAL',
 ];
 
 const List<String> _medicationFrequencies = <String>[

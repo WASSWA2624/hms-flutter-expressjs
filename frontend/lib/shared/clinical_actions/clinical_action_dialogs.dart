@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -448,6 +449,7 @@ class _ClinicalAdmissionActionDialogState
   String? _wardId;
   String? _roomId;
   String? _bedId;
+  String? _bedWarning;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -462,6 +464,7 @@ class _ClinicalAdmissionActionDialogState
       _wardId = null;
       _roomId = null;
       _bedId = null;
+      _bedWarning = null;
     }
   }
 
@@ -550,6 +553,11 @@ class _ClinicalAdmissionActionDialogState
                       onChanged: _handleRoomChanged,
                     ),
                   ),
+                  if (_wardId != null && roomOptions.isEmpty)
+                    _AdmissionInlineMessage(
+                      message: l10n.clinicalAdmissionNoRoomsMessage,
+                      icon: Icons.meeting_room_outlined,
+                    ),
                   AppSelectField<String>.searchable(
                     value: _bedId,
                     labelText: l10n.clinicalAdmissionBedLabel,
@@ -564,6 +572,16 @@ class _ClinicalAdmissionActionDialogState
                     onChanged: (String? value) =>
                         _handleBedChanged(value, availableBeds),
                   ),
+                  if (_roomId != null && bedOptions.isEmpty)
+                    _AdmissionInlineMessage(
+                      message: l10n.clinicalAdmissionNoBedsForRoomMessage,
+                      icon: Icons.bed_outlined,
+                    ),
+                  if (_bedWarning != null)
+                    _AdmissionInlineMessage(
+                      message: _bedWarning!,
+                      icon: Icons.warning_amber_outlined,
+                    ),
                   AppInfoTileGrid(
                     items: _admissionDetailTiles(
                       context,
@@ -610,6 +628,7 @@ class _ClinicalAdmissionActionDialogState
       _wardId = value;
       _roomId = null;
       _bedId = null;
+      _bedWarning = null;
     });
   }
 
@@ -617,6 +636,7 @@ class _ClinicalAdmissionActionDialogState
     setState(() {
       _roomId = value;
       _bedId = null;
+      _bedWarning = null;
     });
   }
 
@@ -630,6 +650,7 @@ class _ClinicalAdmissionActionDialogState
     );
     setState(() {
       _bedId = value;
+      _bedWarning = null;
       if (bed != null) {
         _wardId = bed.parentId;
         _roomId = bed.secondaryId;
@@ -647,7 +668,10 @@ class _ClinicalAdmissionActionDialogState
       _bedId,
     );
     if (bed == null || !_isAdmissionBedAvailable(bed)) {
-      setState(() => _failure = AppFailure.validation());
+      setState(() {
+        _failure = AppFailure.validation();
+        _bedWarning = context.l10n.clinicalAdmissionBedUnavailableMessage;
+      });
       return;
     }
     setState(() {
@@ -676,6 +700,43 @@ class _ClinicalAdmissionActionDialogState
       _failure = failure;
       _isSaving = false;
     });
+  }
+}
+
+class _AdmissionInlineMessage extends StatelessWidget {
+  const _AdmissionInlineMessage({required this.message, required this.icon});
+
+  final String message;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, color: colorScheme.onSurfaceVariant),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Text(
+                message,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -973,27 +1034,20 @@ List<AppInfoTileData> _admissionDetailTiles(
       label: l10n.clinicalAdmissionWardLabel,
       value: bed == null
           ? null
-          : _catalogDisplayLabelById(referenceData.wards, bed.parentId) ??
-                bed.parentId,
+          : _catalogDisplayLabelById(referenceData.wards, bed.parentId),
       icon: Icons.apartment_outlined,
     ),
     AppInfoTileData(
       label: l10n.clinicalAdmissionRoomLabel,
       value: bed == null
           ? null
-          : _catalogDisplayLabelById(referenceData.rooms, bed.secondaryId) ??
-                bed.secondaryId,
+          : _catalogDisplayLabelById(referenceData.rooms, bed.secondaryId),
       icon: Icons.meeting_room_outlined,
     ),
     AppInfoTileData(
       label: l10n.clinicalAdmissionBedLabel,
       value: bed?.displayTitle,
       icon: Icons.bed_outlined,
-    ),
-    AppInfoTileData(
-      label: l10n.clinicalAdmissionAvailabilityLabel,
-      value: bed == null ? null : _apiLabel(bed.status ?? 'AVAILABLE'),
-      icon: Icons.check_circle_outline,
     ),
   ];
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
@@ -984,35 +985,43 @@ final class OpdWorkspaceController
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<OpdFlowDetail> result = await action();
-    return result.when(
-      success: (OpdFlowDetail detail) async {
-        final OpdWorkspaceState latest = _currentState!;
-        _emit(
-          latest.copyWith(
-            selectedFlow: detail.summary.isTerminal ? null : detail,
-            clearSelectedFlow: detail.summary.isTerminal,
-            flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
-            triageQueue: _upsertOrRemoveTriageFlow(
-              latest.triageQueue,
-              detail.summary,
-            ),
-            isSaving: false,
-          ),
-        );
-        if (refreshAfter) {
-          return _syncVisibleData();
-        }
-        return null;
-      },
-      failure: (AppFailure failure) {
-        _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
-        if (failure.category == AppFailureCategory.notFound) {
-          unawaited(_syncVisibleData(showLoading: true));
-        }
-        return failure;
-      },
-    );
+    try {
+      final Result<OpdFlowDetail> result = await action();
+      return result.when(
+        success: (OpdFlowDetail detail) async {
+          final OpdWorkspaceState? latest = _currentState;
+          if (latest != null) {
+            _emit(
+              latest.copyWith(
+                selectedFlow: detail.summary.isTerminal ? null : detail,
+                clearSelectedFlow: detail.summary.isTerminal,
+                flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
+                triageQueue: _upsertOrRemoveTriageFlow(
+                  latest.triageQueue,
+                  detail.summary,
+                ),
+                isSaving: false,
+              ),
+            );
+          }
+          if (refreshAfter) {
+            return _syncVisibleData();
+          }
+          return null;
+        },
+        failure: (AppFailure failure) {
+          _emitMutationFailure(failure);
+          if (failure.category == AppFailureCategory.notFound) {
+            unawaited(_syncVisibleData(showLoading: true));
+          }
+          return failure;
+        },
+      );
+    } catch (error, stackTrace) {
+      final AppFailure failure = mapToFailure(error, stackTrace);
+      _emitMutationFailure(failure);
+      return failure;
+    }
   }
 
   Future<AppFailure?> _mutateRelatedFlowRecord(
@@ -1025,36 +1034,50 @@ final class OpdWorkspaceController
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<void> result = await action();
-    return result.when(
-      success: (_) async {
-        final Result<OpdFlowDetail> detailResult = await _repository.getOpdFlow(
-          flow.apiId,
-        );
-        return detailResult.when(
-          success: (OpdFlowDetail detail) {
-            _emit(
-              _currentState!.copyWith(
-                selectedFlow: detail,
-                flows: _replaceFlow(_currentState!.flows, detail.summary),
-                isSaving: false,
-              ),
-            );
-            return null;
-          },
-          failure: (AppFailure failure) {
-            _emit(
-              _currentState!.copyWith(isSaving: false, lastFailure: failure),
-            );
-            return failure;
-          },
-        );
-      },
-      failure: (AppFailure failure) {
-        _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
-        return failure;
-      },
-    );
+    try {
+      final Result<void> result = await action();
+      return result.when(
+        success: (_) async {
+          final Result<OpdFlowDetail> detailResult = await _repository.getOpdFlow(
+            flow.apiId,
+          );
+          return detailResult.when(
+            success: (OpdFlowDetail detail) {
+              final OpdWorkspaceState? latest = _currentState;
+              if (latest != null) {
+                _emit(
+                  latest.copyWith(
+                    selectedFlow: detail,
+                    flows: _replaceFlow(latest.flows, detail.summary),
+                    isSaving: false,
+                  ),
+                );
+              }
+              return null;
+            },
+            failure: (AppFailure failure) {
+              _emitMutationFailure(failure);
+              return failure;
+            },
+          );
+        },
+        failure: (AppFailure failure) {
+          _emitMutationFailure(failure);
+          return failure;
+        },
+      );
+    } catch (error, stackTrace) {
+      final AppFailure failure = mapToFailure(error, stackTrace);
+      _emitMutationFailure(failure);
+      return failure;
+    }
+  }
+
+  void _emitMutationFailure(AppFailure failure) {
+    final OpdWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+    }
   }
 
   OpdFlowDetail? _selectedAfterFlowRefresh(

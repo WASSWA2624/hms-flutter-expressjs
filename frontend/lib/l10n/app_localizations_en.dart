@@ -3304,13 +3304,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalActionsTitle => 'Clinical actions';
 
   @override
-  String get clinicalAddNoteAction => 'Add note';
+  String get clinicalAddNoteAction => 'Add clinical note';
 
   @override
   String get clinicalAddNoteTitle => 'Add patient clinical note';
 
   @override
   String get clinicalAddDiagnosisAction => 'Add diagnosis';
+
+  @override
+  String get clinicalDiagnosisSearchLabel => 'Search diagnosis';
+
+  @override
+  String get clinicalDiagnosisSearchHint =>
+      'Search by diagnosis name, code, type, status, or source';
+
+  @override
+  String get clinicalDiagnosisSelectedTitle => 'Selected diagnoses';
+
+  @override
+  String clinicalDiagnosisSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get clinicalDiagnosisNoSelection => 'No diagnoses selected';
+
+  @override
+  String clinicalDiagnosisMatchesLabel(int shown, int total) {
+    return 'Showing $shown of $total matches';
+  }
+
+  @override
+  String get clinicalDiagnosisNoCatalogOptions =>
+      'No matching diagnosis terms';
 
   @override
   String get clinicalRequestLabAction => 'Request lab';
@@ -3430,6 +3457,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalRadiologyOrdersTitle => 'Radiology orders';
+
+  @override
+  String get clinicalCancelRadiologyOrderAction => 'Cancel order';
+
+  @override
+  String get clinicalDeleteRadiologyOrderAction => 'Delete order';
+
+  @override
+  String get clinicalCancelRadiologyOrderDialogTitle => 'Cancel radiology order';
+
+  @override
+  String get clinicalCancelRadiologyOrderDialogBody =>
+      'Cancel this radiology order and mark it as cancelled?';
+
+  @override
+  String get clinicalDeleteRadiologyOrderDialogTitle => 'Delete radiology order';
+
+  @override
+  String get clinicalDeleteRadiologyOrderDialogBody =>
+      'Delete this radiology order from the active patient record?';
 
   @override
   String clinicalRadiologyOrderItemCount(int count) {
@@ -3677,6 +3724,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clinicalAdmissionNoBedsMessage =>
       'No available beds found. Refresh bed availability before requesting admission.';
+
+  @override
+  String get clinicalAdmissionNoRoomsMessage =>
+      'No rooms with available beds match this ward.';
+
+  @override
+  String get clinicalAdmissionNoBedsForRoomMessage =>
+      'No available beds match this room.';
+
+  @override
+  String get clinicalAdmissionBedUnavailableMessage =>
+      'This bed is no longer available. Please choose another bed.';
 
   @override
   String get clinicalDispositionReasonLabel => 'Disposition reason';

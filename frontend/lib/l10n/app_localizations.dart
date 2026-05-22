@@ -6193,7 +6193,7 @@ abstract class AppLocalizations {
   /// Clinical add note action label.
   ///
   /// In en, this message translates to:
-  /// **'Add note'**
+  /// **'Add clinical note'**
   String get clinicalAddNoteAction;
 
   /// Clinical add note dialog title.
@@ -6207,6 +6207,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add diagnosis'**
   String get clinicalAddDiagnosisAction;
+
+  /// Clinical diagnosis search field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search diagnosis'**
+  String get clinicalDiagnosisSearchLabel;
+
+  /// Clinical diagnosis search field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by diagnosis name, code, type, status, or source'**
+  String get clinicalDiagnosisSearchHint;
+
+  /// Clinical diagnosis selected items section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected diagnoses'**
+  String get clinicalDiagnosisSelectedTitle;
+
+  /// Clinical diagnosis selected item count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String clinicalDiagnosisSelectedCount(int count);
+
+  /// Clinical diagnosis empty selected items message.
+  ///
+  /// In en, this message translates to:
+  /// **'No diagnoses selected'**
+  String get clinicalDiagnosisNoSelection;
+
+  /// Clinical diagnosis search result count label.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total} matches'**
+  String clinicalDiagnosisMatchesLabel(int shown, int total);
+
+  /// Clinical diagnosis no matching search results message.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching diagnosis terms'**
+  String get clinicalDiagnosisNoCatalogOptions;
 
   /// Clinical request lab action label.
   ///
@@ -6417,6 +6459,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Radiology orders'**
   String get clinicalRadiologyOrdersTitle;
+
+  /// Clinical cancel radiology order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get clinicalCancelRadiologyOrderAction;
+
+  /// Clinical delete radiology order action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete order'**
+  String get clinicalDeleteRadiologyOrderAction;
+
+  /// Clinical cancel radiology order confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel radiology order'**
+  String get clinicalCancelRadiologyOrderDialogTitle;
+
+  /// Clinical cancel radiology order confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this radiology order and mark it as cancelled?'**
+  String get clinicalCancelRadiologyOrderDialogBody;
+
+  /// Clinical delete radiology order confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete radiology order'**
+  String get clinicalDeleteRadiologyOrderDialogTitle;
+
+  /// Clinical delete radiology order confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this radiology order from the active patient record?'**
+  String get clinicalDeleteRadiologyOrderDialogBody;
 
   /// Clinical radiology order requested test count.
   ///
@@ -6861,6 +6939,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No available beds found. Refresh bed availability before requesting admission.'**
   String get clinicalAdmissionNoBedsMessage;
+
+  /// Clinical admission empty-state message when no rooms have available beds for the selected ward.
+  ///
+  /// In en, this message translates to:
+  /// **'No rooms with available beds match this ward.'**
+  String get clinicalAdmissionNoRoomsMessage;
+
+  /// Clinical admission empty-state message when no beds are available for the selected room.
+  ///
+  /// In en, this message translates to:
+  /// **'No available beds match this room.'**
+  String get clinicalAdmissionNoBedsForRoomMessage;
+
+  /// Clinical admission validation message when selected bed is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This bed is no longer available. Please choose another bed.'**
+  String get clinicalAdmissionBedUnavailableMessage;
 
   /// Clinical disposition reason field label.
   ///

@@ -1814,16 +1814,21 @@ class _ClinicalGenericRecordRow extends StatelessWidget {
   }
 }
 
-class _ClinicalRadiologyOrderRow extends StatelessWidget {
+class _ClinicalRadiologyOrderRow extends ConsumerWidget {
   const _ClinicalRadiologyOrderRow({required this.record});
 
   final ClinicalRelatedRecord record;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ClinicalWorkspaceController controller = ref.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
     final String status = record.status ?? '';
+    final bool canCancel = _canCancelRadiologyOrder(status);
+    final bool canDelete = _canDeleteRadiologyOrder(status);
     final List<ClinicalRadiologyOrderItem> items = record.radiologyOrderItems;
 
     return Padding(
@@ -1894,6 +1899,44 @@ class _ClinicalRadiologyOrderRow extends StatelessWidget {
                 ],
               ],
             ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          AppAccessActionGate(
+            requirement: _ClinicalWorkspaceContentState._writeRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  AppIconButton(
+                    icon: Icons.block_outlined,
+                    semanticLabel: l10n.clinicalCancelRadiologyOrderAction,
+                    tooltip: l10n.clinicalCancelRadiologyOrderAction,
+                    enabled: isAllowed && canCancel,
+                    onPressed: () => _confirmLabOrderMutation(
+                      context: context,
+                      title: l10n.clinicalCancelRadiologyOrderDialogTitle,
+                      body: l10n.clinicalCancelRadiologyOrderDialogBody,
+                      confirmLabel: l10n.clinicalCancelRadiologyOrderAction,
+                      action: () => controller.cancelRadiologyOrder(record.id),
+                    ),
+                  ),
+                  AppIconButton(
+                    icon: Icons.delete_outline,
+                    semanticLabel: l10n.clinicalDeleteRadiologyOrderAction,
+                    tooltip: l10n.clinicalDeleteRadiologyOrderAction,
+                    enabled: isAllowed && canDelete,
+                    onPressed: () => _confirmLabOrderMutation(
+                      context: context,
+                      title: l10n.clinicalDeleteRadiologyOrderDialogTitle,
+                      body: l10n.clinicalDeleteRadiologyOrderDialogBody,
+                      confirmLabel: l10n.clinicalDeleteRadiologyOrderAction,
+                      action: () => controller.deleteRadiologyOrder(record.id),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -3088,6 +3131,20 @@ bool _canCancelLabOrder(String? status) {
 }
 
 bool _canDeleteLabOrder(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'ORDERED' || 'CANCELLED' => true,
+    _ => false,
+  };
+}
+
+bool _canCancelRadiologyOrder(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'COMPLETED' || 'CANCELLED' => false,
+    _ => true,
+  };
+}
+
+bool _canDeleteRadiologyOrder(String? status) {
   return switch ((status ?? '').toUpperCase()) {
     'ORDERED' || 'CANCELLED' => true,
     _ => false,

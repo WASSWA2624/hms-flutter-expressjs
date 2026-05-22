@@ -519,20 +519,28 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         onSubmit:
             ({
               required String diagnosisType,
-              required String description,
-              String? code,
+              required List<ClinicalActionCatalogOption> diagnoses,
             }) {
+              final List<Map<String, Object?>> payload = <Map<String, Object?>>[
+                for (final ClinicalActionCatalogOption diagnosis in diagnoses)
+                  <String, Object?>{
+                    'diagnosis_type': diagnosisType,
+                    'code': _trimmedOrNull(diagnosis.code),
+                    'description':
+                        _trimmedOrNull(diagnosis.name) ?? diagnosis.displayTitle,
+                  },
+              ].where((Map<String, Object?> item) {
+                return _isNonEmpty(item['description']?.toString());
+              }).toList(growable: false);
               return ref
                   .read(opdWorkspaceControllerProvider.notifier)
                   .doctorReview(flow, <String, Object?>{
-                    'note': description,
-                    'diagnoses': <Map<String, Object?>>[
-                      <String, Object?>{
-                        'diagnosis_type': diagnosisType,
-                        'code': code,
-                        'description': description,
-                      },
-                    ],
+                    'note': payload
+                        .map((Map<String, Object?> item) =>
+                            item['description']?.toString() ?? '')
+                        .where(_isNonEmpty)
+                        .join(', '),
+                    'diagnoses': payload,
                   });
             },
       ),
@@ -665,6 +673,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                     'clinical_note': request.clinicalNote,
                     'status': 'ORDERED',
                     'request_details': <String, Object?>{
+                      'modality': request.modality,
                       'body_region': request.bodyRegion,
                       'laterality': request.laterality,
                       'priority': request.priority,
@@ -2478,6 +2487,11 @@ bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
 
 String _normalizedStage(String? stage) {
   return (stage ?? '').trim().toUpperCase();
+}
+
+String? _trimmedOrNull(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }
 
 bool _isNonEmpty(String? value) {

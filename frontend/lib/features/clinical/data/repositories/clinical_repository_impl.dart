@@ -249,6 +249,26 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
   }
 
   @override
+  Future<Result<void>> updateRadiologyOrder(
+    String radiologyOrderId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.radiologyOrders, radiologyOrderId),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteRadiologyOrder(String radiologyOrderId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.radiologyOrders, radiologyOrderId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<void>> createPharmacyOrder(Map<String, Object?> payload) {
     return _postVoid(HmsApiResource.pharmacyOrders, payload);
   }

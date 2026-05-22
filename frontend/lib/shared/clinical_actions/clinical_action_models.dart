@@ -13,6 +13,7 @@ final class ClinicalActionCatalogOption {
     this.parentId,
     this.secondaryId,
     this.searchText,
+    this.metadata = const <String, Object?>{},
     this.childIds = const <String>[],
     this.childCodes = const <String>[],
   });
@@ -27,6 +28,7 @@ final class ClinicalActionCatalogOption {
   final String? parentId;
   final String? secondaryId;
   final String? searchText;
+  final Map<String, Object?> metadata;
   final List<String> childIds;
   final List<String> childCodes;
 
@@ -90,6 +92,7 @@ final class ClinicalActionRadiologyRequest {
     this.bodyRegion,
     this.laterality,
     this.priority,
+    this.modality,
   });
 
   final String radiologyTestId;
@@ -97,6 +100,7 @@ final class ClinicalActionRadiologyRequest {
   final String? bodyRegion;
   final String? laterality;
   final String? priority;
+  final String? modality;
 }
 
 @immutable

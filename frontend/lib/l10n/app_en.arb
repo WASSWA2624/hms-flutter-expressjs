@@ -4251,7 +4251,7 @@
   "@clinicalActionsTitle": {
     "description": "Clinical actions panel title."
   },
-  "clinicalAddNoteAction": "Add note",
+  "clinicalAddNoteAction": "Add clinical note",
   "@clinicalAddNoteAction": {
     "description": "Clinical add note action label."
   },
@@ -4262,6 +4262,47 @@
   "clinicalAddDiagnosisAction": "Add diagnosis",
   "@clinicalAddDiagnosisAction": {
     "description": "Clinical add diagnosis action label."
+  },
+  "clinicalDiagnosisSearchLabel": "Search diagnosis",
+  "@clinicalDiagnosisSearchLabel": {
+    "description": "Clinical diagnosis search field label."
+  },
+  "clinicalDiagnosisSearchHint": "Search by diagnosis name, code, type, status, or source",
+  "@clinicalDiagnosisSearchHint": {
+    "description": "Clinical diagnosis search field hint."
+  },
+  "clinicalDiagnosisSelectedTitle": "Selected diagnoses",
+  "@clinicalDiagnosisSelectedTitle": {
+    "description": "Clinical diagnosis selected items section title."
+  },
+  "clinicalDiagnosisSelectedCount": "{count} selected",
+  "@clinicalDiagnosisSelectedCount": {
+    "description": "Clinical diagnosis selected item count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalDiagnosisNoSelection": "No diagnoses selected",
+  "@clinicalDiagnosisNoSelection": {
+    "description": "Clinical diagnosis empty selected items message."
+  },
+  "clinicalDiagnosisMatchesLabel": "Showing {shown} of {total} matches",
+  "@clinicalDiagnosisMatchesLabel": {
+    "description": "Clinical diagnosis search result count label.",
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "clinicalDiagnosisNoCatalogOptions": "No matching diagnosis terms",
+  "@clinicalDiagnosisNoCatalogOptions": {
+    "description": "Clinical diagnosis no matching search results message."
   },
   "clinicalRequestLabAction": "Request lab",
   "@clinicalRequestLabAction": {
@@ -4425,6 +4466,30 @@
   "clinicalRadiologyOrdersTitle": "Radiology orders",
   "@clinicalRadiologyOrdersTitle": {
     "description": "Clinical patient detail radiology orders section title."
+  },
+  "clinicalCancelRadiologyOrderAction": "Cancel order",
+  "@clinicalCancelRadiologyOrderAction": {
+    "description": "Clinical cancel radiology order action label."
+  },
+  "clinicalDeleteRadiologyOrderAction": "Delete order",
+  "@clinicalDeleteRadiologyOrderAction": {
+    "description": "Clinical delete radiology order action label."
+  },
+  "clinicalCancelRadiologyOrderDialogTitle": "Cancel radiology order",
+  "@clinicalCancelRadiologyOrderDialogTitle": {
+    "description": "Clinical cancel radiology order confirmation title."
+  },
+  "clinicalCancelRadiologyOrderDialogBody": "Cancel this radiology order and mark it as cancelled?",
+  "@clinicalCancelRadiologyOrderDialogBody": {
+    "description": "Clinical cancel radiology order confirmation body."
+  },
+  "clinicalDeleteRadiologyOrderDialogTitle": "Delete radiology order",
+  "@clinicalDeleteRadiologyOrderDialogTitle": {
+    "description": "Clinical delete radiology order confirmation title."
+  },
+  "clinicalDeleteRadiologyOrderDialogBody": "Delete this radiology order from the active patient record?",
+  "@clinicalDeleteRadiologyOrderDialogBody": {
+    "description": "Clinical delete radiology order confirmation body."
   },
   "clinicalRadiologyOrderItemCount": "{count} tests",
   "@clinicalRadiologyOrderItemCount": {
@@ -4749,6 +4814,18 @@
   "clinicalAdmissionNoBedsMessage": "No available beds found. Refresh bed availability before requesting admission.",
   "@clinicalAdmissionNoBedsMessage": {
     "description": "Clinical admission empty-state message when no beds are available."
+  },
+  "clinicalAdmissionNoRoomsMessage": "No rooms with available beds match this ward.",
+  "@clinicalAdmissionNoRoomsMessage": {
+    "description": "Clinical admission empty-state message when no rooms have available beds for the selected ward."
+  },
+  "clinicalAdmissionNoBedsForRoomMessage": "No available beds match this room.",
+  "@clinicalAdmissionNoBedsForRoomMessage": {
+    "description": "Clinical admission empty-state message when no beds are available for the selected room."
+  },
+  "clinicalAdmissionBedUnavailableMessage": "This bed is no longer available. Please choose another bed.",
+  "@clinicalAdmissionBedUnavailableMessage": {
+    "description": "Clinical admission validation message when selected bed is unavailable."
   },
   "clinicalDispositionReasonLabel": "Disposition reason",
   "@clinicalDispositionReasonLabel": {

@@ -206,7 +206,12 @@ final class ClinicalRelatedRecordDto {
   }
 
   ClinicalRelatedRecord _toLabOrderEntity() {
-    final List<ClinicalLabOrderItem> items = _list(json['items'])
+    final List<ClinicalJsonMap> rawItems = _list(json['items']);
+    final List<ClinicalJsonMap> requestedTests = _list(json['requested_tests']);
+    final List<ClinicalJsonMap> itemRows = rawItems.isEmpty
+        ? requestedTests
+        : rawItems;
+    final List<ClinicalLabOrderItem> items = itemRows
         .map(_labOrderItemFromJson)
         .where((ClinicalLabOrderItem item) => item.id.isNotEmpty)
         .toList(growable: false);
@@ -238,9 +243,17 @@ final class ClinicalRelatedRecordDto {
   }
 
   ClinicalLabOrderItem _labOrderItemFromJson(ClinicalJsonMap json) {
-    final String? labTestId = _string(json['lab_test_id']);
-    final String? testDisplayName = _string(json['test_display_name']);
-    final String? testCode = _string(json['test_code']);
+    final ClinicalJsonMap labTest = _map(json['lab_test']);
+    final String? labTestId =
+        _string(json['lab_test_id']) ??
+        _string(labTest['human_friendly_id']) ??
+        _string(labTest['id']);
+    final String? testDisplayName =
+        _string(json['test_display_name']) ??
+        _string(json['lab_test_display_name']) ??
+        _string(labTest['name']) ??
+        _string(labTest['description']);
+    final String? testCode = _string(json['test_code']) ?? _string(labTest['code']);
     return ClinicalLabOrderItem(
       id:
           _string(json['human_friendly_id']) ??
@@ -256,9 +269,10 @@ final class ClinicalRelatedRecordDto {
       labTestId: labTestId,
       testDisplayName: testDisplayName,
       testCode: testCode,
-      category: _string(json['category']),
-      specimenType: _string(json['specimen_type']),
-      unit: _string(json['unit']),
+      category: _string(json['category']) ?? _string(labTest['category']),
+      specimenType:
+          _string(json['specimen_type']) ?? _string(labTest['specimen_type']),
+      unit: _string(json['unit']) ?? _string(labTest['unit']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );
@@ -309,23 +323,32 @@ final class ClinicalRelatedRecordDto {
   ClinicalRadiologyOrderItem _radiologyOrderItemFromJson(
     ClinicalJsonMap item,
   ) {
-    final ClinicalJsonMap requestDetails = _map(json['request_details']);
+    final ClinicalJsonMap parentRequestDetails = _map(json['request_details']);
+    final ClinicalJsonMap itemRequestDetails = _map(item['request_details']);
+    final ClinicalJsonMap radiologyTest = _map(item['radiology_test']);
     final String? radiologyTestId =
         _string(item['radiology_test_id']) ??
+        _string(radiologyTest['human_friendly_id']) ??
+        _string(radiologyTest['id']) ??
         _string(json['radiology_test_id']);
     final String? testDisplayName =
         _string(item['radiology_test_display_name']) ??
         _string(item['test_display_name']) ??
+        _string(radiologyTest['name']) ??
+        _string(radiologyTest['description']) ??
         _string(json['radiology_test_display_name']) ??
         _string(json['test_display_name']);
     final String? modality =
         _string(item['modality']) ??
+        _string(itemRequestDetails['modality']) ??
+        _string(radiologyTest['modality']) ??
         _string(json['modality']) ??
-        _string(requestDetails['modality']);
+        _string(parentRequestDetails['modality']);
     return ClinicalRadiologyOrderItem(
       id:
           _string(item['human_friendly_id']) ??
           _string(item['display_id']) ??
+          _string(item['id']) ??
           radiologyTestId ??
           testDisplayName ??
           _string(json['human_friendly_id']) ??
@@ -334,16 +357,33 @@ final class ClinicalRelatedRecordDto {
       testDisplayName: testDisplayName,
       modality: modality,
       bodyRegion:
-          _string(item['body_region']) ?? _string(requestDetails['body_region']),
+          _string(item['body_region']) ??
+          _string(itemRequestDetails['body_region']) ??
+          _string(radiologyTest['body_region']) ??
+          _string(parentRequestDetails['body_region']),
       laterality:
-          _string(item['laterality']) ?? _string(requestDetails['laterality']),
-      priority: _string(item['priority']) ?? _string(requestDetails['priority']),
-      clinicalNote: _string(item['clinical_note']) ?? _string(json['clinical_note']),
+          _string(item['laterality']) ??
+          _string(itemRequestDetails['laterality']) ??
+          _string(radiologyTest['laterality']) ??
+          _string(parentRequestDetails['laterality']),
+      priority:
+          _string(item['priority']) ??
+          _string(itemRequestDetails['priority']) ??
+          _string(parentRequestDetails['priority']),
+      clinicalNote:
+          _string(item['clinical_note']) ??
+          _string(itemRequestDetails['clinical_note']) ??
+          _string(json['clinical_note']),
     );
   }
 
   ClinicalRelatedRecord _toPharmacyOrderEntity() {
-    final List<ClinicalPharmacyOrderItem> items = _list(json['items'])
+    final List<ClinicalJsonMap> rawItems = _list(json['items']);
+    final List<ClinicalJsonMap> orderItems = _list(json['order_items']);
+    final List<ClinicalJsonMap> itemRows = rawItems.isEmpty
+        ? orderItems
+        : rawItems;
+    final List<ClinicalPharmacyOrderItem> items = itemRows
         .map(_pharmacyOrderItemFromJson)
         .where((ClinicalPharmacyOrderItem item) => item.id.isNotEmpty)
         .toList(growable: false);
@@ -377,12 +417,18 @@ final class ClinicalRelatedRecordDto {
   }
 
   ClinicalPharmacyOrderItem _pharmacyOrderItemFromJson(ClinicalJsonMap item) {
+    final ClinicalJsonMap drug = _map(item['drug']);
     final String? drugDisplayName =
         _string(item['drug_display_name']) ??
         _string(item['medicine_name']) ??
         _string(item['drug_name']) ??
-        _string(item['name']);
-    final String? drugId = _string(item['drug_id']);
+        _string(item['name']) ??
+        _string(drug['name']) ??
+        _string(drug['generic_name']);
+    final String? drugId =
+        _string(item['drug_id']) ??
+        _string(drug['human_friendly_id']) ??
+        _string(drug['id']);
     return ClinicalPharmacyOrderItem(
       id:
           _string(item['human_friendly_id']) ??
@@ -456,6 +502,15 @@ final class ClinicalCatalogOptionDto {
         _string(json['procedure_type']),
         _string(json['source']),
       ]),
+      metadata: _withoutNullValues(<String, Object?>{
+        'modality': _string(json['modality']),
+        'body_region': _string(json['body_region']),
+        'laterality': _string(json['laterality']),
+        'equipment': _string(json['equipment']),
+        'procedure_type': _string(json['procedure_type']),
+        'ward_name': _string(_map(json['ward'])['name']),
+        'room_name': _string(_map(json['room'])['name']),
+      }),
       childIds: panelItems
           .map((ClinicalJsonMap item) => _string(item['lab_test_id']))
           .whereType<String>()
@@ -497,6 +552,14 @@ final class ClinicalTermOptionDto {
       searchText: _joinDisplay(<String?>[description, code, category, source]),
     );
   }
+}
+
+
+ClinicalJsonMap _withoutNullValues(Map<String, Object?> json) {
+  return <String, Object?>{
+    for (final MapEntry<String, Object?> entry in json.entries)
+      if (entry.value != null) entry.key: entry.value,
+  };
 }
 
 ClinicalEncounterBundle decodeEncounterBundle(
