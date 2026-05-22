@@ -608,6 +608,14 @@ class _ClinicalEncounterDialog extends ConsumerWidget {
               final ClinicalEncounterBundle? bundle = state.selectedBundle;
               if (bundle == null ||
                   !_isSameWorklistEntry(bundle.entry, initialEntry)) {
+                if (!state.isRefreshingDetail && !state.isSaving) {
+                  return AppWorkspaceStatePanel.state(
+                    variant: AppStateViewVariant.empty,
+                    title: l10n.clinicalNoSelectionTitle,
+                    body: l10n.clinicalNoSelectionBody,
+                    icon: Icons.medical_services_outlined,
+                  );
+                }
                 return AppWorkspaceStatePanel.state(
                   variant: AppStateViewVariant.loading,
                   title: l10n.clinicalLoadingTitle,
@@ -692,7 +700,8 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         ),
       if (_clinicalCompletedResults(bundle).isNotEmpty)
         _ClinicalResultReview(bundle: bundle),
-      if (_clinicalHasRecordSections(bundle)) _ClinicalRecordSections(bundle: bundle),
+      if (_clinicalHasRecordSections(bundle))
+        _ClinicalRecordSections(bundle: bundle),
     ];
 
     return Column(
@@ -741,10 +750,8 @@ class _ClinicalEncounterContextPanel extends StatelessWidget {
                   _ClinicalCopyableInlineValue(
                     label: l10n.opdPatientIdLabel,
                     value: patientNumber,
-                    onCopy: () => _copyClinicalPatientId(
-                      context,
-                      patientNumber,
-                    ),
+                    onCopy: () =>
+                        _copyClinicalPatientId(context, patientNumber),
                   ),
                 AppWorkspaceStatusBadge(status: status),
                 for (final AppWorkspaceStatus alert in alerts)
@@ -1008,7 +1015,10 @@ class _ClinicalVitalsGrid extends StatelessWidget {
           runSpacing: theme.spacing.sm,
           children: <Widget>[
             for (final ClinicalVitalSummary vital in vitals)
-              SizedBox(width: itemWidth, child: _ClinicalVitalSummary(vital: vital)),
+              SizedBox(
+                width: itemWidth,
+                child: _ClinicalVitalSummary(vital: vital),
+              ),
           ],
         );
       },
@@ -2293,19 +2303,24 @@ Future<void> _openCompleteDispositionDialog(
   BuildContext context,
   ClinicalWorkspaceController controller,
 ) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ClinicalDispositionActionDialog(
-        reasons: _clinicalDispositionReasons,
-        onSubmit: ({required String reason, required String notes}) {
-          return controller.completeDisposition(reason: reason, notes: notes);
-        },
-      ),
+  final bool? saved = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => ClinicalDispositionActionDialog(
+      reasons: _clinicalDispositionReasons,
+      onSubmit: ({required String reason, required String notes}) {
+        return controller.completeDisposition(reason: reason, notes: notes);
+      },
     ),
   );
+  if (saved != true || !context.mounted) {
+    return;
+  }
+
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.clinicalSavedMessage)));
+  Navigator.of(context).pop(true);
 }
 
 Future<void> _openDiagnosisDialog(
@@ -3227,10 +3242,7 @@ String _consultationSummaryHtml(
       return;
     }
     sections.add(
-      PrintFormTemplate.section(
-        title: title,
-        bodyHtml: _recordsHtml(records),
-      ),
+      PrintFormTemplate.section(title: title, bodyHtml: _recordsHtml(records)),
     );
   }
 
