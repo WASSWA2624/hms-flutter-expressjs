@@ -431,45 +431,18 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
     String? notes,
     bool closeCase = true,
   }) async {
-    final String handoffNote =
-        _joinDisplay(<String?>['Handoff to $destination.', notes]) ??
-        'Handoff to $destination.';
-    final Result<EmergencyResponseRecord> responseResult = await _apiClient
-        .post<EmergencyResponseRecord>(
-          ApiEndpoints.collection(HmsApiResource.emergencyResponses),
-          data: <String, Object?>{
-            'emergency_case_id': detail.summary.apiId,
-            'response_at': DateTime.now().toUtc().toIso8601String(),
-            'notes': handoffNote,
-          },
-          decoder: (Object? data) =>
-              EmergencyResponseRecordDto(decodeDataMap(data)).toEntity(),
-        );
-    final AppFailure? responseFailure = _failureOrNull(responseResult);
-    if (responseFailure != null) {
-      return Result<EmergencyCaseDetail>.failure(responseFailure);
-    }
-
-    final AppFailure? receivingFailure = await _recordReceivingDepartmentWork(
-      detail: detail,
-      destination: destination,
-      notes: handoffNote,
-    );
-    if (receivingFailure != null) {
-      return Result<EmergencyCaseDetail>.failure(receivingFailure);
-    }
-
-    if (!closeCase) {
-      return _loadDetailForCase(detail.summary);
-    }
-
     final Result<EmergencyCaseSummary> caseResult = await _apiClient
-        .put<EmergencyCaseSummary>(
-          ApiEndpoints.byId(
+        .post<EmergencyCaseSummary>(
+          ApiEndpoints.nested(
             HmsApiResource.emergencyCases,
             detail.summary.apiId,
+            <String>['handoff'],
           ),
-          data: const <String, Object?>{'status': 'CLOSED'},
+          data: <String, Object?>{
+            'destination': destination,
+            'notes': notes,
+            'close_case': closeCase,
+          },
           decoder: (Object? data) =>
               EmergencyCaseDto.fromResponse(data).toEntity(),
         );
@@ -478,44 +451,6 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
       return Result<EmergencyCaseDetail>.failure(_failureOrNull(caseResult)!);
     }
     return _loadDetailForCase(updated);
-  }
-
-  Future<AppFailure?> _recordReceivingDepartmentWork({
-    required EmergencyCaseDetail detail,
-    required String destination,
-    required String notes,
-  }) async {
-    final String normalizedDestination = destination.trim().toUpperCase();
-    if (normalizedDestination != 'OPD') {
-      return null;
-    }
-
-    final EmergencyCaseSummary summary = detail.summary;
-    if ((summary.patientId ?? '').trim().isEmpty) {
-      return AppFailure.validation(
-        validationFields: const <String>{'patient_id'},
-      );
-    }
-
-    final Result<void> result = await _apiClient.post<void>(
-      ApiEndpoints.apiV1(<String>[HmsApiResource.opdFlows.path, 'start']),
-      data: _withoutEmpty(<String, Object?>{
-        'tenant_id': summary.tenantId,
-        'facility_id': summary.facilityId,
-        'patient_id': summary.patientId,
-        'arrival_mode': 'EMERGENCY',
-        'emergency_case_id': summary.apiId,
-        'initial_stage': 'WAITING_VITALS',
-        'require_consultation_payment': false,
-        'create_consultation_invoice': false,
-        'reuse_open_encounter': true,
-        'queued_at': DateTime.now().toUtc().toIso8601String(),
-        'notes': notes,
-      }),
-      decoder: (_) {},
-    );
-
-    return _failureOrNull(result);
   }
 
   Future<Result<EmergencyCaseDetail>> _loadDetailForCase(
@@ -776,12 +711,4 @@ String? _string(Object? value) {
 String? _nonEmpty(String? value) {
   final String normalized = value?.trim() ?? '';
   return normalized.isEmpty ? null : normalized;
-}
-
-String? _joinDisplay(Iterable<String?> values) {
-  final String joined = values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty)
-      .join(' ');
-  return joined.isEmpty ? null : joined;
 }

@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
@@ -588,6 +589,15 @@ class _EmergencyActionPanel extends ConsumerWidget {
     required this.writeRequirement,
   });
 
+  static const AccessRequirement _handoffRequirement = AccessRequirement(
+    anyPermissions: <AppPermission>[
+      AppPermissions.emergencyWrite,
+      AppPermissions.patientWrite,
+      AppPermissions.clinicalWrite,
+      AppPermissions.operationsWrite,
+    ],
+  );
+
   final EmergencyCaseDetail detail;
   final EmergencyReferenceData referenceData;
   final AccessRequirement writeRequirement;
@@ -603,101 +613,101 @@ class _EmergencyActionPanel extends ConsumerWidget {
         !hasTrip &&
         (detail.latestDispatch?.ambulanceId != null ||
             referenceData.availableAmbulances.isNotEmpty);
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canWriteEmergency = writeRequirement.isAllowed(accessPolicy);
+    final bool canHandoff = _handoffRequirement.isAllowed(accessPolicy);
 
-    return AppAccessActionGate(
-      requirement: writeRequirement,
-      builder: (BuildContext context, bool isAllowed) => AppActionPanel(
-        title: 'Actions',
-        actions: <AppActionItem>[
-          AppActionItem(
-            label: _EmergencyText.priority,
-            leadingIcon: Icons.priority_high_outlined,
-            enabled: isAllowed && detail.summary.isOpen,
-            onPressed: () => _openPriorityDialog(context),
+    return AppActionPanel(
+      title: 'Actions',
+      actions: <AppActionItem>[
+        AppActionItem(
+          label: _EmergencyText.priority,
+          leadingIcon: Icons.priority_high_outlined,
+          enabled: canWriteEmergency && detail.summary.isOpen,
+          onPressed: () => _openPriorityDialog(context),
+        ),
+        AppActionItem(
+          label: _EmergencyText.triage,
+          leadingIcon: Icons.monitor_heart_outlined,
+          enabled: canWriteEmergency && detail.summary.isOpen,
+          onPressed: () => _openTriageDialog(context),
+        ),
+        AppActionItem(
+          label: _EmergencyText.response,
+          leadingIcon: Icons.medical_services_outlined,
+          enabled: canWriteEmergency && detail.summary.isOpen,
+          onPressed: () => _openResponseDialog(context),
+        ),
+        AppActionItem(
+          label: _EmergencyText.dispatch,
+          leadingIcon: Icons.airport_shuttle_outlined,
+          enabled: canWriteEmergency && detail.summary.isOpen,
+          onPressed: () => _openDispatchDialog(context, referenceData),
+        ),
+        AppActionItem(
+          label: _EmergencyText.dispatchStatus,
+          leadingIcon: Icons.route_outlined,
+          enabled: canWriteEmergency && detail.summary.isOpen && hasDispatch,
+          onPressed: () => _openDispatchStatusDialog(context),
+        ),
+        AppActionItem(
+          label: _EmergencyText.startTrip,
+          leadingIcon: Icons.play_arrow_outlined,
+          enabled: canWriteEmergency && detail.summary.isOpen && canStartTrip,
+          onPressed: () => _startTrip(context, referenceData),
+        ),
+        AppActionItem(
+          label: _EmergencyText.completeTrip,
+          leadingIcon: Icons.flag_outlined,
+          enabled: canWriteEmergency && hasTrip,
+          onPressed: () => _confirmAction(
+            context: context,
+            title: 'Complete ambulance trip',
+            body:
+                'This records ambulance arrival for the active emergency trip.',
+            actionLabel: 'Complete trip',
+            onConfirmed: controller.completeTrip,
           ),
-          AppActionItem(
-            label: _EmergencyText.triage,
-            leadingIcon: Icons.monitor_heart_outlined,
-            enabled: isAllowed && detail.summary.isOpen,
-            onPressed: () => _openTriageDialog(context),
-          ),
-          AppActionItem(
-            label: _EmergencyText.response,
-            leadingIcon: Icons.medical_services_outlined,
-            enabled: isAllowed && detail.summary.isOpen,
-            onPressed: () => _openResponseDialog(context),
-          ),
-          AppActionItem(
-            label: _EmergencyText.dispatch,
-            leadingIcon: Icons.airport_shuttle_outlined,
-            enabled: isAllowed && detail.summary.isOpen,
-            onPressed: () => _openDispatchDialog(context, referenceData),
-          ),
-          AppActionItem(
-            label: _EmergencyText.dispatchStatus,
-            leadingIcon: Icons.route_outlined,
-            enabled: isAllowed && detail.summary.isOpen && hasDispatch,
-            onPressed: () => _openDispatchStatusDialog(context),
-          ),
-          AppActionItem(
-            label: _EmergencyText.startTrip,
-            leadingIcon: Icons.play_arrow_outlined,
-            enabled: isAllowed && detail.summary.isOpen && canStartTrip,
-            onPressed: () => _startTrip(context, referenceData),
-          ),
-          AppActionItem(
-            label: _EmergencyText.completeTrip,
-            leadingIcon: Icons.flag_outlined,
-            enabled: isAllowed && hasTrip,
-            onPressed: () => _confirmAction(
+        ),
+        AppActionItem(
+          label: _EmergencyText.handoff,
+          leadingIcon: Icons.output_outlined,
+          enabled: canHandoff && detail.summary.isOpen,
+          onPressed: () => _openHandoffDialog(context),
+        ),
+      ],
+      extraActions: <Widget>[
+        AppReportActionButton.print(
+          label: _EmergencyText.printSummary,
+          onPressed: () async {
+            await printFormTemplateDocument(
+              ref: ref,
               context: context,
-              title: 'Complete ambulance trip',
-              body:
-                  'This records ambulance arrival for the active emergency trip.',
-              actionLabel: 'Complete trip',
-              onConfirmed: controller.completeTrip,
-            ),
-          ),
-          AppActionItem(
-            label: _EmergencyText.handoff,
-            leadingIcon: Icons.output_outlined,
-            enabled: isAllowed && detail.summary.isOpen,
-            onPressed: () => _openHandoffDialog(context),
-          ),
-        ],
-        extraActions: <Widget>[
-          AppReportActionButton.print(
-            label: _EmergencyText.printSummary,
-            onPressed: () async {
-              await printFormTemplateDocument(
-                ref: ref,
-                context: context,
-                title: 'Emergency summary',
-                subtitle: detail.summary.displayTitle,
-                metadata: <PrintFormMetadataItem>[
-                  PrintFormMetadataItem(
-                    label: _EmergencyText.caseLabel,
-                    value: detail.summary.caseLabel,
-                  ),
-                  PrintFormMetadataItem(
-                    label: _EmergencyText.severity,
-                    value: _apiLabel(detail.summary.severity ?? ''),
-                  ),
-                  PrintFormMetadataItem(
-                    label: _EmergencyText.status,
-                    value: _apiLabel(detail.summary.status ?? ''),
-                  ),
-                  PrintFormMetadataItem(
-                    label: _EmergencyText.arrival,
-                    value: _dateTimeLabel(context, detail.summary.createdAt),
-                  ),
-                ],
-                bodyHtml: _emergencySummaryHtml(context, detail),
-              );
-            },
-          ),
-        ],
-      ),
+              title: 'Emergency summary',
+              subtitle: detail.summary.displayTitle,
+              metadata: <PrintFormMetadataItem>[
+                PrintFormMetadataItem(
+                  label: _EmergencyText.caseLabel,
+                  value: detail.summary.caseLabel,
+                ),
+                PrintFormMetadataItem(
+                  label: _EmergencyText.severity,
+                  value: _apiLabel(detail.summary.severity ?? ''),
+                ),
+                PrintFormMetadataItem(
+                  label: _EmergencyText.status,
+                  value: _apiLabel(detail.summary.status ?? ''),
+                ),
+                PrintFormMetadataItem(
+                  label: _EmergencyText.arrival,
+                  value: _dateTimeLabel(context, detail.summary.createdAt),
+                ),
+              ],
+              bodyHtml: _emergencySummaryHtml(context, detail),
+            );
+          },
+        ),
+      ],
     );
   }
 

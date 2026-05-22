@@ -184,6 +184,31 @@ describe('Emergency Case Controller', () => {
     });
   });
 
+  describe('handoffEmergencyCase', () => {
+    it('should handoff emergency case', async () => {
+      const handoffData = { destination: 'OPD', notes: 'Accepted by OPD.', close_case: true };
+      const mockUpdated = { id: 'test-id', status: 'CLOSED' };
+
+      mockReq.params = { id: 'test-id' };
+      mockReq.body = handoffData;
+      emergencyCaseService.handoffEmergencyCase.mockResolvedValue(mockUpdated);
+
+      await emergencyCaseController.handoffEmergencyCase(mockReq, mockRes);
+
+      expect(emergencyCaseService.handoffEmergencyCase).toHaveBeenCalledWith(
+        'test-id',
+        handoffData,
+        mockReq.user
+      );
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.emergency_case.handoff.success',
+        mockUpdated
+      );
+    });
+  });
+
   describe('deleteEmergencyCase', () => {
     it('should delete emergency case', async () => {
       mockReq.params = { id: 'test-id' };

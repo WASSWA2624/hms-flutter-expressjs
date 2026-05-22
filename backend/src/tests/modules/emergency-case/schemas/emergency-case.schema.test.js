@@ -8,6 +8,7 @@
 const {
   createEmergencyCaseSchema,
   updateEmergencyCaseSchema,
+  handoffEmergencyCaseSchema,
   emergencyCaseIdParamsSchema,
   listEmergencyCasesQuerySchema
 } = require('../../../../modules/emergency-case/schemas/emergency-case.schema');
@@ -169,6 +170,35 @@ describe('Emergency Case Schema Validation', () => {
       };
 
       const result = updateEmergencyCaseSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('handoffEmergencyCaseSchema', () => {
+    it('should validate a valid handoff payload', () => {
+      const result = handoffEmergencyCaseSchema.safeParse({
+        destination: 'OPD',
+        notes: 'Accepted by OPD.',
+        close_case: true
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept all internal handoff destinations', () => {
+      const destinations = ['OPD', 'IPD', 'ICU', 'THEATER', 'THEATRE', 'REFERRAL', 'DISCHARGE'];
+
+      destinations.forEach((destination) => {
+        const result = handoffEmergencyCaseSchema.safeParse({ destination });
+        expect(result.success).toBe(true);
+      });
+    });
+
+    it('should reject invalid handoff destination', () => {
+      const result = handoffEmergencyCaseSchema.safeParse({
+        destination: 'PHARMACY'
+      });
+
       expect(result.success).toBe(false);
     });
   });

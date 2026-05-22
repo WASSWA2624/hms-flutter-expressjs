@@ -110,6 +110,23 @@ const updateEmergencyCase = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Handoff emergency case
+ * POST /api/v1/emergency-cases/:id/handoff
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const handoffEmergencyCase = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+  const user = req.user;
+
+  const emergencyCase = await emergencyCaseService.handoffEmergencyCase(id, data, user);
+
+  sendSuccess(res, 200, 'messages.emergency_case.handoff.success', emergencyCase);
+});
+
+/**
  * Delete emergency case (soft delete)
  * DELETE /api/v1/emergency-cases/:id
  *
@@ -130,5 +147,6 @@ module.exports = {
   getEmergencyCaseById,
   createEmergencyCase,
   updateEmergencyCase,
+  handoffEmergencyCase,
   deleteEmergencyCase
 };

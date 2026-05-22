@@ -7,11 +7,32 @@
 
 const emergencyCaseService = require('../../../../modules/emergency-case/services/emergency-case.service');
 const emergencyCaseRepository = require('../../../../modules/emergency-case/repositories/emergency-case.repository');
+const emergencyResponseRepository = require('@modules/emergency-response/repositories/emergency-response.repository');
+const opdFlowService = require('@services/opd-flow/opd-flow.service');
+const ipdFlowService = require('@services/ipd-flow/ipd-flow.service');
+const encounterService = require('@services/encounter/encounter.service');
+const theatreFlowService = require('@services/theatre-flow/theatre-flow.service');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 
 // Mock dependencies
 jest.mock('../../../../modules/emergency-case/repositories/emergency-case.repository');
+jest.mock('@modules/emergency-response/repositories/emergency-response.repository', () => ({
+  create: jest.fn()
+}));
+jest.mock('@services/opd-flow/opd-flow.service', () => ({
+  startOpdFlow: jest.fn()
+}));
+jest.mock('@services/ipd-flow/ipd-flow.service', () => ({
+  startIpdFlow: jest.fn(),
+  startIcuStay: jest.fn()
+}));
+jest.mock('@services/encounter/encounter.service', () => ({
+  createEncounter: jest.fn()
+}));
+jest.mock('@services/theatre-flow/theatre-flow.service', () => ({
+  startTheatreFlow: jest.fn()
+}));
 jest.mock('@lib/audit');
 
 describe('Emergency Case Service', () => {
@@ -196,6 +217,179 @@ describe('Emergency Case Service', () => {
       });
     });
 
+  });
+
+  describe('handoffEmergencyCase', () => {
+    it('should start OPD work, record response, close case, and audit handoff', async () => {
+      const existingCase = {
+        id: 'case-id',
+        tenant_id: 'tenant-id',
+        facility_id: 'facility-id',
+        patient_id: 'patient-id',
+        severity: 'CRITICAL',
+        status: 'OPEN'
+      };
+      const updatedCase = { ...existingCase, status: 'CLOSED' };
+
+      emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+      opdFlowService.startOpdFlow.mockResolvedValue({
+        encounter: { id: 'ENC000001' },
+        flow: { emergency_case_id: 'EME000001' }
+      });
+      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyCaseRepository.update.mockResolvedValue(updatedCase);
+
+      const result = await emergencyCaseService.handoffEmergencyCase(
+        'case-id',
+        { destination: 'OPD', notes: 'Accepted by OPD.', close_case: true },
+        mockUser
+      );
+
+      expect(opdFlowService.startOpdFlow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: existingCase.tenant_id,
+          facility_id: existingCase.facility_id,
+          patient_id: existingCase.patient_id,
+          arrival_mode: 'EMERGENCY',
+          emergency_case_id: existingCase.id,
+          initial_stage: 'WAITING_VITALS',
+          require_consultation_payment: false,
+          create_consultation_invoice: false,
+          reuse_open_encounter: true,
+          notes: 'Handoff to OPD.\nAccepted by OPD.'
+        }),
+        expect.objectContaining({
+          tenant_id: existingCase.tenant_id,
+          facility_id: existingCase.facility_id,
+          user_id: mockUser.id
+        })
+      );
+      expect(emergencyResponseRepository.create).toHaveBeenCalledWith({
+        emergency_case_id: existingCase.id,
+        response_at: expect.any(Date),
+        notes: 'Handoff to OPD.\nAccepted by OPD.'
+      });
+      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(existingCase.id, { status: 'CLOSED' });
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'HANDOFF',
+          resource: 'emergency_case',
+          resource_id: existingCase.id,
+          user_id: mockUser.id,
+          tenant_id: existingCase.tenant_id,
+          details: expect.objectContaining({
+            destination: 'OPD',
+            close_case: true,
+            receiving_work: true,
+            notes: 'Accepted by OPD.'
+          })
+        })
+      );
+      expect(result).toEqual(expect.objectContaining(updatedCase));
+    });
+
+    it('should start ICU work through IPD admission before ICU stay', async () => {
+      const existingCase = {
+        id: 'case-id',
+        tenant_id: 'tenant-id',
+        facility_id: 'facility-id',
+        patient_id: 'patient-id',
+        severity: 'CRITICAL',
+        status: 'OPEN'
+      };
+      const updatedCase = { ...existingCase, status: 'CLOSED' };
+
+      emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+      ipdFlowService.startIpdFlow.mockResolvedValue({
+        id: 'ADM000001',
+        admission: { id: 'ADM000001' }
+      });
+      ipdFlowService.startIcuStay.mockResolvedValue({
+        id: 'ADM000001',
+        flow: { stage: 'ICU' }
+      });
+      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyCaseRepository.update.mockResolvedValue(updatedCase);
+
+      await emergencyCaseService.handoffEmergencyCase(
+        'case-id',
+        { destination: 'ICU', close_case: true },
+        mockUser
+      );
+
+      expect(ipdFlowService.startIpdFlow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: existingCase.tenant_id,
+          facility_id: existingCase.facility_id,
+          patient_id: existingCase.patient_id
+        }),
+        expect.objectContaining({ user_id: mockUser.id })
+      );
+      expect(ipdFlowService.startIcuStay).toHaveBeenCalledWith(
+        'ADM000001',
+        expect.objectContaining({ started_at: expect.any(String) }),
+        expect.objectContaining({ user_id: mockUser.id })
+      );
+      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(existingCase.id, { status: 'CLOSED' });
+    });
+
+    it('should start theater work through a theatre encounter', async () => {
+      const existingCase = {
+        id: 'case-id',
+        tenant_id: 'tenant-id',
+        facility_id: 'facility-id',
+        patient_id: 'patient-id',
+        severity: 'HIGH',
+        status: 'OPEN'
+      };
+      const updatedCase = { ...existingCase, status: 'CLOSED' };
+
+      emergencyCaseRepository.findById.mockResolvedValue(existingCase);
+      encounterService.createEncounter.mockResolvedValue({ id: 'ENC000001' });
+      theatreFlowService.startTheatreFlow.mockResolvedValue({ id: 'THR000001' });
+      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyCaseRepository.update.mockResolvedValue(updatedCase);
+
+      await emergencyCaseService.handoffEmergencyCase(
+        'case-id',
+        { destination: 'THEATER', notes: 'Needs urgent theatre.' },
+        mockUser
+      );
+
+      expect(encounterService.createEncounter).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: existingCase.tenant_id,
+          facility_id: existingCase.facility_id,
+          patient_id: existingCase.patient_id,
+          encounter_type: 'THEATRE',
+          status: 'OPEN'
+        }),
+        mockUser.id,
+        undefined
+      );
+      expect(theatreFlowService.startTheatreFlow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          encounter_id: 'ENC000001',
+          status: 'SCHEDULED',
+          workflow_stage: 'PRE_OP',
+          stage_notes: 'Handoff to THEATER.\nNeeds urgent theatre.'
+        }),
+        expect.objectContaining({ user_id: mockUser.id })
+      );
+      expect(emergencyCaseRepository.update).toHaveBeenCalledWith(existingCase.id, { status: 'CLOSED' });
+    });
+
+    it('should throw HttpError if emergency case is not found', async () => {
+      emergencyCaseRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        emergencyCaseService.handoffEmergencyCase(
+          'missing-case',
+          { destination: 'OPD' },
+          mockUser
+        )
+      ).rejects.toThrow(HttpError);
+    });
   });
 
   describe('deleteEmergencyCase', () => {

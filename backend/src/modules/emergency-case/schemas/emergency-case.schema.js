@@ -23,6 +23,16 @@ const EMERGENCY_CASE_STATUS_VALUES = [
   'COMPLETED',
 ];
 
+const EMERGENCY_HANDOFF_DESTINATION_VALUES = [
+  'OPD',
+  'IPD',
+  'ICU',
+  'THEATER',
+  'THEATRE',
+  'REFERRAL',
+  'DISCHARGE',
+];
+
 // ==================== Body Schemas ====================
 
 /**
@@ -47,6 +57,16 @@ const updateEmergencyCaseSchema = z.object({
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
   status: z.enum(EMERGENCY_CASE_STATUS_VALUES).optional()
+});
+
+/**
+ * Emergency handoff body validation
+ * Used for POST /emergency-cases/:id/handoff endpoint
+ */
+const handoffEmergencyCaseSchema = z.object({
+  destination: z.enum(EMERGENCY_HANDOFF_DESTINATION_VALUES),
+  notes: z.string().trim().max(5000).optional().nullable(),
+  close_case: z.boolean().optional().default(true),
 });
 
 // ==================== URL Params ====================
@@ -78,6 +98,7 @@ const listEmergencyCasesQuerySchema = listQuerySchema.extend({
 module.exports = {
   createEmergencyCaseSchema,
   updateEmergencyCaseSchema,
+  handoffEmergencyCaseSchema,
   emergencyCaseIdParamsSchema,
   listEmergencyCasesQuerySchema
 };

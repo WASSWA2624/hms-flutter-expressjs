@@ -579,6 +579,7 @@
   "messages.emergency_case.get.success": "Emergency case retrieved successfully",
   "messages.emergency_case.create.success": "Emergency case created successfully",
   "messages.emergency_case.update.success": "Emergency case updated successfully",
+  "messages.emergency_case.handoff.success": "Emergency handoff recorded successfully",
   "errors.emergency_case.not_found": "Emergency case not found",
   "messages.triage_assessment.list.success": "Triage assessments retrieved successfully",
   "messages.triage_assessment.get.success": "Triage assessment retrieved successfully",

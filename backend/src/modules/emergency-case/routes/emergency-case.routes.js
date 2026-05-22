@@ -16,9 +16,17 @@ const { PERMISSIONS } = require('@config/permissions');
 const {
   createEmergencyCaseSchema,
   updateEmergencyCaseSchema,
+  handoffEmergencyCaseSchema,
   emergencyCaseIdParamsSchema,
   listEmergencyCasesQuerySchema
 } = require('@validations/emergency-case/emergency-case.schema');
+
+const EMERGENCY_HANDOFF_WRITE_SCOPES = [
+  PERMISSIONS.EMERGENCY_WRITE,
+  PERMISSIONS.PATIENT_WRITE,
+  PERMISSIONS.CLINICAL_WRITE,
+  PERMISSIONS.OPERATIONS_WRITE,
+];
 
 /**
  * @route GET /api/v1/emergency-cases
@@ -60,6 +68,21 @@ router.post(
   }),
   authorize(PERMISSIONS.EMERGENCY_WRITE, 'permission'),
   emergencyCaseController.createEmergencyCase
+);
+
+/**
+ * @route POST /api/v1/emergency-cases/:id/handoff
+ * @description Handoff an emergency case to another care workflow
+ * @access Private
+ */
+router.post(
+  '/:id/handoff',
+  validate({
+    params: emergencyCaseIdParamsSchema,
+    body: handoffEmergencyCaseSchema
+  }),
+  authorize(EMERGENCY_HANDOFF_WRITE_SCOPES, 'permission'),
+  emergencyCaseController.handoffEmergencyCase
 );
 
 /**

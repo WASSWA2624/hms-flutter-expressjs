@@ -18,6 +18,7 @@ const {
 } = require('@lib/identifiers/service-identifier-resolution');
 
 const sanitizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
+const sanitizeText = (value) => (typeof value === 'string' ? value.trim() : null);
 const toPublicIdentifier = (value) => {
   const normalized = sanitizeIdentifier(value);
   if (!normalized || isUuidLike(normalized)) return null;
@@ -51,6 +52,46 @@ const normalizeEmergencyCaseStatus = (value) => {
   if (!normalized) return null;
   return EMERGENCY_CASE_STATUS_ALIAS_MAP[normalized] || null;
 };
+
+const EMERGENCY_HANDOFF_DESTINATION_ALIAS_MAP = Object.freeze({
+  OPD: 'OPD',
+  IPD: 'IPD',
+  ICU: 'ICU',
+  THEATER: 'THEATER',
+  THEATRE: 'THEATER',
+  REFERRAL: 'REFERRAL',
+  DISCHARGE: 'DISCHARGE',
+});
+
+const normalizeHandoffDestination = (value) => {
+  const normalized = sanitizeIdentifier(value).toUpperCase();
+  return EMERGENCY_HANDOFF_DESTINATION_ALIAS_MAP[normalized] || null;
+};
+
+const buildHandoffNote = (destination, notes) =>
+  [`Handoff to ${destination}.`, sanitizeText(notes)].filter(Boolean).join('\n');
+
+const buildWorkflowContext = (emergencyCase, user = {}) => ({
+  user_id: user.id || user.user_id || user.userId || null,
+  tenant_id: emergencyCase.tenant_id || user.tenant_id || null,
+  facility_id: emergencyCase.facility_id || user.facility_id || null,
+});
+
+const resolvePublicSnapshotId = (...values) => {
+  for (const value of values) {
+    const normalized = sanitizeIdentifier(value);
+    if (normalized) return normalized;
+  }
+  return null;
+};
+
+const getEmergencyResponseRepository = () =>
+  require('@modules/emergency-response/repositories/emergency-response.repository');
+
+const getOpdFlowService = () => require('@services/opd-flow/opd-flow.service');
+const getIpdFlowService = () => require('@services/ipd-flow/ipd-flow.service');
+const getEncounterService = () => require('@services/encounter/encounter.service');
+const getTheatreFlowService = () => require('@services/theatre-flow/theatre-flow.service');
 
 const buildEmptyListResult = (page, limit) => ({
   items: [],
@@ -222,6 +263,125 @@ const resolveUpdatePayload = async (data = {}, existing = null) => {
   return payload;
 };
 
+const startEmergencyOpdFlow = async (emergencyCase, note, context) => {
+  if (!emergencyCase.patient_id) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'patient_id' }]);
+  }
+
+  const opdFlowService = getOpdFlowService();
+  return opdFlowService.startOpdFlow(
+    {
+      tenant_id: emergencyCase.tenant_id,
+      facility_id: emergencyCase.facility_id || null,
+      patient_id: emergencyCase.patient_id,
+      arrival_mode: 'EMERGENCY',
+      emergency_case_id: emergencyCase.id,
+      initial_stage: 'WAITING_VITALS',
+      require_consultation_payment: false,
+      create_consultation_invoice: false,
+      reuse_open_encounter: true,
+      queued_at: new Date().toISOString(),
+      notes: note,
+    },
+    context
+  );
+};
+
+const startEmergencyIpdFlow = async (emergencyCase, context) => {
+  if (!emergencyCase.patient_id) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'patient_id' }]);
+  }
+
+  const ipdFlowService = getIpdFlowService();
+  return ipdFlowService.startIpdFlow(
+    {
+      tenant_id: emergencyCase.tenant_id,
+      facility_id: emergencyCase.facility_id || null,
+      patient_id: emergencyCase.patient_id,
+    },
+    context
+  );
+};
+
+const startEmergencyIcuFlow = async (emergencyCase, context) => {
+  const ipdFlowService = getIpdFlowService();
+  const admissionSnapshot = await startEmergencyIpdFlow(emergencyCase, context);
+  const admissionId = resolvePublicSnapshotId(
+    admissionSnapshot?.id,
+    admissionSnapshot?.human_friendly_id,
+    admissionSnapshot?.admission?.id
+  );
+
+  if (!admissionId) {
+    throw new HttpError('errors.ipd_flow.not_found', 404, [{ field: 'admission_id' }]);
+  }
+
+  return ipdFlowService.startIcuStay(
+    admissionId,
+    { started_at: new Date().toISOString() },
+    context
+  );
+};
+
+const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
+  if (!emergencyCase.patient_id) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'patient_id' }]);
+  }
+
+  const encounterService = getEncounterService();
+  const theatreEncounter = await encounterService.createEncounter(
+    {
+      tenant_id: emergencyCase.tenant_id,
+      facility_id: emergencyCase.facility_id || null,
+      patient_id: emergencyCase.patient_id,
+      encounter_type: 'THEATRE',
+      status: 'OPEN',
+      started_at: new Date().toISOString(),
+    },
+    context.user_id,
+    context.ip_address
+  );
+  const encounterId = resolvePublicSnapshotId(
+    theatreEncounter?.human_friendly_id,
+    theatreEncounter?.display_id,
+    theatreEncounter?.id
+  );
+
+  if (!encounterId) {
+    throw new HttpError('errors.encounter.not_found', 404, [{ field: 'encounter_id' }]);
+  }
+
+  const theatreFlowService = getTheatreFlowService();
+  return theatreFlowService.startTheatreFlow(
+    {
+      encounter_id: encounterId,
+      scheduled_at: new Date().toISOString(),
+      status: 'SCHEDULED',
+      workflow_stage: 'PRE_OP',
+      stage_notes: note,
+    },
+    context
+  );
+};
+
+const startReceivingDepartmentWork = async (emergencyCase, destination, note, context) => {
+  switch (destination) {
+    case 'OPD':
+      return startEmergencyOpdFlow(emergencyCase, note, context);
+    case 'IPD':
+      return startEmergencyIpdFlow(emergencyCase, context);
+    case 'ICU':
+      return startEmergencyIcuFlow(emergencyCase, context);
+    case 'THEATER':
+      return startEmergencyTheatreFlow(emergencyCase, note, context);
+    case 'REFERRAL':
+    case 'DISCHARGE':
+      return null;
+    default:
+      throw new HttpError('errors.validation.invalid', 400, [{ field: 'destination' }]);
+  }
+};
+
 /**
  * List emergency cases with pagination
  *
@@ -334,6 +494,59 @@ const updateEmergencyCase = async (id, data, user) => {
 };
 
 /**
+ * Record an emergency case handoff and start the receiving department workflow.
+ *
+ * @param {string} id - Emergency case ID
+ * @param {Object} data - Handoff data
+ * @param {Object} user - User performing the action (for audit)
+ * @returns {Promise<Object>} Updated emergency case
+ * @throws {HttpError} If emergency case is not found or handoff is invalid
+ */
+const handoffEmergencyCase = async (id, data = {}, user = {}) => {
+  const resolvedId = await resolveEmergencyCaseId(id);
+  const existing = await emergencyCaseRepository.findById(resolvedId);
+  if (!existing) {
+    throw new HttpError('errors.emergency_case.not_found', 404);
+  }
+
+  const destination = normalizeHandoffDestination(data.destination);
+  if (!destination) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'destination' }]);
+  }
+
+  const note = buildHandoffNote(destination, data.notes);
+  const context = buildWorkflowContext(existing, user);
+  const receivingWork = await startReceivingDepartmentWork(existing, destination, note, context);
+
+  await getEmergencyResponseRepository().create({
+    emergency_case_id: existing.id,
+    response_at: new Date(),
+    notes: note,
+  });
+
+  const closeCase = data.close_case !== false;
+  const updated = closeCase
+    ? await emergencyCaseRepository.update(existing.id, { status: 'CLOSED' })
+    : existing;
+
+  await createAuditLog({
+    action: 'HANDOFF',
+    resource: 'emergency_case',
+    resource_id: existing.id,
+    user_id: user.id || user.user_id || user.userId || null,
+    tenant_id: existing.tenant_id,
+    details: {
+      destination,
+      close_case: closeCase,
+      receiving_work: Boolean(receivingWork),
+      notes: sanitizeText(data.notes),
+    },
+  });
+
+  return mapEmergencyCaseForDisplay(updated);
+};
+
+/**
  * Delete emergency case (soft delete)
  *
  * @param {string} id - Emergency case ID
@@ -367,5 +580,6 @@ module.exports = {
   getEmergencyCaseById,
   createEmergencyCase,
   updateEmergencyCase,
+  handoffEmergencyCase,
   deleteEmergencyCase,
 };
