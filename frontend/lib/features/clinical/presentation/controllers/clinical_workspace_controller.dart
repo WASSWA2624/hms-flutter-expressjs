@@ -591,7 +591,34 @@ final class ClinicalWorkspaceController
     }
 
     final String? opdFlowApiId = entry.opdFlowApiId;
+    if (opdFlowApiId != null &&
+        isClinicalTriageDischargeContext(
+          sourceQueue: entry.sourceQueue,
+          stage: entry.stage,
+        )) {
+      return _mutateSelectedEncounter(
+        () => _opdRepository
+            .routeTriage(opdFlowApiId, <String, Object?>{
+              'route_to': 'DISCHARGE',
+              'decision': 'DISCHARGE',
+              'notes': _dispositionReviewNote(
+                reason: normalizedReason,
+                notes: normalizedNotes,
+              ),
+            })
+            .then((Result<OpdFlowDetail> result) => result.map<void>((_) {})),
+        removeSelectedOnSuccess: true,
+      );
+    }
+
     if (opdFlowApiId != null) {
+      if (!isClinicalDoctorDispositionContext(
+        sourceQueue: entry.sourceQueue,
+        stage: entry.stage,
+      )) {
+        return AppFailure.validation(validationFields: const <String>{'stage'});
+      }
+
       return _mutateSelectedEncounter(() async {
         if (_requiresOpdDoctorReview(entry)) {
           final Result<OpdFlowDetail> reviewResult = await _opdRepository

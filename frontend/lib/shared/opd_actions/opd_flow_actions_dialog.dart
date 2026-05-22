@@ -217,13 +217,19 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         stage: flow.stage,
         isOpdContext: true,
       );
+      final bool canDispose = isClinicalDoctorDispositionContext(
+        sourceQueue: 'OPD',
+        stage: flow.stage,
+      );
       return AppPermissionActionItem(
         requirement: opdDoctorActionRequirement,
         label: label,
         icon: Icons.task_alt_outlined,
         fullWidth: true,
         hideWhenDenied: true,
-        onPressed: terminal
+        enabled: !terminal && canDispose,
+        tooltip: canDispose ? null : _apiLabel(stage),
+        onPressed: terminal || !canDispose
             ? null
             : () => _openNested(
                 context,

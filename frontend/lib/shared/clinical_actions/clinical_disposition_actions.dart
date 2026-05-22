@@ -18,6 +18,13 @@ String clinicalDispositionActionLabel(
       normalizedLocation.contains('BED') ||
       normalizedLocation.contains('IPD');
 
+  if (isClinicalTriageDischargeContext(
+    sourceQueue: normalizedSource,
+    stage: normalizedStage,
+  )) {
+    return l10n.navigationDischargeLabel;
+  }
+
   if (hasAdmission &&
       _matchesAny(<String>[
         normalizedStage,
@@ -39,6 +46,66 @@ String clinicalDispositionActionLabel(
   }
 
   return l10n.clinicalCompleteDispositionAction;
+}
+
+bool isClinicalTriageDischargeContext({String? sourceQueue, String? stage}) {
+  final String normalizedSource = _normalize(sourceQueue);
+  final String normalizedStage = _normalize(stage);
+  return normalizedSource == 'TRIAGE' &&
+      switch (normalizedStage) {
+        'WAITING_CONSULTATION_PAYMENT' ||
+        'WAITING_VITALS' ||
+        'WAITING_DOCTOR_ASSIGNMENT' => true,
+        '' => true,
+        _ => false,
+      };
+}
+
+bool isClinicalDoctorDispositionContext({String? sourceQueue, String? stage}) {
+  final String normalizedSource = _normalize(sourceQueue);
+  final String normalizedStage = _normalize(stage);
+  if (normalizedSource == 'TRIAGE') {
+    return false;
+  }
+  return switch (normalizedStage) {
+    'WAITING_DOCTOR_REVIEW' ||
+    'WAITING_DISPOSITION' ||
+    'LAB_REQUESTED' ||
+    'RADIOLOGY_REQUESTED' ||
+    'LAB_AND_RADIOLOGY_REQUESTED' ||
+    'PHARMACY_REQUESTED' => true,
+    _ => false,
+  };
+}
+
+bool isClinicalDispositionActionAvailable({
+  String? sourceQueue,
+  String? status,
+  String? stage,
+  String? location,
+  bool hasAdmission = false,
+  bool hasOpdFlow = false,
+}) {
+  if (isClinicalAdmissionDischargeContext(
+    sourceQueue: sourceQueue,
+    status: status,
+    stage: stage,
+    location: location,
+    hasAdmission: hasAdmission,
+  )) {
+    return true;
+  }
+  if (!hasOpdFlow) {
+    return false;
+  }
+  return isClinicalTriageDischargeContext(
+        sourceQueue: sourceQueue,
+        stage: stage,
+      ) ||
+      isClinicalDoctorDispositionContext(
+        sourceQueue: sourceQueue,
+        stage: stage,
+      );
 }
 
 bool isClinicalAdmissionDischargeContext({

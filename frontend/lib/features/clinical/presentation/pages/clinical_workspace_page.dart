@@ -1130,6 +1130,14 @@ class _ClinicalActionBar extends ConsumerWidget {
       location: bundle.entry.currentLocation,
       hasAdmission: bundle.entry.admissionId?.trim().isNotEmpty ?? false,
     );
+    final bool canCompleteDisposition = isClinicalDispositionActionAvailable(
+      sourceQueue: bundle.entry.sourceQueue,
+      status: bundle.entry.status,
+      stage: bundle.entry.stage,
+      location: bundle.entry.currentLocation,
+      hasAdmission: bundle.entry.admissionId?.trim().isNotEmpty ?? false,
+      hasOpdFlow: bundle.entry.opdFlowApiId?.trim().isNotEmpty ?? false,
+    );
     return AppAccessActionGate(
       requirement: _ClinicalWorkspaceContentState._writeRequirement,
       builder: (BuildContext context, bool isAllowed) {
@@ -1207,7 +1215,10 @@ class _ClinicalActionBar extends ConsumerWidget {
               kind: ClinicalActionKind.completeDisposition,
               label: dispositionActionLabel,
               icon: Icons.task_alt_outlined,
-              enabled: isAllowed && !bundle.entry.isTerminal,
+              enabled:
+                  isAllowed &&
+                  !bundle.entry.isTerminal &&
+                  canCompleteDisposition,
               onPressed: () => _openCompleteDispositionDialog(
                 context,
                 controller,

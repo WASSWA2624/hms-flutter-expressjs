@@ -585,10 +585,19 @@ final class OpdWorkspaceController
     OpdFlowSummary flow,
     Map<String, Object?> payload,
   ) {
-    return _mutateFlow(
-      () => _repository.disposition(flow.apiId, payload),
-      refreshAfter: true,
-    );
+    return _mutateFlow(() async {
+      if ((flow.stage ?? '').toUpperCase() == 'WAITING_DOCTOR_REVIEW') {
+        final Result<OpdFlowDetail> reviewResult = await _repository
+            .doctorReview(flow.apiId, <String, Object?>{
+              'note': _dispositionReviewNote(payload),
+            });
+        final AppFailure? reviewFailure = _failureOrNull(reviewResult);
+        if (reviewFailure != null) {
+          return Result<OpdFlowDetail>.failure(reviewFailure);
+        }
+      }
+      return _repository.disposition(flow.apiId, payload);
+    }, refreshAfter: true);
   }
 
   Future<AppFailure?> createReferral({
@@ -1038,9 +1047,8 @@ final class OpdWorkspaceController
       final Result<void> result = await action();
       return result.when(
         success: (_) async {
-          final Result<OpdFlowDetail> detailResult = await _repository.getOpdFlow(
-            flow.apiId,
-          );
+          final Result<OpdFlowDetail> detailResult = await _repository
+              .getOpdFlow(flow.apiId);
           return detailResult.when(
             success: (OpdFlowDetail detail) {
               final OpdWorkspaceState? latest = _currentState;
@@ -1398,6 +1406,18 @@ final class OpdWorkspaceController
       success: (_) => null,
       failure: (AppFailure failure) => failure,
     );
+  }
+
+  String _dispositionReviewNote(Map<String, Object?> payload) {
+    final String decision = (payload['decision'] ?? '').toString().trim();
+    final String reason = (payload['reason'] ?? '').toString().trim();
+    final String notes = (payload['notes'] ?? '').toString().trim();
+    final List<String> parts = <String>[
+      if (decision.isNotEmpty) decision,
+      if (reason.isNotEmpty) reason,
+      if (notes.isNotEmpty) notes,
+    ];
+    return parts.isEmpty ? 'Disposition review' : parts.join(' - ');
   }
 
   bool _isAccessDeniedFailure(AppFailure failure) {
