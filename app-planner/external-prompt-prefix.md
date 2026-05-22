@@ -22,6 +22,7 @@ The refined prompt must include:
 6. Testing and verification expectations.
 7. Clear limits on scope: avoid unnecessary rewrites, unrelated refactors, or changes outside the requested task.
 8. An instruction to modify only the files required for the requested change.
+9. Ensure all linter issues are cleared.
 
 The coding agent must return a zipped archive containing only the files and folders that were created or updated. All files must be placed in their correct relative project directories.
 
