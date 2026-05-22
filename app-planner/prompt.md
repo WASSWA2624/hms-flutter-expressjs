@@ -1,365 +1,474 @@
-﻿You are working in the HMS codebase whose main folders are:
+﻿Implement the HMS clinical action fixes and UI refresh improvements described below.
 
-* `app-planner/`
-* `backend/`
-* `frontend/`
+## Objective
 
-Implement the role-based dashboard redesign shown in the attached dashboard screenshots. The dashboard must render the correct dashboard for the signed-in user’s account/role, use real database-backed data, and update when relevant backend data changes.
+Fix and improve the existing clinical action workflows in the Hospital Management System so that diagnosis, lab request, radiology request, admission request, follow-up, disposition, clinical notes, prescriptions/pharmacy orders, and radiology orders behave consistently, update the UI immediately after successful actions, and follow the existing HMS architecture and UI patterns.
 
-## Core problem
+Use the actual project codebase as the source of truth. Preserve the existing architecture, folder structure, naming conventions, coding style, localization approach, Riverpod/state management patterns, backend service/controller/schema patterns, and shared UI components.
 
-The current home dashboard is too generic. Redesign and connect the dashboards for these account types:
+No task-specific screenshots were found in the archive. Any UI/UX requirements below are derived from the raw implementation task and the existing code patterns.
 
-* Super Admin
-* Tenant Admin
-* Facility Admin
-* Doctor
-* Nurse
-* Lab
-* Pharmacy
-* Reception
-* Billing
-* Operations
-* HR
-* Biomedical
-* Housekeeping
-* Ambulance
-* Patient Portal
+---
 
-Each dashboard must visually match the provided screenshots as closely as possible while preserving the existing HMS Flutter architecture and backend dashboard workspace design.
+## Project areas to inspect first
 
-Do not hardcode screenshot values. Use the screenshot values only as design/content examples. Actual counts, queues, alerts, activity, trends, and distributions must come from the database through the backend.
-
-## Relevant project areas to inspect and modify
-
-### Frontend
-
-Inspect and modify only where required:
-
-* `frontend/lib/features/home/`
-
-  * `data/dtos/home_dashboard_dtos.dart`
-  * `data/repositories/home_repository_impl.dart`
-  * `domain/entities/home_dashboard.dart`
-  * `domain/entities/home_dashboard_profiles.dart`
-  * `domain/repositories/home_repository.dart`
-  * `presentation/controllers/home_controller.dart`
-  * `presentation/pages/home_page.dart`
-* `frontend/lib/core/network/api_endpoints.dart`
-* `frontend/lib/core/permissions/access_policy.dart`
-* `frontend/lib/core/realtime/`
-
-  * `realtime_refresh.dart`
-  * `realtime_event_groups.dart`
-  * `realtime_events.dart`
-* `frontend/lib/shared/layout/`
-* `frontend/lib/shared/components/`
-* `frontend/lib/app/router/app_router.dart`
-
-Reuse the existing `HomePage`, `homeControllerProvider`, `HomeDashboardRequest`, `HomeDashboardProfile`, `AppWorkspaceHeader`, shared layout, responsive shell, theme, buttons, panels, and permission patterns wherever possible.
-
-### Backend
-
-Inspect and modify only where required:
-
-* `backend/src/modules/dashboard-workspace/`
-
-  * `routes/dashboard-workspace.routes.js`
-  * `controllers/dashboard-workspace.controller.js`
-  * `services/dashboard-workspace.service.js`
-  * `repositories/dashboard-workspace.repository.js`
-  * `schemas/dashboard-workspace.schema.js`
-* `backend/src/lib/dashboard/summary.js`
-* `backend/src/config/roles.js`
-* `backend/src/lib/websocket/`
-* `backend/docs/api/v1/openapi.yaml`
-
-The existing backend already has dashboard workspace concepts such as role profiles, summary cards, quick actions, queue previews, alerts, activity, insights, and role packs. Extend these instead of replacing them.
+Inspect these files and related modules before making changes.
 
 ### App planner
 
-Use these files as implementation guidance:
+Use these planning documents to understand the intended architecture and flows:
 
+* `app-planner/dev-plan/01-policy.md`
 * `app-planner/dev-plan/10-workspace-ui.md`
-* `app-planner/dev-plan/35-reports-audit.md`
-* `app-planner/dev-plan/37-quality-release.md`
-* `app-planner/app-write-up.md`
-
-Follow the planner rules: dashboards must be clear, responsive, role-aware, not congested, and must use backend summaries or targeted queries rather than client-side counting of large datasets.
-
-## Architecture and style rules
-
-Preserve the current:
-
-* Folder structure
-* Naming conventions
-* Flutter/Riverpod architecture
-* Backend service/controller/repository structure
-* Role and permission model
-* Shared UI shell and theme
-* Existing route structure
-* Existing responsive layout approach
-
-Do not perform unrelated rewrites, broad refactors, or visual changes outside the dashboard task.
-
-Modify only the files required for this change.
-
-## Required dashboard UI/UX
-
-Implement a common dashboard layout matching the screenshots.
-
-### Common layout
-
-Each role dashboard must include:
-
-1. Existing HMS app shell with top bar and side navigation.
-2. Role-specific page header:
-
-   * Role icon/initial tile
-   * Dashboard title
-   * Role/status pill
-   * Refresh button
-3. Hero panel:
-
-   * Short role-specific description
-   * Facility/tenant/branch/scope context
-   * “Live dashboard” style badge
-   * Dynamic “Updated …” timestamp from backend `generated_at`
-4. “Today at a glance” summary cards:
-
-   * Rounded cards
-   * Small icon/initial tile
-   * Metric label
-   * Large metric value
-   * Color-coded values for normal, success, warning, and critical states
-5. Quick actions:
-
-   * Compact outlined action buttons
-   * Small icon/initial tile
-   * Role-specific actions
-   * Wrap cleanly on smaller screens
-6. Main content:
-
-   * Left trend chart panel
-   * Right distribution/donut panel
-   * Action queue panel
-   * Alerts/insights panel
-   * Recent activity panel
-
-### Responsive behavior
-
-Match the screenshots:
-
-| Screen size | Required behavior                                                                                                                                                          |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop     | Persistent left navigation, wide dashboard content, summary cards in one row where possible, trend chart left and donut panel right, queue left and alerts/activity right. |
-| Tablet      | Left navigation remains visible, cards wrap into fewer columns, charts and panels adapt without overflow.                                                                  |
-| Mobile      | No persistent side nav, compact header, cards in two columns where possible, quick actions wrap, charts and panels stack vertically, no horizontal scrolling.              |
-
-Verify against these viewport sizes:
-
-* `390x844`
-* `1024x768`
-* `1440x1024`
-* Also verify the larger doctor/nurse/lab screenshot proportions where applicable.
-
-## Role-specific dashboard content
-
-Use these labels, sections, and actions as the written source of truth from the screenshots. Values must be dynamic and database-backed.
-
-| Role           | Dashboard title                | Summary cards                                                                                                                                            | Quick actions                                                                                                          | Main panels                                                                                                          |
-| -------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Super Admin    | Platform command center        | Tenants active, Facilities active, Subscriptions at risk, Module entitlement issues, Security reviews due, Integration/API errors                        | Select tenant/facility, Create tenant, Create facility, Manage subscription, Review audit, Run report                  | Platform signal trend, Tenant mix donut, Platform review queue, Alerts and insights, Recent activity                 |
-| Tenant Admin   | Organization overview          | Facilities active, Active users, Module adoption, Organization patient flow, Organization revenue, Staffing exceptions                                   | Create facility, Manage users and roles, Manage subscription, Add staff profile, Run report, Review audit              | Facilities performance trend, Module adoption donut, Organization action queue, Alerts and insights, Recent activity |
-| Facility Admin | Facility operations dashboard  | Patient flow today, Appointments today, Active admissions, Occupied beds, Billing exceptions, Operational blockers                                       | Register patient, Book appointment, Check in patient, Create maintenance request, Report equipment issue, Run report   | OPD flow by hour, Bed readiness donut, Facility operations queue, Alerts and insights, Recent activity               |
-| Doctor         | Clinical worklist              | Assigned consultations, Consultations in progress, Completed consultations, Active admissions, Critical lab signals, OPD notifications pending attention | Start consultation, Continue consultation, Write clinical note, Record vitals, Order lab, Order radiology              | Consultation trend, Patient acuity mix, Clinical action queue, Critical attention/alerts, Recent activity            |
-| Nurse          | Nursing work dashboard         | Active inpatients, Medication administrations today, Transfer queue, Critical lab signals, Discharge pressure, OPD notifications pending attention       | Record vitals, Mark medication administered, Create handover, Route patient                                            | Medication rounds trend, Ward distribution, Nursing action queue, Alerts and insights, Recent activity               |
-| Lab            | Laboratory queue               | Lab orders today, Orders in process, Pending results, Critical results, Completed orders                                                                 | Receive sample, Enter lab result, Flag critical lab, Run report                                                        | Sample throughput trend, Test mix donut, Laboratory action queue, Alerts and insights, Recent activity               |
-| Pharmacy       | Pharmacy workload              | Medication orders today, Pending dispense workload, Dispensed today, Low stock pressure, Critical stock pressure                                         | Dispense medication, Record pharmacy sale, Receive pharmacy stock, Adjust pharmacy stock, Run report                   | Dispensing throughput trend, Stock pressure donut, Pharmacy action queue, Alerts and insights, Recent activity       |
-| Reception      | Front desk dashboard           | Registrations today, Appointment desk queue, No-show pressure, Front billing queue, Appointments today, OPD notifications pending attention              | Register patient, Book appointment, Check in patient, Route patient                                                    | Front desk arrivals trend, Queue mix donut, Front desk action queue, Alerts and insights, Recent activity            |
-| Billing        | Billing workbench              | Invoices issued today, Overdue invoices, Open balances, Collections today, Refunds today                                                                 | Create invoice, Receive payment, Process refund, Close shift, Run report                                               | Collections trend, Revenue mix donut, Billing action queue, Alerts and insights, Recent activity                     |
-| Operations     | Operations readiness dashboard | Occupied beds, Total beds, Open maintenance requests, Low stock pressure, Housekeeping backlog, Facility readiness                                       | Create maintenance request, Assign maintenance, Update bed readiness, Report equipment issue, Review audit, Run report | Facility readiness trend, Bed readiness mix donut, Operations action queue, Alerts and insights, Recent activity     |
-| HR             | Workforce dashboard            | Active staff profiles, Shifts today, Pending leave approvals, Staffing backlog, Unassigned shifts, Attendance rate                                       | Add staff profile, Review leave, Create shift, Publish roster, Approve roster, Run report                              | Staffing coverage trend, Workforce mix donut, Workforce action queue, Alerts and insights, Recent activity           |
-| Biomedical     | Biomedical service queue       | Open work orders, Open incidents, Active downtime events, Critical service-risk indicators, High-priority work orders, Assets operational                | Acknowledge work order, Update work order, Report equipment issue, Log calibration, Schedule maintenance, Run report   | Equipment service trend, Asset service status donut, Biomedical service queue, Alerts and insights, Recent activity  |
-| Housekeeping   | My cleaning tasks              | Pending tasks, Tasks in progress, Overdue tasks, Tasks completed today, Completion throughput                                                            | Start cleaning task, Complete cleaning task, Mark cleaning blocked                                                     | Cleaning throughput trend, Task mix donut, Housekeeping action queue, Alerts and insights, Recent activity           |
-| Ambulance      | Ambulance dispatch board       | Dispatches today, Active trips, Critical emergencies, Fleet available, Fleet out of service                                                              | Dispatch ambulance, Update trip status, Record emergency handover                                                      | Dispatch response trend, Fleet readiness donut, Ambulance action queue, Alerts and insights, Recent activity         |
-| Patient Portal | My care dashboard              | My upcoming appointments, My open bills, My prescriptions, My released results, My messages, My profile status                                           | Update own profile, View my care, Contact facility                                                                     | Care activity trend, Care summary donut, My care updates, Alerts and insights, Recent activity                       |
-
-Keep existing support for roles that are already in the codebase but are not represented in the screenshots, such as radiology, managers, mortuary roles, and other valid roles. Do not remove or break them. If no screenshot exists for a role, preserve the existing profile or provide a safe fallback consistent with the existing architecture.
-
-## Data and backend requirements
-
-1. Use the existing dashboard workspace endpoint and service architecture as the primary data source.
-2. Extend backend dashboard responses only as needed to support:
-
-   * Summary cards
-   * Trend chart data
-   * Distribution/donut segments
-   * Action queue rows
-   * Alerts/insights
-   * Recent activity
-   * Hero/context metadata
-   * Quick action IDs
-3. Use targeted Prisma/database queries and aggregates on the backend.
-4. Do not count large datasets on the Flutter client.
-5. Scope all data correctly by role, tenant, facility, branch, department, staff profile, and patient where applicable.
-6. Patient Portal must only show the signed-in patient’s own care data.
-7. Prevent cross-tenant, cross-facility, and cross-patient data leakage.
-8. Display empty states only when the database truly has no matching records.
-9. Avoid static/demo fallback values for authenticated live dashboards.
-10. Preserve tenant-context-required behavior where applicable.
-11. Update OpenAPI docs if the dashboard response schema changes.
-
-Important backend note: the existing dashboard workspace route currently excludes some roles such as `PATIENT`. Verify the current authorization and route behavior. If Patient Portal is not supported by the current endpoint, implement secure patient dashboard support using the existing dashboard architecture or a patient-safe equivalent endpoint. Do not expose admin/facility data to patients.
-
-## Real-time update requirements
-
-Dashboards must stay current when underlying data changes.
-
-Implement real-time refresh using the existing frontend real-time infrastructure:
-
-* `listenForRealtimeRefresh`
-* `RealtimeEventGroups`
-* `RealtimeEvents`
-
-Use relevant existing event groups such as appointments, OPD flow, admissions, diagnostics, pharmacy, billing, emergency, operations, HR, housekeeping, biomedical, communications, patient registry, and related workspace events.
-
-Requirements:
-
-1. `homeControllerProvider(request)` must refresh when relevant real-time events arrive.
-2. Refresh should be debounced to avoid excessive reloads.
-3. Refresh should respect current tenant/facility/branch/patient scope where payload scope is available.
-4. Manual refresh button must still work.
-5. `generated_at` must update after successful reload.
-
-Only add new real-time event constants/groups if existing ones cannot support the dashboard refresh cleanly.
-
-## Frontend implementation requirements
-
-1. Extend `HomeDashboard` entities and DTOs only as needed for chart/distribution/panel data.
-2. Keep `HomeDashboardProfile` role mappings compatible with existing `AppRole` values.
-3. Add missing quick-action definitions only when required by the screenshots.
-4. Quick actions must navigate to existing valid HMS routes where available.
-5. If a destination route does not exist, keep the action disabled or route to the safest existing relevant workspace; do not invent unrelated screens.
-6. Reuse existing shared components before creating new ones.
-7. If chart widgets are needed, add small, maintainable Flutter widgets in the home feature or shared components only if reusable.
-8. Do not introduce a large chart dependency unless the project already uses one.
-9. Ensure all dashboard text is user-friendly and does not expose backend/internal terminology.
-10. Ensure loading, error, empty, and offline states remain polished.
-11. Ensure accessibility labels/semantics for dashboard cards, buttons, and charts.
-12. Fix the quick actions overflow/wrapping behavior on mobile.
-13. If editing current quick action rendering, verify the existing `skip(4).skip(4)` behavior and correct it if it incorrectly hides actions.
-
-## Backend implementation requirements
-
-1. Keep controller/route/service/repository responsibilities separated.
-2. Extend `ROLE_PACKS`, role profiles, and role summary builders consistently.
-3. Add or update repository aggregate methods for missing metrics.
-4. Ensure dashboard metrics come from real tables already used by the HMS modules.
-5. Do not create duplicate dashboard logic in unrelated modules.
-6. Preserve existing authorization middleware and strengthen it where needed.
-7. Keep response payloads stable where possible to avoid breaking existing frontend code.
-8. Add schema validation for any new query or response fields.
-9. Keep all currency, percentage, and count formatting consistent with existing dashboard conventions.
-10. Ensure dashboard queries are efficient and safe for production-sized datasets.
-
-## Testing and verification
-
-Run and/or add tests as appropriate.
+* `app-planner/dev-plan/14-clinical.md`
+* `app-planner/dev-plan/21-lab.md`
+* `app-planner/dev-plan/22-radiology.md`
+* `app-planner/dev-plan/23-pharmacy.md`
+* `app-planner/dev-plan/29-rooms-beds.md`
+* `app-planner/opd-flow.md`
+* `app-planner/ipd-flow.md`
+* `frontend/app-planner/app-rules/`
+* `backend/app-planner/app-rules/`
 
 ### Frontend
 
-Verify:
+Main files to inspect and modify where required:
 
-* `flutter analyze`
-* `flutter test`
-* Dashboard DTO parsing for new response fields
-* Role-to-dashboard rendering for all screenshot roles
-* Responsive rendering at mobile, tablet, and desktop sizes
-* No Flutter overflow warnings
-* Refresh button reloads data
-* Real-time events reload the dashboard
-* Empty/error/loading states render correctly
+* `frontend/lib/shared/clinical_actions/clinical_order_action_dialogs.dart`
+* `frontend/lib/shared/clinical_actions/clinical_action_dialogs.dart`
+* `frontend/lib/shared/clinical_actions/clinical_action_models.dart`
+* `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
+* `frontend/lib/features/clinical/presentation/controllers/clinical_workspace_controller.dart`
+* `frontend/lib/features/clinical/data/repositories/clinical_repository_impl.dart`
+* `frontend/lib/features/clinical/data/dtos/clinical_dtos.dart`
+* `frontend/lib/features/clinical/domain/clinical_entities.dart`
+* `frontend/lib/features/opd/shared/opd_flow_actions_dialog.dart`
+* `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
+* `frontend/lib/features/opd/data/repositories/opd_repository_impl.dart`
+* `frontend/lib/features/opd/data/dtos/opd_dtos.dart`
+* `frontend/lib/core/network/api_endpoints.dart`
+* `frontend/lib/l10n/app_en.arb`
+* generated localization files, if this project checks them in
+
+Also inspect related tests under:
+
+* `frontend/test/features/clinical/`
+* `frontend/test/features/opd/`
+* `frontend/test/features/radiology/`
+* `frontend/test/features/rooms_beds/`
+* `frontend/test/shared/`
 
 ### Backend
 
-Verify:
+Inspect and modify backend only where needed to support the frontend correctly:
 
-* Existing backend test command
-* Existing lint command if available
-* Dashboard workspace endpoint returns correct role-specific payloads
-* Role scoping and authorization are correct
-* Patient portal cannot access another patient’s data
-* Tenant/facility users cannot access data outside their scope
-* Aggregates update when database records change
-* OpenAPI docs remain valid if updated
+* `backend/src/modules/diagnosis/`
+* `backend/src/modules/clinical-note/`
+* `backend/src/modules/clinical-term/`
+* `backend/src/modules/lab-order/`
+* `backend/src/modules/radiology-order/`
+* `backend/src/modules/pharmacy-order/`
+* `backend/src/modules/admission/`
+* `backend/src/modules/follow-up/`
+* `backend/src/modules/opd-flow/`
+* `backend/src/modules/bed/`
+* `backend/src/modules/room/`
+* `backend/src/modules/ward/`
+* `backend/prisma/schema.prisma`, only if a schema change is truly required
+* `backend/docs/api/v1/openapi.yaml`, only if API contracts are changed
+* related backend tests under `backend/src/tests/modules/`
 
-### End-to-end verification
+---
 
-Test login and dashboard rendering for:
+## Required implementation
 
-* Super Admin
-* Tenant Admin
-* Facility Admin
-* Doctor
-* Nurse
-* Lab
-* Pharmacy
-* Reception
-* Billing
-* Operations
-* HR
-* Biomedical
-* Housekeeping
-* Ambulance
-* Patient
+### 1. Rename “Add note” to “Add clinical note”
 
-For each role, verify:
+Update the clinical note action label from:
 
-1. Correct dashboard title and content.
-2. Correct quick actions.
-3. Real database values appear.
-4. Manual refresh updates values.
-5. Relevant database changes update the dashboard through real-time refresh.
-6. UI matches the screenshots across desktop, tablet, and mobile.
-7. No unrelated role data is visible.
+* `Add note`
+
+to:
+
+* `Add clinical note`
+
+Use the existing localization system. Do not hard-code this visible string directly in widgets.
+
+Relevant current localization key to inspect:
+
+* `clinicalAddNoteAction`
+
+Keep existing dialog title and clinical note behavior unless a code issue is found.
+
+---
+
+### 2. Redesign diagnosis creation to use the shared reusable diagnosis/search component
+
+The current diagnosis action must use the existing shared clinical term/diagnosis mechanism instead of a standalone or non-reusable implementation.
+
+Requirements:
+
+* Use the existing shared clinical action dialog/component architecture.
+* Use existing clinical term suggestions for diagnosis search.
+* Search diagnosis terms using the existing clinical terms API/repository flow with `term_type` / `termType` set to diagnosis.
+* Diagnosis search must be searchable by diagnosis name and code where available.
+* Support selecting more than one diagnosis before submission.
+* Redesign the diagnosis dialog similarly to the existing lab request and radiology request dialogs:
+
+  * left side: searchable existing/predefined diagnosis results
+  * right side: selected diagnoses
+  * allow adding/removing selected diagnoses before submission
+  * clearly show selected diagnosis name, code, and type/status where available
+* Preserve or reuse the existing visual pattern from `ClinicalLabOrderActionDialog`.
+* Do not create a separate modal family if the shared clinical action dialogs already support the pattern.
+* If the backend endpoint only creates one diagnosis at a time, submit selected diagnoses sequentially using the existing endpoint and refresh the selected patient/encounter bundle only after all successful creations.
+* Continue creating/updating shared clinical term favorites where the existing flow already does so.
+* Ensure diagnosis creation updates the patient details dialog/clinical workspace in real time after success, without requiring a manual page refresh or reopening the encounter.
+
+Apply this behavior consistently anywhere the shared diagnosis dialog is used, including clinical workspace and OPD flow actions.
+
+---
+
+### 3. Fix real-time UI updates after successful actions
+
+After these actions succeed, the currently selected patient/encounter/OPD details must update immediately in the visible UI:
+
+* add clinical note
+* add diagnosis
+* request lab
+* request radiology
+* request admission
+* create follow-up
+* complete disposition
+* prescribe/create pharmacy order
+* cancel/delete/update lab order
+* cancel/delete/update radiology order where supported
+* cancel/delete pharmacy order where supported
+
+Requirements:
+
+* Use the existing controller/repository refresh patterns.
+* Do not force full app reloads.
+* Refresh only the affected selected detail/worklist data where possible.
+* Ensure modal dialogs only report success after persistence succeeds and the relevant state has been refreshed.
+* Fix stale DTO/entity mapping if the backend response already includes the new records but the frontend does not display them.
+* Fix backend list/detail endpoints only if they are not returning newly created records correctly.
+* Ensure loading/saving states are always cleared on success and failure.
+* Show useful error messages instead of vague messages such as “check the details” when the backend provides or can provide a clearer validation error.
+
+---
+
+### 4. Improve radiology request dialog globally
+
+Update the shared radiology request dialog so all callers benefit.
+
+Relevant existing component:
+
+* `ClinicalRadiologyOrderActionDialog`
+
+Requirements:
+
+* Keep the existing multi-select request pattern.
+* Add a searchable select for modality.
+
+  * Label it `Modality`.
+  * Example modality: `CT`.
+* Add a searchable select for body region.
+
+  * Label it `Body region`.
+* Keep or improve the existing laterality select.
+* Keep the clinical notes text field.
+* Keep the priority/urgency field if it already exists.
+* Move the free-text search/matching study list below the modality, body region, and laterality selectors.
+* The matching radiology studies section must only show studies that match the selected modality/body region/laterality and the entered search text.
+* Derive modality/body-region/laterality options from existing radiology catalog/reference data where possible.
+* Do not hard-code a fixed radiology catalog.
+* Use existing `ClinicalActionCatalogOption` fields such as category, secondary text, status, search text, and related metadata where appropriate.
+* Add appropriate existing project icons to make the dialog visually clear and consistent with the lab request dialog.
+* Preserve the selected radiology requests panel on the right.
+* Allow selecting more than one radiology request.
+* Each selected radiology request must clearly show:
+
+  * study name
+  * modality where available
+  * body region where available
+  * laterality where available
+  * priority/urgency
+  * clinical notes if provided
+* When `Request radiology` succeeds, update the patient details/dialog/tables in real time.
+
+Backend/API requirement:
+
+* Verify whether radiology order payloads and DTOs already support modality.
+* If modality is catalog-derived only, use it for filtering/display without changing the backend payload.
+* If the backend supports or should persist modality in `request_details`, update frontend DTOs and backend schemas/services consistently.
+* Do not invent unsupported API fields without checking the backend schema and service first.
+
+Also verify frontend DTO mapping for radiology requested test items. If per-item `request_details` are returned by the backend, ensure body region, laterality, priority, clinical note, and modality are decoded from the correct item-level or parent-level location.
+
+---
+
+### 5. Fix lab request real-time refresh
+
+The lab request dialog is mostly working, but after clicking `Request lab`, the UI does not update immediately.
+
+Requirements:
+
+* Keep the existing lab request dialog design unless a bug requires a small adjustment.
+* Fix the controller/repository/backend refresh path so new lab orders appear immediately in:
+
+  * patient details
+  * clinical workspace sections
+  * lab order tables/panels
+  * OPD flow details where applicable
+* Preserve existing edit/cancel/delete behavior for lab orders.
+
+---
+
+### 6. Fix admission request dialog and admission creation
+
+Improve the admission request UI and fix admission submission failures.
+
+Relevant existing component:
+
+* `ClinicalAdmissionActionDialog`
+
+Requirements:
+
+* Do not show raw row IDs/UUIDs to users when a human-readable ward, room, or bed label/name is available.
+* Ward selection should narrow the next options to rooms with available beds.
+* Room selection should narrow the next options to beds available in that room.
+* Bed options should show availability/status directly inside the bed option display.
+* Remove or avoid a separate “Bed availability” display if the same information can be cleanly merged into the bed row/selection.
+* If no available rooms or beds exist for the selected ward/room, show a clear empty-state message.
+* If a selected bed is unavailable, show a clear message such as “This bed is no longer available. Please choose another bed.”
+* Improve the visual layout so ward, room, bed, and availability/status fields do not wrap awkwardly into two-line cramped controls.
+* Use existing shared components such as:
+
+  * `AppDialog`
+  * `AppFormSection`
+  * `AppResponsiveFieldRow`
+  * `AppSelectField.searchable`
+  * `AppTextField`
+  * `AppInfoTileGrid`
+  * existing status badges/chips where available
+* Fix the admission request submission so a valid available bed creates the admission successfully.
+* Verify the frontend payload against the backend admission schema/service.
+* Include reason/notes only if the backend supports them or the existing domain model expects them.
+* If backend validation fails, surface the actual useful validation message to the user.
+* After a successful admission request, update the clinical/OPD patient details in real time.
+
+---
+
+### 7. Fix follow-up creation/update behavior
+
+Ensure follow-up actions work correctly and persist to the database.
+
+Requirements:
+
+* Verify the frontend follow-up dialog payload.
+* Verify backend follow-up endpoint/schema/service behavior.
+* After creating a follow-up, update the visible clinical/OPD details immediately.
+* Show follow-up records in the correct patient detail section.
+* Avoid duplicate follow-up rows after refresh.
+
+---
+
+### 8. Fix disposition completion and indefinite loading
+
+The disposition flow can enter an indefinite loading state, especially when completing disposition with “admission not required” and notes such as “patient is stable”.
+
+Requirements:
+
+* Fix the loading state so it always stops after success or failure.
+* Verify the OPD disposition backend schema and accepted decision values.
+* Map frontend disposition values to backend-supported values correctly.
+* For “admission not required”, complete the disposition using the correct backend decision, likely the discharge/close-flow equivalent after verifying the backend schema.
+* Preserve notes/reason.
+* Show a useful success or failure message.
+* Update selected patient/OPD/clinical details immediately after success.
+* Do not hard-code incorrect disposition decisions.
+* Do not remove required clinical review behavior unless the backend flow requires it.
+
+---
+
+### 9. Improve clinical notes, prescriptions, radiology orders, and pharmacy orders display
+
+Improve the patient details/clinical record sections.
+
+Requirements:
+
+* Label the clinical notes section clearly as patient clinical notes.
+* Keep clinical notes visually separate from prescriptions/pharmacy orders.
+* Improve prescription/pharmacy order display so it is human-readable.
+
+  * Show medication name, dose, route, frequency, duration, quantity, and instructions clearly where available.
+  * Avoid confusing duplicate rows/items.
+  * If one pharmacy order contains multiple items, render them cleanly without repeating unnecessary parent information.
+* Improve radiology order display.
+
+  * Show study name, status, priority, modality/body region/laterality, clinical notes, and date where available.
+  * Add edit/cancel/delete actions for radiology orders only where supported by existing backend routes/API contracts.
+  * If backend supports cancellation but not hard delete, implement cancel and do not fake deletion.
+  * Match the existing lab order action style as closely as possible.
+* Keep lab order display behavior intact, including existing edit/cancel/delete support.
+
+---
+
+### 10. Backend/API changes, only if required
+
+Only modify backend code if the frontend cannot correctly support the requested behavior with existing APIs.
+
+When backend changes are required:
+
+* Preserve existing Express/Prisma module architecture.
+* Preserve controller/service/repository/schema separation.
+* Update validation schemas.
+* Update services with tenant/facility/patient/encounter scoping preserved.
+* Update OpenAPI documentation if request/response contracts change.
+* Add or update backend tests for changed behavior.
+* Do not create duplicate endpoints if an existing endpoint should be fixed or extended.
+* Do not bypass authorization, tenant scoping, facility scoping, or audit behavior.
+
+---
+
+## UI/UX requirements
+
+Follow existing HMS UI patterns.
+
+Use existing shared frontend components and visual conventions. Do not introduce a new design system.
+
+Specific UI requirements:
+
+* Diagnosis dialog should visually match the lab request dialog pattern:
+
+  * searchable results on the left
+  * selected items on the right
+  * clear selected count
+  * easy remove action
+  * empty states
+* Radiology dialog should visually match the lab request dialog pattern while adding:
+
+  * modality searchable select
+  * body region searchable select
+  * laterality select
+  * clinical notes
+  * filtered matching studies below the selectors
+* Admission dialog should be cleaner and less cramped:
+
+  * ward, room, and bed controls should be readable
+  * bed status should be visible in the bed option itself
+  * no raw IDs should be visible when labels exist
+  * clear empty and unavailable states
+* Use existing icons already used in the project where possible.
+* Use localization for user-facing strings.
+* Maintain responsive behavior for desktop and smaller widths.
+
+---
+
+## Testing and verification
+
+Add or update tests where practical and relevant.
+
+At minimum, verify:
+
+### Frontend
+
+Run:
+
+* `cd frontend`
+* `flutter test`
+
+Add/update targeted tests for:
+
+* diagnosis multi-select dialog behavior
+* clinical workspace refresh after diagnosis/lab/radiology/admission/follow-up/disposition actions
+* radiology DTO mapping for request details
+* admission option filtering and unavailable-bed validation
+* pharmacy/prescription display formatting where practical
+* OPD flow action refresh behavior where applicable
+
+### Backend
+
+If backend files are changed, run:
+
+* `cd backend`
+* `npm run lint`
+* `npm run test:backend`
+* `npm run validate`
+
+If OpenAPI is changed, also run:
+
+* `npm run openapi:validate`
+
+Add/update targeted backend tests for any changed module, especially:
+
+* diagnosis
+* lab order
+* radiology order
+* admission
+* follow-up
+* OPD disposition
+* pharmacy order
+
+### Manual verification scenarios
+
+Verify these flows manually in the running app:
+
+1. Open a patient/encounter clinical detail.
+2. Click `Add clinical note`; save a note; confirm it appears immediately.
+3. Click `Add diagnosis`; search diagnosis terms; select multiple diagnoses; save; confirm they appear immediately.
+4. Click `Request lab`; select tests/panels; submit; confirm lab orders appear immediately.
+5. Click `Request radiology`; select modality/body region/laterality; confirm matches filter correctly; select one or more studies; submit; confirm radiology orders appear immediately.
+6. Request admission:
+
+   * select ward
+   * confirm rooms are filtered to those with available beds
+   * select room
+   * confirm beds are filtered to available beds
+   * submit
+   * confirm the admission appears immediately
+7. Try admission when no available bed exists and confirm a clear message is shown.
+8. Create a follow-up and confirm it persists and appears immediately.
+9. Complete disposition with “admission not required” and notes; confirm no indefinite loading occurs.
+10. Review clinical notes, prescriptions/pharmacy orders, lab orders, and radiology orders for clean display and no confusing duplicates.
+11. Verify radiology edit/cancel/delete behavior only where supported by the backend.
+
+---
 
 ## Scope limits
 
-Do not:
+Do not implement printing in this task.
 
-* Rewrite the app shell.
-* Rewrite authentication.
-* Rewrite routing globally.
-* Replace the dashboard workspace architecture.
-* Add unrelated modules.
-* Refactor unrelated screens.
-* Change database schema unless absolutely necessary.
-* Hardcode screenshot demo values.
-* Modify screenshots or planner files unless required.
-* Remove support for existing roles not shown in the screenshots.
-* Touch files unrelated to the dashboard implementation.
+Do not perform unrelated rewrites, broad refactors, dependency changes, route restructuring, theme redesigns, or database schema changes unless absolutely required for the requested behavior.
+
+Do not replace the existing Riverpod/controller/repository/DTO architecture.
+
+Do not create new duplicate modal/dialog families when existing shared clinical action dialogs should be extended.
+
+Do not hard-code catalog data.
+
+Do not hard-code user-facing strings.
+
+Do not modify unrelated modules.
+
+Do not include generated build artifacts, caches, `node_modules`, `.dart_tool`, build output, or full project copies in the final deliverable.
 
 Modify only the files required for this requested change.
 
-## Delivery requirements
+---
 
-Return a zipped archive containing only the files and folders that were created or updated.
+## Final deliverable
 
-All files must be placed in their correct relative project directories, for example:
+Return a `.zip` archive containing only the files and folders that were created or updated, placed in their correct relative project directories.
 
-* `frontend/lib/...`
-* `backend/src/...`
-* `backend/docs/...`
-* `app-planner/...`
+If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts in the archive that safely perform those delete or rename operations.
 
-If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those delete or rename operations.
+PowerShell scripts must:
 
-The `.ps1` scripts must:
+* use correct relative paths
+* check that the target exists before deleting or renaming
+* not delete unrelated files
+* not use broad wildcards that could remove unrelated project content
 
-* Use correct relative paths.
-* Check that paths exist before deleting or renaming.
-* Avoid deleting unrelated files.
-* Be safe to run from the project root.
-
-Do not include unchanged files in the returned archive.
+Also include a concise implementation summary and verification results inside the archive as a small text or markdown file, unless the calling workflow explicitly forbids summary files.
