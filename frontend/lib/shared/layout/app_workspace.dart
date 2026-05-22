@@ -253,39 +253,27 @@ class AppWorkspaceStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final _WorkspaceToneColors colors = _toneColors(theme, status.tone);
+    final Color color = _toneForegroundColor(theme, status.tone);
     final IconData icon = status.icon ?? _defaultIcon(status.tone);
 
     return Semantics(
       label: status.label,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.container,
-          border: Border.all(color: colors.border),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.sm,
-            vertical: theme.spacing.xs,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(icon, size: theme.appTokens.listIconSize, color: colors.on),
-              SizedBox(width: theme.spacing.xs),
-              Flexible(
-                child: Text(
-                  status.label,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colors.on,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: theme.appTokens.listIconSize, color: color),
+          SizedBox(width: theme.spacing.xs),
+          Flexible(
+            child: Text(
+              status.label,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -310,19 +298,13 @@ class AppWorkspaceTitleIcon extends StatelessWidget {
       image: true,
       label: semanticLabel,
       child: ExcludeSemantics(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorScheme.primaryContainer.withValues(alpha: 0.62),
-            border: Border.all(
-              color: colorScheme.primary.withValues(alpha: 0.28),
-            ),
-          ),
-          child: SizedBox.square(
-            dimension: 36,
+        child: SizedBox.square(
+          dimension: 32,
+          child: Center(
             child: Icon(
               icon,
               color: colorScheme.primary,
-              size: theme.appTokens.listIconSize,
+              size: theme.appTokens.listIconSize + 2,
             ),
           ),
         ),
@@ -2726,6 +2708,19 @@ IconData _defaultIcon(AppWorkspaceStatusTone tone) {
     AppWorkspaceStatusTone.warning => Icons.warning_amber_outlined,
     AppWorkspaceStatusTone.error => Icons.error_outline,
     AppWorkspaceStatusTone.info => Icons.info_outline,
+  };
+}
+
+Color _toneForegroundColor(ThemeData theme, AppWorkspaceStatusTone tone) {
+  final ColorScheme colorScheme = theme.colorScheme;
+  final AppStatusColors statusColors = theme.statusColors;
+
+  return switch (tone) {
+    AppWorkspaceStatusTone.neutral => colorScheme.onSurfaceVariant,
+    AppWorkspaceStatusTone.success => statusColors.success,
+    AppWorkspaceStatusTone.warning => statusColors.warning,
+    AppWorkspaceStatusTone.error => statusColors.error,
+    AppWorkspaceStatusTone.info => statusColors.info,
   };
 }
 

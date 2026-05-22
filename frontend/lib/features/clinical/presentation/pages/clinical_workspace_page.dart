@@ -474,6 +474,7 @@ class _ClinicalStatusText extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Color color = _clinicalToneColor(theme, status.tone);
+    final IconData icon = status.icon ?? _clinicalStatusIcon(status.tone);
     final TextStyle? effectiveStyle = (textStyle ?? theme.textTheme.labelLarge)
         ?.copyWith(color: color, fontWeight: FontWeight.w700);
 
@@ -482,10 +483,8 @@ class _ClinicalStatusText extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (status.icon != null) ...<Widget>[
-            Icon(status.icon, size: theme.appTokens.listIconSize, color: color),
-            SizedBox(width: theme.spacing.xs),
-          ],
+          Icon(icon, size: theme.appTokens.listIconSize, color: color),
+          SizedBox(width: theme.spacing.xs),
           Text(
             status.label,
             overflow: TextOverflow.ellipsis,
@@ -662,14 +661,11 @@ class _ClinicalDetailPanel extends ConsumerWidget {
     }
 
     final ClinicalWorklistEntry entry = bundle.entry;
-    final String patientId = entry.patientPublicId ?? entry.patientId ?? '';
-    final String patientNumber = patientId.isEmpty ? entry.id : patientId;
+    final AppWorkspaceStatus primaryStatus = _entryStatus(entry);
     final List<Widget> sections = <Widget>[
-      AppWorkspacePatientContextHeader(
-        patientName: entry.patientDisplayName ?? entry.displayTitle,
-        patientNumber: patientNumber,
-        patientNumberLabel: patientId.isEmpty ? null : l10n.opdPatientIdLabel,
-        status: _entryStatus(entry),
+      _ClinicalEncounterContextPanel(
+        entry: entry,
+        status: primaryStatus,
         alerts: <AppWorkspaceStatus>[
           if (entry.isUrgent)
             AppWorkspaceStatus(
@@ -682,14 +678,12 @@ class _ClinicalDetailPanel extends ConsumerWidget {
               tone: AppWorkspaceStatusTone.success,
             ),
         ],
-        fields: _clinicalPatientContextFields(context, l10n, entry),
-        fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
-        onCopyPatientNumber: patientId.isEmpty
-            ? null
-            : () => _copyClinicalPatientId(context, patientId),
       ),
       if (bundle.triageHandoff?.hasContent ?? false)
-        _ClinicalTriageHandoffPanel(handoff: bundle.triageHandoff!),
+        _ClinicalTriageHandoffPanel(
+          handoff: bundle.triageHandoff!,
+          primaryStatus: primaryStatus,
+        ),
       _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
       if (bundle.labOrders.isNotEmpty)
         _ClinicalLabOrdersPanel(
@@ -708,10 +702,176 @@ class _ClinicalDetailPanel extends ConsumerWidget {
   }
 }
 
+class _ClinicalEncounterContextPanel extends StatelessWidget {
+  const _ClinicalEncounterContextPanel({
+    required this.entry,
+    required this.status,
+    this.alerts = const <AppWorkspaceStatus>[],
+  });
+
+  final ClinicalWorklistEntry entry;
+  final AppWorkspaceStatus status;
+  final List<AppWorkspaceStatus> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String patientNumber = _clinicalPatientNumber(entry);
+    final List<AppWorkspacePatientContextField> fields =
+        _clinicalPatientContextFields(context, l10n, entry);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Wrap(
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                if (patientNumber.isNotEmpty)
+                  _ClinicalCopyableInlineValue(
+                    label: l10n.opdPatientIdLabel,
+                    value: patientNumber,
+                    onCopy: () => _copyClinicalPatientId(
+                      context,
+                      patientNumber,
+                    ),
+                  ),
+                AppWorkspaceStatusBadge(status: status),
+                for (final AppWorkspaceStatus alert in alerts)
+                  AppWorkspaceStatusBadge(status: alert),
+              ],
+            ),
+            if (fields.any(
+              (AppWorkspacePatientContextField field) => field.hasValue,
+            )) ...<Widget>[
+              SizedBox(height: theme.spacing.md),
+              _ClinicalInfoGrid(fields: fields),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClinicalCopyableInlineValue extends StatelessWidget {
+  const _ClinicalCopyableInlineValue({
+    required this.label,
+    required this.value,
+    required this.onCopy,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Semantics(
+      label: '$label: $value',
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Flexible(
+              child: Text.rich(
+                TextSpan(
+                  children: <InlineSpan>[
+                    TextSpan(
+                      text: '$label  ',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    TextSpan(
+                      text: value,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Tooltip(
+              message: MaterialLocalizations.of(context).copyButtonLabel,
+              child: IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: BoxConstraints.tightFor(
+                  width: theme.appTokens.minInteractiveDimension,
+                  height: theme.appTokens.minInteractiveDimension,
+                ),
+                padding: EdgeInsets.zero,
+                onPressed: onCopy,
+                icon: Icon(
+                  Icons.copy_outlined,
+                  size: theme.appTokens.listIconSize,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClinicalInfoGrid extends StatelessWidget {
+  const _ClinicalInfoGrid({required this.fields});
+
+  final List<AppWorkspacePatientContextField> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<AppWorkspacePatientContextField> visibleFields = fields
+        .where((AppWorkspacePatientContextField field) => field.hasValue)
+        .toList(growable: false);
+    if (visibleFields.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return AppInfoTileGrid(
+      minItemWidth: 180,
+      borderedTiles: false,
+      items: <AppInfoTileData>[
+        for (final AppWorkspacePatientContextField field in visibleFields)
+          AppInfoTileData(
+            label: field.label,
+            value: field.value,
+            icon: field.icon,
+          ),
+      ],
+    );
+  }
+}
+
 class _ClinicalTriageHandoffPanel extends StatelessWidget {
-  const _ClinicalTriageHandoffPanel({required this.handoff});
+  const _ClinicalTriageHandoffPanel({
+    required this.handoff,
+    required this.primaryStatus,
+  });
 
   final ClinicalTriageHandoff handoff;
+  final AppWorkspaceStatus primaryStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -729,6 +889,8 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
           ? AppWorkspaceStatusTone.warning
           : AppWorkspaceStatusTone.success,
     );
+    final bool stageRepeatsPrimaryStatus =
+        _apiLabel(handoff.stage ?? '') == primaryStatus.label;
     final List<AppWorkspacePatientContextField> facts =
         <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
@@ -747,11 +909,12 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
             value: handoff.chiefComplaint ?? '',
             icon: Icons.sick_outlined,
           ),
-          AppWorkspacePatientContextField(
-            label: l10n.opdStageLabel,
-            value: _apiLabel(handoff.stage ?? ''),
-            icon: Icons.timeline_outlined,
-          ),
+          if (!stageRepeatsPrimaryStatus)
+            AppWorkspacePatientContextField(
+              label: l10n.opdStageLabel,
+              value: _apiLabel(handoff.stage ?? ''),
+              icon: Icons.timeline_outlined,
+            ),
           AppWorkspacePatientContextField(
             label: l10n.opdNextStepColumnLabel,
             value: _apiLabel(handoff.nextStep ?? ''),
@@ -783,7 +946,7 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _ClinicalFactWrap(fields: facts),
+          _ClinicalInfoGrid(fields: facts),
           if (handoff.vitalSigns.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.md),
             Wrap(
@@ -814,89 +977,6 @@ class _ClinicalTriageHandoffPanel extends StatelessWidget {
             SizedBox(height: theme.spacing.xs),
             _ClinicalAlertsWrap(alerts: handoff.alerts),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ClinicalFactWrap extends StatelessWidget {
-  const _ClinicalFactWrap({required this.fields});
-
-  final List<AppWorkspacePatientContextField> fields;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final List<AppWorkspacePatientContextField> visibleFields = fields
-        .where((AppWorkspacePatientContextField field) => field.hasValue)
-        .toList(growable: false);
-    if (visibleFields.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Wrap(
-      spacing: theme.spacing.lg,
-      runSpacing: theme.spacing.sm,
-      children: <Widget>[
-        for (final AppWorkspacePatientContextField field in visibleFields)
-          _ClinicalInlineFact(field: field),
-      ],
-    );
-  }
-}
-
-class _ClinicalInlineFact extends StatelessWidget {
-  const _ClinicalInlineFact({required this.field});
-
-  final AppWorkspacePatientContextField field;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color accentColor = field.tone == AppWorkspaceStatusTone.neutral
-        ? colorScheme.primary
-        : _clinicalToneColor(theme, field.tone);
-
-    return Semantics(
-      label: '${field.label}: ${field.value}',
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (field.icon != null) ...<Widget>[
-            Icon(
-              field.icon,
-              size: theme.appTokens.listIconSize,
-              color: accentColor,
-            ),
-            SizedBox(width: theme.spacing.xs),
-          ],
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Text.rich(
-              TextSpan(
-                children: <InlineSpan>[
-                  TextSpan(
-                    text: '${field.label}: ',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  TextSpan(
-                    text: field.value,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: field.tone == AppWorkspaceStatusTone.neutral
-                          ? colorScheme.onSurface
-                          : accentColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -1866,7 +1946,7 @@ class _ClinicalRadiologyOrderItemRow extends StatelessWidget {
             ),
           ),
           SizedBox(height: theme.spacing.xs),
-          _ClinicalFactWrap(fields: facts),
+          _ClinicalInfoGrid(fields: facts),
         ],
       ),
     );
@@ -2073,7 +2153,7 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
             ],
           ),
           SizedBox(height: theme.spacing.xs),
-          _ClinicalFactWrap(fields: facts),
+          _ClinicalInfoGrid(fields: facts),
         ],
       ),
     );
@@ -2673,6 +2753,31 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
       tone: _sourceQueueTone(entry.sourceQueue),
     ),
     AppWorkspacePatientContextField(
+      label: l10n.clinicalEncounterTypeLabel,
+      value: _apiLabel(entry.encounterType ?? ''),
+      icon: Icons.local_hospital_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalLocationLabel,
+      value: entry.currentLocation ?? '',
+      icon: Icons.location_on_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.opdProviderColumnLabel,
+      value: entry.providerDisplayName ?? '',
+      icon: Icons.badge_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalLastUpdatedLabel,
+      value: lastUpdated == null ? '' : _dateTimeLabel(context, lastUpdated),
+      icon: Icons.schedule_outlined,
+    ),
+    AppWorkspacePatientContextField(
+      label: l10n.clinicalAdmissionNumberLabel,
+      value: entry.admissionPublicId ?? '',
+      icon: Icons.bed_outlined,
+    ),
+    AppWorkspacePatientContextField(
       label: l10n.clinicalAgeLabel,
       value: age,
       icon: Icons.cake_outlined,
@@ -2703,37 +2808,21 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
             ),
       icon: Icons.event_outlined,
     ),
-    AppWorkspacePatientContextField(
-      label: l10n.clinicalEncounterTypeLabel,
-      value: _apiLabel(entry.encounterType ?? ''),
-      icon: Icons.local_hospital_outlined,
-    ),
-    AppWorkspacePatientContextField(
-      label: l10n.clinicalLocationLabel,
-      value: entry.currentLocation ?? '',
-      icon: Icons.location_on_outlined,
-    ),
-    AppWorkspacePatientContextField(
-      label: l10n.opdProviderColumnLabel,
-      value: entry.providerDisplayName ?? '',
-      icon: Icons.badge_outlined,
-    ),
-    AppWorkspacePatientContextField(
-      label: l10n.opdStageLabel,
-      value: _apiLabel(entry.stage ?? entry.nextStep ?? ''),
-      icon: Icons.timeline_outlined,
-    ),
-    AppWorkspacePatientContextField(
-      label: l10n.clinicalLastUpdatedLabel,
-      value: lastUpdated == null ? '' : _dateTimeLabel(context, lastUpdated),
-      icon: Icons.schedule_outlined,
-    ),
-    AppWorkspacePatientContextField(
-      label: l10n.clinicalAdmissionNumberLabel,
-      value: entry.admissionPublicId ?? entry.admissionId ?? '',
-      icon: Icons.bed_outlined,
-    ),
   ];
+}
+
+String _clinicalPatientNumber(ClinicalWorklistEntry entry) {
+  final String? publicId = entry.patientPublicId?.trim();
+  if (publicId != null && publicId.isNotEmpty) {
+    return publicId;
+  }
+
+  final String? patientId = entry.patientId?.trim();
+  if (patientId != null && patientId.isNotEmpty) {
+    return patientId;
+  }
+
+  return '';
 }
 
 String _clinicalAgeLabel(DateTime? birthDate) {
@@ -2826,6 +2915,16 @@ bool _clinicalHasRecordSections(ClinicalEncounterBundle bundle) {
       bundle.admissions.isNotEmpty;
 }
 
+IconData _clinicalStatusIcon(AppWorkspaceStatusTone tone) {
+  return switch (tone) {
+    AppWorkspaceStatusTone.success => Icons.check_circle_outline,
+    AppWorkspaceStatusTone.warning => Icons.warning_amber_outlined,
+    AppWorkspaceStatusTone.error => Icons.error_outline,
+    AppWorkspaceStatusTone.info => Icons.info_outline,
+    AppWorkspaceStatusTone.neutral => Icons.radio_button_unchecked,
+  };
+}
+
 Color _clinicalToneColor(ThemeData theme, AppWorkspaceStatusTone tone) {
   final ColorScheme colorScheme = theme.colorScheme;
   return switch (tone) {
@@ -2855,6 +2954,9 @@ AppWorkspaceStatusTone _statusTone(String? value) {
     'NORMAL' => AppWorkspaceStatusTone.success,
     'CANCELLED' || 'CRITICAL' => AppWorkspaceStatusTone.error,
     'URGENT' ||
+    'ABNORMAL' ||
+    'WAITING' ||
+    'WAITING_REVIEW' ||
     'WAITING_DOCTOR_REVIEW' ||
     'WAITING_DISPOSITION' ||
     'ADMITTED' => AppWorkspaceStatusTone.warning,
@@ -2862,6 +2964,7 @@ AppWorkspaceStatusTone _statusTone(String? value) {
     'ORDERED' ||
     'COLLECTED' ||
     'IN_PROCESS' ||
+    'RESULTS_READY' ||
     'OPEN' => AppWorkspaceStatusTone.info,
     'PENDING' => AppWorkspaceStatusTone.warning,
     _ => AppWorkspaceStatusTone.neutral,

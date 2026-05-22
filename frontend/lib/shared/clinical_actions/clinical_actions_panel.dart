@@ -7,18 +7,24 @@ class ClinicalActionsPanel extends StatelessWidget {
     required this.title,
     required this.actions,
     this.description,
+    this.minItemWidth = 156,
+    this.maxColumns = 5,
     super.key,
   });
 
   final String title;
   final String? description;
   final List<ClinicalActionItem> actions;
+  final double minItemWidth;
+  final int maxColumns;
 
   @override
   Widget build(BuildContext context) {
     return AppActionPanel(
       title: title,
       description: description,
+      minItemWidth: minItemWidth,
+      maxColumns: maxColumns,
       actions: <AppActionItem>[
         for (final ClinicalActionItem action in actions)
           AppActionItem(

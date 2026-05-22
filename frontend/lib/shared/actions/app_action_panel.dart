@@ -15,6 +15,8 @@ class AppActionList extends StatelessWidget {
     this.extraActions = const <Widget>[],
     this.spacing,
     this.runSpacing,
+    this.minItemWidth,
+    this.maxColumns = 4,
     super.key,
   });
 
@@ -22,18 +24,30 @@ class AppActionList extends StatelessWidget {
   final List<Widget> extraActions;
   final double? spacing;
   final double? runSpacing;
+  final double? minItemWidth;
+  final int maxColumns;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Wrap(
-      spacing: spacing ?? theme.spacing.xs,
-      runSpacing: runSpacing ?? theme.spacing.xs,
-      children: <Widget>[
-        for (final AppActionItem action in actions) _ActionButton(action),
-        ...extraActions,
-      ],
-    );
+    final double gap = spacing ?? theme.spacing.sm;
+    final double rowGap = runSpacing ?? gap;
+    final List<Widget> children = <Widget>[
+      for (final AppActionItem action in actions) _ActionButton(action),
+      ...extraActions,
+    ];
+
+    if (minItemWidth != null) {
+      return AppResponsiveWrap(
+        minItemWidth: minItemWidth!,
+        maxColumns: maxColumns,
+        spacing: gap,
+        runSpacing: rowGap,
+        children: children,
+      );
+    }
+
+    return Wrap(spacing: gap, runSpacing: rowGap, children: children);
   }
 }
 
@@ -44,6 +58,10 @@ class AppActionPanel extends StatelessWidget {
     required this.actions,
     this.description,
     this.extraActions = const <Widget>[],
+    this.spacing,
+    this.runSpacing,
+    this.minItemWidth,
+    this.maxColumns = 4,
     super.key,
   });
 
@@ -51,13 +69,24 @@ class AppActionPanel extends StatelessWidget {
   final String? description;
   final List<AppActionItem> actions;
   final List<Widget> extraActions;
+  final double? spacing;
+  final double? runSpacing;
+  final double? minItemWidth;
+  final int maxColumns;
 
   @override
   Widget build(BuildContext context) {
     return AppWorkspaceDetailPanel(
       title: title,
       description: description,
-      child: AppActionList(actions: actions, extraActions: extraActions),
+      child: AppActionList(
+        actions: actions,
+        extraActions: extraActions,
+        spacing: spacing,
+        runSpacing: runSpacing,
+        minItemWidth: minItemWidth,
+        maxColumns: maxColumns,
+      ),
     );
   }
 }
