@@ -4,6 +4,9 @@ import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 
 enum AppButtonVariant { primary, secondary, tertiary }
 
+const Duration _buttonAnimationDuration = Duration(milliseconds: 140);
+const OutlinedBorder _buttonShape = RoundedRectangleBorder();
+
 class AppButton extends StatelessWidget {
   const AppButton({
     required this.label,
@@ -102,6 +105,8 @@ class AppButton extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final bool canPress = enabled && !isLoading && onPressed != null;
     final String label = semanticLabel ?? this.label;
+    final double iconSize = theme.appTokens.listIconSize;
+    final Color foregroundColor = _buttonForegroundColor(theme, variant);
 
     return Semantics(
       button: true,
@@ -112,41 +117,187 @@ class AppButton extends StatelessWidget {
         tooltip: tooltip ?? label,
         onPressed: canPress ? onPressed : null,
         autofocus: autofocus,
-        iconSize: theme.appTokens.listIconSize,
-        icon: isLoading
-            ? SizedBox.square(
-                dimension: theme.appTokens.listIconSize,
-                child: const CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Icon(leadingIcon),
+        style: _iconOnlyButtonStyle(context),
+        iconSize: iconSize,
+        icon: _ButtonGlyph(
+          icon: leadingIcon,
+          iconSize: iconSize,
+          isLoading: isLoading,
+          loadingColor: foregroundColor,
+        ),
       ),
     );
   }
 
   Widget _buildButton(BuildContext context, bool canPress) {
+    final ThemeData theme = Theme.of(context);
     final Widget child = _ButtonContent(
       label: label,
       leadingIcon: leadingIcon,
       isLoading: isLoading,
+      loadingColor: _buttonForegroundColor(theme, variant),
     );
+    final ButtonStyle style = _buttonStyle(context, variant);
 
     return switch (variant) {
       AppButtonVariant.primary => FilledButton(
         onPressed: canPress ? onPressed : null,
         autofocus: autofocus,
+        style: style,
         child: child,
       ),
       AppButtonVariant.secondary => OutlinedButton(
         onPressed: canPress ? onPressed : null,
         autofocus: autofocus,
+        style: style,
         child: child,
       ),
       AppButtonVariant.tertiary => TextButton(
         onPressed: canPress ? onPressed : null,
         autofocus: autofocus,
+        style: style,
         child: child,
       ),
     };
+  }
+
+  ButtonStyle _buttonStyle(BuildContext context, AppButtonVariant variant) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppSpacingTokens spacing = theme.spacing;
+    final double viewportWidth = MediaQuery.sizeOf(context).width;
+    final bool compact = viewportWidth < 360;
+    final EdgeInsetsGeometry padding = EdgeInsets.symmetric(
+      horizontal: compact ? spacing.md : spacing.lg,
+      vertical: spacing.sm,
+    );
+    final Color foregroundColor = _buttonForegroundColor(theme, variant);
+    final Color overlayBaseColor = switch (variant) {
+      AppButtonVariant.primary => colorScheme.onPrimary,
+      AppButtonVariant.secondary ||
+      AppButtonVariant.tertiary => foregroundColor,
+    };
+
+    return ButtonStyle(
+      animationDuration: _buttonAnimationDuration,
+      enableFeedback: true,
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      alignment: Alignment.center,
+      minimumSize: WidgetStatePropertyAll<Size>(
+        Size(spacing.none, theme.appTokens.minInteractiveDimension),
+      ),
+      padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(padding),
+      shape: const WidgetStatePropertyAll<OutlinedBorder>(_buttonShape),
+      textStyle: WidgetStatePropertyAll<TextStyle?>(
+        theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      foregroundColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (states.contains(WidgetState.disabled)) {
+          return colorScheme.onSurface.withValues(alpha: 0.38);
+        }
+        return foregroundColor;
+      }),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (states.contains(WidgetState.disabled)) {
+          return switch (variant) {
+            AppButtonVariant.primary => colorScheme.onSurface.withValues(
+              alpha: 0.08,
+            ),
+            AppButtonVariant.secondary ||
+            AppButtonVariant.tertiary => Colors.transparent,
+          };
+        }
+        return switch (variant) {
+          AppButtonVariant.primary => colorScheme.primary,
+          AppButtonVariant.secondary ||
+          AppButtonVariant.tertiary => Colors.transparent,
+        };
+      }),
+      overlayColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (states.contains(WidgetState.disabled)) {
+          return null;
+        }
+        if (states.contains(WidgetState.pressed)) {
+          return overlayBaseColor.withValues(alpha: 0.14);
+        }
+        if (states.contains(WidgetState.focused)) {
+          return overlayBaseColor.withValues(alpha: 0.12);
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return overlayBaseColor.withValues(alpha: 0.08);
+        }
+        return null;
+      }),
+      side: WidgetStateProperty.resolveWith<BorderSide?>((
+        Set<WidgetState> states,
+      ) {
+        if (variant != AppButtonVariant.secondary) {
+          return BorderSide.none;
+        }
+        final bool disabled = states.contains(WidgetState.disabled);
+        final bool focused = states.contains(WidgetState.focused);
+        final Color borderColor = disabled
+            ? colorScheme.onSurface.withValues(alpha: 0.12)
+            : colorScheme.primary.withValues(alpha: focused ? 0.74 : 0.48);
+        return BorderSide(
+          color: borderColor,
+          width: focused ? 1.4 : theme.appTokens.dividerThickness,
+        );
+      }),
+    );
+  }
+
+  ButtonStyle _iconOnlyButtonStyle(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color foregroundColor = _buttonForegroundColor(theme, variant);
+
+    return ButtonStyle(
+      animationDuration: _buttonAnimationDuration,
+      enableFeedback: true,
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      minimumSize: WidgetStatePropertyAll<Size>(
+        Size.square(theme.appTokens.minInteractiveDimension),
+      ),
+      padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
+        EdgeInsets.all(theme.spacing.xs),
+      ),
+      shape: const WidgetStatePropertyAll<OutlinedBorder>(_buttonShape),
+      foregroundColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (states.contains(WidgetState.disabled)) {
+          return colorScheme.onSurface.withValues(alpha: 0.38);
+        }
+        return foregroundColor;
+      }),
+      backgroundColor: const WidgetStatePropertyAll<Color>(Colors.transparent),
+      overlayColor: WidgetStateProperty.resolveWith<Color?>((
+        Set<WidgetState> states,
+      ) {
+        if (states.contains(WidgetState.disabled)) {
+          return null;
+        }
+        if (states.contains(WidgetState.pressed)) {
+          return foregroundColor.withValues(alpha: 0.14);
+        }
+        if (states.contains(WidgetState.focused)) {
+          return foregroundColor.withValues(alpha: 0.12);
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return foregroundColor.withValues(alpha: 0.08);
+        }
+        return null;
+      }),
+    );
   }
 }
 
@@ -155,35 +306,84 @@ class _ButtonContent extends StatelessWidget {
     required this.label,
     required this.leadingIcon,
     required this.isLoading,
+    required this.loadingColor,
   });
 
   final String label;
   final IconData? leadingIcon;
   final bool isLoading;
+  final Color loadingColor;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppSpacingTokens spacing = theme.spacing;
+    final double iconSize = theme.appTokens.listIconSize;
+    final Widget labelText = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
+    );
 
     if (!isLoading && leadingIcon == null) {
-      return Text(label, overflow: TextOverflow.ellipsis);
+      return labelText;
     }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        if (isLoading)
-          SizedBox.square(
-            dimension: theme.appTokens.listIconSize,
-            child: const CircularProgressIndicator(strokeWidth: 2),
-          )
-        else
-          Icon(leadingIcon, size: theme.appTokens.listIconSize),
+        _ButtonGlyph(
+          icon: leadingIcon,
+          iconSize: iconSize,
+          isLoading: isLoading,
+          loadingColor: loadingColor,
+        ),
         SizedBox(width: spacing.sm),
-        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+        Flexible(child: labelText),
       ],
     );
   }
+}
+
+class _ButtonGlyph extends StatelessWidget {
+  const _ButtonGlyph({
+    required this.icon,
+    required this.iconSize,
+    required this.isLoading,
+    required this.loadingColor,
+  });
+
+  final IconData? icon;
+  final double iconSize;
+  final bool isLoading;
+  final Color loadingColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: _buttonAnimationDuration,
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: isLoading
+          ? SizedBox.square(
+              key: const ValueKey<String>('loading'),
+              dimension: iconSize,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(loadingColor),
+              ),
+            )
+          : Icon(icon, key: const ValueKey<String>('icon'), size: iconSize),
+    );
+  }
+}
+
+Color _buttonForegroundColor(ThemeData theme, AppButtonVariant variant) {
+  return switch (variant) {
+    AppButtonVariant.primary => theme.colorScheme.onPrimary,
+    AppButtonVariant.secondary ||
+    AppButtonVariant.tertiary => theme.colorScheme.primary,
+  };
 }
