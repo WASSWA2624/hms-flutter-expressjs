@@ -14,6 +14,7 @@ class AppDialog extends StatefulWidget {
     this.semanticLabel,
     this.scrollable = false,
     this.showCloseButton = true,
+    this.showMaximizeButton = true,
     this.closeEnabled = true,
     this.maxWidth = _defaultMaxWidth,
     super.key,
@@ -28,6 +29,7 @@ class AppDialog extends StatefulWidget {
   final String? semanticLabel;
   final bool scrollable;
   final bool showCloseButton;
+  final bool showMaximizeButton;
   final bool closeEnabled;
   final double maxWidth;
 
@@ -39,9 +41,15 @@ class _AppDialogState extends State<AppDialog> {
   static const double _desktopMinWidth = 360;
   static const double _desktopMinHeight = 280;
   static const double _snackBarClearance = 88;
+  static const double _resizeHandleThickness = 6;
+
+  final GlobalKey _dialogShellKey = GlobalKey(debugLabel: 'appDialogShell');
 
   Offset _dragOffset = Offset.zero;
   Size? _desktopSize;
+  Size? _preMaximizeSize;
+  Offset? _preMaximizeDragOffset;
+  bool _isMaximized = false;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +86,7 @@ class _AppDialogState extends State<AppDialog> {
           ? (desktopSize?.height ?? maxHeight)
           : maxHeight,
     );
+    final bool resizeEnabled = desktopInteractive && !_isMaximized;
 
     final Widget dialogContent = DecoratedBox(
       decoration: BoxDecoration(
@@ -91,8 +100,11 @@ class _AppDialogState extends State<AppDialog> {
         scrollable: widget.scrollable,
         compact: compact,
         showCloseButton: widget.showCloseButton,
+        showMaximizeButton: widget.showMaximizeButton && desktopInteractive,
+        isMaximized: _isMaximized,
         closeEnabled: widget.closeEnabled,
-        onHeaderDragUpdate: desktopInteractive
+        onMaximizeToggle: desktopInteractive ? _toggleMaximize : null,
+        onHeaderDragUpdate: desktopInteractive && !_isMaximized
             ? (DragUpdateDetails details) {
                 _handleDrag(details, viewport, insetPadding);
               }
@@ -112,22 +124,67 @@ class _AppDialogState extends State<AppDialog> {
 
     if (desktopInteractive) {
       dialogBody = SizedBox(
+        key: _dialogShellKey,
         width: dialogConstraints.maxWidth,
+        height: desktopSize == null ? null : dialogConstraints.maxHeight,
         child: dialogBody,
       );
     }
 
-    if (desktopInteractive) {
+    if (resizeEnabled) {
       dialogBody = Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
           dialogBody,
           PositionedDirectional(
-            end: theme.spacing.xs,
-            bottom: theme.spacing.xs,
+            top: 0,
+            end: 0,
+            bottom: _resizeHandleThickness,
+            width: _resizeHandleThickness,
+            child: _DialogResizeHandle(
+              axis: Axis.horizontal,
+              tooltip: 'Resize width',
+              onDragUpdate: (DragUpdateDetails details) {
+                _handleResize(
+                  details,
+                  viewport,
+                  insetPadding,
+                  defaultWidth,
+                  axis: Axis.horizontal,
+                );
+              },
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: _resizeHandleThickness,
+            bottom: 0,
+            height: _resizeHandleThickness,
+            child: _DialogResizeHandle(
+              axis: Axis.vertical,
+              tooltip: 'Resize height',
+              onDragUpdate: (DragUpdateDetails details) {
+                _handleResize(
+                  details,
+                  viewport,
+                  insetPadding,
+                  defaultWidth,
+                  axis: Axis.vertical,
+                );
+              },
+            ),
+          ),
+          PositionedDirectional(
+            end: 0,
+            bottom: 0,
             child: _DialogResizeHandle(
               onDragUpdate: (DragUpdateDetails details) {
-                _handleResize(details, viewport, insetPadding, defaultWidth);
+                _handleResize(
+                  details,
+                  viewport,
+                  insetPadding,
+                  defaultWidth,
+                );
               },
             ),
           ),
@@ -186,12 +243,17 @@ class _AppDialogState extends State<AppDialog> {
     });
   }
 
-  void _handleResize(
-    DragUpdateDetails details,
-    Size viewport,
-    EdgeInsets insetPadding,
-    double defaultWidth,
-  ) {
+  void _toggleMaximize() {
+    final Size viewport = MediaQuery.sizeOf(context);
+    final ThemeData theme = Theme.of(context);
+    final double horizontalInset = theme.spacing.xl;
+    final double topInset = theme.spacing.xl;
+    final EdgeInsets insetPadding = EdgeInsets.only(
+      left: horizontalInset,
+      top: topInset,
+      right: horizontalInset,
+      bottom: topInset + _snackBarClearance,
+    );
     final double availableWidth = math.max(
       _desktopMinWidth,
       viewport.width - insetPadding.horizontal,
@@ -200,17 +262,83 @@ class _AppDialogState extends State<AppDialog> {
       _desktopMinHeight,
       viewport.height - insetPadding.vertical,
     );
-    final Size current = _desktopSize ?? Size(defaultWidth, availableHeight);
+    final double defaultWidth = math.min(widget.maxWidth, availableWidth);
+
+    if (_isMaximized) {
+      setState(() {
+        _isMaximized = false;
+        _desktopSize = _preMaximizeSize;
+        _dragOffset = _preMaximizeDragOffset ?? Offset.zero;
+        _preMaximizeSize = null;
+        _preMaximizeDragOffset = null;
+      });
+      return;
+    }
+
+    final Size currentSize = _desktopSize ??
+        _measuredShellSize(defaultWidth, availableWidth, availableHeight);
     setState(() {
-      _desktopSize = Size(
-        (current.width + details.delta.dx)
-            .clamp(_desktopMinWidth, availableWidth)
-            .toDouble(),
-        (current.height + details.delta.dy)
-            .clamp(_desktopMinHeight, availableHeight)
-            .toDouble(),
-      );
+      _preMaximizeSize = currentSize;
+      _preMaximizeDragOffset = _dragOffset;
+      _isMaximized = true;
+      _desktopSize = Size(availableWidth, availableHeight);
+      _dragOffset = Offset.zero;
     });
+  }
+
+  void _handleResize(
+    DragUpdateDetails details,
+    Size viewport,
+    EdgeInsets insetPadding,
+    double defaultWidth, {
+    Axis? axis,
+  }) {
+    if (_isMaximized) {
+      setState(() {
+        _isMaximized = false;
+        _preMaximizeSize = null;
+        _preMaximizeDragOffset = null;
+      });
+    }
+
+    final double availableWidth = math.max(
+      _desktopMinWidth,
+      viewport.width - insetPadding.horizontal,
+    );
+    final double availableHeight = math.max(
+      _desktopMinHeight,
+      viewport.height - insetPadding.vertical,
+    );
+    final Size current = _desktopSize ??
+        _measuredShellSize(defaultWidth, availableWidth, availableHeight);
+    setState(() {
+      final double nextWidth = axis == Axis.vertical
+          ? current.width
+          : (current.width + details.delta.dx)
+              .clamp(_desktopMinWidth, availableWidth)
+              .toDouble();
+      final double nextHeight = axis == Axis.horizontal
+          ? current.height
+          : (current.height + details.delta.dy)
+              .clamp(_desktopMinHeight, availableHeight)
+              .toDouble();
+      _desktopSize = Size(nextWidth, nextHeight);
+    });
+  }
+
+  Size _measuredShellSize(
+    double defaultWidth,
+    double availableWidth,
+    double availableHeight,
+  ) {
+    final Size? measured = _dialogShellKey.currentContext?.size;
+    if (measured != null) {
+      return Size(
+        measured.width.clamp(_desktopMinWidth, availableWidth).toDouble(),
+        measured.height.clamp(_desktopMinHeight, availableHeight).toDouble(),
+      );
+    }
+    return Size(defaultWidth, availableHeight);
   }
 }
 
@@ -220,7 +348,10 @@ class _DialogBody extends StatelessWidget {
     required this.scrollable,
     required this.compact,
     required this.showCloseButton,
+    required this.showMaximizeButton,
+    required this.isMaximized,
     required this.closeEnabled,
+    this.onMaximizeToggle,
     this.onHeaderDragUpdate,
     this.title,
     this.content,
@@ -234,7 +365,10 @@ class _DialogBody extends StatelessWidget {
   final bool scrollable;
   final bool compact;
   final bool showCloseButton;
+  final bool showMaximizeButton;
+  final bool isMaximized;
   final bool closeEnabled;
+  final VoidCallback? onMaximizeToggle;
   final ValueChanged<DragUpdateDetails>? onHeaderDragUpdate;
 
   @override
@@ -265,8 +399,11 @@ class _DialogBody extends StatelessWidget {
           icon: icon,
           titleStyle: titleStyle,
           showCloseButton: showCloseButton,
+          showMaximizeButton: showMaximizeButton,
+          isMaximized: isMaximized,
           closeEnabled: closeEnabled,
           compact: compact,
+          onMaximizeToggle: onMaximizeToggle,
           onDragUpdate: onHeaderDragUpdate,
         ),
         if (dialogContent != null)
@@ -295,8 +432,11 @@ class _DialogHeader extends StatelessWidget {
     required this.icon,
     required this.titleStyle,
     required this.showCloseButton,
+    required this.showMaximizeButton,
+    required this.isMaximized,
     required this.closeEnabled,
     required this.compact,
+    this.onMaximizeToggle,
     this.onDragUpdate,
   });
 
@@ -304,8 +444,11 @@ class _DialogHeader extends StatelessWidget {
   final Widget? icon;
   final TextStyle titleStyle;
   final bool showCloseButton;
+  final bool showMaximizeButton;
+  final bool isMaximized;
   final bool closeEnabled;
   final bool compact;
+  final VoidCallback? onMaximizeToggle;
   final ValueChanged<DragUpdateDetails>? onDragUpdate;
 
   @override
@@ -348,6 +491,17 @@ class _DialogHeader extends StatelessWidget {
                       child: title!,
                     ),
             ),
+            if (showMaximizeButton)
+              Tooltip(
+                message: isMaximized ? 'Restore dialog' : 'Maximize dialog',
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onMaximizeToggle,
+                  icon: Icon(
+                    isMaximized ? Icons.fullscreen_exit : Icons.fullscreen,
+                  ),
+                ),
+              ),
             if (showCloseButton)
               Tooltip(
                 message: MaterialLocalizations.of(context).closeButtonTooltip,
@@ -383,23 +537,32 @@ class _DialogHeader extends StatelessWidget {
 }
 
 class _DialogResizeHandle extends StatelessWidget {
-  const _DialogResizeHandle({required this.onDragUpdate});
+  const _DialogResizeHandle({
+    required this.onDragUpdate,
+    this.axis,
+    this.tooltip = 'Resize dialog',
+  });
 
   final ValueChanged<DragUpdateDetails> onDragUpdate;
+  final Axis? axis;
+  final String tooltip;
+
+  SystemMouseCursor get _cursor {
+    return switch (axis) {
+      Axis.horizontal => SystemMouseCursors.resizeLeftRight,
+      Axis.vertical => SystemMouseCursors.resizeUpDown,
+      _ => SystemMouseCursors.resizeDownRight,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final bool showCornerIcon = axis == null;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeDownRight,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onPanUpdate: onDragUpdate,
-        child: Tooltip(
-          message: 'Resize dialog',
-          child: SizedBox.square(
+    final Widget handle = showCornerIcon
+        ? SizedBox.square(
             dimension: theme.appTokens.minInteractiveDimension,
             child: Align(
               alignment: Alignment.bottomRight,
@@ -409,8 +572,15 @@ class _DialogResizeHandle extends StatelessWidget {
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
-          ),
-        ),
+          )
+        : const SizedBox.expand();
+
+    return MouseRegion(
+      cursor: _cursor,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanUpdate: onDragUpdate,
+        child: Tooltip(message: tooltip, child: handle),
       ),
     );
   }

@@ -117,4 +117,77 @@ void main() {
       closeTo(titleBefore.dy + 40, 1),
     );
   });
+
+  testWidgets('desktop maximize toggles shell size and icon', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        maxWidth: 480,
+        title: Text('Large form'),
+        content: SizedBox(
+          width: 320,
+          height: 240,
+          child: Text('Dialog body'),
+        ),
+      ),
+      size: const Size(1000, 700),
+    );
+
+    expect(find.byIcon(Icons.fullscreen), findsOneWidget);
+
+    final RenderBox shellBefore = _dialogShellRenderBox(tester);
+    final double widthBefore = shellBefore.size.width;
+    final double heightBefore = shellBefore.size.height;
+
+    await tester.tap(find.byTooltip('Maximize dialog'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
+    final RenderBox shellMaximized = _dialogShellRenderBox(tester);
+    expect(shellMaximized.size.width, greaterThan(widthBefore + 100));
+    expect(shellMaximized.size.height, greaterThan(heightBefore + 50));
+
+    await tester.tap(find.byTooltip('Restore dialog'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.fullscreen), findsOneWidget);
+    final RenderBox shellRestored = _dialogShellRenderBox(tester);
+    expect(shellRestored.size.width, closeTo(widthBefore, 2));
+    expect(shellRestored.size.height, closeTo(heightBefore, 2));
+  });
+
+  testWidgets('desktop corner resize updates shell size', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        maxWidth: 520,
+        title: Text('Resize me'),
+        content: SizedBox(width: 320, height: 200, child: Text('Dialog body')),
+      ),
+      size: const Size(1000, 700),
+    );
+
+    final RenderBox shellBefore = _dialogShellRenderBox(tester);
+    final double widthBefore = shellBefore.size.width;
+    final double heightBefore = shellBefore.size.height;
+
+    await tester.drag(find.byIcon(Icons.open_in_full), const Offset(-80, 60));
+    await tester.pump();
+
+    final RenderBox shellAfter = _dialogShellRenderBox(tester);
+    expect(shellAfter.size.width, lessThan(widthBefore - 40));
+    expect(shellAfter.size.height, greaterThan(heightBefore + 40));
+  });
+}
+
+RenderBox _dialogShellRenderBox(WidgetTester tester) {
+  final Finder sizedBoxes = find.descendant(
+    of: find.byType(Dialog),
+    matching: find.byType(SizedBox),
+  );
+  return tester.renderObject<RenderBox>(sizedBoxes.first);
 }
