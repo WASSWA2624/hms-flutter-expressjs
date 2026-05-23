@@ -97,6 +97,128 @@ describe('lab-workspace.service', () => {
     });
   });
 
+  it('returns a stable empty patient workbench response', async () => {
+    labWorkspaceRepository.findManyOrders.mockResolvedValue(undefined);
+    labWorkspaceRepository.countOrders.mockResolvedValue(undefined);
+    labWorkspaceRepository.countOrderItems.mockResolvedValue(undefined);
+    labWorkspaceRepository.countResults.mockResolvedValue(undefined);
+    labWorkspaceRepository.countSamples.mockResolvedValue(undefined);
+
+    const result = await labWorkspaceService.getLabWorkbench(
+      { view: 'PATIENTS' },
+      1,
+      25,
+      'ordered_at',
+      'desc'
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          view: 'patients',
+          total_orders: 0,
+          total_patients: 0,
+          actionable_patients: 0,
+        }),
+        worklist: [],
+        pagination: expect.objectContaining({
+          page: 1,
+          limit: 25,
+          total: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        }),
+      })
+    );
+  });
+
+  it('returns an order workbench response with pagination total', async () => {
+    labWorkspaceRepository.findManyOrders
+      .mockResolvedValueOnce([buildBaseOrder()])
+      .mockResolvedValueOnce([buildBaseOrder()]);
+    labWorkspaceRepository.countOrders
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    labWorkspaceRepository.countOrderItems.mockResolvedValue(0);
+    labWorkspaceRepository.countResults.mockResolvedValue(0);
+    labWorkspaceRepository.countSamples.mockResolvedValue(0);
+
+    const result = await labWorkspaceService.getLabWorkbench(
+      { view: 'ORDERS' },
+      1,
+      25,
+      'ordered_at',
+      'desc'
+    );
+
+    expect(result.summary).toEqual(
+      expect.objectContaining({
+        view: 'orders',
+        total_orders: 1,
+      })
+    );
+    expect(result.worklist).toHaveLength(1);
+    expect(result.worklist[0]).toEqual(
+      expect.objectContaining({
+        id: 'LAB0000001',
+        display_id: 'LAB0000001',
+        patient_id: 'PAT0000001',
+      })
+    );
+    expect(result.pagination).toEqual(
+      expect.objectContaining({
+        page: 1,
+        limit: 25,
+        total: 1,
+      })
+    );
+  });
+
+  it('groups patient workbench records without losing order identifiers', async () => {
+    const secondOrder = buildBaseOrder({
+      id: 'order-internal-2',
+      human_friendly_id: 'LAB0000002',
+      status: 'COLLECTED',
+    });
+    const records = [buildBaseOrder(), secondOrder];
+    labWorkspaceRepository.findManyOrders
+      .mockResolvedValueOnce(records)
+      .mockResolvedValueOnce(records);
+    labWorkspaceRepository.countOrders
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+    labWorkspaceRepository.countOrderItems.mockResolvedValue(0);
+    labWorkspaceRepository.countResults.mockResolvedValue(0);
+    labWorkspaceRepository.countSamples.mockResolvedValue(0);
+
+    const result = await labWorkspaceService.getLabWorkbench(
+      { view: 'PATIENTS' },
+      1,
+      25,
+      'ordered_at',
+      'desc'
+    );
+
+    expect(result.worklist).toHaveLength(1);
+    expect(result.worklist[0]).toEqual(
+      expect.objectContaining({
+        patient_worklist: true,
+        order_count: 2,
+        active_order_count: 2,
+        order_ids: ['LAB0000001', 'LAB0000002'],
+        order_display_ids: ['LAB0000001', 'LAB0000002'],
+      })
+    );
+    expect(result.pagination.total).toBe(1);
+  });
+
   it('collectLabOrder emits lab workflow realtime update without blocking mutation', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
 

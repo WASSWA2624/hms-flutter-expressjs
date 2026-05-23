@@ -121,7 +121,11 @@ final class LabWorkspaceController
   }
 
   Future<AppFailure?> selectOrder(LabOrderSummary order) {
-    return selectOrderById(order.apiId);
+    final String? orderId = _workflowIdentifierFor(order);
+    if (orderId == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+    return selectOrderById(orderId);
   }
 
   Future<AppFailure?> selectOrderById(String orderId) async {
@@ -323,9 +327,14 @@ final class LabWorkspaceController
     final _LabReferenceData referenceData = await _referenceData();
     LabOrderWorkflow? selectedWorkflow;
     if (workbench.worklist.items.isNotEmpty) {
-      final Result<LabOrderWorkflow> detailResult = await _repository
-          .loadOrderWorkflow(workbench.worklist.items.first.apiId);
-      selectedWorkflow = _successOrNull(detailResult);
+      final String? initialOrderId = _workflowIdentifierFor(
+        workbench.worklist.items.first,
+      );
+      if (initialOrderId != null) {
+        final Result<LabOrderWorkflow> detailResult = await _repository
+            .loadOrderWorkflow(initialOrderId);
+        selectedWorkflow = _successOrNull(detailResult);
+      }
     }
 
     return Result<LabWorkspaceState>.success(
@@ -575,6 +584,32 @@ final class LabWorkspaceController
     return left.id == right.id ||
         left.apiId == right.apiId ||
         (left.displayId != null && left.displayId == right.displayId);
+  }
+
+  String? _workflowIdentifierFor(LabOrderSummary order) {
+    if (order.isPatientGroup) {
+      final String? groupedOrderDisplayId = _firstNonEmpty(
+        order.orderDisplayIds,
+      );
+      if (groupedOrderDisplayId != null) {
+        return groupedOrderDisplayId;
+      }
+      final String? groupedOrderId = _firstNonEmpty(order.orderIds);
+      if (groupedOrderId != null) {
+        return groupedOrderId;
+      }
+    }
+    return _firstNonEmpty(<String?>[order.displayId, order.id]);
+  }
+
+  String? _firstNonEmpty(Iterable<String?> values) {
+    for (final String? value in values) {
+      final String? trimmed = value?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    }
+    return null;
   }
 
   T? _successOrNull<T>(Result<T> result) {

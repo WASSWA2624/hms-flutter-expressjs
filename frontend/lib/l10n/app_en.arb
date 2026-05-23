@@ -795,50 +795,185 @@
   "opdAllBillingStatesOption": "All billing states",
   "opdAllNextActionsOption": "All next actions",
   "opdSummaryAllPatientsLabel": "All Patients",
+  "@opdSummaryAllPatientsLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryAllOpdPatientsLabel": "All OPD Patients",
+  "@opdSummaryAllOpdPatientsLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryActiveOpdLabel": "Active OPD",
+  "@opdSummaryActiveOpdLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryVitalsNeededLabel": "Vitals needed",
+  "@opdSummaryVitalsNeededLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryDoctorNeededLabel": "Doctor needed",
+  "@opdSummaryDoctorNeededLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryWithDoctorLabel": "With doctor",
+  "@opdSummaryWithDoctorLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryLabPendingLabel": "Lab pending",
+  "@opdSummaryLabPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryImagingPendingLabel": "Imaging pending",
+  "@opdSummaryImagingPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryPharmacyPendingLabel": "Pharmacy pending",
+  "@opdSummaryPharmacyPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryDecisionNeededLabel": "Decision needed",
+  "@opdSummaryDecisionNeededLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryAdmissionPendingLabel": "Admission pending",
+  "@opdSummaryAdmissionPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdSummaryDischargedTodayLabel": "Discharged today",
+  "@opdSummaryDischargedTodayLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusPaymentDueLabel": "Payment due",
+  "@opdStatusPaymentDueLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusVitalsNeededLabel": "Vitals needed",
+  "@opdStatusVitalsNeededLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusDoctorNeededLabel": "Doctor needed",
+  "@opdStatusDoctorNeededLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusWithDoctorLabel": "With doctor",
+  "@opdStatusWithDoctorLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusDoctorReviewLabel": "Doctor review",
+  "@opdStatusDoctorReviewLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusLabPendingLabel": "Lab pending",
+  "@opdStatusLabPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusSamplePendingLabel": "Sample pending",
+  "@opdStatusSamplePendingLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusInLabLabel": "In lab",
+  "@opdStatusInLabLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusResultsReadyLabel": "Results ready",
+  "@opdStatusResultsReadyLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusImagingPendingLabel": "Imaging pending",
+  "@opdStatusImagingPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusReportPendingLabel": "Report pending",
+  "@opdStatusReportPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusReportReadyLabel": "Report ready",
+  "@opdStatusReportReadyLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusLabAndImagingPendingLabel": "Lab & imaging pending",
+  "@opdStatusLabAndImagingPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusPharmacyPendingLabel": "Pharmacy pending",
+  "@opdStatusPharmacyPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusDispensingLabel": "Dispensing",
+  "@opdStatusDispensingLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusMedicinesDispensedLabel": "Medicines dispensed",
+  "@opdStatusMedicinesDispensedLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusDecisionNeededLabel": "Decision needed",
+  "@opdStatusDecisionNeededLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusAdmissionPendingLabel": "Admission pending",
+  "@opdStatusAdmissionPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusAdmittedLabel": "Admitted",
+  "@opdStatusAdmittedLabel": {
+    "description": "OPD display label."
+  },
   "opdStatusDischargedLabel": "Discharged",
+  "@opdStatusDischargedLabel": {
+    "description": "OPD display label."
+  },
   "opdNextCollectSampleLabel": "Collect sample",
+  "@opdNextCollectSampleLabel": {
+    "description": "OPD display label."
+  },
   "opdNextProcessLabLabel": "Process lab",
+  "@opdNextProcessLabLabel": {
+    "description": "OPD display label."
+  },
   "opdNextReviewResultsLabel": "Review results",
+  "@opdNextReviewResultsLabel": {
+    "description": "OPD display label."
+  },
   "opdNextLabHandoffLabel": "Lab handoff",
+  "@opdNextLabHandoffLabel": {
+    "description": "OPD display label."
+  },
   "opdNextPerformImagingLabel": "Perform imaging",
+  "@opdNextPerformImagingLabel": {
+    "description": "OPD display label."
+  },
   "opdNextCompleteImagingReportLabel": "Complete imaging report",
+  "@opdNextCompleteImagingReportLabel": {
+    "description": "OPD display label."
+  },
   "opdNextReviewReportLabel": "Review report",
+  "@opdNextReviewReportLabel": {
+    "description": "OPD display label."
+  },
   "opdNextImagingHandoffLabel": "Imaging handoff",
+  "@opdNextImagingHandoffLabel": {
+    "description": "OPD display label."
+  },
   "opdNextDiagnosticsPendingLabel": "Diagnostics pending",
+  "@opdNextDiagnosticsPendingLabel": {
+    "description": "OPD display label."
+  },
   "opdNextDispenseMedicineLabel": "Dispense medicine",
+  "@opdNextDispenseMedicineLabel": {
+    "description": "OPD display label."
+  },
   "opdNextPharmacyHandoffLabel": "Pharmacy handoff",
+  "@opdNextPharmacyHandoffLabel": {
+    "description": "OPD display label."
+  },
   "opdNextDispositionLabel": "Disposition",
+  "@opdNextDispositionLabel": {
+    "description": "OPD display label."
+  },
   "opdNextAdmissionHandoffLabel": "Admission handoff",
+  "@opdNextAdmissionHandoffLabel": {
+    "description": "OPD display label."
+  },
   "opdSearchLabel": "Search OPD",
   "opdSearchHint": "Search patient, identifier, or assigned staff",
   "opdApplyFiltersAction": "Apply filters",

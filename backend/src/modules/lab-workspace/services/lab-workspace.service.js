@@ -90,14 +90,23 @@ const normalizeWorkbenchView = (value) => {
 const labPatientGroupKey = (order) =>
   String(order?.patient_id || order?.patient?.id || order?.id || '').trim();
 
+const toSafeArray = (value) => (Array.isArray(value) ? value : []);
+
+const toSafeCount = (value) => {
+  const count = Number(value);
+  return Number.isFinite(count) && count > 0 ? count : 0;
+};
+
 const groupLabOrdersByPatient = (records = []) => {
   const groups = new Map();
-  records.forEach((record) => {
+  toSafeArray(records).forEach((record) => {
+    if (!record || typeof record !== 'object') return;
     const key = labPatientGroupKey(record);
+    if (!key) return;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(record);
   });
-  return Array.from(groups.values());
+  return Array.from(groups.values()).filter((group) => group.length > 0);
 };
 
 const uniqueByKey = (items, keySelector) => {
@@ -113,7 +122,9 @@ const uniqueByKey = (items, keySelector) => {
 const labOrderIsTerminal = (order) => ORDER_COMPLETION_STATES.has(normalizeStatus(order?.status));
 
 const mapLabPatientWorkItem = (records = []) => {
-  const mapped = records.map((record) => mapLabOrderRecord(record)).filter(Boolean);
+  const mapped = toSafeArray(records)
+    .map((record) => mapLabOrderRecord(record))
+    .filter(Boolean);
   if (!mapped.length) return null;
   const representative = mapped[0];
   const items = uniqueByKey(mapped.flatMap((order) => order.items || []), (item) => item.id);
@@ -825,26 +836,32 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order) => {
       ),
     ]);
 
-    const patientGroups = groupLabOrdersByPatient(orderWorklistRecords);
-    const patientSummary = summarizeLabPatientGroups(groupLabOrdersByPatient(summaryOrderRecords));
+    const worklistRecords = toSafeArray(orderWorklistRecords);
+    const summaryRecords = toSafeArray(summaryOrderRecords);
+    const patientGroups = groupLabOrdersByPatient(worklistRecords);
+    const patientSummary = summarizeLabPatientGroups(
+      groupLabOrdersByPatient(summaryRecords)
+    );
     const patientWorklist = patientGroups.map(mapLabPatientWorkItem).filter(Boolean);
     const pagedPatientWorklist = patientWorklist.slice(skip, skip + limit);
     const worklist = view === 'PATIENTS'
       ? pagedPatientWorklist
-      : orderWorklistRecords.map((record) => mapLabOrderRecord(record)).filter(Boolean);
-    const worklistTotal = view === 'PATIENTS' ? patientWorklist.length : total;
+      : worklistRecords.map((record) => mapLabOrderRecord(record)).filter(Boolean);
+    const worklistTotal = view === 'PATIENTS'
+      ? patientWorklist.length
+      : toSafeCount(total);
 
     return {
       summary: {
         view: view.toLowerCase(),
-        total_orders: totalOrders,
-        collection_queue: collectionQueue,
-        processing_queue: processingQueue,
-        results_queue: resultsQueue,
-        critical_results: criticalResults,
-        completed_orders: completedOrders,
-        cancelled_orders: cancelledOrders,
-        rejected_samples: rejectedSamples,
+        total_orders: toSafeCount(totalOrders),
+        collection_queue: toSafeCount(collectionQueue),
+        processing_queue: toSafeCount(processingQueue),
+        results_queue: toSafeCount(resultsQueue),
+        critical_results: toSafeCount(criticalResults),
+        completed_orders: toSafeCount(completedOrders),
+        cancelled_orders: toSafeCount(cancelledOrders),
+        rejected_samples: toSafeCount(rejectedSamples),
         ...patientSummary,
       },
       worklist,
