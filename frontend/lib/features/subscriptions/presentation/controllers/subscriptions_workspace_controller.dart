@@ -21,24 +21,18 @@ final class SubscriptionsWorkspaceController
   }
 
   @override
-  Future<Result<SubscriptionsWorkspaceState>> build() async {
-    const SubscriptionsWorkspaceQuery query = SubscriptionsWorkspaceQuery();
-    final Result<SubscriptionsWorkspaceData> dataResult = await _repository
-        .getWorkspace(query);
-    return dataResult.map(
-      (SubscriptionsWorkspaceData data) => SubscriptionsWorkspaceState(
-        data: data,
-        selectedItem:
-            data.overview.currentSubscription ?? data.items.items.firstOrNull,
-      ),
-    );
+  Future<Result<SubscriptionsWorkspaceState>> build() {
+    return _loadInitialState();
   }
 
   Future<AppFailure?> refresh() async {
     final SubscriptionsWorkspaceState? current = _currentState;
     if (current == null) {
-      ref.invalidateSelf();
-      return null;
+      state = const AsyncLoading<Result<SubscriptionsWorkspaceState>>();
+      final Result<SubscriptionsWorkspaceState> result =
+          await _loadInitialState();
+      state = AsyncData<Result<SubscriptionsWorkspaceState>>(result);
+      return _failureOrNull(result);
     }
     _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
     return _refreshWorkspace(preferredSelectedId: current.selectedItem?.id);
@@ -294,6 +288,19 @@ final class SubscriptionsWorkspaceController
     return _submitAction(() => _repository.retryInvoice(selected.id, draft));
   }
 
+  Future<Result<SubscriptionsWorkspaceState>> _loadInitialState() async {
+    const SubscriptionsWorkspaceQuery query = SubscriptionsWorkspaceQuery();
+    final Result<SubscriptionsWorkspaceData> dataResult = await _repository
+        .getWorkspace(query);
+    return dataResult.map(
+      (SubscriptionsWorkspaceData data) => SubscriptionsWorkspaceState(
+        data: data,
+        selectedItem:
+            data.overview.currentSubscription ?? data.items.items.firstOrNull,
+      ),
+    );
+  }
+
   Future<AppFailure?> _loadQuery(
     SubscriptionsWorkspaceQuery query, {
     bool clearSelectedItem = false,
@@ -319,6 +326,7 @@ final class SubscriptionsWorkspaceController
             selectedItem: _selectAfterRefresh(data.items.items, null),
             isRefreshing: false,
             isSaving: false,
+            clearLastFailure: true,
           ),
         );
         return null;
@@ -376,6 +384,7 @@ final class SubscriptionsWorkspaceController
             ),
             isRefreshing: false,
             isSaving: false,
+            clearLastFailure: true,
           ),
         );
         return null;
@@ -443,6 +452,13 @@ final class SubscriptionsWorkspaceController
   void _emit(SubscriptionsWorkspaceState nextState) {
     state = AsyncData<Result<SubscriptionsWorkspaceState>>(
       Result<SubscriptionsWorkspaceState>.success(nextState),
+    );
+  }
+
+  AppFailure? _failureOrNull<T>(Result<T> result) {
+    return result.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
     );
   }
 

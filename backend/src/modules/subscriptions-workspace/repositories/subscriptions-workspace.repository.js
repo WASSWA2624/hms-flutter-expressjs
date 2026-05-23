@@ -338,8 +338,8 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
     if (search) {
       where.AND = [{
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { code: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search } },
+          { code: { contains: search } },
           { human_friendly_id: { contains: search.toUpperCase() } },
         ],
       }];
@@ -355,9 +355,9 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
     if (filters.is_add_on === 'false') where.is_add_on = false;
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search } },
+        { slug: { contains: search } },
+        { description: { contains: search } },
         { human_friendly_id: { contains: search.toUpperCase() } },
       ];
     }
@@ -384,9 +384,9 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
     if (search) {
       where.OR = [
         { human_friendly_id: { contains: search.toUpperCase() } },
-        { tenant: { name: { contains: search, mode: 'insensitive' } } },
-        { plan: { name: { contains: search, mode: 'insensitive' } } },
-        { plan: { code: { contains: search, mode: 'insensitive' } } },
+        { tenant: { name: { contains: search } } },
+        { plan: { name: { contains: search } } },
+        { plan: { code: { contains: search } } },
       ];
     }
     applyDateWindow(where, dateWindow);
@@ -407,8 +407,8 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
     if (search) {
       where.OR = [
         { human_friendly_id: { contains: search.toUpperCase() } },
-        { module: { name: { contains: search, mode: 'insensitive' } } },
-        { module: { slug: { contains: search, mode: 'insensitive' } } },
+        { module: { name: { contains: search } } },
+        { module: { slug: { contains: search } } },
         { subscription: { human_friendly_id: { contains: search.toUpperCase() } } },
       ];
     }
@@ -463,7 +463,7 @@ const buildResourceWhere = (resource, filters = {}, tenantId) => {
   if (search) {
     where.OR = [
       { human_friendly_id: { contains: search.toUpperCase() } },
-      { tenant: { name: { contains: search, mode: 'insensitive' } } },
+      { tenant: { name: { contains: search } } },
     ];
   }
   if ((queue === 'EXPIRING_LICENSES' || queue === 'RENEWALS_DUE') && !dateWindow) {

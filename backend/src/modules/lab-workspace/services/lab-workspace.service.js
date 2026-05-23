@@ -81,6 +81,24 @@ const REVERSE_STEP_PRIORITY = Object.freeze({
 
 const PATIENT_WORKBENCH_SCAN_LIMIT = 5000;
 const WORKBENCH_VIEWS = new Set(['PATIENTS', 'ORDERS']);
+const LAB_WORKBENCH_SORT_FIELDS = new Set([
+  'human_friendly_id',
+  'status',
+  'ordered_at',
+  'created_at',
+  'updated_at',
+]);
+
+const resolveWorkbenchOrderBy = (sortBy, order = 'desc') => {
+  const direction = String(order || '').trim().toLowerCase() === 'asc'
+    ? 'asc'
+    : 'desc';
+  const field = String(sortBy || '').trim().toLowerCase();
+  if (LAB_WORKBENCH_SORT_FIELDS.has(field)) {
+    return { [field]: direction };
+  }
+  return { ordered_at: direction };
+};
 
 const normalizeWorkbenchView = (value) => {
   const normalized = String(value || 'PATIENTS').trim().toUpperCase();
@@ -765,7 +783,7 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) =
   try {
     const view = normalizeWorkbenchView(filters?.view);
     const skip = (page - 1) * limit;
-    const orderBy = sortBy ? { [sortBy]: order } : { ordered_at: 'desc' };
+    const orderBy = resolveWorkbenchOrderBy(sortBy, order);
 
     const [where, summaryWhere] = await Promise.all([
       buildWorkbenchOrderWhere(filters, { includeSearch: true, user }),

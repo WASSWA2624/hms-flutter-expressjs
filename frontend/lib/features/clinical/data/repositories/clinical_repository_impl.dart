@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
@@ -72,50 +71,45 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     ClinicalWorklistEntry entry,
   ) async {
     final String encounterId = entry.encounterId;
-    final List<Result<List<ClinicalRelatedRecord>>> results = await Future.wait(
-      <Future<Result<List<ClinicalRelatedRecord>>>>[
-        _fetchRelatedList(
+    final List<List<ClinicalRelatedRecord>> results = await Future.wait(
+      <Future<List<ClinicalRelatedRecord>>>[
+        _relatedListOrEmpty(
           HmsApiResource.clinicalNotes,
           encounterId,
           'clinical_note',
         ),
-        _fetchRelatedList(HmsApiResource.diagnoses, encounterId, 'diagnosis'),
-        _fetchRelatedList(HmsApiResource.procedures, encounterId, 'procedure'),
-        _fetchRelatedList(HmsApiResource.carePlans, encounterId, 'care_plan'),
-        _fetchRelatedList(HmsApiResource.labOrders, encounterId, 'lab_order'),
-        _fetchRelatedList(
+        _relatedListOrEmpty(HmsApiResource.diagnoses, encounterId, 'diagnosis'),
+        _relatedListOrEmpty(HmsApiResource.procedures, encounterId, 'procedure'),
+        _relatedListOrEmpty(HmsApiResource.carePlans, encounterId, 'care_plan'),
+        _relatedListOrEmpty(HmsApiResource.labOrders, encounterId, 'lab_order'),
+        _relatedListOrEmpty(
           HmsApiResource.radiologyOrders,
           encounterId,
           'radiology_order',
         ),
-        _fetchRelatedList(
+        _relatedListOrEmpty(
           HmsApiResource.pharmacyOrders,
           encounterId,
           'pharmacy_order',
         ),
-        _fetchRelatedList(HmsApiResource.referrals, encounterId, 'referral'),
-        _fetchRelatedList(HmsApiResource.followUps, encounterId, 'follow_up'),
-        _fetchRelatedList(HmsApiResource.admissions, encounterId, 'admission'),
+        _relatedListOrEmpty(HmsApiResource.referrals, encounterId, 'referral'),
+        _relatedListOrEmpty(HmsApiResource.followUps, encounterId, 'follow_up'),
+        _relatedListOrEmpty(HmsApiResource.admissions, encounterId, 'admission'),
       ],
     );
 
-    final AppFailure? failure = _firstFailure(results);
-    if (failure != null) {
-      return Result<ClinicalEncounterBundle>.failure(failure);
-    }
-
     final bundle = ClinicalEncounterBundle(
       entry: entry,
-      clinicalNotes: _successValue(results[0]),
-      diagnoses: _successValue(results[1]),
-      procedures: _successValue(results[2]),
-      carePlans: _successValue(results[3]),
-      labOrders: _successValue(results[4]),
-      radiologyOrders: _successValue(results[5]),
-      pharmacyOrders: _successValue(results[6]),
-      referrals: _successValue(results[7]),
-      followUps: _successValue(results[8]),
-      admissions: _successValue(results[9]),
+      clinicalNotes: results[0],
+      diagnoses: results[1],
+      procedures: results[2],
+      carePlans: results[3],
+      labOrders: results[4],
+      radiologyOrders: results[5],
+      pharmacyOrders: results[6],
+      referrals: results[7],
+      followUps: results[8],
+      admissions: results[9],
     );
 
     return Result<ClinicalEncounterBundle>.success(
@@ -354,6 +348,23 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     );
   }
 
+  Future<List<ClinicalRelatedRecord>> _relatedListOrEmpty(
+    HmsApiResource resource,
+    String encounterId,
+    String kind,
+  ) async {
+    final Result<List<ClinicalRelatedRecord>> result = await _fetchRelatedList(
+      resource,
+      encounterId,
+      kind,
+    );
+
+    return result.when(
+      success: (List<ClinicalRelatedRecord> value) => value,
+      failure: (_) => const <ClinicalRelatedRecord>[],
+    );
+  }
+
   Future<List<ClinicalCatalogOption>> _catalogOrEmpty(
     HmsApiResource resource, {
     Map<String, Object?> queryParameters = const <String, Object?>{},
@@ -386,26 +397,6 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
       ApiEndpoints.collection(resource),
       data: _withoutEmpty(payload),
       decoder: (_) {},
-    );
-  }
-
-  AppFailure? _firstFailure<T>(List<Result<T>> results) {
-    for (final Result<T> result in results) {
-      final AppFailure? failure = result.when(
-        success: (_) => null,
-        failure: (AppFailure failure) => failure,
-      );
-      if (failure != null) {
-        return failure;
-      }
-    }
-    return null;
-  }
-
-  T _successValue<T>(Result<T> result) {
-    return result.when(
-      success: (T value) => value,
-      failure: (_) => throw StateError('Expected successful result.'),
     );
   }
 

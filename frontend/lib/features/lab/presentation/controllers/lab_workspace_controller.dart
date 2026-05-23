@@ -33,7 +33,9 @@ final class LabWorkspaceController
       onRefresh: (_) => _syncFromRealtime(),
     );
     final Result<LabWorkspaceState> result = await _loadInitialState();
-    _startSync();
+    if (result.isSuccess) {
+      _startSync();
+    }
     return result;
   }
 
@@ -41,7 +43,17 @@ final class LabWorkspaceController
     await _syncVisibleData();
   }
 
-  Future<AppFailure?> refresh() {
+  Future<AppFailure?> refresh() async {
+    if (_currentState == null) {
+      state = const AsyncLoading<Result<LabWorkspaceState>>();
+      final Result<LabWorkspaceState> result = await _loadInitialState();
+      state = AsyncData<Result<LabWorkspaceState>>(result);
+      if (result.isSuccess) {
+        _startSync();
+      }
+      return _failureOrNull(result);
+    }
+
     return _syncVisibleData(showLoading: true, refreshCatalogs: true);
   }
 
