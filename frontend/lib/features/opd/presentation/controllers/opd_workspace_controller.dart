@@ -658,32 +658,27 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdAppointment>> appointmentsResult = await _repository
         .listAppointments(appointmentQuery);
-    final AppPage<OpdAppointment>? appointments = _pageOrEmptyOnAccessDenied(
+    final AppPage<OpdAppointment> appointments = _pageOrEmptyOnFailure(
       appointmentsResult,
       appointmentQuery.pageRequest,
     );
-    if (appointments == null) {
-      return Result<OpdWorkspaceState>.failure(
-        _failureOrNull(appointmentsResult)!,
-      );
-    }
+    final AppFailure? appointmentsFailure = _failureOrNull(appointmentsResult);
 
     final Result<AppPage<OpdQueueEntry>> queueResult = await _repository
         .listVisitQueues(queueQuery);
-    final AppPage<OpdQueueEntry>? queue = _pageOrEmptyOnAccessDenied(
+    final AppPage<OpdQueueEntry> queue = _pageOrEmptyOnFailure(
       queueResult,
       queueQuery.pageRequest,
     );
-    if (queue == null) {
-      return Result<OpdWorkspaceState>.failure(_failureOrNull(queueResult)!);
-    }
+    final AppFailure? queueFailure = _failureOrNull(queueResult);
 
     final Result<AppPage<OpdFlowSummary>> flowsResult = await _repository
         .listOpdFlows(flowQuery);
-    final AppPage<OpdFlowSummary>? flows = _successOrNull(flowsResult);
-    if (flows == null) {
-      return Result<OpdWorkspaceState>.failure(_failureOrNull(flowsResult)!);
-    }
+    final AppPage<OpdFlowSummary> flows = _pageOrEmptyOnFailure(
+      flowsResult,
+      flowQuery.pageRequest,
+    );
+    final AppFailure? flowsFailure = _failureOrNull(flowsResult);
 
     final Result<OpdFlowAggregateCounts> summaryCountsResult = await _repository
         .getOpdSummaryCounts();
@@ -692,14 +687,32 @@ final class OpdWorkspaceController
 
     final Result<AppPage<OpdFlowSummary>> triageQueueResult = await _repository
         .listTriageQueue(triageQueueQuery);
-    final AppPage<OpdFlowSummary>? triageQueue = _pageOrEmptyOnAccessDenied(
+    final AppPage<OpdFlowSummary> triageQueue = _pageOrEmptyOnFailure(
       triageQueueResult,
       triageQueueQuery.pageRequest,
     );
-    if (triageQueue == null) {
-      return Result<OpdWorkspaceState>.failure(
-        _failureOrNull(triageQueueResult)!,
-      );
+    final AppFailure? triageQueueFailure = _failureOrNull(triageQueueResult);
+
+    final bool hasAnySuccess = appointmentsResult.isSuccess ||
+        queueResult.isSuccess ||
+        flowsResult.isSuccess ||
+        triageQueueResult.isSuccess;
+
+    AppFailure? firstFailure;
+    for (final AppFailure? failure in <AppFailure?>[
+      appointmentsFailure,
+      queueFailure,
+      flowsFailure,
+      triageQueueFailure,
+    ]) {
+      if (failure == null || _isAccessDeniedFailure(failure)) {
+        continue;
+      }
+      firstFailure ??= failure;
+      break;
+    }
+    if (!hasAnySuccess && firstFailure != null) {
+      return Result<OpdWorkspaceState>.failure(firstFailure);
     }
 
     final List<OpdClinicalAlertThreshold> thresholds =
@@ -721,6 +734,7 @@ final class OpdWorkspaceController
         clinicalAlertThresholds: thresholds,
         providerSchedules: schedules,
         availabilitySlots: slots,
+        lastFailure: firstFailure,
       ),
     );
   }
@@ -1433,22 +1447,17 @@ final class OpdWorkspaceController
     return result.when(success: (T value) => value, failure: (_) => null);
   }
 
-  AppPage<T>? _pageOrEmptyOnAccessDenied<T>(
+  AppPage<T> _pageOrEmptyOnFailure<T>(
     Result<AppPage<T>> result,
     AppPageRequest request,
   ) {
     return result.when(
       success: (AppPage<T> page) => page,
-      failure: (AppFailure failure) {
-        if (_isAccessDeniedFailure(failure)) {
-          return AppPage<T>(
-            items: List<T>.empty(),
-            request: request,
-            totalItemCount: 0,
-          );
-        }
-        return null;
-      },
+      failure: (_) => AppPage<T>(
+        items: List<T>.empty(),
+        request: request,
+        totalItemCount: 0,
+      ),
     );
   }
 

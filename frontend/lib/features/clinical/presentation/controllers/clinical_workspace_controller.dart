@@ -955,7 +955,7 @@ final class ClinicalWorkspaceController
   Future<Result<AppPage<ClinicalWorklistEntry>>> _loadWorklist(
     ClinicalWorklistQuery query,
   ) async {
-    final results =
+    final List<Result<AppPage<ClinicalWorklistEntry>>> results =
         await Future.wait(<Future<Result<AppPage<ClinicalWorklistEntry>>>>[
           _repository.listEncounters(query),
           _repository.listAdmissions(query),
@@ -963,16 +963,19 @@ final class ClinicalWorkspaceController
           _triageFlows(query),
         ]);
 
-    final AppFailure? failure = _firstFailure(results);
-    if (failure != null) {
-      return Result<AppPage<ClinicalWorklistEntry>>.failure(failure);
+    final bool hasAnySuccess = results.any((Result<AppPage<ClinicalWorklistEntry>> result) => result.isSuccess);
+    final AppFailure? firstFailure = _firstFailure(results);
+    if (!hasAnySuccess) {
+      return Result<AppPage<ClinicalWorklistEntry>>.failure(
+        firstFailure ?? const AppFailure.network(),
+      );
     }
 
     final List<ClinicalWorklistEntry> items =
         deduplicateClinicalWorklistEntries(
           <ClinicalWorklistEntry>[
             for (final Result<AppPage<ClinicalWorklistEntry>> result in results)
-              ..._successOrEmpty(result).items,
+              ..._worklistPageOrEmpty(result, query.pageRequest).items,
           ].where((ClinicalWorklistEntry item) {
             return item.matchesSearch(query.search, filters: query.filters) &&
                 item.matchesFilters(query.filters) &&
@@ -1350,14 +1353,15 @@ final class ClinicalWorkspaceController
     return null;
   }
 
-  AppPage<ClinicalWorklistEntry> _successOrEmpty(
+  AppPage<ClinicalWorklistEntry> _worklistPageOrEmpty(
     Result<AppPage<ClinicalWorklistEntry>> result,
+    AppPageRequest request,
   ) {
     return result.when(
       success: (AppPage<ClinicalWorklistEntry> page) => page,
       failure: (_) => AppPage<ClinicalWorklistEntry>(
         items: const <ClinicalWorklistEntry>[],
-        request: _currentState?.query.pageRequest ?? const AppPageRequest(),
+        request: request,
       ),
     );
   }
