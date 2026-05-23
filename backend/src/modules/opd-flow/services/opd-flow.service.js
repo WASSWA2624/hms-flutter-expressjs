@@ -1566,6 +1566,9 @@ const stageByDisplayCode = (code, currentStage = null) => ({
 const resolveOpdDisplayState = (encounter, flow = null) => {
   const currentFlow = flow || encounter?.extension_json?.opd_flow || {};
   const assignedStaff = buildAssignedStaff(encounter?.provider);
+  const providerAssigned = Boolean(
+    normalizeIdentifier(encounter?.provider_user_id) || assignedStaff.display_name
+  );
   const labState = resolveLabState(encounter?.lab_orders);
   const radiologyState = resolveRadiologyState(encounter?.radiology_orders);
   const pharmacyState = resolvePharmacyState(encounter?.pharmacy_orders);
@@ -1579,7 +1582,7 @@ const resolveOpdDisplayState = (encounter, flow = null) => {
   else if (admissionPending) code = 'ADMISSION_PENDING';
   else if (!hasCompletedConsultationPayment(currentFlow)) code = 'PAYMENT_DUE';
   else if (!hasRecordedVitals(encounter)) code = 'VITALS_NEEDED';
-  else if (!normalizeIdentifier(encounter?.provider_user_id) && !assignedStaff.display_name) code = 'DOCTOR_NEEDED';
+  else if (!providerAssigned) code = 'DOCTOR_NEEDED';
   else if (labState.pending) code = labState.code;
   else if (radiologyState.pending) code = radiologyState.code;
   else if (pharmacyState.pending) code = pharmacyState.code;
@@ -1587,7 +1590,7 @@ const resolveOpdDisplayState = (encounter, flow = null) => {
   else if (radiologyState.ready && ['RADIOLOGY_REQUESTED', 'LAB_AND_RADIOLOGY_REQUESTED'].includes(currentFlow.stage)) code = 'REPORT_READY';
   else if (pharmacyState.ready && currentFlow.stage === STAGES.PHARMACY_REQUESTED) code = 'MEDICINES_DISPENSED';
   else if (currentFlow.review_completed || currentFlow.stage === STAGES.WAITING_DISPOSITION) code = 'DECISION_NEEDED';
-  else if (assignedStaff.display_name) code = 'WITH_DOCTOR';
+  else if (providerAssigned) code = 'WITH_DOCTOR';
   else code = 'DOCTOR_NEEDED';
 
   const resolvedStage = stageByDisplayCode(code, currentFlow.stage);
@@ -1601,7 +1604,7 @@ const resolveOpdDisplayState = (encounter, flow = null) => {
     assigned_staff: assignedStaff.display_name ? assignedStaff : null,
     assigned_staff_role: assignedStaff.role || null,
     assigned_staff_type: assignedStaff.type || null,
-    assigned_staff_label: assignedStaff.label || (code === 'DOCTOR_NEEDED' ? 'Doctor needed' : 'Assigned staff unknown'),
+    assigned_staff_label: assignedStaff.label || (code === 'DOCTOR_NEEDED' ? 'Doctor needed' : code === 'WITH_DOCTOR' ? 'With doctor' : 'Assigned staff unknown'),
     lab_state: labState,
     radiology_state: radiologyState,
     pharmacy_state: pharmacyState,
@@ -2292,19 +2295,23 @@ const getOpdFlowSummaryCounts = async (filters = {}, context = {}) => {
     }
   };
 
-  const [allPatients, opdPatients, activeOpd, openEncounters, dischargedToday] = await Promise.all([
+  const [allPatients, opdPatients, activeOpdPatients, openEncounters, dischargedTodayPatients] = await Promise.all([
     prisma.patient.count({ where: scopeWhere }),
     prisma.encounter.findMany({
       where: encounterScopeWhere,
       distinct: ['patient_id'],
       select: { patient_id: true }
     }),
-    prisma.encounter.count({ where: activeEncounterWhere }),
+    prisma.encounter.findMany({
+      where: activeEncounterWhere,
+      distinct: ['patient_id'],
+      select: { patient_id: true }
+    }),
     prisma.encounter.findMany({
       where: activeEncounterWhere,
       include: flowDisplayInclude
     }),
-    prisma.encounter.count({
+    prisma.encounter.findMany({
       where: {
         ...encounterScopeWhere,
         OR: [
@@ -2314,14 +2321,16 @@ const getOpdFlowSummaryCounts = async (filters = {}, context = {}) => {
             updated_at: { gte: today, lt: tomorrow }
           }
         ]
-      }
+      },
+      distinct: ['patient_id'],
+      select: { patient_id: true }
     })
   ]);
 
   const counts = {
     all_patients: allPatients,
     all_opd_patients: opdPatients.length,
-    active_opd: activeOpd,
+    active_opd: activeOpdPatients.length,
     vitals_needed: 0,
     doctor_needed: 0,
     with_doctor: 0,
@@ -2330,7 +2339,7 @@ const getOpdFlowSummaryCounts = async (filters = {}, context = {}) => {
     pharmacy_pending: 0,
     decision_needed: 0,
     admission_pending: 0,
-    discharged_today: dischargedToday
+    discharged_today: dischargedTodayPatients.length
   };
 
   const openItems = await enrichConsultationBillingForListItems(
@@ -2340,42 +2349,61 @@ const getOpdFlowSummaryCounts = async (filters = {}, context = {}) => {
     }))
   );
 
+  const categoryPatientSets = {
+    vitals_needed: new Set(),
+    doctor_needed: new Set(),
+    with_doctor: new Set(),
+    lab_pending: new Set(),
+    imaging_pending: new Set(),
+    pharmacy_pending: new Set(),
+    decision_needed: new Set(),
+    admission_pending: new Set(),
+  };
+  const addPatientToCategory = (key, encounter) => {
+    const patientKey = normalizeIdentifier(encounter?.patient_id) || normalizeIdentifier(encounter?.id);
+    if (patientKey && categoryPatientSets[key]) categoryPatientSets[key].add(patientKey);
+  };
+
   openItems.forEach((item) => {
     const display = resolveOpdDisplayState(item.encounter, item.flow);
     switch (display.display_code) {
       case 'VITALS_NEEDED':
-        counts.vitals_needed += 1;
+        addPatientToCategory('vitals_needed', item.encounter);
         break;
       case 'DOCTOR_NEEDED':
-        counts.doctor_needed += 1;
+        addPatientToCategory('doctor_needed', item.encounter);
         break;
       case 'WITH_DOCTOR':
-        counts.with_doctor += 1;
+        addPatientToCategory('with_doctor', item.encounter);
         break;
       case 'LAB_PENDING':
       case 'SAMPLE_PENDING':
       case 'IN_LAB':
-        counts.lab_pending += 1;
+        addPatientToCategory('lab_pending', item.encounter);
         break;
       case 'IMAGING_PENDING':
       case 'REPORT_PENDING':
-        counts.imaging_pending += 1;
+        addPatientToCategory('imaging_pending', item.encounter);
         break;
       case 'PHARMACY_PENDING':
-        counts.pharmacy_pending += 1;
+        addPatientToCategory('pharmacy_pending', item.encounter);
         break;
       case 'DECISION_NEEDED':
       case 'RESULTS_READY':
       case 'REPORT_READY':
       case 'MEDICINES_DISPENSED':
-        counts.decision_needed += 1;
+        addPatientToCategory('decision_needed', item.encounter);
         break;
       case 'ADMISSION_PENDING':
-        counts.admission_pending += 1;
+        addPatientToCategory('admission_pending', item.encounter);
         break;
       default:
         break;
     }
+  });
+
+  Object.entries(categoryPatientSets).forEach(([key, values]) => {
+    counts[key] = values.size;
   });
 
   return counts;

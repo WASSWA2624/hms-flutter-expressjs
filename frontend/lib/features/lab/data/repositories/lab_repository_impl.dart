@@ -27,6 +27,7 @@ final class LabRepositoryImpl implements LabRepository {
         'limit': request.pageSize,
         'search': query.search,
         'stage': _stageFor(query.scope),
+        'view': query.view == LabWorkbenchView.patients ? 'PATIENTS' : 'ORDERS',
         'criticality': query.scope == LabQueueScope.critical
             ? 'CRITICAL'
             : null,

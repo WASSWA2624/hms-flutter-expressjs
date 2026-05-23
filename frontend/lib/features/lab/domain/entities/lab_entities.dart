@@ -11,26 +11,32 @@ enum LabQueueScope {
   cancelled,
 }
 
+enum LabWorkbenchView { patients, orders }
+
 @immutable
 final class LabWorkbenchQuery {
   const LabWorkbenchQuery({
     this.search = '',
     this.scope = LabQueueScope.all,
+    this.view = LabWorkbenchView.patients,
     this.pageRequest = const AppPageRequest(pageSize: 25),
   });
 
   final String search;
   final LabQueueScope scope;
+  final LabWorkbenchView view;
   final AppPageRequest pageRequest;
 
   LabWorkbenchQuery copyWith({
     String? search,
     LabQueueScope? scope,
+    LabWorkbenchView? view,
     AppPageRequest? pageRequest,
   }) {
     return LabWorkbenchQuery(
       search: search ?? this.search,
       scope: scope ?? this.scope,
+      view: view ?? this.view,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
@@ -47,6 +53,15 @@ final class LabWorkbenchSummary {
     this.completedOrders = 0,
     this.cancelledOrders = 0,
     this.rejectedSamples = 0,
+    this.totalPatients = 0,
+    this.actionablePatients = 0,
+    this.collectionPatients = 0,
+    this.processingPatients = 0,
+    this.resultsPatients = 0,
+    this.criticalPatients = 0,
+    this.completedPatients = 0,
+    this.cancelledPatients = 0,
+    this.rejectedSamplePatients = 0,
   });
 
   const LabWorkbenchSummary.empty() : this();
@@ -59,6 +74,47 @@ final class LabWorkbenchSummary {
   final int completedOrders;
   final int cancelledOrders;
   final int rejectedSamples;
+  final int totalPatients;
+  final int actionablePatients;
+  final int collectionPatients;
+  final int processingPatients;
+  final int resultsPatients;
+  final int criticalPatients;
+  final int completedPatients;
+  final int cancelledPatients;
+  final int rejectedSamplePatients;
+
+  int totalForView(LabWorkbenchView view) {
+    return view == LabWorkbenchView.patients ? totalPatients : totalOrders;
+  }
+
+  int collectionForView(LabWorkbenchView view) {
+    return view == LabWorkbenchView.patients
+        ? collectionPatients
+        : collectionQueue;
+  }
+
+  int processingForView(LabWorkbenchView view) {
+    return view == LabWorkbenchView.patients
+        ? processingPatients
+        : processingQueue;
+  }
+
+  int resultsForView(LabWorkbenchView view) {
+    return view == LabWorkbenchView.patients ? resultsPatients : resultsQueue;
+  }
+
+  int criticalForView(LabWorkbenchView view) {
+    return view == LabWorkbenchView.patients
+        ? criticalPatients
+        : criticalResults;
+  }
+
+  int completedForView(LabWorkbenchView view) {
+    return view == LabWorkbenchView.patients
+        ? completedPatients
+        : completedOrders;
+  }
 }
 
 enum LabCatalogItemType { test, panel }
@@ -227,6 +283,12 @@ final class LabOrderSummary {
     this.inProcessItemCount = 0,
     this.completedItemCount = 0,
     this.sampleCount = 0,
+    this.isPatientGroup = false,
+    this.activeOrderCount = 0,
+    this.orderCount = 1,
+    this.orderIds = const <String>[],
+    this.orderDisplayIds = const <String>[],
+    this.testsSummary,
     this.items = const <LabOrderItem>[],
     this.samples = const <LabSample>[],
   });
@@ -246,6 +308,12 @@ final class LabOrderSummary {
   final int inProcessItemCount;
   final int completedItemCount;
   final int sampleCount;
+  final bool isPatientGroup;
+  final int activeOrderCount;
+  final int orderCount;
+  final List<String> orderIds;
+  final List<String> orderDisplayIds;
+  final String? testsSummary;
   final List<LabOrderItem> items;
   final List<LabSample> samples;
 
@@ -262,10 +330,19 @@ final class LabOrderSummary {
   }
 
   String? get displaySubtitle {
+    if (isPatientGroup) {
+      final String ordersLabel = activeOrderCount == 1
+          ? '1 active order'
+          : '$activeOrderCount active orders';
+      return _joinDisplay(<String?>[patientId, encounterId, ordersLabel]);
+    }
     return _joinDisplay(<String?>[patientId, encounterId, displayId ?? id]);
   }
 
   String? get testsLabel {
+    if (testsSummary != null && testsSummary!.trim().isNotEmpty) {
+      return testsSummary;
+    }
     final List<String> names = items
         .map((LabOrderItem item) => item.displayTitle)
         .where((String value) => value.trim().isNotEmpty)
@@ -316,6 +393,9 @@ final class LabOrderSummary {
       patientId,
       patientDisplayName,
       testsLabel,
+      orderCount.toString(),
+      activeOrderCount.toString(),
+      ...orderDisplayIds,
       for (final LabOrderItem item in items) item.displayTitle,
       for (final LabSample sample in samples) sample.displayId ?? sample.id,
     ]);
@@ -613,6 +693,9 @@ final class LabWorkspaceState {
   final bool isSaving;
 
   int get workloadCount {
+    if (query.view == LabWorkbenchView.patients) {
+      return summary.actionablePatients;
+    }
     return summary.collectionQueue +
         summary.processingQueue +
         summary.resultsQueue +

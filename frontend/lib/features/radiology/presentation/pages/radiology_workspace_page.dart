@@ -127,6 +127,17 @@ class _RadiologyWorkspaceContentState
           : null,
       secondaryActions: <Widget>[
         AppButton.secondary(
+          label: state.query.view == RadiologyWorkbenchView.patients
+              ? 'Orders view'
+              : 'Patients view',
+          leadingIcon: Icons.swap_horiz_outlined,
+          onPressed: () => controller.applyView(
+            state.query.view == RadiologyWorkbenchView.patients
+                ? RadiologyWorkbenchView.orders
+                : RadiologyWorkbenchView.patients,
+          ),
+        ),
+        AppButton.secondary(
           label: l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
           isLoading: state.isRefreshing,
@@ -135,18 +146,22 @@ class _RadiologyWorkspaceContentState
       ],
       compactSummaryCards: true,
       summaryCards: <Widget>[
-        if (state.summary.totalOrders > 0)
+        if (state.summary.totalForView(state.query.view) > 0)
           AppWorkspaceSummaryCard(
-            label: l10n.radiologyTotalOrdersSummaryLabel,
-            value: state.summary.totalOrders.toString(),
+            label: state.query.view == RadiologyWorkbenchView.patients
+                ? 'Radiology patients'
+                : l10n.radiologyTotalOrdersSummaryLabel,
+            value: state.summary.totalForView(state.query.view).toString(),
             icon: Icons.assignment_outlined,
             compact: true,
             onPressed: controller.clearFilters,
           ),
-        if (state.summary.orderedQueue > 0)
+        if (state.summary.orderedForView(state.query.view) > 0)
           AppWorkspaceSummaryCard(
-            label: l10n.radiologyWaitingImagingSummaryLabel,
-            value: state.summary.orderedQueue.toString(),
+            label: state.query.view == RadiologyWorkbenchView.patients
+                ? 'Patients waiting imaging'
+                : l10n.radiologyWaitingImagingSummaryLabel,
+            value: state.summary.orderedForView(state.query.view).toString(),
             icon: Icons.pending_actions_outlined,
             tone: AppWorkspaceStatusTone.warning,
             compact: true,
@@ -216,8 +231,12 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
 
     return AppWorkspaceDetailPanel(
-      title: l10n.radiologyWorklistTitle,
-      description: l10n.radiologyWorklistDescription,
+      title: state.query.view == RadiologyWorkbenchView.patients
+          ? 'Radiology patients'
+          : l10n.radiologyWorklistTitle,
+      description: state.query.view == RadiologyWorkbenchView.patients
+          ? 'One row per patient with imaging orders, studies, reporting state, billing gate, and next action.'
+          : l10n.radiologyWorklistDescription,
       child: AppListTable<RadiologyOrder>(
         page: state.orders,
         isLoading: state.isRefreshing,
@@ -327,8 +346,12 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         },
         emptyBuilder: (BuildContext context) {
           return AppWorkspaceStatePanel.empty(
-            title: l10n.radiologyNoOrdersTitle,
-            body: l10n.radiologyNoOrdersBody,
+            title: state.query.view == RadiologyWorkbenchView.patients
+                ? 'No radiology patients'
+                : l10n.radiologyNoOrdersTitle,
+            body: state.query.view == RadiologyWorkbenchView.patients
+                ? 'No patients have imaging work matching the current filters.'
+                : l10n.radiologyNoOrdersBody,
             icon: Icons.inbox_outlined,
           );
         },
@@ -344,19 +367,37 @@ class _RadiologyOrderBoard extends ConsumerWidget {
               return _TwoLineCell(
                 title: item.patientDisplayName ?? l10n.profileUnknownValue,
                 subtitle: _joinDisplay(<String?>[
-                  item.displayId,
+                  item.patientId,
+                  if (item.isPatientGroup)
+                    item.activeOrderCount == 1
+                        ? '1 active order'
+                        : '${item.activeOrderCount} active orders'
+                  else
+                    item.displayId,
                 ]),
               );
             },
           ),
           AppListTableColumn<RadiologyOrder>(
-            label: l10n.radiologyOrderColumnLabel,
+            label: state.query.view == RadiologyWorkbenchView.patients
+                ? 'Orders'
+                : l10n.radiologyOrderColumnLabel,
             sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
                 appListTableCompareText(
                   left.effectiveDisplayId,
                   right.effectiveDisplayId,
                 ),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
+              if (item.isPatientGroup) {
+                final int activeOrders = item.activeOrderCount > 0
+                    ? item.activeOrderCount
+                    : item.orderCount;
+                return Text(
+                  activeOrders == 1
+                      ? '1 active order'
+                      : '$activeOrders active orders',
+                );
+              }
               return Text(item.effectiveDisplayId);
             },
           ),
@@ -369,7 +410,9 @@ class _RadiologyOrderBoard extends ConsumerWidget {
                 ),
             cellBuilder: (BuildContext context, RadiologyOrder item) {
               return _TwoLineCell(
-                title: item.testDisplayName ?? l10n.profileUnknownValue,
+                title: item.testsSummary ??
+                    item.testDisplayName ??
+                    l10n.profileUnknownValue,
                 subtitle: _joinDisplay(<String?>[
                   _modalityLabelOrNull(l10n, item.modality),
                   item.bodyRegion,
@@ -459,8 +502,12 @@ class _RadiologyOrderListTile extends StatelessWidget {
           SizedBox(height: theme.spacing.xs),
           Text(
             _joinDisplay(<String?>[
-              order.effectiveDisplayId,
-              order.testDisplayName,
+              order.isPatientGroup
+                  ? (order.activeOrderCount == 1
+                      ? '1 active order'
+                      : '${order.activeOrderCount} active orders')
+                  : order.effectiveDisplayId,
+              order.testsSummary ?? order.testDisplayName,
               _modalityLabelOrNull(l10n, order.modality),
             ]),
             maxLines: 2,

@@ -79,6 +79,110 @@ const REVERSE_STEP_PRIORITY = Object.freeze({
   RELEASE: 4,
 });
 
+const PATIENT_WORKBENCH_SCAN_LIMIT = 5000;
+const WORKBENCH_VIEWS = new Set(['PATIENTS', 'ORDERS']);
+
+const normalizeWorkbenchView = (value) => {
+  const normalized = String(value || 'PATIENTS').trim().toUpperCase();
+  return WORKBENCH_VIEWS.has(normalized) ? normalized : 'PATIENTS';
+};
+
+const labPatientGroupKey = (order) =>
+  String(order?.patient_id || order?.patient?.id || order?.id || '').trim();
+
+const groupLabOrdersByPatient = (records = []) => {
+  const groups = new Map();
+  records.forEach((record) => {
+    const key = labPatientGroupKey(record);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(record);
+  });
+  return Array.from(groups.values());
+};
+
+const uniqueByKey = (items, keySelector) => {
+  const seen = new Set();
+  return (items || []).filter((item) => {
+    const key = keySelector(item);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const labOrderIsTerminal = (order) => ORDER_COMPLETION_STATES.has(normalizeStatus(order?.status));
+
+const mapLabPatientWorkItem = (records = []) => {
+  const mapped = records.map((record) => mapLabOrderRecord(record)).filter(Boolean);
+  if (!mapped.length) return null;
+  const representative = mapped[0];
+  const items = uniqueByKey(mapped.flatMap((order) => order.items || []), (item) => item.id);
+  const samples = uniqueByKey(mapped.flatMap((order) => order.samples || []), (sample) => sample.id);
+  const statuses = mapped.map((order) => normalizeStatus(order.status)).filter(Boolean);
+  const hasCritical = items.some((item) => normalizeStatus(item?.result_status) === 'CRITICAL');
+  const hasRejectedSample = samples.some((sample) => normalizeStatus(sample?.status) === 'REJECTED');
+  const activeOrders = mapped.filter((order) => !labOrderIsTerminal(order));
+  const status = hasCritical
+    ? 'CRITICAL'
+    : hasRejectedSample
+      ? 'REJECTED_SAMPLE'
+      : statuses.includes('IN_PROCESS')
+        ? 'IN_PROCESS'
+        : statuses.includes('COLLECTED')
+          ? 'COLLECTED'
+          : statuses.includes('ORDERED')
+            ? 'ORDERED'
+            : statuses.length && statuses.every((entry) => entry === 'COMPLETED')
+              ? 'COMPLETED'
+              : statuses.length && statuses.every((entry) => entry === 'CANCELLED')
+                ? 'CANCELLED'
+                : representative.status;
+
+  const testNames = uniqueByKey(
+    items.map((item) => ({ id: item?.lab_test_id || item?.test_code || item?.test_display_name, label: item?.test_display_name || item?.test_code })).filter((item) => item.label),
+    (item) => item.id || item.label
+  ).map((item) => item.label);
+  const shownTests = testNames.slice(0, 3);
+  const testsSummary = shownTests.length
+    ? `${shownTests.join(', ')}${testNames.length > shownTests.length ? ` +${testNames.length - shownTests.length}` : ''}`
+    : null;
+
+  return {
+    ...representative,
+    patient_worklist: true,
+    active_order_count: activeOrders.length,
+    order_count: mapped.length,
+    order_ids: mapped.map((order) => order.id).filter(Boolean),
+    order_display_ids: mapped.map((order) => order.display_id || order.id).filter(Boolean),
+    status,
+    status_rank: Math.max(...mapped.map((order) => Number(order.status_rank || 0)), 0),
+    item_count: items.length,
+    pending_item_count: items.filter((item) => normalizeStatus(item?.status) === 'ORDERED').length,
+    in_process_item_count: items.filter((item) => ['COLLECTED', 'IN_PROCESS'].includes(normalizeStatus(item?.status))).length,
+    completed_item_count: items.filter((item) => normalizeStatus(item?.status) === 'COMPLETED').length,
+    sample_count: samples.length,
+    tests_summary: testsSummary,
+    items,
+    samples,
+  };
+};
+
+const summarizeLabPatientGroups = (groups = []) => {
+  const patientItems = groups.map(mapLabPatientWorkItem).filter(Boolean);
+  const hasStatus = (item, values) => values.has(normalizeStatus(item.status));
+  return {
+    total_patients: patientItems.length,
+    actionable_patients: patientItems.filter((item) => !hasStatus(item, new Set(['COMPLETED', 'CANCELLED']))).length,
+    collection_patients: patientItems.filter((item) => hasStatus(item, new Set(['ORDERED', 'COLLECTED']))).length,
+    processing_patients: patientItems.filter((item) => hasStatus(item, new Set(['IN_PROCESS']))).length,
+    results_patients: patientItems.filter((item) => Number(item.in_process_item_count || 0) > 0).length,
+    critical_patients: patientItems.filter((item) => item.items.some((entry) => normalizeStatus(entry?.result_status) === 'CRITICAL')).length,
+    completed_patients: patientItems.filter((item) => hasStatus(item, new Set(['COMPLETED']))).length,
+    cancelled_patients: patientItems.filter((item) => hasStatus(item, new Set(['CANCELLED']))).length,
+    rejected_sample_patients: patientItems.filter((item) => item.samples.some((entry) => normalizeStatus(entry?.status) === 'REJECTED')).length,
+  };
+};
+
 const appendAnd = (where, clause) => {
   if (!clause || typeof clause !== 'object') return;
   if (!Array.isArray(where.AND)) where.AND = [];
@@ -481,6 +585,7 @@ const publishLabRealtimeUpdates = async ({
 
 const getLabWorkbench = async (filters, page, limit, sortBy, order) => {
   try {
+    const view = normalizeWorkbenchView(filters?.view);
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { ordered_at: 'desc' };
 
@@ -490,7 +595,7 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order) => {
     ]);
 
     const [
-      worklistRecords,
+      orderWorklistRecords,
       total,
       totalOrders,
       collectionQueue,
@@ -500,15 +605,26 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order) => {
       resultsQueue,
       criticalResults,
       rejectedSamples,
+      summaryOrderRecords,
     ] = await Promise.all([
-      labWorkspaceRepository.findManyOrders(
-        where,
-        skip,
-        limit,
-        orderBy,
-        LAB_ORDER_WITH_RELATIONS_INCLUDE
-      ),
-      labWorkspaceRepository.countOrders(where),
+      view === 'PATIENTS'
+        ? labWorkspaceRepository.findManyOrders(
+            where,
+            0,
+            PATIENT_WORKBENCH_SCAN_LIMIT,
+            orderBy,
+            LAB_ORDER_WITH_RELATIONS_INCLUDE
+          )
+        : labWorkspaceRepository.findManyOrders(
+            where,
+            skip,
+            limit,
+            orderBy,
+            LAB_ORDER_WITH_RELATIONS_INCLUDE
+          ),
+      view === 'PATIENTS'
+        ? Promise.resolve(0)
+        : labWorkspaceRepository.countOrders(where),
       labWorkspaceRepository.countOrders(summaryWhere),
       labWorkspaceRepository.countOrders({
         ...summaryWhere,
@@ -550,10 +666,27 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order) => {
           ...summaryWhere,
         },
       }),
+      labWorkspaceRepository.findManyOrders(
+        summaryWhere,
+        0,
+        PATIENT_WORKBENCH_SCAN_LIMIT,
+        orderBy,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      ),
     ]);
+
+    const patientGroups = groupLabOrdersByPatient(orderWorklistRecords);
+    const patientSummary = summarizeLabPatientGroups(groupLabOrdersByPatient(summaryOrderRecords));
+    const patientWorklist = patientGroups.map(mapLabPatientWorkItem).filter(Boolean);
+    const pagedPatientWorklist = patientWorklist.slice(skip, skip + limit);
+    const worklist = view === 'PATIENTS'
+      ? pagedPatientWorklist
+      : orderWorklistRecords.map((record) => mapLabOrderRecord(record)).filter(Boolean);
+    const worklistTotal = view === 'PATIENTS' ? patientWorklist.length : total;
 
     return {
       summary: {
+        view: view.toLowerCase(),
         total_orders: totalOrders,
         collection_queue: collectionQueue,
         processing_queue: processingQueue,
@@ -562,9 +695,10 @@ const getLabWorkbench = async (filters, page, limit, sortBy, order) => {
         completed_orders: completedOrders,
         cancelled_orders: cancelledOrders,
         rejected_samples: rejectedSamples,
+        ...patientSummary,
       },
-      worklist: worklistRecords.map((record) => mapLabOrderRecord(record)).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
+      worklist,
+      pagination: buildPagination(page, limit, worklistTotal),
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;

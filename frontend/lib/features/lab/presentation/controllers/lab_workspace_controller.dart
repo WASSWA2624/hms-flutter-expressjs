@@ -83,6 +83,27 @@ final class LabWorkspaceController
     return _refreshWorkbench(showLoading: true);
   }
 
+  Future<AppFailure?> applyView(LabWorkbenchView view) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          view: view,
+          scope: LabQueueScope.all,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearSelectedWorkflow: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkbench(showLoading: true);
+  }
+
   Future<AppFailure?> changePage(AppPageRequest request) async {
     final LabWorkspaceState? current = _currentState;
     if (current == null) {

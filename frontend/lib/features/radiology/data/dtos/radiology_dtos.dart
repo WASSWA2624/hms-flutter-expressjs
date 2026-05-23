@@ -120,6 +120,14 @@ final class RadiologySummaryDto {
       cancelledOrders: _int(json['cancelled_orders']) ?? 0,
       studiesTotal: _int(json['studies_total']) ?? 0,
       unsyncedStudies: _int(json['unsynced_studies']) ?? 0,
+      totalPatients: _int(json['total_patients']) ?? 0,
+      actionablePatients: _int(json['actionable_patients']) ?? 0,
+      orderedPatients: _int(json['ordered_patients']) ?? 0,
+      processingPatients: _int(json['processing_patients']) ?? 0,
+      reportingPatients: _int(json['reporting_patients']) ?? 0,
+      releasedPatients: _int(json['released_patients']) ?? 0,
+      completedPatients: _int(json['completed_patients']) ?? 0,
+      cancelledPatients: _int(json['cancelled_patients']) ?? 0,
     );
   }
 }
@@ -165,6 +173,12 @@ final class RadiologyOrderDto {
       amendedResultCount: _int(json['amended_result_count']) ?? 0,
       studyCount: _int(json['study_count']) ?? 0,
       unsyncedStudyCount: _int(json['unsynced_study_count']) ?? 0,
+      isPatientGroup: _bool(json['patient_worklist']),
+      activeOrderCount: _int(json['active_order_count']) ?? 0,
+      orderCount: _int(json['order_count']) ?? 1,
+      orderIds: _stringList(json['order_ids']),
+      orderDisplayIds: _stringList(json['order_display_ids']),
+      testsSummary: _string(json['tests_summary']),
       results: _list(json['results'])
           .map(RadiologyResultDto.new)
           .map((RadiologyResultDto dto) => dto.toEntity())
@@ -432,6 +446,18 @@ List<RadiologyJsonMap> _list(Object? value) {
   }
 
   return value.whereType<RadiologyJsonMap>().toList(growable: false);
+}
+
+List<String> _stringList(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+
+  return value
+      .map(_string)
+      .whereType<String>()
+      .where((String item) => item.trim().isNotEmpty)
+      .toList(growable: false);
 }
 
 String? _string(Object? value) {

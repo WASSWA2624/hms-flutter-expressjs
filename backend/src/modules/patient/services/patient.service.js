@@ -619,7 +619,22 @@ const buildPatientWhereClause = (filters = {}) => {
   if (filters.patient_id) whereClause.human_friendly_id = { contains: filters.patient_id };
   if (filters.gender) whereClause.gender = filters.gender;
   const activeFilter = normalizeBooleanFilter(filters.is_active);
-  if (activeFilter !== undefined) whereClause.is_active = activeFilter;
+  if (activeFilter === true) {
+    whereClause.encounters = {
+      some: {
+        deleted_at: null,
+        status: 'OPEN'
+      }
+    };
+  }
+  if (activeFilter === false) {
+    whereClause.encounters = {
+      none: {
+        deleted_at: null,
+        status: 'OPEN'
+      }
+    };
+  }
   if (filters.first_name) whereClause.first_name = { contains: filters.first_name };
   if (filters.last_name) whereClause.last_name = { contains: filters.last_name };
   if (filters.consent_state) {

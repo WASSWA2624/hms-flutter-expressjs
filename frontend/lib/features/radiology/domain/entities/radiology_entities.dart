@@ -37,11 +37,14 @@ const List<String> radiologyResultStatuses = <String>[
   'AMENDED',
 ];
 
+enum RadiologyWorkbenchView { patients, orders }
+
 @immutable
 final class RadiologyWorkspaceQuery {
   const RadiologyWorkspaceQuery({
     this.search = '',
     this.stage = 'ALL',
+    this.view = RadiologyWorkbenchView.patients,
     this.status,
     this.modality,
     this.from,
@@ -53,6 +56,7 @@ final class RadiologyWorkspaceQuery {
 
   final String search;
   final String stage;
+  final RadiologyWorkbenchView view;
   final String? status;
   final String? modality;
   final DateTime? from;
@@ -64,6 +68,7 @@ final class RadiologyWorkspaceQuery {
   RadiologyWorkspaceQuery copyWith({
     String? search,
     String? stage,
+    RadiologyWorkbenchView? view,
     String? status,
     String? modality,
     DateTime? from,
@@ -81,6 +86,7 @@ final class RadiologyWorkspaceQuery {
     return RadiologyWorkspaceQuery(
       search: search ?? this.search,
       stage: stage ?? this.stage,
+      view: view ?? this.view,
       status: clearStatus ? null : status ?? this.status,
       modality: clearModality ? null : modality ?? this.modality,
       from: clearFrom ? null : from ?? this.from,
@@ -117,17 +123,24 @@ final class RadiologyWorkspaceState {
   final AppFailure? lastFailure;
 
   int get workloadCount {
+    if (query.view == RadiologyWorkbenchView.patients) {
+      return summary.actionablePatients;
+    }
     return summary.orderedQueue +
         summary.processingQueue +
         summary.draftReports;
   }
 
   int get reportingCount {
-    return summary.draftReports;
+    return query.view == RadiologyWorkbenchView.patients
+        ? summary.reportingPatients
+        : summary.draftReports;
   }
 
   int get releasedCount {
-    return summary.finalizedReports + summary.amendedReports;
+    return query.view == RadiologyWorkbenchView.patients
+        ? summary.releasedPatients
+        : summary.finalizedReports + summary.amendedReports;
   }
 
   RadiologyWorkspaceState copyWith({
@@ -172,6 +185,14 @@ final class RadiologySummary {
     this.cancelledOrders = 0,
     this.studiesTotal = 0,
     this.unsyncedStudies = 0,
+    this.totalPatients = 0,
+    this.actionablePatients = 0,
+    this.orderedPatients = 0,
+    this.processingPatients = 0,
+    this.reportingPatients = 0,
+    this.releasedPatients = 0,
+    this.completedPatients = 0,
+    this.cancelledPatients = 0,
   });
 
   final int totalOrders;
@@ -184,6 +205,24 @@ final class RadiologySummary {
   final int cancelledOrders;
   final int studiesTotal;
   final int unsyncedStudies;
+  final int totalPatients;
+  final int actionablePatients;
+  final int orderedPatients;
+  final int processingPatients;
+  final int reportingPatients;
+  final int releasedPatients;
+  final int completedPatients;
+  final int cancelledPatients;
+
+  int totalForView(RadiologyWorkbenchView view) {
+    return view == RadiologyWorkbenchView.patients ? totalPatients : totalOrders;
+  }
+
+  int orderedForView(RadiologyWorkbenchView view) {
+    return view == RadiologyWorkbenchView.patients
+        ? orderedPatients
+        : orderedQueue;
+  }
 }
 
 @immutable
@@ -212,6 +251,12 @@ final class RadiologyOrder {
     this.amendedResultCount = 0,
     this.studyCount = 0,
     this.unsyncedStudyCount = 0,
+    this.isPatientGroup = false,
+    this.activeOrderCount = 0,
+    this.orderCount = 1,
+    this.orderIds = const <String>[],
+    this.orderDisplayIds = const <String>[],
+    this.testsSummary,
     this.results = const <RadiologyResult>[],
     this.imagingStudies = const <ImagingStudy>[],
   });
@@ -239,6 +284,12 @@ final class RadiologyOrder {
   final int amendedResultCount;
   final int studyCount;
   final int unsyncedStudyCount;
+  final bool isPatientGroup;
+  final int activeOrderCount;
+  final int orderCount;
+  final List<String> orderIds;
+  final List<String> orderDisplayIds;
+  final String? testsSummary;
   final List<RadiologyResult> results;
   final List<ImagingStudy> imagingStudies;
 

@@ -512,12 +512,10 @@ final class CommunicationsWorkspaceState {
   final bool isRefreshing;
   final bool isSaving;
 
-  int get unreadBadgeCount => summary.unreadThreads + metrics.unread;
+  int get unreadBadgeCount => metrics.unread;
 
   int get workloadCount {
-    return summary.unreadThreads +
-        metrics.attentionRequired +
-        metrics.failedDeliveries;
+    return summary.unreadThreads + metrics.unread + metrics.failedDeliveries;
   }
 
   CommunicationsWorkspaceState copyWith({

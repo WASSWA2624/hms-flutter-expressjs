@@ -113,6 +113,17 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
             : AppWorkspaceStatusTone.success,
       ),
       secondaryActions: <Widget>[
+        AppButton.secondary(
+          label: state.query.view == LabWorkbenchView.patients
+              ? 'Orders view'
+              : 'Patients view',
+          leadingIcon: Icons.swap_horiz_outlined,
+          onPressed: () => controller.applyView(
+            state.query.view == LabWorkbenchView.patients
+                ? LabWorkbenchView.orders
+                : LabWorkbenchView.patients,
+          ),
+        ),
         if (canMutate)
           AppButton.secondary(
             label: l10n.labRecordQcAction,
@@ -133,56 +144,68 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         ),
       ],
       summaryCards: <Widget>[
-        if (state.summary.totalOrders > 0)
+        if (state.summary.totalForView(state.query.view) > 0)
           _summaryCard(
             context,
-            label: l10n.labTotalOrdersSummaryLabel,
-            value: state.summary.totalOrders,
+            label: state.query.view == LabWorkbenchView.patients
+                ? 'Lab patients'
+                : l10n.labTotalOrdersSummaryLabel,
+            value: state.summary.totalForView(state.query.view),
             icon: Icons.assignment_outlined,
             tone: AppWorkspaceStatusTone.info,
             onPressed: () => controller.applyScope(LabQueueScope.all),
           ),
-        if (state.summary.collectionQueue > 0)
+        if (state.summary.collectionForView(state.query.view) > 0)
           _summaryCard(
             context,
-            label: l10n.labWaitingSampleSummaryLabel,
-            value: state.summary.collectionQueue,
+            label: state.query.view == LabWorkbenchView.patients
+                ? 'Patients waiting sample'
+                : l10n.labWaitingSampleSummaryLabel,
+            value: state.summary.collectionForView(state.query.view),
             icon: Icons.biotech_outlined,
             tone: AppWorkspaceStatusTone.warning,
             onPressed: () => controller.applyScope(LabQueueScope.collection),
           ),
-        if (state.summary.processingQueue > 0)
+        if (state.summary.processingForView(state.query.view) > 0)
           _summaryCard(
             context,
-            label: l10n.labProcessingSummaryLabel,
-            value: state.summary.processingQueue,
+            label: state.query.view == LabWorkbenchView.patients
+                ? 'Patients processing'
+                : l10n.labProcessingSummaryLabel,
+            value: state.summary.processingForView(state.query.view),
             icon: Icons.sync_outlined,
             tone: AppWorkspaceStatusTone.info,
             onPressed: () => controller.applyScope(LabQueueScope.processing),
           ),
-        if (state.summary.resultsQueue > 0)
+        if (state.summary.resultsForView(state.query.view) > 0)
           _summaryCard(
             context,
-            label: l10n.labResultPendingSummaryLabel,
-            value: state.summary.resultsQueue,
+            label: state.query.view == LabWorkbenchView.patients
+                ? 'Patients with results pending'
+                : l10n.labResultPendingSummaryLabel,
+            value: state.summary.resultsForView(state.query.view),
             icon: Icons.pending_actions_outlined,
             tone: AppWorkspaceStatusTone.warning,
             onPressed: () => controller.applyScope(LabQueueScope.results),
           ),
-        if (state.summary.criticalResults > 0)
+        if (state.summary.criticalForView(state.query.view) > 0)
           _summaryCard(
             context,
-            label: l10n.labCriticalSummaryLabel,
-            value: state.summary.criticalResults,
+            label: state.query.view == LabWorkbenchView.patients
+                ? 'Critical patients'
+                : l10n.labCriticalSummaryLabel,
+            value: state.summary.criticalForView(state.query.view),
             icon: Icons.priority_high_outlined,
             tone: AppWorkspaceStatusTone.error,
             onPressed: () => controller.applyScope(LabQueueScope.critical),
           ),
-        if (state.summary.completedOrders > 0)
+        if (state.summary.completedForView(state.query.view) > 0)
           _summaryCard(
             context,
-            label: l10n.labCompletedSummaryLabel,
-            value: state.summary.completedOrders,
+            label: state.query.view == LabWorkbenchView.patients
+                ? 'Completed patients'
+                : l10n.labCompletedSummaryLabel,
+            value: state.summary.completedForView(state.query.view),
             icon: Icons.verified_outlined,
             tone: AppWorkspaceStatusTone.success,
             onPressed: () => controller.applyScope(LabQueueScope.completed),
@@ -241,8 +264,12 @@ class _LabWorklistPanel extends ConsumerWidget {
     );
 
     return AppWorkspaceDetailPanel(
-      title: l10n.labWorklistTitle,
-      description: l10n.labWorklistDescription,
+      title: state.query.view == LabWorkbenchView.patients
+          ? 'Lab patients'
+          : l10n.labWorklistTitle,
+      description: state.query.view == LabWorkbenchView.patients
+          ? 'One row per patient with active lab orders, tests, samples, results, and next action.'
+          : l10n.labWorklistDescription,
       child: AppListTable<LabOrderSummary>(
         page: state.worklist,
         isLoading: state.isRefreshing,
@@ -291,8 +318,12 @@ class _LabWorklistPanel extends ConsumerWidget {
           );
         },
         emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.labNoOrdersTitle,
-          body: l10n.labNoOrdersBody,
+          title: state.query.view == LabWorkbenchView.patients
+              ? 'No lab patients'
+              : l10n.labNoOrdersTitle,
+          body: state.query.view == LabWorkbenchView.patients
+              ? 'No patients have lab work matching the current filters.'
+              : l10n.labNoOrdersBody,
           icon: Icons.science_outlined,
         ),
         columns: <AppListTableColumn<LabOrderSummary>>[
@@ -305,10 +336,22 @@ class _LabWorklistPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<LabOrderSummary>(
-            label: l10n.labOrderColumnLabel,
+            label: state.query.view == LabWorkbenchView.patients
+                ? 'Orders'
+                : l10n.labOrderColumnLabel,
             sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
                 appListTableCompareText(left.apiId, right.apiId),
             cellBuilder: (BuildContext context, LabOrderSummary item) {
+              if (item.isPatientGroup) {
+                final int activeOrders = item.activeOrderCount > 0
+                    ? item.activeOrderCount
+                    : item.orderCount;
+                return Text(
+                  activeOrders == 1
+                      ? '1 active order'
+                      : '$activeOrders active orders',
+                );
+              }
               return AppCopyableIdentifier(
                 value: item.displayId,
                 tooltip: context.l10n.copyIdentifierAction,

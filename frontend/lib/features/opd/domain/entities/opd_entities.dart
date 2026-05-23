@@ -981,7 +981,24 @@ final class OpdWorkspaceState {
     return flows.items.where((OpdFlowSummary flow) => flow.isTerminal).length;
   }
 
-  int get workloadCount => arrivalCount + queueCount + activeFlowCount;
+  int get workloadCount {
+    if (summaryCounts.activeOpd > 0) {
+      return summaryCounts.activeOpd;
+    }
+
+    final Set<String> activePatientKeys = <String>{};
+    for (final OpdFlowSummary flow in flows.items) {
+      if (flow.isTerminal || isOpdTerminalStatus(flow.status ?? flow.stage)) {
+        continue;
+      }
+      final String key = (flow.patientId ?? flow.patientDisplayName ?? flow.id)
+          .trim();
+      if (key.isNotEmpty) {
+        activePatientKeys.add(key);
+      }
+    }
+    return activePatientKeys.isNotEmpty ? activePatientKeys.length : activeFlowCount;
+  }
 
   OpdWorkspaceState copyWith({
     OpdAppointmentQuery? appointmentQuery,

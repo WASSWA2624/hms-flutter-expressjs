@@ -84,6 +84,28 @@ final class RadiologyWorkspaceController
     return _refreshWorkbench(showLoading: true);
   }
 
+  Future<AppFailure?> applyView(RadiologyWorkbenchView view) async {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          view: view,
+          stage: 'ALL',
+          clearStatus: true,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearSelectedWorkflow: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkbench(showLoading: true);
+  }
+
   Future<AppFailure?> applyStatus(String? status) async {
     final RadiologyWorkspaceState? current = _currentState;
     if (current == null) {

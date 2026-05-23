@@ -517,7 +517,15 @@ final class EmergencyWorkspaceState {
         .length;
   }
 
-  int get workloadCount => activeCount + ambulanceCount;
+  int get workloadCount {
+    final Set<String> uniqueCases = <String>{};
+    for (final EmergencyCaseSummary item in board.items) {
+      if (item.isOpen || item.hasAmbulanceActivity) {
+        uniqueCases.add(item.id);
+      }
+    }
+    return uniqueCases.length;
+  }
 
   EmergencyWorkspaceState copyWith({
     EmergencyBoardQuery? query,

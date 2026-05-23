@@ -11,6 +11,7 @@ const stageFilterSchema = z.enum([
 ]);
 
 const criticalityFilterSchema = z.enum(['ALL', 'CRITICAL', 'NON_CRITICAL']);
+const workbenchViewSchema = z.enum(['PATIENTS', 'ORDERS', 'patients', 'orders']);
 
 const orderWorkflowParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema,
@@ -28,6 +29,7 @@ const getLabWorkbenchQuerySchema = listQuerySchema.extend({
   stage: stageFilterSchema.optional(),
   status: z.enum(['ORDERED', 'COLLECTED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED']).optional(),
   criticality: criticalityFilterSchema.optional(),
+  view: workbenchViewSchema.optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),

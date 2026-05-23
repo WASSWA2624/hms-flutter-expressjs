@@ -29,6 +29,9 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
         'page': request.pageIndex + 1,
         'limit': request.pageSize,
         'stage': query.stage == 'ALL' ? null : query.stage,
+        'view': query.view == RadiologyWorkbenchView.patients
+            ? 'PATIENTS'
+            : 'ORDERS',
         'status': query.status,
         'modality': query.modality,
         'from': _iso(query.from),

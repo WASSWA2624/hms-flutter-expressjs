@@ -42,6 +42,113 @@ const RADIOLOGY_RECIPIENT_ROLES = [
   ROLES.RADIOLOGY_TECH,
 ];
 
+const PATIENT_WORKBENCH_SCAN_LIMIT = 5000;
+const WORKBENCH_VIEWS = new Set(['PATIENTS', 'ORDERS']);
+
+const normalizeWorkbenchView = (value) => {
+  const normalized = String(value || 'PATIENTS').trim().toUpperCase();
+  return WORKBENCH_VIEWS.has(normalized) ? normalized : 'PATIENTS';
+};
+
+const normalizeRadiologyStatus = (value) => String(value || '').trim().toUpperCase();
+
+const radiologyPatientGroupKey = (order) =>
+  String(order?.patient_id || order?.patient?.id || order?.id || '').trim();
+
+const groupRadiologyOrdersByPatient = (records = []) => {
+  const groups = new Map();
+  records.forEach((record) => {
+    const key = radiologyPatientGroupKey(record);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(record);
+  });
+  return Array.from(groups.values());
+};
+
+const uniqueRadiologyByKey = (items, keySelector) => {
+  const seen = new Set();
+  return (items || []).filter((item) => {
+    const key = keySelector(item);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const radiologyOrderIsTerminal = (order) => ORDER_COMPLETION_STATES.has(normalizeRadiologyStatus(order?.status));
+
+const mapRadiologyPatientWorkItem = (records = []) => {
+  const mapped = records.map((record) => mapRadiologyOrderRecord(record)).filter(Boolean);
+  if (!mapped.length) return null;
+  const representative = mapped[0];
+  const requestedTests = uniqueRadiologyByKey(
+    mapped.flatMap((order) => order.requested_tests || []),
+    (item) => item.radiology_test_id || item.test_display_name || item.modality
+  );
+  const results = uniqueRadiologyByKey(mapped.flatMap((order) => order.results || []), (item) => item.id);
+  const studies = uniqueRadiologyByKey(mapped.flatMap((order) => order.imaging_studies || []), (item) => item.id);
+  const statuses = mapped.map((order) => normalizeRadiologyStatus(order.status)).filter(Boolean);
+  const hasDraft = results.some((result) => normalizeRadiologyStatus(result?.status) === 'DRAFT');
+  const hasReleased = results.some((result) => ['FINAL', 'AMENDED'].includes(normalizeRadiologyStatus(result?.status)));
+  const activeOrders = mapped.filter((order) => !radiologyOrderIsTerminal(order));
+  const status = hasDraft
+    ? 'REPORTING'
+    : statuses.includes('IN_PROCESS')
+      ? 'IN_PROCESS'
+      : statuses.includes('ORDERED')
+        ? 'ORDERED'
+        : (statuses.length && statuses.every((entry) => entry === 'COMPLETED')) || hasReleased
+          ? 'COMPLETED'
+          : statuses.length && statuses.every((entry) => entry === 'CANCELLED')
+            ? 'CANCELLED'
+            : representative.status;
+
+  const testNames = requestedTests
+    .map((item) => item.test_display_name || item.radiology_test_display_name || item.modality)
+    .filter(Boolean);
+  const shownTests = testNames.slice(0, 3);
+  const testsSummary = shownTests.length
+    ? `${shownTests.join(', ')}${testNames.length > shownTests.length ? ` +${testNames.length - shownTests.length}` : ''}`
+    : null;
+
+  return {
+    ...representative,
+    patient_worklist: true,
+    active_order_count: activeOrders.length,
+    order_count: mapped.length,
+    order_ids: mapped.map((order) => order.id).filter(Boolean),
+    order_display_ids: mapped.map((order) => order.display_id || order.id).filter(Boolean),
+    status,
+    requested_tests: requestedTests,
+    test_display_name: testsSummary || representative.test_display_name,
+    radiology_test_display_name: testsSummary || representative.radiology_test_display_name,
+    study_count: studies.length,
+    result_count: results.length,
+    draft_result_count: results.filter((entry) => normalizeRadiologyStatus(entry?.status) === 'DRAFT').length,
+    final_result_count: results.filter((entry) => normalizeRadiologyStatus(entry?.status) === 'FINAL').length,
+    amended_result_count: results.filter((entry) => normalizeRadiologyStatus(entry?.status) === 'AMENDED').length,
+    unsynced_study_count: studies.filter((entry) => Number(entry?.pacs_link_count || 0) === 0).length,
+    tests_summary: testsSummary,
+    results,
+    imaging_studies: studies,
+  };
+};
+
+const summarizeRadiologyPatientGroups = (groups = []) => {
+  const patientItems = groups.map(mapRadiologyPatientWorkItem).filter(Boolean);
+  const hasStatus = (item, values) => values.has(normalizeRadiologyStatus(item.status));
+  return {
+    total_patients: patientItems.length,
+    actionable_patients: patientItems.filter((item) => !hasStatus(item, new Set(['COMPLETED', 'CANCELLED']))).length,
+    ordered_patients: patientItems.filter((item) => hasStatus(item, new Set(['ORDERED']))).length,
+    processing_patients: patientItems.filter((item) => hasStatus(item, new Set(['IN_PROCESS']))).length,
+    reporting_patients: patientItems.filter((item) => hasStatus(item, new Set(['REPORTING'])) || Number(item.draft_result_count || 0) > 0).length,
+    released_patients: patientItems.filter((item) => Number(item.final_result_count || 0) + Number(item.amended_result_count || 0) > 0).length,
+    completed_patients: patientItems.filter((item) => hasStatus(item, new Set(['COMPLETED']))).length,
+    cancelled_patients: patientItems.filter((item) => hasStatus(item, new Set(['CANCELLED']))).length,
+  };
+};
+
 const LEGACY_ROUTE_CONFIG = Object.freeze({
   'radiology-orders': {
     model: 'radiology_order',
@@ -419,6 +526,7 @@ const publishRadiologyRealtimeUpdates = async ({
 
 const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
   try {
+    const view = normalizeWorkbenchView(filters?.view);
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { ordered_at: 'desc' };
 
@@ -428,7 +536,7 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
     ]);
 
     const [
-      worklistRecords,
+      orderWorklistRecords,
       total,
       totalOrders,
       orderedQueue,
@@ -440,15 +548,26 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
       amendedReports,
       studiesTotal,
       unsyncedStudies,
+      summaryOrderRecords,
     ] = await Promise.all([
-      radiologyWorkspaceRepository.findManyOrders(
-        where,
-        skip,
-        limit,
-        orderBy,
-        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
-      ),
-      radiologyWorkspaceRepository.countOrders(where),
+      view === 'PATIENTS'
+        ? radiologyWorkspaceRepository.findManyOrders(
+            where,
+            0,
+            PATIENT_WORKBENCH_SCAN_LIMIT,
+            orderBy,
+            RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+          )
+        : radiologyWorkspaceRepository.findManyOrders(
+            where,
+            skip,
+            limit,
+            orderBy,
+            RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+          ),
+      view === 'PATIENTS'
+        ? Promise.resolve(0)
+        : radiologyWorkspaceRepository.countOrders(where),
       radiologyWorkspaceRepository.countOrders(summaryWhere),
       radiologyWorkspaceRepository.countOrders({
         ...summaryWhere,
@@ -504,10 +623,29 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
           },
         },
       }),
+      radiologyWorkspaceRepository.findManyOrders(
+        summaryWhere,
+        0,
+        PATIENT_WORKBENCH_SCAN_LIMIT,
+        orderBy,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      ),
     ]);
+
+    const patientGroups = groupRadiologyOrdersByPatient(orderWorklistRecords);
+    const patientSummary = summarizeRadiologyPatientGroups(
+      groupRadiologyOrdersByPatient(summaryOrderRecords)
+    );
+    const patientWorklist = patientGroups.map(mapRadiologyPatientWorkItem).filter(Boolean);
+    const pagedPatientWorklist = patientWorklist.slice(skip, skip + limit);
+    const worklist = view === 'PATIENTS'
+      ? pagedPatientWorklist
+      : orderWorklistRecords.map((record) => mapRadiologyOrderRecord(record)).filter(Boolean);
+    const worklistTotal = view === 'PATIENTS' ? patientWorklist.length : total;
 
     return {
       summary: {
+        view: view.toLowerCase(),
         total_orders: totalOrders,
         ordered_queue: orderedQueue,
         processing_queue: processingQueue,
@@ -518,9 +656,10 @@ const getRadiologyWorkbench = async (filters, page, limit, sortBy, order) => {
         cancelled_orders: cancelledOrders,
         studies_total: studiesTotal,
         unsynced_studies: unsyncedStudies,
+        ...patientSummary,
       },
-      worklist: worklistRecords.map((record) => mapRadiologyOrderRecord(record)).filter(Boolean),
-      pagination: buildPagination(page, limit, total),
+      worklist,
+      pagination: buildPagination(page, limit, worklistTotal),
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;

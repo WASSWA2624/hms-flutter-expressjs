@@ -1045,6 +1045,26 @@ final class ClinicalWorkspaceController
 
   ClinicalWorklistEntry _entryFromOpd(OpdFlowSummary item, String sourceQueue) {
     final String triageLevel = (item.triageLevel ?? '').toUpperCase();
+    final bool hasAssignedProvider = _stringValue(item.providerUserId) != null ||
+        _stringValue(item.providerDisplayName) != null ||
+        _stringValue(item.assignedStaffDisplayName) != null;
+    final String? normalizedStage =
+        hasAssignedProvider &&
+            (item.stage ?? '').toUpperCase() == 'WAITING_DOCTOR_ASSIGNMENT'
+        ? 'WAITING_DOCTOR_REVIEW'
+        : item.stage;
+    final String? normalizedStatus =
+        hasAssignedProvider &&
+            (item.displayCode ?? item.status ?? '').toUpperCase() ==
+                'DOCTOR_NEEDED'
+        ? 'WITH_DOCTOR'
+        : item.displayCode ?? item.status ?? normalizedStage;
+    final String? normalizedNextStep =
+        hasAssignedProvider &&
+            (item.nextStep ?? '').toUpperCase() == 'ASSIGN_DOCTOR'
+        ? 'DOCTOR_REVIEW'
+        : item.displayNextStep ?? item.nextStep;
+
     return ClinicalWorklistEntry(
       id: '${sourceQueue}_${item.id}',
       sourceQueue: sourceQueue,
@@ -1057,9 +1077,9 @@ final class ClinicalWorkspaceController
       patientDisplayName: item.patientDisplayName,
       patientPhone: item.patientPhone,
       encounterType: item.encounterType,
-      status: item.status,
-      stage: item.stage,
-      nextStep: item.nextStep,
+      status: normalizedStatus,
+      stage: normalizedStage,
+      nextStep: normalizedNextStep,
       currentLocation: item.facilityName,
       providerUserId: item.providerUserId,
       providerDisplayName: item.providerDisplayName,
@@ -1073,8 +1093,8 @@ final class ClinicalWorkspaceController
           triageLevel.contains('LEVEL_1') ||
           triageLevel.contains('LEVEL_2'),
       resultsReady:
-          (item.stage ?? '').toUpperCase().contains('RESULT') ||
-          (item.nextStep ?? '').toUpperCase().contains('RESULT'),
+          (normalizedStage ?? '').toUpperCase().contains('RESULT') ||
+          (normalizedNextStep ?? '').toUpperCase().contains('RESULT'),
     );
   }
 

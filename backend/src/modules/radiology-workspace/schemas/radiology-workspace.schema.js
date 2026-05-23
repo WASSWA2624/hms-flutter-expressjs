@@ -22,6 +22,7 @@ const stageFilterSchema = z.enum([
   'COMPLETED',
   'CANCELLED',
 ]);
+const workbenchViewSchema = z.enum(['PATIENTS', 'ORDERS', 'patients', 'orders']);
 
 const orderWorkflowParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema,
@@ -38,6 +39,7 @@ const resultWorkflowParamsSchema = z.object({
 const getRadiologyWorkbenchQuerySchema = listQuerySchema.extend({
   stage: stageFilterSchema.optional(),
   status: z.enum(['ORDERED', 'IN_PROCESS', 'COMPLETED', 'CANCELLED']).optional(),
+  view: workbenchViewSchema.optional(),
   modality: imagingModalitySchema.optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),

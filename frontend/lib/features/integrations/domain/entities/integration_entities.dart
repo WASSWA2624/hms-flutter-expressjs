@@ -553,7 +553,20 @@ final class IntegrationWorkspaceState {
     }).length;
   }
 
-  int get workloadCount => warningCount + failedCount;
+  int get workloadCount {
+    final Set<String> attentionKeys = <String>{};
+    for (final IntegrationWorkItem item in workItems) {
+      final String status = item.status.toUpperCase();
+      if (item.errorSummary != null ||
+          status == 'WARNING' ||
+          status == 'FAILED' ||
+          status == 'ERROR' ||
+          status == 'INACTIVE') {
+        attentionKeys.add('${item.kind.name}:${item.id}');
+      }
+    }
+    return attentionKeys.length;
+  }
 
   List<ApiKeyPermissionRecord> permissionsForKey(ApiKeyRecord key) {
     return apiKeyPermissions

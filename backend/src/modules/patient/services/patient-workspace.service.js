@@ -740,7 +740,19 @@ const getPatientWorkspaceOverview = async (scope = {}, userContext = {}) => {
       'metrics.active_patients',
       scope,
       0,
-      () => prisma.patient.count({ where: { ...where, deleted_at: null, is_active: true } })
+      () =>
+        prisma.patient.count({
+          where: {
+            ...where,
+            deleted_at: null,
+            encounters: {
+              some: {
+                deleted_at: null,
+                status: 'OPEN',
+              },
+            },
+          },
+        })
     ),
     runSafeOverviewSection(
       'metrics.waiting_queue',

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
@@ -218,48 +219,85 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         counts.vitalsNeeded,
         Icons.monitor_heart_outlined,
         tone: AppWorkspaceStatusTone.warning,
+        filter: const _OpdTableFilter(
+          category: _opdCategoryActiveFlow,
+          statuses: <String>{'VITALS_NEEDED'},
+        ),
       ),
       card(
         'doctor_needed',
         counts.doctorNeeded,
         Icons.assignment_ind_outlined,
         tone: AppWorkspaceStatusTone.warning,
+        filter: const _OpdTableFilter(
+          category: _opdCategoryActiveFlow,
+          statuses: <String>{'DOCTOR_NEEDED'},
+        ),
       ),
       card(
         'with_doctor',
         counts.withDoctor,
         Icons.medical_services_outlined,
         tone: AppWorkspaceStatusTone.info,
+        filter: const _OpdTableFilter(
+          category: _opdCategoryActiveFlow,
+          statuses: <String>{'WITH_DOCTOR'},
+        ),
       ),
       card(
         'lab_pending',
         counts.labPending,
         Icons.science_outlined,
         tone: AppWorkspaceStatusTone.info,
+        filter: const _OpdTableFilter(
+          category: _opdCategoryActiveFlow,
+          statuses: <String>{'LAB_PENDING', 'SAMPLE_PENDING', 'IN_LAB'},
+        ),
       ),
       card(
         'imaging_pending',
         counts.imagingPending,
         Icons.biotech_outlined,
         tone: AppWorkspaceStatusTone.info,
+        filter: const _OpdTableFilter(
+          category: _opdCategoryActiveFlow,
+          statuses: <String>{'IMAGING_PENDING', 'REPORT_PENDING'},
+        ),
       ),
       card(
         'pharmacy_pending',
         counts.pharmacyPending,
         Icons.medication_outlined,
         tone: AppWorkspaceStatusTone.warning,
+        filter: const _OpdTableFilter(
+          category: _opdCategoryActiveFlow,
+          statuses: <String>{'PHARMACY_PENDING'},
+        ),
       ),
       card(
         'decision_needed',
         counts.decisionNeeded,
         Icons.task_alt_outlined,
         tone: AppWorkspaceStatusTone.warning,
+        filter: const _OpdTableFilter(
+          category: _opdCategoryActiveFlow,
+          statuses: <String>{
+            'DECISION_NEEDED',
+            'RESULTS_READY',
+            'REPORT_READY',
+            'MEDICINES_DISPENSED',
+          },
+        ),
       ),
       card(
         'admission_pending',
         counts.admissionPending,
         Icons.bed_outlined,
         tone: AppWorkspaceStatusTone.warning,
+        filter: const _OpdTableFilter(
+          category: _opdCategoryActiveFlow,
+          statuses: <String>{'ADMISSION_PENDING'},
+        ),
       ),
       card(
         'discharged_today',
@@ -478,6 +516,7 @@ final class _OpdTableFilter {
     this.datePreset,
     this.category,
     this.status,
+    this.statuses = const <String>{},
     this.triageScope,
     this.visitType,
     this.queue,
@@ -493,6 +532,7 @@ final class _OpdTableFilter {
   final String? datePreset;
   final String? category;
   final String? status;
+  final Set<String> statuses;
   final String? triageScope;
   final String? visitType;
   final String? queue;
@@ -508,6 +548,7 @@ final class _OpdTableFilter {
       _isNonEmpty(datePreset) ||
       _isNonEmpty(category) ||
       _isNonEmpty(status) ||
+      statuses.isNotEmpty ||
       _isNonEmpty(triageScope) ||
       _isNonEmpty(visitType) ||
       _isNonEmpty(queue) ||
@@ -522,6 +563,7 @@ final class _OpdTableFilter {
       _isNonEmpty(datePreset) ||
       _isNonEmpty(category) ||
       _isNonEmpty(status) ||
+      statuses.isNotEmpty ||
       _isNonEmpty(triageScope) ||
       _isNonEmpty(visitType) ||
       _isNonEmpty(queue) ||
@@ -578,6 +620,7 @@ final class _OpdTableFilter {
     String? datePreset,
     String? category,
     String? status,
+    Set<String>? statuses,
     String? triageScope,
     String? visitType,
     String? queue,
@@ -591,6 +634,7 @@ final class _OpdTableFilter {
     bool clearDatePreset = false,
     bool clearCategory = false,
     bool clearStatus = false,
+    bool clearStatuses = false,
     bool clearTriageScope = false,
     bool clearVisitType = false,
     bool clearQueue = false,
@@ -606,6 +650,7 @@ final class _OpdTableFilter {
       datePreset: clearDatePreset ? null : datePreset ?? this.datePreset,
       category: clearCategory ? null : category ?? this.category,
       status: clearStatus ? null : status ?? this.status,
+      statuses: clearStatuses ? const <String>{} : statuses ?? this.statuses,
       triageScope: clearTriageScope ? null : triageScope ?? this.triageScope,
       visitType: clearVisitType ? null : visitType ?? this.visitType,
       queue: clearQueue ? null : queue ?? this.queue,
@@ -639,6 +684,9 @@ final class _OpdTableFilter {
     if (_isNonEmpty(status) && item.status != status) {
       return false;
     }
+    if (statuses.isNotEmpty && !statuses.contains(item.status)) {
+      return false;
+    }
     if (_isNonEmpty(triageScope) && !_matchesTriageScope(item, triageScope!)) {
       return false;
     }
@@ -670,6 +718,7 @@ final class _OpdTableFilter {
         other.datePreset == datePreset &&
         other.category == category &&
         other.status == status &&
+        setEquals(other.statuses, statuses) &&
         other.triageScope == triageScope &&
         other.visitType == visitType &&
         other.queue == queue &&
@@ -687,6 +736,7 @@ final class _OpdTableFilter {
     datePreset,
     category,
     status,
+    Object.hashAllUnordered(statuses),
     triageScope,
     visitType,
     queue,

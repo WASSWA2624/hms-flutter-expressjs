@@ -49,6 +49,15 @@ final class LabWorkbenchSummaryDto {
       completedOrders: _int(json['completed_orders']),
       cancelledOrders: _int(json['cancelled_orders']),
       rejectedSamples: _int(json['rejected_samples']),
+      totalPatients: _int(json['total_patients']),
+      actionablePatients: _int(json['actionable_patients']),
+      collectionPatients: _int(json['collection_patients']),
+      processingPatients: _int(json['processing_patients']),
+      resultsPatients: _int(json['results_patients']),
+      criticalPatients: _int(json['critical_patients']),
+      completedPatients: _int(json['completed_patients']),
+      cancelledPatients: _int(json['cancelled_patients']),
+      rejectedSamplePatients: _int(json['rejected_sample_patients']),
     );
   }
 }
@@ -170,6 +179,12 @@ final class LabOrderSummaryDto {
       inProcessItemCount: _int(json['in_process_item_count']),
       completedItemCount: _int(json['completed_item_count']),
       sampleCount: _int(json['sample_count']),
+      isPatientGroup: _bool(json['patient_worklist']),
+      activeOrderCount: _int(json['active_order_count']),
+      orderCount: _int(json['order_count']),
+      orderIds: _stringList(json['order_ids']),
+      orderDisplayIds: _stringList(json['order_display_ids']),
+      testsSummary: _string(json['tests_summary']),
       items: _list(json['items'])
           .map(LabOrderItemDto.new)
           .map((LabOrderItemDto dto) => dto.toEntity())
@@ -395,6 +410,18 @@ List<LabJsonMap> _list(Object? value) {
   }
 
   return value.whereType<LabJsonMap>().toList(growable: false);
+}
+
+List<String> _stringList(Object? value) {
+  if (value is! List) {
+    return const <String>[];
+  }
+
+  return value
+      .map(_string)
+      .whereType<String>()
+      .where((String item) => item.trim().isNotEmpty)
+      .toList(growable: false);
 }
 
 String? _string(Object? value) {
