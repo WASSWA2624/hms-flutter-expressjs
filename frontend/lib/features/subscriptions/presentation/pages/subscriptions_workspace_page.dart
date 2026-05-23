@@ -594,6 +594,7 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
                 title: item.title,
                 subtitle: item.subtitle,
                 identifier: item.effectiveDisplayId,
+                dense: true,
               );
             },
           ),
@@ -959,25 +960,33 @@ class _CopyableRecordCell extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.identifier,
+    this.dense = false,
   });
 
   final String title;
   final String? subtitle;
   final String? identifier;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final bool hasIdentifier = (identifier ?? '').trim().isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _TwoLineCell(title: title, subtitle: subtitle),
-        if ((identifier ?? '').trim().isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
+        _TwoLineCell(
+          title: title,
+          subtitle: subtitle,
+          subtitleMaxLines: dense ? 1 : 2,
+        ),
+        if (hasIdentifier) ...<Widget>[
+          if (!dense) SizedBox(height: theme.spacing.xs),
           AppCopyableIdentifier(
             value: identifier,
             textStyle: theme.textTheme.bodySmall,
+            showCopyIcon: !dense,
           ),
         ],
       ],
@@ -986,10 +995,15 @@ class _CopyableRecordCell extends StatelessWidget {
 }
 
 class _TwoLineCell extends StatelessWidget {
-  const _TwoLineCell({required this.title, this.subtitle});
+  const _TwoLineCell({
+    required this.title,
+    this.subtitle,
+    this.subtitleMaxLines = 2,
+  });
 
   final String title;
   final String? subtitle;
+  final int subtitleMaxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -1009,7 +1023,7 @@ class _TwoLineCell extends StatelessWidget {
         if (subtitle != null && subtitle!.trim().isNotEmpty)
           Text(
             subtitle!,
-            maxLines: 2,
+            maxLines: subtitleMaxLines,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,

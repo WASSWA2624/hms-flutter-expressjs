@@ -47,7 +47,7 @@ const invoiceSelect = {
   total_amount: true,
   currency: true,
   issued_at: true,
-  paid_at: true,
+  updated_at: true,
 };
 
 const invoiceLookupSelect = {

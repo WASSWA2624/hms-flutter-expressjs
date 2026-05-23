@@ -192,7 +192,7 @@ const resolveOrderBy = (resource, sortBy, order = 'desc') => {
       ['total_amount', 'total_amount'],
       ['currency', 'currency'],
       ['issued_at', 'issued_at'],
-      ['paid_at', 'paid_at'],
+      ['paid_at', 'updated_at'],
     ]);
 
     if (invoiceFieldMap.has(requestedField)) {
