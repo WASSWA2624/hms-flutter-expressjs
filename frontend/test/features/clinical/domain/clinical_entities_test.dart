@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 void main() {
   group('ClinicalWorklistEntry filtering', () {
@@ -139,6 +140,44 @@ void main() {
         expect(entries.single.opdFlowApiId, 'ENC0000010');
       },
     );
+
+    test(
+      'deduplicates clinical workload count across action categories',
+      () {
+        final ClinicalWorkspaceState state = ClinicalWorkspaceState(
+          query: const ClinicalWorklistQuery(),
+          worklist: AppPage<ClinicalWorklistEntry>(
+            request: const AppPageRequest(),
+            items: <ClinicalWorklistEntry>[
+              _entry(
+                encounterId: 'enc-1',
+                stage: 'WAITING_DOCTOR_REVIEW',
+                nextStep: 'REVIEW_RESULTS',
+                isUrgent: true,
+                resultsReady: true,
+              ),
+              _entry(
+                encounterId: 'enc-2',
+                stage: 'WAITING_DISPOSITION',
+                resultsReady: true,
+              ),
+              _entry(
+                encounterId: 'enc-3',
+                status: 'CLOSED',
+                stage: 'WAITING_DOCTOR_REVIEW',
+                isUrgent: true,
+                resultsReady: true,
+              ),
+            ],
+          ),
+        );
+
+        expect(state.waitingReviewCount, 1);
+        expect(state.urgentCount, 1);
+        expect(state.resultsReadyCount, 2);
+        expect(state.workloadCount, 2);
+      },
+    );
   });
 }
 
@@ -151,8 +190,11 @@ ClinicalWorklistEntry _entry({
   String? providerDisplayName,
   String? status,
   String? stage,
+  String? nextStep,
   String? opdFlowApiId,
   DateTime? updatedAt,
+  bool isUrgent = false,
+  bool resultsReady = false,
 }) {
   return ClinicalWorklistEntry(
     id: encounterId,
@@ -164,7 +206,10 @@ ClinicalWorklistEntry _entry({
     providerDisplayName: providerDisplayName,
     status: status,
     stage: stage,
+    nextStep: nextStep,
     opdFlowApiId: opdFlowApiId,
     updatedAt: updatedAt,
+    isUrgent: isUrgent,
+    resultsReady: resultsReady,
   );
 }

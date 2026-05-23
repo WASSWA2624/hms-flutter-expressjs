@@ -757,6 +757,26 @@ final class ClinicalWorkspaceState {
         .length;
   }
 
+  int get workloadCount {
+    final Set<String> activeWorkItems = <String>{};
+
+    for (final ClinicalWorklistEntry item in worklist.items) {
+      if (item.isTerminal) {
+        continue;
+      }
+
+      final bool needsClinicalAction =
+          _matchesReviewState(item) || item.isUrgent || item.resultsReady;
+      if (!needsClinicalAction) {
+        continue;
+      }
+
+      activeWorkItems.add(_worklistDeduplicationKey(item));
+    }
+
+    return activeWorkItems.length;
+  }
+
   int get inConsultationCount {
     return worklist.items
         .where(

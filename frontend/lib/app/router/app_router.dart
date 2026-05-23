@@ -812,10 +812,7 @@ class _AppShell extends ConsumerWidget {
               ?.value
               .when(
                 success: (ClinicalWorkspaceState state) {
-                  final int count =
-                      state.waitingReviewCount +
-                      state.urgentCount +
-                      state.resultsReadyCount;
+                  final int count = state.workloadCount;
                   return count > 0 ? count : null;
                 },
                 failure: (_) => null,
