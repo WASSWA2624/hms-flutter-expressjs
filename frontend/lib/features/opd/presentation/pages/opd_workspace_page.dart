@@ -929,6 +929,7 @@ final class _OpdTableItem {
     this.visitType,
     this.queue,
     this.provider,
+    this.ownerRole,
     this.facility,
     this.billing,
     this.billingState = _opdBillingStateUnknown,
@@ -949,6 +950,7 @@ final class _OpdTableItem {
   final String? visitType;
   final String? queue;
   final String? provider;
+  final String? ownerRole;
   final String? facility;
   final String? billing;
   final String billingState;
@@ -1008,7 +1010,7 @@ final class _OpdTableItem {
         queueEntry?.patientPhone,
         flow?.patientPhone,
       ],
-      _opdSearchFieldProvider => <String?>[provider],
+      _opdSearchFieldProvider => <String?>[provider, ownerRole],
       _opdSearchFieldQueue => <String?>[category, queue, flow?.lastRouteTo],
       _opdSearchFieldStatus => <String?>[status, flow?.stage, flow?.status],
       _opdSearchFieldVisitType => <String?>[visitType, flow?.arrivalMode],
@@ -1023,6 +1025,7 @@ final class _OpdTableItem {
         visitType,
         queue,
         provider,
+        ownerRole,
         facility,
         billing,
         billingState,
@@ -1088,6 +1091,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
         flow.chiefComplaint,
       ]),
       provider: flow.providerDisplayName,
+      ownerRole: _flowOwnerRole(context, flow),
       facility: flow.facilityName,
       billing: _flowBillingLabel(context, flow),
       billingState: _flowBillingState(flow),
@@ -1119,6 +1123,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
         flow.lastRouteTo == null ? null : _apiLabel(flow.lastRouteTo!),
       ]),
       provider: flow.providerDisplayName,
+      ownerRole: _flowOwnerRole(context, flow),
       facility: flow.facilityName,
       billing: _flowBillingLabel(context, flow),
       billingState: _flowBillingState(flow),
@@ -1159,7 +1164,9 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
         entry.appointmentReason,
       ]),
       provider: entry.providerDisplayName,
+      ownerRole: context.l10n.opdWorkflowReceptionTitle,
       billing: _queueBillingLabel(context, entry),
+      nextStep: context.l10n.opdStartWalkInAction,
       billingState: _queueBillingState(entry),
       billingTone: _queueBillingTone(entry),
       time: entry.queuedAt,
@@ -1193,8 +1200,10 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
         appointment.reason,
       ]),
       provider: appointment.providerDisplayName,
+      ownerRole: context.l10n.opdWorkflowReceptionTitle,
       facility: appointment.facilityName,
       billing: context.l10n.profileUnknownValue,
+      nextStep: context.l10n.opdStartWalkInAction,
       time: _appointmentArrivalTime(appointment),
       urgencyRank: _statusUrgencyRank(appointment.status),
       appointment: appointment,
@@ -1438,6 +1447,15 @@ AppWorkspaceStatusTone _flowBillingTone(OpdFlowSummary flow) {
   return opdBillingTone(opdFlowBillingState(flow));
 }
 
+String _flowOwnerRole(BuildContext context, OpdFlowSummary flow) {
+  return opdResponsibleRoleForStage(
+    context.l10n,
+    flow.stage,
+    hasAssignedProvider:
+        _isNonEmpty(flow.providerUserId) || _isNonEmpty(flow.providerDisplayName),
+  );
+}
+
 String _queueBillingLabel(BuildContext context, OpdQueueEntry entry) {
   return opdQueueBillingDisplay(context, entry).label;
 }
@@ -1631,11 +1649,9 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
           softWrap: false,
           overflow: TextOverflow.ellipsis,
         ),
-        _OpdTableColumnId.nextStep => Text(
-          _nextStepLabel(context, item),
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
+        _OpdTableColumnId.nextStep => AppListItemText(
+          title: _nextStepLabel(context, item),
+          subtitle: item.ownerRole,
         ),
       };
     },
@@ -1700,13 +1716,13 @@ final DateTime _unknownArrivalTime = DateTime(9999);
 
 const List<_OpdTableColumnId> _defaultOpdTableColumns = <_OpdTableColumnId>[
   _OpdTableColumnId.patient,
-  _OpdTableColumnId.visitType,
   _OpdTableColumnId.queueStatus,
+  _OpdTableColumnId.nextStep,
+  _OpdTableColumnId.provider,
   _OpdTableColumnId.payerBilling,
   _OpdTableColumnId.waitingTime,
-  _OpdTableColumnId.provider,
   _OpdTableColumnId.arrivalTime,
-  _OpdTableColumnId.nextStep,
+  _OpdTableColumnId.visitType,
 ];
 
 const List<_OpdTableColumnId> _availableOpdTableColumns = <_OpdTableColumnId>[
@@ -1899,6 +1915,7 @@ class _OpdTableMobileRow extends StatelessWidget {
         item.billing,
         _waitingTimeLabel(context, item),
         item.provider,
+        item.ownerRole,
         _nextStepLabel(context, item),
         _formatDateTime(context, item.time),
       ]),

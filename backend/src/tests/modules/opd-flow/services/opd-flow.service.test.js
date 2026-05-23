@@ -1296,6 +1296,219 @@ describe('opd-flow.service', () => {
     expect(tx.vital_sign.create).not.toHaveBeenCalled();
   });
 
+  it('advances directly to doctor review after vitals when a provider is already assigned', async () => {
+    const snapshotEncounter = {
+      id: 'enc-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      patient_id: 'pat-1',
+      provider_user_id: 'doc-1',
+      encounter_type: 'OPD',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_DOCTOR_REVIEW',
+          next_step: 'DOCTOR_REVIEW',
+          consultation: {
+            require_payment: false,
+            is_paid: false,
+            invoice_id: null,
+            payment_id: null
+          }
+        }
+      },
+      vital_signs: [],
+      clinical_notes: [],
+      diagnoses: [],
+      procedures: [],
+      care_plans: [],
+      alerts: [],
+      referrals: [],
+      follow_ups: [],
+      admissions: [],
+      lab_orders: [],
+      radiology_orders: [],
+      pharmacy_orders: []
+    };
+    const tx = {
+      encounter: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'enc-1',
+            tenant_id: 'tenant-1',
+            facility_id: 'facility-1',
+            patient_id: 'pat-1',
+            provider_user_id: 'doc-1',
+            encounter_type: 'OPD',
+            extension_json: {
+              opd_flow: {
+                stage: 'WAITING_VITALS',
+                consultation: {
+                  require_payment: false,
+                  is_paid: false,
+                  invoice_id: null,
+                  payment_id: null
+                }
+              }
+            }
+          })
+          .mockResolvedValue(snapshotEncounter),
+        update: jest.fn().mockResolvedValue(snapshotEncounter)
+      },
+      vital_sign: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn(),
+        create: jest.fn().mockResolvedValue({
+          id: 'vital-1',
+          encounter_id: 'enc-1',
+          vital_type: 'TEMPERATURE',
+          value: '37.5'
+        })
+      },
+      triage_assessment: {
+        update: jest.fn(),
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      visit_queue: {
+        update: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      invoice: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      payment: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      emergency_case: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    const result = await opdFlowService.recordVitals(
+      'enc-1',
+      { vitals: [{ vital_type: 'TEMPERATURE', value: '37.5', unit: 'C' }] },
+      { user_id: 'actor-1', tenant_id: 'tenant-1', facility_id: 'facility-1' }
+    );
+
+    expect(tx.encounter.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'enc-1' },
+        data: expect.objectContaining({
+          extension_json: expect.objectContaining({
+            opd_flow: expect.objectContaining({
+              stage: 'WAITING_DOCTOR_REVIEW',
+              next_step: 'DOCTOR_REVIEW'
+            })
+          })
+        })
+      })
+    );
+    expect(result.flow.stage).toBe('WAITING_DOCTOR_REVIEW');
+    expect(result.flow.next_step).toBe('DOCTOR_REVIEW');
+  });
+
+  it('allows doctor review from doctor-assignment stage when the encounter already has a provider', async () => {
+    const snapshotEncounter = {
+      id: 'enc-1',
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+      patient_id: 'pat-1',
+      provider_user_id: 'doc-1',
+      encounter_type: 'OPD',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_DISPOSITION',
+          next_step: 'DISPOSITION',
+          review_completed: true,
+          visit_queue_id: null,
+          appointment_id: null,
+          consultation: {
+            invoice_id: null,
+            payment_id: null
+          }
+        }
+      },
+      vital_signs: [],
+      clinical_notes: [],
+      diagnoses: [],
+      procedures: [],
+      care_plans: [],
+      alerts: [],
+      referrals: [],
+      follow_ups: [],
+      admissions: [],
+      lab_orders: [],
+      radiology_orders: [],
+      pharmacy_orders: []
+    };
+    const tx = {
+      encounter: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'enc-1',
+            tenant_id: 'tenant-1',
+            facility_id: 'facility-1',
+            patient_id: 'pat-1',
+            provider_user_id: 'doc-1',
+            encounter_type: 'OPD',
+            extension_json: {
+              opd_flow: {
+                stage: 'WAITING_DOCTOR_ASSIGNMENT',
+                visit_queue_id: null,
+                appointment_id: null,
+                consultation: {
+                  invoice_id: null,
+                  payment_id: null
+                }
+              }
+            }
+          })
+          .mockResolvedValue(snapshotEncounter),
+        update: jest.fn().mockResolvedValue(snapshotEncounter)
+      },
+      clinical_note: {
+        create: jest.fn().mockResolvedValue({ id: 'cn-1' })
+      },
+      visit_queue: { findFirst: jest.fn() },
+      appointment: { findFirst: jest.fn() },
+      invoice: { findFirst: jest.fn() },
+      payment: { findFirst: jest.fn() },
+      emergency_case: { findFirst: jest.fn() },
+      triage_assessment: { findFirst: jest.fn() }
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    const result = await opdFlowService.doctorReview(
+      'enc-1',
+      { note: 'Doctor assessment completed' },
+      { user_id: 'doc-1', tenant_id: 'tenant-1', facility_id: 'facility-1' }
+    );
+
+    expect(tx.clinical_note.create).toHaveBeenCalled();
+    expect(tx.encounter.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          extension_json: expect.objectContaining({
+            opd_flow: expect.objectContaining({
+              stage: 'WAITING_DISPOSITION',
+              next_step: 'DISPOSITION',
+              review_completed: true
+            })
+          })
+        })
+      })
+    );
+    expect(result.flow.stage).toBe('WAITING_DISPOSITION');
+  });
+
   it('creates lab, radiology, and pharmacy requests on doctor review', async () => {
     const tx = {
       encounter: {

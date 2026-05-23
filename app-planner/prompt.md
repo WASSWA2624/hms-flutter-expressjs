@@ -1,787 +1,488 @@
-﻿# Implementation Prompt: HMS Real-Time CRUD UI Synchronization Fix
-
-## Goal
-
-Fix inconsistent real-time UI updates in the Hospital Management System.
-
-The app already has WebSocket support. Do **not** add a new real-time system and do **not** replace the existing architecture.
-
-The problem is that backend CRUD mutations are not consistently emitted as domain events, and the Flutter frontend does not consistently invalidate or refresh affected Riverpod state when those events arrive.
-
-Implement a focused fix so that when users create, update, delete, reconcile, queue, or process important HMS records, the UI updates immediately and consistently across relevant screens, tabs, devices, and users.
-
----
-
-## Existing architecture to preserve
-
-Preserve the existing project structure and coding style.
-
-### Backend
-
-The backend uses:
-
-* Express
-* Prisma
-* CommonJS modules
-* `ws` WebSocket server
-* Layered structure:
-
-```txt
-route -> controller -> service -> repository -> prisma
-```
-
-Respect the existing backend rules:
-
-* Services own business logic, workflow, audit, and event publishing decisions.
-* Repositories own Prisma/database access.
-* Do not move Prisma queries into controllers or shared websocket helpers.
-* Do not put business logic in the WebSocket gateway.
-* Keep WebSocket payloads stable and use `snake_case` field names.
-
-Relevant backend files to inspect and update where required:
-
-```txt
-backend/src/server.js
-backend/src/websockets/server.js
-backend/src/websockets/gateway.js
-
-backend/src/lib/websocket/events.js
-backend/src/lib/websocket/emit.js
-backend/src/lib/websocket/index.js
-
-backend/src/modules/patient/services/patient.service.js
-backend/src/modules/encounter/services/encounter.service.js
-backend/src/modules/payment/services/payment.service.js
-backend/src/modules/visit-queue/services/visit-queue.service.js
-backend/src/modules/billing/services/billing.service.js
-
-backend/src/modules/billing/repositories/billing.repository.js
-```
-
-Also inspect related tests under:
-
-```txt
-backend/src/tests/
-```
-
-especially existing websocket and module service tests.
-
-### Frontend
-
-The frontend uses:
-
-* Flutter
-* Riverpod
-* Dio
-* `web_socket_channel`
-* Feature-first clean architecture
-
-Respect the existing frontend rules:
-
-* UI widgets must not own HTTP or business workflow logic.
-* Repositories handle API calls and DTO/domain mapping.
-* Controllers own presentation state.
-* Providers should stay close to their owning feature unless truly shared.
-* `core` must remain generic and must not contain feature-specific business rules.
-* Use existing shared UI/theme patterns.
-* Do not redesign screens.
-
-Relevant frontend files to inspect and update where required:
-
-```txt
-frontend/lib/core/realtime/realtime_events.dart
-frontend/lib/core/realtime/realtime_event_groups.dart
-frontend/lib/core/realtime/realtime_message.dart
-frontend/lib/core/realtime/realtime_service.dart
-frontend/lib/core/realtime/realtime_providers.dart
-frontend/lib/core/realtime/realtime_refresh.dart
-
-frontend/lib/features/patients/presentation/controllers/patient_registry_controller.dart
-
-frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart
-
-frontend/lib/features/billing/domain/repositories/billing_repository.dart
-frontend/lib/features/billing/data/repositories/billing_repository_impl.dart
-frontend/lib/features/billing/presentation/controllers/billing_workspace_controller.dart
-```
-
-Also inspect related frontend tests under:
-
-```txt
-frontend/test/
-```
-
-especially realtime, patient registry, OPD workspace, and billing workspace tests.
-
-### App planner files
-
-Use the rules in these files as project constraints:
-
-```txt
-app-planner/
-backend/app-planner/app-rules/
-frontend/app-planner/app-rules/
-```
-
-Do not modify `app-planner` files unless absolutely required.
-
----
-
-## Screenshot/UI note
-
-No task-specific screenshots are available to the coding agent. Therefore, preserve the existing UI exactly unless a functional state-update change requires a minimal adjustment.
-
-Written UI/UX requirements:
-
-1. After a successful create/update/delete/reconcile/payment/queue action, the user must see the latest state without manual refresh or navigating away.
-2. Avoid full-screen flicker or unnecessary full reloads after small actions.
-3. Keep existing loading/saving indicators such as `isSaving`, `isRefreshing`, and existing button/modal behavior.
-4. Prefer immediate server-confirmed state patching when the API returns useful data.
-5. Use WebSocket events to synchronize other visible screens, other browser tabs, other devices, and other users.
-6. Existing polling may remain only as a slow fallback. Do not add new polling as the primary solution.
-7. The experience should feel like a messaging app: after an action succeeds, the UI should quickly show the new/updated item.
-
----
-
-## Main implementation requirements
-
-## 1. Backend: add missing domain events
-
-Extend the existing backend websocket event constants in:
-
-```txt
-backend/src/lib/websocket/events.js
-```
-
-Add missing resource-level events while preserving all existing event names.
-
-Required new events:
-
-```js
-patient.created
-patient.updated
-patient.deleted
-
-encounter.created
-encounter.updated
-encounter.deleted
-
-visit_queue.created
-visit_queue.updated
-visit_queue.deleted
-visit_queue.position_changed
-
-payment.created
-payment.updated
-payment.deleted
-payment.reconciled
-
-invoice.updated
-billing.balance_updated
-```
-
-Keep existing compatibility events such as:
-
-```js
-billing.invoice_issued
-billing.payment_received
-billing.refund_processed
-opd.flow.updated
-ipd.flow.updated
-visit_queue.triage_updated
-```
-
-Do not remove or rename existing events that the frontend may already consume.
-
----
-
-## 2. Backend: add or formalize a shared domain event publisher
-
-Create or extend a shared publisher under:
-
-```txt
-backend/src/lib/websocket/
-```
-
-Suggested export:
-
-```js
-publishDomainEvent({
-  event,
-  tenant_id,
-  facility_id,
-  actor_user_id,
-  resource_type,
-  resource_id,
-  affected,
-  payload,
-  recipient_user_ids,
-});
-```
-
-Requirements:
-
-1. The publisher must use existing websocket emit helpers.
-2. The publisher must not query Prisma directly.
-3. Recipient lookup must remain in services/repositories.
-4. Payloads must use stable `snake_case` fields.
-5. Every event should include:
-
-   * `event`
-   * `tenant_id`
-   * `facility_id`
-   * `actor_user_id`
-   * `resource_type`
-   * `resource_id`
-   * `affected`
-   * `payload`
-   * `occurred_at`
-6. Realtime delivery failure must not break successful CRUD API responses.
-7. Log websocket publish failures using the existing backend logger pattern.
-8. Do not send large raw Prisma objects unless already established by existing patterns. Prefer IDs, public IDs, statuses, amounts, timestamps, and affected resource references.
-
-Example payload shape:
-
-```js
-{
-  event: "payment.reconciled",
-  tenant_id,
-  facility_id,
-  actor_user_id,
-  resource_type: "payment",
-  resource_id: payment.id,
-  affected: {
-    payment_id: payment.id,
-    invoice_id,
-    patient_id,
-    encounter_id
-  },
-  payload: {
-    payment_id: payment.id,
-    payment_public_id,
-    invoice_id,
-    invoice_public_id,
-    patient_id,
-    encounter_id,
-    status,
-    amount,
-    occurred_at
-  },
-  occurred_at
-}
-```
-
----
-
-## 3. Backend: support multiple WebSocket connections per user
-
-Update:
-
-```txt
-backend/src/websockets/gateway.js
-```
-
-The current gateway stores one socket per user. Change this to support multiple active sockets per user.
-
-Target concept:
-
-```js
-Map<UserId, Set<WebSocket>>
-```
-
-Requirements:
-
-1. The same user can open multiple tabs/devices without disconnecting older sockets.
-2. `sendToUser(userId, event, payload)` must send to all active sockets for that user.
-3. `broadcast(event, payload, excludeUserIds)` must handle multiple sockets per user.
-4. Closing one socket must not disconnect other sockets for the same user.
-5. Cleanup must remove stale socket references safely.
-6. `getConnectedUsers()` should still return unique user IDs.
-7. Update gateway tests to cover multiple sockets for the same user.
-
-Do not change the public gateway API more than necessary.
-
----
-
-## 4. Backend: emit events after successful mutations
-
-Emit domain events after successful database writes in the relevant services.
-
-Update only the required mutation paths.
-
-### Patient service
-
-File:
-
-```txt
-backend/src/modules/patient/services/patient.service.js
-```
-
-Emit:
-
-```js
-patient.created
-patient.updated
-patient.deleted
-```
-
-Required payload fields where available:
-
-```js
-patient_id
-patient_public_id
-tenant_id
-facility_id
-status or is_active
-actor_user_id
-occurred_at
-affected: { patient_id }
-target_path, if existing navigation patterns support it
-```
-
-For delete operations, use the pre-delete record to include affected IDs.
-
-### Encounter service
-
-File:
-
-```txt
-backend/src/modules/encounter/services/encounter.service.js
-```
-
-Emit:
-
-```js
-encounter.created
-encounter.updated
-encounter.deleted
-```
-
-Required payload fields where available:
-
-```js
-encounter_id
-encounter_public_id
-patient_id
-tenant_id
-facility_id
-encounter_type
-status
-actor_user_id
-occurred_at
-affected: { patient_id, encounter_id }
-```
-
-### Payment service
-
-File:
-
-```txt
-backend/src/modules/payment/services/payment.service.js
-```
-
-Emit:
-
-```js
-payment.created
-payment.updated
-payment.deleted
-payment.reconciled
-```
-
-Required payload fields where available:
-
-```js
-payment_id
-payment_public_id
-invoice_id
-invoice_public_id
-patient_id
-encounter_id
-tenant_id
-facility_id
-amount
-status
-method
-actor_user_id
-occurred_at
-affected: { payment_id, invoice_id, patient_id, encounter_id }
-```
-
-### Visit queue service
-
-File:
-
-```txt
-backend/src/modules/visit-queue/services/visit-queue.service.js
-```
-
-Emit:
-
-```js
-visit_queue.created
-visit_queue.updated
-visit_queue.deleted
-visit_queue.position_changed
-```
-
-Required payload fields where available:
-
-```js
-queue_id
-queue_public_id
-patient_id
-appointment_id
-provider_user_id
-tenant_id
-facility_id
-status
-queued_at
-actor_user_id
-occurred_at
-affected: { queue_id, patient_id, appointment_id, provider_user_id }
-```
-
-### Billing service
-
-File:
-
-```txt
-backend/src/modules/billing/services/billing.service.js
-```
-
-Keep existing billing events and add more specific events where appropriate:
-
-```js
-invoice.updated
-payment.reconciled
-billing.balance_updated
-```
-
-Important:
-
-* Do not remove current `billing.invoice_issued`, `billing.payment_received`, or `billing.refund_processed` behavior.
-* Stop excluding the actor completely from billing realtime recipients.
-* The same tab may already update from the API response, but other tabs/devices for the same user must still receive events.
-* Other users in the same tenant/facility who should see billing updates must continue receiving them.
-
----
-
-## 5. Backend: recipient resolution
-
-Use the existing repository/service patterns to determine recipients.
-
-Do not hardcode unsafe global broadcasts unless the existing module already uses that pattern.
-
-If recipient lookup needs database access, place it in the appropriate repository, not in shared websocket helpers.
-
-Missing detail to verify from the codebase:
-
-```txt
-The exact role/permission set that should receive patient, encounter, visit queue, payment, and billing events.
-```
-
-Choose the smallest safe recipient set based on existing role, facility, tenant, and module patterns.
-
----
-
-## 6. Frontend: add matching realtime event constants and groups
-
-Update:
-
-```txt
-frontend/lib/core/realtime/realtime_events.dart
-frontend/lib/core/realtime/realtime_event_groups.dart
-```
-
-Add constants for the new backend events.
-
-Required frontend event names:
-
-```dart
-patient.created
-patient.updated
-patient.deleted
-
-encounter.created
-encounter.updated
-encounter.deleted
-
-visit_queue.created
-visit_queue.updated
-visit_queue.deleted
-visit_queue.position_changed
-
-payment.created
-payment.updated
-payment.deleted
-payment.reconciled
-
-invoice.updated
-billing.balance_updated
-```
-
-Update event groups so affected workspaces receive the correct invalidation triggers.
-
-Expected group behavior:
-
-| Event                     | Frontend reaction                                                             |
-| ------------------------- | ----------------------------------------------------------------------------- |
-| `patient.created`         | Refresh/upsert patient registry                                               |
-| `patient.updated`         | Refresh/update patient registry, selected patient detail, related workspaces  |
-| `patient.deleted`         | Remove patient from lists and close/clear stale selected detail if needed     |
-| `encounter.created`       | Refresh patient timeline/detail and OPD/IPD/clinical workspace where relevant |
-| `encounter.updated`       | Refresh encounter detail and affected patient/workspace state                 |
-| `encounter.deleted`       | Remove stale encounter data and refresh affected patient/workspace state      |
-| `visit_queue.created`     | Refresh OPD queue/list                                                        |
-| `visit_queue.updated`     | Refresh OPD queue card/status and affected patient state                      |
-| `visit_queue.deleted`     | Remove stale queue item and refresh OPD queue/list                            |
-| `payment.created`         | Refresh billing workspace/payment list                                        |
-| `payment.updated`         | Refresh billing workspace/payment detail                                      |
-| `payment.reconciled`      | Refresh invoice, payment list, patient balance, and billing workspace         |
-| `invoice.updated`         | Refresh invoice detail and billing workspace                                  |
-| `billing.balance_updated` | Refresh patient billing balance and billing workspace                         |
-
-Do not place feature-specific invalidation rules directly inside generic `core` code unless the helper is feature-neutral.
-
----
-
-## 7. Frontend: centralize invalidation behavior without violating architecture
-
-Improve the existing realtime refresh flow.
-
-Relevant file:
-
-```txt
-frontend/lib/core/realtime/realtime_refresh.dart
-```
-
-You may create a new helper only if it remains generic, for example:
-
-```txt
-frontend/lib/core/realtime/realtime_invalidation_controller.dart
-```
-
-But feature-specific mappings must live in feature controllers or feature-owned files.
-
-Requirements:
-
-1. Avoid scattered duplicate websocket handling logic.
-2. Keep debounced refresh behavior to prevent excessive API calls.
-3. Add support for refresh-on-reconnect/authenticated websocket events.
-4. Add support for pending refresh while a controller is saving or already syncing.
-5. Do not lose realtime events that arrive during `isSaving` or `_isSyncing`.
+﻿# Implementation Prompt: Make HMS Patient Workflows Clear, Short, and Action-Oriented
+
+You are working in the attached HMS codebase with these main folders:
+
+* `app-planner`
+* `backend`
+* `frontend`
+
+Inspect the codebase before editing. Implement a focused workflow-clarity improvement across the existing patient workflows. Do **not** rebuild the system. Preserve the current architecture, folder structure, naming conventions, coding style, state-management patterns, UI components, API patterns, permissions model, and localization approach.
+
+No task-specific workflow screenshots were found in the archive. Use the existing Flutter UI patterns, backend modules, planner docs, and current screens as the source of truth. If any requirement remains unclear, verify it from the codebase and implement only what is supported.
+
+## Problem to Solve
+
+The current HMS patient workflow is confusing in several areas. Users cannot always tell:
+
+* What action is required now.
+* What has already been completed.
+* The current patient/status/stage.
+* The next action to take.
+* Who is responsible for the next action.
+* Whether the last action completed successfully.
+* Whether queue/status/stage updates are actually reflected.
+
+Improve the patient workflows so that every department screen is clear, short, obvious, and action-oriented.
+
+The target is:
+
+* One-step completion where possible.
+* Maximum two to three steps for genuinely complex actions.
+* No unnecessary queue stages.
+* No duplicate assignment/payment/admission steps.
+* No misleading “request-based” workflows except where clinically appropriate.
+
+Only laboratory and radiology investigations should remain request/order-based because they naturally require investigation orders.
+
+## Relevant Areas to Inspect
+
+### Planner / Requirements
+
+Inspect these files and update only if required to keep implementation documentation aligned:
+
+* `app-planner/app-write-up.md`
+* `app-planner/ipd-flow.md`
+* `app-planner/opd-flow.md`
+* `app-planner/prompt.md`
+* `app-planner/dev-plan/11-patients.md`
+* `app-planner/dev-plan/12-opd-flow.md`
+* `app-planner/dev-plan/13-triage.md`
+* `app-planner/dev-plan/14-clinical.md`
+* `app-planner/dev-plan/15-nursing.md`
+* `app-planner/dev-plan/16-inpatient.md`
+* `app-planner/dev-plan/17-icu.md`
+* `app-planner/dev-plan/18-theater.md`
+* `app-planner/dev-plan/19-discharge.md`
+* `app-planner/dev-plan/20-emergency.md`
+* `app-planner/dev-plan/21-lab.md`
+* `app-planner/dev-plan/22-radiology.md`
+* `app-planner/dev-plan/26-physiotherapy.md`
+* `app-planner/dev-plan/29-rooms-beds.md`
+* `app-planner/dev-plan/34-notifications.md`
+* `frontend/app-planner/app-rules/*.md`
+
+Code is the final source of truth if planner docs are stale or incomplete.
+
+### Frontend Areas
+
+Inspect and modify only the files required under:
+
+* `frontend/lib/features/patients/`
+* `frontend/lib/features/opd/`
+* `frontend/lib/features/emergency/`
+* `frontend/lib/features/ipd/`
+* `frontend/lib/features/rooms_beds/`
+* `frontend/lib/features/icu/`
+* `frontend/lib/features/nursing/`
+* `frontend/lib/features/discharge/`
+* `frontend/lib/features/clinical/`
+* `frontend/lib/features/physiotherapy/`
+* `frontend/lib/features/theater/`
+* `frontend/lib/features/lab/`
+* `frontend/lib/features/radiology/`
+* `frontend/lib/features/communications/`
+* `frontend/lib/shared/opd_actions/`
+* `frontend/lib/shared/clinical_actions/`
+* `frontend/lib/shared/actions/`
+* `frontend/lib/shared/components/`
+* `frontend/lib/shared/forms/`
+* `frontend/lib/shared/layout/`
+* `frontend/lib/shared/data/`
+* `frontend/lib/core/network/api_endpoints.dart`
+* `frontend/lib/core/permissions/`
+* `frontend/lib/l10n/app_en.arb`
+* Generated localization files, if this project commits them.
+
+Use the existing Flutter/Riverpod feature-first structure:
+
+* `data`
+* `domain`
+* `presentation`
+
+Widgets must not call APIs directly. Controllers manage presentation actions/state. Repositories own data coordination.
+
+### Backend Areas
+
+Inspect and modify only where required:
+
+* `backend/src/modules/opd-flow/`
+* `backend/src/modules/visit-queue/`
+* `backend/src/modules/triage/`
+* `backend/src/modules/patient/`
+* `backend/src/modules/emergency-case/`
+* `backend/src/modules/emergency-response/`
+* `backend/src/modules/admission/`
+* `backend/src/modules/bed-assignment/`
+* `backend/src/modules/bed/`
+* `backend/src/modules/room/`
+* `backend/src/modules/icu-stay/`
+* `backend/src/modules/icu-observation/`
+* `backend/src/modules/nursing-note/`
+* `backend/src/modules/discharge-summary/`
+* `backend/src/modules/clinical-note/`
+* `backend/src/modules/theatre-case/`
+* `backend/src/modules/theatre-flow/`
+* `backend/src/modules/lab-workspace/`
+* `backend/src/modules/lab-order/`
+* `backend/src/modules/lab-sample/`
+* `backend/src/modules/lab-result/`
+* `backend/src/modules/radiology-workspace/`
+* `backend/src/modules/radiology-order/`
+* `backend/src/modules/radiology-result/`
+* `backend/src/modules/communications-workspace/`
+* Relevant backend tests under `backend/src/tests/modules/`
+
+Avoid backend changes unless the current API/state logic blocks the requested workflow clarity.
+
+## Core UI/UX Requirements
+
+Across all affected screens:
+
+1. Show one clear primary action for the current state.
+2. Show completed steps clearly.
+3. Show current status/stage using existing badges/status components.
+4. Show the next action and responsible role.
+5. Show success/completion feedback after actions.
+6. Keep secondary actions available but visually subordinate.
+7. Do not show long confusing grids of disabled or irrelevant actions.
+8. Do not duplicate workflow steps.
+9. Do not use request-style wording unless the action is genuinely a lab/radiology order/request.
+10. Keep tables scannable and action-oriented.
+11. Preserve existing responsive layouts and accessibility patterns.
+12. Use existing components such as `AppWorkspace`, `AppListTable`, `AppDialog`, `AppActionSection`, `AppPermissionActionItem`, info/status tiles, shared forms, empty/error/loading states, and shared search/filter controls.
+13. Avoid hard-coded UI strings. Use localization patterns already present in the project.
+
+## Specific Implementation Requirements
+
+### OPD Flow
+
+Focus strongly on OPD because it is currently the most confusing workflow.
+
+Inspect:
+
+* `frontend/lib/features/opd/presentation/pages/opd_workspace_page.dart`
+* `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
+* `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart`
+* `frontend/lib/shared/opd_actions/opd_action_context.dart`
+* `frontend/lib/shared/opd_actions/opd_billing_state.dart`
+* `backend/src/modules/opd-flow/services/opd-flow.service.js`
+* `backend/src/modules/opd-flow/controllers/`
+* `backend/src/modules/opd-flow/routes/`
+* `backend/src/modules/opd-flow/schemas/`
+* `backend/src/tests/modules/opd-flow/`
+
+Required OPD behavior:
+
+* The OPD workspace must clearly show:
+
+  * patient identity/context,
+  * OPD stage,
+  * billing/payment status,
+  * assigned provider,
+  * next required action,
+  * responsible role,
+  * completed actions.
+* `FlowActionsDialog` must become stage-aware and concise:
+
+  * Show the current state/context first.
+  * Show one primary “Next required action”.
+  * Show only relevant secondary actions.
+  * Remove or avoid the confusing pattern where all actions are always displayed regardless of current stage.
+  * Avoid disabled placeholder action grids that do not help the user complete the workflow.
+* If consultation payment is required, make payment the obvious next step.
+* If vitals are required, make “Record vitals” the obvious next step.
+* If a doctor/provider is already assigned, do not show doctor assignment as the required next step.
+* If a doctor/provider is missing, show assignment as the required next step.
+* After vitals are recorded, the backend must not blindly move the flow to `WAITING_DOCTOR_ASSIGNMENT` when a provider is already assigned. It must advance to the correct next stage, normally doctor review.
+* If a doctor was assigned during registration/check-in/start flow, do not create another unnecessary doctor-assignment step later.
+* Doctor review should lead to the correct next state:
+
+  * lab requested,
+  * radiology requested,
+  * lab and radiology requested,
+  * pharmacy required,
+  * waiting disposition,
+  * admitted,
+  * discharged.
+* OPD disposition should be direct and action-oriented:
+
+  * Use “Admit patient”, “Send to pharmacy”, or “Discharge patient” style wording where supported.
+  * Do not present OPD admission as merely “request admission” if the current backend already performs direct admission.
+* Ensure OPD queue/stage changes refresh the UI correctly after successful actions.
+
+### Emergency Flow
+
+Inspect:
+
+* `frontend/lib/features/emergency/`
+* `backend/src/modules/emergency-case/`
+* `backend/src/modules/emergency-response/`
+* Ambulance/dispatch/trip modules where used.
+
+Improve clarity for:
+
+* quick arrival,
+* triage,
+* priority update,
+* emergency response,
+* ambulance dispatch/status,
+* handoff.
+
+Each emergency case must show the current emergency status, required action, owner role, and completion result. Keep emergency actions direct and fast.
+
+### General Patient Flow
+
+Inspect:
+
+* `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart`
+* related patient controllers/repositories/models.
+
+Improve patient registry actions so users can quickly start the correct workflow without duplicate steps:
+
+* OPD/walk-in/check-in,
+* emergency arrival,
+* IPD/admission,
+* patient detail/context actions.
+
+Do not create duplicate patients, duplicate encounters, or duplicate unnecessary queues.
+
+### IPD, Room Assignment, ICU, Nursing, and Discharge
+
+Inspect:
+
+* `frontend/lib/features/ipd/`
+* `frontend/lib/features/rooms_beds/`
+* `frontend/lib/features/icu/`
+* `frontend/lib/features/nursing/`
+* `frontend/lib/features/discharge/`
+* corresponding backend modules.
 
 Required behavior:
 
-```txt
-If realtime event arrives while saving/syncing:
-    mark refreshPending = true
+* IPD admission and bed assignment should be direct and obvious.
+* Room/bed state must clearly show whether a bed is available, occupied, reserved, blocked, or out of service, based on existing backend states.
+* Avoid unnecessary “request” wording for actions that can be completed directly.
+* Transfer, release bed, discharge planning, discharge completion, nursing notes, medication administration, ICU observations, ICU transfer-out, and escalation actions should show:
 
-After saving/syncing finishes:
-    run one refresh if refreshPending == true
-```
+  * current state,
+  * next action,
+  * owner role,
+  * completion result.
+* Do not break bed assignment consistency between IPD, ICU, rooms/beds, and discharge.
 
-Apply this pattern to affected controllers, especially:
+### Clinical Workflow
 
-```txt
-patient_registry_controller.dart
-opd_workspace_controller.dart
-billing_workspace_controller.dart
-```
+Inspect:
 
----
+* `frontend/lib/features/clinical/`
+* `frontend/lib/shared/clinical_actions/`
+* `backend/src/modules/clinical-note/`
+* related admission/disposition modules.
 
-## 8. Frontend: use API responses immediately
+Required behavior:
 
-Do not throw away useful mutation responses.
+* Clinical screens must show what the clinician needs to do next.
+* Lab and radiology may remain order/request-based.
+* Admission should be direct where the backend supports it.
+* Avoid misleading “request admission” wording if the action actually admits or marks the patient admitted.
+* Preserve existing clinical note, diagnosis, procedure, prescription, referral, follow-up, disposition, lab, and radiology action patterns.
 
-Billing currently has mutation methods that return `Result<void>` even when the backend can return useful payment, invoice, approval, or billing data.
+### Physiotherapy
 
-Update billing repository/controller flow where appropriate:
+Inspect:
 
-```txt
-frontend/lib/features/billing/domain/repositories/billing_repository.dart
-frontend/lib/features/billing/data/repositories/billing_repository_impl.dart
-frontend/lib/features/billing/presentation/controllers/billing_workspace_controller.dart
-```
+* `frontend/lib/features/physiotherapy/`
+* corresponding backend/workspace APIs if present.
 
-Requirements:
+Improve clarity for:
 
-1. Replace `Result<void>` with typed results where useful backend data is available.
-2. Decode server-confirmed responses instead of ignoring them.
-3. Patch selected invoice/payment/workspace state immediately when safe.
-4. If exact patching is too risky, trigger a targeted refresh using the server-confirmed result.
-5. Keep the UI responsive and avoid waiting for polling.
-6. Do not break existing billing actions.
+* referral acceptance,
+* assessment,
+* session scheduling,
+* attendance,
+* progress note,
+* plan update,
+* follow-up,
+* episode closure.
 
-Missing detail to verify from the codebase:
+The screen must clearly distinguish pending, active, missed, follow-up due, and completed physiotherapy work.
 
-```txt
-Exact backend response shapes for issue invoice, send invoice, receive payment, reconcile payment, refund request, adjustment request, void request, shift close, and day close.
-```
+### Theater
 
-Use existing DTO/domain conventions.
+Inspect:
 
----
+* `frontend/lib/features/theater/`
+* `backend/src/modules/theatre-case/`
+* `backend/src/modules/theatre-flow/`
 
-## 9. Frontend: keep existing UI design
+Improve clarity for:
 
-Do not redesign pages.
+* case scheduling,
+* stage updates,
+* anesthesia record,
+* observations,
+* checklist,
+* resources,
+* post-op note,
+* finalization/reopening.
 
-Do not change layout, colors, typography, navigation, modals, or shared components unless required for the realtime state fix.
+Theater stages must clearly show what is pending, what is completed, and the next required owner/action.
 
-Expected UX after implementation:
+### Laboratory
 
-1. Creating/updating/deleting a patient updates the registry and selected detail immediately.
-2. Creating/updating/deleting an encounter updates patient detail/timeline and relevant workspace state.
-3. Creating/updating/deleting/prioritizing a queue item updates OPD queue state immediately.
-4. Processing or reconciling a payment updates billing workspace, invoice state, payment list, and patient balance.
-5. Opening the same user account in two tabs/devices keeps both tabs connected and synchronized.
-6. WebSocket reconnect causes the visible workspace state to refresh because events may have been missed.
+Inspect:
 
----
+* `frontend/lib/features/lab/`
+* `backend/src/modules/lab-workspace/`
+* `backend/src/modules/lab-order/`
+* `backend/src/modules/lab-sample/`
+* `backend/src/modules/lab-result/`
 
-## 10. Scope limits
+Lab should remain request/order-based.
 
-Do **not**:
+Improve clarity for:
 
-1. Rewrite the whole app.
-2. Replace Riverpod.
-3. Replace the existing WebSocket system.
-4. Add GraphQL, Socket.IO, Firebase, Supabase, or another realtime platform.
-5. Add polling as the primary fix.
-6. Redesign the UI.
-7. Refactor unrelated modules.
-8. Change folder structure unnecessarily.
-9. Rename files unless required.
-10. Add a transactional outbox migration unless the existing codebase already has an unfinished outbox pattern that can be completed safely.
+* order status,
+* sample collection,
+* sample receiving,
+* rejection,
+* result entry/release,
+* reversal,
+* QC logs.
 
-A transactional outbox is a future improvement, not required for this task.
+Show the next lab action and responsible role without removing the order-based workflow.
 
----
+### Radiology
 
-## 11. Testing requirements
+Inspect:
 
-Add or update tests for the changed behavior.
+* `frontend/lib/features/radiology/`
+* `backend/src/modules/radiology-workspace/`
+* `backend/src/modules/radiology-order/`
+* `backend/src/modules/radiology-result/`
 
-### Backend tests
+Radiology should remain request/order-based.
 
-Update or add tests for:
+Improve clarity for:
 
-1. WebSocket gateway multiple connections per user:
+* order creation,
+* assignment,
+* start,
+* completion,
+* cancellation,
+* study creation,
+* draft result,
+* finalization,
+* addendum,
+* PACS sync.
 
-   * same user can register more than one socket
-   * `sendToUser` sends to all sockets for that user
-   * closing one socket does not remove other sockets
-   * broadcast reaches all expected sockets
-   * cleanup closes/removes all sockets safely
+Show the next radiology action and responsible role without removing the order-based workflow.
 
-2. Event constants and publisher:
+### Communication Notes
 
-   * new event names exist
-   * publisher creates stable payload shape
-   * publisher does not throw into service mutation flow when delivery fails
+Inspect:
 
-3. Service mutations emit expected events:
+* `frontend/lib/features/communications/`
+* `backend/src/modules/communications-workspace/`
 
-   * patient create/update/delete
-   * encounter create/update/delete
-   * payment create/update/delete/reconcile
-   * visit queue create/update/delete/position change
-   * billing invoice/payment/balance updates
+Improve clarity for:
 
-4. Failed mutations must not emit success events.
+* conversations,
+* messages,
+* notifications,
+* delivery status,
+* read/unread state,
+* archive/unarchive actions.
 
-Run:
+Communication notes should clearly show whether communication is pending, sent, delivered, read, archived, or requiring action.
 
-```bash
-cd backend
-npm run lint
-npm run test:backend
-```
+## Backend Requirements
 
-If backend routes or API schemas are changed, also run:
+Make minimal backend changes only when needed to support correct workflow behavior.
 
-```bash
-npm run openapi:validate
-```
+At minimum, verify and fix OPD stage progression:
 
-### Frontend tests
+* If provider is already assigned, OPD must not require a second doctor-assignment step.
+* After vitals, if provider exists, advance to doctor review.
+* If provider is missing, advance to doctor assignment.
+* Ensure `next_step`, stage/status, audit/realtime events, and API responses remain consistent.
+* Update backend tests for OPD stage behavior.
 
-Update or add tests for:
+Do not invent new APIs if existing routes already support the needed action. If a required action cannot be safely implemented with current backend support, leave unsupported behavior unchanged and document the verified limitation in the smallest appropriate place.
 
-1. New realtime event constants and groups.
-2. Realtime refresh helper behavior:
+## Frontend Requirements
 
-   * debounced refresh
-   * refresh-on-reconnect/authenticated event
-   * pending refresh while saving/syncing
-3. Patient registry controller:
+* Preserve Riverpod controller/repository patterns.
+* Do not call APIs directly from widgets.
+* Keep permission checks intact.
+* Use existing shared UI components.
+* Keep responsive layout behavior.
+* Keep table filters/search/sort/pagination behavior.
+* Update localization strings properly.
+* Do not introduce hard-coded user-facing text.
+* Do not create broad duplicate workflow components if existing shared action/dialog components can be improved.
+* Ensure successful actions refresh local state or invalidate/reload the correct providers so the visible patient status updates immediately.
 
-   * reacts to patient events
-   * updates/refreshes selected patient when affected
-4. OPD workspace controller:
+## Scope Limits
 
-   * reacts to encounter and visit queue events
-   * does not lose refresh during saving
-5. Billing workspace controller:
+Do not:
 
-   * reacts to payment, invoice, and balance events
-   * does not ignore useful mutation responses
-6. Billing repository DTO decoding for updated mutation return types.
+* rewrite the whole HMS,
+* redesign unrelated modules,
+* change unrelated APIs,
+* remove useful existing features,
+* introduce a new design system,
+* rename folders unnecessarily,
+* delete files unless deletion is required for this task,
+* change authentication, authorization, or permissions behavior except where required to preserve existing action visibility,
+* fake backend behavior on the frontend,
+* leave dead code, unused imports, or linter errors.
 
-Run:
+Modify only the files required for the requested workflow improvements.
 
-```bash
-cd frontend
-dart format .
-flutter analyze
-flutter test
-```
+## Testing and Verification
 
-All linter/analyzer issues must be cleared.
+Run and fix issues from the relevant checks.
 
----
+Frontend:
 
-## 12. Output requirements
+* `cd frontend`
+* `flutter analyze`
+* `flutter test`
+* Run targeted tests for modified areas, especially:
 
-Return a zipped archive containing **only** files and folders that were created or updated.
+  * OPD controller/action tests,
+  * patient registry tests,
+  * clinical workspace tests,
+  * rooms/beds tests,
+  * theater tests,
+  * communications tests,
+  * shared OPD action tests,
+  * localization/hard-coded UI text tests.
+* Run `flutter test integration_test/startup_navigation_smoke_test.dart` if feasible.
 
-All files must be placed in their correct relative project directories, for example:
+Backend:
 
-```txt
-backend/src/...
-frontend/lib/...
-frontend/test/...
-backend/src/tests/...
-```
+* `cd backend`
+* `npm run lint`
+* `npm run test:backend`
+* Run targeted OPD/backend workflow tests.
+* If backend routes/schemas/OpenAPI behavior changed, also run:
 
-Do not include:
+  * `npm run openapi:validate`
 
-```txt
-node_modules/
-build/
-.dart_tool/
-coverage/
-.env files
-logs
-temporary extraction folders
-unrelated unchanged files
-```
+All linter, analyzer, and test issues introduced by this work must be cleared.
 
-If any file or folder must be deleted or renamed, include one or more PowerShell scripts:
+## Required Output
 
-```txt
-scripts/delete-or-rename-*.ps1
-```
+Return a zipped archive containing only the files and folders that were created or updated.
 
-Script requirements:
+Requirements for the archive:
 
-1. Use correct relative paths.
-2. Check that the target exists before deleting or renaming.
-3. Do not delete unrelated files.
-4. Do not use broad destructive patterns.
-5. Keep scripts safe and readable.
-
-Only modify the files required for this realtime CRUD synchronization task.
+* Preserve correct relative paths from the project root.
+* Do not include the full repository.
+* Do not include unchanged files.
+* Include updated frontend, backend, and `app-planner` files only where actually changed.
+* If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those delete/rename operations.
+* The `.ps1` scripts must use correct relative paths and must not delete unrelated files.
+* Do not include unsafe broad delete commands.

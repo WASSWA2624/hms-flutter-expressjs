@@ -1328,6 +1328,11 @@ const setFlowStage = (flow, stage) => {
   flow.next_step = getNextStep(stage);
 };
 
+const resolvePostVitalsStage = (encounter) =>
+  normalizeIdentifier(encounter?.provider_user_id)
+    ? STAGES.WAITING_DOCTOR_REVIEW
+    : STAGES.WAITING_DOCTOR_ASSIGNMENT;
+
 const ensureNonTerminalStage = (flow) => {
   if (TERMINAL_STAGES.has(flow.stage)) {
     throw new HttpError('errors.opd_flow.already_terminal', 400);
@@ -3056,7 +3061,7 @@ const recordVitals = async (id, data, context = {}) => {
       }
 
       if (flow.stage === STAGES.WAITING_VITALS || flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT) {
-        setFlowStage(flow, STAGES.WAITING_DOCTOR_ASSIGNMENT);
+        setFlowStage(flow, resolvePostVitalsStage(encounter));
       }
       appendTimelineEvent(flow, isVitalsUpdate ? 'VITALS_UPDATED' : 'VITALS_RECORDED', context, {
         vitals_count: data.vitals.length,
@@ -3233,6 +3238,10 @@ const doctorReview = async (id, data, context = {}) => {
     const flow = getOpdFlowState(encounter);
     ensureNonTerminalStage(flow);
     const stageBefore = flow.stage;
+
+    if (flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT && normalizeIdentifier(encounter.provider_user_id)) {
+      setFlowStage(flow, STAGES.WAITING_DOCTOR_REVIEW);
+    }
 
     const reviewUpdateStages = new Set([
       STAGES.WAITING_DOCTOR_REVIEW,

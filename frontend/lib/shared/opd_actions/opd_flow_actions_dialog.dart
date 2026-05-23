@@ -98,9 +98,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
+          OpdActionContextPanel(flow: flow, detail: detail),
           if (detail == null) const LinearProgressIndicator(),
           _actionGrid(context, flow, detail),
-          OpdActionContextPanel(flow: flow),
         ],
       ),
     );
@@ -243,24 +243,14 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       );
     }
 
-    AppPermissionActionItem disabledDoctorAction({
-      required String label,
-      required IconData icon,
-    }) => AppPermissionActionItem(
-      requirement: opdDoctorActionRequirement,
-      label: label,
-      icon: icon,
-      fullWidth: true,
-      hideWhenDenied: true,
-      enabled: false,
-      tooltip: _apiLabel(stage),
-      onPressed: null,
-    );
-
+    final bool hasAssignedProvider = _isNonEmpty(flow.providerUserId) ||
+        _isNonEmpty(flow.providerDisplayName);
     final String nextActionKey = switch (stage) {
-      'WAITING_CONSULTATION_PAYMENT' => 'billing',
+      'WAITING_CONSULTATION_PAYMENT' => canPayNow ? 'billing' : 'correct_stage',
       'WAITING_VITALS' => 'vitals',
-      'WAITING_DOCTOR_ASSIGNMENT' => 'assign_doctor',
+      'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
+          ? 'doctor_review'
+          : 'assign_doctor',
       'WAITING_DOCTOR_REVIEW' => 'doctor_review',
       'WAITING_DISPOSITION' ||
       'LAB_REQUESTED' ||
@@ -388,62 +378,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     } else {
       addAction('correct_stage', _correctStageAction(context, flow));
     }
-    if (!terminal) {
-      addAction('billing', billingAction());
-      addAction('vitals', vitalsAction());
-      addAction('assign_doctor', assignDoctorAction());
-      addAction('doctor_review', doctorReviewAction());
-      addAction('disposition', dispositionAction());
-    }
-    addAction(
-      'diagnosis',
-      disabledDoctorAction(
-        label: l10n.clinicalAddDiagnosisAction,
-        icon: Icons.rule_outlined,
-      ),
-    );
-    addAction(
-      'lab',
-      disabledDoctorAction(
-        label: l10n.clinicalRequestLabAction,
-        icon: Icons.science_outlined,
-      ),
-    );
-    addAction(
-      'radiology',
-      disabledDoctorAction(
-        label: l10n.clinicalRequestRadiologyAction,
-        icon: Icons.biotech_outlined,
-      ),
-    );
-    addAction(
-      'prescription',
-      disabledDoctorAction(
-        label: l10n.clinicalPrescribeAction,
-        icon: Icons.medication_outlined,
-      ),
-    );
-    addAction(
-      'procedure',
-      disabledDoctorAction(
-        label: l10n.clinicalRequestProcedureAction,
-        icon: Icons.healing_outlined,
-      ),
-    );
-    addAction(
-      'referral',
-      disabledDoctorAction(
-        label: l10n.opdReferAction,
-        icon: Icons.alt_route_outlined,
-      ),
-    );
-    addAction(
-      'follow_up',
-      disabledDoctorAction(
-        label: l10n.opdFollowUpAction,
-        icon: Icons.event_repeat_outlined,
-      ),
-    );
     addAction(
       'print',
       AppPermissionActionItem(

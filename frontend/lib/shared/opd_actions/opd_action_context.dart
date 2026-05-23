@@ -11,11 +11,13 @@ import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 class OpdActionContextPanel extends StatelessWidget {
   const OpdActionContextPanel({
     required this.flow,
+    this.detail,
     this.showTitle = true,
     super.key,
   });
 
   final OpdFlowSummary flow;
+  final OpdFlowDetail? detail;
   final bool showTitle;
 
   @override
@@ -26,6 +28,8 @@ class OpdActionContextPanel extends StatelessWidget {
       flow.patientId,
     ]);
     final String encounterId = flow.apiId;
+    final bool hasAssignedProvider = _isNonEmpty(flow.providerUserId) ||
+        _isNonEmpty(flow.providerDisplayName);
 
     return AppSectionPanel(
       title: showTitle ? l10n.opdEncounterContextTitle : null,
@@ -64,24 +68,81 @@ class OpdActionContextPanel extends StatelessWidget {
             AppInfoTileData(
               label: l10n.opdStageLabel,
               value: _apiLabel(flow.stage),
+              icon: Icons.flag_outlined,
             ),
             AppInfoTileData(
               label: l10n.opdNextStepColumnLabel,
               value: _apiLabel(flow.nextStep),
+              icon: Icons.next_plan_outlined,
+            ),
+            AppInfoTileData(
+              label: l10n.settingsWorkspaceModuleRole,
+              value: opdResponsibleRoleForStage(
+                l10n,
+                flow.stage,
+                hasAssignedProvider: hasAssignedProvider,
+              ),
+              icon: Icons.badge_outlined,
             ),
             AppInfoTileData(
               label: l10n.opdPaymentStatusLabel,
               value: opdFlowBillingDisplay(context, flow).label,
+              icon: Icons.payments_outlined,
             ),
             AppInfoTileData(
               label: l10n.opdProviderColumnLabel,
               value: flow.providerDisplayName,
+              icon: Icons.person_outline,
+            ),
+            AppInfoTileData(
+              label: l10n.opdCompletedFlowSummaryLabel,
+              value: _completedActionSummary(detail),
+              icon: Icons.check_circle_outline,
             ),
           ],
         ),
       ],
     );
   }
+}
+
+String opdResponsibleRoleForStage(
+  AppLocalizations l10n,
+  String? stage, {
+  bool hasAssignedProvider = false,
+}) {
+  return switch ((stage ?? '').trim().toUpperCase()) {
+    'WAITING_CONSULTATION_PAYMENT' => l10n.navigationBillingLabel,
+    'WAITING_VITALS' => l10n.navigationNursingLabel,
+    'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
+        ? l10n.opdWorkflowDoctorTitle
+        : l10n.opdWorkflowReceptionTitle,
+    'WAITING_DOCTOR_REVIEW' => l10n.opdWorkflowDoctorTitle,
+    'LAB_REQUESTED' => l10n.navigationLabLabel,
+    'RADIOLOGY_REQUESTED' => l10n.navigationRadiologyLabel,
+    'LAB_AND_RADIOLOGY_REQUESTED' =>
+        '${l10n.navigationLabLabel} / ${l10n.navigationRadiologyLabel}',
+    'PHARMACY_REQUESTED' => l10n.navigationPharmacyLabel,
+    'WAITING_DISPOSITION' => l10n.opdWorkflowDoctorTitle,
+    'ADMITTED' => l10n.navigationIpdLabel,
+    'DISCHARGED' => l10n.navigationDischargeLabel,
+    _ => l10n.profileUnknownValue,
+  };
+}
+
+String _completedActionSummary(OpdFlowDetail? detail) {
+  final List<String> actions = <String>[];
+  for (final OpdTimelineItem item
+      in detail?.timeline ?? const <OpdTimelineItem>[]) {
+    final String label = _apiLabel(item.action);
+    if (label.isNotEmpty && !actions.contains(label)) {
+      actions.add(label);
+    }
+  }
+  if (actions.isEmpty) {
+    return '';
+  }
+  return actions.reversed.take(4).join(' • ');
 }
 
 String _apiLabel(String? value) {
@@ -98,6 +159,8 @@ String? _firstNonEmpty(Iterable<String?> values) {
   }
   return null;
 }
+
+bool _isNonEmpty(String? value) => value?.trim().isNotEmpty ?? false;
 
 Future<void> _copyTextToClipboard(
   BuildContext context,
