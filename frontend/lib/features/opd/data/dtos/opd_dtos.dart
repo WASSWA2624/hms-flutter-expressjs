@@ -129,6 +129,34 @@ final class OpdQueueEntryDto {
   }
 }
 
+final class OpdFlowAggregateCountsDto {
+  const OpdFlowAggregateCountsDto(this.json);
+
+  final OpdJsonMap json;
+
+  factory OpdFlowAggregateCountsDto.fromResponse(Object? responseData) {
+    final OpdJsonMap response = _expectMap(responseData);
+    return OpdFlowAggregateCountsDto(_map(response['data']));
+  }
+
+  OpdFlowAggregateCounts toEntity() {
+    return OpdFlowAggregateCounts(
+      allPatients: _int(json['all_patients']),
+      allOpdPatients: _int(json['all_opd_patients']),
+      activeOpd: _int(json['active_opd']),
+      vitalsNeeded: _int(json['vitals_needed']),
+      doctorNeeded: _int(json['doctor_needed']),
+      withDoctor: _int(json['with_doctor']),
+      labPending: _int(json['lab_pending']),
+      imagingPending: _int(json['imaging_pending']),
+      pharmacyPending: _int(json['pharmacy_pending']),
+      decisionNeeded: _int(json['decision_needed']),
+      admissionPending: _int(json['admission_pending']),
+      dischargedToday: _int(json['discharged_today']),
+    );
+  }
+}
+
 final class OpdFlowPageDto {
   const OpdFlowPageDto({required this.page});
 
@@ -179,7 +207,10 @@ final class OpdFlowSummaryDto {
     final OpdJsonMap? patient = _nullableMap(encounter['patient']);
     final OpdJsonMap? provider = _nullableMap(encounter['provider']);
     final OpdJsonMap? facility = _nullableMap(encounter['facility']);
+    final OpdJsonMap? assignedStaff = _nullableMap(flow['assigned_staff']);
     final OpdJsonMap consultation = _map(flow['consultation']);
+    final String? assignedStaffDisplayName =
+        _string(assignedStaff?['display_name']) ?? _providerDisplayName(provider);
 
     return OpdFlowSummary(
       id: _string(encounter['id']) ?? '',
@@ -196,10 +227,20 @@ final class OpdFlowSummaryDto {
       arrivalMode: _string(flow['arrival_mode']),
       stage: _string(flow['stage']),
       nextStep: _string(flow['next_step']),
+      displayCode: _string(flow['display_code']),
+      displayStatus: _string(flow['display_status']),
+      displayNextStep: _string(flow['display_next_step']),
       patientDisplayName: _patientDisplayName(patient),
       patientIdentifier: _string(patient?['human_friendly_id']),
       patientPhone: _string(patient?['primary_phone']),
       providerDisplayName: _providerDisplayName(provider),
+      assignedStaffDisplayName: assignedStaffDisplayName,
+      assignedStaffRole:
+          _string(flow['assigned_staff_role']) ?? _string(assignedStaff?['role']),
+      assignedStaffType:
+          _string(flow['assigned_staff_type']) ?? _string(assignedStaff?['type']),
+      assignedStaffLabel:
+          _string(flow['assigned_staff_label']) ?? assignedStaffDisplayName,
       appointmentId: _string(flow['appointment_id']),
       visitQueueId: _string(flow['visit_queue_id']),
       triageLevel:

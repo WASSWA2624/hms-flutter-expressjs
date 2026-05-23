@@ -46,6 +46,14 @@ const PROVIDER_SELECT = {
   },
   staff_profile: {
     select: PROVIDER_STAFF_PROFILE_SELECT
+  },
+  roles: {
+    where: { deleted_at: null },
+    select: {
+      role: {
+        select: { name: true }
+      }
+    }
   }
 };
 
@@ -100,7 +108,7 @@ const findMany = async (
 ) => {
   try {
     const where = withActivePatient({
-      encounter_type: { in: ['OPD', 'EMERGENCY'] },
+      encounter_type: 'OPD',
       ...filters
     });
 
@@ -130,7 +138,7 @@ const findMany = async (
 const count = async (filters = {}) => {
   try {
     const where = withActivePatient({
-      encounter_type: { in: ['OPD', 'EMERGENCY'] },
+      encounter_type: 'OPD',
       ...filters
     });
 

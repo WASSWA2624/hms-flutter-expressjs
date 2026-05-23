@@ -1183,7 +1183,7 @@ abstract class AppLocalizations {
   /// OPD workspace description.
   ///
   /// In en, this message translates to:
-  /// **'Manage arrivals, queues, provider readiness, and outpatient clinical handoffs.'**
+  /// **'Manage arrivals, queues, staff readiness, and outpatient clinical handoffs.'**
   String get opdDescription;
 
   /// Title while OPD data loads.
@@ -1387,7 +1387,7 @@ abstract class AppLocalizations {
   /// OPD table provider filter label.
   ///
   /// In en, this message translates to:
-  /// **'Provider'**
+  /// **'Assigned staff'**
   String get opdProviderFilterLabel;
 
   /// OPD table billing filter label.
@@ -1429,7 +1429,7 @@ abstract class AppLocalizations {
   /// All providers option label in OPD filters.
   ///
   /// In en, this message translates to:
-  /// **'All providers'**
+  /// **'All staff'**
   String get opdAllProvidersOption;
 
   /// All billing states option label in OPD filters.
@@ -1444,6 +1444,277 @@ abstract class AppLocalizations {
   /// **'All next actions'**
   String get opdAllNextActionsOption;
 
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'All Patients'**
+  String get opdSummaryAllPatientsLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'All OPD Patients'**
+  String get opdSummaryAllOpdPatientsLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active OPD'**
+  String get opdSummaryActiveOpdLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals needed'**
+  String get opdSummaryVitalsNeededLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor needed'**
+  String get opdSummaryDoctorNeededLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'With doctor'**
+  String get opdSummaryWithDoctorLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab pending'**
+  String get opdSummaryLabPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging pending'**
+  String get opdSummaryImagingPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy pending'**
+  String get opdSummaryPharmacyPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Decision needed'**
+  String get opdSummaryDecisionNeededLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission pending'**
+  String get opdSummaryAdmissionPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharged today'**
+  String get opdSummaryDischargedTodayLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment due'**
+  String get opdStatusPaymentDueLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals needed'**
+  String get opdStatusVitalsNeededLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor needed'**
+  String get opdStatusDoctorNeededLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'With doctor'**
+  String get opdStatusWithDoctorLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor review'**
+  String get opdStatusDoctorReviewLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab pending'**
+  String get opdStatusLabPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample pending'**
+  String get opdStatusSamplePendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'In lab'**
+  String get opdStatusInLabLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Results ready'**
+  String get opdStatusResultsReadyLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging pending'**
+  String get opdStatusImagingPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Report pending'**
+  String get opdStatusReportPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Report ready'**
+  String get opdStatusReportReadyLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab & imaging pending'**
+  String get opdStatusLabAndImagingPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy pending'**
+  String get opdStatusPharmacyPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispensing'**
+  String get opdStatusDispensingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines dispensed'**
+  String get opdStatusMedicinesDispensedLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Decision needed'**
+  String get opdStatusDecisionNeededLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission pending'**
+  String get opdStatusAdmissionPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admitted'**
+  String get opdStatusAdmittedLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharged'**
+  String get opdStatusDischargedLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect sample'**
+  String get opdNextCollectSampleLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Process lab'**
+  String get opdNextProcessLabLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Review results'**
+  String get opdNextReviewResultsLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab handoff'**
+  String get opdNextLabHandoffLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform imaging'**
+  String get opdNextPerformImagingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete imaging report'**
+  String get opdNextCompleteImagingReportLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Review report'**
+  String get opdNextReviewReportLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging handoff'**
+  String get opdNextImagingHandoffLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics pending'**
+  String get opdNextDiagnosticsPendingLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense medicine'**
+  String get opdNextDispenseMedicineLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy handoff'**
+  String get opdNextPharmacyHandoffLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Disposition'**
+  String get opdNextDispositionLabel;
+
+  /// OPD display label.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission handoff'**
+  String get opdNextAdmissionHandoffLabel;
+
+
   /// Search field label for OPD.
   ///
   /// In en, this message translates to:
@@ -1453,7 +1724,7 @@ abstract class AppLocalizations {
   /// Search field hint for OPD.
   ///
   /// In en, this message translates to:
-  /// **'Search patient, identifier, or provider'**
+  /// **'Search patient, identifier, or assigned staff'**
   String get opdSearchHint;
 
   /// Action label to apply OPD filters.
@@ -1507,13 +1778,13 @@ abstract class AppLocalizations {
   /// OPD main table description.
   ///
   /// In en, this message translates to:
-  /// **'Track arrivals, queue status, billing state, provider ownership, and next steps.'**
+  /// **'Track arrivals, queue status, billing state, assigned staff, and next steps.'**
   String get opdTableDescription;
 
   /// OPD provider readiness panel title.
   ///
   /// In en, this message translates to:
-  /// **'Provider readiness'**
+  /// **'Staff readiness'**
   String get opdProviderReadinessTitle;
 
   /// OPD activity panel title.
@@ -1579,13 +1850,13 @@ abstract class AppLocalizations {
   /// Empty state title for provider readiness.
   ///
   /// In en, this message translates to:
-  /// **'No providers ready'**
+  /// **'No staff ready'**
   String get opdNoProvidersTitle;
 
   /// Empty state body for provider readiness.
   ///
   /// In en, this message translates to:
-  /// **'Provider schedules and available slots will appear here.'**
+  /// **'Staff schedules and available slots will appear here.'**
   String get opdNoProvidersBody;
 
   /// Empty state title for OPD activity.
@@ -1657,7 +1928,7 @@ abstract class AppLocalizations {
   /// Provider column label.
   ///
   /// In en, this message translates to:
-  /// **'Provider'**
+  /// **'Assigned staff'**
   String get opdProviderColumnLabel;
 
   /// Payer and billing column label for the main OPD table.
@@ -1885,19 +2156,19 @@ abstract class AppLocalizations {
   /// Searchable provider field label in OPD.
   ///
   /// In en, this message translates to:
-  /// **'Search provider'**
+  /// **'Search doctor'**
   String get opdSearchProviderLabel;
 
   /// Helper text explaining the selected OPD provider.
   ///
   /// In en, this message translates to:
-  /// **'This provider will handle the patient.'**
+  /// **'This doctor will handle the patient.'**
   String get opdSearchProviderHelper;
 
   /// Helper text shown when no OPD providers can be loaded.
   ///
   /// In en, this message translates to:
-  /// **'No registered providers were found. Check doctor setup or provider permissions.'**
+  /// **'No registered doctors were found. Check doctor setup or staff permissions.'**
   String get opdNoProvidersHelper;
 
   /// Toggle label for new patient registration in OPD.
@@ -1933,7 +2204,7 @@ abstract class AppLocalizations {
   /// Provider ID field label.
   ///
   /// In en, this message translates to:
-  /// **'Provider ID'**
+  /// **'Staff ID'**
   String get opdProviderIdLabel;
 
   /// Consultation fee field label.
@@ -3343,7 +3614,7 @@ abstract class AppLocalizations {
   /// Patient workflow provider select field label.
   ///
   /// In en, this message translates to:
-  /// **'Provider'**
+  /// **'Assigned staff'**
   String get patientsProviderLabel;
 
   /// Helper text for optional provider selection.
@@ -6703,7 +6974,7 @@ abstract class AppLocalizations {
   /// Clinical add procedure action label.
   ///
   /// In en, this message translates to:
-  /// **'Add procedure'**
+  /// **'Record procedure'**
   String get clinicalRequestProcedureAction;
 
   /// Clinical procedure dialog helper text.
@@ -16494,7 +16765,7 @@ abstract class AppLocalizations {
   /// Label for delivery provider.
   ///
   /// In en, this message translates to:
-  /// **'Provider'**
+  /// **'Assigned staff'**
   String get communicationsProviderLabel;
 
   /// Label for sent time.

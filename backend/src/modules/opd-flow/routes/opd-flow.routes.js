@@ -71,6 +71,21 @@ router.get(
 );
 
 router.get(
+  '/summary',
+  authenticate(),
+  authorize(
+    [
+      PERMISSIONS.PATIENT_READ,
+      PERMISSIONS.CLINICAL_READ,
+      PERMISSIONS.BILLING_READ,
+      PERMISSIONS.OPERATIONS_READ
+    ],
+    'permission'
+  ),
+  opdFlowController.getOpdFlowSummaryCounts
+);
+
+router.get(
   '/resolve-legacy/:resource/:id',
   validateRequest({ params: resolveLegacyRouteParamsSchema }),
   authenticate(),
@@ -349,7 +364,7 @@ router.post(
  * @method POST
  * @route /api/v1/opd-flows/:id/correct-stage
  * @authentication Required (JWT)
- * @permissions Restricted clinical roles
+ * @permissions Admin roles only
  * @urlParams {string} id - Encounter Friendly ID
  * @queryParams None
  * @bodyParams {string} stage_to - Target stage
@@ -366,7 +381,7 @@ router.post(
     body: correctStageSchema
   }),
   authenticate(),
-  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.NURSE, ROLES.DOCTOR], 'role'),
+  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN], 'role'),
   opdFlowController.correctStage
 );
 

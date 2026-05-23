@@ -1,488 +1,459 @@
-﻿# Implementation Prompt: Make HMS Patient Workflows Clear, Short, and Action-Oriented
-
-You are working in the attached HMS codebase with these main folders:
-
-* `app-planner`
-* `backend`
-* `frontend`
-
-Inspect the codebase before editing. Implement a focused workflow-clarity improvement across the existing patient workflows. Do **not** rebuild the system. Preserve the current architecture, folder structure, naming conventions, coding style, state-management patterns, UI components, API patterns, permissions model, and localization approach.
-
-No task-specific workflow screenshots were found in the archive. Use the existing Flutter UI patterns, backend modules, planner docs, and current screens as the source of truth. If any requirement remains unclear, verify it from the codebase and implement only what is supported.
-
-## Problem to Solve
-
-The current HMS patient workflow is confusing in several areas. Users cannot always tell:
-
-* What action is required now.
-* What has already been completed.
-* The current patient/status/stage.
-* The next action to take.
-* Who is responsible for the next action.
-* Whether the last action completed successfully.
-* Whether queue/status/stage updates are actually reflected.
-
-Improve the patient workflows so that every department screen is clear, short, obvious, and action-oriented.
-
-The target is:
-
-* One-step completion where possible.
-* Maximum two to three steps for genuinely complex actions.
-* No unnecessary queue stages.
-* No duplicate assignment/payment/admission steps.
-* No misleading “request-based” workflows except where clinically appropriate.
-
-Only laboratory and radiology investigations should remain request/order-based because they naturally require investigation orders.
-
-## Relevant Areas to Inspect
-
-### Planner / Requirements
-
-Inspect these files and update only if required to keep implementation documentation aligned:
-
-* `app-planner/app-write-up.md`
-* `app-planner/ipd-flow.md`
-* `app-planner/opd-flow.md`
-* `app-planner/prompt.md`
-* `app-planner/dev-plan/11-patients.md`
-* `app-planner/dev-plan/12-opd-flow.md`
-* `app-planner/dev-plan/13-triage.md`
-* `app-planner/dev-plan/14-clinical.md`
-* `app-planner/dev-plan/15-nursing.md`
-* `app-planner/dev-plan/16-inpatient.md`
-* `app-planner/dev-plan/17-icu.md`
-* `app-planner/dev-plan/18-theater.md`
-* `app-planner/dev-plan/19-discharge.md`
-* `app-planner/dev-plan/20-emergency.md`
-* `app-planner/dev-plan/21-lab.md`
-* `app-planner/dev-plan/22-radiology.md`
-* `app-planner/dev-plan/26-physiotherapy.md`
-* `app-planner/dev-plan/29-rooms-beds.md`
-* `app-planner/dev-plan/34-notifications.md`
-* `frontend/app-planner/app-rules/*.md`
-
-Code is the final source of truth if planner docs are stale or incomplete.
-
-### Frontend Areas
-
-Inspect and modify only the files required under:
-
-* `frontend/lib/features/patients/`
-* `frontend/lib/features/opd/`
-* `frontend/lib/features/emergency/`
-* `frontend/lib/features/ipd/`
-* `frontend/lib/features/rooms_beds/`
-* `frontend/lib/features/icu/`
-* `frontend/lib/features/nursing/`
-* `frontend/lib/features/discharge/`
-* `frontend/lib/features/clinical/`
-* `frontend/lib/features/physiotherapy/`
-* `frontend/lib/features/theater/`
-* `frontend/lib/features/lab/`
-* `frontend/lib/features/radiology/`
-* `frontend/lib/features/communications/`
-* `frontend/lib/shared/opd_actions/`
-* `frontend/lib/shared/clinical_actions/`
-* `frontend/lib/shared/actions/`
-* `frontend/lib/shared/components/`
-* `frontend/lib/shared/forms/`
-* `frontend/lib/shared/layout/`
-* `frontend/lib/shared/data/`
-* `frontend/lib/core/network/api_endpoints.dart`
-* `frontend/lib/core/permissions/`
-* `frontend/lib/l10n/app_en.arb`
-* Generated localization files, if this project commits them.
-
-Use the existing Flutter/Riverpod feature-first structure:
-
-* `data`
-* `domain`
-* `presentation`
-
-Widgets must not call APIs directly. Controllers manage presentation actions/state. Repositories own data coordination.
-
-### Backend Areas
-
-Inspect and modify only where required:
-
-* `backend/src/modules/opd-flow/`
-* `backend/src/modules/visit-queue/`
-* `backend/src/modules/triage/`
-* `backend/src/modules/patient/`
-* `backend/src/modules/emergency-case/`
-* `backend/src/modules/emergency-response/`
-* `backend/src/modules/admission/`
-* `backend/src/modules/bed-assignment/`
-* `backend/src/modules/bed/`
-* `backend/src/modules/room/`
-* `backend/src/modules/icu-stay/`
-* `backend/src/modules/icu-observation/`
-* `backend/src/modules/nursing-note/`
-* `backend/src/modules/discharge-summary/`
-* `backend/src/modules/clinical-note/`
-* `backend/src/modules/theatre-case/`
-* `backend/src/modules/theatre-flow/`
-* `backend/src/modules/lab-workspace/`
-* `backend/src/modules/lab-order/`
-* `backend/src/modules/lab-sample/`
-* `backend/src/modules/lab-result/`
-* `backend/src/modules/radiology-workspace/`
-* `backend/src/modules/radiology-order/`
-* `backend/src/modules/radiology-result/`
-* `backend/src/modules/communications-workspace/`
-* Relevant backend tests under `backend/src/tests/modules/`
-
-Avoid backend changes unless the current API/state logic blocks the requested workflow clarity.
-
-## Core UI/UX Requirements
-
-Across all affected screens:
-
-1. Show one clear primary action for the current state.
-2. Show completed steps clearly.
-3. Show current status/stage using existing badges/status components.
-4. Show the next action and responsible role.
-5. Show success/completion feedback after actions.
-6. Keep secondary actions available but visually subordinate.
-7. Do not show long confusing grids of disabled or irrelevant actions.
-8. Do not duplicate workflow steps.
-9. Do not use request-style wording unless the action is genuinely a lab/radiology order/request.
-10. Keep tables scannable and action-oriented.
-11. Preserve existing responsive layouts and accessibility patterns.
-12. Use existing components such as `AppWorkspace`, `AppListTable`, `AppDialog`, `AppActionSection`, `AppPermissionActionItem`, info/status tiles, shared forms, empty/error/loading states, and shared search/filter controls.
-13. Avoid hard-coded UI strings. Use localization patterns already present in the project.
-
-## Specific Implementation Requirements
-
-### OPD Flow
-
-Focus strongly on OPD because it is currently the most confusing workflow.
-
-Inspect:
-
-* `frontend/lib/features/opd/presentation/pages/opd_workspace_page.dart`
-* `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
-* `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart`
-* `frontend/lib/shared/opd_actions/opd_action_context.dart`
-* `frontend/lib/shared/opd_actions/opd_billing_state.dart`
-* `backend/src/modules/opd-flow/services/opd-flow.service.js`
-* `backend/src/modules/opd-flow/controllers/`
-* `backend/src/modules/opd-flow/routes/`
-* `backend/src/modules/opd-flow/schemas/`
-* `backend/src/tests/modules/opd-flow/`
-
-Required OPD behavior:
-
-* The OPD workspace must clearly show:
-
-  * patient identity/context,
-  * OPD stage,
-  * billing/payment status,
-  * assigned provider,
-  * next required action,
-  * responsible role,
-  * completed actions.
-* `FlowActionsDialog` must become stage-aware and concise:
-
-  * Show the current state/context first.
-  * Show one primary “Next required action”.
-  * Show only relevant secondary actions.
-  * Remove or avoid the confusing pattern where all actions are always displayed regardless of current stage.
-  * Avoid disabled placeholder action grids that do not help the user complete the workflow.
-* If consultation payment is required, make payment the obvious next step.
-* If vitals are required, make “Record vitals” the obvious next step.
-* If a doctor/provider is already assigned, do not show doctor assignment as the required next step.
-* If a doctor/provider is missing, show assignment as the required next step.
-* After vitals are recorded, the backend must not blindly move the flow to `WAITING_DOCTOR_ASSIGNMENT` when a provider is already assigned. It must advance to the correct next stage, normally doctor review.
-* If a doctor was assigned during registration/check-in/start flow, do not create another unnecessary doctor-assignment step later.
-* Doctor review should lead to the correct next state:
-
-  * lab requested,
-  * radiology requested,
-  * lab and radiology requested,
-  * pharmacy required,
-  * waiting disposition,
-  * admitted,
-  * discharged.
-* OPD disposition should be direct and action-oriented:
-
-  * Use “Admit patient”, “Send to pharmacy”, or “Discharge patient” style wording where supported.
-  * Do not present OPD admission as merely “request admission” if the current backend already performs direct admission.
-* Ensure OPD queue/stage changes refresh the UI correctly after successful actions.
-
-### Emergency Flow
-
-Inspect:
-
-* `frontend/lib/features/emergency/`
-* `backend/src/modules/emergency-case/`
-* `backend/src/modules/emergency-response/`
-* Ambulance/dispatch/trip modules where used.
-
-Improve clarity for:
-
-* quick arrival,
-* triage,
-* priority update,
-* emergency response,
-* ambulance dispatch/status,
-* handoff.
-
-Each emergency case must show the current emergency status, required action, owner role, and completion result. Keep emergency actions direct and fast.
-
-### General Patient Flow
-
-Inspect:
-
-* `frontend/lib/features/patients/presentation/pages/patient_registry_page.dart`
-* related patient controllers/repositories/models.
-
-Improve patient registry actions so users can quickly start the correct workflow without duplicate steps:
-
-* OPD/walk-in/check-in,
-* emergency arrival,
-* IPD/admission,
-* patient detail/context actions.
-
-Do not create duplicate patients, duplicate encounters, or duplicate unnecessary queues.
-
-### IPD, Room Assignment, ICU, Nursing, and Discharge
-
-Inspect:
-
-* `frontend/lib/features/ipd/`
-* `frontend/lib/features/rooms_beds/`
-* `frontend/lib/features/icu/`
-* `frontend/lib/features/nursing/`
-* `frontend/lib/features/discharge/`
-* corresponding backend modules.
-
-Required behavior:
-
-* IPD admission and bed assignment should be direct and obvious.
-* Room/bed state must clearly show whether a bed is available, occupied, reserved, blocked, or out of service, based on existing backend states.
-* Avoid unnecessary “request” wording for actions that can be completed directly.
-* Transfer, release bed, discharge planning, discharge completion, nursing notes, medication administration, ICU observations, ICU transfer-out, and escalation actions should show:
-
-  * current state,
-  * next action,
-  * owner role,
-  * completion result.
-* Do not break bed assignment consistency between IPD, ICU, rooms/beds, and discharge.
-
-### Clinical Workflow
-
-Inspect:
-
-* `frontend/lib/features/clinical/`
-* `frontend/lib/shared/clinical_actions/`
-* `backend/src/modules/clinical-note/`
-* related admission/disposition modules.
-
-Required behavior:
-
-* Clinical screens must show what the clinician needs to do next.
-* Lab and radiology may remain order/request-based.
-* Admission should be direct where the backend supports it.
-* Avoid misleading “request admission” wording if the action actually admits or marks the patient admitted.
-* Preserve existing clinical note, diagnosis, procedure, prescription, referral, follow-up, disposition, lab, and radiology action patterns.
+# Implementation Prompt: Normalize OPD Patient-Flow Status, Counts, Role Labels, and Actions
+
+You are working on the HOSSPI Hospital Management System codebase with these main folders:
+
+- `app-planner`
+- `backend`
+- `frontend`
+
+Implement a focused OPD patient-flow fix so the OPD workspace displays patient status from the real patient/encounter state instead of blindly showing the last stored OPD stage.
+
+## Core Problem
+
+The OPD flow currently has multiple unsynchronized state sources:
+
+- OPD flow stage
+- encounter provider
+- visit queue status
+- triage route
+- billing/payment state
+- lab/radiology/pharmacy order state
+- admission/discharge state
+
+This causes wrong UI states such as **“Awaiting doctor assignment”** even when a doctor/provider is already assigned.
+
+The main rule to implement is:
+
+> OPD display status must be computed from the actual patient state, not copied directly from the stored OPD stage enum.
+
+## Important Codebase Findings to Ground the Work
+
+Use the current project structure and coding style as the source of truth.
 
-### Physiotherapy
+### Backend OPD areas
+
+Inspect and modify only where needed:
+
+- `backend/src/modules/opd-flow/controllers/opd-flow.controller.js`
+- `backend/src/modules/opd-flow/services/opd-flow.service.js`
+- `backend/src/modules/opd-flow/repositories/opd-flow.repository.js`
+- `backend/src/modules/opd-flow/routes/opd-flow.routes.js`
+- `backend/src/modules/opd-flow/schemas/opd-flow.schema.js`
+- `backend/src/config/roles.js`
+- `backend/prisma/schema.prisma`
+
+Also inspect connected modules only if required for synchronization:
+
+- `backend/src/modules/triage/`**
+- `backend/src/modules/triage-assessment/**`
+- `backend/src/modules/visit-queue/**`
+- `backend/src/modules/lab-order/**`
+- `backend/src/modules/lab-result/**`
+- `backend/src/modules/lab-sample/**`
+- `backend/src/modules/radiology-order/**`
+- `backend/src/modules/radiology-result/**`
+- `backend/src/modules/pharmacy-order/**`
+- `backend/src/modules/pharmacy-workspace/**`
+- `backend/src/modules/admission/**`
+- `backend/src/modules/bed-assignment/**`
+- `backend/src/modules/billing/**`
+
+Current backend issues to address:
+
+- `opd-flow.repository.js` defaults OPD queries to both `OPD` and `EMERGENCY`.
+- `opd-flow.service.js` has technical stages such as `WAITING_DOCTOR_ASSIGNMENT`, `LAB_REQUESTED`, `RADIOLOGY_REQUESTED`, `PHARMACY_REQUESTED`.
+- `buildFlowSummary()` returns stage/next step but does not include assigned staff role/type.
+- `NEXT_STEP_BY_STAGE` currently routes lab/radiology/pharmacy stages to `DISPOSITION`.
+- `assignDoctor` accepts `provider_user_id` but does not strongly validate the assigned user role.
+- `disposition` currently marks `ADMIT` as `ADMITTED` immediately.
+- `SEND_TO_PHARMACY` can close/discharge the encounter before pharmacy dispensing is complete.
+- `correct-stage` is currently available to nurse/doctor roles; it should be admin/supervisor-only based on existing role constants.
+
+### Frontend OPD areas
+
+Inspect and modify only where needed:
+
+- `frontend/lib/features/opd/domain/entities/opd_entities.dart`
+- `frontend/lib/features/opd/domain/repositories/opd_repository.dart`
+- `frontend/lib/features/opd/data/dtos/opd_dtos.dart`
+- `frontend/lib/features/opd/data/repositories/opd_repository_impl.dart`
+- `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
+- `frontend/lib/features/opd/presentation/pages/opd_workspace_page.dart`
+- `frontend/lib/shared/opd_actions/opd_action_context.dart`
+- `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart`
+- `frontend/lib/shared/opd_actions/opd_provider_options.dart`
+- `frontend/lib/shared/clinical_actions/clinical_action_items.dart`
+- `frontend/lib/shared/clinical_actions/clinical_order_action_dialogs.dart`
+- `frontend/lib/shared/clinical_actions/clinical_disposition_actions.dart`
+- `frontend/lib/l10n/app_en.arb`
+- `frontend/lib/l10n/app_localizations.dart`
+- `frontend/lib/l10n/app_localizations_en.dart`
+- `frontend/lib/l10n/app_localizations_x.dart`
+
+Current frontend issues to address:
+
+- `OpdFlowQuery` does not carry `encounter_type`.
+- `opd_repository_impl.dart` calls `/opd-flows` without `encounter_type=OPD`.
+- `OpdFlowSummary` does not include assigned staff role/type.
+- `opd_workspace_page.dart` merges appointments, queues, triage, and active flows, then counts visible rows for summary cards.
+- OPD status labels use `_apiLabel()` / raw enum formatting in several places.
+- `_OpdPatientActionsDialog` shows many disabled downstream actions before they are relevant.
+- `FlowActionsDialog` routes `LAB_REQUESTED`, `RADIOLOGY_REQUESTED`, `LAB_AND_RADIOLOGY_REQUESTED`, and `PHARMACY_REQUESTED` to disposition too early.
+- UI strings still use generic “Provider” wording in OPD-facing areas.
+- Procedure UI says **Request procedure**, but the backend records the procedure as performed.
 
-Inspect:
+### App planner references
 
-* `frontend/lib/features/physiotherapy/`
-* corresponding backend/workspace APIs if present.
-
-Improve clarity for:
-
-* referral acceptance,
-* assessment,
-* session scheduling,
-* attendance,
-* progress note,
-* plan update,
-* follow-up,
-* episode closure.
+Review these for architecture and flow intent:
 
-The screen must clearly distinguish pending, active, missed, follow-up due, and completed physiotherapy work.
+- `app-planner/dev-plan/12-opd-flow.md`
+- `app-planner/dev-plan/13-triage.md`
+- `app-planner/dev-plan/14-clinical.md`
+- `app-planner/dev-plan/21-lab.md`
+- `app-planner/dev-plan/22-radiology.md`
+- `app-planner/dev-plan/23-pharmacy.md`
+- `app-planner/dev-plan/24-billing.md`
+- `app-planner/dev-plan/16-inpatient.md`
+- `frontend/app-planner/app-rules/`**
+- `backend/app-planner/app-rules/**`
 
-### Theater
+Do not edit planner files unless absolutely necessary.
 
-Inspect:
+No OPD task-specific screenshots were found in the archive. Do not assume screenshot-only requirements.
 
-* `frontend/lib/features/theater/`
-* `backend/src/modules/theatre-case/`
-* `backend/src/modules/theatre-flow/`
+## Implementation Requirements
 
-Improve clarity for:
+### 1. Add one central OPD state/display resolver
 
-* case scheduling,
-* stage updates,
-* anesthesia record,
-* observations,
-* checklist,
-* resources,
-* post-op note,
-* finalization/reopening.
+Create or refactor a central OPD resolver in the backend OPD module, following existing service/helper style.
 
-Theater stages must clearly show what is pending, what is completed, and the next required owner/action.
+It must compute the real OPD state from:
 
-### Laboratory
+- consultation billing/payment state
+- vitals state
+- assigned staff/provider state
+- assigned staff role/type
+- lab order state
+- radiology order state
+- pharmacy order/dispensing state
+- admission state
+- encounter open/closed state
+- discharge state
 
-Inspect:
+Use this resolver from all OPD mutation paths that can affect patient flow:
 
-* `frontend/lib/features/lab/`
-* `backend/src/modules/lab-workspace/`
-* `backend/src/modules/lab-order/`
-* `backend/src/modules/lab-sample/`
-* `backend/src/modules/lab-result/`
-
-Lab should remain request/order-based.
-
-Improve clarity for:
+- OPD start/bootstrap/context update
+- consultation payment
+- vitals recording
+- doctor assignment
+- doctor review/order creation
+- disposition
+- triage routing if it updates OPD/encounter state
+- lab/radiology/pharmacy completion hooks where existing module services update completion status
 
-* order status,
-* sample collection,
-* sample receiving,
-* rejection,
-* result entry/release,
-* reversal,
-* QC logs.
+Do not create duplicate OPD flow systems.
 
-Show the next lab action and responsible role without removing the order-based workflow.
+### 2. Prevent incorrect “doctor needed” states
 
-### Radiology
+Never display or persist a patient as waiting for doctor assignment when a doctor/clinician is already assigned.
 
-Inspect:
+Expected behavior:
 
-* `frontend/lib/features/radiology/`
-* `backend/src/modules/radiology-workspace/`
-* `backend/src/modules/radiology-order/`
-* `backend/src/modules/radiology-result/`
 
-Radiology should remain request/order-based.
+| Situation                                     | Correct OPD display                                   |
+| --------------------------------------------- | ----------------------------------------------------- |
+| consultation unpaid                           | Payment due                                           |
+| payment done but vitals missing               | Vitals needed                                         |
+| vitals done and no doctor assigned            | Doctor needed                                         |
+| doctor assigned                               | With doctor or `Doctor: Name`                         |
+| lab ordered and incomplete                    | Lab pending / Sample pending / In lab                 |
+| lab result complete                           | Results ready                                         |
+| radiology ordered and incomplete              | Imaging pending / Report pending                      |
+| radiology report complete                     | Report ready                                          |
+| medication prescribed but not dispensed       | Pharmacy pending                                      |
+| medicine dispensed                            | Medicines dispensed / Decision needed, depending flow |
+| ready for doctor final decision               | Decision needed                                       |
+| admission requested but bed/IPD not confirmed | Admission pending                                     |
+| IPD/bed allocation confirmed                  | Admitted                                              |
+| OPD completed                                 | Discharged                                            |
 
-Improve clarity for:
 
-* order creation,
-* assignment,
-* start,
-* completion,
-* cancellation,
-* study creation,
-* draft result,
-* finalization,
-* addendum,
-* PACS sync.
+### 3. Add role-aware assigned staff details to OPD responses
 
-Show the next radiology action and responsible role without removing the order-based workflow.
+Extend OPD summary/detail response data so the frontend can display the assigned staff role/type.
 
-### Communication Notes
+Use existing user role/staff profile data. Verify the correct role source from:
 
-Inspect:
+- `user_role`
+- `staff_profile`
+- `practitioner_type`
+- `position`
+- existing role constants in `backend/src/config/roles.js`
 
-* `frontend/lib/features/communications/`
-* `backend/src/modules/communications-workspace/`
+Return enough data for the frontend to display:
 
-Improve clarity for:
+- `Doctor: Jordan Demo`
+- `Nurse: Sarah`
+- `Lab Technician: Name`
+- `Radiologist: Name` or `Radiology Technician: Name`
+- `Pharmacist: Name`
+- `Assigned staff: Name`
+- `Assigned staff unknown`
+- `Doctor needed` when no doctor is assigned and doctor assignment is required
 
-* conversations,
-* messages,
-* notifications,
-* delivery status,
-* read/unread state,
-* archive/unarchive actions.
+Keep API responses backward-compatible where possible by adding fields instead of removing existing fields.
 
-Communication notes should clearly show whether communication is pending, sent, delivered, read, archived, or requiring action.
+### 4. Validate or clarify doctor assignment
 
-## Backend Requirements
+For the existing `assignDoctor` action:
 
-Make minimal backend changes only when needed to support correct workflow behavior.
+- Validate that the assigned user is actually a doctor/clinician using existing roles/staff profile data.
+- Do not allow nurses, lab techs, radiology techs, pharmacists, or unrelated staff to be assigned through a doctor-specific action.
+- If the current codebase intentionally supports non-doctor clinical assignment through this same endpoint, rename OPD-facing UI wording to **Assign clinician** / **Assigned staff** and display the actual role everywhere. Do not leave misleading “doctor” labels for non-doctor staff.
 
-At minimum, verify and fix OPD stage progression:
+Prefer minimal API disruption. Do not rename backend routes unless required.
 
-* If provider is already assigned, OPD must not require a second doctor-assignment step.
-* After vitals, if provider exists, advance to doctor review.
-* If provider is missing, advance to doctor assignment.
-* Ensure `next_step`, stage/status, audit/realtime events, and API responses remain consistent.
-* Update backend tests for OPD stage behavior.
+### 5. Stop OPD/Emergency mixing
 
-Do not invent new APIs if existing routes already support the needed action. If a required action cannot be safely implemented with current backend support, leave unsupported behavior unchanged and document the verified limitation in the smallest appropriate place.
-
-## Frontend Requirements
-
-* Preserve Riverpod controller/repository patterns.
-* Do not call APIs directly from widgets.
-* Keep permission checks intact.
-* Use existing shared UI components.
-* Keep responsive layout behavior.
-* Keep table filters/search/sort/pagination behavior.
-* Update localization strings properly.
-* Do not introduce hard-coded user-facing text.
-* Do not create broad duplicate workflow components if existing shared action/dialog components can be improved.
-* Ensure successful actions refresh local state or invalidate/reload the correct providers so the visible patient status updates immediately.
-
-## Scope Limits
-
-Do not:
-
-* rewrite the whole HMS,
-* redesign unrelated modules,
-* change unrelated APIs,
-* remove useful existing features,
-* introduce a new design system,
-* rename folders unnecessarily,
-* delete files unless deletion is required for this task,
-* change authentication, authorization, or permissions behavior except where required to preserve existing action visibility,
-* fake backend behavior on the frontend,
-* leave dead code, unused imports, or linter errors.
-
-Modify only the files required for the requested workflow improvements.
-
-## Testing and Verification
-
-Run and fix issues from the relevant checks.
+The OPD workspace must always query OPD records only.
 
 Frontend:
 
-* `cd frontend`
-* `flutter analyze`
-* `flutter test`
-* Run targeted tests for modified areas, especially:
-
-  * OPD controller/action tests,
-  * patient registry tests,
-  * clinical workspace tests,
-  * rooms/beds tests,
-  * theater tests,
-  * communications tests,
-  * shared OPD action tests,
-  * localization/hard-coded UI text tests.
-* Run `flutter test integration_test/startup_navigation_smoke_test.dart` if feasible.
+- Update OPD flow queries to pass `encounter_type=OPD`.
+- If an emergency workspace uses the same OPD flow API, ensure it passes `encounter_type=EMERGENCY`.
 
 Backend:
 
-* `cd backend`
-* `npm run lint`
-* `npm run test:backend`
-* Run targeted OPD/backend workflow tests.
-* If backend routes/schemas/OpenAPI behavior changed, also run:
+- Ensure explicit `encounter_type` filters are respected.
+- Do not mix OPD and EMERGENCY worklists unless a caller intentionally requests both.
 
-  * `npm run openapi:validate`
+### 6. Replace raw OPD enum labels with clear display labels
 
-All linter, analyzer, and test issues introduced by this work must be cleared.
+Create or use a central frontend OPD status display mapper.
 
-## Required Output
+Do not show raw enum-derived labels such as:
 
-Return a zipped archive containing only the files and folders that were created or updated.
+- `Waiting doctor assignment`
+- `Waiting consultation payment`
+- `Lab and radiology requested`
 
-Requirements for the archive:
+Use clear labels:
 
-* Preserve correct relative paths from the project root.
-* Do not include the full repository.
-* Do not include unchanged files.
-* Include updated frontend, backend, and `app-planner` files only where actually changed.
-* If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those delete/rename operations.
-* The `.ps1` scripts must use correct relative paths and must not delete unrelated files.
-* Do not include unsafe broad delete commands.
+
+| Backend stage                  | Display requirement                                   |
+| ------------------------------ | ----------------------------------------------------- |
+| `WAITING_CONSULTATION_PAYMENT` | Payment due                                           |
+| `WAITING_VITALS`               | Vitals needed                                         |
+| `WAITING_DOCTOR_ASSIGNMENT`    | Doctor needed only if no doctor is assigned           |
+| `WAITING_DOCTOR_REVIEW`        | With doctor / Doctor review                           |
+| `LAB_REQUESTED`                | Lab pending / Sample pending / In lab / Results ready |
+| `RADIOLOGY_REQUESTED`          | Imaging pending / Report pending / Report ready       |
+| `LAB_AND_RADIOLOGY_REQUESTED`  | Compute display only: Lab & imaging pending           |
+| `PHARMACY_REQUESTED`           | Pharmacy pending / Dispensing / Medicines ready       |
+| `WAITING_DISPOSITION`          | Decision needed                                       |
+| `ADMITTED`                     | Admitted only after actual admission confirmation     |
+| `DISCHARGED`                   | Discharged                                            |
+
+
+Use this mapper in:
+
+- OPD status chips
+- OPD table status column
+- next-step labels
+- OPD action context panel
+- OPD detail/action dialogs
+- OPD summary cards
+
+Keep generic `_apiLabel()` for non-OPD values only where appropriate.
+
+### 7. Fix OPD summary cards/counts
+
+OPD summary cards must use backend aggregate counts, not the currently visible merged frontend table rows.
+
+Implement or wire a backend-backed OPD count/summary source.
+
+If an OPD summary endpoint already exists, use it. If it does not exist, add a small endpoint or extend the existing OPD list response in the `opd-flow` module, following existing API response patterns.
+
+Required card definitions:
+
+
+| Card              | Meaning                                                              |
+| ----------------- | -------------------------------------------------------------------- |
+| All Patients      | Total registered patients in the system                              |
+| All OPD Patients  | Distinct patients who have OPD encounters                            |
+| Active OPD        | Open OPD encounters only                                             |
+| Vitals needed     | OPD patients waiting for vitals                                      |
+| Doctor needed     | OPD patients without an assigned doctor                              |
+| With doctor       | OPD patients assigned and awaiting/under doctor review               |
+| Lab pending       | OPD patients with incomplete lab orders                              |
+| Imaging pending   | OPD patients with incomplete radiology orders                        |
+| Pharmacy pending  | OPD patients awaiting dispensing                                     |
+| Decision needed   | OPD patients ready for final doctor disposition                      |
+| Admission pending | OPD patients approved/requested for admission but not fully admitted |
+| Discharged today  | OPD encounters discharged today                                      |
+
+
+If any count cannot be reliably computed from the current schema, verify the missing source in the codebase and implement the closest safe backend-backed count without inventing fake data.
+
+### 8. Fix OPD action menu clarity
+
+In the OPD workspace:
+
+- Show only valid next actions.
+- Hide irrelevant disabled downstream actions.
+- Do not show long disabled lists for appointment/queue rows before an active OPD encounter exists.
+- Do not route lab/radiology/pharmacy stages directly to disposition.
+- Determine next action from actual order state:
+  - lab: collect sample, process lab, review result, results ready
+  - radiology: perform imaging, complete/report imaging, report ready
+  - pharmacy: dispense medicine, medicines dispensed
+- If the OPD UI cannot safely perform the downstream action, show a clear valid handoff/status instead of exposing an incorrect disposition action.
+
+Keep existing shared modal/action patterns. Do not create a new OPD board or duplicate action framework.
+
+### 9. Fix pharmacy disposition behavior
+
+`SEND_TO_PHARMACY` must not close/discharge the OPD encounter before pharmacy dispensing is complete.
+
+Implement one of these safe behaviors, based on existing schema/workflow support:
+
+- keep encounter open with `PHARMACY_REQUESTED` / `Pharmacy pending`, then close after dispensing is confirmed; or
+- show a clear terminal display such as `Discharged – pharmacy pending` only if the existing workflow supports that distinction.
+
+Do not make the patient disappear from OPD while medicines are still pending.
+
+### 10. Fix admission behavior safely
+
+OPD `ADMIT` should not mark the patient as fully admitted before IPD/bed allocation confirms admission.
+
+Current Prisma `AdmissionStatus` appears to include `ADMITTED`, `DISCHARGED`, `TRANSFERRED`, and `CANCELLED`, with no obvious pending/requested value. Verify the existing IPD/bed workflow before changing schema.
+
+Implement the safest supported behavior:
+
+- display **Admission pending** after OPD admission request/approval;
+- mark **Admitted** only after the existing IPD/bed workflow confirms admission;
+- avoid unsafe schema changes unless they are required and fully migrated.
+
+### 11. Restrict manual stage correction
+
+Keep manual stage correction, but make it admin/supervisor-only.
+
+Use existing role constants. If there is no explicit supervisor role, restrict to existing admin roles such as:
+
+- `SUPER_ADMIN`
+- `TENANT_ADMIN`
+- `FACILITY_ADMIN`
+
+Ensure correction remains audited with:
+
+- old stage
+- new stage
+- reason
+- acting user
+- timestamp
+
+Do not allow normal doctor/nurse users to hide workflow bugs by freely correcting stages.
+
+### 12. Update OPD-facing wording
+
+Replace generic **Provider** wording in OPD-facing UI where it causes confusion.
+
+Use role-aware wording:
+
+
+| Current wording   | Replacement                                                 |
+| ----------------- | ----------------------------------------------------------- |
+| Provider          | Assigned staff                                              |
+| Provider assigned | Doctor assigned / Nurse assigned / Assigned staff           |
+| Unknown provider  | Assigned staff unknown                                      |
+| Search provider   | Search doctor or nurse / Search doctor, depending context   |
+| Provider ID       | Staff ID                                                    |
+| All providers     | All doctors / All clinicians / All staff, depending context |
+
+
+Rename procedure UI wording:
+
+- Replace **Request procedure** with **Record procedure** unless a true procedure request workflow exists.
+
+Update localization files properly. Do not hard-code new UI strings in Dart widgets.
+
+## Scope Limits
+
+- Do not rewrite the whole OPD module.
+- Do not create a second OPD workspace, board, route, or state system.
+- Do not perform unrelated refactors.
+- Do not change unrelated modules except where required to synchronize OPD state after lab/radiology/pharmacy/admission events.
+- Do not invent statuses, enum values, API routes, or schema fields without verifying the existing codebase and migrations.
+- Modify only the files required for this task.
+- Preserve existing folder structure, naming conventions, code style, response format, validation patterns, Riverpod patterns, Flutter shared components, Express controller/service/repository structure, and Prisma conventions.
+
+## Testing and Verification
+
+Add or update tests where the project has an existing test pattern.
+
+Backend verification:
+
+- `assignDoctor` cannot leave a provider-assigned encounter in `WAITING_DOCTOR_ASSIGNMENT`.
+- OPD list/query with `encounter_type=OPD` does not include emergency encounters.
+- OPD summary/counts are backend-backed and not derived from visible frontend rows.
+- OPD resolver returns correct display state for payment due, vitals needed, doctor needed, with doctor, lab pending/results ready, imaging pending/report ready, pharmacy pending/dispensed, decision needed, admission pending, admitted, and discharged.
+- Pharmacy disposition does not close the OPD encounter before dispensing is complete.
+- Admission flow does not display **Admitted** before IPD/bed confirmation.
+- Stage correction is restricted and audited.
+
+Frontend verification:
+
+- OPD repository sends `encounter_type=OPD`.
+- OPD status chips/table/actions use the central OPD display mapper instead of raw enum labels.
+- Assigned staff/provider display is role-aware.
+- Summary cards use backend aggregate counts.
+- Disabled irrelevant downstream actions are hidden.
+- Lab/radiology/pharmacy stages do not offer premature disposition as the next action.
+- Procedure UI says **Record procedure**.
+
+Run the relevant checks:
+
+Backend:
+
+```bash
+cd backend
+npm run lint
+npm run test:backend
+npm run openapi:validate
+```
+
+Frontend:
+
+```bash
+cd frontend
+dart format .
+flutter analyze
+flutter test
+```
+
+If API contracts or localization generation require additional project-specific commands, run those too.
+
+All linter/analyzer issues must be cleared before delivery.
+
+## Final Delivery Format
+
+Return a zipped archive containing only files and folders that were created or updated.
+
+Requirements:
+
+- Preserve correct relative project paths inside the zip.
+- Do not include the full project.
+- Do not include `node_modules`, build outputs, cache folders, logs, `.env`, screenshots, or unrelated files.
+- Include updated tests when tests are changed or added.
+- Include generated localization files only if this project expects them to be committed.
+
+If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts in the archive to safely perform those operations.
+
+PowerShell script requirements:
+
+- Use correct relative paths.
+- Use explicit file/folder targets only.
+- Use `Test-Path` before deleting or renaming.
+- Do not delete unrelated files.
+- Do not use broad wildcards that could remove unrelated project files.
+

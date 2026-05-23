@@ -682,6 +682,11 @@ final class OpdWorkspaceController
       return Result<OpdWorkspaceState>.failure(_failureOrNull(flowsResult)!);
     }
 
+    final Result<OpdFlowAggregateCounts> summaryCountsResult = await _repository
+        .getOpdSummaryCounts();
+    final OpdFlowAggregateCounts summaryCounts = _successOrNull(summaryCountsResult) ??
+        OpdFlowAggregateCounts.empty;
+
     final Result<AppPage<OpdFlowSummary>> triageQueueResult = await _repository
         .listTriageQueue(triageQueueQuery);
     final AppPage<OpdFlowSummary>? triageQueue = _pageOrEmptyOnAccessDenied(
@@ -709,6 +714,7 @@ final class OpdWorkspaceController
         queueEntries: queue,
         flows: flows,
         triageQueue: triageQueue,
+        summaryCounts: summaryCounts,
         clinicalAlertThresholds: thresholds,
         providerSchedules: schedules,
         availabilitySlots: slots,
@@ -809,6 +815,8 @@ final class OpdWorkspaceController
         .listOpdFlows(current.flowQuery);
     final Future<Result<AppPage<OpdFlowSummary>>> triageFuture = _repository
         .listTriageQueue(current.triageQueueQuery);
+    final Future<Result<OpdFlowAggregateCounts>> summaryCountsFuture =
+        _repository.getOpdSummaryCounts();
     final OpdFlowDetail? currentSelectedFlow = current.selectedFlow;
     final Future<Result<OpdFlowDetail>>? selectedDetailFuture =
         currentSelectedFlow == null
@@ -820,6 +828,8 @@ final class OpdWorkspaceController
     final Result<AppPage<OpdQueueEntry>> queueResult = await queueFuture;
     final Result<AppPage<OpdFlowSummary>> flowsResult = await flowsFuture;
     final Result<AppPage<OpdFlowSummary>> triageResult = await triageFuture;
+    final Result<OpdFlowAggregateCounts> summaryCountsResult =
+        await summaryCountsFuture;
     final Result<OpdFlowDetail>? selectedDetailResult =
         selectedDetailFuture == null ? null : await selectedDetailFuture;
 
@@ -869,6 +879,15 @@ final class OpdWorkspaceController
         nextState = nextState.copyWith(
           triageQueue: _stableFlowPage(page, current.triageQueue),
         );
+      },
+      failure: (AppFailure failure) {
+        firstFailure ??= failure;
+      },
+    );
+
+    summaryCountsResult.when(
+      success: (OpdFlowAggregateCounts counts) {
+        nextState = nextState.copyWith(summaryCounts: counts);
       },
       failure: (AppFailure failure) {
         firstFailure ??= failure;

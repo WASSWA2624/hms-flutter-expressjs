@@ -25,6 +25,7 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 const AccessRequirement opdReceptionActionRequirement = AccessRequirement(
@@ -54,6 +55,15 @@ const AccessRequirement opdBillingActionRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
     AppPermissions.billingWrite,
     AppPermissions.patientWrite,
+  ],
+  activeModules: <String>['scheduling-queue'],
+);
+
+const AccessRequirement opdStageCorrectionRequirement = AccessRequirement(
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
   ],
   activeModules: <String>['scheduling-queue'],
 );
@@ -228,7 +238,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         fullWidth: true,
         hideWhenDenied: true,
         enabled: !terminal && canDispose,
-        tooltip: canDispose ? null : _apiLabel(stage),
+        tooltip: canDispose ? null : opdStageDisplayLabel(l10n, stage),
         onPressed: terminal || !canDispose
             ? null
             : () => _openNested(
@@ -244,21 +254,51 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     }
 
     final bool hasAssignedProvider = _isNonEmpty(flow.providerUserId) ||
-        _isNonEmpty(flow.providerDisplayName);
-    final String nextActionKey = switch (stage) {
-      'WAITING_CONSULTATION_PAYMENT' => canPayNow ? 'billing' : 'correct_stage',
-      'WAITING_VITALS' => 'vitals',
-      'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
-          ? 'doctor_review'
-          : 'assign_doctor',
-      'WAITING_DOCTOR_REVIEW' => 'doctor_review',
-      'WAITING_DISPOSITION' ||
-      'LAB_REQUESTED' ||
-      'RADIOLOGY_REQUESTED' ||
-      'LAB_AND_RADIOLOGY_REQUESTED' ||
-      'PHARMACY_REQUESTED' => 'disposition',
-      _ => 'correct_stage',
+        _isNonEmpty(flow.providerDisplayName) ||
+        _isNonEmpty(flow.assignedStaffDisplayName);
+    final String displayCode = (flow.displayCode ?? '').trim().toUpperCase();
+    final String nextActionKey = switch (displayCode) {
+      'PAYMENT_DUE' => canPayNow ? 'billing' : 'correct_stage',
+      'VITALS_NEEDED' => 'vitals',
+      'DOCTOR_NEEDED' => 'assign_doctor',
+      'WITH_DOCTOR' => 'doctor_review',
+      'LAB_PENDING' ||
+      'SAMPLE_PENDING' ||
+      'IN_LAB' ||
+      'IMAGING_PENDING' ||
+      'REPORT_PENDING' ||
+      'PHARMACY_PENDING' => 'handoff',
+      'RESULTS_READY' ||
+      'REPORT_READY' ||
+      'MEDICINES_DISPENSED' ||
+      'DECISION_NEEDED' => 'disposition',
+      'ADMISSION_PENDING' => 'handoff',
+      _ => switch (stage) {
+        'WAITING_CONSULTATION_PAYMENT' => canPayNow ? 'billing' : 'correct_stage',
+        'WAITING_VITALS' => 'vitals',
+        'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
+            ? 'doctor_review'
+            : 'assign_doctor',
+        'WAITING_DOCTOR_REVIEW' => 'doctor_review',
+        'WAITING_DISPOSITION' => 'disposition',
+        'LAB_REQUESTED' ||
+        'RADIOLOGY_REQUESTED' ||
+        'LAB_AND_RADIOLOGY_REQUESTED' ||
+        'PHARMACY_REQUESTED' => 'handoff',
+        _ => 'correct_stage',
+      },
     };
+
+    AppPermissionActionItem handoffAction() => AppPermissionActionItem(
+      requirement: opdReceptionActionRequirement,
+      label: opdNextStepDisplayLabel(l10n, flow.displayNextStep ?? flow.nextStep ?? flow.displayCode ?? flow.stage),
+      icon: Icons.info_outline,
+      fullWidth: true,
+      hideWhenDenied: true,
+      enabled: false,
+      tooltip: opdStatusDisplayLabel(l10n, flow),
+      onPressed: null,
+    );
 
     final Map<String, AppPermissionActionItem Function()> actionFactories =
         <String, AppPermissionActionItem Function()>{
@@ -267,6 +307,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           'assign_doctor': assignDoctorAction,
           'doctor_review': doctorReviewAction,
           'disposition': dispositionAction,
+          'handoff': handoffAction,
         };
     final AppPermissionActionItem Function()? nextFactory =
         actionFactories[nextActionKey];
@@ -369,10 +410,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
           ),
         );
-        if (nextActionKey != 'disposition' &&
-            stage != 'WAITING_DOCTOR_REVIEW') {
-          addAction('disposition', dispositionAction());
-        }
       }
       addAction('correct_stage', _correctStageAction(context, flow));
     } else {
@@ -407,7 +444,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     OpdFlowSummary flow,
   ) {
     return AppPermissionActionItem(
-      requirement: opdDoctorActionRequirement,
+      requirement: opdStageCorrectionRequirement,
       label: context.l10n.opdCorrectStageAction,
       icon: Icons.sync_alt_outlined,
       fullWidth: true,
@@ -888,11 +925,11 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
               items: <AppInfoTileData>[
                 AppInfoTileData(
                   label: l10n.opdCurrentStageLabel,
-                  value: _apiLabel(currentStage),
+                  value: opdStageDisplayLabel(l10n, currentStage),
                 ),
                 AppInfoTileData(
                   label: l10n.opdTargetStageLabel,
-                  value: _apiLabel(_stage),
+                  value: opdStageDisplayLabel(l10n, _stage),
                 ),
               ],
             ),
@@ -902,7 +939,7 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
               enabled: !_isSaving,
               onChanged: (String? value) =>
                   setState(() => _stage = value ?? _stage),
-              options: _flowStageOptions(exclude: currentStage),
+              options: _flowStageOptions(context.l10n, exclude: currentStage),
             ),
             AppTextField(
               controller: _reasonController,
@@ -1437,11 +1474,17 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
                 ),
                 PrintFormMetadataItem(
                   label: l10n.opdStageLabel,
-                  value: _apiLabel(flow.stage ?? ''),
+                  value: opdStageDisplayLabel(
+          l10n,
+          flow.displayCode ?? flow.stage,
+        ),
                 ),
                 PrintFormMetadataItem(
                   label: l10n.opdNextStepColumnLabel,
-                  value: _apiLabel(flow.nextStep ?? ''),
+                  value: opdNextStepDisplayLabel(
+          l10n,
+          flow.displayNextStep ?? flow.nextStep,
+        ),
                 ),
                 PrintFormMetadataItem(
                   label: l10n.opdPaymentStatusLabel,
@@ -1469,10 +1512,12 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
       _joinDisplay(<String?>[
         flow.patientIdentifier,
         flow.patientPhone,
-        flow.providerDisplayName,
+        flow.assignedStaffLabel ?? flow.providerDisplayName,
       ]),
-      '${l10n.opdStageLabel}: ${_apiLabel(flow.stage ?? '')}',
-      '${l10n.opdNextStepColumnLabel}: ${_apiLabel(flow.nextStep ?? '')}',
+      '${l10n.opdStageLabel}: '
+          '${opdStageDisplayLabel(l10n, flow.displayCode ?? flow.stage)}',
+      '${l10n.opdNextStepColumnLabel}: '
+          '${opdNextStepDisplayLabel(l10n, flow.displayNextStep ?? flow.nextStep)}',
       '${l10n.opdTriageLevelLabel}: ${_apiLabel(flow.triageLevel ?? '')}',
       '${l10n.opdRouteDecisionLabel}: ${_apiLabel(flow.lastRouteTo ?? '')}',
       if (_isNonEmpty(flow.chiefComplaint))
@@ -1495,7 +1540,7 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
         for (final OpdTimelineItem item in value.timeline)
           _joinDisplay(<String?>[
             _apiLabel(item.action),
-            _apiLabel(item.stage ?? ''),
+            opdStageDisplayLabel(l10n, item.stage),
             item.notes,
           ]),
     ];
@@ -2180,7 +2225,10 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
       ),
       AppInfoTileData(
         label: l10n.opdStageLabel,
-        value: _apiLabel(flow.stage ?? ''),
+        value: opdStageDisplayLabel(
+          l10n,
+          flow.displayCode ?? flow.stage,
+        ),
       ),
       AppInfoTileData(
         label: l10n.opdQueueSummaryLabel,
@@ -2188,7 +2236,10 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
       ),
       AppInfoTileData(
         label: l10n.opdNextStepColumnLabel,
-        value: _apiLabel(flow.nextStep ?? ''),
+        value: opdNextStepDisplayLabel(
+          l10n,
+          flow.displayNextStep ?? flow.nextStep,
+        ),
       ),
       AppInfoTileData(
         label: l10n.opdPaymentStatusLabel,
@@ -2360,14 +2411,17 @@ bool _stageCorrectionRequiresReason(String currentStage, String targetStage) {
   return targetIndex < currentIndex || (targetIndex - currentIndex).abs() > 1;
 }
 
-List<AppSelectOption<String>> _flowStageOptions({String? exclude}) {
+List<AppSelectOption<String>> _flowStageOptions(
+  AppLocalizations l10n, {
+  String? exclude,
+}) {
   final String normalizedExclude = _normalizedStage(exclude);
   return <AppSelectOption<String>>[
     for (final String value in _flowStages)
       if (value != normalizedExclude)
         AppSelectOption<String>(
           value: value,
-          label: _apiLabel(value),
+          label: opdStageDisplayLabel(l10n, value),
           leadingIcon: Icon(_flowStageIcon(value)),
         ),
   ];
@@ -2420,7 +2474,10 @@ String _flowQueueLabel(BuildContext context, OpdFlowSummary flow) {
     return route;
   }
 
-  final String stage = _apiLabel(flow.stage ?? '');
+  final String stage = opdStageDisplayLabel(
+    context.l10n,
+    flow.displayCode ?? flow.stage,
+  );
   return stage.isEmpty ? context.l10n.profileUnknownValue : stage;
 }
 

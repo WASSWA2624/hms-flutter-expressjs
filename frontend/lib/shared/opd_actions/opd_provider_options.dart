@@ -4,7 +4,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/shared/components/app_list_item_text.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 
-const String opdUnknownProviderLabel = 'Unknown provider';
+const String opdUnknownProviderLabel = 'Assigned staff unknown';
 
 List<OpdProviderOption> dedupeOpdProviderOptions(
   Iterable<OpdProviderOption> providers,

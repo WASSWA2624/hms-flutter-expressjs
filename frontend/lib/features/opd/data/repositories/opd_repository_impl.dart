@@ -154,11 +154,22 @@ final class OpdRepositoryImpl implements OpdRepository {
         'search': query.search,
         'stage': query.stage,
         'queue_scope': query.queueScope,
+        'encounter_type': query.encounterType,
         'sort_by': 'started_at',
         'order': 'desc',
       }),
       decoder: (Object? data) =>
           OpdFlowPageDto.fromResponse(data, request).page,
+    );
+  }
+
+  @override
+  Future<Result<OpdFlowAggregateCounts>> getOpdSummaryCounts() {
+    return _apiClient.get<OpdFlowAggregateCounts>(
+      ApiEndpoints.nested(HmsApiResource.opdFlows, 'summary', const <String>[]),
+      queryParameters: const <String, Object?>{'encounter_type': 'OPD'},
+      decoder: (Object? data) =>
+          OpdFlowAggregateCountsDto.fromResponse(data).toEntity(),
     );
   }
 

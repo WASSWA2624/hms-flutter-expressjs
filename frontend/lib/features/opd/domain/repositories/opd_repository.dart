@@ -39,6 +39,8 @@ abstract interface class OpdRepository {
 
   Future<Result<AppPage<OpdFlowSummary>>> listOpdFlows(OpdFlowQuery query);
 
+  Future<Result<OpdFlowAggregateCounts>> getOpdSummaryCounts();
+
   Future<Result<OpdFlowDetail>> getOpdFlow(String flowId);
 
   Future<Result<AppPage<OpdFlowSummary>>> listTriageQueue(

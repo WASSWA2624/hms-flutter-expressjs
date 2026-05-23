@@ -12,7 +12,7 @@ const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { emitToUser, emitToUsers, OPD_EVENTS, NOTIFICATION_EVENTS } = require('@lib/websocket');
-const { ROLES } = require('@config/roles');
+const { ROLES, normalizeRoleName } = require('@config/roles');
 const clinicalAlertThresholdService = require('@services/clinical-alert-threshold/clinical-alert-threshold.service');
 const { LAB_PANEL_WITH_RELATIONS_INCLUDE } = require('@services/lab-workspace/lab.shared');
 const { STANDARD_LAB_PANELS, STANDARD_LAB_TESTS } = require('@services/lab-order/lab-order.service');
@@ -130,6 +130,14 @@ const PROVIDER_SELECT = {
   },
   staff_profile: {
     select: PROVIDER_STAFF_PROFILE_SELECT
+  },
+  roles: {
+    where: { deleted_at: null },
+    select: {
+      role: {
+        select: { name: true }
+      }
+    }
   }
 };
 
@@ -573,10 +581,10 @@ const NEXT_STEP_BY_STAGE = {
   [STAGES.WAITING_DOCTOR_ASSIGNMENT]: 'ASSIGN_DOCTOR',
   [STAGES.WAITING_DOCTOR_REVIEW]: 'DOCTOR_REVIEW',
   [STAGES.WAITING_DISPOSITION]: 'DISPOSITION',
-  [STAGES.LAB_REQUESTED]: 'DISPOSITION',
-  [STAGES.RADIOLOGY_REQUESTED]: 'DISPOSITION',
-  [STAGES.LAB_AND_RADIOLOGY_REQUESTED]: 'DISPOSITION',
-  [STAGES.PHARMACY_REQUESTED]: 'DISPOSITION',
+  [STAGES.LAB_REQUESTED]: 'LAB_WORKSPACE',
+  [STAGES.RADIOLOGY_REQUESTED]: 'RADIOLOGY_WORKSPACE',
+  [STAGES.LAB_AND_RADIOLOGY_REQUESTED]: 'DIAGNOSTICS_PENDING',
+  [STAGES.PHARMACY_REQUESTED]: 'PHARMACY_WORKSPACE',
   [STAGES.ADMITTED]: null,
   [STAGES.DISCHARGED]: null
 };
@@ -611,7 +619,12 @@ const buildFlowSummary = (snapshot) => {
 
   return {
     stage: flow.stage || null,
-    next_step: flow.next_step || null,
+    next_step: flow.display_next_step || flow.next_step || null,
+    display_code: flow.display_code || null,
+    display_status: flow.display_status || null,
+    assigned_staff_role: flow.assigned_staff_role || null,
+    assigned_staff_type: flow.assigned_staff_type || null,
+    assigned_staff_label: flow.assigned_staff_label || null,
     encounter_type: snapshot?.encounter?.encounter_type || null,
     timeline_count: timeline.length
   };
@@ -1333,6 +1346,302 @@ const resolvePostVitalsStage = (encounter) =>
     ? STAGES.WAITING_DOCTOR_REVIEW
     : STAGES.WAITING_DOCTOR_ASSIGNMENT;
 
+const normalizeStatus = (value) => normalizeIdentifier(value).toUpperCase();
+
+const titleCaseWords = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const buildStaffDisplayName = (user) => {
+  const profile = user?.profile || {};
+  const names = [profile.first_name, profile.middle_name, profile.last_name]
+    .map((part) => normalizeIdentifier(part))
+    .filter(Boolean);
+  return names.join(' ') || normalizeIdentifier(user?.email) || normalizeIdentifier(user?.phone) || null;
+};
+
+const staffRoleNames = (user) => {
+  const roles = Array.isArray(user?.roles) ? user.roles : [];
+  return roles
+    .map((entry) => normalizeRoleName(entry?.role?.name || entry?.name || ''))
+    .filter(Boolean);
+};
+
+const staffRoleText = (user) => {
+  const normalizedRoles = new Set(staffRoleNames(user));
+  const practitionerType = normalizeStatus(user?.staff_profile?.practitioner_type);
+  const position = normalizeStatus(user?.staff_profile?.position);
+  const combined = `${practitionerType} ${position}`;
+
+  if (normalizedRoles.has(ROLES.DOCTOR) || /DOCTOR|PHYSICIAN|MEDICAL_OFFICER|CLINICAL_OFFICER|CLINICIAN|CONSULTANT/.test(combined)) {
+    return 'Doctor';
+  }
+  if (normalizedRoles.has(ROLES.NURSE) || /NURSE|MIDWIFE/.test(combined)) return 'Nurse';
+  if (normalizedRoles.has(ROLES.LAB_TECH) || /LAB|LABORATORY/.test(combined)) return 'Lab Technician';
+  if (/RADIOLOGIST/.test(combined)) return 'Radiologist';
+  if (normalizedRoles.has(ROLES.RADIOLOGY_TECH) || /RADIOLOGY|IMAGING|SONOGRAPHER|XRAY|X_RAY/.test(combined)) return 'Radiology Technician';
+  if (normalizedRoles.has(ROLES.PHARMACIST) || /PHARMAC/.test(combined)) return 'Pharmacist';
+  return titleCaseWords(user?.staff_profile?.position || user?.staff_profile?.practitioner_type) || 'Assigned staff';
+};
+
+const buildAssignedStaff = (user) => {
+  const displayName = buildStaffDisplayName(user);
+  const role = displayName ? staffRoleText(user) : null;
+  return {
+    id: user?.id || null,
+    public_id: user?.human_friendly_id || user?.id || null,
+    display_name: displayName,
+    role,
+    type: user?.staff_profile?.practitioner_type || null,
+    position: user?.staff_profile?.position || null,
+    label: displayName ? `${role || 'Assigned staff'}: ${displayName}` : null
+  };
+};
+
+const isDoctorAssignable = (user) => {
+  if (!user) return false;
+  const normalizedRoles = new Set(staffRoleNames(user));
+  if (normalizedRoles.has(ROLES.DOCTOR)) return true;
+  const practitionerType = normalizeStatus(user?.staff_profile?.practitioner_type);
+  const position = normalizeStatus(user?.staff_profile?.position);
+  return /DOCTOR|PHYSICIAN|MEDICAL_OFFICER|CLINICAL_OFFICER|CLINICIAN|CONSULTANT/.test(
+    `${practitionerType} ${position}`
+  );
+};
+
+const ensureDoctorAssignable = (provider) => {
+  if (!isDoctorAssignable(provider)) {
+    throw new HttpError('errors.opd_flow.provider_not_doctor', 400, [{ field: 'provider_user_id' }]);
+  }
+};
+
+const hasCompletedConsultationPayment = (flow) => {
+  const consultation = flow?.consultation || {};
+  if (consultation.require_payment === false || normalizeStatus(consultation.payment_status) === 'NOT_REQUIRED') return true;
+  if (consultation.is_paid === true) return true;
+  return PAID_PAYMENT_STATUSES.has(normalizeStatus(consultation.payment_status));
+};
+
+const hasRecordedVitals = (encounter) =>
+  Array.isArray(encounter?.vital_signs) && encounter.vital_signs.some((item) => !item.deleted_at);
+
+const activeItems = (items) => (Array.isArray(items) ? items.filter((item) => !item?.deleted_at) : []);
+
+const resolveLabState = (orders = []) => {
+  const activeOrders = activeItems(orders).filter((order) => normalizeStatus(order.status) !== 'CANCELLED');
+  if (!activeOrders.length) return { code: null, pending: false, ready: false };
+  const hasPendingSample = activeOrders.some((order) =>
+    activeItems(order.samples).some((sample) => ['PENDING', 'REJECTED'].includes(normalizeStatus(sample.status)))
+  );
+  const hasInLab = activeOrders.some((order) =>
+    ['COLLECTED', 'IN_PROCESS'].includes(normalizeStatus(order.status)) ||
+    activeItems(order.items).some((item) => ['COLLECTED', 'IN_PROCESS'].includes(normalizeStatus(item.status)))
+  );
+  const hasIncomplete = activeOrders.some((order) =>
+    normalizeStatus(order.status) !== 'COMPLETED' ||
+    activeItems(order.items).some((item) => normalizeStatus(item.status) !== 'COMPLETED') ||
+    activeItems(order.items).some((item) => activeItems(item.results).some((result) => normalizeStatus(result.status) === 'PENDING'))
+  );
+  const ready = activeOrders.some(
+    (order) =>
+      normalizeStatus(order.status) === 'COMPLETED' ||
+      activeItems(order.items).some((item) =>
+        activeItems(item.results).some((result) => normalizeStatus(result.status) !== 'PENDING')
+      )
+  );
+  return {
+    code: hasIncomplete ? (hasPendingSample ? 'SAMPLE_PENDING' : hasInLab ? 'IN_LAB' : 'LAB_PENDING') : 'RESULTS_READY',
+    pending: hasIncomplete,
+    ready: ready || !hasIncomplete
+  };
+};
+
+const resolveRadiologyState = (orders = []) => {
+  const activeOrders = activeItems(orders).filter((order) => normalizeStatus(order.status) !== 'CANCELLED');
+  if (!activeOrders.length) return { code: null, pending: false, ready: false };
+  const hasFinalReport = activeOrders.some((order) =>
+    activeItems(order.results).some((result) => ['FINAL', 'AMENDED'].includes(normalizeStatus(result.status)))
+  );
+  const hasPerformedStudy = activeOrders.some((order) => activeItems(order.imaging_studies).some((study) => Boolean(study.performed_at)));
+  const hasIncomplete = activeOrders.some((order) => normalizeStatus(order.status) !== 'COMPLETED' || !activeItems(order.results).length);
+  return {
+    code: hasFinalReport ? 'REPORT_READY' : hasPerformedStudy ? 'REPORT_PENDING' : 'IMAGING_PENDING',
+    pending: hasIncomplete && !hasFinalReport,
+    ready: hasFinalReport || activeOrders.every((order) => normalizeStatus(order.status) === 'COMPLETED')
+  };
+};
+
+const resolvePharmacyState = (orders = []) => {
+  const activeOrders = activeItems(orders).filter((order) => normalizeStatus(order.status) !== 'CANCELLED');
+  if (!activeOrders.length) return { code: null, pending: false, ready: false };
+  const hasPending = activeOrders.some((order) =>
+    ['ORDERED', 'PARTIALLY_DISPENSED'].includes(normalizeStatus(order.status)) ||
+    activeItems(order.items).some((item) => normalizeStatus(item.status) !== 'COMPLETED') ||
+    activeItems(order.items).some((item) => activeItems(item.dispense_logs).some((log) => normalizeStatus(log.status) === 'PENDING'))
+  );
+  return {
+    code: hasPending ? 'PHARMACY_PENDING' : 'MEDICINES_DISPENSED',
+    pending: hasPending,
+    ready: !hasPending || activeOrders.some((order) => normalizeStatus(order.status) === 'DISPENSED')
+  };
+};
+
+const hasConfirmedAdmission = (encounter, flow) => {
+  const admissions = activeItems(encounter?.admissions);
+  const admission = admissions.find((item) => item.id === flow?.admission_id) || admissions[0] || null;
+  if (!admission || normalizeStatus(admission.status) !== 'ADMITTED') return false;
+  return activeItems(admission.bed_assignments).some((assignment) => !assignment.released_at);
+};
+
+const displayLabelByCode = (code, assignedStaff = null) => {
+  if (code === 'WITH_DOCTOR' && assignedStaff?.display_name) return `${assignedStaff.role || 'Doctor'}: ${assignedStaff.display_name}`;
+  return {
+    PAYMENT_DUE: 'Payment due',
+    VITALS_NEEDED: 'Vitals needed',
+    DOCTOR_NEEDED: 'Doctor needed',
+    WITH_DOCTOR: 'With doctor',
+    LAB_PENDING: 'Lab pending',
+    SAMPLE_PENDING: 'Sample pending',
+    IN_LAB: 'In lab',
+    RESULTS_READY: 'Results ready',
+    IMAGING_PENDING: 'Imaging pending',
+    REPORT_PENDING: 'Report pending',
+    REPORT_READY: 'Report ready',
+    PHARMACY_PENDING: 'Pharmacy pending',
+    MEDICINES_DISPENSED: 'Medicines dispensed',
+    DECISION_NEEDED: 'Decision needed',
+    ADMISSION_PENDING: 'Admission pending',
+    ADMITTED: 'Admitted',
+    DISCHARGED: 'Discharged'
+  }[code] || titleCaseWords(code || 'Updated');
+};
+
+const nextStepByDisplayCode = (code) => ({
+  PAYMENT_DUE: 'PAY_CONSULTATION',
+  VITALS_NEEDED: 'RECORD_VITALS',
+  DOCTOR_NEEDED: 'ASSIGN_DOCTOR',
+  WITH_DOCTOR: 'DOCTOR_REVIEW',
+  LAB_PENDING: 'LAB_WORKSPACE',
+  SAMPLE_PENDING: 'COLLECT_SAMPLE',
+  IN_LAB: 'PROCESS_LAB',
+  RESULTS_READY: 'REVIEW_RESULTS',
+  IMAGING_PENDING: 'PERFORM_IMAGING',
+  REPORT_PENDING: 'COMPLETE_IMAGING_REPORT',
+  REPORT_READY: 'REVIEW_REPORT',
+  PHARMACY_PENDING: 'DISPENSE_MEDICINE',
+  MEDICINES_DISPENSED: 'DISPOSITION',
+  DECISION_NEEDED: 'DISPOSITION',
+  ADMISSION_PENDING: 'ADMISSION_HANDOFF',
+  ADMITTED: null,
+  DISCHARGED: null
+}[code] ?? null);
+
+const stageByDisplayCode = (code, currentStage = null) => ({
+  PAYMENT_DUE: STAGES.WAITING_CONSULTATION_PAYMENT,
+  VITALS_NEEDED: STAGES.WAITING_VITALS,
+  DOCTOR_NEEDED: STAGES.WAITING_DOCTOR_ASSIGNMENT,
+  WITH_DOCTOR: STAGES.WAITING_DOCTOR_REVIEW,
+  LAB_PENDING: STAGES.LAB_REQUESTED,
+  SAMPLE_PENDING: STAGES.LAB_REQUESTED,
+  IN_LAB: STAGES.LAB_REQUESTED,
+  RESULTS_READY: currentStage === STAGES.RADIOLOGY_REQUESTED || currentStage === STAGES.LAB_AND_RADIOLOGY_REQUESTED
+    ? currentStage
+    : STAGES.WAITING_DISPOSITION,
+  IMAGING_PENDING: STAGES.RADIOLOGY_REQUESTED,
+  REPORT_PENDING: STAGES.RADIOLOGY_REQUESTED,
+  REPORT_READY: currentStage === STAGES.LAB_REQUESTED || currentStage === STAGES.LAB_AND_RADIOLOGY_REQUESTED
+    ? currentStage
+    : STAGES.WAITING_DISPOSITION,
+  PHARMACY_PENDING: STAGES.PHARMACY_REQUESTED,
+  MEDICINES_DISPENSED: STAGES.WAITING_DISPOSITION,
+  DECISION_NEEDED: STAGES.WAITING_DISPOSITION,
+  ADMISSION_PENDING: STAGES.WAITING_DISPOSITION,
+  ADMITTED: STAGES.ADMITTED,
+  DISCHARGED: STAGES.DISCHARGED
+}[code] ?? currentStage ?? null);
+
+const resolveOpdDisplayState = (encounter, flow = null) => {
+  const currentFlow = flow || encounter?.extension_json?.opd_flow || {};
+  const assignedStaff = buildAssignedStaff(encounter?.provider);
+  const labState = resolveLabState(encounter?.lab_orders);
+  const radiologyState = resolveRadiologyState(encounter?.radiology_orders);
+  const pharmacyState = resolvePharmacyState(encounter?.pharmacy_orders);
+  const closedOrDischarged = normalizeStatus(encounter?.status) === 'CLOSED' || currentFlow.stage === STAGES.DISCHARGED;
+  const admissionConfirmed = hasConfirmedAdmission(encounter, currentFlow);
+  const admissionPending = Boolean(currentFlow.admission_pending || (currentFlow.admission_id && !admissionConfirmed));
+  let code = null;
+
+  if (closedOrDischarged) code = 'DISCHARGED';
+  else if (admissionConfirmed || currentFlow.stage === STAGES.ADMITTED) code = 'ADMITTED';
+  else if (admissionPending) code = 'ADMISSION_PENDING';
+  else if (!hasCompletedConsultationPayment(currentFlow)) code = 'PAYMENT_DUE';
+  else if (!hasRecordedVitals(encounter)) code = 'VITALS_NEEDED';
+  else if (!normalizeIdentifier(encounter?.provider_user_id) && !assignedStaff.display_name) code = 'DOCTOR_NEEDED';
+  else if (labState.pending) code = labState.code;
+  else if (radiologyState.pending) code = radiologyState.code;
+  else if (pharmacyState.pending) code = pharmacyState.code;
+  else if (labState.ready && ['LAB_REQUESTED', 'LAB_AND_RADIOLOGY_REQUESTED'].includes(currentFlow.stage)) code = 'RESULTS_READY';
+  else if (radiologyState.ready && ['RADIOLOGY_REQUESTED', 'LAB_AND_RADIOLOGY_REQUESTED'].includes(currentFlow.stage)) code = 'REPORT_READY';
+  else if (pharmacyState.ready && currentFlow.stage === STAGES.PHARMACY_REQUESTED) code = 'MEDICINES_DISPENSED';
+  else if (currentFlow.review_completed || currentFlow.stage === STAGES.WAITING_DISPOSITION) code = 'DECISION_NEEDED';
+  else if (assignedStaff.display_name) code = 'WITH_DOCTOR';
+  else code = 'DOCTOR_NEEDED';
+
+  const resolvedStage = stageByDisplayCode(code, currentFlow.stage);
+  const nextStep = nextStepByDisplayCode(code) || getNextStep(resolvedStage);
+  return {
+    stage: resolvedStage,
+    next_step: nextStep,
+    display_code: code,
+    display_status: displayLabelByCode(code, assignedStaff),
+    display_next_step: nextStep,
+    assigned_staff: assignedStaff.display_name ? assignedStaff : null,
+    assigned_staff_role: assignedStaff.role || null,
+    assigned_staff_type: assignedStaff.type || null,
+    assigned_staff_label: assignedStaff.label || (code === 'DOCTOR_NEEDED' ? 'Doctor needed' : 'Assigned staff unknown'),
+    lab_state: labState,
+    radiology_state: radiologyState,
+    pharmacy_state: pharmacyState,
+    admission_state: admissionConfirmed ? 'ADMITTED' : admissionPending ? 'PENDING' : null
+  };
+};
+
+const attachResolvedDisplayToFlow = (encounter, flow) => {
+  const resolved = resolveOpdDisplayState(encounter, flow);
+  return {
+    ...flow,
+    stage: resolved.stage || flow?.stage || null,
+    next_step: resolved.next_step || flow?.next_step || null,
+    display_code: resolved.display_code,
+    display_status: resolved.display_status,
+    display_next_step: resolved.display_next_step,
+    assigned_staff: resolved.assigned_staff,
+    assigned_staff_role: resolved.assigned_staff_role,
+    assigned_staff_type: resolved.assigned_staff_type,
+    assigned_staff_label: resolved.assigned_staff_label,
+    lab_state: resolved.lab_state,
+    radiology_state: resolved.radiology_state,
+    pharmacy_state: resolved.pharmacy_state,
+    admission_state: resolved.admission_state
+  };
+};
+
+const applyResolvedStageToFlow = (encounter, flow) => {
+  const resolved = resolveOpdDisplayState(encounter, flow);
+  flow.stage = resolved.stage || flow.stage;
+  flow.next_step = resolved.next_step || getNextStep(flow.stage);
+  flow.display_code = resolved.display_code;
+  flow.display_status = resolved.display_status;
+  flow.display_next_step = resolved.display_next_step;
+  flow.assigned_staff_role = resolved.assigned_staff_role;
+  flow.assigned_staff_type = resolved.assigned_staff_type;
+  flow.assigned_staff_label = resolved.assigned_staff_label;
+  return resolved;
+};
+
 const ensureNonTerminalStage = (flow) => {
   if (TERMINAL_STAGES.has(flow.stage)) {
     throw new HttpError('errors.opd_flow.already_terminal', 400);
@@ -1406,7 +1715,7 @@ const buildEncounterSearchTokenClause = (token) => {
 
 const buildEncounterWhereClause = (filters = {}) => {
   const where = {
-    encounter_type: { in: ['OPD', 'EMERGENCY'] }
+    encounter_type: 'OPD'
   };
   const andClauses = [];
 
@@ -1611,26 +1920,43 @@ const getOpdFlowById = async (id) => {
           },
           admissions: {
             where: { deleted_at: null },
-            orderBy: { created_at: 'desc' }
+            orderBy: { created_at: 'desc' },
+            include: {
+              bed_assignments: {
+                where: { deleted_at: null },
+                orderBy: { assigned_at: 'desc' }
+              }
+            }
           },
           lab_orders: {
             where: { deleted_at: null },
             orderBy: { created_at: 'desc' },
             include: {
               items: {
-                where: { deleted_at: null }
-              }
+                where: { deleted_at: null },
+                include: {
+                  results: { where: { deleted_at: null } }
+                }
+              },
+              samples: { where: { deleted_at: null } }
             }
           },
           radiology_orders: {
             where: { deleted_at: null },
-            orderBy: { created_at: 'desc' }
+            orderBy: { created_at: 'desc' },
+            include: {
+              results: { where: { deleted_at: null } },
+              imaging_studies: { where: { deleted_at: null } }
+            }
           },
           pharmacy_orders: {
             where: { deleted_at: null },
             orderBy: { created_at: 'desc' },
             include: {
-              items: { where: { deleted_at: null } }
+              items: {
+                where: { deleted_at: null },
+                include: { dispense_logs: { where: { deleted_at: null } } }
+              }
             }
           }
         }
@@ -1696,26 +2022,27 @@ const getOpdFlowById = async (id) => {
           ? encounter.pharmacy_orders.find((item) => item.id === flow.pharmacy_order_id) || encounter.pharmacy_orders[0]
           : null) || null;
       const consultation = flow.consultation || {};
-
+      const resolvedConsultation = {
+        ...consultation,
+        consultation_fee: resolveConsultationFeeAmount(consultation, consultationInvoice),
+        paid_amount: resolveConsultationPaymentAmount({
+          consultation,
+          invoice: consultationInvoice,
+          payment: consultationPayment
+        }),
+        currency: consultation.currency || consultationInvoice?.currency || null,
+        invoice_id: consultationInvoice?.human_friendly_id || consultation.invoice_id || null,
+        payment_id: consultationPayment?.human_friendly_id || consultation.payment_id || null,
+        payment_status: resolveConsultationPaymentStatus({
+          consultation,
+          invoice: consultationInvoice,
+          payment: consultationPayment
+        })
+      };
+      const resolvedDisplayFlow = attachResolvedDisplayToFlow(encounter, { ...flow, consultation: resolvedConsultation });
       const flowWithFriendlyIds = {
-        ...flow,
-        consultation: {
-          ...consultation,
-          consultation_fee: resolveConsultationFeeAmount(consultation, consultationInvoice),
-          paid_amount: resolveConsultationPaymentAmount({
-            consultation,
-            invoice: consultationInvoice,
-            payment: consultationPayment
-          }),
-          currency: consultation.currency || consultationInvoice?.currency || null,
-          invoice_id: consultationInvoice?.human_friendly_id || consultation.invoice_id || null,
-          payment_id: consultationPayment?.human_friendly_id || consultation.payment_id || null,
-          payment_status: resolveConsultationPaymentStatus({
-            consultation,
-            invoice: consultationInvoice,
-            payment: consultationPayment
-          })
-        },
+        ...resolvedDisplayFlow,
+        consultation: resolvedConsultation,
         appointment_id: appointment?.human_friendly_id || flow.appointment_id || null,
         visit_queue_id: visitQueue?.human_friendly_id || flow.visit_queue_id || null,
         emergency_case_id: emergencyCase?.human_friendly_id || flow.emergency_case_id || null,
@@ -1853,8 +2180,35 @@ const listOpdFlows = async (
   const where = buildEncounterWhereClause(resolvedFilters);
   const orderBy = { [sortBy]: order };
 
+  const flowDisplayInclude = {
+    vital_signs: { where: { deleted_at: null }, orderBy: { recorded_at: 'asc' } },
+    admissions: {
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      include: { bed_assignments: { where: { deleted_at: null }, orderBy: { assigned_at: 'desc' } } }
+    },
+    lab_orders: {
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      include: {
+        items: { where: { deleted_at: null }, include: { results: { where: { deleted_at: null } } } },
+        samples: { where: { deleted_at: null } }
+      }
+    },
+    radiology_orders: {
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      include: { results: { where: { deleted_at: null } }, imaging_studies: { where: { deleted_at: null } } }
+    },
+    pharmacy_orders: {
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      include: { items: { where: { deleted_at: null }, include: { dispense_logs: { where: { deleted_at: null } } } } }
+    }
+  };
+
   const [encounters, total] = await Promise.all([
-    opdFlowRepository.findMany(where, skip, limit, orderBy),
+    opdFlowRepository.findMany(where, skip, limit, orderBy, flowDisplayInclude),
     opdFlowRepository.count(where)
   ]);
 
@@ -1862,7 +2216,7 @@ const listOpdFlows = async (
     const flow = encounter?.extension_json?.opd_flow || null;
     return {
       encounter,
-      flow
+      flow: flow ? attachResolvedDisplayToFlow(encounter, flow) : flow
     };
   });
 
@@ -1870,6 +2224,10 @@ const listOpdFlows = async (
     items = sortEmergencyQueueItems(await enrichEmergencyQueueUrgency(items));
   }
   items = await enrichConsultationBillingForListItems(items);
+  items = items.map((item) => ({
+    ...item,
+    flow: item.flow ? attachResolvedDisplayToFlow(item.encounter, item.flow) : item.flow
+  }));
 
   return {
     items,
@@ -1882,6 +2240,145 @@ const listOpdFlows = async (
       hasPreviousPage: page > 1
     }
   };
+};
+
+const getOpdFlowSummaryCounts = async (filters = {}, context = {}) => {
+  const tenantId = filters.tenant_id || context.tenant_id || null;
+  const facilityId = filters.facility_id || context.facility_id || null;
+  const scopeWhere = {
+    deleted_at: null,
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+    ...(facilityId ? { facility_id: facilityId } : {})
+  };
+  const encounterScopeWhere = {
+    ...scopeWhere,
+    encounter_type: 'OPD',
+    AND: [buildOpdFlowStagePresenceClause()]
+  };
+  const activeEncounterWhere = {
+    ...encounterScopeWhere,
+    status: 'OPEN'
+  };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const flowDisplayInclude = {
+    provider: PROVIDER_INCLUDE,
+    vital_signs: { where: { deleted_at: null }, orderBy: { recorded_at: 'asc' } },
+    admissions: {
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      include: { bed_assignments: { where: { deleted_at: null }, orderBy: { assigned_at: 'desc' } } }
+    },
+    lab_orders: {
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      include: {
+        items: { where: { deleted_at: null }, include: { results: { where: { deleted_at: null } } } },
+        samples: { where: { deleted_at: null } }
+      }
+    },
+    radiology_orders: {
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      include: { results: { where: { deleted_at: null } }, imaging_studies: { where: { deleted_at: null } } }
+    },
+    pharmacy_orders: {
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      include: { items: { where: { deleted_at: null }, include: { dispense_logs: { where: { deleted_at: null } } } } }
+    }
+  };
+
+  const [allPatients, opdPatients, activeOpd, openEncounters, dischargedToday] = await Promise.all([
+    prisma.patient.count({ where: scopeWhere }),
+    prisma.encounter.findMany({
+      where: encounterScopeWhere,
+      distinct: ['patient_id'],
+      select: { patient_id: true }
+    }),
+    prisma.encounter.count({ where: activeEncounterWhere }),
+    prisma.encounter.findMany({
+      where: activeEncounterWhere,
+      include: flowDisplayInclude
+    }),
+    prisma.encounter.count({
+      where: {
+        ...encounterScopeWhere,
+        OR: [
+          { status: 'CLOSED', ended_at: { gte: today, lt: tomorrow } },
+          {
+            extension_json: buildOpdFlowJsonFilter(OPD_FLOW_STAGE_JSON_PATH, STAGES.DISCHARGED),
+            updated_at: { gte: today, lt: tomorrow }
+          }
+        ]
+      }
+    })
+  ]);
+
+  const counts = {
+    all_patients: allPatients,
+    all_opd_patients: opdPatients.length,
+    active_opd: activeOpd,
+    vitals_needed: 0,
+    doctor_needed: 0,
+    with_doctor: 0,
+    lab_pending: 0,
+    imaging_pending: 0,
+    pharmacy_pending: 0,
+    decision_needed: 0,
+    admission_pending: 0,
+    discharged_today: dischargedToday
+  };
+
+  const openItems = await enrichConsultationBillingForListItems(
+    openEncounters.map((encounter) => ({
+      encounter,
+      flow: encounter?.extension_json?.opd_flow || {}
+    }))
+  );
+
+  openItems.forEach((item) => {
+    const display = resolveOpdDisplayState(item.encounter, item.flow);
+    switch (display.display_code) {
+      case 'VITALS_NEEDED':
+        counts.vitals_needed += 1;
+        break;
+      case 'DOCTOR_NEEDED':
+        counts.doctor_needed += 1;
+        break;
+      case 'WITH_DOCTOR':
+        counts.with_doctor += 1;
+        break;
+      case 'LAB_PENDING':
+      case 'SAMPLE_PENDING':
+      case 'IN_LAB':
+        counts.lab_pending += 1;
+        break;
+      case 'IMAGING_PENDING':
+      case 'REPORT_PENDING':
+        counts.imaging_pending += 1;
+        break;
+      case 'PHARMACY_PENDING':
+        counts.pharmacy_pending += 1;
+        break;
+      case 'DECISION_NEEDED':
+      case 'RESULTS_READY':
+      case 'REPORT_READY':
+      case 'MEDICINES_DISPENSED':
+        counts.decision_needed += 1;
+        break;
+      case 'ADMISSION_PENDING':
+        counts.admission_pending += 1;
+        break;
+      default:
+        break;
+    }
+  });
+
+  return counts;
 };
 
 const bootstrapOpdFlow = async (data = {}, context = {}) => {
@@ -2682,6 +3179,9 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
       } else if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT) {
         setFlowStage(flow, STAGES.WAITING_VITALS);
       }
+      if (providerUserId && flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT) {
+        setFlowStage(flow, STAGES.WAITING_DOCTOR_REVIEW);
+      }
 
       if (flow.visit_queue_id) {
         await tx.visit_queue.update({
@@ -3162,6 +3662,7 @@ const assignDoctor = async (id, data, context = {}) => {
     if (!provider) {
       throw new HttpError('errors.user.not_found', 404, [{ field: 'provider_user_id' }]);
     }
+    ensureDoctorAssignable(provider);
 
     const updated = await tx.encounter.update({
       where: { id: encounter.id },
@@ -3551,6 +4052,7 @@ const disposition = async (id, data, context = {}) => {
     }
 
     let admission = null;
+    let closeEncounter = data.decision === 'DISCHARGE';
     if (data.decision === 'ADMIT') {
       let admissionFacilityId = encounter.facility_id || null;
       if (data.admission_facility_id !== undefined) {
@@ -3580,15 +4082,22 @@ const disposition = async (id, data, context = {}) => {
         }
       });
       flow.admission_id = admission.id;
-      setFlowStage(flow, STAGES.ADMITTED);
-    } else {
-      if (data.decision === 'SEND_TO_PHARMACY' && !flow.pharmacy_order_id) {
+      flow.admission_pending = true;
+      flow.admission_requested_at = dispositionAt.toISOString();
+      setFlowStage(flow, STAGES.WAITING_DISPOSITION);
+      closeEncounter = false;
+    } else if (data.decision === 'SEND_TO_PHARMACY') {
+      if (!flow.pharmacy_order_id) {
         throw new HttpError('errors.opd_flow.pharmacy_order_required_for_disposition', 400);
       }
-
+      flow.pharmacy_pending_after_disposition = true;
+      setFlowStage(flow, STAGES.PHARMACY_REQUESTED);
+      closeEncounter = false;
+    } else {
       setFlowStage(flow, STAGES.DISCHARGED);
     }
 
+    flow.disposition_decision = data.decision;
     flow.disposition_reason = dispositionReason;
     flow.disposition_notes = dispositionNotes;
     flow.disposition_at = dispositionAt.toISOString();
@@ -3596,6 +4105,7 @@ const disposition = async (id, data, context = {}) => {
     appendTimelineEvent(flow, 'DISPOSITION_RECORDED', context, {
       decision: data.decision,
       admission_id: admission?.id || null,
+      pharmacy_order_id: flow.pharmacy_order_id || null,
       reason: dispositionReason,
       notes: dispositionNotes
     });
@@ -3603,9 +4113,16 @@ const disposition = async (id, data, context = {}) => {
     const finalizedEncounter = await tx.encounter.update({
       where: { id: encounter.id },
       data: {
-        status: 'CLOSED',
-        active_opd_lock_key: null,
-        ended_at: dispositionAt,
+        ...(closeEncounter
+          ? {
+              status: 'CLOSED',
+              active_opd_lock_key: null,
+              ended_at: dispositionAt
+            }
+          : {
+              status: 'OPEN',
+              ended_at: null
+            }),
         extension_json: {
           ...(encounter.extension_json || {}),
           opd_flow: flow
@@ -3613,7 +4130,7 @@ const disposition = async (id, data, context = {}) => {
       }
     });
 
-    if (flow.visit_queue_id) {
+    if (closeEncounter && flow.visit_queue_id) {
       await tx.visit_queue.update({
         where: { id: flow.visit_queue_id },
         data: {
@@ -3622,7 +4139,7 @@ const disposition = async (id, data, context = {}) => {
       });
     }
 
-    if (flow.appointment_id) {
+    if (closeEncounter && flow.appointment_id) {
       const appointment = await tx.appointment.findFirst({
         where: { id: flow.appointment_id, deleted_at: null }
       });
@@ -3634,7 +4151,7 @@ const disposition = async (id, data, context = {}) => {
       }
     }
 
-    if (flow.emergency_case_id) {
+    if (closeEncounter && flow.emergency_case_id) {
       await tx.emergency_case.update({
         where: { id: flow.emergency_case_id },
         data: {
@@ -3813,6 +4330,7 @@ const correctStage = async (id, data, context = {}) => {
 
 module.exports = {
   listOpdFlows,
+  getOpdFlowSummaryCounts,
   resolveLegacyRoute,
   getOpdFlowById,
   bootstrapOpdFlow,

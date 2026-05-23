@@ -17,7 +17,6 @@ import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_c
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_disposition_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -96,7 +95,6 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool iconOnly =
         breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
-    final List<_OpdTableItem> tableItems = _tableItems(context, state);
 
     return AppWorkspace(
       title: l10n.opdTitle,
@@ -146,83 +144,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         ),
       ],
       summaryCards: <Widget>[
-        if (tableItems.isNotEmpty)
-          AppWorkspaceSummaryCard(
-            label: _OpdSummaryText.allRecords,
-            value: AppFormatters.compactNumber(
-              tableItems.length,
-              Localizations.localeOf(context),
-            ),
-            icon: Icons.groups_outlined,
-            compact: true,
-            onPressed: () {
-              _applySummaryFilter(const _OpdTableFilter());
-            },
-          ),
-        if (_opdCategoryCount(tableItems, _opdCategoryArrival) > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.opdArrivalsSummaryLabel,
-            value: AppFormatters.compactNumber(
-              _opdCategoryCount(tableItems, _opdCategoryArrival),
-              Localizations.localeOf(context),
-            ),
-            icon: Icons.event_available_outlined,
-            tone: _categoryTone(_opdCategoryArrival),
-            compact: true,
-            onPressed: () {
-              _applySummaryFilter(
-                const _OpdTableFilter(category: _opdCategoryArrival),
-              );
-            },
-          ),
-        if (_opdCategoryCount(tableItems, _opdCategoryQueue) > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.opdQueueSummaryLabel,
-            value: AppFormatters.compactNumber(
-              _opdCategoryCount(tableItems, _opdCategoryQueue),
-              Localizations.localeOf(context),
-            ),
-            icon: Icons.queue_outlined,
-            tone: _categoryTone(_opdCategoryQueue),
-            compact: true,
-            onPressed: () {
-              _applySummaryFilter(
-                const _OpdTableFilter(category: _opdCategoryQueue),
-              );
-            },
-          ),
-        if (_opdCategoryCount(tableItems, _opdCategoryTriage) > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.opdWorkflowTriageTitle,
-            value: AppFormatters.compactNumber(
-              _opdCategoryCount(tableItems, _opdCategoryTriage),
-              Localizations.localeOf(context),
-            ),
-            icon: Icons.monitor_heart_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            compact: true,
-            onPressed: () {
-              _applySummaryFilter(
-                const _OpdTableFilter(category: _opdCategoryTriage),
-              );
-            },
-          ),
-        if (_opdCategoryCount(tableItems, _opdCategoryActiveFlow) > 0)
-          AppWorkspaceSummaryCard(
-            label: l10n.opdActiveFlowSummaryLabel,
-            value: AppFormatters.compactNumber(
-              _opdCategoryCount(tableItems, _opdCategoryActiveFlow),
-              Localizations.localeOf(context),
-            ),
-            icon: Icons.medical_services_outlined,
-            tone: _categoryTone(_opdCategoryActiveFlow),
-            compact: true,
-            onPressed: () {
-              _applySummaryFilter(
-                const _OpdTableFilter(category: _opdCategoryActiveFlow),
-              );
-            },
-          ),
+        ..._opdBackendSummaryCards(context, state.summaryCounts),
       ],
       body: ValueListenableBuilder<_OpdTableFilter>(
         valueListenable: _filterNotifier,
@@ -253,6 +175,101 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     _filterNotifier.value = filter;
     _tablePageNotifier.value = _tablePageNotifier.value.first();
   }
+
+
+  List<Widget> _opdBackendSummaryCards(
+    BuildContext context,
+    OpdFlowAggregateCounts counts,
+  ) {
+    final Locale locale = Localizations.localeOf(context);
+    AppWorkspaceSummaryCard card(
+      String key,
+      int value,
+      IconData icon, {
+      AppWorkspaceStatusTone? tone,
+      _OpdTableFilter filter = const _OpdTableFilter(),
+    }) {
+      return AppWorkspaceSummaryCard(
+        label: opdSummaryCountLabel(context.l10n, key),
+        value: AppFormatters.compactNumber(value, locale),
+        icon: icon,
+        tone: tone,
+        compact: true,
+        onPressed: () => _applySummaryFilter(filter),
+      );
+    }
+
+    return <Widget>[
+      card('all_patients', counts.allPatients, Icons.groups_outlined),
+      card(
+        'all_opd_patients',
+        counts.allOpdPatients,
+        Icons.local_hospital_outlined,
+      ),
+      card(
+        'active_opd',
+        counts.activeOpd,
+        Icons.medical_services_outlined,
+        tone: AppWorkspaceStatusTone.success,
+        filter: const _OpdTableFilter(category: _opdCategoryActiveFlow),
+      ),
+      card(
+        'vitals_needed',
+        counts.vitalsNeeded,
+        Icons.monitor_heart_outlined,
+        tone: AppWorkspaceStatusTone.warning,
+      ),
+      card(
+        'doctor_needed',
+        counts.doctorNeeded,
+        Icons.assignment_ind_outlined,
+        tone: AppWorkspaceStatusTone.warning,
+      ),
+      card(
+        'with_doctor',
+        counts.withDoctor,
+        Icons.medical_services_outlined,
+        tone: AppWorkspaceStatusTone.info,
+      ),
+      card(
+        'lab_pending',
+        counts.labPending,
+        Icons.science_outlined,
+        tone: AppWorkspaceStatusTone.info,
+      ),
+      card(
+        'imaging_pending',
+        counts.imagingPending,
+        Icons.biotech_outlined,
+        tone: AppWorkspaceStatusTone.info,
+      ),
+      card(
+        'pharmacy_pending',
+        counts.pharmacyPending,
+        Icons.medication_outlined,
+        tone: AppWorkspaceStatusTone.warning,
+      ),
+      card(
+        'decision_needed',
+        counts.decisionNeeded,
+        Icons.task_alt_outlined,
+        tone: AppWorkspaceStatusTone.warning,
+      ),
+      card(
+        'admission_pending',
+        counts.admissionPending,
+        Icons.bed_outlined,
+        tone: AppWorkspaceStatusTone.warning,
+      ),
+      card(
+        'discharged_today',
+        counts.dischargedToday,
+        Icons.check_circle_outline,
+        tone: AppWorkspaceStatusTone.success,
+      ),
+    ];
+  }
+
 
   void _applySummaryFilter(_OpdTableFilter filter) {
     if (filter.search.trim().isEmpty && _searchController.text.isNotEmpty) {
@@ -732,7 +749,7 @@ List<AppSearchBarFilterGroup> _opdTableFilterGroups(
           .map(
             (String status) => AppSearchBarFilterChoice(
               value: status,
-              label: _apiLabel(status),
+              label: opdStageDisplayLabel(context.l10n, status),
             ),
           )
           .toList(growable: false),
@@ -755,7 +772,7 @@ List<AppSearchBarFilterGroup> _opdTableFilterGroups(
       key: _opdFilterKeyNextAction,
       label: l10n.opdNextActionFilterLabel,
       allLabel: l10n.opdAllNextActionsOption,
-      choices: _nextActionFilterChoices(items),
+      choices: _nextActionFilterChoices(context, items),
     ),
     AppSearchBarFilterGroup(
       key: _opdFilterKeyTriageScope,
@@ -897,6 +914,7 @@ List<AppSearchBarFilterChoice> _billingFilterChoices(
 }
 
 List<AppSearchBarFilterChoice> _nextActionFilterChoices(
+  BuildContext context,
   List<_OpdTableItem> items,
 ) {
   final List<String> unique =
@@ -908,13 +926,18 @@ List<AppSearchBarFilterChoice> _nextActionFilterChoices(
           .toSet()
           .toList(growable: false)
         ..sort(
-          (String left, String right) =>
-              _apiLabel(left).compareTo(_apiLabel(right)),
+          (String left, String right) => opdNextStepDisplayLabel(
+            context.l10n,
+            left,
+          ).compareTo(opdNextStepDisplayLabel(context.l10n, right)),
         );
 
   return <AppSearchBarFilterChoice>[
     for (final String value in unique)
-      AppSearchBarFilterChoice(value: value, label: _apiLabel(value)),
+      AppSearchBarFilterChoice(
+        value: value,
+        label: opdNextStepDisplayLabel(context.l10n, value),
+      ),
   ];
 }
 
@@ -1080,7 +1103,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       id: flow.id,
       title: flow.displayTitle,
       category: _opdCategoryTriage,
-      status: flow.triageLevel ?? flow.stage,
+      status: flow.triageLevel ?? flow.displayCode ?? flow.stage,
       visitType: _flowVisitTypeLabel(context, flow),
       queue: _flowQueueLabel(context, flow),
       subtitle: _joinDisplay(<String?>[
@@ -1090,13 +1113,13 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
         _flowWaitLabel(context, flow),
         flow.chiefComplaint,
       ]),
-      provider: flow.providerDisplayName,
+      provider: flow.assignedStaffLabel ?? flow.providerDisplayName,
       ownerRole: _flowOwnerRole(context, flow),
       facility: flow.facilityName,
       billing: _flowBillingLabel(context, flow),
       billingState: _flowBillingState(flow),
       billingTone: _flowBillingTone(flow),
-      nextStep: _triageNextStep(flow),
+      nextStep: flow.displayNextStep ?? _triageNextStep(flow),
       time: flow.queuedAt ?? flow.startedAt,
       urgencyRank: _flowUrgencyRank(flow),
       flow: flow,
@@ -1112,7 +1135,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       id: flow.id,
       title: flow.displayTitle,
       category: _opdCategoryActiveFlow,
-      status: flow.stage,
+      status: flow.displayCode ?? flow.stage,
       visitType: _flowVisitTypeLabel(context, flow),
       queue: _flowQueueLabel(context, flow),
       subtitle: _joinDisplay(<String?>[
@@ -1122,13 +1145,13 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
         _flowWaitLabel(context, flow),
         flow.lastRouteTo == null ? null : _apiLabel(flow.lastRouteTo!),
       ]),
-      provider: flow.providerDisplayName,
+      provider: flow.assignedStaffLabel ?? flow.providerDisplayName,
       ownerRole: _flowOwnerRole(context, flow),
       facility: flow.facilityName,
       billing: _flowBillingLabel(context, flow),
       billingState: _flowBillingState(flow),
       billingTone: _flowBillingTone(flow),
-      nextStep: flow.nextStep,
+      nextStep: flow.displayNextStep ?? flow.nextStep,
       time: flow.queuedAt ?? flow.startedAt,
       urgencyRank: _flowUrgencyRank(flow),
       flow: flow,
@@ -1301,14 +1324,6 @@ int _flowActionRank(OpdFlowSummary flow) {
   return emergencyRank + stageRank + paymentRank;
 }
 
-int _opdCategoryCount(List<_OpdTableItem> items, String category) {
-  return items.where((_OpdTableItem item) => item.category == category).length;
-}
-
-abstract final class _OpdSummaryText {
-  static const String allRecords = 'All OPD records';
-}
-
 DateTime? _appointmentArrivalTime(OpdAppointment appointment) {
   final String status = (appointment.status ?? '').toUpperCase();
   if (status == 'IN_PROGRESS') {
@@ -1424,7 +1439,10 @@ String _flowQueueLabel(BuildContext context, OpdFlowSummary flow) {
     return route;
   }
 
-  final String stage = _apiLabel(flow.stage ?? '');
+  final String stage = opdStageDisplayLabel(
+    context.l10n,
+    flow.displayCode ?? flow.stage,
+  );
   return stage.isEmpty ? context.l10n.profileUnknownValue : stage;
 }
 
@@ -1448,11 +1466,16 @@ AppWorkspaceStatusTone _flowBillingTone(OpdFlowSummary flow) {
 }
 
 String _flowOwnerRole(BuildContext context, OpdFlowSummary flow) {
+  if (_isNonEmpty(flow.assignedStaffRole)) {
+    return flow.assignedStaffRole!;
+  }
   return opdResponsibleRoleForStage(
     context.l10n,
-    flow.stage,
+    flow.displayCode ?? flow.stage,
     hasAssignedProvider:
-        _isNonEmpty(flow.providerUserId) || _isNonEmpty(flow.providerDisplayName),
+        _isNonEmpty(flow.providerUserId) ||
+        _isNonEmpty(flow.providerDisplayName) ||
+        _isNonEmpty(flow.assignedStaffDisplayName),
   );
 }
 
@@ -1911,7 +1934,7 @@ class _OpdTableMobileRow extends StatelessWidget {
         item.subtitle,
         item.visitType,
         item.queue,
-        _apiLabel(item.status ?? ''),
+        opdStageDisplayLabel(context.l10n, item.status),
         item.billing,
         _waitingTimeLabel(context, item),
         item.provider,
@@ -1954,7 +1977,7 @@ class _QueueStatusCell extends StatelessWidget {
 }
 
 Widget _opdStatusText(BuildContext context, String? value) {
-  final String label = _apiLabel(value ?? '');
+  final String label = opdStageDisplayLabel(context.l10n, value);
   return AppStatusText(
     label: label.isEmpty ? context.l10n.profileUnknownValue : label,
     tone: _stageTone(value),
@@ -1977,7 +2000,7 @@ class _ProviderCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppListItemText(
-      title: item.provider ?? context.l10n.profileUnknownValue,
+      title: item.provider ?? opdUnknownProviderLabel,
       subtitle: item.facility,
     );
   }
@@ -1997,7 +2020,10 @@ String _waitingTimeLabel(BuildContext context, _OpdTableItem item) {
 }
 
 String _nextStepLabel(BuildContext context, _OpdTableItem item) {
-  final String label = _apiLabel(item.nextStep ?? item.status ?? '');
+  final String label = opdNextStepDisplayLabel(
+    context.l10n,
+    item.nextStep ?? item.status,
+  );
   return label.isEmpty ? context.l10n.profileUnknownValue : label;
 }
 
@@ -2030,16 +2056,6 @@ String _categoryLabel(BuildContext context, String category) {
     _opdCategoryTriage => l10n.opdWorkflowTriageTitle,
     _opdCategoryActiveFlow => l10n.opdActiveFlowSummaryLabel,
     _ => _apiLabel(category),
-  };
-}
-
-AppWorkspaceStatusTone _categoryTone(String category) {
-  return switch (category) {
-    _opdCategoryArrival => AppWorkspaceStatusTone.info,
-    _opdCategoryQueue => AppWorkspaceStatusTone.warning,
-    _opdCategoryTriage => AppWorkspaceStatusTone.warning,
-    _opdCategoryActiveFlow => AppWorkspaceStatusTone.success,
-    _ => AppWorkspaceStatusTone.neutral,
   };
 }
 
@@ -2124,7 +2140,7 @@ class _OpdPatientActionsDialogState
             items: <AppInfoTileData>[
               AppInfoTileData(
                 label: l10n.opdStatusColumnLabel,
-                value: _apiLabel(widget.item.status ?? ''),
+                value: opdStageDisplayLabel(l10n, widget.item.status),
               ),
               AppInfoTileData(
                 label: l10n.opdVisitTypeColumnLabel,
@@ -2132,7 +2148,7 @@ class _OpdPatientActionsDialogState
               ),
               AppInfoTileData(
                 label: l10n.opdProviderColumnLabel,
-                value: widget.item.provider ?? l10n.profileUnknownValue,
+                value: widget.item.provider ?? opdUnknownProviderLabel,
               ),
               AppInfoTileData(
                 label: l10n.opdTimeColumnLabel,
@@ -2266,104 +2282,7 @@ class _OpdPatientActionsDialogState
       ]);
     }
 
-    final List<AppPermissionActionItem> downstream = <AppPermissionActionItem>[
-      action(
-        requirement: opdReceptionActionRequirement,
-        label: l10n.opdOpenActiveEncounterAction,
-        icon: Icons.save_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdBillingActionRequirement,
-        label: l10n.opdManageConsultationBillingAction,
-        icon: Icons.payments_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdTriageActionRequirement,
-        label: l10n.opdRecordVitalsAction,
-        icon: Icons.monitor_heart_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdReceptionActionRequirement,
-        label: l10n.opdAssignDoctorAction,
-        icon: Icons.assignment_ind_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.opdDoctorReviewAction,
-        icon: Icons.edit_note_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.clinicalAddDiagnosisAction,
-        icon: Icons.rule_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.clinicalRequestLabAction,
-        icon: Icons.science_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.clinicalRequestRadiologyAction,
-        icon: Icons.biotech_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.clinicalPrescribeAction,
-        icon: Icons.medication_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.clinicalRequestProcedureAction,
-        icon: Icons.healing_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.opdReferAction,
-        icon: Icons.alt_route_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.opdFollowUpAction,
-        icon: Icons.event_repeat_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: l10n.opdCorrectStageAction,
-        icon: Icons.sync_alt_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdDoctorActionRequirement,
-        label: clinicalDispositionActionLabel(
-          l10n,
-          sourceQueue: 'OPD',
-          isOpdContext: true,
-        ),
-        icon: Icons.task_alt_outlined,
-        onPressed: null,
-      ),
-      action(
-        requirement: opdTriageActionRequirement,
-        label: l10n.opdPrintSummaryAction,
-        icon: Icons.print_outlined,
-        onPressed: null,
-      ),
-    ];
-
-    return <AppPermissionActionItem>[...actions, ...downstream];
+    return actions;
   }
 
   Future<void> _openAppointmentCheckIn() async {
@@ -3152,15 +3071,32 @@ String _joinDisplay(Iterable<String?> values) {
 
 AppWorkspaceStatusTone _stageTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
-    'COMPLETED' || 'DISCHARGED' || 'ADMITTED' => AppWorkspaceStatusTone.success,
+    'COMPLETED' ||
+    'DISCHARGED' ||
+    'ADMITTED' ||
+    'RESULTS_READY' ||
+    'REPORT_READY' ||
+    'MEDICINES_DISPENSED' => AppWorkspaceStatusTone.success,
     'NORMAL' || 'ROUTINE' => AppWorkspaceStatusTone.success,
     'CANCELLED' || 'NO_SHOW' => AppWorkspaceStatusTone.error,
     'CRITICAL' => AppWorkspaceStatusTone.error,
-    'ABNORMAL' || 'SERVICE_ONLY' => AppWorkspaceStatusTone.warning,
+    'ABNORMAL' ||
+    'SERVICE_ONLY' ||
+    'PAYMENT_DUE' ||
+    'VITALS_NEEDED' ||
+    'DOCTOR_NEEDED' ||
+    'PHARMACY_PENDING' ||
+    'ADMISSION_PENDING' => AppWorkspaceStatusTone.warning,
     'WAITING_CONSULTATION_PAYMENT' ||
     'WAITING_VITALS' ||
     'WAITING_DOCTOR_ASSIGNMENT' => AppWorkspaceStatusTone.warning,
     'IN_PROGRESS' ||
+    'WITH_DOCTOR' ||
+    'LAB_PENDING' ||
+    'SAMPLE_PENDING' ||
+    'IN_LAB' ||
+    'IMAGING_PENDING' ||
+    'REPORT_PENDING' ||
     'WAITING_DOCTOR_REVIEW' ||
     'WAITING_DISPOSITION' => AppWorkspaceStatusTone.info,
     _ => AppWorkspaceStatusTone.neutral,

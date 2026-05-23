@@ -7,6 +7,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
 class OpdActionContextPanel extends StatelessWidget {
   const OpdActionContextPanel({
@@ -29,7 +30,8 @@ class OpdActionContextPanel extends StatelessWidget {
     ]);
     final String encounterId = flow.apiId;
     final bool hasAssignedProvider = _isNonEmpty(flow.providerUserId) ||
-        _isNonEmpty(flow.providerDisplayName);
+        _isNonEmpty(flow.providerDisplayName) ||
+        _isNonEmpty(flow.assignedStaffDisplayName);
 
     return AppSectionPanel(
       title: showTitle ? l10n.opdEncounterContextTitle : null,
@@ -67,19 +69,22 @@ class OpdActionContextPanel extends StatelessWidget {
           items: <AppInfoTileData>[
             AppInfoTileData(
               label: l10n.opdStageLabel,
-              value: _apiLabel(flow.stage),
+              value: opdStatusDisplayLabel(l10n, flow),
               icon: Icons.flag_outlined,
             ),
             AppInfoTileData(
               label: l10n.opdNextStepColumnLabel,
-              value: _apiLabel(flow.nextStep),
+              value: opdNextStepDisplayLabel(
+                l10n,
+                flow.displayNextStep ?? flow.nextStep,
+              ),
               icon: Icons.next_plan_outlined,
             ),
             AppInfoTileData(
               label: l10n.settingsWorkspaceModuleRole,
               value: opdResponsibleRoleForStage(
                 l10n,
-                flow.stage,
+                flow.displayCode ?? flow.stage,
                 hasAssignedProvider: hasAssignedProvider,
               ),
               icon: Icons.badge_outlined,
@@ -91,7 +96,7 @@ class OpdActionContextPanel extends StatelessWidget {
             ),
             AppInfoTileData(
               label: l10n.opdProviderColumnLabel,
-              value: flow.providerDisplayName,
+              value: flow.assignedStaffLabel ?? flow.providerDisplayName,
               icon: Icons.person_outline,
             ),
             AppInfoTileData(
@@ -112,19 +117,31 @@ String opdResponsibleRoleForStage(
   bool hasAssignedProvider = false,
 }) {
   return switch ((stage ?? '').trim().toUpperCase()) {
+    'PAYMENT_DUE' ||
     'WAITING_CONSULTATION_PAYMENT' => l10n.navigationBillingLabel,
-    'WAITING_VITALS' => l10n.navigationNursingLabel,
-    'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
+    'VITALS_NEEDED' || 'WAITING_VITALS' => l10n.navigationNursingLabel,
+    'DOCTOR_NEEDED' || 'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
         ? l10n.opdWorkflowDoctorTitle
         : l10n.opdWorkflowReceptionTitle,
-    'WAITING_DOCTOR_REVIEW' => l10n.opdWorkflowDoctorTitle,
+    'WITH_DOCTOR' ||
+    'WAITING_DOCTOR_REVIEW' ||
+    'DECISION_NEEDED' ||
+    'WAITING_DISPOSITION' ||
+    'RESULTS_READY' ||
+    'REPORT_READY' ||
+    'MEDICINES_DISPENSED' => l10n.opdWorkflowDoctorTitle,
+    'LAB_PENDING' ||
+    'SAMPLE_PENDING' ||
+    'IN_LAB' ||
     'LAB_REQUESTED' => l10n.navigationLabLabel,
+    'IMAGING_PENDING' ||
+    'REPORT_PENDING' ||
     'RADIOLOGY_REQUESTED' => l10n.navigationRadiologyLabel,
     'LAB_AND_RADIOLOGY_REQUESTED' =>
         '${l10n.navigationLabLabel} / ${l10n.navigationRadiologyLabel}',
+    'PHARMACY_PENDING' ||
     'PHARMACY_REQUESTED' => l10n.navigationPharmacyLabel,
-    'WAITING_DISPOSITION' => l10n.opdWorkflowDoctorTitle,
-    'ADMITTED' => l10n.navigationIpdLabel,
+    'ADMISSION_PENDING' || 'ADMITTED' => l10n.navigationIpdLabel,
     'DISCHARGED' => l10n.navigationDischargeLabel,
     _ => l10n.profileUnknownValue,
   };

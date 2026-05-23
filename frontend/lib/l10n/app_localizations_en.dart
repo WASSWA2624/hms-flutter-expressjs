@@ -577,7 +577,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdDescription =>
-      'Manage arrivals, queues, provider readiness, and outpatient clinical handoffs.';
+      'Manage arrivals, queues, staff readiness, and outpatient clinical handoffs.';
 
   @override
   String get opdLoadingTitle => 'Loading OPD flow';
@@ -680,7 +680,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdQueueFilterLabel => 'Queue';
 
   @override
-  String get opdProviderFilterLabel => 'Provider';
+  String get opdProviderFilterLabel => 'Assigned staff';
 
   @override
   String get opdBillingFilterLabel => 'Billing';
@@ -701,7 +701,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdAllQueuesOption => 'All queues';
 
   @override
-  String get opdAllProvidersOption => 'All providers';
+  String get opdAllProvidersOption => 'All staff';
 
   @override
   String get opdAllBillingStatesOption => 'All billing states';
@@ -710,10 +710,146 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdAllNextActionsOption => 'All next actions';
 
   @override
+  String get opdSummaryAllPatientsLabel => 'All Patients';
+
+  @override
+  String get opdSummaryAllOpdPatientsLabel => 'All OPD Patients';
+
+  @override
+  String get opdSummaryActiveOpdLabel => 'Active OPD';
+
+  @override
+  String get opdSummaryVitalsNeededLabel => 'Vitals needed';
+
+  @override
+  String get opdSummaryDoctorNeededLabel => 'Doctor needed';
+
+  @override
+  String get opdSummaryWithDoctorLabel => 'With doctor';
+
+  @override
+  String get opdSummaryLabPendingLabel => 'Lab pending';
+
+  @override
+  String get opdSummaryImagingPendingLabel => 'Imaging pending';
+
+  @override
+  String get opdSummaryPharmacyPendingLabel => 'Pharmacy pending';
+
+  @override
+  String get opdSummaryDecisionNeededLabel => 'Decision needed';
+
+  @override
+  String get opdSummaryAdmissionPendingLabel => 'Admission pending';
+
+  @override
+  String get opdSummaryDischargedTodayLabel => 'Discharged today';
+
+  @override
+  String get opdStatusPaymentDueLabel => 'Payment due';
+
+  @override
+  String get opdStatusVitalsNeededLabel => 'Vitals needed';
+
+  @override
+  String get opdStatusDoctorNeededLabel => 'Doctor needed';
+
+  @override
+  String get opdStatusWithDoctorLabel => 'With doctor';
+
+  @override
+  String get opdStatusDoctorReviewLabel => 'Doctor review';
+
+  @override
+  String get opdStatusLabPendingLabel => 'Lab pending';
+
+  @override
+  String get opdStatusSamplePendingLabel => 'Sample pending';
+
+  @override
+  String get opdStatusInLabLabel => 'In lab';
+
+  @override
+  String get opdStatusResultsReadyLabel => 'Results ready';
+
+  @override
+  String get opdStatusImagingPendingLabel => 'Imaging pending';
+
+  @override
+  String get opdStatusReportPendingLabel => 'Report pending';
+
+  @override
+  String get opdStatusReportReadyLabel => 'Report ready';
+
+  @override
+  String get opdStatusLabAndImagingPendingLabel => 'Lab & imaging pending';
+
+  @override
+  String get opdStatusPharmacyPendingLabel => 'Pharmacy pending';
+
+  @override
+  String get opdStatusDispensingLabel => 'Dispensing';
+
+  @override
+  String get opdStatusMedicinesDispensedLabel => 'Medicines dispensed';
+
+  @override
+  String get opdStatusDecisionNeededLabel => 'Decision needed';
+
+  @override
+  String get opdStatusAdmissionPendingLabel => 'Admission pending';
+
+  @override
+  String get opdStatusAdmittedLabel => 'Admitted';
+
+  @override
+  String get opdStatusDischargedLabel => 'Discharged';
+
+  @override
+  String get opdNextCollectSampleLabel => 'Collect sample';
+
+  @override
+  String get opdNextProcessLabLabel => 'Process lab';
+
+  @override
+  String get opdNextReviewResultsLabel => 'Review results';
+
+  @override
+  String get opdNextLabHandoffLabel => 'Lab handoff';
+
+  @override
+  String get opdNextPerformImagingLabel => 'Perform imaging';
+
+  @override
+  String get opdNextCompleteImagingReportLabel => 'Complete imaging report';
+
+  @override
+  String get opdNextReviewReportLabel => 'Review report';
+
+  @override
+  String get opdNextImagingHandoffLabel => 'Imaging handoff';
+
+  @override
+  String get opdNextDiagnosticsPendingLabel => 'Diagnostics pending';
+
+  @override
+  String get opdNextDispenseMedicineLabel => 'Dispense medicine';
+
+  @override
+  String get opdNextPharmacyHandoffLabel => 'Pharmacy handoff';
+
+  @override
+  String get opdNextDispositionLabel => 'Disposition';
+
+  @override
+  String get opdNextAdmissionHandoffLabel => 'Admission handoff';
+
+
+  @override
   String get opdSearchLabel => 'Search OPD';
 
   @override
-  String get opdSearchHint => 'Search patient, identifier, or provider';
+  String get opdSearchHint => 'Search patient, identifier, or assigned staff';
 
   @override
   String get opdApplyFiltersAction => 'Apply filters';
@@ -741,10 +877,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdTableDescription =>
-      'Track arrivals, queue status, billing state, provider ownership, and next steps.';
+      'Track arrivals, queue status, billing state, assigned staff, and next steps.';
 
   @override
-  String get opdProviderReadinessTitle => 'Provider readiness';
+  String get opdProviderReadinessTitle => 'Staff readiness';
 
   @override
   String get opdActivityTitle => 'Recent OPD activity';
@@ -782,11 +918,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select an OPD encounter to review actions and related records.';
 
   @override
-  String get opdNoProvidersTitle => 'No providers ready';
+  String get opdNoProvidersTitle => 'No staff ready';
 
   @override
   String get opdNoProvidersBody =>
-      'Provider schedules and available slots will appear here.';
+      'Staff schedules and available slots will appear here.';
 
   @override
   String get opdNoActivityTitle => 'No recent activity';
@@ -824,7 +960,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdWaitingTimeColumnLabel => 'Wait time';
 
   @override
-  String get opdProviderColumnLabel => 'Provider';
+  String get opdProviderColumnLabel => 'Assigned staff';
 
   @override
   String get opdPayerBillingColumnLabel => 'Payer / billing';
@@ -953,15 +1089,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start or update an OPD encounter first.';
 
   @override
-  String get opdSearchProviderLabel => 'Search provider';
+  String get opdSearchProviderLabel => 'Search doctor';
 
   @override
   String get opdSearchProviderHelper =>
-      'This provider will handle the patient.';
+      'This doctor will handle the patient.';
 
   @override
   String get opdNoProvidersHelper =>
-      'No registered providers were found. Check doctor setup or provider permissions.';
+      'No registered doctors were found. Check doctor setup or staff permissions.';
 
   @override
   String get opdRegisterNewPatientLabel => 'Register a new patient';
@@ -979,7 +1115,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdGenderLabel => 'Gender';
 
   @override
-  String get opdProviderIdLabel => 'Provider ID';
+  String get opdProviderIdLabel => 'Staff ID';
 
   @override
   String get opdConsultationFeeLabel => 'Consultation fee';
@@ -3598,7 +3734,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalPrescriptionRemoveMedicineAction => 'Remove medicine';
 
   @override
-  String get clinicalRequestProcedureAction => 'Add procedure';
+  String get clinicalRequestProcedureAction => 'Record procedure';
 
   @override
   String get clinicalProcedureDialogHelp =>

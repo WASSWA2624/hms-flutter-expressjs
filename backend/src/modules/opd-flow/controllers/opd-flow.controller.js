@@ -56,6 +56,17 @@ const listOpdFlows = asyncHandler(async (req, res) => {
   return sendPaginated(res, 'messages.opd_flow.list.success', result.items, result.pagination);
 });
 
+const getOpdFlowSummaryCounts = asyncHandler(async (req, res) => {
+  const counts = await opdFlowService.getOpdFlowSummaryCounts(
+    {
+      tenant_id: req.query?.tenant_id || req.user?.tenant_id,
+      facility_id: req.query?.facility_id || req.user?.facility_id
+    },
+    buildAuditContext(req)
+  );
+  return sendSuccess(res, 200, 'messages.opd_flow.summary.success', counts);
+});
+
 const getOpdFlowById = asyncHandler(async (req, res) => {
   const flow = await opdFlowService.getOpdFlowById(req.params.id);
   return sendSuccess(res, 200, 'messages.opd_flow.get.success', flow);
@@ -125,6 +136,7 @@ const correctStage = asyncHandler(async (req, res) => {
 
 module.exports = {
   listOpdFlows,
+  getOpdFlowSummaryCounts,
   resolveLegacyRoute,
   getOpdFlowById,
   startOpdFlow,

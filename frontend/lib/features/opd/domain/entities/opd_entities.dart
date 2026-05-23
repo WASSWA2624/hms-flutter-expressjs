@@ -58,18 +58,21 @@ final class OpdFlowQuery {
   const OpdFlowQuery({
     this.search = '',
     this.stage,
+    this.encounterType = 'OPD',
     this.queueScope = 'ALL',
     this.pageRequest = const AppPageRequest(pageSize: 12),
   });
 
   final String search;
   final String? stage;
+  final String encounterType;
   final String queueScope;
   final AppPageRequest pageRequest;
 
   OpdFlowQuery copyWith({
     String? search,
     String? stage,
+    String? encounterType,
     String? queueScope,
     AppPageRequest? pageRequest,
     bool clearStage = false,
@@ -77,6 +80,7 @@ final class OpdFlowQuery {
     return OpdFlowQuery(
       search: search ?? this.search,
       stage: clearStage ? null : stage ?? this.stage,
+      encounterType: encounterType ?? this.encounterType,
       queueScope: queueScope ?? this.queueScope,
       pageRequest: pageRequest ?? this.pageRequest,
     );
@@ -326,10 +330,17 @@ final class OpdFlowSummary {
     this.arrivalMode,
     this.stage,
     this.nextStep,
+    this.displayCode,
+    this.displayStatus,
+    this.displayNextStep,
     this.patientDisplayName,
     this.patientIdentifier,
     this.patientPhone,
     this.providerDisplayName,
+    this.assignedStaffDisplayName,
+    this.assignedStaffRole,
+    this.assignedStaffType,
+    this.assignedStaffLabel,
     this.appointmentId,
     this.visitQueueId,
     this.triageLevel,
@@ -363,10 +374,17 @@ final class OpdFlowSummary {
   final String? arrivalMode;
   final String? stage;
   final String? nextStep;
+  final String? displayCode;
+  final String? displayStatus;
+  final String? displayNextStep;
   final String? patientDisplayName;
   final String? patientIdentifier;
   final String? patientPhone;
   final String? providerDisplayName;
+  final String? assignedStaffDisplayName;
+  final String? assignedStaffRole;
+  final String? assignedStaffType;
+  final String? assignedStaffLabel;
   final String? appointmentId;
   final String? visitQueueId;
   final String? triageLevel;
@@ -415,10 +433,17 @@ final class OpdFlowSummary {
     String? arrivalMode,
     String? stage,
     String? nextStep,
+    String? displayCode,
+    String? displayStatus,
+    String? displayNextStep,
     String? patientDisplayName,
     String? patientIdentifier,
     String? patientPhone,
     String? providerDisplayName,
+    String? assignedStaffDisplayName,
+    String? assignedStaffRole,
+    String? assignedStaffType,
+    String? assignedStaffLabel,
     String? appointmentId,
     String? visitQueueId,
     String? triageLevel,
@@ -452,10 +477,18 @@ final class OpdFlowSummary {
       arrivalMode: arrivalMode ?? this.arrivalMode,
       stage: stage ?? this.stage,
       nextStep: nextStep ?? this.nextStep,
+      displayCode: displayCode ?? this.displayCode,
+      displayStatus: displayStatus ?? this.displayStatus,
+      displayNextStep: displayNextStep ?? this.displayNextStep,
       patientDisplayName: patientDisplayName ?? this.patientDisplayName,
       patientIdentifier: patientIdentifier ?? this.patientIdentifier,
       patientPhone: patientPhone ?? this.patientPhone,
       providerDisplayName: providerDisplayName ?? this.providerDisplayName,
+      assignedStaffDisplayName:
+          assignedStaffDisplayName ?? this.assignedStaffDisplayName,
+      assignedStaffRole: assignedStaffRole ?? this.assignedStaffRole,
+      assignedStaffType: assignedStaffType ?? this.assignedStaffType,
+      assignedStaffLabel: assignedStaffLabel ?? this.assignedStaffLabel,
       appointmentId: appointmentId ?? this.appointmentId,
       visitQueueId: visitQueueId ?? this.visitQueueId,
       triageLevel: triageLevel ?? this.triageLevel,
@@ -789,7 +822,7 @@ final class OpdProviderOption {
   final String? consultationCurrency;
 
   String get displayTitle {
-    return _firstNonEmpty(<String?>[displayName]) ?? 'Unknown provider';
+    return _firstNonEmpty(<String?>[displayName]) ?? 'Assigned staff unknown';
   }
 }
 
@@ -815,6 +848,39 @@ final class OpdAvailabilitySlot {
 }
 
 @immutable
+final class OpdFlowAggregateCounts {
+  const OpdFlowAggregateCounts({
+    this.allPatients = 0,
+    this.allOpdPatients = 0,
+    this.activeOpd = 0,
+    this.vitalsNeeded = 0,
+    this.doctorNeeded = 0,
+    this.withDoctor = 0,
+    this.labPending = 0,
+    this.imagingPending = 0,
+    this.pharmacyPending = 0,
+    this.decisionNeeded = 0,
+    this.admissionPending = 0,
+    this.dischargedToday = 0,
+  });
+
+  static const OpdFlowAggregateCounts empty = OpdFlowAggregateCounts();
+
+  final int allPatients;
+  final int allOpdPatients;
+  final int activeOpd;
+  final int vitalsNeeded;
+  final int doctorNeeded;
+  final int withDoctor;
+  final int labPending;
+  final int imagingPending;
+  final int pharmacyPending;
+  final int decisionNeeded;
+  final int admissionPending;
+  final int dischargedToday;
+}
+
+@immutable
 final class OpdWorkspaceState {
   const OpdWorkspaceState({
     required this.appointmentQuery,
@@ -825,6 +891,7 @@ final class OpdWorkspaceState {
     required this.queueEntries,
     required this.flows,
     required this.triageQueue,
+    this.summaryCounts = OpdFlowAggregateCounts.empty,
     this.clinicalAlertThresholds = const <OpdClinicalAlertThreshold>[],
     this.providerSchedules = const <OpdProviderSchedule>[],
     this.availabilitySlots = const <OpdAvailabilitySlot>[],
@@ -871,6 +938,7 @@ final class OpdWorkspaceState {
   final AppPage<OpdQueueEntry> queueEntries;
   final AppPage<OpdFlowSummary> flows;
   final AppPage<OpdFlowSummary> triageQueue;
+  final OpdFlowAggregateCounts summaryCounts;
   final List<OpdClinicalAlertThreshold> clinicalAlertThresholds;
   final List<OpdProviderSchedule> providerSchedules;
   final List<OpdAvailabilitySlot> availabilitySlots;
@@ -924,6 +992,7 @@ final class OpdWorkspaceState {
     AppPage<OpdQueueEntry>? queueEntries,
     AppPage<OpdFlowSummary>? flows,
     AppPage<OpdFlowSummary>? triageQueue,
+    OpdFlowAggregateCounts? summaryCounts,
     List<OpdClinicalAlertThreshold>? clinicalAlertThresholds,
     List<OpdProviderSchedule>? providerSchedules,
     List<OpdAvailabilitySlot>? availabilitySlots,
@@ -947,6 +1016,7 @@ final class OpdWorkspaceState {
       queueEntries: queueEntries ?? this.queueEntries,
       flows: flows ?? this.flows,
       triageQueue: triageQueue ?? this.triageQueue,
+      summaryCounts: summaryCounts ?? this.summaryCounts,
       clinicalAlertThresholds:
           clinicalAlertThresholds ?? this.clinicalAlertThresholds,
       providerSchedules: providerSchedules ?? this.providerSchedules,
