@@ -6561,14 +6561,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labDescription =>
-      'Manage lab catalog, order queues, samples, result release, QC, and clinician review handoff.';
+      'Manage lab requests, result entry, backend interpretation, verification, reference ranges, reports, and clinician handoff.';
 
   @override
   String get labLoadingTitle => 'Loading laboratory';
 
   @override
   String get labLoadingBody =>
-      'Loading lab queues, catalog, samples, results, and QC logs.';
+      'Loading lab queues, catalog configuration, results, and QC logs.';
 
   @override
   String get labLiveStatus => 'Live sync';
@@ -6589,19 +6589,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labTotalOrdersSummaryLabel => 'Total orders';
 
   @override
-  String get labWaitingSampleSummaryLabel => 'Waiting sample';
+  String get labWaitingSampleSummaryLabel => 'Awaiting results';
 
   @override
   String get labProcessingSummaryLabel => 'Processing';
 
   @override
-  String get labResultPendingSummaryLabel => 'Result pending';
+  String get labResultPendingSummaryLabel => 'Pending verification';
 
   @override
   String get labCriticalSummaryLabel => 'Critical';
 
   @override
-  String get labCompletedSummaryLabel => 'Released';
+  String get labCompletedSummaryLabel => 'Verified';
 
   @override
   String get labFiltersLabel => 'Laboratory filters';
@@ -6620,19 +6620,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labScopeAll => 'All';
 
   @override
-  String get labScopeCollection => 'Waiting sample';
+  String get labScopeCollection => 'Awaiting results';
 
   @override
   String get labScopeProcessing => 'Processing';
 
   @override
-  String get labScopeResults => 'Result pending';
+  String get labScopeResults => 'Pending verification';
 
   @override
   String get labScopeCritical => 'Critical';
 
   @override
-  String get labScopeCompleted => 'Released';
+  String get labScopeCompleted => 'Verified';
 
   @override
   String get labScopeCancelled => 'Cancelled';
@@ -6642,7 +6642,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labWorklistDescription =>
-      'Actionable lab orders with sample, processing, result, and release state.';
+      'Actionable lab orders with requested tests, result entry state, verification state, and report readiness.';
 
   @override
   String get labNoOrdersTitle => 'No lab orders';
@@ -6661,7 +6661,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labTestsColumnLabel => 'Tests';
 
   @override
-  String get labSampleColumnLabel => 'Sample';
+  String get labSampleColumnLabel => 'Entry status';
 
   @override
   String get labResultColumnLabel => 'Result';
@@ -6688,14 +6688,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labDetailLoadingBody =>
-      'Loading samples, results, timeline, and available workflow actions.';
+      'Loading order details, ordered tests, results, timeline, and available actions.';
 
   @override
   String get labNoSelectionTitle => 'Select an order';
 
   @override
   String get labNoSelectionBody =>
-      'Choose a lab order from the queue to collect samples, process results, and release reports.';
+      'Choose a lab order from the queue to enter, verify, and report results.';
 
   @override
   String get labPatientContextLabel => 'Lab patient context';
@@ -6710,7 +6710,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labOrderedAtFieldLabel => 'Ordered at';
 
   @override
-  String get labItemsSectionTitle => 'Order items';
+  String get labItemsSectionTitle => 'Ordered tests';
 
   @override
   String get labSamplesSectionTitle => 'Samples';
@@ -6725,7 +6725,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labNoSamplesLabel => 'No samples recorded';
 
   @override
-  String get labNoResultsLabel => 'No released results';
+  String get labNoResultsLabel => 'No verified results';
 
   @override
   String get labNoTimelineLabel => 'No timeline entries';
@@ -6746,7 +6746,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labRejectSampleAction => 'Reject sample';
 
   @override
-  String get labReleaseResultAction => 'Release result';
+  String get labReleaseResultAction => 'Verify result';
 
   @override
   String get labReverseWorkflowAction => 'Reverse step';
@@ -6829,7 +6829,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labRejectReasonLabel => 'Rejection reason';
 
   @override
-  String get labReleaseDialogTitle => 'Release lab result';
+  String get labReleaseDialogTitle => 'Verify lab result';
 
   @override
   String get labOrderItemFieldLabel => 'Order item';
@@ -6844,7 +6844,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labResultUnitLabel => 'Result unit';
 
   @override
-  String get labResultTextLabel => 'Result comments';
+  String get labResultTextLabel => 'Result text';
 
   @override
   String get labReportedAtInputLabel => 'Reported at';
@@ -6880,7 +6880,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labStatusInProcess => 'In process';
 
   @override
-  String get labStatusCompleted => 'Released';
+  String get labStatusCompleted => 'Verified';
 
   @override
   String get labStatusCancelled => 'Cancelled';
@@ -6907,13 +6907,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labNextActionCancelled => 'Order cancelled';
 
   @override
-  String get labNextActionCollect => 'Collect sample';
+  String get labNextActionCollect => 'Enter result';
 
   @override
-  String get labNextActionReceive => 'Receive sample';
+  String get labNextActionReceive => 'Enter result';
 
   @override
-  String get labNextActionRelease => 'Enter and release result';
+  String get labNextActionRelease => 'Verify result';
 
   @override
   String get labNextActionReviewCritical => 'Escalate critical result';
@@ -6946,10 +6946,226 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labReportRangeLabel => 'Reference range';
 
   @override
-  String get labReportVerifiedLabel => 'Released';
+  String get labReportVerifiedLabel => 'Verified';
 
   @override
   String get labReportFooter => 'Generated from laboratory workflow data.';
+
+  @override
+  String get commonSelectActionLabel => 'Select';
+
+  @override
+  String get commonSaveActionLabel => 'Save';
+
+  @override
+  String get labOrdersViewAction => 'Orders view';
+
+  @override
+  String get labPatientsViewAction => 'Patients view';
+
+  @override
+  String get labReferenceRangesAction => 'Reference ranges';
+
+  @override
+  String get labPatientsSummaryLabel => 'Patients';
+
+  @override
+  String get labPatientsAwaitingResultsSummaryLabel => 'Patients awaiting results';
+
+  @override
+  String get labPatientsProcessingSummaryLabel => 'Patients in processing';
+
+  @override
+  String get labPatientsPendingVerificationSummaryLabel => 'Patients pending verification';
+
+  @override
+  String get labPatientsCriticalSummaryLabel => 'Patients with critical results';
+
+  @override
+  String get labPatientsCompletedSummaryLabel => 'Patients completed';
+
+  @override
+  String get labPatientsWorklistTitle => 'Patient lab worklist';
+
+  @override
+  String get labPatientsWorklistDescription => 'Patients with active lab orders and result-entry work.';
+
+  @override
+  String get labNoPatientsTitle => 'No patients in lab worklist';
+
+  @override
+  String get labNoPatientsBody => 'Adjust the queue filter or search term to find patient lab work.';
+
+  @override
+  String get labOrdersColumnLabel => 'Orders';
+
+  @override
+  String get labPatientIdFieldLabel => 'Patient ID';
+
+  @override
+  String get labVerifyAllAction => 'Verify all';
+
+  @override
+  String get labEntryStatusColumnLabel => 'Entry status';
+
+  @override
+  String get labSelectOrderDialogTitle => 'Select lab order';
+
+  @override
+  String get labSelectOrderDialogBody => 'This patient has multiple active lab orders. Select the order to review.';
+
+  @override
+  String get labNoOrderItemsLabel => 'No ordered tests found';
+
+  @override
+  String get labTestCodeLabel => 'Test code';
+
+  @override
+  String get labVerifyResultAction => 'Verify result';
+
+  @override
+  String get labRejectOrderItemAction => 'Reject test';
+
+  @override
+  String get labResultFlagLabel => 'Flag';
+
+  @override
+  String get labVerifyResultDialogTitle => 'Enter and verify result';
+
+  @override
+  String get labNumericRangeValidationMessage => 'Enter a valid number.';
+
+  @override
+  String get labVerifyAllDialogTitle => 'Verify entered results';
+
+  @override
+  String get labRejectOrderItemDialogTitle => 'Reject requested test';
+
+  @override
+  String get labRejectReasonNotPerformedHere => 'Test not performed here';
+
+  @override
+  String get labRejectReasonInsufficientInfo => 'Insufficient information';
+
+  @override
+  String get labRejectReasonInvalidRequest => 'Invalid request';
+
+  @override
+  String get labRejectReasonOther => 'Other reason';
+
+  @override
+  String get labRejectCustomReasonLabel => 'Custom reason';
+
+  @override
+  String get labReferenceRangesDialogTitle => 'Lab test configuration';
+
+  @override
+  String get labReferenceRangesDialogBody => 'Update test details, units, qualitative options, and reference ranges used by backend result interpretation.';
+
+  @override
+  String get labConfigureTestAction => 'Configure test';
+
+  @override
+  String get labQcLogsAction => 'QC logs';
+
+  @override
+  String get labConfigureTestDialogTitle => 'Configure lab test';
+
+  @override
+  String get labTestNameLabel => 'Test name';
+
+  @override
+  String get labCategoryLabel => 'Category';
+
+  @override
+  String get labSpecimenTypeLabel => 'Specimen type';
+
+  @override
+  String get labResultKindLabel => 'Result kind';
+
+  @override
+  String get labResultKindNumeric => 'Numeric';
+
+  @override
+  String get labResultKindQualitative => 'Qualitative';
+
+  @override
+  String get labResultKindText => 'Text';
+
+  @override
+  String get labDefaultUnitLabel => 'Default unit';
+
+  @override
+  String get labUnitOptionsLabel => 'Unit options';
+
+  @override
+  String get labCommaSeparatedHelper => 'Separate multiple values with commas.';
+
+  @override
+  String get labQualitativeOptionsLabel => 'Qualitative result options';
+
+  @override
+  String get labGenderApplicabilityLabel => 'Gender applicability';
+
+  @override
+  String get labGenderAnyLabel => 'Any';
+
+  @override
+  String get labGenderMaleLabel => 'Male';
+
+  @override
+  String get labGenderFemaleLabel => 'Female';
+
+  @override
+  String get labAgeMinLabel => 'Age min';
+
+  @override
+  String get labAgeMaxLabel => 'Age max';
+
+  @override
+  String get labAgeUnitLabel => 'Age unit';
+
+  @override
+  String get labAgeUnitDays => 'Days';
+
+  @override
+  String get labAgeUnitMonths => 'Months';
+
+  @override
+  String get labAgeUnitYears => 'Years';
+
+  @override
+  String get labNormalMinLabel => 'Normal min';
+
+  @override
+  String get labNormalMaxLabel => 'Normal max';
+
+  @override
+  String get labCriticalMinLabel => 'Critical min';
+
+  @override
+  String get labCriticalMaxLabel => 'Critical max';
+
+  @override
+  String get labReferenceTextLabel => 'Reference text';
+
+  @override
+  String get labStatusPendingResults => 'Pending results';
+
+  @override
+  String get labStatusVerified => 'Verified';
+
+  @override
+  String get labStatusLow => 'Low';
+
+  @override
+  String get labStatusHigh => 'High';
+
+  @override
+  String get labNextActionVerify => 'Verify result';
+
+  @override
+  String get labNextActionEnterResult => 'Enter result';
 
   @override
   String get labGapBillingTitle => 'Payment and authorization gate';

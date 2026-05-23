@@ -120,7 +120,11 @@ final class LabWorkspaceController
     return _refreshWorkbench(showLoading: true);
   }
 
-  Future<AppFailure?> selectOrder(LabOrderSummary order) async {
+  Future<AppFailure?> selectOrder(LabOrderSummary order) {
+    return selectOrderById(order.apiId);
+  }
+
+  Future<AppFailure?> selectOrderById(String orderId) async {
     final LabWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
@@ -128,7 +132,7 @@ final class LabWorkspaceController
 
     _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
     final Result<LabOrderWorkflow> result = await _repository.loadOrderWorkflow(
-      order.apiId,
+      orderId,
     );
     return result.when(
       success: (LabOrderWorkflow workflow) {
@@ -211,7 +215,60 @@ final class LabWorkspaceController
     String itemId,
     Map<String, Object?> payload,
   ) {
-    return _mutateWorkflow(() => _repository.releaseOrderItem(itemId, payload));
+    return verifyOrderItem(itemId, payload);
+  }
+
+  Future<AppFailure?> verifyOrderItem(
+    String itemId,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateWorkflow(() => _repository.verifyOrderItem(itemId, payload));
+  }
+
+  Future<AppFailure?> verifyAllResults(
+    String orderId,
+    List<Map<String, Object?>> results,
+  ) {
+    return _mutateWorkflow(() => _repository.verifyOrderResults(orderId, results));
+  }
+
+  Future<AppFailure?> rejectOrderItem(
+    String itemId,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateWorkflow(() => _repository.rejectOrderItem(itemId, payload));
+  }
+
+  Future<AppFailure?> updateLabTest(
+    String testId,
+    Map<String, Object?> payload,
+  ) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<LabCatalogItem> result = await _repository.updateLabTest(testId, payload);
+    return result.when(
+      success: (LabCatalogItem updated) async {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          final List<LabCatalogItem> tests = <LabCatalogItem>[
+            for (final LabCatalogItem item in latest.catalogTests)
+              item.id == updated.id || item.apiId == updated.apiId ? updated : item,
+          ];
+          _emit(latest.copyWith(catalogTests: tests, isSaving: false));
+        }
+        return refresh();
+      },
+      failure: (AppFailure failure) {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
   }
 
   Future<AppFailure?> reverseSelected(Map<String, Object?> payload) {

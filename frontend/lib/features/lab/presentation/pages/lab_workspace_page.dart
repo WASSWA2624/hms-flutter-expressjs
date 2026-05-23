@@ -115,8 +115,8 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       secondaryActions: <Widget>[
         AppButton.secondary(
           label: state.query.view == LabWorkbenchView.patients
-              ? 'Orders view'
-              : 'Patients view',
+              ? l10n.labOrdersViewAction
+              : l10n.labPatientsViewAction,
           leadingIcon: Icons.swap_horiz_outlined,
           onPressed: () => controller.applyView(
             state.query.view == LabWorkbenchView.patients
@@ -126,9 +126,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         ),
         if (canMutate)
           AppButton.secondary(
-            label: l10n.labRecordQcAction,
-            leadingIcon: Icons.fact_check_outlined,
-            onPressed: () => _openQcDialog(context, state),
+            label: l10n.labReferenceRangesAction,
+            leadingIcon: Icons.tune_outlined,
+            onPressed: () => _openTestCatalogDialog(context, state),
           ),
         AppIconButton(
           icon: Icons.refresh,
@@ -148,7 +148,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           _summaryCard(
             context,
             label: state.query.view == LabWorkbenchView.patients
-                ? 'Lab patients'
+                ? l10n.labPatientsSummaryLabel
                 : l10n.labTotalOrdersSummaryLabel,
             value: state.summary.totalForView(state.query.view),
             icon: Icons.assignment_outlined,
@@ -159,7 +159,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           _summaryCard(
             context,
             label: state.query.view == LabWorkbenchView.patients
-                ? 'Patients waiting sample'
+                ? l10n.labPatientsAwaitingResultsSummaryLabel
                 : l10n.labWaitingSampleSummaryLabel,
             value: state.summary.collectionForView(state.query.view),
             icon: Icons.biotech_outlined,
@@ -170,7 +170,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           _summaryCard(
             context,
             label: state.query.view == LabWorkbenchView.patients
-                ? 'Patients processing'
+                ? l10n.labPatientsProcessingSummaryLabel
                 : l10n.labProcessingSummaryLabel,
             value: state.summary.processingForView(state.query.view),
             icon: Icons.sync_outlined,
@@ -181,7 +181,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           _summaryCard(
             context,
             label: state.query.view == LabWorkbenchView.patients
-                ? 'Patients with results pending'
+                ? l10n.labPatientsPendingVerificationSummaryLabel
                 : l10n.labResultPendingSummaryLabel,
             value: state.summary.resultsForView(state.query.view),
             icon: Icons.pending_actions_outlined,
@@ -192,7 +192,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           _summaryCard(
             context,
             label: state.query.view == LabWorkbenchView.patients
-                ? 'Critical patients'
+                ? l10n.labPatientsCriticalSummaryLabel
                 : l10n.labCriticalSummaryLabel,
             value: state.summary.criticalForView(state.query.view),
             icon: Icons.priority_high_outlined,
@@ -203,7 +203,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
           _summaryCard(
             context,
             label: state.query.view == LabWorkbenchView.patients
-                ? 'Completed patients'
+                ? l10n.labPatientsCompletedSummaryLabel
                 : l10n.labCompletedSummaryLabel,
             value: state.summary.completedForView(state.query.view),
             icon: Icons.verified_outlined,
@@ -265,10 +265,10 @@ class _LabWorklistPanel extends ConsumerWidget {
 
     return AppWorkspaceDetailPanel(
       title: state.query.view == LabWorkbenchView.patients
-          ? 'Lab patients'
+          ? l10n.labPatientsWorklistTitle
           : l10n.labWorklistTitle,
       description: state.query.view == LabWorkbenchView.patients
-          ? 'One row per patient with active lab orders, tests, samples, results, and next action.'
+          ? l10n.labPatientsWorklistDescription
           : l10n.labWorklistDescription,
       child: AppListTable<LabOrderSummary>(
         page: state.worklist,
@@ -319,10 +319,10 @@ class _LabWorklistPanel extends ConsumerWidget {
         },
         emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
           title: state.query.view == LabWorkbenchView.patients
-              ? 'No lab patients'
+              ? l10n.labNoPatientsTitle
               : l10n.labNoOrdersTitle,
           body: state.query.view == LabWorkbenchView.patients
-              ? 'No patients have lab work matching the current filters.'
+              ? l10n.labNoPatientsBody
               : l10n.labNoOrdersBody,
           icon: Icons.science_outlined,
         ),
@@ -337,7 +337,7 @@ class _LabWorklistPanel extends ConsumerWidget {
           ),
           AppListTableColumn<LabOrderSummary>(
             label: state.query.view == LabWorkbenchView.patients
-                ? 'Orders'
+                ? l10n.labOrdersColumnLabel
                 : l10n.labOrderColumnLabel,
             sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
                 appListTableCompareText(left.apiId, right.apiId),
@@ -368,12 +368,15 @@ class _LabWorklistPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<LabOrderSummary>(
-            label: l10n.labSampleColumnLabel,
+            label: l10n.labEntryStatusColumnLabel,
             sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-                appListTableCompareNumber(left.sampleCount, right.sampleCount),
+                appListTableCompareNumber(
+                  left.verifiableItemCount,
+                  right.verifiableItemCount,
+                ),
             cellBuilder: (BuildContext context, LabOrderSummary item) {
               return AppWorkspaceStatusBadge(
-                status: _sampleStatus(context, item),
+                status: _entryStatus(context, item),
               );
             },
           ),
@@ -429,7 +432,7 @@ class _LabWorklistPanel extends ConsumerWidget {
                       status: _orderStatus(context, item.status),
                     ),
                     AppWorkspaceStatusBadge(
-                      status: _sampleStatus(context, item),
+                      status: _entryStatus(context, item),
                     ),
                     AppWorkspaceStatusBadge(
                       status: _resultStatus(context, item),
@@ -492,9 +495,18 @@ class _LabDetailPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final LabOrderWorkflow? workflow = state.selectedWorkflow;
+    final LabWorkspaceState currentState = ref
+            .watch(labWorkspaceControllerProvider)
+            .asData
+            ?.value
+            .when(
+              success: (LabWorkspaceState value) => value,
+              failure: (_) => state,
+            ) ??
+        state;
+    final LabOrderWorkflow? workflow = currentState.selectedWorkflow;
 
-    if (state.isRefreshingDetail) {
+    if (currentState.isRefreshingDetail) {
       return AppWorkspaceDetailPanel(
         title: l10n.labDetailTitle,
         child: AppWorkspaceStatePanel.loading(
@@ -518,41 +530,18 @@ class _LabDetailPanel extends ConsumerWidget {
     }
 
     final LabOrderSummary order = workflow.order;
-    final LabOrderItem? releasableItem = workflow.firstReleasableItem;
-    final LabSample? receivableSample = workflow.firstReceivableSample;
-    final LabSample? rejectableSample = workflow.firstRejectableSample;
+    final String? encounterId = order.encounterId;
+    final String? orderedAtLabel = _optionalDateTimeLabel(context, order.orderedAt);
+    final bool hasVerifiableItems = workflow.verifiableItems.isNotEmpty;
 
     return AppWorkspaceDetailPanel(
       title: l10n.labDetailTitle,
       actions: <Widget>[
-        if (canMutate && workflow.nextActions.canCollect)
-          AppButton.secondary(
-            label: l10n.labCollectSampleAction,
-            leadingIcon: Icons.qr_code_scanner_outlined,
-            onPressed: () => _openCollectDialog(context, workflow),
-          ),
-        if (canMutate &&
-            workflow.nextActions.canReceiveSample &&
-            receivableSample != null)
-          AppButton.secondary(
-            label: l10n.labReceiveSampleAction,
-            leadingIcon: Icons.inventory_2_outlined,
-            onPressed: () => _openReceiveDialog(context, workflow),
-          ),
-        if (canMutate &&
-            workflow.nextActions.canReleaseResult &&
-            releasableItem != null)
+        if (canMutate && hasVerifiableItems)
           AppButton.primary(
-            label: l10n.labReleaseResultAction,
+            label: l10n.labVerifyAllAction,
             leadingIcon: Icons.verified_outlined,
-            onPressed: () => _openReleaseDialog(context, workflow),
-          ),
-        if (canMutate && rejectableSample != null)
-          AppIconButton(
-            icon: Icons.block_outlined,
-            semanticLabel: l10n.labRejectSampleAction,
-            tooltip: l10n.labRejectSampleAction,
-            onPressed: () => _openRejectDialog(context, workflow),
+            onPressed: () => _openVerifyAllDialog(context, workflow),
           ),
         if (canMutate && workflow.nextActions.canReverseWorkflow)
           AppIconButton(
@@ -567,8 +556,12 @@ class _LabDetailPanel extends ConsumerWidget {
         children: <Widget>[
           AppWorkspacePatientContextHeader(
             patientName: order.patientDisplayName ?? l10n.profileUnknownValue,
-            patientNumber: l10n.profileUnknownValue,
+            patientNumber: order.patientId ?? '',
+            patientNumberLabel: l10n.labPatientIdFieldLabel,
             semanticLabel: l10n.labPatientContextLabel,
+            copyPatientNumberTooltip: l10n.copyIdentifierAction,
+            copyPatientNumberMessage: l10n.identifierCopiedMessage,
+            showPatientNumberCopyIcon: order.patientId != null && order.patientId!.trim().isNotEmpty,
             status: _orderStatus(context, order.status),
             alerts: <AppWorkspaceStatus>[
               if (order.hasCriticalResult)
@@ -577,7 +570,7 @@ class _LabDetailPanel extends ConsumerWidget {
                   tone: AppWorkspaceStatusTone.error,
                   icon: Icons.priority_high_outlined,
                 ),
-              if (order.hasRejectedSample)
+              if (order.hasRejectedItem)
                 AppWorkspaceStatus(
                   label: l10n.labStatusRejected,
                   tone: AppWorkspaceStatusTone.error,
@@ -587,25 +580,27 @@ class _LabDetailPanel extends ConsumerWidget {
             fields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.labOrderFieldLabel,
-                value: order.displayId ?? '',
+                value: order.displayId ?? order.id,
                 icon: Icons.tag_outlined,
                 copyable: true,
                 copyTooltip: l10n.copyIdentifierAction,
                 copiedMessage: l10n.identifierCopiedMessage,
               ),
-              AppWorkspacePatientContextField(
-                label: l10n.labEncounterFieldLabel,
-                value: '',
-                icon: Icons.medical_information_outlined,
-                copyable: true,
-                copyTooltip: l10n.opdCopyEncounterIdAction,
-                copiedMessage: l10n.opdEncounterIdCopiedMessage,
-              ),
-              AppWorkspacePatientContextField(
-                label: l10n.labOrderedAtFieldLabel,
-                value: _dateTimeLabel(context, order.orderedAt),
-                icon: Icons.event_outlined,
-              ),
+              if (encounterId != null && encounterId.trim().isNotEmpty)
+                AppWorkspacePatientContextField(
+                  label: l10n.labEncounterFieldLabel,
+                  value: encounterId,
+                  icon: Icons.medical_information_outlined,
+                  copyable: true,
+                  copyTooltip: l10n.opdCopyEncounterIdAction,
+                  copiedMessage: l10n.opdEncounterIdCopiedMessage,
+                ),
+              if (orderedAtLabel != null)
+                AppWorkspacePatientContextField(
+                  label: l10n.labOrderedAtFieldLabel,
+                  value: orderedAtLabel,
+                  icon: Icons.event_outlined,
+                ),
               AppWorkspacePatientContextField(
                 label: l10n.labTestsColumnLabel,
                 value: order.testsLabel ?? '',
@@ -615,20 +610,16 @@ class _LabDetailPanel extends ConsumerWidget {
           ),
           _LabDetailSection(
             title: l10n.labItemsSectionTitle,
-            child: _LabItemList(items: order.items),
+            child: _LabResultEntryList(
+              workflow: workflow,
+              canMutate: canMutate,
+            ),
           ),
-          _LabDetailSection(
-            title: l10n.labSamplesSectionTitle,
-            child: order.samples.isEmpty
-                ? _EmptyInlineText(text: l10n.labNoSamplesLabel)
-                : _LabSampleList(samples: order.samples),
-          ),
-          _LabDetailSection(
-            title: l10n.labResultsSectionTitle,
-            child: workflow.results.isEmpty
-                ? _EmptyInlineText(text: l10n.labNoResultsLabel)
-                : _LabResultList(results: workflow.results),
-          ),
+          if (workflow.results.isNotEmpty)
+            _LabDetailSection(
+              title: l10n.labResultsSectionTitle,
+              child: _LabResultList(results: workflow.results),
+            ),
           if (workflow.results.isNotEmpty)
             _LabDetailSection(
               title: l10n.labReportPreviewTitle,
@@ -656,7 +647,14 @@ Future<void> _openLabDetailDialog(
   final LabWorkspaceController controller = ref.read(
     labWorkspaceControllerProvider.notifier,
   );
-  final AppFailure? failure = await controller.selectOrder(order);
+  final String? selectedOrderId = await _resolveLabOrderSelection(
+    context,
+    order,
+  );
+  if (selectedOrderId == null || !context.mounted) {
+    return;
+  }
+  final AppFailure? failure = await controller.selectOrderById(selectedOrderId);
   if (context.mounted) {
     _showFailureIfNeeded(context, failure);
   }
@@ -679,6 +677,66 @@ Future<void> _openLabDetailDialog(
       content: _LabDetailPanel(state: state, canMutate: canMutate),
     ),
   );
+}
+
+Future<String?> _resolveLabOrderSelection(
+  BuildContext context,
+  LabOrderSummary order,
+) async {
+  if (!order.isPatientGroup || order.orderIds.length <= 1) {
+    return order.apiId;
+  }
+
+  return showAppDialog<String>(
+    context: context,
+    builder: (_) => _LabOrderSelectorDialog(order: order),
+  );
+}
+
+class _LabOrderSelectorDialog extends StatelessWidget {
+  const _LabOrderSelectorDialog({required this.order});
+
+  final LabOrderSummary order;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.labSelectOrderDialogTitle),
+      icon: const Icon(Icons.assignment_outlined),
+      scrollable: true,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.labSelectOrderDialogBody,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          for (var index = 0; index < order.orderIds.length; index += 1)
+            _CompactRecordRow(
+              title: index < order.orderDisplayIds.length
+                  ? order.orderDisplayIds[index]
+                  : order.orderIds[index],
+              subtitle: order.testsLabel,
+              trailing: AppButton.secondary(
+                label: l10n.commonSelectActionLabel,
+                onPressed: () => Navigator.of(context).pop(order.orderIds[index]),
+              ),
+            ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
 }
 
 LabWorkspaceState? _readLabState(WidgetRef ref) {
@@ -714,51 +772,121 @@ class _LabDetailSection extends StatelessWidget {
   }
 }
 
-class _LabItemList extends StatelessWidget {
-  const _LabItemList({required this.items});
+class _LabResultEntryList extends StatelessWidget {
+  const _LabResultEntryList({required this.workflow, required this.canMutate});
 
-  final List<LabOrderItem> items;
+  final LabOrderWorkflow workflow;
+  final bool canMutate;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final List<LabOrderItem> items = workflow.order.items;
+    if (items.isEmpty) {
+      return _EmptyInlineText(text: l10n.labNoOrderItemsLabel);
+    }
+
     return Column(
       children: <Widget>[
         for (final LabOrderItem item in items)
-          _CompactRecordRow(
-            title: item.displayTitle,
-            subtitle: item.displaySubtitle ?? item.apiId,
-            trailing: AppWorkspaceStatusBadge(
-              status: _orderStatus(context, item.status),
-            ),
-          ),
-        if (items.isEmpty) _EmptyInlineText(text: l10n.profileUnknownValue),
+          _LabResultEntryRow(item: item, canMutate: canMutate),
       ],
     );
   }
 }
 
-class _LabSampleList extends StatelessWidget {
-  const _LabSampleList({required this.samples});
+class _LabResultEntryRow extends StatelessWidget {
+  const _LabResultEntryRow({required this.item, required this.canMutate});
 
-  final List<LabSample> samples;
+  final LabOrderItem item;
+  final bool canMutate;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        for (final LabSample sample in samples)
-          _CompactRecordRow(
-            title: sample.displayId ?? context.l10n.profileUnknownValue,
-            subtitle: _joinDisplay(<String?>[
-              _dateTimeLabel(context, sample.collectedAt),
-              _dateTimeLabel(context, sample.receivedAt),
-            ]),
-            trailing: AppWorkspaceStatusBadge(
-              status: _statusBadge(context, sample.status),
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final String? subtitle = _joinDisplay(<String?>[
+      item.testCode == null ? null : '${l10n.labTestCodeLabel}: ${item.testCode}',
+      item.resultKind == null ? null : _apiLabel(item.resultKind!),
+      item.unit,
+      item.displayReferenceRange == null
+          ? null
+          : '${l10n.labReferenceRangeLabel}: ${item.displayReferenceRange}',
+      item.isRejected ? '${l10n.labRejectReasonLabel}: ${item.rejectionReason}' : null,
+    ]);
+    final String? resultValue = item.displayResultValue;
+    final AppWorkspaceStatus status = item.isRejected
+        ? AppWorkspaceStatus(
+            label: l10n.labStatusRejected,
+            tone: AppWorkspaceStatusTone.error,
+            icon: Icons.block_outlined,
+          )
+        : _statusBadge(context, item.effectiveResultStatus ?? item.status);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.displayTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (subtitle != null)
+                  Padding(
+                    padding: EdgeInsets.only(top: theme.spacing.xs),
+                    child: Text(
+                      subtitle,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                if (resultValue != null)
+                  Padding(
+                    padding: EdgeInsets.only(top: theme.spacing.xs),
+                    child: Text(
+                      '${l10n.labReportResultLabel}: $resultValue',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+              ],
             ),
           ),
-      ],
+          SizedBox(width: theme.spacing.sm),
+          Wrap(
+            spacing: theme.spacing.xs,
+            runSpacing: theme.spacing.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              AppWorkspaceStatusBadge(status: status),
+              if (canMutate && item.canVerify)
+                AppButton.secondary(
+                  label: l10n.labVerifyResultAction,
+                  leadingIcon: Icons.verified_outlined,
+                  onPressed: () => _openVerifyResultDialog(context, item),
+                ),
+              if (canMutate && item.canReject)
+                AppIconButton(
+                  icon: Icons.block_outlined,
+                  semanticLabel: l10n.labRejectOrderItemAction,
+                  tooltip: l10n.labRejectOrderItemAction,
+                  onPressed: () => _openRejectOrderItemDialog(context, item),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -931,15 +1059,23 @@ class _LabReportPreview extends StatelessWidget {
             children: <Widget>[
               _ReportLine(
                 label: l10n.labReportPatientLabel,
-                value: order.patientDisplayName ?? l10n.profileUnknownValue,
+                value: order.patientDisplayName,
               ),
               _ReportLine(
-                label: l10n.labReportOrderLabel,
-                value: order.displayId ?? l10n.profileUnknownValue,
+                label: l10n.labPatientIdFieldLabel,
+                value: order.patientId,
               ),
               _ReportLine(
                 label: l10n.labEncounterFieldLabel,
-                value: l10n.profileUnknownValue,
+                value: order.encounterId,
+              ),
+              _ReportLine(
+                label: l10n.labReportOrderLabel,
+                value: order.displayId ?? order.id,
+              ),
+              _ReportLine(
+                label: l10n.labOrderedAtFieldLabel,
+                value: _optionalDateTimeLabel(context, order.orderedAt),
               ),
               const Divider(height: 24),
               for (final LabResult result in workflow.results)
@@ -953,6 +1089,10 @@ class _LabReportPreview extends StatelessWidget {
                         style: theme.textTheme.titleSmall,
                       ),
                       _ReportLine(
+                        label: l10n.labTestCodeLabel,
+                        value: result.testCode,
+                      ),
+                      _ReportLine(
                         label: l10n.labReportResultLabel,
                         value: result.displayValue,
                       ),
@@ -961,8 +1101,12 @@ class _LabReportPreview extends StatelessWidget {
                         value: result.referenceRangeSummary,
                       ),
                       _ReportLine(
+                        label: l10n.labResultFlagLabel,
+                        value: result.resultFlag ?? result.status,
+                      ),
+                      _ReportLine(
                         label: l10n.labReportVerifiedLabel,
-                        value: _dateTimeLabel(context, result.reportedAt),
+                        value: _optionalDateTimeLabel(context, result.reportedAt),
                       ),
                     ],
                   ),
@@ -990,6 +1134,10 @@ class _ReportLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.xs),
@@ -997,7 +1145,7 @@ class _ReportLine extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(
-            width: 104,
+            width: 112,
             child: Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -1007,12 +1155,7 @@ class _ReportLine extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              value == null || value!.isEmpty
-                  ? context.l10n.profileUnknownValue
-                  : value!,
-              style: theme.textTheme.bodySmall,
-            ),
+            child: Text(normalized, style: theme.textTheme.bodySmall),
           ),
         ],
       ),
@@ -1020,35 +1163,197 @@ class _ReportLine extends StatelessWidget {
   }
 }
 
-class _CollectDialog extends ConsumerStatefulWidget {
-  const _CollectDialog({required this.workflow});
 
-  final LabOrderWorkflow workflow;
+final class _ResultDraft {
+  _ResultDraft(this.item)
+    : valueController = TextEditingController(text: item.resultValue ?? ''),
+      unitController = TextEditingController(text: item.resultUnit ?? item.unit ?? ''),
+      textController = TextEditingController(text: item.resultText ?? ''),
+      notesController = TextEditingController(),
+      selectedOption = item.resultText ?? item.resultValue;
 
-  @override
-  ConsumerState<_CollectDialog> createState() => _CollectDialogState();
+  final LabOrderItem item;
+  final TextEditingController valueController;
+  final TextEditingController unitController;
+  final TextEditingController textController;
+  final TextEditingController notesController;
+  String? selectedOption;
+
+  void dispose() {
+    valueController.dispose();
+    unitController.dispose();
+    textController.dispose();
+    notesController.dispose();
+  }
+
+  Map<String, Object?> toPayload({bool includeOrderItemId = false}) {
+    final String value = valueController.text.trim();
+    final String unit = unitController.text.trim();
+    final String text = textController.text.trim();
+    final bool hasOption = selectedOption?.trim().isNotEmpty ?? false;
+    final String? option = hasOption ? selectedOption!.trim() : null;
+    final Map<String, Object?> payload = <String, Object?>{
+      if (includeOrderItemId) 'order_item_id': item.apiId,
+      'reported_at': DateTime.now().toIso8601String(),
+      'notes': notesController.text.trim(),
+    };
+
+    if (item.isNumeric) {
+      payload['result_value'] = value;
+      payload['result_unit'] = unit;
+      return payload;
+    }
+    if (item.isQualitative) {
+      payload['result_text'] = option ?? text;
+      return payload;
+    }
+    payload['result_text'] = text;
+    return payload;
+  }
 }
 
-class _CollectDialogState extends ConsumerState<_CollectDialog> {
+class _ResultInputFields extends StatefulWidget {
+  const _ResultInputFields({required this.draft, required this.enabled});
+
+  final _ResultDraft draft;
+  final bool enabled;
+
+  @override
+  State<_ResultInputFields> createState() => _ResultInputFieldsState();
+}
+
+class _ResultInputFieldsState extends State<_ResultInputFields> {
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final LabOrderItem item = widget.draft.item;
+    final List<Widget> inputs = <Widget>[
+      _CompactRecordRow(
+        title: item.displayTitle,
+        subtitle: _joinDisplay(<String?>[
+          item.resultKind == null ? null : _apiLabel(item.resultKind!),
+          item.unit,
+          item.displayReferenceRange == null
+              ? null
+              : '${l10n.labReferenceRangeLabel}: ${item.displayReferenceRange}',
+        ]),
+      ),
+    ];
+
+    if (item.isNumeric) {
+      inputs.addAll(<Widget>[
+        AppTextField(
+          controller: widget.draft.valueController,
+          labelText: l10n.labResultValueLabel,
+          enabled: widget.enabled,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          validator: (String? value) {
+            final String normalized = value?.trim() ?? '';
+            if (normalized.isEmpty) {
+              return l10n.validationRequired;
+            }
+            return num.tryParse(normalized) == null
+                ? l10n.labNumericRangeValidationMessage
+                : null;
+          },
+        ),
+        if (item.unitOptions.isEmpty)
+          AppTextField(
+            controller: widget.draft.unitController,
+            labelText: l10n.labResultUnitLabel,
+            enabled: widget.enabled,
+          )
+        else
+          AppSelectField<String>(
+            value: widget.draft.unitController.text.trim().isEmpty
+                ? null
+                : widget.draft.unitController.text.trim(),
+            labelText: l10n.labResultUnitLabel,
+            enabled: widget.enabled,
+            options: <AppSelectOption<String>>[
+              for (final LabUnitOption option in item.unitOptions)
+                AppSelectOption<String>(
+                  value: option.unit ?? option.label ?? option.id,
+                  label: option.displayLabel,
+                ),
+            ],
+            onChanged: (String? value) {
+              setState(() {
+                widget.draft.unitController.text = value ?? '';
+              });
+            },
+          ),
+      ]);
+    } else if (item.isQualitative && item.resultOptions.isNotEmpty) {
+      inputs.add(
+        AppSelectField<String>(
+          value: widget.draft.selectedOption,
+          labelText: l10n.labResultValueLabel,
+          enabled: widget.enabled,
+          validator: AppValidators.requiredValue(l10n.validationRequired),
+          options: <AppSelectOption<String>>[
+            for (final LabResultOption option in item.resultOptions)
+              AppSelectOption<String>(
+                value: option.value ?? option.label ?? option.id,
+                label: option.displayLabel,
+              ),
+          ],
+          onChanged: (String? value) {
+            setState(() => widget.draft.selectedOption = value);
+          },
+        ),
+      );
+    } else {
+      inputs.add(
+        AppTextField(
+          controller: widget.draft.textController,
+          labelText: item.isQualitative
+              ? l10n.labResultValueLabel
+              : l10n.labResultTextLabel,
+          enabled: widget.enabled,
+          maxLines: item.isText ? 3 : 1,
+          validator: AppValidators.requiredText(l10n.validationRequired),
+        ),
+      );
+    }
+
+    inputs.add(
+      AppTextField(
+        controller: widget.draft.notesController,
+        labelText: l10n.labNotesLabel,
+        enabled: widget.enabled,
+        maxLines: 2,
+      ),
+    );
+
+    return AppFormSection(children: inputs);
+  }
+}
+
+class _VerifyResultDialog extends ConsumerStatefulWidget {
+  const _VerifyResultDialog({required this.item});
+
+  final LabOrderItem item;
+
+  @override
+  ConsumerState<_VerifyResultDialog> createState() => _VerifyResultDialogState();
+}
+
+class _VerifyResultDialogState extends ConsumerState<_VerifyResultDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _collectedAtController;
-  late final TextEditingController _notesController;
+  late final _ResultDraft _draft;
   AppFailure? _failure;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _collectedAtController = TextEditingController(
-      text: DateTime.now().toIso8601String(),
-    );
-    _notesController = TextEditingController();
+    _draft = _ResultDraft(widget.item);
   }
 
   @override
   void dispose() {
-    _collectedAtController.dispose();
-    _notesController.dispose();
+    _draft.dispose();
     super.dispose();
   }
 
@@ -1056,33 +1361,22 @@ class _CollectDialogState extends ConsumerState<_CollectDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: Text(l10n.labCollectDialogTitle),
-      icon: const Icon(Icons.qr_code_scanner_outlined),
+      title: Text(l10n.labVerifyResultDialogTitle),
+      icon: const Icon(Icons.verified_outlined),
       scrollable: true,
       content: Form(
         key: _formKey,
-        child: AppFormSection(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppTextField(
-              controller: _collectedAtController,
-              labelText: l10n.labCollectedAtLabel,
-              hintText: l10n.labDateTimeHint,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.labNotesLabel,
-              enabled: !_isSaving,
-              maxLines: 3,
-            ),
+            _ResultInputFields(draft: _draft, enabled: !_isSaving),
           ],
         ),
       ),
       actions: _dialogActions(
         context,
-        submitLabel: l10n.labCollectSampleAction,
+        submitLabel: l10n.labVerifyResultAction,
         isSaving: _isSaving,
         onSubmit: _submit,
       ),
@@ -1093,21 +1387,13 @@ class _CollectDialogState extends ConsumerState<_CollectDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    if (DateTime.tryParse(_collectedAtController.text.trim()) == null) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-
     setState(() {
       _isSaving = true;
       _failure = null;
     });
     final AppFailure? failure = await ref
         .read(labWorkspaceControllerProvider.notifier)
-        .collectSelected(<String, Object?>{
-          'collected_at': _collectedAtController.text.trim(),
-          'notes': _notesController.text.trim(),
-        });
+        .verifyOrderItem(widget.item.apiId, _draft.toPayload());
     _finish(failure);
   }
 
@@ -1123,38 +1409,33 @@ class _CollectDialogState extends ConsumerState<_CollectDialog> {
   }
 }
 
-class _ReceiveSampleDialog extends ConsumerStatefulWidget {
-  const _ReceiveSampleDialog({required this.workflow});
+class _VerifyAllResultsDialog extends ConsumerStatefulWidget {
+  const _VerifyAllResultsDialog({required this.workflow});
 
   final LabOrderWorkflow workflow;
 
   @override
-  ConsumerState<_ReceiveSampleDialog> createState() =>
-      _ReceiveSampleDialogState();
+  ConsumerState<_VerifyAllResultsDialog> createState() =>
+      _VerifyAllResultsDialogState();
 }
 
-class _ReceiveSampleDialogState extends ConsumerState<_ReceiveSampleDialog> {
+class _VerifyAllResultsDialogState extends ConsumerState<_VerifyAllResultsDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _receivedAtController;
-  late final TextEditingController _notesController;
-  String? _sampleId;
+  late final List<_ResultDraft> _drafts;
   AppFailure? _failure;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _sampleId = widget.workflow.firstReceivableSample?.apiId;
-    _receivedAtController = TextEditingController(
-      text: DateTime.now().toIso8601String(),
-    );
-    _notesController = TextEditingController();
+    _drafts = widget.workflow.verifiableItems.map(_ResultDraft.new).toList();
   }
 
   @override
   void dispose() {
-    _receivedAtController.dispose();
-    _notesController.dispose();
+    for (final _ResultDraft draft in _drafts) {
+      draft.dispose();
+    }
     super.dispose();
   }
 
@@ -1162,50 +1443,26 @@ class _ReceiveSampleDialogState extends ConsumerState<_ReceiveSampleDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: Text(l10n.labReceiveDialogTitle),
-      icon: const Icon(Icons.inventory_2_outlined),
+      title: Text(l10n.labVerifyAllDialogTitle),
+      icon: const Icon(Icons.fact_check_outlined),
       scrollable: true,
+      maxWidth: 760,
       content: Form(
         key: _formKey,
-        child: AppFormSection(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppSelectField<String>(
-              value: _sampleId,
-              labelText: l10n.labSampleFieldLabel,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              options: <AppSelectOption<String>>[
-                for (final LabSample sample
-                    in widget.workflow.order.samples.where(
-                      (LabSample sample) => sample.canReceive,
-                    ))
-                  AppSelectOption<String>(
-                    value: sample.apiId,
-                    label: sample.displayId ?? l10n.profileUnknownValue,
-                  ),
-              ],
-              onChanged: (String? value) => setState(() => _sampleId = value),
-            ),
-            AppTextField(
-              controller: _receivedAtController,
-              labelText: l10n.labReceivedAtLabel,
-              hintText: l10n.labDateTimeHint,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.labNotesLabel,
-              enabled: !_isSaving,
-              maxLines: 3,
-            ),
+            for (final _ResultDraft draft in _drafts) ...<Widget>[
+              _ResultInputFields(draft: draft, enabled: !_isSaving),
+              const Divider(height: 24),
+            ],
           ],
         ),
       ),
       actions: _dialogActions(
         context,
-        submitLabel: l10n.labReceiveSampleAction,
+        submitLabel: l10n.labVerifyAllAction,
         isSaving: _isSaving,
         onSubmit: _submit,
       ),
@@ -1216,29 +1473,20 @@ class _ReceiveSampleDialogState extends ConsumerState<_ReceiveSampleDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    final String? sampleId = _sampleId;
-    if (sampleId == null ||
-        DateTime.tryParse(_receivedAtController.text.trim()) == null) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-
     setState(() {
       _isSaving = true;
       _failure = null;
     });
+    final List<Map<String, Object?>> results = _drafts
+        .map((_ResultDraft draft) => draft.toPayload(includeOrderItemId: true))
+        .toList(growable: false);
     final AppFailure? failure = await ref
         .read(labWorkspaceControllerProvider.notifier)
-        .receiveSample(sampleId, <String, Object?>{
-          'received_at': _receivedAtController.text.trim(),
-          'notes': _notesController.text.trim(),
-        });
-    _finish(failure);
-  }
-
-  void _finish(AppFailure? failure) {
+        .verifyAllResults(widget.workflow.order.apiId, results);
     if (failure == null) {
-      Navigator.of(context).pop(true);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
       return;
     }
     setState(() {
@@ -1248,36 +1496,35 @@ class _ReceiveSampleDialogState extends ConsumerState<_ReceiveSampleDialog> {
   }
 }
 
-class _RejectSampleDialog extends ConsumerStatefulWidget {
-  const _RejectSampleDialog({required this.workflow});
+class _RejectOrderItemDialog extends ConsumerStatefulWidget {
+  const _RejectOrderItemDialog({required this.item});
 
-  final LabOrderWorkflow workflow;
+  final LabOrderItem item;
 
   @override
-  ConsumerState<_RejectSampleDialog> createState() =>
-      _RejectSampleDialogState();
+  ConsumerState<_RejectOrderItemDialog> createState() =>
+      _RejectOrderItemDialogState();
 }
 
-class _RejectSampleDialogState extends ConsumerState<_RejectSampleDialog> {
+class _RejectOrderItemDialogState extends ConsumerState<_RejectOrderItemDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
   late final TextEditingController _notesController;
-  String? _sampleId;
+  late final TextEditingController _customReasonController;
+  String? _reason;
   AppFailure? _failure;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _sampleId = widget.workflow.firstRejectableSample?.apiId;
-    _reasonController = TextEditingController();
     _notesController = TextEditingController();
+    _customReasonController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _reasonController.dispose();
     _notesController.dispose();
+    _customReasonController.dispose();
     super.dispose();
   }
 
@@ -1285,7 +1532,7 @@ class _RejectSampleDialogState extends ConsumerState<_RejectSampleDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: Text(l10n.labRejectDialogTitle),
+      title: Text(l10n.labRejectOrderItemDialogTitle),
       icon: const Icon(Icons.block_outlined),
       scrollable: true,
       content: Form(
@@ -1293,30 +1540,40 @@ class _RejectSampleDialogState extends ConsumerState<_RejectSampleDialog> {
         child: AppFormSection(
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
+            _CompactRecordRow(title: widget.item.displayTitle),
             AppSelectField<String>(
-              value: _sampleId,
-              labelText: l10n.labSampleFieldLabel,
+              value: _reason,
+              labelText: l10n.labRejectReasonLabel,
               enabled: !_isSaving,
               validator: AppValidators.requiredValue(l10n.validationRequired),
               options: <AppSelectOption<String>>[
-                for (final LabSample sample
-                    in widget.workflow.order.samples.where(
-                      (LabSample sample) => sample.canReject,
-                    ))
-                  AppSelectOption<String>(
-                    value: sample.apiId,
-                    label: sample.displayId ?? l10n.profileUnknownValue,
-                  ),
+                AppSelectOption<String>(
+                  value: l10n.labRejectReasonNotPerformedHere,
+                  label: l10n.labRejectReasonNotPerformedHere,
+                ),
+                AppSelectOption<String>(
+                  value: l10n.labRejectReasonInsufficientInfo,
+                  label: l10n.labRejectReasonInsufficientInfo,
+                ),
+                AppSelectOption<String>(
+                  value: l10n.labRejectReasonInvalidRequest,
+                  label: l10n.labRejectReasonInvalidRequest,
+                ),
+                AppSelectOption<String>(
+                  value: 'OTHER',
+                  label: l10n.labRejectReasonOther,
+                ),
               ],
-              onChanged: (String? value) => setState(() => _sampleId = value),
+              onChanged: (String? value) => setState(() => _reason = value),
             ),
-            AppTextField(
-              controller: _reasonController,
-              labelText: l10n.labRejectReasonLabel,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-              maxLines: 2,
-            ),
+            if (_reason == 'OTHER')
+              AppTextField(
+                controller: _customReasonController,
+                labelText: l10n.labRejectCustomReasonLabel,
+                enabled: !_isSaving,
+                validator: AppValidators.requiredText(l10n.validationRequired),
+                maxLines: 2,
+              ),
             AppTextField(
               controller: _notesController,
               labelText: l10n.labNotesLabel,
@@ -1328,7 +1585,7 @@ class _RejectSampleDialogState extends ConsumerState<_RejectSampleDialog> {
       ),
       actions: _dialogActions(
         context,
-        submitLabel: l10n.labRejectSampleAction,
+        submitLabel: l10n.labRejectOrderItemAction,
         isSaving: _isSaving,
         onSubmit: _submit,
       ),
@@ -1339,28 +1596,27 @@ class _RejectSampleDialogState extends ConsumerState<_RejectSampleDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    final String? sampleId = _sampleId;
-    if (sampleId == null) {
+    final String? reason = _reason == 'OTHER'
+        ? _customReasonController.text.trim()
+        : _reason;
+    if (reason == null || reason.trim().isEmpty) {
       setState(() => _failure = AppFailure.validation());
       return;
     }
-
     setState(() {
       _isSaving = true;
       _failure = null;
     });
     final AppFailure? failure = await ref
         .read(labWorkspaceControllerProvider.notifier)
-        .rejectSample(sampleId, <String, Object?>{
-          'reason': _reasonController.text.trim(),
+        .rejectOrderItem(widget.item.apiId, <String, Object?>{
+          'reason': reason,
           'notes': _notesController.text.trim(),
         });
-    _finish(failure);
-  }
-
-  void _finish(AppFailure? failure) {
     if (failure == null) {
-      Navigator.of(context).pop(true);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
       return;
     }
     setState(() {
@@ -1370,138 +1626,330 @@ class _RejectSampleDialogState extends ConsumerState<_RejectSampleDialog> {
   }
 }
 
-class _ReleaseResultDialog extends ConsumerStatefulWidget {
-  const _ReleaseResultDialog({required this.workflow});
+class _TestCatalogDialog extends StatelessWidget {
+  const _TestCatalogDialog({required this.state});
 
-  final LabOrderWorkflow workflow;
+  final LabWorkspaceState state;
 
   @override
-  ConsumerState<_ReleaseResultDialog> createState() =>
-      _ReleaseResultDialogState();
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    return AppDialog(
+      title: Text(l10n.labReferenceRangesDialogTitle),
+      icon: const Icon(Icons.tune_outlined),
+      scrollable: true,
+      maxWidth: 820,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.labReferenceRangesDialogBody,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.md),
+          if (state.catalogTests.isEmpty)
+            _EmptyInlineText(text: l10n.labNoCatalogItemsLabel)
+          else
+            for (final LabCatalogItem item in state.catalogTests)
+              _CompactRecordRow(
+                title: item.displayTitle,
+                subtitle: item.displaySubtitle,
+                trailing: AppButton.secondary(
+                  label: l10n.labConfigureTestAction,
+                  leadingIcon: Icons.edit_outlined,
+                  onPressed: () => _openLabTestConfigurationDialog(
+                    context,
+                    item,
+                  ),
+                ),
+              ),
+          const Divider(height: 24),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AppButton.tertiary(
+              label: l10n.labQcLogsAction,
+              leadingIcon: Icons.fact_check_outlined,
+              onPressed: () => _openQcDialog(context, state),
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCloseActionLabel,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
 }
 
-class _ReleaseResultDialogState extends ConsumerState<_ReleaseResultDialog> {
+class _LabTestConfigurationDialog extends ConsumerStatefulWidget {
+  const _LabTestConfigurationDialog({required this.item});
+
+  final LabCatalogItem item;
+
+  @override
+  ConsumerState<_LabTestConfigurationDialog> createState() =>
+      _LabTestConfigurationDialogState();
+}
+
+class _LabTestConfigurationDialogState
+    extends ConsumerState<_LabTestConfigurationDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _valueController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _codeController;
+  late final TextEditingController _categoryController;
+  late final TextEditingController _specimenController;
   late final TextEditingController _unitController;
-  late final TextEditingController _textController;
-  late final TextEditingController _reportedAtController;
-  late final TextEditingController _notesController;
-  String? _itemId;
-  String _status = 'NORMAL';
+  late final TextEditingController _unitOptionsController;
+  late final TextEditingController _resultOptionsController;
+  late final TextEditingController _rangeLabelController;
+  late final TextEditingController _ageMinController;
+  late final TextEditingController _ageMaxController;
+  late final TextEditingController _rangeUnitController;
+  late final TextEditingController _normalMinController;
+  late final TextEditingController _normalMaxController;
+  late final TextEditingController _criticalMinController;
+  late final TextEditingController _criticalMaxController;
+  late final TextEditingController _referenceTextController;
+  late final TextEditingController _rangeNotesController;
+  String? _resultKind;
+  String? _gender;
+  String? _ageUnit = 'YEARS';
   AppFailure? _failure;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    final LabOrderItem? item = widget.workflow.firstReleasableItem;
-    _itemId = item?.apiId;
-    _valueController = TextEditingController();
-    _unitController = TextEditingController(text: item?.unit ?? '');
-    _textController = TextEditingController();
-    _reportedAtController = TextEditingController(
-      text: DateTime.now().toIso8601String(),
+    final LabCatalogItem item = widget.item;
+    final LabReferenceRange? range = item.referenceRanges.isEmpty
+        ? null
+        : item.referenceRanges.first;
+    _nameController = TextEditingController(text: item.name ?? '');
+    _codeController = TextEditingController(text: item.code ?? '');
+    _categoryController = TextEditingController(text: item.category ?? '');
+    _specimenController = TextEditingController(text: item.specimenType ?? '');
+    _unitController = TextEditingController(text: item.unit ?? '');
+    _unitOptionsController = TextEditingController(
+      text: item.unitOptions
+          .map((LabUnitOption option) => option.unit ?? option.label ?? '')
+          .where((String value) => value.trim().isNotEmpty)
+          .join(', '),
     );
-    _notesController = TextEditingController();
+    _resultOptionsController = TextEditingController(
+      text: item.resultOptions
+          .map((LabResultOption option) => option.value ?? option.label ?? '')
+          .where((String value) => value.trim().isNotEmpty)
+          .join(', '),
+    );
+    _rangeLabelController = TextEditingController(text: range?.label ?? '');
+    _ageMinController = TextEditingController(text: range?.ageMinValue?.toString() ?? '');
+    _ageMaxController = TextEditingController(text: range?.ageMaxValue?.toString() ?? '');
+    _rangeUnitController = TextEditingController(text: range?.unit ?? item.unit ?? '');
+    _normalMinController = TextEditingController(text: range?.normalMinValue ?? '');
+    _normalMaxController = TextEditingController(text: range?.normalMaxValue ?? '');
+    _criticalMinController = TextEditingController(text: range?.criticalMinValue ?? '');
+    _criticalMaxController = TextEditingController(text: range?.criticalMaxValue ?? '');
+    _referenceTextController = TextEditingController(text: range?.referenceText ?? '');
+    _rangeNotesController = TextEditingController(text: range?.notes ?? '');
+    _resultKind = item.resultKind ?? 'NUMERIC';
+    _gender = range?.gender;
+    _ageUnit = range?.ageMinUnit ?? range?.ageMaxUnit ?? 'YEARS';
   }
 
   @override
   void dispose() {
-    _valueController.dispose();
+    _nameController.dispose();
+    _codeController.dispose();
+    _categoryController.dispose();
+    _specimenController.dispose();
     _unitController.dispose();
-    _textController.dispose();
-    _reportedAtController.dispose();
-    _notesController.dispose();
+    _unitOptionsController.dispose();
+    _resultOptionsController.dispose();
+    _rangeLabelController.dispose();
+    _ageMinController.dispose();
+    _ageMaxController.dispose();
+    _rangeUnitController.dispose();
+    _normalMinController.dispose();
+    _normalMaxController.dispose();
+    _criticalMinController.dispose();
+    _criticalMaxController.dispose();
+    _referenceTextController.dispose();
+    _rangeNotesController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<LabOrderItem> items = widget.workflow.order.items
-        .where((LabOrderItem item) => item.canRelease)
-        .toList(growable: false);
     return AppDialog(
-      title: Text(l10n.labReleaseDialogTitle),
-      icon: const Icon(Icons.verified_outlined),
+      title: Text(l10n.labConfigureTestDialogTitle),
+      icon: const Icon(Icons.edit_outlined),
       scrollable: true,
+      maxWidth: 760,
       content: Form(
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppSelectField<String>(
-              value: _itemId,
-              labelText: l10n.labOrderItemFieldLabel,
-              enabled: !_isSaving,
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              options: <AppSelectOption<String>>[
-                for (final LabOrderItem item in items)
-                  AppSelectOption<String>(
-                    value: item.apiId,
-                    label: item.displayTitle,
-                  ),
-              ],
-              onChanged: (String? value) {
-                setState(() {
-                  _itemId = value;
-                  final LabOrderItem? item = _itemFor(value);
-                  if (item != null && _unitController.text.trim().isEmpty) {
-                    _unitController.text = item.unit ?? '';
-                  }
-                });
-              },
-            ),
-            AppSelectField<String>(
-              value: _status,
-              labelText: l10n.labResultStatusLabel,
-              enabled: !_isSaving,
-              options: <AppSelectOption<String>>[
-                AppSelectOption<String>(
-                  value: 'NORMAL',
-                  label: l10n.labStatusNormal,
-                ),
-                AppSelectOption<String>(
-                  value: 'ABNORMAL',
-                  label: l10n.labStatusAbnormal,
-                ),
-                AppSelectOption<String>(
-                  value: 'CRITICAL',
-                  label: l10n.labStatusCritical,
-                ),
-              ],
-              onChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _status = value);
-                }
-              },
-            ),
             AppTextField(
-              controller: _valueController,
-              labelText: l10n.labResultValueLabel,
-              enabled: !_isSaving,
-            ),
-            AppTextField(
-              controller: _unitController,
-              labelText: l10n.labResultUnitLabel,
-              enabled: !_isSaving,
-            ),
-            AppTextField(
-              controller: _textController,
-              labelText: l10n.labResultTextLabel,
-              enabled: !_isSaving,
-              maxLines: 3,
-            ),
-            AppTextField(
-              controller: _reportedAtController,
-              labelText: l10n.labReportedAtInputLabel,
-              hintText: l10n.labDateTimeHint,
+              controller: _nameController,
+              labelText: l10n.labTestNameLabel,
               enabled: !_isSaving,
               validator: AppValidators.requiredText(l10n.validationRequired),
             ),
             AppTextField(
-              controller: _notesController,
+              controller: _codeController,
+              labelText: l10n.labTestCodeLabel,
+              enabled: !_isSaving,
+            ),
+            AppTextField(
+              controller: _categoryController,
+              labelText: l10n.labCategoryLabel,
+              enabled: !_isSaving,
+            ),
+            AppTextField(
+              controller: _specimenController,
+              labelText: l10n.labSpecimenTypeLabel,
+              enabled: !_isSaving,
+            ),
+            AppSelectField<String>(
+              value: _resultKind,
+              labelText: l10n.labResultKindLabel,
+              enabled: !_isSaving,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(value: 'NUMERIC', label: l10n.labResultKindNumeric),
+                AppSelectOption<String>(value: 'QUALITATIVE', label: l10n.labResultKindQualitative),
+                AppSelectOption<String>(value: 'TEXT', label: l10n.labResultKindText),
+              ],
+              onChanged: (String? value) => setState(() => _resultKind = value),
+            ),
+            AppTextField(
+              controller: _unitController,
+              labelText: l10n.labDefaultUnitLabel,
+              enabled: !_isSaving,
+            ),
+            AppTextField(
+              controller: _unitOptionsController,
+              labelText: l10n.labUnitOptionsLabel,
+              helperText: l10n.labCommaSeparatedHelper,
+              enabled: !_isSaving,
+            ),
+            AppTextField(
+              controller: _resultOptionsController,
+              labelText: l10n.labQualitativeOptionsLabel,
+              helperText: l10n.labCommaSeparatedHelper,
+              enabled: !_isSaving,
+            ),
+            const Divider(height: 24),
+            AppTextField(
+              controller: _rangeLabelController,
+              labelText: l10n.labReferenceRangeLabel,
+              enabled: !_isSaving,
+            ),
+            AppSelectField<String>(
+              value: _gender,
+              labelText: l10n.labGenderApplicabilityLabel,
+              enabled: !_isSaving,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(value: 'ANY', label: l10n.labGenderAnyLabel),
+                AppSelectOption<String>(value: 'MALE', label: l10n.labGenderMaleLabel),
+                AppSelectOption<String>(value: 'FEMALE', label: l10n.labGenderFemaleLabel),
+              ],
+              onChanged: (String? value) => setState(() => _gender = value),
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTextField(
+                    controller: _ageMinController,
+                    labelText: l10n.labAgeMinLabel,
+                    enabled: !_isSaving,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AppTextField(
+                    controller: _ageMaxController,
+                    labelText: l10n.labAgeMaxLabel,
+                    enabled: !_isSaving,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+              ],
+            ),
+            AppSelectField<String>(
+              value: _ageUnit,
+              labelText: l10n.labAgeUnitLabel,
+              enabled: !_isSaving,
+              options: <AppSelectOption<String>>[
+                AppSelectOption<String>(value: 'DAYS', label: l10n.labAgeUnitDays),
+                AppSelectOption<String>(value: 'MONTHS', label: l10n.labAgeUnitMonths),
+                AppSelectOption<String>(value: 'YEARS', label: l10n.labAgeUnitYears),
+              ],
+              onChanged: (String? value) => setState(() => _ageUnit = value),
+            ),
+            AppTextField(
+              controller: _rangeUnitController,
+              labelText: l10n.labResultUnitLabel,
+              enabled: !_isSaving,
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTextField(
+                    controller: _normalMinController,
+                    labelText: l10n.labNormalMinLabel,
+                    enabled: !_isSaving,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AppTextField(
+                    controller: _normalMaxController,
+                    labelText: l10n.labNormalMaxLabel,
+                    enabled: !_isSaving,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTextField(
+                    controller: _criticalMinController,
+                    labelText: l10n.labCriticalMinLabel,
+                    enabled: !_isSaving,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AppTextField(
+                    controller: _criticalMaxController,
+                    labelText: l10n.labCriticalMaxLabel,
+                    enabled: !_isSaving,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+              ],
+            ),
+            AppTextField(
+              controller: _referenceTextController,
+              labelText: l10n.labReferenceTextLabel,
+              enabled: !_isSaving,
+              maxLines: 2,
+            ),
+            AppTextField(
+              controller: _rangeNotesController,
               labelText: l10n.labNotesLabel,
               enabled: !_isSaving,
               maxLines: 2,
@@ -1511,59 +1959,117 @@ class _ReleaseResultDialogState extends ConsumerState<_ReleaseResultDialog> {
       ),
       actions: _dialogActions(
         context,
-        submitLabel: l10n.labReleaseResultAction,
+        submitLabel: l10n.commonSaveActionLabel,
         isSaving: _isSaving,
         onSubmit: _submit,
       ),
     );
   }
 
-  LabOrderItem? _itemFor(String? id) {
-    for (final LabOrderItem item in widget.workflow.order.items) {
-      if (item.apiId == id) {
-        return item;
-      }
-    }
-    return null;
-  }
-
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
-    final String? itemId = _itemId;
-    if (itemId == null ||
-        DateTime.tryParse(_reportedAtController.text.trim()) == null) {
+    if (!_rangesAreValid()) {
       setState(() => _failure = AppFailure.validation());
       return;
     }
-
     setState(() {
       _isSaving = true;
       _failure = null;
     });
     final AppFailure? failure = await ref
         .read(labWorkspaceControllerProvider.notifier)
-        .releaseOrderItem(itemId, <String, Object?>{
-          'status': _status,
-          'result_value': _valueController.text.trim(),
-          'result_unit': _unitController.text.trim(),
-          'result_text': _textController.text.trim(),
-          'reported_at': _reportedAtController.text.trim(),
-          'notes': _notesController.text.trim(),
-        });
-    _finish(failure);
-  }
-
-  void _finish(AppFailure? failure) {
+        .updateLabTest(widget.item.apiId, _payload());
     if (failure == null) {
-      Navigator.of(context).pop(true);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
       return;
     }
     setState(() {
       _failure = failure;
       _isSaving = false;
     });
+  }
+
+  bool _rangesAreValid() {
+    return _isRangeValid(_normalMinController.text, _normalMaxController.text) &&
+        _isRangeValid(_criticalMinController.text, _criticalMaxController.text) &&
+        _isRangeValid(_ageMinController.text, _ageMaxController.text);
+  }
+
+  bool _isRangeValid(String minValue, String maxValue) {
+    final String minText = minValue.trim();
+    final String maxText = maxValue.trim();
+    if (minText.isEmpty || maxText.isEmpty) {
+      return true;
+    }
+    final num? minNumber = num.tryParse(minText);
+    final num? maxNumber = num.tryParse(maxText);
+    return minNumber != null && maxNumber != null && minNumber <= maxNumber;
+  }
+
+  Map<String, Object?> _payload() {
+    final String unit = _unitController.text.trim();
+    return <String, Object?>{
+      'name': _nameController.text.trim(),
+      'code': _codeController.text.trim(),
+      'category': _categoryController.text.trim(),
+      'specimen_type': _specimenController.text.trim(),
+      'result_kind': _resultKind,
+      'unit': unit,
+      'unit_options': _commaSeparated(_unitOptionsController.text)
+          .asMap()
+          .entries
+          .map((MapEntry<int, String> entry) => <String, Object?>{
+                'unit': entry.value,
+                'label': entry.value,
+                'is_default': entry.key == 0,
+                'sort_order': entry.key,
+              })
+          .toList(growable: false),
+      'result_options': _commaSeparated(_resultOptionsController.text)
+          .asMap()
+          .entries
+          .map((MapEntry<int, String> entry) => <String, Object?>{
+                'value': entry.value,
+                'label': entry.value,
+                'status': 'NORMAL',
+                'sort_order': entry.key,
+              })
+          .toList(growable: false),
+      'reference_ranges': <Map<String, Object?>>[
+        <String, Object?>{
+          if (widget.item.referenceRanges.isNotEmpty)
+            'id': widget.item.referenceRanges.first.id,
+          'label': _rangeLabelController.text.trim(),
+          'gender': _gender,
+          'age_min_value': _ageMinController.text.trim(),
+          'age_min_unit': _ageUnit,
+          'age_max_value': _ageMaxController.text.trim(),
+          'age_max_unit': _ageUnit,
+          'unit': _rangeUnitController.text.trim().isEmpty
+              ? unit
+              : _rangeUnitController.text.trim(),
+          'normal_min_value': _normalMinController.text.trim(),
+          'normal_max_value': _normalMaxController.text.trim(),
+          'critical_min_value': _criticalMinController.text.trim(),
+          'critical_max_value': _criticalMaxController.text.trim(),
+          'reference_text': _referenceTextController.text.trim(),
+          'notes': _rangeNotesController.text.trim(),
+          'sort_order': 0,
+        },
+      ],
+    };
+  }
+
+  List<String> _commaSeparated(String value) {
+    return value
+        .split(',')
+        .map((String item) => item.trim())
+        .where((String item) => item.isNotEmpty)
+        .toList(growable: false);
   }
 }
 
@@ -1783,6 +2289,73 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
   }
 }
 
+
+Future<void> _openTestCatalogDialog(
+  BuildContext context,
+  LabWorkspaceState state,
+) async {
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => _TestCatalogDialog(state: state),
+  );
+}
+
+Future<void> _openLabTestConfigurationDialog(
+  BuildContext context,
+  LabCatalogItem item,
+) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _LabTestConfigurationDialog(item: item),
+    ),
+  );
+}
+
+Future<void> _openVerifyResultDialog(
+  BuildContext context,
+  LabOrderItem item,
+) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _VerifyResultDialog(item: item),
+    ),
+  );
+}
+
+Future<void> _openVerifyAllDialog(
+  BuildContext context,
+  LabOrderWorkflow workflow,
+) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _VerifyAllResultsDialog(workflow: workflow),
+    ),
+  );
+}
+
+Future<void> _openRejectOrderItemDialog(
+  BuildContext context,
+  LabOrderItem item,
+) async {
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _RejectOrderItemDialog(item: item),
+    ),
+  );
+}
+
 Future<void> _openQcDialog(
   BuildContext context,
   LabWorkspaceState state,
@@ -1793,62 +2366,6 @@ Future<void> _openQcDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => _QcDialog(state: state),
-    ),
-  );
-}
-
-Future<void> _openCollectDialog(
-  BuildContext context,
-  LabOrderWorkflow workflow,
-) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _CollectDialog(workflow: workflow),
-    ),
-  );
-}
-
-Future<void> _openReceiveDialog(
-  BuildContext context,
-  LabOrderWorkflow workflow,
-) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _ReceiveSampleDialog(workflow: workflow),
-    ),
-  );
-}
-
-Future<void> _openRejectDialog(
-  BuildContext context,
-  LabOrderWorkflow workflow,
-) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _RejectSampleDialog(workflow: workflow),
-    ),
-  );
-}
-
-Future<void> _openReleaseDialog(
-  BuildContext context,
-  LabOrderWorkflow workflow,
-) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _ReleaseResultDialog(workflow: workflow),
     ),
   );
 }
@@ -1975,7 +2492,7 @@ List<AppSearchBarFilterChoice> _labScopeFilterChoices(AppLocalizations l10n) {
 IconData _labScopeIcon(LabQueueScope scope) {
   return switch (scope) {
     LabQueueScope.all => Icons.assignment_outlined,
-    LabQueueScope.collection => Icons.biotech_outlined,
+    LabQueueScope.collection => Icons.pending_actions_outlined,
     LabQueueScope.processing => Icons.sync_outlined,
     LabQueueScope.results => Icons.pending_actions_outlined,
     LabQueueScope.critical => Icons.priority_high_outlined,
@@ -1997,42 +2514,31 @@ AppWorkspaceStatus _orderStatus(BuildContext context, String? value) {
   return _statusBadge(context, value);
 }
 
-AppWorkspaceStatus _sampleStatus(BuildContext context, LabOrderSummary order) {
-  if (order.hasRejectedSample) {
+AppWorkspaceStatus _entryStatus(BuildContext context, LabOrderSummary order) {
+  if (order.hasRejectedItem) {
     return AppWorkspaceStatus(
       label: context.l10n.labStatusRejected,
       tone: AppWorkspaceStatusTone.error,
       icon: Icons.block_outlined,
     );
   }
-  if (order.samples.isEmpty) {
+  if (order.verifiableItemCount > 0 || order.pendingItemCount > 0) {
     return AppWorkspaceStatus(
-      label: context.l10n.labStatusPending,
+      label: context.l10n.labStatusPendingResults,
       tone: AppWorkspaceStatusTone.warning,
-      icon: Icons.pending_outlined,
+      icon: Icons.pending_actions_outlined,
     );
   }
-  final bool received = order.samples.any(
-    (LabSample sample) => (sample.status ?? '').toUpperCase() == 'RECEIVED',
-  );
-  if (received) {
+  if (order.completedItemCount > 0 && order.completedItemCount >= order.itemCount) {
     return AppWorkspaceStatus(
-      label: context.l10n.labStatusReceived,
+      label: context.l10n.labStatusVerified,
       tone: AppWorkspaceStatusTone.success,
-      icon: Icons.inventory_2_outlined,
+      icon: Icons.verified_outlined,
     );
   }
-  final bool collected = order.samples.any(
-    (LabSample sample) => (sample.status ?? '').toUpperCase() == 'COLLECTED',
-  );
   return AppWorkspaceStatus(
-    label: collected
-        ? context.l10n.labStatusCollected
-        : context.l10n.labStatusPending,
-    tone: collected
-        ? AppWorkspaceStatusTone.info
-        : AppWorkspaceStatusTone.warning,
-    icon: collected ? Icons.biotech_outlined : Icons.pending_outlined,
+    label: context.l10n.labStatusOrdered,
+    icon: Icons.assignment_outlined,
   );
 }
 
@@ -2091,10 +2597,12 @@ String _nextActionLabel(BuildContext context, LabOrderSummary order) {
     return l10n.labNextActionReviewCritical;
   }
   final String status = (order.status ?? '').toUpperCase();
+  if (order.verifiableItemCount > 0) {
+    return l10n.labNextActionVerify;
+  }
   return switch (status) {
-    'ORDERED' => l10n.labNextActionCollect,
-    'COLLECTED' => l10n.labNextActionReceive,
-    'IN_PROCESS' => l10n.labNextActionRelease,
+    'ORDERED' || 'COLLECTED' => l10n.labNextActionEnterResult,
+    'IN_PROCESS' => l10n.labNextActionVerify,
     'COMPLETED' => l10n.labNextActionCompleted,
     _ => l10n.labNextActionWatch,
   };
@@ -2112,6 +2620,9 @@ String _statusLabel(BuildContext context, String? value) {
     'NORMAL' => l10n.labStatusNormal,
     'ABNORMAL' => l10n.labStatusAbnormal,
     'CRITICAL' => l10n.labStatusCritical,
+    'LOW' => l10n.labStatusLow,
+    'HIGH' => l10n.labStatusHigh,
+    'VERIFIED' => l10n.labStatusVerified,
     'REJECTED' => l10n.labStatusRejected,
     'RECEIVED' => l10n.labStatusReceived,
     final String status when status.trim().isNotEmpty => _apiLabel(status),
@@ -2122,6 +2633,16 @@ String _statusLabel(BuildContext context, String? value) {
 String _dateTimeLabel(BuildContext context, DateTime? value) {
   if (value == null) {
     return context.l10n.profileUnknownValue;
+  }
+  return AppFormatters.dateTime(
+    value.toLocal(),
+    Localizations.localeOf(context),
+  );
+}
+
+String? _optionalDateTimeLabel(BuildContext context, DateTime? value) {
+  if (value == null) {
+    return null;
   }
   return AppFormatters.dateTime(
     value.toLocal(),
@@ -2150,18 +2671,36 @@ String _reportText(BuildContext context, LabOrderWorkflow workflow) {
   final LabOrderSummary order = workflow.order;
   final List<String> lines = <String>[
     l10n.labReportTitle,
-    '${l10n.labReportPatientLabel}: ${order.patientDisplayName ?? l10n.profileUnknownValue}',
-    '${l10n.labReportOrderLabel}: ${order.displayId ?? l10n.profileUnknownValue}',
-    '${l10n.labEncounterFieldLabel}: ${l10n.profileUnknownValue}',
+    ..._reportTextLines(<String, String?>{
+      l10n.labReportPatientLabel: order.patientDisplayName,
+      l10n.labPatientIdFieldLabel: order.patientId,
+      l10n.labEncounterFieldLabel: order.encounterId,
+      l10n.labReportOrderLabel: order.displayId ?? order.id,
+      l10n.labOrderedAtFieldLabel: _optionalDateTimeLabel(context, order.orderedAt),
+    }),
     for (final LabResult result in workflow.results) ...<String>[
+      '',
       result.displayTitle,
-      '${l10n.labReportResultLabel}: ${result.displayValue ?? l10n.profileUnknownValue}',
-      '${l10n.labReportRangeLabel}: ${result.referenceRangeSummary ?? l10n.profileUnknownValue}',
-      '${l10n.labReportVerifiedLabel}: ${_dateTimeLabel(context, result.reportedAt)}',
+      ..._reportTextLines(<String, String?>{
+        l10n.labTestCodeLabel: result.testCode,
+        l10n.labReportResultLabel: result.displayValue,
+        l10n.labReportRangeLabel: result.referenceRangeSummary,
+        l10n.labResultFlagLabel: result.resultFlag ?? result.status,
+        l10n.labReportVerifiedLabel: _optionalDateTimeLabel(context, result.reportedAt),
+      }),
     ],
+    '',
     l10n.labReportFooter,
   ];
   return lines.join('\n');
+}
+
+List<String> _reportTextLines(Map<String, String?> fields) {
+  return <String>[
+    for (final MapEntry<String, String?> entry in fields.entries)
+      if ((entry.value ?? '').trim().isNotEmpty)
+        '${entry.key}: ${entry.value!.trim()}',
+  ];
 }
 
 String? _joinDisplay(Iterable<String?> values) {

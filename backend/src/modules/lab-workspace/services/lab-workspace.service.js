@@ -120,13 +120,16 @@ const mapLabPatientWorkItem = (records = []) => {
   const samples = uniqueByKey(mapped.flatMap((order) => order.samples || []), (sample) => sample.id);
   const statuses = mapped.map((order) => normalizeStatus(order.status)).filter(Boolean);
   const hasCritical = items.some((item) => normalizeStatus(item?.result_status) === 'CRITICAL');
+  const hasRejectedItem = items.some((item) => normalizeStatus(item?.status) === 'CANCELLED');
   const hasRejectedSample = samples.some((sample) => normalizeStatus(sample?.status) === 'REJECTED');
   const activeOrders = mapped.filter((order) => !labOrderIsTerminal(order));
   const status = hasCritical
     ? 'CRITICAL'
-    : hasRejectedSample
-      ? 'REJECTED_SAMPLE'
-      : statuses.includes('IN_PROCESS')
+    : hasRejectedItem
+      ? 'REJECTED'
+      : hasRejectedSample
+        ? 'REJECTED_SAMPLE'
+        : statuses.includes('IN_PROCESS')
         ? 'IN_PROCESS'
         : statuses.includes('COLLECTED')
           ? 'COLLECTED'
@@ -160,6 +163,7 @@ const mapLabPatientWorkItem = (records = []) => {
     pending_item_count: items.filter((item) => normalizeStatus(item?.status) === 'ORDERED').length,
     in_process_item_count: items.filter((item) => ['COLLECTED', 'IN_PROCESS'].includes(normalizeStatus(item?.status))).length,
     completed_item_count: items.filter((item) => normalizeStatus(item?.status) === 'COMPLETED').length,
+    rejected_item_count: items.filter((item) => normalizeStatus(item?.status) === 'CANCELLED').length,
     sample_count: samples.length,
     tests_summary: testsSummary,
     items,
@@ -201,6 +205,42 @@ const assertTransition = (condition, details = {}) => {
 };
 
 const normalizeStatus = (value) => String(value || '').trim().toUpperCase();
+
+const ORDER_ITEM_RESULT_INCLUDE = Object.freeze({
+  lab_test: {
+    select: {
+      id: true,
+      unit: true,
+      result_kind: true,
+      reference_range: true,
+      reference_ranges: {
+        orderBy: { sort_order: 'asc' },
+      },
+      unit_options: {
+        orderBy: { sort_order: 'asc' },
+      },
+      result_options: {
+        orderBy: { sort_order: 'asc' },
+      },
+    },
+  },
+  lab_order: {
+    select: {
+      id: true,
+      status: true,
+      patient: {
+        select: {
+          id: true,
+          date_of_birth: true,
+          gender: true,
+        },
+      },
+    },
+  },
+});
+
+const payloadHasField = (payload, field) =>
+  Object.prototype.hasOwnProperty.call(payload || {}, field);
 
 const toTimestampValue = (...candidates) => {
   for (const candidate of candidates) {
@@ -298,6 +338,10 @@ const syncLabOrderProgress = async (tx, orderId) => {
     lab_order_id: orderId,
     status: 'COMPLETED',
   });
+  const cancelledItems = await labWorkspaceRepository.txCountOrderItems(tx, {
+    lab_order_id: orderId,
+    status: 'CANCELLED',
+  });
   const openItems = await labWorkspaceRepository.txCountOrderItems(tx, {
     lab_order_id: orderId,
     status: { notIn: ['COMPLETED', 'CANCELLED'] },
@@ -321,8 +365,13 @@ const syncLabOrderProgress = async (tx, orderId) => {
     );
   }
 
-  const nextOrderStatus =
-    openItems === 0 && completedItems > 0 ? 'COMPLETED' : nextActiveItemStatus;
+  const nextOrderStatus = openItems === 0
+    ? completedItems > 0
+      ? 'COMPLETED'
+      : cancelledItems > 0
+        ? 'CANCELLED'
+        : 'ORDERED'
+    : nextActiveItemStatus;
 
   await labWorkspaceRepository.txUpdateOrder(tx, orderId, {
     status: nextOrderStatus,
@@ -332,9 +381,11 @@ const syncLabOrderProgress = async (tx, orderId) => {
     nextOrderStatus,
     nextActiveItemStatus,
     completedItems,
+    cancelledItems,
     openItems,
   };
 };
+
 
 const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
   const includeSearch = options.includeSearch !== false;
@@ -453,6 +504,105 @@ const mapReleasedResultFromOrder = (orderRecord, releasedResultId) => {
     }
   }
   return null;
+};
+
+const mapReleasedResultsFromOrder = (orderRecord, releasedResultIds = []) => {
+  const ids = new Set((releasedResultIds || []).filter(Boolean));
+  if (!ids.size) return [];
+  const results = [];
+  for (const item of orderRecord?.items || []) {
+    for (const result of item?.results || []) {
+      if (!ids.has(result.id)) continue;
+      const mapped = mapLabResultRecord({
+        ...result,
+        lab_order_item: item,
+      });
+      if (mapped) results.push(mapped);
+    }
+  }
+  return results;
+};
+
+const resolveTargetLabResult = async (tx, item, payload = {}) => {
+  if (payload.result_id) {
+    const resultId = await resolveModelIdOrThrow({
+      identifier: payload.result_id,
+      model: 'lab_result',
+      where: { deleted_at: null, lab_order_item_id: item.id },
+      errorKey: 'errors.lab_result.not_found',
+    });
+    return labWorkspaceRepository.txFindResultById(tx, resultId);
+  }
+
+  const pendingResult = await labWorkspaceRepository.txFindFirstResult(tx, {
+    lab_order_item_id: item.id,
+    status: 'PENDING',
+  });
+  if (pendingResult) return pendingResult;
+
+  return labWorkspaceRepository.txFindFirstResult(
+    tx,
+    { lab_order_item_id: item.id },
+    { created_at: 'desc' }
+  );
+};
+
+const persistLabOrderItemResult = async (tx, item, payload = {}) => {
+  assertTransition(item.status !== 'CANCELLED', {
+    from: item.status,
+    to: 'COMPLETED',
+  });
+
+  const targetResult = await resolveTargetLabResult(tx, item, payload);
+  const fallbackStatus =
+    targetResult?.status && targetResult.status !== 'PENDING'
+      ? targetResult.status
+      : 'NORMAL';
+  const resultData = {
+    status: fallbackStatus,
+    result_value: payloadHasField(payload, 'result_value')
+      ? payload.result_value
+      : targetResult?.result_value || null,
+    result_unit: payloadHasField(payload, 'result_unit')
+      ? payload.result_unit
+      : targetResult?.result_unit || item?.lab_test?.unit || null,
+    result_text: payloadHasField(payload, 'result_text')
+      ? payload.result_text
+      : targetResult?.result_text || null,
+    reported_at: toDateOrNull(payload.reported_at, new Date()),
+  };
+
+  const interpretation = evaluateLabResult({
+    test: item?.lab_test || {},
+    patient: item?.lab_order?.patient || {},
+    resultValue: resultData.result_value,
+    resultText: resultData.result_text,
+    resultUnit: resultData.result_unit,
+    fallbackStatus,
+  });
+
+  resultData.status = interpretation.status;
+  resultData.result_unit = interpretation.result_unit || null;
+  resultData.result_flag = interpretation.result_flag || null;
+  resultData.is_positive = Boolean(interpretation.is_positive);
+  resultData.reference_range_label = interpretation.reference_range_label || null;
+  resultData.reference_range_summary = interpretation.reference_range_summary || null;
+
+  const releasedResult = targetResult
+    ? await labWorkspaceRepository.txUpdateResult(tx, targetResult.id, resultData)
+    : await labWorkspaceRepository.txCreateResult(tx, {
+        ...resultData,
+        lab_order_item_id: item.id,
+      });
+
+  await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
+    status: 'COMPLETED',
+    rejection_reason: null,
+    rejection_notes: null,
+    rejected_at: null,
+  });
+
+  return releasedResult;
 };
 
 const resolveAuditTenantId = (orderRecord) =>
@@ -1050,129 +1200,17 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
     });
 
     const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
-      const item = await labWorkspaceRepository.txFindOrderItemById(tx, orderItemId, {
-        lab_test: {
-          select: {
-            id: true,
-            unit: true,
-            reference_ranges: {
-              orderBy: { sort_order: 'asc' },
-            },
-            unit_options: {
-              orderBy: { sort_order: 'asc' },
-            },
-            result_options: {
-              orderBy: { sort_order: 'asc' },
-            },
-          },
-        },
-        lab_order: {
-          select: {
-            id: true,
-            status: true,
-            patient: {
-              select: {
-                id: true,
-                date_of_birth: true,
-                gender: true,
-              },
-            },
-          },
-        },
-      });
+      const item = await labWorkspaceRepository.txFindOrderItemById(
+        tx,
+        orderItemId,
+        ORDER_ITEM_RESULT_INCLUDE
+      );
       if (!item) {
         throw new HttpError('errors.lab_order_item.not_found', 404);
       }
 
-      assertTransition(item.status !== 'CANCELLED', {
-        from: item.status,
-        to: 'COMPLETED',
-      });
-
-      let targetResult = null;
-      if (payload.result_id) {
-        const resultId = await resolveModelIdOrThrow({
-          identifier: payload.result_id,
-          model: 'lab_result',
-          where: { deleted_at: null, lab_order_item_id: item.id },
-          errorKey: 'errors.lab_result.not_found',
-        });
-        targetResult = await labWorkspaceRepository.txFindResultById(tx, resultId);
-      } else {
-        targetResult = await labWorkspaceRepository.txFindFirstResult(tx, {
-          lab_order_item_id: item.id,
-          status: 'PENDING',
-        });
-        if (!targetResult) {
-          targetResult = await labWorkspaceRepository.txFindFirstResult(
-            tx,
-            { lab_order_item_id: item.id },
-            { created_at: 'desc' }
-          );
-        }
-      }
-
-      const hasResultValue = Object.prototype.hasOwnProperty.call(payload, 'result_value');
-      const hasResultUnit = Object.prototype.hasOwnProperty.call(payload, 'result_unit');
-      const hasResultText = Object.prototype.hasOwnProperty.call(payload, 'result_text');
-
-      const resultData = {
-        status:
-          payload.status ||
-          (targetResult?.status && targetResult.status !== 'PENDING' ? targetResult.status : 'NORMAL'),
-        result_value: hasResultValue ? payload.result_value : targetResult?.result_value || null,
-        result_unit: hasResultUnit
-          ? payload.result_unit
-          : targetResult?.result_unit || item?.lab_test?.unit || null,
-        result_text: hasResultText ? payload.result_text : targetResult?.result_text || null,
-        reported_at: toDateOrNull(payload.reported_at, new Date()),
-      };
-
-      const interpretation = evaluateLabResult({
-        test: item?.lab_test || {},
-        patient: item?.lab_order?.patient || {},
-        resultValue: resultData.result_value,
-        resultText: resultData.result_text,
-        resultUnit: resultData.result_unit,
-        fallbackStatus: resultData.status || 'NORMAL',
-      });
-
-      resultData.status = interpretation.status;
-      resultData.result_unit = interpretation.result_unit || null;
-      resultData.result_flag = interpretation.result_flag || null;
-      resultData.is_positive = Boolean(interpretation.is_positive);
-      resultData.reference_range_label = interpretation.reference_range_label || null;
-      resultData.reference_range_summary = interpretation.reference_range_summary || null;
-
-      let releasedResult = null;
-      if (targetResult) {
-        releasedResult = await labWorkspaceRepository.txUpdateResult(tx, targetResult.id, resultData);
-      } else {
-        releasedResult = await labWorkspaceRepository.txCreateResult(tx, {
-          ...resultData,
-          lab_order_item_id: item.id,
-        });
-      }
-
-      await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
-        status: 'COMPLETED',
-      });
-
-      const remainingItems = await labWorkspaceRepository.txCountOrderItems(tx, {
-        lab_order_id: item.lab_order_id,
-        status: { notIn: ['COMPLETED', 'CANCELLED'] },
-      });
-
-      if (remainingItems === 0) {
-        await labWorkspaceRepository.txUpdateOrder(tx, item.lab_order_id, {
-          status: 'COMPLETED',
-        });
-      } else if (item.lab_order && item.lab_order.status !== 'CANCELLED') {
-        await labWorkspaceRepository.txUpdateOrder(tx, item.lab_order_id, {
-          status: 'IN_PROCESS',
-        });
-      }
-
+      const releasedResult = await persistLabOrderItemResult(tx, item, payload);
+      const progress = await syncLabOrderProgress(tx, item.lab_order_id);
       const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
         tx,
         item.lab_order_id,
@@ -1183,6 +1221,7 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
         beforeItemStatus: item.status,
         beforeOrderStatus: item.lab_order?.status || null,
         order: refreshedOrder,
+        progress,
         releasedResultId: releasedResult.id,
       };
     });
@@ -1190,7 +1229,7 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
     createAuditLog({
       tenant_id: resolveAuditTenantId(mutation.order),
       user_id: userId,
-      action: 'RELEASE',
+      action: 'VERIFY_RESULT',
       entity: 'lab_order_item',
       entity_id: orderItemId,
       diff: {
@@ -1214,7 +1253,7 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
       workflow,
       orderRecord: mutation.order,
       actorUserId: userId || null,
-      action: 'RELEASE',
+      action: 'VERIFY_RESULT',
       resourceType: 'order-item',
       resourceId: identifier,
       releasedResult,
@@ -1229,6 +1268,197 @@ const releaseLabOrderItem = async (identifier, payload = {}, userId, ipAddress) 
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
   }
 };
+
+const verifyLabOrderResults = async (identifier, payload = {}, userId, ipAddress) => {
+  try {
+    const orderId = await resolveModelIdOrThrow({
+      identifier,
+      model: 'lab_order',
+      where: { deleted_at: null },
+      errorKey: 'errors.lab_order.not_found',
+    });
+
+    const resultPayloads = Array.isArray(payload.results) ? payload.results : [];
+    if (!resultPayloads.length) {
+      throw new HttpError('errors.validation.field.required', 400, [{ field: 'results' }]);
+    }
+
+    const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
+      const order = await labWorkspaceRepository.txFindOrderById(
+        tx,
+        orderId,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      );
+      if (!order) {
+        throw new HttpError('errors.lab_order.not_found', 404);
+      }
+
+      const releasedResultIds = [];
+      const itemTransitions = [];
+      for (const entry of resultPayloads) {
+        const orderItemId = await resolveModelIdOrThrow({
+          identifier: entry.order_item_id,
+          model: 'lab_order_item',
+          where: { deleted_at: null, lab_order_id: order.id },
+          errorKey: 'errors.lab_order_item.not_found',
+        });
+        const item = await labWorkspaceRepository.txFindOrderItemById(
+          tx,
+          orderItemId,
+          ORDER_ITEM_RESULT_INCLUDE
+        );
+        if (!item || item.lab_order_id !== order.id) {
+          throw new HttpError('errors.lab_order_item.not_found', 404);
+        }
+
+        const releasedResult = await persistLabOrderItemResult(tx, item, entry);
+        releasedResultIds.push(releasedResult.id);
+        itemTransitions.push({
+          order_item_id: item.id,
+          before_status: item.status,
+          released_result_id: releasedResult.id,
+        });
+      }
+
+      const progress = await syncLabOrderProgress(tx, order.id);
+      const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
+        tx,
+        order.id,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return {
+        beforeOrderStatus: order.status,
+        order: refreshedOrder,
+        progress,
+        releasedResultIds,
+        itemTransitions,
+      };
+    });
+
+    createAuditLog({
+      tenant_id: resolveAuditTenantId(mutation.order),
+      user_id: userId,
+      action: 'VERIFY_RESULTS',
+      entity: 'lab_order',
+      entity_id: orderId,
+      diff: {
+        metadata: {
+          before_order_status: mutation.beforeOrderStatus,
+          after_order_status: mutation.order?.status || null,
+          item_transitions: mutation.itemTransitions,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    const workflow = mapLabOrderWorkflowRecord(mutation.order);
+    const releasedResults = mapReleasedResultsFromOrder(
+      mutation.order,
+      mutation.releasedResultIds
+    );
+    publishLabRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'VERIFY_RESULTS',
+      resourceType: 'order',
+      resourceId: workflow?.order?.id || null,
+      releasedResult: releasedResults[0] || null,
+    }).catch(() => {});
+
+    return {
+      workflow,
+      released_results: releasedResults,
+    };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) => {
+  try {
+    const reason = String(payload?.reason || '').trim();
+    if (!reason) {
+      throw new HttpError('errors.validation.field.required', 400, [{ field: 'reason' }]);
+    }
+
+    const orderItemId = await resolveModelIdOrThrow({
+      identifier,
+      model: 'lab_order_item',
+      where: { deleted_at: null },
+      errorKey: 'errors.lab_order_item.not_found',
+    });
+
+    const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
+      const item = await labWorkspaceRepository.txFindOrderItemById(tx, orderItemId, {
+        lab_order: { select: { id: true, status: true } },
+      });
+      if (!item) {
+        throw new HttpError('errors.lab_order_item.not_found', 404);
+      }
+      assertTransition(item.status !== 'COMPLETED', {
+        from: item.status,
+        to: 'CANCELLED',
+      });
+
+      await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
+        status: 'CANCELLED',
+        rejection_reason: reason,
+        rejection_notes: payload.notes || null,
+        rejected_at: toDateOrNull(payload.rejected_at, new Date()),
+      });
+      const progress = await syncLabOrderProgress(tx, item.lab_order_id);
+      const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
+        tx,
+        item.lab_order_id,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return {
+        beforeItemStatus: item.status,
+        beforeOrderStatus: item.lab_order?.status || null,
+        order: refreshedOrder,
+        progress,
+      };
+    });
+
+    createAuditLog({
+      tenant_id: resolveAuditTenantId(mutation.order),
+      user_id: userId,
+      action: 'REJECT_ORDER_ITEM',
+      entity: 'lab_order_item',
+      entity_id: orderItemId,
+      diff: {
+        metadata: {
+          reason,
+          notes: payload.notes || null,
+          before_item_status: mutation.beforeItemStatus,
+          before_order_status: mutation.beforeOrderStatus,
+          after_order_status: mutation.order?.status || null,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    const workflow = mapLabOrderWorkflowRecord(mutation.order);
+    publishLabRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'REJECT_ORDER_ITEM',
+      resourceType: 'order-item',
+      resourceId: identifier,
+    }).catch(() => {});
+
+    return { workflow };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 
 const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddress) => {
   try {
@@ -1456,6 +1686,8 @@ module.exports = {
   receiveLabSample,
   rejectLabSample,
   releaseLabOrderItem,
+  verifyLabOrderResults,
+  rejectLabOrderItem,
   reverseLabOrderWorkflow,
   resolveLegacyRouteIdentifier,
 };

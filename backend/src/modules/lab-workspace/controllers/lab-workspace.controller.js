@@ -8,6 +8,7 @@ const getLabWorkbench = asyncHandler(async (req, res) => {
     stage,
     status,
     criticality,
+    view,
     from,
     to,
     patient_id,
@@ -24,6 +25,7 @@ const getLabWorkbench = asyncHandler(async (req, res) => {
       stage,
       status,
       criticality,
+      view,
       from,
       to,
       patient_id,
@@ -84,6 +86,26 @@ const releaseLabOrderItem = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.lab_workspace.release.success', data);
 });
 
+const verifyLabOrderResults = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.verifyLabOrderResults(
+    req.params.id,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.lab_workspace.verify_all.success', data);
+});
+
+const rejectLabOrderItem = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.rejectLabOrderItem(
+    req.params.id,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.lab_workspace.reject_item.success', data);
+});
+
 const reverseLabOrderWorkflow = asyncHandler(async (req, res) => {
   const data = await labWorkspaceService.reverseLabOrderWorkflow(
     req.params.id,
@@ -109,6 +131,8 @@ module.exports = {
   receiveLabSample,
   rejectLabSample,
   releaseLabOrderItem,
+  verifyLabOrderResults,
+  rejectLabOrderItem,
   reverseLabOrderWorkflow,
   resolveLegacyRoute,
 };

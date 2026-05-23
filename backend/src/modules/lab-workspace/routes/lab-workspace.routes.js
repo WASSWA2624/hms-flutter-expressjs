@@ -20,6 +20,8 @@ const {
   receiveLabSampleSchema,
   rejectLabSampleSchema,
   releaseLabOrderItemSchema,
+  verifyLabOrderResultsSchema,
+  rejectLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
   sampleWorkflowParamsSchema,
 } = require('@validations/lab-workspace/lab-workspace.schema');
@@ -112,6 +114,28 @@ router.post(
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.releaseLabOrderItem
+);
+
+router.post(
+  '/orders/:id/verify-results',
+  validateRequest({
+    params: orderWorkflowParamsSchema,
+    body: verifyLabOrderResultsSchema,
+  }),
+  authenticate(),
+  authorize(LAB_MUTATION_ROLES, 'role'),
+  labWorkspaceController.verifyLabOrderResults
+);
+
+router.post(
+  '/order-items/:id/reject',
+  validateRequest({
+    params: orderItemWorkflowParamsSchema,
+    body: rejectLabOrderItemSchema,
+  }),
+  authenticate(),
+  authorize(LAB_MUTATION_ROLES, 'role'),
+  labWorkspaceController.rejectLabOrderItem
 );
 
 router.post(

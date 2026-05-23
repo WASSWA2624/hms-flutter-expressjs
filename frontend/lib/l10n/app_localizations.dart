@@ -13037,6 +13037,438 @@ abstract class AppLocalizations {
   /// **'Generated from laboratory workflow data.'**
   String get labReportFooter;
 
+  /// Localized text for commonSelectActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get commonSelectActionLabel;
+
+  /// Localized text for commonSaveActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get commonSaveActionLabel;
+
+  /// Localized text for labOrdersViewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders view'**
+  String get labOrdersViewAction;
+
+  /// Localized text for labPatientsViewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients view'**
+  String get labPatientsViewAction;
+
+  /// Localized text for labReferenceRangesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference ranges'**
+  String get labReferenceRangesAction;
+
+  /// Localized text for labPatientsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients'**
+  String get labPatientsSummaryLabel;
+
+  /// Localized text for labPatientsAwaitingResultsSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients awaiting results'**
+  String get labPatientsAwaitingResultsSummaryLabel;
+
+  /// Localized text for labPatientsProcessingSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients in processing'**
+  String get labPatientsProcessingSummaryLabel;
+
+  /// Localized text for labPatientsPendingVerificationSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients pending verification'**
+  String get labPatientsPendingVerificationSummaryLabel;
+
+  /// Localized text for labPatientsCriticalSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients with critical results'**
+  String get labPatientsCriticalSummaryLabel;
+
+  /// Localized text for labPatientsCompletedSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients completed'**
+  String get labPatientsCompletedSummaryLabel;
+
+  /// Localized text for labPatientsWorklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient lab worklist'**
+  String get labPatientsWorklistTitle;
+
+  /// Localized text for labPatientsWorklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients with active lab orders and result-entry work.'**
+  String get labPatientsWorklistDescription;
+
+  /// Localized text for labNoPatientsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No patients in lab worklist'**
+  String get labNoPatientsTitle;
+
+  /// Localized text for labNoPatientsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the queue filter or search term to find patient lab work.'**
+  String get labNoPatientsBody;
+
+  /// Localized text for labOrdersColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get labOrdersColumnLabel;
+
+  /// Localized text for labPatientIdFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get labPatientIdFieldLabel;
+
+  /// Localized text for labVerifyAllAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify all'**
+  String get labVerifyAllAction;
+
+  /// Localized text for labEntryStatusColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry status'**
+  String get labEntryStatusColumnLabel;
+
+  /// Localized text for labSelectOrderDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select lab order'**
+  String get labSelectOrderDialogTitle;
+
+  /// Localized text for labSelectOrderDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This patient has multiple active lab orders. Select the order to review.'**
+  String get labSelectOrderDialogBody;
+
+  /// Localized text for labNoOrderItemsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No ordered tests found'**
+  String get labNoOrderItemsLabel;
+
+  /// Localized text for labTestCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Test code'**
+  String get labTestCodeLabel;
+
+  /// Localized text for labVerifyResultAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify result'**
+  String get labVerifyResultAction;
+
+  /// Localized text for labRejectOrderItemAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject test'**
+  String get labRejectOrderItemAction;
+
+  /// Localized text for labResultFlagLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag'**
+  String get labResultFlagLabel;
+
+  /// Localized text for labVerifyResultDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter and verify result'**
+  String get labVerifyResultDialogTitle;
+
+  /// Localized text for labNumericRangeValidationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number.'**
+  String get labNumericRangeValidationMessage;
+
+  /// Localized text for labVerifyAllDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify entered results'**
+  String get labVerifyAllDialogTitle;
+
+  /// Localized text for labRejectOrderItemDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject requested test'**
+  String get labRejectOrderItemDialogTitle;
+
+  /// Localized text for labRejectReasonNotPerformedHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Test not performed here'**
+  String get labRejectReasonNotPerformedHere;
+
+  /// Localized text for labRejectReasonInsufficientInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient information'**
+  String get labRejectReasonInsufficientInfo;
+
+  /// Localized text for labRejectReasonInvalidRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid request'**
+  String get labRejectReasonInvalidRequest;
+
+  /// Localized text for labRejectReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other reason'**
+  String get labRejectReasonOther;
+
+  /// Localized text for labRejectCustomReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom reason'**
+  String get labRejectCustomReasonLabel;
+
+  /// Localized text for labReferenceRangesDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab test configuration'**
+  String get labReferenceRangesDialogTitle;
+
+  /// Localized text for labReferenceRangesDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Update test details, units, qualitative options, and reference ranges used by backend result interpretation.'**
+  String get labReferenceRangesDialogBody;
+
+  /// Localized text for labConfigureTestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure test'**
+  String get labConfigureTestAction;
+
+  /// Localized text for labQcLogsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'QC logs'**
+  String get labQcLogsAction;
+
+  /// Localized text for labConfigureTestDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure lab test'**
+  String get labConfigureTestDialogTitle;
+
+  /// Localized text for labTestNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Test name'**
+  String get labTestNameLabel;
+
+  /// Localized text for labCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get labCategoryLabel;
+
+  /// Localized text for labSpecimenTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Specimen type'**
+  String get labSpecimenTypeLabel;
+
+  /// Localized text for labResultKindLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result kind'**
+  String get labResultKindLabel;
+
+  /// Localized text for labResultKindNumeric.
+  ///
+  /// In en, this message translates to:
+  /// **'Numeric'**
+  String get labResultKindNumeric;
+
+  /// Localized text for labResultKindQualitative.
+  ///
+  /// In en, this message translates to:
+  /// **'Qualitative'**
+  String get labResultKindQualitative;
+
+  /// Localized text for labResultKindText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get labResultKindText;
+
+  /// Localized text for labDefaultUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default unit'**
+  String get labDefaultUnitLabel;
+
+  /// Localized text for labUnitOptionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit options'**
+  String get labUnitOptionsLabel;
+
+  /// Localized text for labCommaSeparatedHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate multiple values with commas.'**
+  String get labCommaSeparatedHelper;
+
+  /// Localized text for labQualitativeOptionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qualitative result options'**
+  String get labQualitativeOptionsLabel;
+
+  /// Localized text for labGenderApplicabilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender applicability'**
+  String get labGenderApplicabilityLabel;
+
+  /// Localized text for labGenderAnyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get labGenderAnyLabel;
+
+  /// Localized text for labGenderMaleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get labGenderMaleLabel;
+
+  /// Localized text for labGenderFemaleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get labGenderFemaleLabel;
+
+  /// Localized text for labAgeMinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age min'**
+  String get labAgeMinLabel;
+
+  /// Localized text for labAgeMaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age max'**
+  String get labAgeMaxLabel;
+
+  /// Localized text for labAgeUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age unit'**
+  String get labAgeUnitLabel;
+
+  /// Localized text for labAgeUnitDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get labAgeUnitDays;
+
+  /// Localized text for labAgeUnitMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Months'**
+  String get labAgeUnitMonths;
+
+  /// Localized text for labAgeUnitYears.
+  ///
+  /// In en, this message translates to:
+  /// **'Years'**
+  String get labAgeUnitYears;
+
+  /// Localized text for labNormalMinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal min'**
+  String get labNormalMinLabel;
+
+  /// Localized text for labNormalMaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal max'**
+  String get labNormalMaxLabel;
+
+  /// Localized text for labCriticalMinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical min'**
+  String get labCriticalMinLabel;
+
+  /// Localized text for labCriticalMaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical max'**
+  String get labCriticalMaxLabel;
+
+  /// Localized text for labReferenceTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference text'**
+  String get labReferenceTextLabel;
+
+  /// Localized text for labStatusPendingResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending results'**
+  String get labStatusPendingResults;
+
+  /// Localized text for labStatusVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get labStatusVerified;
+
+  /// Localized text for labStatusLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get labStatusLow;
+
+  /// Localized text for labStatusHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get labStatusHigh;
+
+  /// Localized text for labNextActionVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify result'**
+  String get labNextActionVerify;
+
+  /// Localized text for labNextActionEnterResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter result'**
+  String get labNextActionEnterResult;
+
   /// Localized text for labGapBillingTitle.
   ///
   /// In en, this message translates to:

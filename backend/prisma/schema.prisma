@@ -3003,6 +3003,9 @@ model lab_order_item {
   lab_order_id      String         @db.VarChar(36)
   lab_test_id       String         @db.VarChar(36)
   status            LabOrderStatus
+  rejection_reason  String?        @db.VarChar(255)
+  rejection_notes   String?        @db.Text
+  rejected_at       DateTime?
   created_at        DateTime       @default(now())
   updated_at        DateTime       @updatedAt
   deleted_at        DateTime?
@@ -3017,6 +3020,7 @@ model lab_order_item {
   @@index([lab_test_id])
   @@index([status])
   @@index([deleted_at])
+  @@index([rejected_at])
   @@index([human_friendly_id])
 }
 

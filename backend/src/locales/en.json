@@ -999,6 +999,8 @@
   "messages.lab_workspace.receive.success": "Lab sample received successfully",
   "messages.lab_workspace.reject.success": "Lab sample rejected successfully",
   "messages.lab_workspace.release.success": "Lab order item released successfully",
+  "messages.lab_workspace.verify_all.success": "Lab order results verified successfully",
+  "messages.lab_workspace.reject_item.success": "Lab order item rejected successfully",
   "messages.lab_workspace.reverse.success": "Lab workflow step reversed successfully",
   "messages.lab_workspace.resolve_legacy.success": "Legacy lab route resolved successfully",
   "messages.maintenance_request.triage.success": "Maintenance request triaged successfully",

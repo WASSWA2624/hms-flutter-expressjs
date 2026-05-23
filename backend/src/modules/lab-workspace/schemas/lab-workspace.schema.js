@@ -64,6 +64,20 @@ const releaseLabOrderItemSchema = z.object({
   notes: z.string().trim().max(65535).optional().nullable(),
 });
 
+const verifyLabOrderResultItemSchema = releaseLabOrderItemSchema.extend({
+  order_item_id: uuidOrFriendlyIdentifierSchema,
+});
+
+const verifyLabOrderResultsSchema = z.object({
+  results: z.array(verifyLabOrderResultItemSchema).min(1).max(100),
+});
+
+const rejectLabOrderItemSchema = z.object({
+  reason: z.string().trim().min(2).max(255),
+  rejected_at: z.string().datetime().optional(),
+  notes: z.string().trim().max(65535).optional().nullable(),
+});
+
 const reverseLabOrderWorkflowSchema = z.object({
   reason: z.string().trim().min(2).max(65535),
 });
@@ -77,5 +91,7 @@ module.exports = {
   receiveLabSampleSchema,
   rejectLabSampleSchema,
   releaseLabOrderItemSchema,
+  verifyLabOrderResultsSchema,
+  rejectLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
 };

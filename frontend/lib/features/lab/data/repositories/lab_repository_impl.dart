@@ -151,12 +151,64 @@ final class LabRepositoryImpl implements LabRepository {
     String itemId,
     Map<String, Object?> payload,
   ) {
+    return verifyOrderItem(itemId, payload);
+  }
+
+  @override
+  Future<Result<LabOrderWorkflow>> verifyOrderItem(
+    String itemId,
+    Map<String, Object?> payload,
+  ) {
     return _postWorkflow(<String>[
       HmsApiResource.lab.path,
       'order-items',
       itemId,
       'release',
     ], payload);
+  }
+
+  @override
+  Future<Result<LabOrderWorkflow>> verifyOrderResults(
+    String orderId,
+    List<Map<String, Object?>> results,
+  ) {
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'orders',
+      orderId,
+      'verify-results',
+    ], <String, Object?>{'results': results});
+  }
+
+  @override
+  Future<Result<LabOrderWorkflow>> rejectOrderItem(
+    String itemId,
+    Map<String, Object?> payload,
+  ) {
+    return _postWorkflow(<String>[
+      HmsApiResource.lab.path,
+      'order-items',
+      itemId,
+      'reject',
+    ], payload);
+  }
+
+  @override
+  Future<Result<LabCatalogItem>> updateLabTest(
+    String testId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<LabCatalogItem>(
+      ApiEndpoints.byId(HmsApiResource.labTests, testId),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) {
+        final LabJsonMap response = _expectLabMap(data);
+        final LabJsonMap payload = _asLabMap(response['data']).isEmpty
+            ? response
+            : _asLabMap(response['data']);
+        return LabCatalogItemDto(payload, LabCatalogItemType.test).toEntity();
+      },
+    );
   }
 
   @override
@@ -191,6 +243,17 @@ final class LabRepositoryImpl implements LabRepository {
       decoder: (Object? data) =>
           LabOrderWorkflowDto.fromResponse(data).toEntity(),
     );
+  }
+
+  LabJsonMap _expectLabMap(Object? value) {
+    if (value is LabJsonMap) {
+      return value;
+    }
+    throw const FormatException('Expected lab response object.');
+  }
+
+  LabJsonMap _asLabMap(Object? value) {
+    return value is LabJsonMap ? value : <String, Object?>{};
   }
 
   String? _stageFor(LabQueueScope scope) {

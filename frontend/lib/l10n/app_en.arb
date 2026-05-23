@@ -8334,7 +8334,7 @@
   "@labTitle": {
     "description": "Localized text for labTitle."
   },
-  "labDescription": "Manage lab catalog, order queues, samples, result release, QC, and clinician review handoff.",
+  "labDescription": "Manage lab requests, result entry, backend interpretation, verification, reference ranges, reports, and clinician handoff.",
   "@labDescription": {
     "description": "Localized text for labDescription."
   },
@@ -8342,7 +8342,7 @@
   "@labLoadingTitle": {
     "description": "Localized text for labLoadingTitle."
   },
-  "labLoadingBody": "Loading lab queues, catalog, samples, results, and QC logs.",
+  "labLoadingBody": "Loading lab queues, catalog configuration, results, and QC logs.",
   "@labLoadingBody": {
     "description": "Localized text for labLoadingBody."
   },
@@ -8370,7 +8370,7 @@
   "@labTotalOrdersSummaryLabel": {
     "description": "Localized text for labTotalOrdersSummaryLabel."
   },
-  "labWaitingSampleSummaryLabel": "Waiting sample",
+  "labWaitingSampleSummaryLabel": "Awaiting results",
   "@labWaitingSampleSummaryLabel": {
     "description": "Localized text for labWaitingSampleSummaryLabel."
   },
@@ -8378,7 +8378,7 @@
   "@labProcessingSummaryLabel": {
     "description": "Localized text for labProcessingSummaryLabel."
   },
-  "labResultPendingSummaryLabel": "Result pending",
+  "labResultPendingSummaryLabel": "Pending verification",
   "@labResultPendingSummaryLabel": {
     "description": "Localized text for labResultPendingSummaryLabel."
   },
@@ -8386,7 +8386,7 @@
   "@labCriticalSummaryLabel": {
     "description": "Localized text for labCriticalSummaryLabel."
   },
-  "labCompletedSummaryLabel": "Released",
+  "labCompletedSummaryLabel": "Verified",
   "@labCompletedSummaryLabel": {
     "description": "Localized text for labCompletedSummaryLabel."
   },
@@ -8398,7 +8398,7 @@
   "@labSearchLabel": {
     "description": "Localized text for labSearchLabel."
   },
-  "labSearchHint": "Search patient, order, sample, test, or encounter",
+  "labSearchHint": "Search patient, order, test, or encounter",
   "@labSearchHint": {
     "description": "Localized text for labSearchHint."
   },
@@ -8410,7 +8410,7 @@
   "@labScopeAll": {
     "description": "Localized text for labScopeAll."
   },
-  "labScopeCollection": "Waiting sample",
+  "labScopeCollection": "Awaiting results",
   "@labScopeCollection": {
     "description": "Localized text for labScopeCollection."
   },
@@ -8418,7 +8418,7 @@
   "@labScopeProcessing": {
     "description": "Localized text for labScopeProcessing."
   },
-  "labScopeResults": "Result pending",
+  "labScopeResults": "Pending verification",
   "@labScopeResults": {
     "description": "Localized text for labScopeResults."
   },
@@ -8426,7 +8426,7 @@
   "@labScopeCritical": {
     "description": "Localized text for labScopeCritical."
   },
-  "labScopeCompleted": "Released",
+  "labScopeCompleted": "Verified",
   "@labScopeCompleted": {
     "description": "Localized text for labScopeCompleted."
   },
@@ -8438,7 +8438,7 @@
   "@labWorklistTitle": {
     "description": "Localized text for labWorklistTitle."
   },
-  "labWorklistDescription": "Actionable lab orders with sample, processing, result, and release state.",
+  "labWorklistDescription": "Actionable lab orders with requested tests, result entry state, verification state, and report readiness.",
   "@labWorklistDescription": {
     "description": "Localized text for labWorklistDescription."
   },
@@ -8462,7 +8462,7 @@
   "@labTestsColumnLabel": {
     "description": "Localized text for labTestsColumnLabel."
   },
-  "labSampleColumnLabel": "Sample",
+  "labSampleColumnLabel": "Entry status",
   "@labSampleColumnLabel": {
     "description": "Localized text for labSampleColumnLabel."
   },
@@ -8504,7 +8504,7 @@
   "@labDetailLoadingTitle": {
     "description": "Localized text for labDetailLoadingTitle."
   },
-  "labDetailLoadingBody": "Loading samples, results, timeline, and available workflow actions.",
+  "labDetailLoadingBody": "Loading order details, ordered tests, results, timeline, and available actions.",
   "@labDetailLoadingBody": {
     "description": "Localized text for labDetailLoadingBody."
   },
@@ -8512,7 +8512,7 @@
   "@labNoSelectionTitle": {
     "description": "Localized text for labNoSelectionTitle."
   },
-  "labNoSelectionBody": "Choose a lab order from the queue to collect samples, process results, and release reports.",
+  "labNoSelectionBody": "Choose a lab order from the queue to enter, verify, and report results.",
   "@labNoSelectionBody": {
     "description": "Localized text for labNoSelectionBody."
   },
@@ -8532,7 +8532,7 @@
   "@labOrderedAtFieldLabel": {
     "description": "Localized text for labOrderedAtFieldLabel."
   },
-  "labItemsSectionTitle": "Order items",
+  "labItemsSectionTitle": "Ordered tests",
   "@labItemsSectionTitle": {
     "description": "Localized text for labItemsSectionTitle."
   },
@@ -8552,7 +8552,7 @@
   "@labNoSamplesLabel": {
     "description": "Localized text for labNoSamplesLabel."
   },
-  "labNoResultsLabel": "No released results",
+  "labNoResultsLabel": "No verified results",
   "@labNoResultsLabel": {
     "description": "Localized text for labNoResultsLabel."
   },
@@ -8580,7 +8580,7 @@
   "@labRejectSampleAction": {
     "description": "Localized text for labRejectSampleAction."
   },
-  "labReleaseResultAction": "Release result",
+  "labReleaseResultAction": "Verify result",
   "@labReleaseResultAction": {
     "description": "Localized text for labReleaseResultAction."
   },
@@ -8688,7 +8688,7 @@
   "@labRejectReasonLabel": {
     "description": "Localized text for labRejectReasonLabel."
   },
-  "labReleaseDialogTitle": "Release lab result",
+  "labReleaseDialogTitle": "Verify lab result",
   "@labReleaseDialogTitle": {
     "description": "Localized text for labReleaseDialogTitle."
   },
@@ -8708,7 +8708,7 @@
   "@labResultUnitLabel": {
     "description": "Localized text for labResultUnitLabel."
   },
-  "labResultTextLabel": "Result comments",
+  "labResultTextLabel": "Result text",
   "@labResultTextLabel": {
     "description": "Localized text for labResultTextLabel."
   },
@@ -8756,7 +8756,7 @@
   "@labStatusInProcess": {
     "description": "Localized text for labStatusInProcess."
   },
-  "labStatusCompleted": "Released",
+  "labStatusCompleted": "Verified",
   "@labStatusCompleted": {
     "description": "Localized text for labStatusCompleted."
   },
@@ -8792,15 +8792,15 @@
   "@labNextActionCancelled": {
     "description": "Localized text for labNextActionCancelled."
   },
-  "labNextActionCollect": "Collect sample",
+  "labNextActionCollect": "Enter result",
   "@labNextActionCollect": {
     "description": "Localized text for labNextActionCollect."
   },
-  "labNextActionReceive": "Receive sample",
+  "labNextActionReceive": "Enter result",
   "@labNextActionReceive": {
     "description": "Localized text for labNextActionReceive."
   },
-  "labNextActionRelease": "Enter and release result",
+  "labNextActionRelease": "Verify result",
   "@labNextActionRelease": {
     "description": "Localized text for labNextActionRelease."
   },
@@ -8844,7 +8844,7 @@
   "@labReportRangeLabel": {
     "description": "Localized text for labReportRangeLabel."
   },
-  "labReportVerifiedLabel": "Released",
+  "labReportVerifiedLabel": "Verified",
   "@labReportVerifiedLabel": {
     "description": "Localized text for labReportVerifiedLabel."
   },
@@ -14562,5 +14562,293 @@
   "pharmacyReadinessPrintReady": "Medication printouts use the configured print workflow.",
   "@pharmacyReadinessPrintReady": {
     "description": "Localized text for pharmacyReadinessPrintReady."
+  },
+  "commonSelectActionLabel": "Select",
+  "@commonSelectActionLabel": {
+    "description": "Localized text for commonSelectActionLabel."
+  },
+  "commonSaveActionLabel": "Save",
+  "@commonSaveActionLabel": {
+    "description": "Localized text for commonSaveActionLabel."
+  },
+  "labOrdersViewAction": "Orders view",
+  "@labOrdersViewAction": {
+    "description": "Localized text for labOrdersViewAction."
+  },
+  "labPatientsViewAction": "Patients view",
+  "@labPatientsViewAction": {
+    "description": "Localized text for labPatientsViewAction."
+  },
+  "labReferenceRangesAction": "Reference ranges",
+  "@labReferenceRangesAction": {
+    "description": "Localized text for labReferenceRangesAction."
+  },
+  "labPatientsSummaryLabel": "Patients",
+  "@labPatientsSummaryLabel": {
+    "description": "Localized text for labPatientsSummaryLabel."
+  },
+  "labPatientsAwaitingResultsSummaryLabel": "Patients awaiting results",
+  "@labPatientsAwaitingResultsSummaryLabel": {
+    "description": "Localized text for labPatientsAwaitingResultsSummaryLabel."
+  },
+  "labPatientsProcessingSummaryLabel": "Patients in processing",
+  "@labPatientsProcessingSummaryLabel": {
+    "description": "Localized text for labPatientsProcessingSummaryLabel."
+  },
+  "labPatientsPendingVerificationSummaryLabel": "Patients pending verification",
+  "@labPatientsPendingVerificationSummaryLabel": {
+    "description": "Localized text for labPatientsPendingVerificationSummaryLabel."
+  },
+  "labPatientsCriticalSummaryLabel": "Patients with critical results",
+  "@labPatientsCriticalSummaryLabel": {
+    "description": "Localized text for labPatientsCriticalSummaryLabel."
+  },
+  "labPatientsCompletedSummaryLabel": "Patients completed",
+  "@labPatientsCompletedSummaryLabel": {
+    "description": "Localized text for labPatientsCompletedSummaryLabel."
+  },
+  "labPatientsWorklistTitle": "Patient lab worklist",
+  "@labPatientsWorklistTitle": {
+    "description": "Localized text for labPatientsWorklistTitle."
+  },
+  "labPatientsWorklistDescription": "Patients with active lab orders and result-entry work.",
+  "@labPatientsWorklistDescription": {
+    "description": "Localized text for labPatientsWorklistDescription."
+  },
+  "labNoPatientsTitle": "No patients in lab worklist",
+  "@labNoPatientsTitle": {
+    "description": "Localized text for labNoPatientsTitle."
+  },
+  "labNoPatientsBody": "Adjust the queue filter or search term to find patient lab work.",
+  "@labNoPatientsBody": {
+    "description": "Localized text for labNoPatientsBody."
+  },
+  "labOrdersColumnLabel": "Orders",
+  "@labOrdersColumnLabel": {
+    "description": "Localized text for labOrdersColumnLabel."
+  },
+  "labPatientIdFieldLabel": "Patient ID",
+  "@labPatientIdFieldLabel": {
+    "description": "Localized text for labPatientIdFieldLabel."
+  },
+  "labVerifyAllAction": "Verify all",
+  "@labVerifyAllAction": {
+    "description": "Localized text for labVerifyAllAction."
+  },
+  "labEntryStatusColumnLabel": "Entry status",
+  "@labEntryStatusColumnLabel": {
+    "description": "Localized text for labEntryStatusColumnLabel."
+  },
+  "labSelectOrderDialogTitle": "Select lab order",
+  "@labSelectOrderDialogTitle": {
+    "description": "Localized text for labSelectOrderDialogTitle."
+  },
+  "labSelectOrderDialogBody": "This patient has multiple active lab orders. Select the order to review.",
+  "@labSelectOrderDialogBody": {
+    "description": "Localized text for labSelectOrderDialogBody."
+  },
+  "labNoOrderItemsLabel": "No ordered tests found",
+  "@labNoOrderItemsLabel": {
+    "description": "Localized text for labNoOrderItemsLabel."
+  },
+  "labTestCodeLabel": "Test code",
+  "@labTestCodeLabel": {
+    "description": "Localized text for labTestCodeLabel."
+  },
+  "labVerifyResultAction": "Verify result",
+  "@labVerifyResultAction": {
+    "description": "Localized text for labVerifyResultAction."
+  },
+  "labRejectOrderItemAction": "Reject test",
+  "@labRejectOrderItemAction": {
+    "description": "Localized text for labRejectOrderItemAction."
+  },
+  "labResultFlagLabel": "Flag",
+  "@labResultFlagLabel": {
+    "description": "Localized text for labResultFlagLabel."
+  },
+  "labVerifyResultDialogTitle": "Enter and verify result",
+  "@labVerifyResultDialogTitle": {
+    "description": "Localized text for labVerifyResultDialogTitle."
+  },
+  "labNumericRangeValidationMessage": "Enter a valid number.",
+  "@labNumericRangeValidationMessage": {
+    "description": "Localized text for labNumericRangeValidationMessage."
+  },
+  "labVerifyAllDialogTitle": "Verify entered results",
+  "@labVerifyAllDialogTitle": {
+    "description": "Localized text for labVerifyAllDialogTitle."
+  },
+  "labRejectOrderItemDialogTitle": "Reject requested test",
+  "@labRejectOrderItemDialogTitle": {
+    "description": "Localized text for labRejectOrderItemDialogTitle."
+  },
+  "labRejectReasonNotPerformedHere": "Test not performed here",
+  "@labRejectReasonNotPerformedHere": {
+    "description": "Localized text for labRejectReasonNotPerformedHere."
+  },
+  "labRejectReasonInsufficientInfo": "Insufficient information",
+  "@labRejectReasonInsufficientInfo": {
+    "description": "Localized text for labRejectReasonInsufficientInfo."
+  },
+  "labRejectReasonInvalidRequest": "Invalid request",
+  "labRejectReasonOther": "Other reason",
+  "@labRejectReasonOther": {
+    "description": "Localized text for labRejectReasonOther."
+  },
+  "labRejectCustomReasonLabel": "Custom reason",
+  "@labRejectCustomReasonLabel": {
+    "description": "Localized text for labRejectCustomReasonLabel."
+  },
+  "@labRejectReasonInvalidRequest": {
+    "description": "Localized text for labRejectReasonInvalidRequest."
+  },
+  "labReferenceRangesDialogTitle": "Lab test configuration",
+  "@labReferenceRangesDialogTitle": {
+    "description": "Localized text for labReferenceRangesDialogTitle."
+  },
+  "labReferenceRangesDialogBody": "Update test details, units, qualitative options, and reference ranges used by backend result interpretation.",
+  "@labReferenceRangesDialogBody": {
+    "description": "Localized text for labReferenceRangesDialogBody."
+  },
+  "labConfigureTestAction": "Configure test",
+  "@labConfigureTestAction": {
+    "description": "Localized text for labConfigureTestAction."
+  },
+  "labQcLogsAction": "QC logs",
+  "@labQcLogsAction": {
+    "description": "Localized text for labQcLogsAction."
+  },
+  "labConfigureTestDialogTitle": "Configure lab test",
+  "@labConfigureTestDialogTitle": {
+    "description": "Localized text for labConfigureTestDialogTitle."
+  },
+  "labTestNameLabel": "Test name",
+  "@labTestNameLabel": {
+    "description": "Localized text for labTestNameLabel."
+  },
+  "labCategoryLabel": "Category",
+  "@labCategoryLabel": {
+    "description": "Localized text for labCategoryLabel."
+  },
+  "labSpecimenTypeLabel": "Specimen type",
+  "@labSpecimenTypeLabel": {
+    "description": "Localized text for labSpecimenTypeLabel."
+  },
+  "labResultKindLabel": "Result kind",
+  "@labResultKindLabel": {
+    "description": "Localized text for labResultKindLabel."
+  },
+  "labResultKindNumeric": "Numeric",
+  "@labResultKindNumeric": {
+    "description": "Localized text for labResultKindNumeric."
+  },
+  "labResultKindQualitative": "Qualitative",
+  "@labResultKindQualitative": {
+    "description": "Localized text for labResultKindQualitative."
+  },
+  "labResultKindText": "Text",
+  "@labResultKindText": {
+    "description": "Localized text for labResultKindText."
+  },
+  "labDefaultUnitLabel": "Default unit",
+  "@labDefaultUnitLabel": {
+    "description": "Localized text for labDefaultUnitLabel."
+  },
+  "labUnitOptionsLabel": "Unit options",
+  "@labUnitOptionsLabel": {
+    "description": "Localized text for labUnitOptionsLabel."
+  },
+  "labCommaSeparatedHelper": "Separate multiple values with commas.",
+  "@labCommaSeparatedHelper": {
+    "description": "Localized text for labCommaSeparatedHelper."
+  },
+  "labQualitativeOptionsLabel": "Qualitative result options",
+  "@labQualitativeOptionsLabel": {
+    "description": "Localized text for labQualitativeOptionsLabel."
+  },
+  "labGenderApplicabilityLabel": "Gender applicability",
+  "@labGenderApplicabilityLabel": {
+    "description": "Localized text for labGenderApplicabilityLabel."
+  },
+  "labGenderAnyLabel": "Any",
+  "@labGenderAnyLabel": {
+    "description": "Localized text for labGenderAnyLabel."
+  },
+  "labGenderMaleLabel": "Male",
+  "@labGenderMaleLabel": {
+    "description": "Localized text for labGenderMaleLabel."
+  },
+  "labGenderFemaleLabel": "Female",
+  "@labGenderFemaleLabel": {
+    "description": "Localized text for labGenderFemaleLabel."
+  },
+  "labAgeMinLabel": "Age min",
+  "@labAgeMinLabel": {
+    "description": "Localized text for labAgeMinLabel."
+  },
+  "labAgeMaxLabel": "Age max",
+  "@labAgeMaxLabel": {
+    "description": "Localized text for labAgeMaxLabel."
+  },
+  "labAgeUnitLabel": "Age unit",
+  "@labAgeUnitLabel": {
+    "description": "Localized text for labAgeUnitLabel."
+  },
+  "labAgeUnitDays": "Days",
+  "@labAgeUnitDays": {
+    "description": "Localized text for labAgeUnitDays."
+  },
+  "labAgeUnitMonths": "Months",
+  "@labAgeUnitMonths": {
+    "description": "Localized text for labAgeUnitMonths."
+  },
+  "labAgeUnitYears": "Years",
+  "@labAgeUnitYears": {
+    "description": "Localized text for labAgeUnitYears."
+  },
+  "labNormalMinLabel": "Normal min",
+  "@labNormalMinLabel": {
+    "description": "Localized text for labNormalMinLabel."
+  },
+  "labNormalMaxLabel": "Normal max",
+  "@labNormalMaxLabel": {
+    "description": "Localized text for labNormalMaxLabel."
+  },
+  "labCriticalMinLabel": "Critical min",
+  "@labCriticalMinLabel": {
+    "description": "Localized text for labCriticalMinLabel."
+  },
+  "labCriticalMaxLabel": "Critical max",
+  "@labCriticalMaxLabel": {
+    "description": "Localized text for labCriticalMaxLabel."
+  },
+  "labReferenceTextLabel": "Reference text",
+  "@labReferenceTextLabel": {
+    "description": "Localized text for labReferenceTextLabel."
+  },
+  "labStatusPendingResults": "Pending results",
+  "@labStatusPendingResults": {
+    "description": "Localized text for labStatusPendingResults."
+  },
+  "labStatusVerified": "Verified",
+  "@labStatusVerified": {
+    "description": "Localized text for labStatusVerified."
+  },
+  "labStatusLow": "Low",
+  "@labStatusLow": {
+    "description": "Localized text for labStatusLow."
+  },
+  "labStatusHigh": "High",
+  "@labStatusHigh": {
+    "description": "Localized text for labStatusHigh."
+  },
+  "labNextActionVerify": "Verify result",
+  "@labNextActionVerify": {
+    "description": "Localized text for labNextActionVerify."
+  },
+  "labNextActionEnterResult": "Enter result",
+  "@labNextActionEnterResult": {
+    "description": "Localized text for labNextActionEnterResult."
   }
 }

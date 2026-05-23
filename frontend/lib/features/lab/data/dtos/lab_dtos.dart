@@ -81,6 +81,11 @@ final class LabCatalogItemDto {
       unit: _string(json['unit']),
       description: _string(json['description']),
       referenceRange: _string(json['reference_range']),
+      referenceRanges: _list(json['reference_ranges'])
+          .map(LabReferenceRangeDto.new)
+          .map((LabReferenceRangeDto dto) => dto.toEntity())
+          .where((LabReferenceRange item) => item.id.isNotEmpty)
+          .toList(growable: false),
       referenceRangeCount: _int(json['reference_range_count']),
       unitOptions: _list(json['unit_options'])
           .map(LabUnitOptionDto.new)
@@ -118,6 +123,33 @@ final class LabPanelItemDto {
       instructions: _string(json['instructions']),
       isRequired: _bool(json['is_required'], fallback: true),
       sortOrder: _int(json['sort_order']),
+    );
+  }
+}
+
+final class LabReferenceRangeDto {
+  const LabReferenceRangeDto(this.json);
+
+  final LabJsonMap json;
+
+  LabReferenceRange toEntity() {
+    return LabReferenceRange(
+      id: _string(json['id']) ?? _string(json['label']) ?? '',
+      label: _string(json['label']),
+      unit: _string(json['unit']),
+      gender: _string(json['gender']),
+      ageMinValue: _num(json['age_min_value']),
+      ageMinUnit: _string(json['age_min_unit']),
+      ageMaxValue: _num(json['age_max_value']),
+      ageMaxUnit: _string(json['age_max_unit']),
+      normalMinValue: _string(json['normal_min_value']),
+      normalMaxValue: _string(json['normal_max_value']),
+      criticalMinValue: _string(json['critical_min_value']),
+      criticalMaxValue: _string(json['critical_max_value']),
+      referenceText: _string(json['reference_text']),
+      notes: _string(json['notes']),
+      sortOrder: _int(json['sort_order']),
+      summary: _string(json['summary']),
     );
   }
 }
@@ -178,6 +210,7 @@ final class LabOrderSummaryDto {
       pendingItemCount: _int(json['pending_item_count']),
       inProcessItemCount: _int(json['in_process_item_count']),
       completedItemCount: _int(json['completed_item_count']),
+      rejectedItemCount: _int(json['rejected_item_count']),
       sampleCount: _int(json['sample_count']),
       isPatientGroup: _bool(json['patient_worklist']),
       activeOrderCount: _int(json['active_order_count']),
@@ -214,12 +247,38 @@ final class LabOrderItemDto {
       labTestId: _string(json['lab_test_id']),
       testDisplayName: _string(json['test_display_name']),
       testCode: _string(json['test_code']),
+      category: _string(json['category']),
+      specimenType: _string(json['specimen_type']),
+      resultKind: _string(json['result_kind']),
       unit: _string(json['unit']),
       unitOptions: _list(json['unit_options'])
           .map(LabUnitOptionDto.new)
           .map((LabUnitOptionDto dto) => dto.toEntity())
           .where((LabUnitOption item) => item.id.isNotEmpty)
           .toList(growable: false),
+      resultOptions: _list(json['result_options'])
+          .map(LabResultOptionDto.new)
+          .map((LabResultOptionDto dto) => dto.toEntity())
+          .where((LabResultOption item) => item.id.isNotEmpty)
+          .toList(growable: false),
+      referenceRange: _string(json['reference_range']),
+      referenceRanges: _list(json['reference_ranges'])
+          .map(LabReferenceRangeDto.new)
+          .map((LabReferenceRangeDto dto) => dto.toEntity())
+          .where((LabReferenceRange item) => item.id.isNotEmpty)
+          .toList(growable: false),
+      resultId: _string(json['result_id']),
+      resultValue: _string(json['result_value']),
+      resultUnit: _string(json['result_unit']),
+      resultText: _string(json['result_text']),
+      resultFlag: _string(json['result_flag']),
+      isPositive: _bool(json['is_positive']),
+      referenceRangeLabel: _string(json['reference_range_label']),
+      referenceRangeSummary: _string(json['reference_range_summary']),
+      reportedAt: _date(json['reported_at']),
+      rejectionReason: _string(json['rejection_reason']),
+      rejectionNotes: _string(json['rejection_notes']),
+      rejectedAt: _date(json['rejected_at']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );
@@ -358,6 +417,9 @@ final class LabWorkflowNextActionsDto {
       canCollect: _bool(json['can_collect']),
       canReceiveSample: _bool(json['can_receive_sample']),
       canReleaseResult: _bool(json['can_release_result']),
+      canVerifyResult: _bool(json['can_verify_result'], fallback: _bool(json['can_release_result'])),
+      canVerifyAll: _bool(json['can_verify_all']),
+      canRejectOrderItem: _bool(json['can_reject_order_item']),
       canReverseWorkflow: _bool(json['can_reverse_workflow']),
     );
   }
@@ -440,6 +502,16 @@ DateTime? _date(Object? value) {
   }
 
   return DateTime.tryParse(normalized);
+}
+
+num? _num(Object? value) {
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value.trim());
+  }
+  return null;
 }
 
 int _int(Object? value) {

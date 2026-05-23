@@ -1,420 +1,575 @@
-You are working on the attached Hospital Management System codebase with these main folders:
+# Implementation Prompt: Refactor HMS Laboratory Workflow Into Result Entry, Verification, Reference Range, and Reporting Flow
+
+You are working on the HMS codebase with these main folders:
 
 * `app-planner`
 * `backend`
 * `frontend`
 
-Your task is to inspect the existing codebase and implement targeted fixes that make the OPD and IPD patient flows clear, consistent, simple, backend-aligned, role-aware, and free of confusing or redundant steps.
+Implement a focused refactor of the Laboratory module so it behaves like a practical lab result-entry and reporting workflow, not a sample-collection workflow.
 
-Do **not** perform a broad rewrite. Implement only the changes required to fix real issues found in the existing code.
+## 1. Problem to solve
 
----
+The current lab workspace is too sample-centric. It exposes primary actions and labels such as **Collect sample**, **Receive sample**, **Waiting sample**, **Sample**, and a prominent **Record QC** action.
 
-## 1. Main Problem to Solve
+The intended workflow is:
 
-Review and improve the complete OPD and IPD flows so that:
+1. A doctor/user requests lab tests or panels.
+2. Lab staff see the requested tests.
+3. Lab staff enter result values for each requested test.
+4. The backend applies configured reference ranges/result options.
+5. The backend flags results as normal, low, high, abnormal, critical, etc.
+6. Lab staff verify one result or verify all entered results in a batch.
+7. Verified results become visible to requester/doctor-facing clinical areas.
+8. Report preview/copy output shows patient/order details, result values, units, reference ranges, and flags.
 
-* Patient movement through OPD and IPD is obvious and complete.
-* Frontend workflow steps match backend stages, routes, permissions, and data models.
-* Redundant, duplicated, unclear, or frontend-only steps are removed or corrected.
-* Role-based menus and pages show only what each user is authorized to access.
-* OPD/IPD actions are available only to the correct roles.
-* Bottlenecks, unnecessary reloads, inconsistent status labels, and confusing UI states are fixed.
-* Linter/analyzer issues are cleared.
+Do not turn this into a device/equipment workflow. The lab module is for entering, verifying, interpreting, and reporting manually performed lab results.
 
-The final system should feel like a professional hospital workflow: simple for users, strict on permissions, and aligned across frontend, backend, and planner documentation.
+## 2. Important archive findings
 
----
+Use the actual codebase as the source of truth.
 
-## 2. Project Areas to Inspect
+No task-specific screenshots were found in the archive. The only image files found are app/logo/splash/icon assets. Therefore, all UI/UX requirements below are derived from the raw task and the existing codebase.
 
-Inspect these areas before modifying anything.
-
-### `app-planner`
-
-Review and use these files as planning references:
+The raw task also exists in:
 
 * `app-planner/prompt.md`
-* `app-planner/opd-flow.md`
-* `app-planner/ipd-flow.md`
-* `app-planner/dev-plan/12-opd-flow.md`
-* `app-planner/dev-plan/16-inpatient.md`
-* `app-planner/dev-plan/19-discharge.md`
+* `app-planner/external-prompt-prefix.md`
 
-Important: `app-planner/dev-plan/12-opd-flow.md` refers to `app-planner/opd-flow.md` as an OPD source of truth, but the current `opd-flow.md` may contain older summary-card instructions instead of a complete OPD flow blueprint. Verify this mismatch from the actual file content. If planner files are updated, update only the relevant planner files and keep them aligned with the implemented code.
+Use planner docs for guidance only unless project conventions require implementation notes.
 
-No separate workflow screenshots are present in the archive. Use the existing Flutter UI patterns and planner documents as the UI/UX source of truth.
+## 3. Relevant project areas to inspect or modify
 
-### Backend
+### Planner/reference files
 
-Inspect these backend areas:
+Inspect for architecture and UI conventions:
 
+* `app-planner/dev-plan/21-lab.md`
+* `app-planner/dev-plan/10-workspace-ui.md`
+* `app-planner/dev-plan/02-codebase.md`
+* Relevant app rules under `app-planner`
+
+Do not modify planner files unless existing project conventions explicitly require documentation updates.
+
+### Backend files
+
+Inspect and modify only where needed:
+
+* `backend/prisma/schema.prisma`
 * `backend/src/app/router.js`
-* `backend/src/config/roles.js`
-* `backend/src/config/permissions.js`
-* `backend/src/modules/opd-flow/**`
-* `backend/src/modules/ipd-flow/**`
-* `backend/src/modules/admission/**`
-* `backend/src/modules/encounter/**`
-* `backend/src/modules/visit-queue/**`
-* `backend/src/modules/triage/**`
-* `backend/src/modules/patient/**`
-* `backend/src/modules/appointment/**`
-* `backend/src/modules/billing/**`
-* `backend/src/modules/invoice/**`
-* `backend/src/modules/payment/**`
-* `backend/src/modules/lab-workspace/**`
-* `backend/src/modules/radiology-workspace/**`
-* `backend/src/modules/pharmacy-workspace/**`
-* `backend/src/modules/clinical-note/**`
-* `backend/src/modules/nursing-note/**`
-* `backend/src/modules/discharge-summary/**`
-* `backend/src/modules/bed/**`
-* `backend/src/modules/bed-assignment/**`
-* `backend/src/modules/transfer-request/**`
-* `backend/src/modules/icu-stay/**`
-* `backend/scripts/seeders/seed-catalog.js`
+* `backend/src/modules/lab-workspace/routes/lab-workspace.routes.js`
+* `backend/src/modules/lab-workspace/controllers/lab-workspace.controller.js`
+* `backend/src/modules/lab-workspace/services/lab-workspace.service.js`
+* `backend/src/modules/lab-workspace/services/lab.serializer.js`
+* `backend/src/modules/lab-workspace/services/lab.shared.js`
+* `backend/src/modules/lab-workspace/services/lab.interpretation.js`
+* `backend/src/modules/lab-workspace/services/lab.configuration.js`
+* `backend/src/modules/lab-workspace/schemas/lab-workspace.schema.js`
+* `backend/src/modules/lab-test/**`
+* `backend/src/modules/lab-panel/**`
+* `backend/src/modules/lab-order/**`
+* `backend/src/modules/opd-flow/services/opd-flow.service.js`
+* Any requester/doctor-facing backend consumer of lab result data, only if required
+* Relevant backend tests under `backend/src/tests/**`
 
-Preserve the backend architecture:
+Confirmed backend facts:
 
-* Express + CommonJS.
-* `/api/v1/*` routes.
-* Route → controller → service → repository layering.
-* Zod validation.
-* Existing response helpers.
-* Existing role/permission system.
-* Existing Prisma/database naming conventions.
-* Existing audit/security patterns.
+* `lab.interpretation.js` already evaluates numeric, qualitative, and text results.
+* Lab test reference ranges, unit options, and result options already exist in the backend lab-test model/service.
+* Lab panels already expand into individual `lab_order_item` records through lab-order logic.
+* `releaseLabOrderItem` already creates/updates `lab_result` and computes interpretation.
+* There is no obvious existing batch result verification endpoint.
+* Current rejection is sample-level, not clearly durable per order item/test.
+* The lab workspace controller currently needs verification that it passes the `view` query parameter through to the service so the patient/order toggle works as intended.
 
-### Frontend
+### Frontend files
 
-Inspect these frontend areas:
+Inspect and modify only where needed:
 
-* `frontend/lib/app/router/app_routes.dart`
-* `frontend/lib/app/router/app_router.dart`
-* `frontend/lib/app/router/route_guards.dart`
-* `frontend/lib/core/permissions/**`
-* `frontend/lib/features/opd/**`
-* `frontend/lib/features/ipd/**`
-* `frontend/lib/features/patients/**`
-* `frontend/lib/features/clinical/**`
-* `frontend/lib/features/nursing/**`
-* `frontend/lib/features/lab/**`
-* `frontend/lib/features/radiology/**`
-* `frontend/lib/features/pharmacy/**`
-* `frontend/lib/features/billing/**`
-* `frontend/lib/features/discharge/**`
-* `frontend/lib/features/emergency/**`
-* `frontend/lib/features/icu/**`
-* `frontend/lib/features/rooms_beds/**`
-* `frontend/lib/shared/layout/app_workspace.dart`
-* `frontend/lib/shared/components/app_list_table.dart`
-* `frontend/lib/shared/components/app_search_bar.dart`
-* `frontend/lib/shared/opd_actions/**`
-* `frontend/lib/l10n/**`, if UI text is changed
+* `frontend/lib/features/lab/domain/entities/lab_entities.dart`
+* `frontend/lib/features/lab/data/dtos/lab_dtos.dart`
+* `frontend/lib/features/lab/domain/repositories/lab_repository.dart`
+* `frontend/lib/features/lab/data/repositories/lab_repository_impl.dart`
+* `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart`
+* `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`
+* `frontend/lib/core/network/api_endpoints.dart`, only if new endpoint constants are needed
+* `frontend/lib/features/clinical/domain/entities/clinical_entities.dart`
+* `frontend/lib/features/clinical/data/dtos/clinical_dtos.dart`
+* `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
+* Existing localization files, including:
 
-Preserve the frontend architecture:
+  * `frontend/lib/l10n/app_en.arb`
+  * generated localization Dart files, if this project keeps them committed
 
-* Flutter feature-first structure.
-* Riverpod state management.
-* GoRouter route guards.
-* Existing shared layout/components.
-* Existing localization approach.
-* Existing styling, spacing, cards, tables, dialogs, badges, and workspace patterns.
+Confirmed frontend facts:
 
----
+* The lab workspace uses Flutter with the existing DTO/entity/repository/controller/page pattern.
+* The lab workspace uses shared UI patterns such as `AppWorkspace`, `AppListTable`, dialogs, badges, report preview/copy actions, and async state handling.
+* The current lab page has:
 
-## 3. OPD Flow Requirements
+  * Laboratory title
+  * green `Live sync` indicator
+  * Patients/orders view toggle
+  * Refresh action
+  * prominent `Record QC` action
+  * sample-centered summary labels
+  * sample column
+  * detail dialog with `Collect sample`, `Receive sample`, sample sections, result release dialog, and report preview
+* The current detail header shows lab order ID as copyable but does not correctly expose a copyable patient ID.
+* The current result dialog lets the frontend choose result status manually. This must be replaced or constrained so the backend interpretation is authoritative.
+* Patient-group rows may represent multiple active lab orders. Do not silently open only one order.
 
-Make the OPD flow simple, complete, and backend-aligned.
+## 4. Architecture and style rules
 
-The OPD flow must support these entry paths where already represented in the codebase:
+Preserve the existing architecture.
 
-* Walk-in/new patient.
-* Appointment check-in.
-* Follow-up/review.
-* Emergency-to-OPD handoff where applicable.
+* Do not introduce a new frontend state-management pattern.
+* Do not introduce a new UI framework.
+* Do not rewrite unrelated modules.
+* Do not duplicate backend result interpretation in the frontend.
+* Do not create duplicate DTOs/entities/services when existing ones can be extended.
+* Do not hardcode new user-facing strings if the feature uses localization.
+* Preserve backend route/controller/service/schema/serializer patterns.
+* Preserve existing authorization and role patterns.
+* Preserve realtime/event behavior for lab workflow updates.
+* Modify only files required for this lab workflow change.
+* Clear all linter/analyzer issues.
 
-The OPD flow must avoid duplicate active encounters. If an active OPD encounter already exists for a patient, the UI should reuse or clearly surface it instead of silently creating another one.
+## 5. Main lab workspace UI requirements
 
-The frontend OPD workspace must align with backend OPD flow stages, including:
+Keep the existing Laboratory workspace visual style:
 
-| Backend OPD Stage              | Expected User Meaning                                       | Expected Primary Owner |
-| ------------------------------ | ----------------------------------------------------------- | ---------------------- |
-| `WAITING_CONSULTATION_PAYMENT` | Patient must complete consultation/payment gate if required | Reception/Billing      |
-| `WAITING_VITALS`               | Patient is ready for vitals                                 | Nurse                  |
-| `WAITING_DOCTOR_ASSIGNMENT`    | Patient needs doctor/provider assignment                    | Reception/Nurse        |
-| `WAITING_DOCTOR_REVIEW`        | Patient is waiting for consultation                         | Doctor                 |
-| `LAB_REQUESTED`                | Patient has pending lab work                                | Lab                    |
-| `RADIOLOGY_REQUESTED`          | Patient has pending imaging                                 | Radiology              |
-| `LAB_AND_RADIOLOGY_REQUESTED`  | Patient has pending diagnostics                             | Lab/Radiology          |
-| `PHARMACY_REQUESTED`           | Patient has pending pharmacy action                         | Pharmacy               |
-| `WAITING_DISPOSITION`          | Doctor must decide final outcome                            | Doctor                 |
-| `ADMITTED`                     | Patient has moved to IPD/admission flow                     | OPD/IPD handoff        |
-| `DISCHARGED`                   | OPD visit is complete                                       | Reception/Clinical     |
+* Page title: `Laboratory`
+* Green live-sync indicator
+* Patients/orders toggle
+* Refresh action
+* Existing table/workspace layout language
 
-Fix any frontend labels, filters, actions, badges, summary cards, or dialogs that do not match the backend meaning.
+Change the visible workflow language away from sample collection.
 
-OPD worklists must clearly show:
+Replace or remove sample-centered labels:
 
-* Patient identity.
-* Encounter/visit information.
-* Visit type.
-* Queue/stage/status.
-* Provider or department.
-* Billing/payment state where relevant.
-* Waiting time or arrival time where available.
-* Next required action.
-* Role/team responsible for the next action.
+| Current concept                   | Required direction                                   |
+| --------------------------------- | ---------------------------------------------------- |
+| `Waiting sample`                  | `Awaiting results`, `Pending results`, or equivalent |
+| `Patients waiting sample`         | Result-entry-oriented wording                        |
+| `Sample` primary column           | Remove or replace with result/status-oriented column |
+| `Collect sample` primary action   | Remove from primary lab workflow                     |
+| `Receive sample` primary action   | Remove from primary lab workflow                     |
+| `Release result` primary UI label | Prefer `Verify result`                               |
+| `Record QC` top-level action      | Remove/hide from primary action bar                  |
 
-OPD actions must be shown only when valid for the current stage and current user role. Do not show doctor review actions to billing users, billing actions to lab users, clinical actions to reception-only users, or staff actions to patient users.
+The primary worklist should emphasize:
 
-Avoid full workspace reloads after small modal actions if existing controller patterns support targeted refresh.
+* Patient
+* Patient ID
+* Encounter ID, if available
+* Lab order ID
+* Requested tests/panels
+* Result status
+* Next action
 
----
+Do not delete backend sample models/routes simply because the primary UI no longer shows sample collection.
 
-## 4. IPD Flow Requirements
+## 6. QC behavior
 
-Make the IPD flow simple, complete, and backend-aligned.
-
-The IPD flow should follow the existing planner intent:
-
-1. Admission request from OPD, emergency, planned admission, or referral.
-2. IPD admission/encounter creation.
-3. Bed request and allocation.
-4. Configurable billing/insurance clearance where already supported.
-5. Ward handover.
-6. Nursing admission.
-7. Doctor inpatient assessment.
-8. Care plan, orders, notes, and service execution.
-9. Transfers where needed.
-10. Discharge planning.
-11. Final clinical, nursing, pharmacy, billing, and insurance clearance where supported.
-12. Patient exit.
-13. Bed cleaning/release.
-14. Encounter closure.
-
-The frontend IPD workspace must align with backend IPD flow stages, including:
-
-| Backend IPD Stage      | Expected User Meaning                     | Expected Primary Owner         |
-| ---------------------- | ----------------------------------------- | ------------------------------ |
-| `ADMITTED_PENDING_BED` | Admission exists but bed is not assigned  | Bed manager/Nurse/Operations   |
-| `ADMITTED_IN_BED`      | Patient is admitted and assigned to a bed | Ward/Nursing/Doctor            |
-| `TRANSFER_REQUESTED`   | Transfer has been requested               | Ward/Operations                |
-| `TRANSFER_IN_PROGRESS` | Transfer is being processed               | Ward/Operations                |
-| `DISCHARGE_PLANNED`    | Discharge is planned but not finalized    | Doctor/Nurse/Billing/Pharmacy  |
-| `DISCHARGED`           | Admission is complete                     | Clinical/Billing/Operations    |
-| `CANCELLED`            | Admission was cancelled/rejected          | Authorized admin/clinical user |
-
-Fix any frontend labels, filters, actions, badges, summary cards, or dialogs that do not match the backend meaning.
-
-IPD worklists must clearly show:
-
-* Patient identity.
-* Admission number/context.
-* Current ward/room/bed.
-* Admission stage.
-* Transfer status where relevant.
-* Discharge status where relevant.
-* ICU status where relevant.
-* Next required action.
-* Role/team responsible for the next action.
-
-Verify the current backend IPD permissions. The IPD planner expects bed, ward, nursing, operations, billing, and clinical users to participate in the flow, but the current backend IPD routes may be restricted mostly to clinical permissions. Align backend and frontend access rules if this creates blocked or inconsistent workflow behavior.
-
----
-
-## 5. Role-Based Menu and Access Requirements
-
-For every authenticated user, the sidebar/menu, route guards, visible pages, buttons, dialogs, and backend endpoints must agree.
-
-Verify these demo accounts from the seed data and raw task:
-
-* `super.admin@hosspi.com`
-* `tenant.admin@hosspi.com`
-* `facility.admin@hosspi.com`
-* `doctor@hosspi.com`
-* `nurse@hosspi.com`
-* `lab@hosspi.com`
-* `pharmacy@hosspi.com`
-* `reception@hosspi.com`
-* `billing@hosspi.com`
-* `operations@hosspi.com`
-* `hr@hosspi.com`
-* `biomed@hosspi.com`
-* `housekeeping@hosspi.com`
-* `ambulance@hosspi.com`
-* `patient.portal@hosspi.com`
-
-Also verify `radiology@hosspi.com` if it exists in the seed data.
+The current top-level `Record QC` button is confusing in the main lab workflow.
 
 Required behavior:
 
-* Users must see only menu items and pages they are authorized to access.
-* Route guards must block unauthorized deep links.
-* Backend endpoints must reject unauthorized actions.
-* Frontend and backend role/permission mappings must remain mirrored.
-* Patient users must not access staff OPD/IPD/clinical/admin workspaces.
-* Housekeeping users must not access clinical OPD/IPD workspaces unless explicitly allowed by the permission model.
-* Lab users should access lab/diagnostic work, not unrelated OPD/IPD clinical actions.
-* Pharmacy users should access pharmacy work, not unrelated OPD/IPD clinical actions.
-* Billing users should access billing/payment/claims and payment-gate actions only.
-* Reception users should access patient registration, appointment/check-in, queue, and reception-level OPD actions only.
-* Doctors and nurses should access clinical/nursing actions appropriate to their roles.
-* Operations users should access operational flow areas only where permissions and backend routes allow.
-* Admin users should retain appropriate broad access.
+* Remove or hide `Record QC` from the primary lab action bar.
+* Do not delete backend QC routes/models unless proven unused and deletion is truly required.
+* If QC remains accessible, move it to a less prominent catalog/configuration/admin-style area and label it clearly, for example `QC logs`.
 
-If the exact intended page set for a role is unclear, derive it from:
+## 7. Lab detail dialog requirements
 
-1. `backend/src/config/permissions.js`
-2. `frontend/lib/core/permissions/access_policy.dart`
-3. `frontend/lib/app/router/app_routes.dart`
-4. Existing seed roles in `backend/scripts/seeders/seed-catalog.js`
+Refactor the lab detail dialog into a compact lab order/result entry screen.
 
-Do not invent new permissions or modules unless required to resolve a real backend/frontend mismatch.
+Remove from the primary detail dialog:
 
----
+* `Collect sample`
+* `Receive sample`
+* sample-first actions
+* sample-first empty states such as `No samples recorded`
+* large bordered cards that waste space for simple label/value data
 
-## 6. UI/UX Requirements
+The top section must display compact patient/order information:
 
-Use the existing UI patterns. Do not introduce a new design system.
+* Patient name
+* Patient ID, visible and copyable
+* Encounter ID, only if available
+* Lab order ID, visible and copyable
+* Ordered date/time
+* Order/result status
+* Requested tests/panels summary
 
-OPD/IPD screens should continue using the established HMS workspace style:
+Rules:
 
-* `AppWorkspace`
-* Compact summary cards.
-* `AppListTable`
-* Search/filter controls.
-* Status badges.
-* Detail panels.
-* Focused dialogs/modals for actions.
-* Existing responsive/mobile behavior.
-* Existing sidebar grouping and visual hierarchy.
+* Do not show `Not available` when an optional field can be omitted.
+* Do not show `Not available` for patient ID if a patient identifier exists in workflow/order data.
+* Do not render an empty encounter value as copyable.
+* Preserve existing HMS spacing, badge, typography, and dialog style.
 
-Improve clarity by ensuring:
+## 8. Multiple lab orders in patient view
 
-* Every patient row has a clear status and next action.
-* Every action label uses hospital workflow language, not technical stage names.
-* Empty states explain what the user should do next.
-* Disabled or hidden actions are consistent with permissions.
-* Summary cards filter the current worklist when clickable.
-* Summary cards do not point to empty or misleading filters.
-* Zero-value cards should be hidden only where the existing design/prompt pattern expects that behavior.
-* Similar statuses use consistent colors, labels, and badge styles across OPD/IPD.
-* Avoid duplicate buttons that perform the same step.
-* Avoid multi-step navigation when a focused modal is enough.
-* Do not display backend enum names directly to normal users unless that is already the project convention.
+In patients view, one patient row may represent multiple active lab orders.
 
----
+Verify how grouped rows are represented by `LabOrderSummary`.
 
-## 7. Specific Implementation Requirements
+If a row represents multiple orders:
 
-Implement fixes in the minimum number of files required.
+* Do not silently open only the representative order.
+* Show all active lab orders for that patient, or provide a compact order selector/list inside the detail dialog.
+* Each order must expose its own tests, result entry state, result status, and actions.
+* Use the existing `orderIds`, `orderDisplayIds`, and patient-group fields where possible.
+* Add only the smallest backend/frontend support needed if existing data is insufficient.
 
-You must:
+## 9. Ordered tests and result entry requirements
 
-1. Audit current OPD and IPD frontend flows against backend services and routes.
-2. Fix any mismatched status/stage labels.
-3. Fix any role-visible actions that the backend would reject.
-4. Fix any backend route permissions that block required real workflow participants.
-5. Fix any frontend route/menu permissions that expose unauthorized pages.
-6. Fix confusing OPD/IPD filters, summary cards, or worklist counts if they are inconsistent.
-7. Fix duplicated or redundant patient-flow actions where the same step appears in multiple confusing places.
-8. Ensure OPD-to-IPD handoff is clear where admission/disposition already exists.
-9. Ensure IPD discharge/bed-release behavior is clear and aligned with existing discharge/bed modules.
-10. Update localization files if UI text changes.
-11. Update planner files only when needed to keep source-of-truth documentation aligned.
-12. Add or update tests where existing project patterns support it.
+Inside the lab detail dialog, replace the sample-first sections with a compact ordered tests/result entry table or list.
+
+Each ordered test row should include, where data exists:
+
+* Test name
+* Test code
+* Result kind/type
+* Unit
+* Result input or released value
+* Reference range or qualitative options
+* Result flag/status
+* Row action
+
+Input behavior:
+
+| Result kind | Required input                                            |
+| ----------- | --------------------------------------------------------- |
+| Numeric     | numeric input, unit/default unit, reference range display |
+| Qualitative | dropdown/options if configured                            |
+| Text        | text input/textarea                                       |
+
+Rules:
+
+* Do not collapse a panel into one vague row if individual panel tests require individual result values.
+* Show component tests for ordered panels.
+* Do not let the frontend manually decide final result status.
+* The backend must compute interpretation using configured reference ranges/result options.
+* Prevent double submission while a result is saving/verifying.
+* Show validation/server errors using existing HMS UI patterns.
+* After verification, refresh the selected order/workflow and worklist.
+
+Use user-facing action labels such as:
+
+* `Enter result`
+* `Save result`
+* `Verify result`
+* `Verify all`
+
+Avoid using `Release result` as the main user-facing label.
+
+## 10. Individual and batch verification
+
+Implement or reuse backend-supported result verification.
+
+Required behavior:
+
+* Verify/save one result at a time.
+* Verify/save all entered results in a batch.
+* Use the existing backend result interpretation logic.
+* Return updated workflow/order data after verification.
+* Preserve realtime updates so requester-facing views refresh.
+
+If the existing release endpoint is sufficient for individual verification, keep the backend endpoint but change the user-facing wording to `Verify result`.
+
+If batch verification is not currently supported, add a focused endpoint following existing route/controller/schema/service conventions.
+
+## 11. Test/order-item rejection
+
+Add a way to reject a requested test/order item with a required reason.
+
+Required behavior:
+
+* Rejection must apply to the requested test/order item, not only to a sample.
+* A rejection reason is required.
+* Suggested reason options:
+
+  * `Test not performed here`
+  * `Insufficient information`
+  * `Invalid request`
+  * free-text reason
+
+Before adding schema fields, verify whether durable per-test rejection already exists.
+
+If it does not exist, add the smallest safe Prisma/API extension required, for example nullable rejection metadata on `lab_order_item`.
+
+Do not delete unrelated order/sample behavior while adding this.
+
+## 12. Reference range configuration
+
+The lab module must expose a way to configure lab test reference ranges.
+
+Use existing backend lab-test support where possible.
+
+The UI should allow lab users/admins to add or update lab test configuration, including:
+
+* Test name
+* Code
+* Category
+* Specimen type, if supported
+* Result kind
+* Default unit
+* Unit options, if supported
+* Qualitative result options, if supported
+* Reference ranges
+
+Reference range fields should match the existing backend model/support:
+
+* Label
+* Gender applicability
+* Age minimum/maximum values
+* Age units
+* Unit
+* Normal minimum/maximum values
+* Critical minimum/maximum values
+* Reference text
+* Notes, if supported
+* Sort order, if supported
+
+Validation requirements:
+
+* Validate numeric ranges in the UI.
+* Keep backend schema validation authoritative.
+* Show clear errors using existing UI patterns.
+* Reuse existing `/api/v1/lab-tests` create/update patterns where possible.
+* Do not create a duplicate reference-range API if the existing lab-test API can handle it.
+
+## 13. Backend implementation requirements
+
+Implement the smallest backend changes needed.
+
+Required backend behavior:
+
+* Reuse `backend/src/modules/lab-workspace/services/lab.interpretation.js`.
+
+* Ensure numeric results are interpreted against configured reference ranges using patient demographics where available.
+
+* Ensure qualitative/text results use configured result options or existing interpretation logic.
+
+* Ensure serialized workflow/order data exposes enough information for the frontend to show:
+
+  * patient ID
+  * encounter ID
+  * lab order IDs
+  * ordered tests
+  * test result kind
+  * current result values
+  * result units
+  * result text
+  * reference ranges
+  * qualitative result options
+  * result flags/statuses
+  * rejection status/reason, if applicable
+
+* Fix the lab workspace query flow if the `view` query parameter is not currently passed from controller to service.
+
+* Support individual result verification using the existing release/verify logic if suitable.
+
+* Add backend-supported batch verification if the current API cannot safely verify multiple results in one operation.
+
+* Add order-item rejection with required reason if not already supported.
+
+* Preserve lab realtime notifications when results are verified or rejected.
+
+* Preserve existing authorization/role patterns.
+
+* Update schemas and OpenAPI-related validation if API contracts change.
+
+* Add Prisma migration only if the current schema cannot durably store required data.
+
+Do not duplicate result interpretation logic in frontend code.
+
+## 14. Frontend implementation requirements
+
+Update the lab frontend while preserving the existing feature architecture.
+
+Required frontend changes:
+
+* Update lab DTOs/entities to parse any new backend fields.
+
+* Update repository methods for:
+
+  * individual result verification
+  * batch result verification
+  * order-item rejection
+  * lab test/reference range configuration, if not already exposed
+
+* Update the lab controller without changing the state-management pattern.
+
+* Redesign the lab detail dialog inside the existing lab workspace page/components.
+
+* Keep refresh/live-sync behavior working.
+
+* Keep patients/orders toggle working.
+
+* Use backend-provided interpretation/status/flag data.
+
+* Do not manually compute final result status in the frontend.
+
+* Ensure copy actions exist for both patient ID and lab order ID.
+
+* Update localization for new/changed labels where applicable.
+
+UI styling requirements:
+
+* clean spacing
+* compact rows
+* minimal borders
+* clear status badges
+* readable table/list layout
+* no crowded multi-card layout for simple label/value data
+* consistent with existing HMS shared components
+
+## 15. Report preview/copy requirements
+
+Improve the existing lab report preview/copy output.
+
+The report must include:
+
+* Patient name
+* Patient ID
+* Encounter ID, only if available
+* Lab order ID
+* Ordered date/time, if available
+* Test name
+* Test code, if available
+* Result value
+* Unit
+* Reference range
+* Result flag/status
+* Verified/reported timestamp, if available
+
+Rules:
+
+* Do not print empty `Not available` lines.
+* Omit optional missing fields instead.
+* Reuse existing report preview/copy components.
+* If the project already has a shared print/export/report pattern, reuse it instead of creating an unrelated printing flow.
+
+## 16. Requester/doctor-facing behavior
+
+After lab results are verified:
+
+* The order should no longer appear as merely ordered/pending.
+* Clinical/requester-facing areas should show completed/verified result details.
+* Result values, units, reference ranges, and flags should be available wherever lab results are displayed.
+
+Inspect existing clinical/frontend and OPD/backend result consumers.
+
+Modify only the minimum required files if clinical/requester views do not already receive or display this data.
+
+## 17. Testing and verification
+
+Clear all linter/analyzer issues.
+
+Run or update relevant checks.
+
+### Backend checks
+
+Run where applicable:
+
+* `npm run lint`
+* targeted backend tests for lab workspace/lab test/lab order/lab result changes
+* `npm run test:backend`, if feasible
+* `npm run openapi:validate`, if API contracts changed
+
+Add or update backend tests for:
+
+* lab workspace `view` query behavior, if fixed
+* numeric reference range interpretation
+* low/high/critical flagging
+* qualitative result option interpretation
+* individual result verification
+* batch result verification
+* order-item rejection with required reason
+* durable rejection serialization, if schema is extended
+* workflow serialization fields required by the frontend
+
+### Frontend checks
+
+Run where applicable:
+
+* `flutter analyze`
+* `flutter test`
+
+Add or update frontend tests where the project has test patterns for:
+
+* DTO/entity parsing for result metadata
+* reference ranges
+* qualitative result options
+* verified result values
+* result flags/statuses
+* controller/repository methods for verify/reject/configuration actions
+
+### Manual verification
+
+Manually verify:
+
+* Patients/orders toggle works.
+* Summary cards use result-oriented wording.
+* `Record QC` is no longer prominent in the main workflow.
+* Lab detail opens cleanly.
+* Patient ID is visible and copyable.
+* Lab order ID is visible and copyable.
+* Empty encounter ID is omitted.
+* Multiple active orders for one patient are not silently collapsed into one order.
+* Ordered tests and panel component tests are visible.
+* Numeric result entry works.
+* Qualitative result entry works when options exist.
+* Text result entry works.
+* `Verify result` works for one result.
+* `Verify all` works for multiple entered results.
+* Backend-generated result flags appear automatically.
+* Rejection requires a reason.
+* Report preview/copy includes result, unit, range, and flag.
+* Requester/clinical views update after verification.
+
+## 18. Scope limits
 
 Do not:
 
-* Rewrite unrelated modules.
-* Replace the app shell.
-* Replace Riverpod/GoRouter architecture.
-* Bypass backend service/repository layers.
-* Add new global state systems.
-* Add duplicate OPD/IPD dashboards.
-* Change database schema unless absolutely necessary.
-* Change seeded accounts unless required to fix role/access mismatches.
-* Modify files outside the requested task.
-* Add screenshots, build outputs, dependency folders, logs, or generated junk files.
+* rewrite the whole lab module
+* remove backend sample models/routes unless absolutely necessary
+* remove backend QC support unless proven unused and required
+* change unrelated OPD, IPD, billing, pharmacy, authentication, or layout code
+* change global theme/layout unless required by existing component usage
+* introduce unrelated refactors
+* include generated build outputs, logs, screenshots, dependencies, `node_modules`, Flutter build folders, or the full project in the final archive
 
----
+Modify only files required for this requested change.
 
-## 8. Testing and Verification
+## 19. Unclear details to verify from the codebase
 
-Run relevant checks and fix all issues before packaging.
+Before implementing, verify these from the codebase and handle them without guessing:
 
-Backend:
+* Whether QC should be hidden only from the main lab screen or moved to an existing catalog/admin area.
+* Whether durable per-test/order-item rejection storage already exists.
+* Whether requester/clinical views already receive released result values, ranges, and flags.
+* Whether patient-group rows already include enough order IDs to show all active orders.
+* Whether current report copy behavior is enough or an existing shared report/export pattern should be reused.
+* Whether generated localization files are committed and must be updated manually or through the project’s localization generation workflow.
 
-```bash
-cd backend
-npm run lint
-npm run test:backend
-npm run openapi:validate
-```
+## 20. Final delivery format
 
-If backend routes/schemas/OpenAPI output are changed, also run the project’s OpenAPI generation/validation flow according to existing scripts.
+Return a zipped archive containing only files and folders that were created or updated.
 
-Frontend:
+All files must be placed in their correct relative project paths.
 
-```bash
-cd frontend
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test
-```
+If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those operations.
 
-If integration tests are already used for navigation/access smoke testing, update and run:
+The scripts must:
 
-```bash
-flutter test integration_test
-```
+* use correct relative paths
+* check that targets exist before deleting or renaming
+* avoid deleting unrelated files
+* avoid broad wildcards
 
-Verify manually or with tests that:
-
-* Each listed account sees only authorized menu items.
-* Unauthorized deep links are blocked.
-* OPD actions match current stage and role.
-* IPD actions match current stage and role.
-* OPD/IPD frontend calls match backend routes.
-* No linter/analyzer errors remain.
-* No obvious performance regressions are introduced.
-* No full-page refresh is used where an existing targeted refresh pattern is available.
-
----
-
-## 9. Scope Limits
-
-This is a targeted implementation task, not a full product redesign.
-
-Keep changes limited to:
-
-* OPD flow clarity.
-* IPD flow clarity.
-* Role/menu/page/action access consistency.
-* Backend/frontend permission alignment.
-* UI consistency directly related to OPD/IPD and patient-flow navigation.
-* Planner documentation updates only where needed.
-
-Do not fix unrelated features discovered during review unless they directly block OPD/IPD flow correctness or role access.
-
-If a requirement is incomplete or unclear, preserve the known behavior, implement the safest codebase-aligned fix, and mark the unresolved detail in a small code comment only where necessary.
-
----
-
-## 10. Required Final Deliverable
-
-Return a zipped archive containing **only** files and folders that were created or updated.
-
-Requirements for the zip:
-
-* Preserve correct relative project paths.
-* Include only changed/new files.
-* Do not include the full repository.
-* Do not include `node_modules`, Flutter build folders, generated build artifacts, logs, `.env` files, caches, or unrelated files.
-* If files/folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those operations.
-* `.ps1` scripts must use correct relative paths.
-* `.ps1` scripts must not delete unrelated files.
-* Ensure all linter/analyzer issues are cleared before returning the archive.
+Do not include the full repository.

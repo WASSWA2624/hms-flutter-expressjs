@@ -133,6 +133,7 @@ final class LabCatalogItem {
     this.unit,
     this.description,
     this.referenceRange,
+    this.referenceRanges = const <LabReferenceRange>[],
     this.referenceRangeCount = 0,
     this.unitOptions = const <LabUnitOption>[],
     this.resultOptions = const <LabResultOption>[],
@@ -152,6 +153,7 @@ final class LabCatalogItem {
   final String? unit;
   final String? description;
   final String? referenceRange;
+  final List<LabReferenceRange> referenceRanges;
   final int referenceRangeCount;
   final List<LabUnitOption> unitOptions;
   final List<LabResultOption> resultOptions;
@@ -173,6 +175,7 @@ final class LabCatalogItem {
       resultKind,
       unit,
       referenceRange,
+      referenceRanges.isEmpty ? null : '${referenceRanges.length} ranges',
     ]);
   }
 
@@ -188,6 +191,7 @@ final class LabCatalogItem {
       unit,
       description,
       referenceRange,
+      for (final LabReferenceRange range in referenceRanges) range.displayLabel,
     ]);
   }
 }
@@ -219,6 +223,48 @@ final class LabPanelItem {
         labTestId ??
         id;
   }
+}
+
+@immutable
+final class LabReferenceRange {
+  const LabReferenceRange({
+    required this.id,
+    this.label,
+    this.unit,
+    this.gender,
+    this.ageMinValue,
+    this.ageMinUnit,
+    this.ageMaxValue,
+    this.ageMaxUnit,
+    this.normalMinValue,
+    this.normalMaxValue,
+    this.criticalMinValue,
+    this.criticalMaxValue,
+    this.referenceText,
+    this.notes,
+    this.sortOrder = 0,
+    this.summary,
+  });
+
+  final String id;
+  final String? label;
+  final String? unit;
+  final String? gender;
+  final num? ageMinValue;
+  final String? ageMinUnit;
+  final num? ageMaxValue;
+  final String? ageMaxUnit;
+  final String? normalMinValue;
+  final String? normalMaxValue;
+  final String? criticalMinValue;
+  final String? criticalMaxValue;
+  final String? referenceText;
+  final String? notes;
+  final int sortOrder;
+  final String? summary;
+
+  String get displayLabel =>
+      _joinDisplay(<String?>[label, summary, referenceText, unit]) ?? id;
 }
 
 @immutable
@@ -282,6 +328,7 @@ final class LabOrderSummary {
     this.pendingItemCount = 0,
     this.inProcessItemCount = 0,
     this.completedItemCount = 0,
+    this.rejectedItemCount = 0,
     this.sampleCount = 0,
     this.isPatientGroup = false,
     this.activeOrderCount = 0,
@@ -307,6 +354,7 @@ final class LabOrderSummary {
   final int pendingItemCount;
   final int inProcessItemCount;
   final int completedItemCount;
+  final int rejectedItemCount;
   final int sampleCount;
   final bool isPatientGroup;
   final int activeOrderCount;
@@ -370,6 +418,14 @@ final class LabOrderSummary {
     });
   }
 
+  bool get hasRejectedItem {
+    return rejectedItemCount > 0 || items.any((LabOrderItem item) => item.isRejected);
+  }
+
+  int get verifiableItemCount {
+    return items.where((LabOrderItem item) => item.canVerify).length;
+  }
+
   bool get hasReceivableSample {
     return samples.any((LabSample sample) {
       return sample.canReceive;
@@ -413,8 +469,26 @@ final class LabOrderItem {
     this.labTestId,
     this.testDisplayName,
     this.testCode,
+    this.category,
+    this.specimenType,
+    this.resultKind,
     this.unit,
     this.unitOptions = const <LabUnitOption>[],
+    this.resultOptions = const <LabResultOption>[],
+    this.referenceRange,
+    this.referenceRanges = const <LabReferenceRange>[],
+    this.resultId,
+    this.resultValue,
+    this.resultUnit,
+    this.resultText,
+    this.resultFlag,
+    this.isPositive = false,
+    this.referenceRangeLabel,
+    this.referenceRangeSummary,
+    this.reportedAt,
+    this.rejectionReason,
+    this.rejectionNotes,
+    this.rejectedAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -427,8 +501,26 @@ final class LabOrderItem {
   final String? labTestId;
   final String? testDisplayName;
   final String? testCode;
+  final String? category;
+  final String? specimenType;
+  final String? resultKind;
   final String? unit;
   final List<LabUnitOption> unitOptions;
+  final List<LabResultOption> resultOptions;
+  final String? referenceRange;
+  final List<LabReferenceRange> referenceRanges;
+  final String? resultId;
+  final String? resultValue;
+  final String? resultUnit;
+  final String? resultText;
+  final String? resultFlag;
+  final bool isPositive;
+  final String? referenceRangeLabel;
+  final String? referenceRangeSummary;
+  final DateTime? reportedAt;
+  final String? rejectionReason;
+  final String? rejectionNotes;
+  final DateTime? rejectedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -441,20 +533,52 @@ final class LabOrderItem {
   }
 
   String? get displaySubtitle {
-    return _joinDisplay(<String?>[status, resultStatus, unit]);
+    return _joinDisplay(<String?>[
+      resultKind,
+      unit,
+      displayReferenceRange,
+      status,
+      effectiveResultStatus,
+    ]);
   }
 
   String? get effectiveResultStatus {
-    return _firstNonEmpty(<String?>[resultStatus, status])?.toUpperCase();
+    return _firstNonEmpty(<String?>[resultStatus, resultFlag, status])
+        ?.toUpperCase();
   }
 
-  bool get canRelease {
+  String? get displayResultValue {
+    return _joinDisplay(<String?>[resultValue, resultUnit]) ?? resultText;
+  }
+
+  String? get displayReferenceRange {
+    return _firstNonEmpty(<String?>[
+      referenceRangeSummary,
+      referenceRange,
+      if (referenceRanges.isNotEmpty) referenceRanges.first.displayLabel,
+    ]);
+  }
+
+  bool get isNumeric => _normalize(resultKind) == 'NUMERIC';
+  bool get isQualitative => _normalize(resultKind) == 'QUALITATIVE';
+  bool get isText => _normalize(resultKind) == 'TEXT';
+  bool get hasResult =>
+      _firstNonEmpty(<String?>[resultValue, resultText, resultId]) != null;
+  bool get isRejected =>
+      _normalize(status) == 'CANCELLED' &&
+      _firstNonEmpty(<String?>[rejectionReason, rejectionNotes]) != null;
+
+  bool get canVerify {
     return switch (_normalize(status)) {
       'ORDERED' || 'COLLECTED' || 'IN_PROCESS' => true,
       _ => false,
     };
   }
+
+  bool get canReject => canVerify;
+  bool get canRelease => canVerify;
 }
+
 
 @immutable
 final class LabSample {
@@ -613,12 +737,18 @@ final class LabWorkflowNextActions {
     this.canCollect = false,
     this.canReceiveSample = false,
     this.canReleaseResult = false,
+    this.canVerifyResult = false,
+    this.canVerifyAll = false,
+    this.canRejectOrderItem = false,
     this.canReverseWorkflow = false,
   });
 
   final bool canCollect;
   final bool canReceiveSample;
   final bool canReleaseResult;
+  final bool canVerifyResult;
+  final bool canVerifyAll;
+  final bool canRejectOrderItem;
   final bool canReverseWorkflow;
 }
 
@@ -636,14 +766,20 @@ final class LabOrderWorkflow {
   final List<LabWorkflowTimelineItem> timeline;
   final LabWorkflowNextActions nextActions;
 
-  LabOrderItem? get firstReleasableItem {
+  LabOrderItem? get firstVerifiableItem {
     for (final LabOrderItem item in order.items) {
-      if (item.canRelease) {
+      if (item.canVerify) {
         return item;
       }
     }
     return null;
   }
+
+  LabOrderItem? get firstReleasableItem => firstVerifiableItem;
+
+  List<LabOrderItem> get verifiableItems => order.items
+      .where((LabOrderItem item) => item.canVerify)
+      .toList(growable: false);
 
   LabSample? get firstReceivableSample {
     for (final LabSample sample in order.samples) {
@@ -699,8 +835,7 @@ final class LabWorkspaceState {
     return summary.collectionQueue +
         summary.processingQueue +
         summary.resultsQueue +
-        summary.criticalResults +
-        summary.rejectedSamples;
+        summary.criticalResults;
   }
 
   int get catalogCount => catalogTests.length + catalogPanels.length;
@@ -744,12 +879,7 @@ bool labOrderMatchesScope(LabOrderSummary order, LabQueueScope scope) {
     LabQueueScope.all => true,
     LabQueueScope.collection => status == 'ORDERED' || status == 'COLLECTED',
     LabQueueScope.processing => status == 'IN_PROCESS',
-    LabQueueScope.results => order.items.any((LabOrderItem item) {
-      final String itemStatus = _normalize(item.status);
-      return itemStatus == 'COLLECTED' ||
-          itemStatus == 'IN_PROCESS' ||
-          _normalize(item.resultStatus) == 'PENDING';
-    }),
+    LabQueueScope.results => order.items.any((LabOrderItem item) => item.canVerify),
     LabQueueScope.critical => order.hasCriticalResult,
     LabQueueScope.completed => status == 'COMPLETED',
     LabQueueScope.cancelled => status == 'CANCELLED',

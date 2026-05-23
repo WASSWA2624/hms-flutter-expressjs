@@ -248,17 +248,24 @@ const mapLabOrderItemRecord = (record) => {
   const patient = order?.patient;
   const test = record.lab_test;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
-  const resultStatus = Array.isArray(record.results) && record.results.length
-    ? record.results
-        .map((entry) => toText(entry?.status).toUpperCase())
-        .find(Boolean) || null
+  const latestResult = Array.isArray(record.results) && record.results.length
+    ? record.results[0]
     : null;
+  const referenceRanges = Array.isArray(test?.reference_ranges)
+    ? test.reference_ranges.map((entry) => mapLabReferenceRangeRecord(entry)).filter(Boolean)
+    : [];
+  const unitOptions = Array.isArray(test?.unit_options)
+    ? test.unit_options.map((entry) => mapLabUnitOptionRecord(entry)).filter(Boolean)
+    : [];
+  const resultOptions = Array.isArray(test?.result_options)
+    ? test.result_options.map((entry) => mapLabResultOptionRecord(entry)).filter(Boolean)
+    : [];
 
   return {
     id: publicId,
     display_id: publicId,
     status: toText(record.status) || null,
-    result_status: resultStatus,
+    result_status: toText(latestResult?.status).toUpperCase() || null,
     lab_order_id: toPublicIdentifier(order?.human_friendly_id, record.lab_order_id),
     lab_test_id: toPublicIdentifier(test?.human_friendly_id, record.lab_test_id),
     patient_id: toPublicIdentifier(patient?.human_friendly_id, order?.patient_id),
@@ -267,10 +274,24 @@ const mapLabOrderItemRecord = (record) => {
     test_code: toText(test?.code) || null,
     category: toText(test?.category) || null,
     specimen_type: toText(test?.specimen_type) || null,
+    result_kind: toText(test?.result_kind) || null,
     unit: toText(test?.unit) || null,
-    unit_options: Array.isArray(test?.unit_options)
-      ? test.unit_options.map((entry) => mapLabUnitOptionRecord(entry)).filter(Boolean)
-      : [],
+    unit_options: unitOptions,
+    result_options: resultOptions,
+    reference_range: buildLabReferenceRangeSummary(test?.reference_range, referenceRanges),
+    reference_ranges: referenceRanges,
+    result_id: toPublicIdentifier(latestResult?.human_friendly_id, latestResult?.id),
+    result_value: toText(latestResult?.result_value) || null,
+    result_unit: toText(latestResult?.result_unit) || null,
+    result_text: toText(latestResult?.result_text) || null,
+    result_flag: toText(latestResult?.result_flag) || null,
+    is_positive: Boolean(latestResult?.is_positive),
+    reference_range_label: toText(latestResult?.reference_range_label) || null,
+    reference_range_summary: toText(latestResult?.reference_range_summary) || null,
+    reported_at: toIsoDateTime(latestResult?.reported_at),
+    rejection_reason: toText(record.rejection_reason) || null,
+    rejection_notes: toText(record.rejection_notes) || null,
+    rejected_at: toIsoDateTime(record.rejected_at),
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
   };
@@ -369,6 +390,7 @@ const mapLabOrderRecord = (record, options = {}) => {
   const inProgressItems = items.filter((entry) => ['COLLECTED', 'IN_PROCESS'].includes(toText(entry?.status).toUpperCase())).length;
   const pendingItems = items.filter((entry) => toText(entry?.status).toUpperCase() === 'ORDERED').length;
   const completedItems = items.filter((entry) => toText(entry?.status).toUpperCase() === 'COMPLETED').length;
+  const rejectedItems = items.filter((entry) => toText(entry?.status).toUpperCase() === 'CANCELLED').length;
 
   return {
     id: publicId,
@@ -385,6 +407,7 @@ const mapLabOrderRecord = (record, options = {}) => {
     pending_item_count: pendingItems,
     in_process_item_count: inProgressItems,
     completed_item_count: completedItems,
+    rejected_item_count: rejectedItems,
     sample_count: samples.length,
     items,
     samples,
@@ -460,6 +483,9 @@ const mapLabOrderWorkflowRecord = (record) => {
       can_collect: ['ORDERED', 'COLLECTED'].includes(toText(order.status).toUpperCase()),
       can_receive_sample: order.samples.some((sample) => ['PENDING', 'COLLECTED'].includes(toText(sample.status).toUpperCase())),
       can_release_result: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
+      can_verify_result: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
+      can_verify_all: order.items.filter((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())).length > 1,
+      can_reject_order_item: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
       can_reverse_workflow: Boolean(resolveLatestReverseWorkflowTarget(record)),
     },
   };
