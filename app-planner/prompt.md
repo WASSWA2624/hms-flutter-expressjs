@@ -1,41 +1,88 @@
-You are working on the HOSSPI Hospital Management System codebase. The archive contains these main project folders:
+You are working on the HOSSPI Hospital Management System codebase from `hms.zip`.
 
-* `app-planner`
-* `backend`
-* `frontend`
+The archive contains these main folders:
 
-Convert the current inconsistent workspace behavior into a clear, synchronized, patient-friendly HMS workflow.
+```text
+app-planner/
+backend/
+frontend/
+```
+
+Your task is to perform an end-to-end HMS codebase review and implement only safe, necessary, directly verifiable improvements. The goal is to make the app more professional, fast, consistent, responsive, maintainable, and suitable for real healthcare workflows.
 
 ## 1. Problem to Solve
 
-The app UI is improving, but multiple workspaces show inconsistent counts, confusing sidebar badges, duplicate patient rows, and incorrect workflow states.
+Review the full HMS workflow from login to daily hospital operations:
 
-The main issues are:
+* login/session restoration;
+* navigation/sidebar/top bar;
+* patient registration and patient lookup;
+* OPD, emergency, clinical, IPD, ICU, nursing, discharge, lab, radiology, pharmacy, billing, claims, HR, operations, housekeeping, biomedical, mortuary, communications, reports, integrations, settings, and subscriptions;
+* forms, tables, reports, dialogs, filters, modals, empty states, and detail panels;
+* frontend/backend API contracts;
+* backend routes, controllers, services, repositories, schemas, middleware, Prisma models, validation, error handling, security, and websocket updates.
 
-* Sidebar badges, summary cards, and visible table rows often use different definitions.
-* Some badges double-count the same patient/work item.
-* Patient-related modules sometimes count encounters/orders instead of unique patients without making that clear.
-* OPD and Clinical still show “Doctor needed” / “Waiting Doctor Assignment” even when a valid provider is already assigned.
-* Lab and Radiology default lists show orders, causing the same patient to appear multiple times.
-* HR, Communications, and Integrations show sidebar counts that are not clearly tied to visible page cards.
-* Empty states and zero-count states must remain simple and clear.
-* Backend/database logic and frontend UI logic must use the same source of truth.
-* Real-time refresh must keep sidebar badges, summary cards, rows, and detail panels synchronized.
+Identify and fix gaps that are clearly supported by the codebase, especially:
 
-The goal is to make the HMS extremely simple, clear, correct, robust, and professional. A user should always understand:
+* frontend API calls that do not match backend routes, request bodies, query params, response shapes, or error structures;
+* UI screens showing raw technical values, enum names, IDs, unclear status text, or confusing labels instead of human-friendly healthcare language;
+* duplicated frontend components, repeated form/table/modal/search logic, or one-off UI patterns where shared components already exist;
+* slow workflows, unnecessary steps, poor patient turnaround, unnecessary reloads, repeated API calls, repeated rendering, inefficient queries, or state not refreshing after mutations;
+* inconsistent sidebar badges, summary cards, filters, visible table rows, and workload counts;
+* forms with unclear validation, cramped layout, missing loading/error/success states, or inconsistent behavior;
+* reports that are hard to read, badly structured, or not useful to healthcare users;
+* backend code that violates the existing route → controller → service → repository → Prisma pattern;
+* missing Zod validation, weak error handling, tenant/facility scoping issues, security gaps, or inconsistent response handling.
 
-* what each count means;
-* whether the count is for patients, encounters, orders, tasks, alerts, or failures;
-* what each patient/work item’s current state is;
-* what action should happen next.
+Where a gap is confirmed and safe to fix, implement the fix. Where a gap is real but too broad or risky for this task, document it clearly in the review report without rewriting unrelated modules.
 
-## 2. Project Architecture to Preserve
+## 2. Sources to Inspect First
+
+Read these before modifying code:
+
+```text
+app-planner/app-write-up.md
+app-planner/opd-flow.md
+app-planner/ipd-flow.md
+app-planner/prompt.md
+app-planner/dev-plan/00-index.md
+app-planner/dev-plan/01-policy.md
+app-planner/dev-plan/02-codebase.md
+app-planner/dev-plan/10-workspace-ui.md
+app-planner/dev-plan/11-patients.md
+app-planner/dev-plan/12-opd-flow.md
+app-planner/dev-plan/14-clinical.md
+app-planner/dev-plan/16-inpatient.md
+app-planner/dev-plan/17-icu.md
+app-planner/dev-plan/20-emergency.md
+app-planner/dev-plan/21-lab.md
+app-planner/dev-plan/22-radiology.md
+app-planner/dev-plan/23-pharmacy.md
+app-planner/dev-plan/24-billing.md
+app-planner/dev-plan/25-claims.md
+app-planner/dev-plan/27-mortuary.md
+app-planner/dev-plan/28-hr.md
+app-planner/dev-plan/29-rooms-beds.md
+app-planner/dev-plan/30-biomedical.md
+app-planner/dev-plan/31-operations.md
+app-planner/dev-plan/32-housekeeping.md
+app-planner/dev-plan/35-reports-audit.md
+app-planner/dev-plan/36-integrations.md
+frontend/app-planner/app-rules/
+backend/app-planner/app-rules/
+```
+
+Use `app-planner/prompt.md` as an additional requirements source because it records existing UI/workflow observations that may not be available as screenshots to the coding agent. Verify every requirement against the current code before changing implementation.
+
+## 3. Architecture to Preserve
 
 Preserve the existing architecture, folder structure, naming conventions, coding style, and UI patterns.
 
 ### Backend
 
-The backend is an Express + Prisma project using CommonJS modules and a module-based structure:
+The backend is Node.js + Express + Prisma using CommonJS.
+
+Preserve this module pattern:
 
 ```text
 backend/src/modules/<module>/
@@ -46,14 +93,30 @@ backend/src/modules/<module>/
   services/
 ```
 
-Relevant backend areas to inspect and modify only where required:
+Backend rules:
+
+* use CommonJS only;
+* keep the route → controller → service → repository → Prisma layer order;
+* controllers must use existing response helpers from `backend/src/lib/response/`;
+* schemas must use Zod validation;
+* repositories own Prisma access and query composition;
+* services own business logic, workflow orchestration, authorization-sensitive decisions, audit behavior, and cross-module coordination;
+* preserve tenant scope, facility scope, soft-delete filters, module entitlements, RBAC/ABAC behavior, audit logging, PHI protection, and websocket behavior;
+* do not expose Prisma internals, stack traces, secrets, or PHI in API errors;
+* do not edit `.env`, logs, generated caches, or unrelated deployment files.
+
+Important backend areas:
 
 ```text
-backend/prisma/schema.prisma
 backend/src/app/router.js
-backend/src/lib/opd-active-encounter.js
-backend/src/lib/patient-query-filters.js
-backend/src/lib/websocket/
+backend/src/server.js
+backend/src/config/
+backend/src/middlewares/
+backend/src/lib/
+backend/src/websockets/
+backend/prisma/schema.prisma
+backend/docs/api/v1/openapi.yaml
+backend/src/modules/auth/
 backend/src/modules/patient/
 backend/src/modules/encounter/
 backend/src/modules/opd-flow/
@@ -75,47 +138,86 @@ backend/src/modules/radiology-workspace/
 backend/src/modules/radiology-order/
 backend/src/modules/radiology-result/
 backend/src/modules/pharmacy-workspace/
+backend/src/modules/pharmacy-order/
 backend/src/modules/billing/
 backend/src/modules/insurance-claim/
+backend/src/modules/reports-workspace/
+backend/src/modules/report-definition/
+backend/src/modules/report-run/
 backend/src/modules/hr-workspace/
 backend/src/modules/communications-workspace/
+backend/src/modules/notification/
+backend/src/modules/notification-delivery/
+backend/src/modules/conversation/
 backend/src/modules/integration/
 backend/src/modules/integration-log/
+backend/src/modules/api-key/
+backend/src/modules/webhook-subscription/
 backend/src/modules/housekeeping-workspace/
 backend/src/modules/biomedical-workspace/
 backend/src/modules/mortuary-workspace/
+backend/src/modules/theatre-case/
+backend/src/modules/theatre-flow/
 ```
-
-Follow existing backend patterns:
-
-* services own business logic;
-* repositories own database access;
-* controllers wrap HTTP responses using existing response helpers;
-* schemas validate inputs with existing conventions;
-* use tenant/facility/deleted filters consistently;
-* keep audit, permissions, module entitlement, and websocket behavior intact.
 
 ### Frontend
 
-The frontend is a Flutter/Riverpod app using GoRouter, shared workspace UI components, localization, and feature-first folders.
+The frontend is Flutter + Riverpod + GoRouter.
 
-Relevant frontend areas to inspect and modify only where required:
+Preserve this structure:
+
+```text
+frontend/lib/
+  app/
+  core/
+  features/
+  l10n/
+  shared/
+```
+
+Frontend rules:
+
+* Riverpod controllers own presentation state and user actions;
+* repositories own API coordination;
+* UI must not call HTTP directly;
+* DTOs/mappers must stay in data layer;
+* domain entities must stay UI-safe and testable;
+* use `go_router` routes from `frontend/lib/app/router/`;
+* use shared components instead of recreating local versions;
+* keep screens responsive, theme-aware, accessible, and localized;
+* add or update localization keys when visible labels change;
+* avoid hardcoded user-facing strings where localization patterns already exist.
+
+Required shared UI patterns to reuse:
+
+```text
+frontend/lib/shared/layout/app_workspace.dart
+frontend/lib/shared/layout/responsive_page.dart
+frontend/lib/shared/layout/responsive_shell_scaffold.dart
+frontend/lib/shared/components/app_list_table.dart
+frontend/lib/shared/components/app_search_bar.dart
+frontend/lib/shared/components/app_status_text.dart
+frontend/lib/shared/components/app_state_view.dart
+frontend/lib/shared/components/app_dialog.dart
+frontend/lib/shared/components/app_button.dart
+frontend/lib/shared/forms/
+frontend/lib/shared/actions/
+frontend/lib/shared/opd_actions/
+frontend/lib/shared/clinical_actions/
+frontend/lib/shared/printing/
+```
+
+Important frontend areas:
 
 ```text
 frontend/lib/app/router/app_router.dart
 frontend/lib/app/router/app_routes.dart
 frontend/lib/core/network/api_endpoints.dart
-frontend/lib/core/realtime/realtime_event_groups.dart
-frontend/lib/core/realtime/realtime_events.dart
-frontend/lib/shared/layout/app_workspace.dart
-frontend/lib/shared/components/app_list_table.dart
-frontend/lib/shared/components/app_search_bar.dart
-frontend/lib/shared/components/app_status_text.dart
-frontend/lib/shared/components/app_state_view.dart
-frontend/lib/shared/components/app_patient_detail_dialog.dart
-frontend/lib/shared/components/opd_encounter_dialog.dart
-frontend/lib/shared/opd_actions/
-frontend/lib/shared/clinical_actions/
+frontend/lib/core/network/
+frontend/lib/core/security/
+frontend/lib/core/realtime/
+frontend/lib/core/utils/app_display.dart
+frontend/lib/features/auth/
 frontend/lib/features/patients/
 frontend/lib/features/opd/
 frontend/lib/features/emergency/
@@ -139,218 +241,211 @@ frontend/lib/features/mortuary/
 frontend/lib/features/hr/
 frontend/lib/features/communications/
 frontend/lib/features/integrations/
+frontend/lib/features/reports/
+frontend/lib/features/settings/
+frontend/lib/features/subscriptions/
 frontend/lib/l10n/
 frontend/test/
 ```
 
-Follow existing frontend patterns:
+## 4. Required Review Report
 
-* Riverpod controllers own presentation state and actions.
-* Repositories own API coordination.
-* UI must not call HTTP directly.
-* Reuse `AppWorkspace`, `AppWorkspaceSummaryCard`, `AppWorkspaceDetailPanel`, `AppListTable`, `AppListTableSearch`, `AppSearchBar`, `AppDialog`, `AppStateView`, `AsyncStateScaffold`, shared form fields, access gates, and status badges.
-* Do not create duplicate shells, tables, search bars, dialog systems, permission wrappers, or app-wide components.
-* Keep UI theme-aware, responsive, accessible, localized, and consistent with the existing screenshots.
-
-### Planner Files to Read
-
-Use these as product/flow references. Do not edit planner files unless a verified codebase gap requires a small documentation update.
+Create a new file:
 
 ```text
-app-planner/app-write-up.md
-app-planner/opd-flow.md
-app-planner/ipd-flow.md
-app-planner/dev-plan/10-workspace-ui.md
-app-planner/dev-plan/11-patients.md
-app-planner/dev-plan/12-opd-flow.md
-app-planner/dev-plan/14-clinical.md
-app-planner/dev-plan/16-inpatient.md
-app-planner/dev-plan/17-icu.md
-app-planner/dev-plan/20-emergency.md
-app-planner/dev-plan/21-lab.md
-app-planner/dev-plan/22-radiology.md
-app-planner/dev-plan/23-pharmacy.md
-app-planner/dev-plan/24-billing.md
-app-planner/dev-plan/25-claims.md
-app-planner/dev-plan/26-physiotherapy.md
-app-planner/dev-plan/27-mortuary.md
-app-planner/dev-plan/28-hr.md
-app-planner/dev-plan/29-rooms-beds.md
-app-planner/dev-plan/30-biomedical.md
-app-planner/dev-plan/31-operations.md
-app-planner/dev-plan/32-housekeeping.md
-app-planner/dev-plan/36-integrations.md
+app-planner/hms-end-to-end-review.md
 ```
 
-## 3. Global Count and Badge Rules
+The report must include:
 
-Implement one consistent rule across the app:
+* issue title;
+* severity: `Critical`, `High`, `Medium`, or `Low`;
+* affected area/module;
+* relevant frontend/backend files;
+* what is wrong;
+* user/workflow impact;
+* recommended fix;
+* status: `Fixed in this task`, `Documented only`, or `Needs product decision`.
 
-1. Sidebar badges must represent actionable workload for that module.
-2. A sidebar badge must never silently double-count the same patient/work item.
-3. If a badge counts patients, it must count unique patients.
-4. If a badge counts encounters, orders, alerts, tasks, or failures, the label/card must make that explicit.
-5. Summary cards must use the same backend-backed source of truth as the worklist they filter.
-6. Clicking a summary card must filter to rows that match that count.
-7. Zero badges should normally be hidden unless the existing component already intentionally shows zero.
-8. Do not fix count problems with frontend-only guesses while backend summary logic remains inconsistent.
-9. Prefer backend-calculated counts for module summaries and sidebar badge values.
-10. Keep real-time updates targeted: update only affected rows, badges, cards, and detail panels instead of reloading the whole app unnecessarily.
+Do not use the report as a substitute for fixing clear, safe defects. Fix what is directly verifiable and within scope.
 
-## 4. Screenshot-Based UI Requirements to Preserve
+## 5. UI/UX Requirements
 
-The coding agent may not have screenshots, so preserve these written UI requirements:
+Preserve the current HOSSPI HMS shell and workspace style:
 
-### App shell
+* left sidebar with grouped navigation;
+* groups such as Overview, Patient access, Inpatient care, Clinical services, Diagnostics and medication, Revenue cycle, Facility operations, and Administration;
+* top bar with HOSSPI HMS identity/logo, online/offline status, notification badge, and user avatar initials;
+* workspace pages using title/icon, optional live-sync/status chip, right-aligned actions, summary cards, search/filter area, table/card worklist, detail panel where useful, and clear empty state;
+* desktop table behavior and mobile card behavior through `AppListTable`;
+* clean spacing, non-congested layouts, readable labels, consistent actions, and simple healthcare-friendly wording.
 
-* The app uses a left sidebar with grouped navigation.
-* Sidebar groups include areas such as Overview, Patient access, Inpatient care, Clinical services, Diagnostics and medication, Revenue cycle, Facility operations, and Administration.
-* The top bar shows the HOSSPI HMS logo/title, online/offline status, notification badge, and user avatar initials.
-* Preserve this shell layout.
+Use clear labels that identify what is being counted or displayed:
 
-### Workspace pattern
+* patients;
+* encounters;
+* orders;
+* tasks;
+* alerts;
+* failures;
+* templates;
+* staff;
+* rooms;
+* beds;
+* invoices;
+* claims.
 
-Each workspace should keep the current clean structure:
+Do not show raw enum/status values directly. Convert values such as `WAITING_DOCTOR_ASSIGNMENT`, `IN_PROGRESS`, `PENDING_RELEASE`, `FAILED`, or similar technical states into localized, human-friendly text.
 
-1. Page title with icon.
-2. Optional “Live sync” or online status chip where currently used.
-3. Right-aligned primary and secondary actions such as Refresh, Add patient, Start OPD encounter, Quick arrival, Request imaging, Formulary and stock.
-4. Compact summary cards with icon, count, label, and chevron when clickable.
-5. Search/filter bar above the table.
-6. Table/card worklist with clear row states.
-7. Empty state panel when no matching records exist.
-
-### Current screenshot details that must be handled
-
-* Patients screen currently shows `Patient registry`, cards for `All patients` and `Active patients`, and a patient table with `Patient no.`, `Patient`, `Age / sex`, `Phone / ID`, and `Alerts`.
-* OPD screen currently shows `OPD flow`, summary cards like `All Patients`, `All OPD Patients`, `Active OPD`, `Vitals needed`, `Doctor needed`, `With doctor`, `Lab pending`, `Imaging pending`, `Pharmacy pending`, `Decision needed`, `Admission pending`, and `Discharged today`.
-* OPD row problem: Wilson Wasswa shows `Doctor needed` / `Waiting Doctor Assignment` while `Jordan Demo` is already assigned as staff/provider. This must be corrected.
-* Emergency screen currently shows `Emergency`, `Live sync`, cards for `All emergency records`, `Active`, `Critical`, and `Ambulance`, with one visible critical ambulance case. The sidebar must not show `2` for one case just because the same case is both active and ambulance-related.
-* Clinical workspace currently shows `All active work`, `Waiting review`, and `Urgent`. Wilson must not remain `Waiting Doctor Assignment` if a valid provider is assigned. IPD patients requiring clinical action must remain visible in Clinical.
-* IPD empty state should remain simple: `No admissions`.
-* ICU empty state should remain simple: `No ICU patients`.
-* Pharmacy empty state should remain simple: `No pharmacy orders`.
-* Lab currently shows order rows, including duplicate patients when one patient has multiple lab orders. The default view must show patients first.
-* Radiology currently shows order rows, including duplicate patients when one patient has multiple imaging orders. The default view must show patients first.
-* HR, Communications, and Integrations sidebar badges currently feel ambiguous because badge values do not clearly match cards. Define and align them.
-
-## 5. Specific Implementation Requirements
-
-### 5.1 Patients Registry
-
-Inspect and correct:
+Preserve clear empty states where already defined, including:
 
 ```text
-backend/src/modules/patient/services/patient-workspace.service.js
-backend/src/modules/patient/controllers/patient.controller.js
+No admissions
+No ICU patients
+No pharmacy orders
+```
+
+Use equivalent clear empty states in other modules.
+
+## 6. Specific Implementation Requirements
+
+### 6.1 Frontend/Backend API Integration
+
+Audit and fix API contract mismatches between:
+
+```text
+frontend/lib/core/network/api_endpoints.dart
+frontend/lib/features/**/data/repositories/
+frontend/lib/features/**/data/dtos/
+backend/src/app/router.js
+backend/src/modules/**/routes/
+backend/src/modules/**/schemas/
+backend/src/modules/**/controllers/
+backend/docs/api/v1/openapi.yaml
+```
+
+Requirements:
+
+* every frontend endpoint must match a backend route;
+* every request body/query/param must match backend Zod schemas;
+* every DTO mapper must match backend response data;
+* UI must handle backend errors through existing `AppFailure` and network failure mapping;
+* avoid raw `DioException` or raw backend problem details reaching widgets;
+* if backend response shape changes, update DTOs, tests, and OpenAPI generation/validation where applicable;
+* do not create frontend-only fake data to hide backend/API gaps.
+
+### 6.2 Login, Session, and Navigation Flow
+
+Inspect:
+
+```text
+frontend/lib/features/auth/
+frontend/lib/core/security/
+frontend/lib/app/router/
+backend/src/modules/auth/
+backend/src/modules/user-session/
+backend/src/middlewares/auth.middleware.js
+backend/src/middlewares/session.middleware.js
+```
+
+Requirements:
+
+* login, logout, registration, email verification, password change, token/session refresh, and protected route guards must work consistently;
+* unauthorized/expired sessions must redirect safely without loops;
+* forbidden routes must show clear access feedback;
+* tenant/facility setup requirements must not trap users in unclear navigation states;
+* top bar, sidebar, notification badge, and profile actions must stay consistent after login/logout/session refresh.
+
+### 6.3 Sidebar Badges, Summary Cards, and Worklists
+
+Across all workspaces:
+
+* sidebar badges must represent actionable workload for that module;
+* badges must not silently double-count the same patient/work item;
+* if a count is patient-based, count unique patients;
+* if a count is order/task/alert/failure-based, label it clearly;
+* summary cards must match the same source of truth as the visible worklist filters;
+* clicking a summary card must filter to rows that match that card;
+* closed, completed, cancelled, deleted, or discharged records must not count as active workload unless explicitly labeled;
+* hide zero badges unless the existing component intentionally displays zero;
+* prefer backend-calculated summary counts over frontend guesses;
+* if a frontend count is derived locally, ensure it is deduplicated, tested, and clearly consistent with displayed rows.
+
+Important areas:
+
+```text
+frontend/lib/app/router/app_router.dart
+frontend/lib/features/*/domain/entities/
+frontend/lib/features/*/presentation/controllers/
+frontend/lib/features/*/presentation/pages/
+backend/src/modules/*-workspace/
+```
+
+### 6.4 Patient Registry
+
+Inspect:
+
+```text
+backend/src/modules/patient/
 frontend/lib/features/patients/
 ```
 
 Requirements:
 
-* `All patients` means all non-deleted registered patients in the active tenant/facility scope.
-* `Active patients` means unique non-deleted patients with at least one open encounter.
-* Use `encounter.status == OPEN` and `deleted_at == null` as the base definition of an active encounter.
-* Do not use `patient.is_active` as the active-patient clinical workload definition unless the UI explicitly labels it as “Active registry records” or similar.
-* When the `Active patients` card is selected, the displayed list/filter must correspond to the active-patient count.
-* Ensure patient search, pagination, selected patient detail, and real-time refresh still work.
-* Preserve the current visual layout of the patient registry.
+* `All patients` should mean all non-deleted registered patients in the active tenant/facility scope;
+* `Active patients` should clearly mean either active registry records or patients with open encounters; if ambiguity exists, rename labels so users are not misled;
+* patient search, pagination, detail view, documents, allergies, contacts, identifiers, guardians, duplicate detection, and real-time refresh must remain stable;
+* patient rows must show human-friendly identifiers and demographics, not raw technical values;
+* preserve the current patient registry layout and shared components.
 
-If there is ambiguity between “active registry record” and “active patient with open encounter,” implement clear naming so users are not misled.
+### 6.5 OPD Flow
 
-### 5.2 OPD Flow
-
-Inspect and correct:
+Inspect:
 
 ```text
 backend/src/modules/opd-flow/
+backend/src/modules/visit-queue/
+backend/src/modules/appointment/
 frontend/lib/features/opd/
 frontend/lib/shared/opd_actions/
-frontend/lib/app/router/app_router.dart
 ```
 
 Requirements:
 
-* OPD sidebar badge must count unique active OPD patients/work items, not duplicate appointment + queue + encounter rows for the same patient.
-* Closed OPD encounters must not count as active OPD workload.
-* `All OPD Patients` should count unique patients with OPD history/OPD encounters.
-* `Active OPD` should count unique patients with open OPD encounters.
-* If a patient has both an appointment/visit queue entry and an open OPD flow for the same current visit, count that patient once.
-* Summary cards and OPD table filters must use the same definitions.
-* Avoid showing `Doctor needed` when `encounter.provider_user_id` is set and the assigned provider passes the project’s provider/doctor assignment rules.
-* If a provider is already assigned while the flow stage is still `WAITING_DOCTOR_ASSIGNMENT`, automatically normalize the display/workflow state to `WAITING_DOCTOR_REVIEW` / `With doctor` or the existing equivalent next state.
-* Preserve `assignDoctor`, `doctorReview`, `recordVitals`, `payConsultation`, `disposition`, and correction workflows.
-* Do not break the existing active OPD encounter lock behavior.
+* OPD counts must not double-count the same patient across appointment, queue, triage, and active flow records;
+* closed/terminal OPD encounters must not count as active OPD workload;
+* `All OPD Patients`, `Active OPD`, `Vitals needed`, `Doctor needed`, `With doctor`, `Lab pending`, `Imaging pending`, `Pharmacy pending`, `Decision needed`, `Admission pending`, and `Discharged today` must match real data and filters;
+* do not show `Doctor needed` or `Waiting Doctor Assignment` when a valid provider is already assigned;
+* preserve workflows for starting an OPD encounter, assigning doctor/provider, recording vitals, consultation review, billing, orders, disposition, admission, discharge, and corrections;
+* do not break active OPD encounter locking.
 
-Important known code area:
+### 6.6 Emergency and Ambulance
 
-* `backend/src/modules/opd-flow/services/opd-flow.service.js` contains OPD stages, `resolveOpdDisplayState`, `resolvePostVitalsStage`, `assignDoctor`, and summary count logic.
-* `frontend/lib/features/opd/domain/entities/opd_entities.dart` currently derives `workloadCount` from appointments + queue + active flows; review this because it can double-count the same patient.
-
-### 5.3 Emergency
-
-Inspect and correct:
+Inspect:
 
 ```text
 backend/src/modules/emergency-case/
 backend/src/modules/emergency-response/
+backend/src/modules/ambulance/
+backend/src/modules/ambulance-dispatch/
+backend/src/modules/ambulance-trip/
 frontend/lib/features/emergency/
-frontend/lib/app/router/app_router.dart
 ```
 
 Requirements:
 
-* Emergency sidebar badge must count unique active emergency cases/patients requiring action.
-* Do not calculate sidebar workload as `activeCount + ambulanceCount` if the same emergency case can be both active and ambulance-related.
-* Summary cards must match the emergency board:
+* emergency sidebar badge must count unique active emergency cases/patients requiring action;
+* a case that is both active and ambulance-related must count once unless the UI explicitly shows category totals;
+* `All emergency records`, `Active`, `Critical`, and `Ambulance` summary cards must match visible filters;
+* `Awaiting response` must only appear when no response has actually been recorded;
+* preserve quick arrival, triage, response, ambulance dispatch/trip, handoff, print, and live sync behavior.
 
-  * `All emergency records`
-  * `Active`
-  * `Critical`
-  * `Ambulance`
-* The visible board rows must match the selected card/filter.
-* `Awaiting response` is acceptable only when no response has actually been recorded.
-* A critical active ambulance case should display as one case in the sidebar workload, not two.
-* Preserve quick arrival, triage, response, ambulance dispatch/trip, handoff, print, and live sync behavior.
+### 6.7 Clinical, IPD, ICU, Nursing, Discharge, Rooms/Beds
 
-### 5.4 Clinical Workspace
-
-Inspect and correct:
+Inspect:
 
 ```text
-frontend/lib/features/clinical/
-frontend/lib/shared/clinical_actions/
 backend/src/modules/encounter/
-backend/src/modules/admission/
-backend/src/modules/opd-flow/
-backend/src/modules/ipd-flow/
-```
-
-Requirements:
-
-* Clinical worklist must show active clinical work from open encounters, OPD flows, triage flows, and admitted IPD patients that still need clinical action.
-* Deduplicate rows by encounter/patient context using the existing `deduplicateClinicalWorklistEntries` pattern.
-* Wilson-like cases must not show `Waiting Doctor Assignment` when a valid provider is already assigned.
-* An admitted IPD patient should not disappear from Clinical if there is still active clinical work.
-* Summary cards must match the worklist:
-
-  * `All active work`
-  * `Waiting review`
-  * `Urgent`
-  * `Results ready`
-  * `In consultation`
-* Sidebar clinical badge must use a clear workload definition and must not double-count one row across multiple categories unless the UI clearly labels it as category total. Prefer unique actionable clinical work items.
-
-### 5.5 IPD, Rooms and Beds, ICU, Nursing, Discharge
-
-Inspect and verify:
-
-```text
-frontend/lib/features/ipd/
-frontend/lib/features/rooms_beds/
-frontend/lib/features/icu/
-frontend/lib/features/nursing/
-frontend/lib/features/discharge/
 backend/src/modules/admission/
 backend/src/modules/ipd-flow/
 backend/src/modules/bed/
@@ -358,20 +453,28 @@ backend/src/modules/bed-assignment/
 backend/src/modules/icu-stay/
 backend/src/modules/nursing-note/
 backend/src/modules/discharge-summary/
+frontend/lib/features/clinical/
+frontend/lib/features/ipd/
+frontend/lib/features/rooms_beds/
+frontend/lib/features/icu/
+frontend/lib/features/nursing/
+frontend/lib/features/discharge/
+frontend/shared/clinical_actions/
 ```
 
 Requirements:
 
-* Counts, sidebar badges, summary cards, table rows, and empty states must correspond to the same source of truth.
-* Empty IPD must show a clear `No admissions` state.
-* Empty ICU must show a clear `No ICU patients` state.
-* Confirm admitted/transferred/discharged patients move correctly between IPD, Rooms/Beds, ICU, Nursing, Discharge, Clinical, and Housekeeping.
-* Do not invent patient rows when the backend has no matching active data.
-* Do not remove valid rows just because they are admitted if they still require active module work.
+* active clinical work must remain visible when action is still needed;
+* admitted IPD patients must not disappear from Clinical if clinical action is still required;
+* duplicate rows must be deduplicated by the correct patient/encounter/admission context;
+* statuses and next actions must reflect the real workflow;
+* transfers/discharges must correctly update IPD, Rooms/Beds, ICU, Nursing, Discharge, Clinical, and Housekeeping;
+* empty states must be clear and not misleading;
+* preserve existing shared clinical action dialogs and panels.
 
-### 5.6 Lab
+### 6.8 Lab
 
-Inspect and modify:
+Inspect:
 
 ```text
 backend/src/modules/lab-workspace/
@@ -379,337 +482,234 @@ backend/src/modules/lab-order/
 backend/src/modules/lab-sample/
 backend/src/modules/lab-result/
 frontend/lib/features/lab/
-frontend/lib/app/router/app_router.dart
 ```
 
 Requirements:
 
-* The default Lab workspace view must be patient-based, not order-based.
-* If one patient has multiple lab orders, show one patient row by default.
-* The patient row should aggregate:
+* default Lab workbench view should be patient-based where the current code supports it;
+* if one patient has multiple lab orders, default view should show one patient row with aggregated order/test/sample/result state;
+* order-level workflow must remain available through selection or a clear Patients/Orders view toggle;
+* sidebar badge should count unique actionable lab patients by default unless explicitly labeled as orders;
+* preserve create lab order, collect sample, receive sample, reject sample, release result, reverse workflow, QC log behavior, and live sync;
+* if backend support for patient grouping is incomplete, extend the existing workbench endpoint using current backend patterns instead of unreliable frontend-only grouping.
 
-  * patient name;
-  * patient/MRN identifier;
-  * encounter identifier where available;
-  * number of active lab orders;
-  * tests/panels summary;
-  * sample status;
-  * processing/result/release status;
-  * next action.
-* Existing order-level workflow must remain available after selecting a patient or through a clear `Patients / Orders` toggle.
-* If adding a toggle, default to `Patients`.
-* Order view must be clearly labeled as orders and may keep the existing order table.
-* Sidebar badge should count unique actionable lab patients by default, not raw orders, unless the label explicitly says orders.
-* Summary cards must clearly distinguish patient counts from order counts.
-* Preserve existing actions:
+### 6.9 Radiology
 
-  * create lab order;
-  * collect sample;
-  * receive sample;
-  * reject sample;
-  * release result;
-  * reverse workflow;
-  * QC log behavior.
-* Preserve live sync for lab workflow/result events.
-
-If the current `/api/v1/lab/workbench` endpoint cannot safely support patient grouping with correct pagination/counts, extend it following existing backend patterns instead of doing unreliable frontend-only grouping.
-
-### 5.7 Radiology
-
-Inspect and modify:
+Inspect:
 
 ```text
 backend/src/modules/radiology-workspace/
 backend/src/modules/radiology-order/
 backend/src/modules/radiology-result/
+backend/src/modules/imaging-study/
+backend/src/modules/imaging-asset/
+backend/src/modules/pacs-link/
 frontend/lib/features/radiology/
-frontend/lib/app/router/app_router.dart
 ```
 
 Requirements:
 
-* The default Radiology workspace view must be patient-based, not order-based.
-* If one patient has multiple imaging orders, show one patient row by default.
-* The patient row should aggregate:
+* default Radiology workbench view should be patient-based where the current code supports it;
+* if one patient has multiple imaging orders, default view should show one patient row with aggregated order/study/report state;
+* order-level workflow must remain available through selection or a clear Patients/Orders view toggle;
+* sidebar badge should count unique actionable radiology patients by default unless explicitly labeled as orders;
+* preserve request imaging, assign/start/complete imaging, create/update/finalize report, result addendum/finalization flows, PACS/imaging asset behavior, and live sync;
+* if backend support for patient grouping is incomplete, extend the existing workbench endpoint using current backend patterns instead of unreliable frontend-only grouping.
 
-  * patient name;
-  * patient/MRN identifier;
-  * encounter identifier where available;
-  * number of active imaging orders;
-  * study/test summary;
-  * priority;
-  * billing/authorization state;
-  * reporting/release state;
-  * next action.
-* Existing order-level workflow must remain available after selecting a patient or through a clear `Patients / Orders` toggle.
-* If adding a toggle, default to `Patients`.
-* Order view must be clearly labeled as orders and may keep the existing order table.
-* Sidebar badge should count unique actionable radiology patients by default, not raw orders, unless the label explicitly says orders.
-* Summary cards must clearly distinguish patient counts from order counts.
-* Preserve existing actions:
+### 6.10 Pharmacy, Billing, Claims, Reports
 
-  * request imaging;
-  * start/complete imaging;
-  * create/update/finalize report;
-  * amend/release result where supported;
-  * PACS/imaging study behavior.
-* Preserve live sync for radiology workflow/result events.
-
-If the current `/api/v1/radiology/workbench` endpoint cannot safely support patient grouping with correct pagination/counts, extend it following existing backend patterns instead of doing unreliable frontend-only grouping.
-
-### 5.8 Pharmacy
-
-Inspect and verify:
+Inspect:
 
 ```text
 backend/src/modules/pharmacy-workspace/
 backend/src/modules/pharmacy-order/
-frontend/lib/features/pharmacy/
-```
-
-Requirements:
-
-* Pharmacy currently looks acceptable but must be checked for the same consistency rules.
-* Completed/empty states must be clear.
-* Sidebar badge must reflect actionable pharmacy workload, not completed-only state unless clearly labeled.
-* Preserve formulary/stock access, dispensing, return/cancel behavior, and live sync.
-
-### 5.9 Billing and Claims
-
-Inspect and verify:
-
-```text
 backend/src/modules/billing/
+backend/src/modules/invoice/
+backend/src/modules/payment/
+backend/src/modules/refund/
 backend/src/modules/insurance-claim/
+backend/src/modules/reports-workspace/
+backend/src/modules/report-definition/
+backend/src/modules/report-run/
+frontend/lib/features/pharmacy/
 frontend/lib/features/billing/
 frontend/lib/features/claims/
+frontend/lib/features/reports/
+frontend/lib/shared/printing/
+frontend/lib/shared/components/app_report_actions.dart
 ```
 
 Requirements:
 
-* Sidebar badges must represent actionable billing/claims workload.
-* Summary cards must match visible invoices/claims/work queues.
-* Do not duplicate charges or claims just to make counts match.
-* Preserve payment, invoice, refund, approval, claim submission/resubmission, and reporting behavior.
+* pharmacy, billing, claims, and reports must show actionable, readable, human-friendly records;
+* summary cards must match visible invoices/orders/claims/reports;
+* preserve payment, invoice, refund, approval, claim submission/resubmission, report run/export/print behavior;
+* reports must be readable, useful, and not cluttered;
+* use existing print/report components and templates;
+* do not duplicate charges, claims, or orders to force count alignment.
 
-### 5.10 Physiotherapy and Theatre
+### 6.11 HR, Communications, Integrations
 
-Inspect and verify:
+Inspect:
 
 ```text
-frontend/lib/features/physiotherapy/
-frontend/lib/features/theater/
-backend/src/modules/theatre-case/
-backend/src/modules/theatre-flow/
+backend/src/modules/hr-workspace/
+backend/src/modules/communications-workspace/
+backend/src/modules/notification/
+backend/src/modules/notification-delivery/
+backend/src/modules/conversation/
+backend/src/modules/integration/
+backend/src/modules/integration-log/
+backend/src/modules/api-key/
+backend/src/modules/webhook-subscription/
+frontend/lib/features/hr/
+frontend/lib/features/communications/
+frontend/lib/features/integrations/
 ```
 
 Requirements:
 
-* Workflows must show the correct patients, statuses, and next actions.
-* Sidebar badges and summary cards must match visible actionable work.
-* Preserve the existing spelling/naming conventions used in code paths, including `theater` on frontend and `theatre-*` backend modules where already present.
+* HR sidebar badge should represent actionable HR workload, not total staff, unless clearly labeled;
+* Communications must clearly distinguish notification bell count, communications sidebar badge, unread messages, unread threads, unread alerts/notifications, failed deliveries, and templates;
+* Integrations sidebar badge should represent unique items requiring attention, such as warnings/failures, not total integrations/API keys/log rows;
+* preserve conversations, notifications, delivery states, templates, read-state updates, secrets masking, API key security, webhook setup, integration logs, permissions, and live sync.
 
-### 5.11 Operations, Housekeeping, Biomedical, Mortuary
+### 6.12 Operations, Housekeeping, Biomedical, Mortuary, Theatre, Physiotherapy
 
-Inspect and verify:
+Inspect:
 
 ```text
-frontend/lib/features/operations/
-frontend/lib/features/housekeeping/
-frontend/lib/features/biomedical/
-frontend/lib/features/mortuary/
 backend/src/modules/housekeeping-workspace/
 backend/src/modules/biomedical-workspace/
 backend/src/modules/mortuary-workspace/
 backend/src/modules/equipment-work-order/
 backend/src/modules/maintenance-request/
+backend/src/modules/theatre-case/
+backend/src/modules/theatre-flow/
+frontend/lib/features/operations/
+frontend/lib/features/housekeeping/
+frontend/lib/features/biomedical/
+frontend/lib/features/mortuary/
+frontend/lib/features/theater/
+frontend/lib/features/physiotherapy/
 ```
 
 Requirements:
 
-* Each module must display cleanly.
-* Sidebar badges must represent actionable work.
-* Summary cards must match visible records.
-* Empty states must be clear and not misleading.
-* Housekeeping must stay synchronized with bed/room readiness where applicable.
-* Biomedical and operations must not mix total inventory/assets with actionable overdue/fault/maintenance workload unless labels are explicit.
+* worklists must show correct records, statuses, next actions, and empty states;
+* sidebar badges must reflect actionable workload;
+* Housekeeping must stay synchronized with room/bed readiness where applicable;
+* Biomedical and Operations must not confuse total assets/inventory with actionable overdue/fault/maintenance workload unless labels are explicit;
+* preserve the existing spelling split: frontend uses `theater`, backend modules use `theatre-*`.
 
-### 5.12 HR
+## 7. Performance and Real-Time Requirements
 
-Inspect and correct:
-
-```text
-backend/src/modules/hr-workspace/
-frontend/lib/features/hr/
-frontend/lib/app/router/app_router.dart
-```
-
-Requirements:
-
-* Define what the HR sidebar badge represents.
-* Recommended definition: actionable HR workload only, such as pending leave requests, swap requests, draft rosters, unassigned shifts, payroll draft runs, and overdue shifts.
-* Do not let `totalStaff` drive the sidebar badge.
-* HR summary cards and work items must make it clear whether a number is total staff or actionable work.
-* If the sidebar shows `1`, the page must have a clearly corresponding actionable item/card/filter for that `1`.
-
-### 5.13 Communications
-
-Inspect and correct:
+Inspect:
 
 ```text
-backend/src/modules/communications-workspace/
-backend/src/modules/notification/
-backend/src/modules/notification-delivery/
-backend/src/modules/conversation/
-frontend/lib/features/communications/
-frontend/lib/app/router/app_router.dart
-```
-
-Requirements:
-
-* Define and align:
-
-  * top notification bell badge;
-  * Communications sidebar badge;
-  * Communications summary cards.
-* Recommended definitions:
-
-  * top notification bell = unread notifications/alerts;
-  * Communications sidebar badge = total communication items requiring attention, such as unread threads + unread notifications/alerts + failed deliveries;
-  * templates must not count as workload unless explicitly shown as template management work.
-* Avoid confusing combinations where sidebar shows one number while cards show unrelated numbers such as unread alerts and failed deliveries.
-* Summary labels must clearly distinguish:
-
-  * unread messages;
-  * unread threads;
-  * unread alerts/notifications;
-  * failed deliveries;
-  * templates.
-* Preserve conversations, notifications, deliveries, templates, read-state updates, and live sync behavior.
-
-### 5.14 Integrations
-
-Inspect and correct:
-
-```text
-backend/src/modules/integration/
-backend/src/modules/integration-log/
-backend/src/modules/api-key/
-backend/src/modules/api-key-permission/
-backend/src/modules/webhook-subscription/
-frontend/lib/features/integrations/
-frontend/lib/app/router/app_router.dart
-```
-
-Requirements:
-
-* Define what the Integrations sidebar badge represents.
-* Recommended definition: unique integration items requiring attention, such as warning + failed items.
-* Do not confuse active integrations/API keys/log rows with warning/failure workload.
-* Summary cards must clearly label:
-
-  * active;
-  * warning;
-  * failed;
-  * disabled;
-  * logs/API keys/webhooks if shown.
-* Avoid double-counting one failed log as both warning and failed unless displayed as a category total with clear labels.
-* Preserve secrets masking, API key security, webhook configuration, logs, permissions, and integration status behavior.
-
-## 6. Real-Time Synchronization Requirements
-
-Review and update as needed:
-
-```text
-frontend/lib/core/realtime/realtime_event_groups.dart
-frontend/lib/core/realtime/realtime_events.dart
+frontend/lib/core/realtime/
 backend/src/lib/websocket/
+backend/src/websockets/
+frontend/lib/app/router/app_router.dart
+frontend/lib/features/*/presentation/controllers/
 ```
 
 Requirements:
 
-* Mutations that affect counts must trigger the correct frontend refresh group.
-* Sidebar badges must update after relevant changes without requiring full page reload.
-* Patients, OPD, Emergency, Clinical, Lab, Radiology, Pharmacy, IPD, Billing, Claims, HR, Communications, Integrations, Housekeeping, Biomedical, and Mortuary must update consistently.
-* Do not introduce noisy polling if existing websocket/targeted refresh patterns can handle the update.
-* Avoid full workspace reloads after modal actions when updating only the affected row/card is enough.
+* create/update/delete/approve/reject/status-change actions must update affected rows, summary cards, badges, detail panels, and notification counts without requiring full page reload;
+* use existing websocket/targeted refresh patterns where possible;
+* avoid noisy polling;
+* avoid unnecessary full workspace reloads after modal actions;
+* preserve filters, pagination, selected rows, and scroll position after successful actions;
+* avoid loading heavy full workspace state only to compute sidebar badges if a lighter existing summary source can be used safely;
+* do not introduce broad new state-management systems.
 
-## 7. UI/UX Requirements
+## 8. Reusable Components and Duplication
 
-* Keep the interface simple and uncluttered.
-* Do not add unnecessary dashboards, tabs, or nested navigation.
-* Prefer patient-based workload views in patient-facing clinical modules.
-* Use clear labels: `patients`, `encounters`, `orders`, `tasks`, `alerts`, `failures`, `templates`.
-* Do not show order counts as patient counts.
-* Do not show active workload counts that include completed/closed/cancelled records.
-* Preserve existing search/filter/table behavior.
-* Use clear empty states:
+Audit for duplicate local implementations of:
 
-  * “No admissions”
-  * “No ICU patients”
-  * “No pharmacy orders”
-  * equivalent clear states for other modules.
-* Make row next-action text match the real workflow state.
-* Use existing localization patterns. Add/update localization keys where new labels are introduced.
-* Keep desktop table and mobile card behavior consistent with `AppListTable`.
+* tables/lists;
+* search bars;
+* form fields;
+* dialogs/modals;
+* buttons;
+* status badges;
+* patient headers/context cards;
+* permission wrappers;
+* report/print actions;
+* pagination helpers;
+* error/empty/loading state views.
 
-## 8. Implementation Limits
+Use existing shared components where possible. Do not create another app-wide component system.
 
-* Modify only files required for this task.
-* Do not rewrite entire modules.
-* Do not replace the app shell, router, state-management approach, API client, shared component system, or backend module architecture.
-* Do not create fake frontend-only data to make counts appear correct.
-* Do not change unrelated UI styling.
-* Do not introduce new third-party packages unless absolutely necessary.
-* Do not alter authentication, authorization, tenant scoping, or subscription/module entitlement behavior except where needed to keep counts scoped correctly.
-* Do not remove files unless you verify they are unused and safe to delete.
-* If a raw requirement is unclear, preserve the known requirement and verify the missing detail from the codebase before implementation.
+Safe cleanup is allowed only when directly related:
 
-## 9. Code Cleanup
+* remove unused imports;
+* remove dead helper functions;
+* remove duplicated local UI/count logic after replacing it with a shared or backend-backed source;
+* remove unreachable branches.
 
-Review for safe cleanup only where directly related to this task.
+Avoid broad formatting churn and unrelated refactors.
 
-Allowed:
+## 9. Backend Quality Requirements
 
-* remove duplicated count helpers made obsolete by a single source of truth;
-* remove dead local UI grouping/count code after replacing it with backend-backed summaries;
-* remove unused imports, unreachable branches, and obsolete helper functions.
+For any backend files changed:
 
-Not allowed:
+* validate inputs through Zod schemas;
+* preserve tenant/facility/deleted filters;
+* preserve audit logging and permission checks;
+* preserve module entitlement behavior;
+* use response helpers consistently;
+* keep Prisma access inside repositories except documented transaction orchestration;
+* avoid N+1 queries where clear aggregation or include/select can solve the issue;
+* update or add focused tests for changed logic;
+* update OpenAPI generation/validation if route contracts change.
 
-* broad formatting churn across unrelated files;
-* deleting unrelated modules;
-* refactoring entire folder structures;
-* renaming files unless required and verified.
+## 10. Frontend Quality Requirements
 
-If files/folders must be deleted or renamed, include a `.ps1` PowerShell script that performs the operation safely using correct relative paths. The script must not delete unrelated files.
+For any frontend files changed:
 
-## 10. Testing and Verification
+* keep API logic in repositories;
+* keep DTO parsing/mapping in data layer;
+* keep UI state/actions in Riverpod controllers;
+* keep widgets clean and reusable;
+* localize all visible labels;
+* use `AppDisplay`, `AppFormatters`, `AppStatusText`, or equivalent existing utilities for human-friendly display;
+* keep screens responsive across mobile, tablet, and desktop;
+* preserve keyboard, mouse, touch, and screen-reader usability;
+* prevent duplicate form submissions;
+* show clear loading, empty, error, validation, success, and forbidden states.
 
-Add or update targeted tests where the codebase already has similar tests.
+## 11. Scope Limits
 
-### Backend verification
+Do not:
 
-Run:
+* rewrite the whole application;
+* replace the app shell, router, API client, Riverpod state model, backend architecture, Prisma setup, or shared component system;
+* change unrelated styling;
+* introduce new third-party packages unless absolutely necessary;
+* modify `.env`, logs, build outputs, caches, `node_modules`, generated temporary files, or unrelated assets;
+* delete or rename files unless verified safe and required;
+* invent requirements not supported by the codebase or planner files;
+* create fake frontend-only data to hide backend problems;
+* change authentication, authorization, tenant scoping, facility scoping, or subscription/module entitlement behavior except where required to fix confirmed defects.
+
+If a raw requirement is incomplete or unclear, preserve the known requirement and explicitly mark the missing detail in `app-planner/hms-end-to-end-review.md` as `Needs product decision`.
+
+## 12. Testing and Verification
+
+Run and fix issues introduced by this task.
+
+Backend:
 
 ```bash
 cd backend
 npm run lint
 npm run test:backend
+npm run openapi:validate
 ```
 
-Add/update focused backend tests where relevant, especially for:
-
-* patient workspace active-patient count;
-* OPD summary counts and provider-assigned state normalization;
-* emergency workload count uniqueness;
-* lab patient-based workbench count/grouping if backend is extended;
-* radiology patient-based workbench count/grouping if backend is extended;
-* HR/communications/integrations summary/badge count definitions if backend summaries change.
-
-### Frontend verification
-
-Run:
+Frontend:
 
 ```bash
 cd frontend
@@ -718,37 +718,56 @@ flutter analyze
 flutter test
 ```
 
-Add/update focused frontend tests where relevant, especially for:
+Add or update focused tests where similar tests already exist, especially for:
 
-* `app_router.dart` sidebar badge definitions;
-* OPD controller/workload count;
-* emergency controller/workload count;
-* clinical worklist status/count behavior;
-* lab patient/order toggle or patient-based worklist display;
-* radiology patient/order toggle or patient-based worklist display;
+* API DTO/repository contract changes;
+* route/sidebar badge definitions;
+* patient registry active/all counts;
+* OPD workload counts and provider-assigned display state;
+* emergency unique workload count;
+* clinical worklist deduplication/status behavior;
+* lab patient/order workbench behavior;
+* radiology patient/order workbench behavior;
 * HR/communications/integrations badge-summary alignment;
-* localization/hardcoded text tests if new labels are added.
+* form validation and submission behavior;
+* localized/human-friendly status labels;
+* report display/export behavior where changed.
 
 All linter/analyzer issues must be cleared.
 
-## 11. Expected Deliverable
+## 13. Deliverable
 
 Return a zipped archive containing only the files and folders that were created or updated.
 
-Requirements for the returned archive:
+Archive requirements:
 
-* Preserve correct relative project directories.
-* Do not include the full repository.
-* Do not include `node_modules`, build folders, caches, generated temporary files, logs, or unrelated assets.
-* Include only changed/created source files, tests, localization files, and required scripts.
-* If any files/folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those operations using correct relative paths.
-* The `.ps1` scripts must be conservative and must not delete unrelated files.
+* preserve correct relative project directories;
+* include changed source files, tests, localization files, OpenAPI/docs files if updated, and `app-planner/hms-end-to-end-review.md`;
+* do not include the full repository;
+* do not include `node_modules`, build outputs, caches, logs, `.env`, generated temporary files, or unrelated assets.
 
-Before returning the archive, confirm that:
+If any files or folders must be deleted or renamed, include one or more PowerShell scripts in the archive, for example:
 
-* sidebar badges match the defined workload counts;
-* summary cards match visible filters/lists;
-* patient-facing modules do not duplicate the same patient unless the view is explicitly order/encounter based;
-* OPD and Clinical no longer show doctor assignment as pending when a valid provider is assigned;
-* Lab and Radiology default to patient-based workload views while preserving order-level detail/workflow;
-* linter/analyzer/test issues introduced by this task are fixed.
+```text
+scripts/safe-delete-unused-hms-files.ps1
+scripts/safe-rename-hms-files.ps1
+```
+
+The `.ps1` scripts must:
+
+* use correct relative paths;
+* check that each target exists before acting;
+* affect only verified files/folders;
+* not delete unrelated files;
+* be conservative and easy to review.
+
+Before returning the archive, confirm through the changed code and review report that:
+
+* frontend API calls match backend routes and contracts;
+* visible UI labels are human-friendly;
+* sidebar badges, summary cards, and filters use clear, consistent definitions;
+* patient-facing workflows avoid duplicate patient rows unless the view is explicitly order/encounter based;
+* forms, reports, dialogs, tables, filters, modals, and empty states follow existing shared UI patterns;
+* mutations refresh relevant UI sections in real time or through targeted refresh;
+* backend changes follow the existing module architecture;
+* all linter/analyzer issues introduced by this task are fixed.
