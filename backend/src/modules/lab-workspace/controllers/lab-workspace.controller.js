@@ -35,7 +35,8 @@ const getLabWorkbench = asyncHandler(async (req, res) => {
     Number(page),
     Number(limit),
     sort_by,
-    order
+    order,
+    req.user
   );
 
   return sendSuccess(res, 200, 'messages.lab_workspace.workbench.success', data);

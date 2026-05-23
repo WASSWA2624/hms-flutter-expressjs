@@ -132,6 +132,42 @@ describe('lab-workspace.service', () => {
     );
   });
 
+  it('scopes lab workbench queries through patient tenant and facility fields', async () => {
+    labWorkspaceRepository.findManyOrders.mockResolvedValue([]);
+    labWorkspaceRepository.countOrders.mockResolvedValue(0);
+    labWorkspaceRepository.countOrderItems.mockResolvedValue(0);
+    labWorkspaceRepository.countResults.mockResolvedValue(0);
+    labWorkspaceRepository.countSamples.mockResolvedValue(0);
+
+    await labWorkspaceService.getLabWorkbench(
+      { view: 'ORDERS' },
+      1,
+      25,
+      'ordered_at',
+      'desc',
+      {
+        tenant_id: 'tenant-internal-1',
+        facility_id: 'facility-internal-1',
+        branch_id: 'branch-internal-1',
+      }
+    );
+
+    const orderWhere = labWorkspaceRepository.findManyOrders.mock.calls[0][0];
+
+    expect(orderWhere.AND).toEqual(
+      expect.arrayContaining([
+        {
+          patient: {
+            deleted_at: null,
+            tenant_id: 'tenant-internal-1',
+            facility_id: 'facility-internal-1',
+          },
+        },
+      ])
+    );
+    expect(JSON.stringify(orderWhere)).not.toContain('branch_id');
+  });
+
   it('returns an order workbench response with pagination total', async () => {
     labWorkspaceRepository.findManyOrders
       .mockResolvedValueOnce([buildBaseOrder()])
@@ -575,6 +611,7 @@ describe('lab-workspace.service', () => {
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(0);
     labWorkspaceRepository.txCountOrderItems
+      .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(1);
     labWorkspaceRepository.txUpdateOrderItemsMany.mockResolvedValue({ count: 1 });

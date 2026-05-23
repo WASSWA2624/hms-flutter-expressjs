@@ -204,6 +204,21 @@ const appendAnd = (where, clause) => {
   where.AND.push(clause);
 };
 
+const buildWorkbenchPatientScope = (user = {}) => {
+  const tenantId = normalizeIdentifier(user?.tenant_id || user?.tenantId);
+  const facilityId = normalizeIdentifier(user?.facility_id || user?.facilityId);
+
+  if (!tenantId && !facilityId) return null;
+
+  return {
+    patient: {
+      deleted_at: null,
+      ...(tenantId ? { tenant_id: tenantId } : {}),
+      ...(facilityId ? { facility_id: facilityId } : {}),
+    },
+  };
+};
+
 const normalizeEnumFilter = (value, fallback) => {
   const normalized = String(value || '').trim().toUpperCase();
   if (!normalized) return fallback;
@@ -401,6 +416,8 @@ const syncLabOrderProgress = async (tx, orderId) => {
 const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
   const includeSearch = options.includeSearch !== false;
   const where = {};
+
+  appendAnd(where, buildWorkbenchPatientScope(options.user));
 
   if (filters.patient_id) {
     where.patient_id = await resolveModelIdOrThrow({
@@ -744,15 +761,15 @@ const publishLabRealtimeUpdates = async ({
   }
 };
 
-const getLabWorkbench = async (filters, page, limit, sortBy, order) => {
+const getLabWorkbench = async (filters, page, limit, sortBy, order, user = {}) => {
   try {
     const view = normalizeWorkbenchView(filters?.view);
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { ordered_at: 'desc' };
 
     const [where, summaryWhere] = await Promise.all([
-      buildWorkbenchOrderWhere(filters, { includeSearch: true }),
-      buildWorkbenchOrderWhere(filters, { includeSearch: false }),
+      buildWorkbenchOrderWhere(filters, { includeSearch: true, user }),
+      buildWorkbenchOrderWhere(filters, { includeSearch: false, user }),
     ]);
 
     const [

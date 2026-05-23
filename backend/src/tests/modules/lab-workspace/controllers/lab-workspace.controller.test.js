@@ -41,7 +41,8 @@ describe('lab-workspace.controller', () => {
       2,
       15,
       'ordered_at',
-      'asc'
+      'asc',
+      req.user
     );
     expect(sendSuccess).toHaveBeenCalledWith(
       res,

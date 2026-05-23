@@ -43,7 +43,12 @@ const findSummary = async (scope = {}) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const staleThreshold = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const common = baseScope(scope, { includeBranch: false });
+    const reportingScope = baseScope(scope, { includeBranch: false });
+    const widgetScope = baseScope(scope, {
+      includeFacility: false,
+      includeBranch: false,
+    });
+    const granularScope = baseScope(scope);
 
     const [
       totalDefinitions,
@@ -59,20 +64,20 @@ const findSummary = async (scope = {}) => {
       warningKpis,
       recentActivity,
     ] = await Promise.all([
-      prisma.report_definition.count({ where: common }),
-      prisma.report_definition.count({ where: { ...common, status: 'ACTIVE' } }),
-      prisma.report_run.count({ where: { ...common, status: 'QUEUED' } }),
-      prisma.report_run.count({ where: { ...common, status: 'FAILED' } }),
-      prisma.report_run.count({ where: { ...common, status: 'COMPLETED', completed_at: { gte: today } } }),
-      prisma.report_schedule.count({ where: common }),
-      prisma.report_schedule.count({ where: { ...common, status: 'ACTIVE', next_run_at: { lte: now } } }),
-      prisma.dashboard_widget.count({ where: { ...common, is_pinned: true } }),
-      prisma.dashboard_widget.count({ where: { ...common, updated_at: { lt: staleThreshold } } }),
-      prisma.kpi_snapshot.count({ where: { ...baseScope(scope), threshold_state: 'CRITICAL' } }),
-      prisma.kpi_snapshot.count({ where: { ...baseScope(scope), threshold_state: 'WARNING' } }),
+      prisma.report_definition.count({ where: reportingScope }),
+      prisma.report_definition.count({ where: { ...reportingScope, status: 'ACTIVE' } }),
+      prisma.report_run.count({ where: { ...reportingScope, status: 'QUEUED' } }),
+      prisma.report_run.count({ where: { ...reportingScope, status: 'FAILED' } }),
+      prisma.report_run.count({ where: { ...reportingScope, status: 'COMPLETED', completed_at: { gte: today } } }),
+      prisma.report_schedule.count({ where: reportingScope }),
+      prisma.report_schedule.count({ where: { ...reportingScope, status: 'ACTIVE', next_run_at: { lte: now } } }),
+      prisma.dashboard_widget.count({ where: { ...widgetScope, is_pinned: true } }),
+      prisma.dashboard_widget.count({ where: { ...widgetScope, updated_at: { lt: staleThreshold } } }),
+      prisma.kpi_snapshot.count({ where: { ...granularScope, threshold_state: 'CRITICAL' } }),
+      prisma.kpi_snapshot.count({ where: { ...granularScope, threshold_state: 'WARNING' } }),
       prisma.analytics_event.count({
         where: {
-          ...baseScope(scope),
+          ...granularScope,
           occurred_at: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
         },
       }),
