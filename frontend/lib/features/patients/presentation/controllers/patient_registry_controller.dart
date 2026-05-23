@@ -24,6 +24,7 @@ final class PatientRegistryController
 
   Timer? _syncTimer;
   bool _isSyncing = false;
+  bool _refreshPending = false;
 
   @override
   Future<Result<PatientRegistryState>> build() async {
@@ -33,6 +34,7 @@ final class PatientRegistryController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.patientRegistry,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: (_) => _syncFromRealtime(),
     );
     final Result<PatientRegistryState> result = await _loadInitialState();
@@ -41,6 +43,10 @@ final class PatientRegistryController
   }
 
   Future<void> _syncFromRealtime() async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _refreshPending = true;
+      return;
+    }
     await _syncVisibleData();
   }
 
@@ -177,10 +183,12 @@ final class PatientRegistryController
         );
         await _refreshOverviewOnly();
         _emit(_currentState!.copyWith(isSaving: false));
+        await _flushPendingRefresh();
         return null;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
         return failure;
       },
     );
@@ -213,10 +221,12 @@ final class PatientRegistryController
         );
         final AppFailure? detailFailure = await selectPatient(result.patientId);
         _emit(_currentState!.copyWith(isSaving: false));
+        await _flushPendingRefresh();
         return detailFailure;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
         return failure;
       },
     );
@@ -249,10 +259,12 @@ final class PatientRegistryController
           allowWhileSaving: true,
         );
         _emit(_currentState!.copyWith(isSaving: false));
+        await _flushPendingRefresh();
         return null;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
         return failure;
       },
     );
@@ -305,10 +317,12 @@ final class PatientRegistryController
             ? null
             : await selectPatient(patient.id);
         _emit(_currentState!.copyWith(isSaving: false));
+        await _flushPendingRefresh();
         return detailFailure;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
         return failure;
       },
     );
@@ -343,10 +357,12 @@ final class PatientRegistryController
           ),
         );
         await _refreshOverviewOnly();
+        await _flushPendingRefresh();
         return null;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
         return failure;
       },
     );
@@ -420,13 +436,23 @@ final class PatientRegistryController
         );
         await _refreshOverviewOnly();
         _emit(_currentState!.copyWith(isSaving: false));
+        await _flushPendingRefresh();
         return detailFailure;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
         return failure;
       },
     );
+  }
+
+  Future<AppFailure?> _flushPendingRefresh() async {
+    if (!_refreshPending || _isSyncing || (_currentState?.isSaving ?? false)) {
+      return null;
+    }
+    _refreshPending = false;
+    return _syncVisibleData();
   }
 
   Future<Result<PatientRegistryState>> _loadInitialState() async {
@@ -498,10 +524,15 @@ final class PatientRegistryController
     bool allowWhileSaving = false,
   }) async {
     final PatientRegistryState? current = _currentState;
-    if (current == null || _isSyncing) {
+    if (current == null) {
+      return null;
+    }
+    if (_isSyncing) {
+      _refreshPending = true;
       return null;
     }
     if (!allowWhileSaving && current.isSaving) {
+      _refreshPending = true;
       return null;
     }
 

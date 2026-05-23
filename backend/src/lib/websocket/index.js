@@ -10,6 +10,8 @@ const {
   CONNECTION_EVENTS, 
   AUTH_EVENTS,
   APPOINTMENT_EVENTS,
+  PATIENT_EVENTS,
+  ENCOUNTER_EVENTS,
   OPD_EVENTS,
   IPD_EVENTS,
   VISIT_QUEUE_EVENTS,
@@ -22,6 +24,7 @@ const {
   BIOMEDICAL_EVENTS,
   INVENTORY_EVENTS,
   EMERGENCY_EVENTS,
+  PAYMENT_EVENTS,
   BILLING_EVENTS,
   NOTIFICATION_EVENTS,
   SUBSCRIPTION_EVENTS,
@@ -30,7 +33,7 @@ const {
   LAST_OFFICE_EVENTS
 } = require('@lib/websocket/events');
 
-const { emitToUser, emitBroadcast, emitToUsers } = require('@lib/websocket/emit');
+const { emitToUser, emitBroadcast, emitToUsers, publishDomainEvent } = require('@lib/websocket/emit');
 
 module.exports = {
   // Event constants
@@ -38,6 +41,8 @@ module.exports = {
   CONNECTION_EVENTS,
   AUTH_EVENTS,
   APPOINTMENT_EVENTS,
+  PATIENT_EVENTS,
+  ENCOUNTER_EVENTS,
   OPD_EVENTS,
   IPD_EVENTS,
   VISIT_QUEUE_EVENTS,
@@ -50,6 +55,7 @@ module.exports = {
   BIOMEDICAL_EVENTS,
   INVENTORY_EVENTS,
   EMERGENCY_EVENTS,
+  PAYMENT_EVENTS,
   BILLING_EVENTS,
   NOTIFICATION_EVENTS,
   SUBSCRIPTION_EVENTS,
@@ -60,6 +66,7 @@ module.exports = {
   // Emission utilities (for services)
   emitToUser,
   emitBroadcast,
-  emitToUsers
+  emitToUsers,
+  publishDomainEvent
 };
 

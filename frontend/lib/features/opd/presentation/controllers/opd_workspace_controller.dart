@@ -24,6 +24,7 @@ final class OpdWorkspaceController
 
   Timer? _syncTimer;
   bool _isSyncing = false;
+  bool _refreshPending = false;
 
   @override
   Future<Result<OpdWorkspaceState>> build() async {
@@ -33,6 +34,7 @@ final class OpdWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.opd,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: (_) => _syncFromRealtime(),
     );
     final Result<OpdWorkspaceState> result = await _loadInitialState();
@@ -41,6 +43,10 @@ final class OpdWorkspaceController
   }
 
   Future<void> _syncFromRealtime() async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _refreshPending = true;
+      return;
+    }
     await _syncVisibleData();
   }
 
@@ -633,6 +639,14 @@ final class OpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> _flushPendingRefresh() async {
+    if (!_refreshPending || _isSyncing || (_currentState?.isSaving ?? false)) {
+      return null;
+    }
+    _refreshPending = false;
+    return _syncVisibleData();
+  }
+
   Future<Result<OpdWorkspaceState>> _loadInitialState() async {
     const OpdAppointmentQuery appointmentQuery = OpdAppointmentQuery();
     const OpdQueueQuery queueQuery = OpdQueueQuery();
@@ -713,7 +727,11 @@ final class OpdWorkspaceController
     bool refreshProviders = false,
   }) async {
     final OpdWorkspaceState? current = _currentState;
-    if (current == null || _isSyncing || current.isSaving) {
+    if (current == null) {
+      return null;
+    }
+    if (_isSyncing || current.isSaving) {
+      _refreshPending = true;
       return null;
     }
 
@@ -943,10 +961,12 @@ final class OpdWorkspaceController
             isSaving: false,
           ),
         );
+        await _flushPendingRefresh();
         return null;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
         return failure;
       },
     );
@@ -972,13 +992,15 @@ final class OpdWorkspaceController
             isSaving: false,
           ),
         );
+        await _flushPendingRefresh();
         if (refreshFlowsAfter) {
           return _syncVisibleData();
         }
         return null;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
         return failure;
       },
     );
@@ -1013,13 +1035,15 @@ final class OpdWorkspaceController
               ),
             );
           }
+          await _flushPendingRefresh();
           if (refreshAfter) {
             return _syncVisibleData();
           }
           return null;
         },
-        failure: (AppFailure failure) {
+        failure: (AppFailure failure) async {
           _emitMutationFailure(failure);
+          await _flushPendingRefresh();
           if (failure.category == AppFailureCategory.notFound) {
             unawaited(_syncVisibleData(showLoading: true));
           }
@@ -1029,6 +1053,7 @@ final class OpdWorkspaceController
     } catch (error, stackTrace) {
       final AppFailure failure = mapToFailure(error, stackTrace);
       _emitMutationFailure(failure);
+      await _flushPendingRefresh();
       return failure;
     }
   }
@@ -1050,7 +1075,7 @@ final class OpdWorkspaceController
           final Result<OpdFlowDetail> detailResult = await _repository
               .getOpdFlow(flow.apiId);
           return detailResult.when(
-            success: (OpdFlowDetail detail) {
+            success: (OpdFlowDetail detail) async {
               final OpdWorkspaceState? latest = _currentState;
               if (latest != null) {
                 _emit(
@@ -1061,22 +1086,26 @@ final class OpdWorkspaceController
                   ),
                 );
               }
+              await _flushPendingRefresh();
               return null;
             },
-            failure: (AppFailure failure) {
+            failure: (AppFailure failure) async {
               _emitMutationFailure(failure);
+              await _flushPendingRefresh();
               return failure;
             },
           );
         },
-        failure: (AppFailure failure) {
+        failure: (AppFailure failure) async {
           _emitMutationFailure(failure);
+          await _flushPendingRefresh();
           return failure;
         },
       );
     } catch (error, stackTrace) {
       final AppFailure failure = mapToFailure(error, stackTrace);
       _emitMutationFailure(failure);
+      await _flushPendingRefresh();
       return failure;
     }
   }

@@ -303,6 +303,55 @@ final class BillingAdjustmentDto {
   }
 }
 
+final class BillingMutationResultDto {
+  const BillingMutationResultDto(
+    this.json, {
+    this.fallbackQueue = BillingQueueType.pendingPayment,
+  });
+
+  final BillingJsonMap json;
+  final BillingQueueType fallbackQueue;
+
+  factory BillingMutationResultDto.fromResponse(
+    Object? responseData, {
+    BillingQueueType fallbackQueue = BillingQueueType.pendingPayment,
+  }) {
+    return BillingMutationResultDto(
+      _dataMap(responseData),
+      fallbackQueue: fallbackQueue,
+    );
+  }
+
+  BillingMutationResult toEntity() {
+    BillingJsonMap invoiceJson = _map(json['invoice']);
+    if (invoiceJson.isEmpty && _looksLikeInvoice(json)) {
+      invoiceJson = json;
+    }
+
+    BillingJsonMap paymentJson = _map(json['payment']);
+    if (paymentJson.isEmpty && _looksLikePayment(json)) {
+      paymentJson = json;
+    }
+
+    final BillingWorkItem? invoice = invoiceJson.isEmpty
+        ? null
+        : BillingWorkItemDto(
+            invoiceJson,
+            fallbackQueue: fallbackQueue,
+          ).toEntity();
+    final BillingPayment? payment = paymentJson.isEmpty
+        ? null
+        : BillingPaymentDto(paymentJson).toEntity();
+
+    return BillingMutationResult(
+      invoice: invoice?.id.isEmpty == true ? null : invoice,
+      payment: payment?.id.isEmpty == true ? null : payment,
+      approvalRequired: json['approval_required'] == true ||
+          _map(json['approval']).isNotEmpty,
+    );
+  }
+}
+
 final class BillingTimelineItemDto {
   const BillingTimelineItemDto(this.json);
 
@@ -346,6 +395,18 @@ String _queueDefaultLabel(BillingQueueType queue) {
     BillingQueueType.approvalRequired => 'Approval required',
     BillingQueueType.overdue => 'Overdue',
   };
+}
+
+bool _looksLikeInvoice(BillingJsonMap json) {
+  return json.containsKey('billing_status') ||
+      json.containsKey('total_amount') ||
+      json.containsKey('items');
+}
+
+bool _looksLikePayment(BillingJsonMap json) {
+  return json.containsKey('method') &&
+      json.containsKey('amount') &&
+      (json.containsKey('paid_at') || json.containsKey('transaction_ref'));
 }
 
 BillingWorkItemKind _kind(BillingJsonMap json, BillingQueueType fallbackQueue) {

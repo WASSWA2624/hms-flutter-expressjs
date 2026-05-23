@@ -341,6 +341,65 @@ final class BillingWorkItem {
     return (status ?? '').trim().toUpperCase() == 'CANCELLED' ||
         (billingStatus ?? '').trim().toUpperCase() == 'CANCELLED';
   }
+
+  BillingWorkItem copyWith({
+    String? id,
+    BillingWorkItemKind? kind,
+    String? displayId,
+    String? tenantId,
+    String? facilityId,
+    String? patientId,
+    String? patientDisplayId,
+    String? patientDisplayName,
+    String? invoiceDisplayId,
+    String? coveragePlanDisplayId,
+    String? status,
+    String? billingStatus,
+    num? amount,
+    String? currency,
+    DateTime? timelineAt,
+    List<BillingInvoiceItem>? items,
+    List<BillingPayment>? payments,
+    List<BillingAdjustment>? adjustments,
+    BillingFinancials? financials,
+  }) {
+    return BillingWorkItem(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      displayId: displayId ?? this.displayId,
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
+      patientId: patientId ?? this.patientId,
+      patientDisplayId: patientDisplayId ?? this.patientDisplayId,
+      patientDisplayName: patientDisplayName ?? this.patientDisplayName,
+      invoiceDisplayId: invoiceDisplayId ?? this.invoiceDisplayId,
+      coveragePlanDisplayId: coveragePlanDisplayId ?? this.coveragePlanDisplayId,
+      status: status ?? this.status,
+      billingStatus: billingStatus ?? this.billingStatus,
+      amount: amount ?? this.amount,
+      currency: currency ?? this.currency,
+      timelineAt: timelineAt ?? this.timelineAt,
+      items: items ?? this.items,
+      payments: payments ?? this.payments,
+      adjustments: adjustments ?? this.adjustments,
+      financials: financials ?? this.financials,
+    );
+  }
+}
+
+@immutable
+final class BillingMutationResult {
+  const BillingMutationResult({
+    this.invoice,
+    this.payment,
+    this.approvalRequired = false,
+  });
+
+  final BillingWorkItem? invoice;
+  final BillingPayment? payment;
+  final bool approvalRequired;
+
+  bool get hasImmediatePatch => invoice != null || payment != null;
 }
 
 @immutable

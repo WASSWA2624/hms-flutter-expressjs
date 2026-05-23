@@ -67,34 +67,42 @@ final class BillingRepositoryImpl implements BillingRepository {
   }
 
   @override
-  Future<Result<void>> issueInvoice(String invoiceId, {String? notes}) {
-    return _apiClient.post<void>(
+  Future<Result<BillingMutationResult>> issueInvoice(
+    String invoiceId, {
+    String? notes,
+  }) {
+    return _apiClient.post<BillingMutationResult>(
       ApiEndpoints.apiV1(<String>['billing', 'invoices', invoiceId, 'issue']),
       data: _withoutEmpty(<String, Object?>{
         'issued_at': DateTime.now().toUtc().toIso8601String(),
         'notes': notes,
       }),
-      decoder: (_) {},
+      decoder: (Object? data) =>
+          BillingMutationResultDto.fromResponse(data).toEntity(),
     );
   }
 
   @override
-  Future<Result<void>> sendInvoice(String invoiceId, {String? recipientEmail}) {
-    return _apiClient.post<void>(
+  Future<Result<BillingMutationResult>> sendInvoice(
+    String invoiceId, {
+    String? recipientEmail,
+  }) {
+    return _apiClient.post<BillingMutationResult>(
       ApiEndpoints.apiV1(<String>['billing', 'invoices', invoiceId, 'send']),
       data: _withoutEmpty(<String, Object?>{'recipient_email': recipientEmail}),
-      decoder: (_) {},
+      decoder: (Object? data) =>
+          BillingMutationResultDto.fromResponse(data).toEntity(),
     );
   }
 
   @override
-  Future<Result<void>> receivePayment(
+  Future<Result<BillingMutationResult>> receivePayment(
     BillingWorkItem invoice,
     BillingPaymentDraft draft,
   ) async {
     final String? tenantId = _nonEmpty(invoice.tenantId);
     if (tenantId == null || invoice.id.isEmpty) {
-      return Result<void>.failure(
+      return Result<BillingMutationResult>.failure(
         AppFailure.validation(validationFields: <String>{'invoice_id'}),
       );
     }
@@ -115,16 +123,16 @@ final class BillingRepositoryImpl implements BillingRepository {
       decoder: decodeBillingRecordId,
     );
 
-    return createdPayment.when<Future<Result<void>>>(
+    return createdPayment.when<Future<Result<BillingMutationResult>>>(
       success: (String paymentId) {
         if (paymentId.isEmpty) {
-          return Future<Result<void>>.value(
-            Result<void>.failure(
+          return Future<Result<BillingMutationResult>>.value(
+            Result<BillingMutationResult>.failure(
               AppFailure.validation(validationFields: <String>{'payment_id'}),
             ),
           );
         }
-        return _apiClient.post<void>(
+        return _apiClient.post<BillingMutationResult>(
           ApiEndpoints.apiV1(<String>[
             'billing',
             'payments',
@@ -132,16 +140,18 @@ final class BillingRepositoryImpl implements BillingRepository {
             'reconcile',
           ]),
           data: const <String, Object?>{'status': 'COMPLETED'},
-          decoder: (_) {},
+          decoder: (Object? data) =>
+              BillingMutationResultDto.fromResponse(data).toEntity(),
         );
       },
-      failure: (AppFailure failure) async => Result<void>.failure(failure),
+      failure: (AppFailure failure) async =>
+          Result<BillingMutationResult>.failure(failure),
     );
   }
 
   @override
-  Future<Result<void>> requestRefund(BillingRefundDraft draft) {
-    return _apiClient.post<void>(
+  Future<Result<BillingMutationResult>> requestRefund(BillingRefundDraft draft) {
+    return _apiClient.post<BillingMutationResult>(
       ApiEndpoints.apiV1(<String>[
         'billing',
         'payments',
@@ -153,16 +163,17 @@ final class BillingRepositoryImpl implements BillingRepository {
         'reason': draft.reason,
         'notes': draft.notes,
       }),
-      decoder: (_) {},
+      decoder: (Object? data) =>
+          BillingMutationResultDto.fromResponse(data).toEntity(),
     );
   }
 
   @override
-  Future<Result<void>> requestAdjustment(
+  Future<Result<BillingMutationResult>> requestAdjustment(
     BillingWorkItem invoice,
     BillingAdjustmentDraft draft,
   ) {
-    return _apiClient.post<void>(
+    return _apiClient.post<BillingMutationResult>(
       ApiEndpoints.apiV1(<String>['billing', 'adjustments', 'request']),
       data: _withoutEmpty(<String, Object?>{
         'invoice_id': invoice.id,
@@ -172,17 +183,18 @@ final class BillingRepositoryImpl implements BillingRepository {
         'adjusted_at': DateTime.now().toUtc().toIso8601String(),
         'notes': draft.notes,
       }),
-      decoder: (_) {},
+      decoder: (Object? data) =>
+          BillingMutationResultDto.fromResponse(data).toEntity(),
     );
   }
 
   @override
-  Future<Result<void>> requestInvoiceVoid(
+  Future<Result<BillingMutationResult>> requestInvoiceVoid(
     BillingWorkItem invoice, {
     required String reason,
     String? notes,
   }) {
-    return _apiClient.post<void>(
+    return _apiClient.post<BillingMutationResult>(
       ApiEndpoints.apiV1(<String>[
         'billing',
         'invoices',
@@ -190,7 +202,8 @@ final class BillingRepositoryImpl implements BillingRepository {
         'void-request',
       ]),
       data: _withoutEmpty(<String, Object?>{'reason': reason, 'notes': notes}),
-      decoder: (_) {},
+      decoder: (Object? data) =>
+          BillingMutationResultDto.fromResponse(data).toEntity(),
     );
   }
 

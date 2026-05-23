@@ -8,6 +8,9 @@
 const paymentRepository = require('@repositories/payment/payment.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { logger } = require('@lib/logging');
+const { publishDomainEvent, PAYMENT_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
 const {
   sanitizeIdentifier,
   resolvePublicIdentifier,
@@ -15,6 +18,86 @@ const {
   resolveIdentifierForPayload,
   resolveEntityId,
 } = require('@lib/billing/identifiers');
+
+
+const PAYMENT_REALTIME_RECIPIENT_ROLES = Object.freeze([
+  ROLES.BILLING,
+  ROLES.RECEPTIONIST,
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN
+]);
+
+const compactId = (value) => String(value || '').trim() || null;
+
+const publishPaymentRealtimeEvent = async (event, payment = {}, actorUserId = null) => {
+  try {
+    const tenantId = compactId(payment?.tenant_id);
+    if (!tenantId) return;
+
+    const facilityId = compactId(payment?.facility_id);
+    const paymentId = compactId(payment?.id);
+    const invoiceId = compactId(payment?.invoice_id || payment?.invoice?.id);
+    const patientId = compactId(payment?.patient_id || payment?.patient?.id);
+    const encounterId = compactId(payment?.encounter_id || payment?.invoice?.encounter_id);
+    const occurredAt = new Date().toISOString();
+    const paymentPublicId = resolvePublicIdentifier(
+      payment?.payment_public_id,
+      payment?.display_id,
+      payment?.human_friendly_id,
+      paymentId
+    );
+    const invoicePublicId = resolvePublicIdentifier(
+      payment?.invoice_public_id,
+      payment?.invoice?.display_id,
+      payment?.invoice?.human_friendly_id,
+      invoiceId
+    );
+    const recipientUserIds = await paymentRepository.findRealtimeRecipientUserIds({
+      tenantId,
+      facilityId,
+      roles: PAYMENT_REALTIME_RECIPIENT_ROLES,
+      extraUserIds: [actorUserId]
+    });
+
+    publishDomainEvent({
+      event,
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      actor_user_id: actorUserId,
+      resource_type: 'payment',
+      resource_id: paymentId,
+      affected: {
+        payment_id: paymentId,
+        invoice_id: invoiceId,
+        patient_id: patientId,
+        encounter_id: encounterId
+      },
+      recipient_user_ids: recipientUserIds,
+      payload: {
+        payment_id: paymentId,
+        payment_public_id: paymentPublicId,
+        invoice_id: invoiceId,
+        invoice_public_id: invoicePublicId,
+        patient_id: patientId,
+        encounter_id: encounterId,
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        amount: payment?.amount ?? null,
+        status: payment?.status || null,
+        method: payment?.method || null,
+        actor_user_id: actorUserId || null,
+        target_path: invoicePublicId ? `/billing?id=${encodeURIComponent(invoicePublicId)}` : '/billing',
+        occurred_at: occurredAt
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to publish payment realtime event', {
+      event,
+      paymentId: payment?.id,
+      error: error.message
+    });
+  }
+};
 
 const buildEmptyListResult = (page, limit) => ({
   payments: [],
@@ -273,6 +356,8 @@ const createPayment = async (data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishPaymentRealtimeEvent(PAYMENT_EVENTS.PAYMENT_CREATED, createdRecord || payment, userId);
+
     return mapPaymentForDisplay(createdRecord || payment);
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -354,6 +439,8 @@ const updatePayment = async (id, data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishPaymentRealtimeEvent(PAYMENT_EVENTS.PAYMENT_UPDATED, updatedRecord || payment, userId);
+
     return mapPaymentForDisplay(updatedRecord || payment);
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -391,6 +478,8 @@ const deletePayment = async (id, userId, ipAddress) => {
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});
+
+    await publishPaymentRealtimeEvent(PAYMENT_EVENTS.PAYMENT_DELETED, before, userId);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -443,6 +532,8 @@ const reconcilePayment = async (id, data = {}, userId, ipAddress) => {
       },
       ip_address: ipAddress
     }).catch(() => {});
+
+    await publishPaymentRealtimeEvent(PAYMENT_EVENTS.PAYMENT_RECONCILED, updatedRecord || payment, userId);
 
     return mapPaymentForDisplay(updatedRecord || payment);
   } catch (error) {

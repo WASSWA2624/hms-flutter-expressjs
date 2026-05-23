@@ -11,23 +11,29 @@ abstract interface class BillingRepository {
     BillingWorkspaceQuery query,
   );
 
-  Future<Result<void>> issueInvoice(String invoiceId, {String? notes});
+  Future<Result<BillingMutationResult>> issueInvoice(
+    String invoiceId, {
+    String? notes,
+  });
 
-  Future<Result<void>> sendInvoice(String invoiceId, {String? recipientEmail});
+  Future<Result<BillingMutationResult>> sendInvoice(
+    String invoiceId, {
+    String? recipientEmail,
+  });
 
-  Future<Result<void>> receivePayment(
+  Future<Result<BillingMutationResult>> receivePayment(
     BillingWorkItem invoice,
     BillingPaymentDraft draft,
   );
 
-  Future<Result<void>> requestRefund(BillingRefundDraft draft);
+  Future<Result<BillingMutationResult>> requestRefund(BillingRefundDraft draft);
 
-  Future<Result<void>> requestAdjustment(
+  Future<Result<BillingMutationResult>> requestAdjustment(
     BillingWorkItem invoice,
     BillingAdjustmentDraft draft,
   );
 
-  Future<Result<void>> requestInvoiceVoid(
+  Future<Result<BillingMutationResult>> requestInvoiceVoid(
     BillingWorkItem invoice, {
     required String reason,
     String? notes,

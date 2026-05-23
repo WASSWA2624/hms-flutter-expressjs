@@ -10,11 +10,82 @@
 const visitQueueRepository = require('@repositories/visit-queue/visit-queue.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { logger } = require('@lib/logging');
+const { publishDomainEvent, VISIT_QUEUE_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
   resolveModelIdByIdentifier,
   resolveModelRecordByIdentifier,
 } = require('@lib/identifiers/resolve-entity-id');
+
+
+const VISIT_QUEUE_REALTIME_RECIPIENT_ROLES = Object.freeze([
+  ROLES.RECEPTIONIST,
+  ROLES.DOCTOR,
+  ROLES.NURSE,
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN
+]);
+
+const compactId = (value) => String(value || '').trim() || null;
+
+const publishVisitQueueRealtimeEvent = async (event, entry = {}, actorUserId = null) => {
+  try {
+    const tenantId = compactId(entry?.tenant_id);
+    if (!tenantId) return;
+
+    const facilityId = compactId(entry?.facility_id);
+    const queueId = compactId(entry?.id);
+    const providerUserId = compactId(entry?.provider_user_id);
+    const patientId = compactId(entry?.patient_id);
+    const appointmentId = compactId(entry?.appointment_id);
+    const occurredAt = new Date().toISOString();
+    const queuePublicId = compactId(entry?.display_id || entry?.human_friendly_id || queueId);
+    const recipientUserIds = await visitQueueRepository.findRealtimeRecipientUserIds({
+      tenantId,
+      facilityId,
+      roles: VISIT_QUEUE_REALTIME_RECIPIENT_ROLES,
+      extraUserIds: [actorUserId, providerUserId]
+    });
+
+    publishDomainEvent({
+      event,
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      actor_user_id: actorUserId,
+      resource_type: 'visit_queue',
+      resource_id: queueId,
+      affected: {
+        queue_id: queueId,
+        patient_id: patientId,
+        appointment_id: appointmentId,
+        provider_user_id: providerUserId
+      },
+      recipient_user_ids: recipientUserIds,
+      payload: {
+        queue_id: queueId,
+        queue_public_id: queuePublicId,
+        patient_id: patientId,
+        appointment_id: appointmentId,
+        provider_user_id: providerUserId,
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        status: entry?.status || null,
+        queued_at: entry?.queued_at || null,
+        actor_user_id: actorUserId || null,
+        target_path: '/opd',
+        occurred_at: occurredAt
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to publish visit queue realtime event', {
+      event,
+      queueId: entry?.id,
+      error: error.message
+    });
+  }
+};
 
 const USER_IDENTIFIER_MATCHERS = [({ rawValue }) => ({ email: rawValue }), ({ rawValue }) => ({ phone: rawValue })];
 const ALLOWED_VISIT_QUEUE_SORT_FIELDS = new Set([
@@ -585,6 +656,12 @@ const createVisitQueue = async (data, context = {}) => {
     }
   });
 
+  await publishVisitQueueRealtimeEvent(
+    VISIT_QUEUE_EVENTS.VISIT_QUEUE_CREATED,
+    projectedEntry,
+    context.user_id
+  );
+
   return projectedEntry;
 };
 
@@ -636,6 +713,12 @@ const updateVisitQueue = async (id, data, context = {}) => {
     }
   });
 
+  await publishVisitQueueRealtimeEvent(
+    VISIT_QUEUE_EVENTS.VISIT_QUEUE_UPDATED,
+    projectedUpdatedEntry,
+    context.user_id
+  );
+
   return projectedUpdatedEntry;
 };
 
@@ -677,6 +760,12 @@ const deleteVisitQueue = async (id, context = {}) => {
       queued_at: entry.queued_at
     }
   });
+
+  await publishVisitQueueRealtimeEvent(
+    VISIT_QUEUE_EVENTS.VISIT_QUEUE_DELETED,
+    entry,
+    context.user_id
+  );
 };
 
 /**
@@ -732,6 +821,12 @@ const prioritizeVisitQueue = async (id, data = {}, context = {}) => {
       }
     }
   });
+
+  await publishVisitQueueRealtimeEvent(
+    VISIT_QUEUE_EVENTS.VISIT_QUEUE_POSITION_CHANGED,
+    projectedUpdatedEntry,
+    context.user_id
+  );
 
   return projectedUpdatedEntry;
 };

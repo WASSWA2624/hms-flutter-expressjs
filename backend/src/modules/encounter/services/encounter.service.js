@@ -10,10 +10,78 @@
 const encounterRepository = require('@repositories/encounter/encounter.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { logger } = require('@lib/logging');
+const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
+const { publishDomainEvent, ENCOUNTER_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
 const {
   activeOpdLockKeyForEncounter,
   throwActiveOpdEncounterExists
 } = require('@lib/opd-active-encounter');
+
+
+const ENCOUNTER_REALTIME_RECIPIENT_ROLES = Object.freeze([
+  ROLES.RECEPTIONIST,
+  ROLES.DOCTOR,
+  ROLES.NURSE,
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN
+]);
+
+const compactId = (value) => String(value || '').trim() || null;
+
+const publishEncounterRealtimeEvent = async (event, encounter = {}, actorUserId = null) => {
+  try {
+    const tenantId = compactId(encounter?.tenant_id);
+    if (!tenantId) return;
+
+    const facilityId = compactId(encounter?.facility_id);
+    const encounterId = compactId(encounter?.id);
+    const patientId = compactId(encounter?.patient_id);
+    const providerUserId = compactId(encounter?.provider_user_id);
+    const occurredAt = new Date().toISOString();
+    const encounterPublicId = resolvePublicIdentifier(
+      encounter?.display_id,
+      encounter?.human_friendly_id,
+      encounterId
+    );
+    const recipientUserIds = await encounterRepository.findRealtimeRecipientUserIds({
+      tenantId,
+      facilityId,
+      roles: ENCOUNTER_REALTIME_RECIPIENT_ROLES,
+      extraUserIds: [actorUserId, providerUserId]
+    });
+
+    publishDomainEvent({
+      event,
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      actor_user_id: actorUserId,
+      resource_type: 'encounter',
+      resource_id: encounterId,
+      affected: { patient_id: patientId, encounter_id: encounterId },
+      recipient_user_ids: recipientUserIds,
+      payload: {
+        encounter_id: encounterId,
+        encounter_public_id: encounterPublicId,
+        patient_id: patientId,
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        encounter_type: encounter?.encounter_type || null,
+        status: encounter?.status || null,
+        actor_user_id: actorUserId || null,
+        target_path: encounterPublicId ? `/opd?id=${encodeURIComponent(encounterPublicId)}` : '/opd',
+        occurred_at: occurredAt
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to publish encounter realtime event', {
+      event,
+      encounterId: encounter?.id,
+      error: error.message
+    });
+  }
+};
 
 const PATIENT_CONTACT_LOOKUP_TYPES = ['PHONE', 'EMAIL'];
 
@@ -266,6 +334,8 @@ const createEncounter = async (data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishEncounterRealtimeEvent(ENCOUNTER_EVENTS.ENCOUNTER_CREATED, encounter, userId);
+
     return encounter;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -320,6 +390,8 @@ const updateEncounter = async (id, data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishEncounterRealtimeEvent(ENCOUNTER_EVENTS.ENCOUNTER_UPDATED, encounter, userId);
+
     return encounter;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -358,6 +430,8 @@ const deleteEncounter = async (id, userId, ipAddress) => {
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});
+
+    await publishEncounterRealtimeEvent(ENCOUNTER_EVENTS.ENCOUNTER_DELETED, before, userId);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [

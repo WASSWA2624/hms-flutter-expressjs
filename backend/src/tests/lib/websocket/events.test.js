@@ -3,6 +3,8 @@ const websocketEvents = require('@lib/websocket/events');
 
 const REQUIRED_GROUPS = [
   'APPOINTMENT_EVENTS',
+  'PATIENT_EVENTS',
+  'ENCOUNTER_EVENTS',
   'OPD_EVENTS',
   'VISIT_QUEUE_EVENTS',
   'ADMISSION_BED_EVENTS',
@@ -11,10 +13,30 @@ const REQUIRED_GROUPS = [
   'PHARMACY_EVENTS',
   'INVENTORY_EVENTS',
   'EMERGENCY_EVENTS',
+  'PAYMENT_EVENTS',
   'BILLING_EVENTS',
   'NOTIFICATION_EVENTS',
   'SUBSCRIPTION_EVENTS',
   'INTEGRATION_EVENTS'
+];
+
+const REQUIRED_DOMAIN_EVENTS = [
+  'patient.created',
+  'patient.updated',
+  'patient.deleted',
+  'encounter.created',
+  'encounter.updated',
+  'encounter.deleted',
+  'visit_queue.created',
+  'visit_queue.updated',
+  'visit_queue.deleted',
+  'visit_queue.position_changed',
+  'payment.created',
+  'payment.updated',
+  'payment.deleted',
+  'payment.reconciled',
+  'invoice.updated',
+  'billing.balance_updated'
 ];
 
 describe('websocket event catalog', () => {
@@ -23,6 +45,12 @@ describe('websocket event catalog', () => {
       expect(websocketEvents[group]).toBeDefined();
       expect(websocketLib[group]).toBeDefined();
       expect(Object.keys(websocketEvents[group]).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('contains required realtime CRUD domain events', () => {
+    REQUIRED_DOMAIN_EVENTS.forEach((event) => {
+      expect(Object.values(websocketEvents.WS_EVENTS)).toContain(event);
     });
   });
 

@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
 
 typedef RealtimeRefreshPredicate = bool Function(RealtimeMessage message);
 typedef RealtimeRefreshCallback =
     Future<void> Function(RealtimeMessage message);
+typedef RealtimeRefreshDefer = bool Function();
 
 /// Debounced listener for workspace refreshes triggered by websocket events.
 ///
@@ -18,9 +20,14 @@ void listenForRealtimeRefresh({
   required Iterable<String> events,
   required RealtimeRefreshCallback onRefresh,
   RealtimeRefreshPredicate? shouldRefresh,
+  RealtimeRefreshDefer? shouldDefer,
   Duration debounce = const Duration(milliseconds: 250),
+  bool refreshOnReconnect = true,
 }) {
-  final Set<String> eventSet = Set<String>.unmodifiable(events);
+  final Set<String> eventSet = Set<String>.unmodifiable(<String>{
+    ...events,
+    if (refreshOnReconnect) RealtimeEvents.authenticated,
+  });
   Timer? debounceTimer;
   RealtimeMessage? pendingMessage;
   bool isRefreshing = false;
@@ -44,7 +51,7 @@ void listenForRealtimeRefresh({
       return;
     }
 
-    if (isRefreshing) {
+    if (isRefreshing || (shouldDefer?.call() ?? false)) {
       pendingMessage = message;
       debounceTimer = Timer(debounce, flush);
       return;
@@ -71,7 +78,9 @@ void listenForRealtimeRefresh({
       if (!eventSet.contains(message.event)) {
         return;
       }
-      if (shouldRefresh != null && !shouldRefresh(message)) {
+      if (message.event != RealtimeEvents.authenticated &&
+          shouldRefresh != null &&
+          !shouldRefresh(message)) {
         return;
       }
       pendingMessage = message;

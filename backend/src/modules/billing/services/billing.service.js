@@ -2,6 +2,7 @@ const billingRepository = require('@repositories/billing/billing.repository');
 const { createAuditLog } = require('@lib/audit');
 const { sendEmail } = require('@lib/notifications/sendEmail');
 const { HttpError } = require('@lib/errors');
+const { logger } = require('@lib/logging');
 const { isFeatureEnabled } = require('@config/feature-flags');
 const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 const { normalizeRoleName, ROLES } = require('@config/roles');
@@ -14,7 +15,7 @@ const {
   computeInvoiceFinancials,
 } = require('@lib/billing/financials');
 const { generateInvoicePdfBuffer } = require('@lib/billing/pdf');
-const { emitToUsers, BILLING_EVENTS } = require('@lib/websocket');
+const { publishDomainEvent, BILLING_EVENTS, PAYMENT_EVENTS } = require('@lib/websocket');
 
 const QUEUE_TYPES = {
   NEEDS_ISSUE: 'NEEDS_ISSUE',
@@ -184,40 +185,71 @@ const publishBillingRealtimeUpdate = async ({
     if (!tenantId) return;
 
     const facilityId = compactId(invoiceRecord?.facility_id || paymentRecord?.facility_id || approval?.facility_id);
+    const invoiceId = compactId(invoiceRecord?.id || paymentRecord?.invoice_id || approval?.payload_json?.invoice_id);
+    const paymentId = compactId(paymentRecord?.id || approval?.payload_json?.payment_id);
+    const patientId = compactId(invoiceRecord?.patient_id || paymentRecord?.patient_id);
+    const encounterId = compactId(invoiceRecord?.encounter_id || paymentRecord?.encounter_id);
     const recipientUserIds = await billingRepository.findRealtimeRecipientUserIds({
       tenantId,
       facilityId,
       roles: BILLING_REALTIME_RECIPIENT_ROLES,
     });
-    const recipients = recipientUserIds.filter((userId) => userId && userId !== actorUserId);
-    if (!recipients.length) return;
 
-    const invoiceDisplayId = invoiceRecord ? displayId(invoiceRecord) : null;
-    const paymentDisplayId = paymentRecord ? displayId(paymentRecord) : null;
+    const invoiceDisplayId = invoiceRecord ? displayId(invoiceRecord) : compactId(approval?.payload_json?.invoice_display_id);
+    const paymentDisplayId = paymentRecord ? displayId(paymentRecord) : compactId(approval?.payload_json?.payment_display_id);
     const patientRecord = invoiceRecord?.patient || paymentRecord?.patient || null;
     const targetIdentifier = invoiceDisplayId || invoiceRecord?.id;
+    const occurredAt = new Date().toISOString();
+    const resourceType = paymentRecord || event.startsWith('payment.') ? 'payment' : 'invoice';
+    const resourceId = resourceType === 'payment' ? paymentId : invoiceId;
 
-    emitToUsers(recipients, event, {
-      action: clean(action).toUpperCase() || 'UPDATED',
-      invoice_id: compactId(invoiceRecord?.id),
-      invoice_public_id: invoiceDisplayId,
-      payment_id: compactId(paymentRecord?.id),
-      payment_public_id: paymentDisplayId,
-      refund_id: compactId(refund?.id),
-      approval_id: compactId(approval?.id),
-      patient_id: compactId(invoiceRecord?.patient_id || paymentRecord?.patient_id),
-      patient_public_id: patientRecord ? displayId(patientRecord) : null,
-      status: compactId(
-        invoiceRecord?.billing_status ||
-          invoiceRecord?.status ||
-          paymentRecord?.status ||
-          approval?.status
-      ),
-      occurred_at: new Date().toISOString(),
-      target_path: targetIdentifier ? `/billing?id=${encodeURIComponent(targetIdentifier)}` : '/billing',
+    publishDomainEvent({
+      event,
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      actor_user_id: actorUserId,
+      resource_type: resourceType,
+      resource_id: resourceId,
+      recipient_user_ids: recipientUserIds,
+      affected: {
+        invoice_id: invoiceId,
+        payment_id: paymentId,
+        refund_id: compactId(refund?.id),
+        approval_id: compactId(approval?.id),
+        patient_id: patientId,
+        encounter_id: encounterId
+      },
+      payload: {
+        action: clean(action).toUpperCase() || 'UPDATED',
+        invoice_id: invoiceId,
+        invoice_public_id: invoiceDisplayId,
+        payment_id: paymentId,
+        payment_public_id: paymentDisplayId,
+        refund_id: compactId(refund?.id),
+        approval_id: compactId(approval?.id),
+        patient_id: patientId,
+        patient_public_id: patientRecord ? displayId(patientRecord) : null,
+        encounter_id: encounterId,
+        amount: paymentRecord?.amount ?? invoiceRecord?.total_amount ?? null,
+        status: compactId(
+          invoiceRecord?.billing_status ||
+            invoiceRecord?.status ||
+            paymentRecord?.status ||
+            approval?.status
+        ),
+        method: paymentRecord?.method || null,
+        actor_user_id: actorUserId || null,
+        target_path: targetIdentifier ? `/billing?id=${encodeURIComponent(targetIdentifier)}` : '/billing',
+        occurred_at: occurredAt,
+      }
     });
-  } catch (_error) {
-    // Realtime delivery must never block billing mutations.
+  } catch (error) {
+    logger.error('Failed to publish billing realtime event', {
+      event,
+      invoiceId: invoice?.id || payment?.invoice_id || approval?.payload_json?.invoice_id,
+      paymentId: payment?.id || approval?.payload_json?.payment_id,
+      error: error.message,
+    });
   }
 };
 
@@ -682,6 +714,18 @@ const issueInvoice = async (invoiceIdentifier, payload = {}, user = {}, ip = nul
     invoice: updated || invoice,
     actorUserId: user?.id || null,
   });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.INVOICE_UPDATED,
+    action: 'ISSUED',
+    invoice: updated || invoice,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_BALANCE_UPDATED,
+    action: 'BALANCE_UPDATED',
+    invoice: updated || invoice,
+    actorUserId: user?.id || null,
+  });
   return { invoice: mapInvoice(updated || invoice, true) };
 };
 
@@ -779,6 +823,27 @@ const reconcilePayment = async (paymentIdentifier, payload = {}, user = {}, ip =
   await publishBillingRealtimeUpdate({
     event: BILLING_EVENTS.BILLING_PAYMENT_RECEIVED,
     action: 'PAYMENT_RECONCILED',
+    invoice: updatedInvoice,
+    payment: updatedPayment || mutation.payment,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: PAYMENT_EVENTS.PAYMENT_RECONCILED,
+    action: 'PAYMENT_RECONCILED',
+    invoice: updatedInvoice,
+    payment: updatedPayment || mutation.payment,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.INVOICE_UPDATED,
+    action: 'PAYMENT_RECONCILED',
+    invoice: updatedInvoice,
+    payment: updatedPayment || mutation.payment,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_BALANCE_UPDATED,
+    action: 'BALANCE_UPDATED',
     invoice: updatedInvoice,
     payment: updatedPayment || mutation.payment,
     actorUserId: user?.id || null,
@@ -903,6 +968,18 @@ const requestAdjustment = async (payload = {}, user = {}, ip = null) => {
     }),
     mutation.invoiceState?.invoice ? billingRepository.findInvoiceById(mutation.invoiceState.invoice.id, INVOICE_INCLUDE) : Promise.resolve(null),
   ]);
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.INVOICE_UPDATED,
+    action: 'ADJUSTMENT_APPLIED',
+    invoice: updatedInvoice || invoice,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_BALANCE_UPDATED,
+    action: 'BALANCE_UPDATED',
+    invoice: updatedInvoice || invoice,
+    actorUserId: user?.id || null,
+  });
   return {
     approval_required: false,
     adjustment: mapAdjustment(adjustment),
@@ -994,11 +1071,41 @@ const approveApproval = async (approvalIdentifier, payload = {}, user = {}, ip =
   if (mutation.execution?.type === 'ADJUSTMENT' && mutation.execution?.adjustment?.id) auditCreate(user, ip, 'billing_adjustment', mutation.execution.adjustment.id, mutation.execution.adjustment);
   if (mutation.execution?.type === 'VOID' && mutation.execution?.invoice?.id) auditUpdate(user, ip, 'invoice', mutation.execution.invoice.id, { transition: 'VOID_EXECUTED' });
 
+  let approvalUpdatedInvoice = null;
+  if (mutation.execution?.invoiceState?.invoice?.id) {
+    approvalUpdatedInvoice = await billingRepository.findInvoiceById(
+      mutation.execution.invoiceState.invoice.id,
+      INVOICE_INCLUDE
+    );
+  } else if (mutation.execution?.invoice?.id) {
+    approvalUpdatedInvoice = await billingRepository.findInvoiceById(
+      mutation.execution.invoice.id,
+      INVOICE_INCLUDE
+    );
+  }
+
   if (mutation.execution?.type === 'REFUND' && mutation.execution?.refund?.id) {
     await publishBillingRealtimeUpdate({
       event: BILLING_EVENTS.BILLING_REFUND_PROCESSED,
       action: 'REFUND_PROCESSED',
       refund: mutation.execution.refund,
+      invoice: approvalUpdatedInvoice,
+      approval: mutation.approval || approval,
+      actorUserId: user?.id || null,
+    });
+  }
+  if (approvalUpdatedInvoice) {
+    await publishBillingRealtimeUpdate({
+      event: BILLING_EVENTS.INVOICE_UPDATED,
+      action: `${mutation.execution?.type || 'APPROVAL'}_APPROVED`,
+      invoice: approvalUpdatedInvoice,
+      approval: mutation.approval || approval,
+      actorUserId: user?.id || null,
+    });
+    await publishBillingRealtimeUpdate({
+      event: BILLING_EVENTS.BILLING_BALANCE_UPDATED,
+      action: 'BALANCE_UPDATED',
+      invoice: approvalUpdatedInvoice,
       approval: mutation.approval || approval,
       actorUserId: user?.id || null,
     });

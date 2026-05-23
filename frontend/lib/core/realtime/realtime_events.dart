@@ -7,9 +7,20 @@ abstract final class RealtimeEvents {
   static const String appointmentRescheduled = 'appointment.rescheduled';
   static const String appointmentCanceled = 'appointment.canceled';
 
+  static const String patientCreated = 'patient.created';
+  static const String patientUpdated = 'patient.updated';
+  static const String patientDeleted = 'patient.deleted';
+
+  static const String encounterCreated = 'encounter.created';
+  static const String encounterUpdated = 'encounter.updated';
+  static const String encounterDeleted = 'encounter.deleted';
+
   static const String opdFlowUpdated = 'opd.flow.updated';
   static const String ipdFlowUpdated = 'ipd.flow.updated';
 
+  static const String visitQueueCreated = 'visit_queue.created';
+  static const String visitQueueUpdated = 'visit_queue.updated';
+  static const String visitQueueDeleted = 'visit_queue.deleted';
   static const String visitQueuePositionChanged =
       'visit_queue.position_changed';
   static const String visitQueueTriageUpdated = 'visit_queue.triage_updated';
@@ -54,6 +65,14 @@ abstract final class RealtimeEvents {
   static const String biomedicalWorkOrderReturnedToService =
       'biomedical.work_order_returned_to_service';
   static const String biomedicalOverdueChanged = 'biomedical.overdue_changed';
+
+  static const String paymentCreated = 'payment.created';
+  static const String paymentUpdated = 'payment.updated';
+  static const String paymentDeleted = 'payment.deleted';
+  static const String paymentReconciled = 'payment.reconciled';
+
+  static const String invoiceUpdated = 'invoice.updated';
+  static const String billingBalanceUpdated = 'billing.balance_updated';
 
   static const String billingInvoiceIssued = 'billing.invoice_issued';
   static const String billingPaymentReceived = 'billing.payment_received';

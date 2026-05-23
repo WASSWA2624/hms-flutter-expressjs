@@ -28,9 +28,9 @@ const { normalizeRoleName } = require('@config/roles');
 const { WS_MAX_CONNECTIONS, WS_HEARTBEAT_INTERVAL, WS_HEARTBEAT_TIMEOUT } = require('@config/env');
 
 /**
- * Map of UserID → WebSocket connection
- * Per websockets.mdc: Must maintain a Map of UserID → WebSocket for routing messages
- * @type {Map<string, import('ws').WebSocket>}
+ * Map of UserID → Set<WebSocket> connections.
+ * Multiple browser tabs/devices for the same user must remain connected.
+ * @type {Map<string, Set<import('ws').WebSocket>>}
  */
 const userConnections = new Map();
 
@@ -95,18 +95,20 @@ const pendingPings = new Map();
 let heartbeatInterval = null;
 
 /**
- * Send message to a specific user
+ * Send message to every active connection for a specific user
  * 
  * @param {string} userId - User ID to send message to
  * @param {string} event - Event name (from @lib/websocket/events)
  * @param {Object} payload - Message payload
- * @returns {boolean} True if message was sent, false if user not connected
+ * @returns {boolean} True if at least one message was sent, false if user not connected
  */
 const sendToUser = (userId, event, payload = {}) => {
+  let sent = false;
+
   try {
-    const ws = userConnections.get(userId);
-    
-    if (!ws || ws.readyState !== ws.OPEN) {
+    const sockets = userConnections.get(userId);
+
+    if (!sockets || sockets.size === 0) {
       logger.warn('Attempted to send message to disconnected user', {
         userId,
         event
@@ -119,11 +121,35 @@ const sendToUser = (userId, event, payload = {}) => {
       payload
     });
 
-    ws.send(message);
+    sockets.forEach((ws) => {
+      if (ws.readyState !== ws.OPEN) {
+        return;
+      }
+
+      try {
+        ws.send(message);
+        sent = true;
+      } catch (err) {
+        logger.error('Error sending message to user socket', {
+          userId,
+          event,
+          error: err.message
+        });
+      }
+    });
+
+    if (!sent) {
+      logger.warn('Attempted to send message to user with no open sockets', {
+        userId,
+        event
+      });
+      return false;
+    }
     
     logger.info('Message sent to user', {
       userId,
-      event
+      event,
+      socketCount: sockets.size
     });
     
     return true;
@@ -134,17 +160,17 @@ const sendToUser = (userId, event, payload = {}) => {
       error: err.message,
       stack: err.stack
     });
-    return false;
+    return sent;
   }
 };
 
 /**
- * Broadcast message to all connected users
+ * Broadcast message to all connected sockets for all connected users
  * 
  * @param {string} event - Event name (from @lib/websocket/events)
  * @param {Object} payload - Message payload
  * @param {string[]} [excludeUserIds] - User IDs to exclude from broadcast
- * @returns {number} Number of users who received the message
+ * @returns {number} Number of sockets that received the message
  */
 const broadcast = (event, payload = {}, excludeUserIds = []) => {
   let sentCount = 0;
@@ -156,31 +182,35 @@ const broadcast = (event, payload = {}, excludeUserIds = []) => {
       payload
     });
 
-    userConnections.forEach((ws, userId) => {
+    userConnections.forEach((sockets, userId) => {
       // Skip excluded users
       if (excludeSet.has(userId)) {
         return;
       }
 
-      // Only send to open connections
-      if (ws.readyState === ws.OPEN) {
+      sockets.forEach((ws) => {
+        if (ws.readyState !== ws.OPEN) {
+          return;
+        }
+
         try {
           ws.send(message);
           sentCount++;
         } catch (err) {
-          logger.error('Error broadcasting to user', {
+          logger.error('Error broadcasting to user socket', {
             userId,
             event,
             error: err.message
           });
         }
-      }
+      });
     });
 
     logger.info('Message broadcasted', {
       event,
       sentCount,
-      totalConnections: userConnections.size
+      totalUsers: userConnections.size,
+      totalConnections: getConnectionCount()
     });
 
     return sentCount;
@@ -197,27 +227,35 @@ const broadcast = (event, payload = {}, excludeUserIds = []) => {
 /**
  * Get connection count
  * 
- * @returns {number} Number of active connections
+ * @returns {number} Number of active socket connections
  */
 const getConnectionCount = () => {
-  return userConnections.size;
+  let count = 0;
+  userConnections.forEach((sockets) => {
+    count += sockets.size;
+  });
+  return count;
 };
 
 /**
  * Check if user is connected
  * 
  * @param {string} userId - User ID to check
- * @returns {boolean} True if user is connected
+ * @returns {boolean} True if user has at least one open socket
  */
 const isUserConnected = (userId) => {
-  const ws = userConnections.get(userId);
-  return ws !== undefined && ws.readyState === ws.OPEN;
+  const sockets = userConnections.get(userId);
+  if (!sockets || sockets.size === 0) return false;
+  for (const ws of sockets) {
+    if (ws.readyState === ws.OPEN) return true;
+  }
+  return false;
 };
 
 /**
  * Get all connected user IDs
  * 
- * @returns {string[]} Array of connected user IDs
+ * @returns {string[]} Array of unique connected user IDs
  */
 const getConnectedUsers = () => {
   return Array.from(userConnections.keys());
@@ -439,7 +477,7 @@ const checkDeadConnections = () => {
     if (deadConnections.length > 0) {
       logger.info('Cleaned up dead connections', {
         count: deadConnections.length,
-        remainingConnections: userConnections.size
+        remainingConnections: getConnectionCount()
       });
     }
   } catch (err) {
@@ -613,9 +651,9 @@ const authenticateConnection = async (ws, token) => {
 const handleConnection = async (ws, req) => {
   try {
     // Check connection limit
-    if (userConnections.size >= MAX_CONNECTIONS) {
+    if (getConnectionCount() >= MAX_CONNECTIONS) {
       logger.warn('Maximum connections reached', {
-        current: userConnections.size,
+        current: getConnectionCount(),
         max: MAX_CONNECTIONS
       });
       
@@ -681,7 +719,7 @@ const handleConnection = async (ws, req) => {
       email: user.email,
       role: user.role,
       ip: req.socket.remoteAddress,
-      totalConnections: userConnections.size
+      totalConnections: getConnectionCount()
     });
 
     // Send authenticated event
@@ -931,8 +969,14 @@ const handleDisconnection = (ws, code, reason) => {
     const userId = connectionUsers.get(ws);
     
     if (userId) {
-      // Remove from user connections map
-      userConnections.delete(userId);
+      const sockets = userConnections.get(userId);
+      if (sockets) {
+        sockets.delete(ws);
+        if (sockets.size === 0) {
+          userConnections.delete(userId);
+        }
+      }
+
       connectionUsers.delete(ws);
       connectionUserData.delete(ws);
       authenticatedConnections.delete(ws);
@@ -945,7 +989,8 @@ const handleDisconnection = (ws, code, reason) => {
         userId,
         code,
         reason: reason ? reason.toString() : 'No reason provided',
-        remainingConnections: userConnections.size
+        remainingUserSockets: userConnections.get(userId)?.size || 0,
+        remainingConnections: getConnectionCount()
       });
     } else {
       logger.warn('WebSocket disconnected but user ID not found', {
@@ -1014,39 +1059,28 @@ const handleError = (ws, error) => {
 /**
  * Register user connection
  * 
- * Associates a WebSocket connection with a user ID
- * This will be called after authentication in Step 5.3
+ * Associates a WebSocket connection with a user ID.
+ * Multiple sockets are allowed for the same user so multiple tabs/devices stay live.
  * 
  * @param {string} userId - User ID
  * @param {import('ws').WebSocket} ws - WebSocket connection
  */
 const registerUserConnection = (userId, ws) => {
   try {
-    // Remove old connection if user already connected
-    const oldWs = userConnections.get(userId);
-    if (oldWs && oldWs !== ws) {
-      logger.info('Replacing existing connection for user', {
-        userId
-      });
-      
-      // Close old connection
-      if (oldWs.readyState === oldWs.OPEN) {
-        oldWs.close(1000, 'New connection established');
-      }
-      
-      // Clean up old connection
-      connectionUsers.delete(oldWs);
-      connectionUserData.delete(oldWs);
-      authenticatedConnections.delete(oldWs);
+    const normalizedUserId = String(userId || '').trim();
+    if (!normalizedUserId) {
+      return;
     }
 
-    // Register new connection
-    userConnections.set(userId, ws);
-    connectionUsers.set(ws, userId);
+    const sockets = userConnections.get(normalizedUserId) || new Set();
+    sockets.add(ws);
+    userConnections.set(normalizedUserId, sockets);
+    connectionUsers.set(ws, normalizedUserId);
 
     logger.info('User connection registered', {
-      userId,
-      totalConnections: userConnections.size
+      userId: normalizedUserId,
+      userSocketCount: sockets.size,
+      totalConnections: getConnectionCount()
     });
   } catch (err) {
     logger.error('Error registering user connection', {
@@ -1058,31 +1092,31 @@ const registerUserConnection = (userId, ws) => {
 };
 
 /**
- * Unregister user connection
- * 
- * Removes a user's WebSocket connection
- * 
+ * Unregister all WebSocket connections for a user.
+ *
  * @param {string} userId - User ID
  */
 const unregisterUserConnection = (userId) => {
   try {
-    const ws = userConnections.get(userId);
-    
-    if (ws) {
-      userConnections.delete(userId);
+    const sockets = userConnections.get(userId);
+    if (!sockets || sockets.size === 0) {
+      return;
+    }
+
+    sockets.forEach((ws) => {
       connectionUsers.delete(ws);
       connectionUserData.delete(ws);
       authenticatedConnections.delete(ws);
-      
-      // Clean up heartbeat tracking
       lastActivity.delete(ws);
       pendingPings.delete(ws);
-      
-      logger.info('User connection unregistered', {
-        userId,
-        remainingConnections: userConnections.size
-      });
-    }
+    });
+
+    userConnections.delete(userId);
+    
+    logger.info('User connection unregistered', {
+      userId,
+      remainingConnections: getConnectionCount()
+    });
   } catch (err) {
     logger.error('Error unregistering user connection', {
       userId,
@@ -1142,10 +1176,12 @@ const cleanup = () => {
     stopHeartbeat();
 
     // Close all connections
-    userConnections.forEach((ws, userId) => {
-      if (ws.readyState === ws.OPEN) {
-        ws.close(1001, 'Server shutting down');
-      }
+    userConnections.forEach((sockets) => {
+      sockets.forEach((ws) => {
+        if (ws.readyState === ws.OPEN) {
+          ws.close(1001, 'Server shutting down');
+        }
+      });
     });
 
     // Clear all maps

@@ -18,11 +18,15 @@ final class BillingWorkspaceController
     extends AsyncNotifier<Result<BillingWorkspaceState>> {
   BillingRepository get _repository => ref.read(billingRepositoryProvider);
 
+  bool _isSyncing = false;
+  bool _refreshPending = false;
+
   @override
   Future<Result<BillingWorkspaceState>> build() async {
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.billingWorkspace,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: (_) => _syncFromRealtime(),
     );
     const BillingWorkspaceQuery query = BillingWorkspaceQuery();
@@ -56,6 +60,10 @@ final class BillingWorkspaceController
   }
 
   Future<void> _syncFromRealtime() async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _refreshPending = true;
+      return;
+    }
     await refresh();
   }
 
@@ -63,6 +71,10 @@ final class BillingWorkspaceController
     final BillingWorkspaceState? current = _currentState;
     if (current == null) {
       ref.invalidateSelf();
+      return null;
+    }
+    if (_isSyncing || current.isSaving) {
+      _refreshPending = true;
       return null;
     }
     _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
@@ -188,14 +200,49 @@ final class BillingWorkspaceController
   }
 
   Future<AppFailure?> closeShift(BillingCloseDraft draft) {
-    return _submitAction(() => _repository.closeShift(draft));
+    return _submitMaintenanceAction(() => _repository.closeShift(draft));
   }
 
   Future<AppFailure?> closeDay(BillingCloseDraft draft) {
-    return _submitAction(() => _repository.closeDay(draft));
+    return _submitMaintenanceAction(() => _repository.closeDay(draft));
   }
 
   Future<AppFailure?> _submitAction(
+    Future<Result<BillingMutationResult>> Function() submit,
+  ) async {
+    final BillingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return _missingSelectionFailure();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<BillingMutationResult> result = await submit();
+    return result.when<Future<AppFailure?>>(
+      success: (BillingMutationResult mutation) async {
+        _applyMutationResult(mutation);
+        final BillingWorkspaceState? patched = _currentState;
+        if (patched != null) {
+          _emit(patched.copyWith(isSaving: false, isRefreshing: true));
+        }
+        final String? preferredSelectedId =
+            mutation.invoice?.id ?? current.selectedItem?.id;
+        final AppFailure? failure = await _refreshWorkspace(
+          preferredSelectedId: preferredSelectedId,
+        );
+        await _flushPendingRefresh(preferredSelectedId: preferredSelectedId);
+        return failure;
+      },
+      failure: (AppFailure failure) async {
+        _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh(
+          preferredSelectedId: current.selectedItem?.id,
+        );
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> _submitMaintenanceAction(
     Future<Result<void>> Function() submit,
   ) async {
     final BillingWorkspaceState? current = _currentState;
@@ -207,62 +254,143 @@ final class BillingWorkspaceController
     final Result<void> result = await submit();
     return result.when<Future<AppFailure?>>(
       success: (_) async {
-        return _refreshWorkspace(preferredSelectedId: current.selectedItem?.id);
+        _emit(_currentState!.copyWith(isSaving: false, isRefreshing: true));
+        final AppFailure? failure = await _refreshWorkspace(
+          preferredSelectedId: current.selectedItem?.id,
+        );
+        await _flushPendingRefresh(
+          preferredSelectedId: current.selectedItem?.id,
+        );
+        return failure;
       },
       failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh(
+          preferredSelectedId: current.selectedItem?.id,
+        );
         return failure;
       },
     );
   }
 
   Future<AppFailure?> _refreshWorkspace({String? preferredSelectedId}) async {
-    final BillingWorkspaceState current = _currentState!;
+    final BillingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return null;
+    }
+    if (_isSyncing || current.isSaving) {
+      _refreshPending = true;
+      return null;
+    }
+
+    _isSyncing = true;
     final Result<BillingWorkspaceOverview> overviewResult = await _repository
         .getWorkspace(current.query);
-    return overviewResult.when<Future<AppFailure?>>(
-      success: (BillingWorkspaceOverview overview) async {
-        final Result<AppPage<BillingWorkItem>> itemsResult = await _repository
-            .listWorkItems(current.query);
-        return itemsResult.when(
-          success: (AppPage<BillingWorkItem> workItems) {
-            final BillingWorkItem? selected = _selectAfterRefresh(
-              workItems.items,
-              preferredSelectedId,
-            );
-            _emit(
-              _currentState!.copyWith(
-                overview: overview,
-                workItems: workItems,
-                selectedItem: selected,
-                isRefreshing: false,
-                isSaving: false,
-              ),
-            );
-            return null;
-          },
-          failure: (AppFailure failure) {
-            _emit(
-              _currentState!.copyWith(
-                isRefreshing: false,
-                isSaving: false,
-                lastFailure: failure,
-              ),
-            );
-            return failure;
-          },
-        );
-      },
-      failure: (AppFailure failure) async {
-        _emit(
-          _currentState!.copyWith(
-            isRefreshing: false,
-            isSaving: false,
-            lastFailure: failure,
-          ),
-        );
-        return failure;
-      },
+    try {
+      return await overviewResult.when<Future<AppFailure?>>(
+        success: (BillingWorkspaceOverview overview) async {
+          final Result<AppPage<BillingWorkItem>> itemsResult = await _repository
+              .listWorkItems(current.query);
+          return itemsResult.when(
+            success: (AppPage<BillingWorkItem> workItems) {
+              final BillingWorkItem? selected = _selectAfterRefresh(
+                workItems.items,
+                preferredSelectedId,
+              );
+              _emit(
+                _currentState!.copyWith(
+                  overview: overview,
+                  workItems: workItems,
+                  selectedItem: selected,
+                  isRefreshing: false,
+                  isSaving: false,
+                ),
+              );
+              return null;
+            },
+            failure: (AppFailure failure) {
+              _emit(
+                _currentState!.copyWith(
+                  isRefreshing: false,
+                  isSaving: false,
+                  lastFailure: failure,
+                ),
+              );
+              return failure;
+            },
+          );
+        },
+        failure: (AppFailure failure) async {
+          _emit(
+            _currentState!.copyWith(
+              isRefreshing: false,
+              isSaving: false,
+              lastFailure: failure,
+            ),
+          );
+          return failure;
+        },
+      );
+    } finally {
+      _isSyncing = false;
+    }
+  }
+
+  Future<AppFailure?> _flushPendingRefresh({String? preferredSelectedId}) async {
+    if (!_refreshPending || _isSyncing || (_currentState?.isSaving ?? false)) {
+      return null;
+    }
+    _refreshPending = false;
+    return _refreshWorkspace(preferredSelectedId: preferredSelectedId);
+  }
+
+  void _applyMutationResult(BillingMutationResult mutation) {
+    if (!mutation.hasImmediatePatch) {
+      return;
+    }
+
+    final BillingWorkspaceState? current = _currentState;
+    final BillingWorkItem? invoice = mutation.invoice;
+    if (current == null || invoice == null) {
+      return;
+    }
+
+    final AppPage<BillingWorkItem> workItems = _upsertWorkItem(
+      current.workItems,
+      invoice,
+    );
+    final BillingWorkItem selected = current.selectedItem?.id == invoice.id
+        ? invoice
+        : current.selectedItem ?? invoice;
+    _emit(
+      current.copyWith(
+        workItems: workItems,
+        selectedItem: selected,
+        clearLastFailure: true,
+      ),
+    );
+  }
+
+  AppPage<BillingWorkItem> _upsertWorkItem(
+    AppPage<BillingWorkItem> page,
+    BillingWorkItem item,
+  ) {
+    final List<BillingWorkItem> items = page.items
+        .where((BillingWorkItem existing) => existing.id != item.id)
+        .toList(growable: true);
+    final bool inserted = items.length == page.items.length;
+    items.insert(0, item);
+    final int maxItems = page.request.pageSize;
+    final List<BillingWorkItem> visible = items.length > maxItems
+        ? items.take(maxItems).toList(growable: false)
+        : items.toList(growable: false);
+
+    return AppPage<BillingWorkItem>(
+      items: visible,
+      request: page.request,
+      totalItemCount: page.totalItemCount == null
+          ? null
+          : page.totalItemCount! + (inserted ? 1 : 0),
     );
   }
 

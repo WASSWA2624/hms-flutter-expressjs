@@ -13,6 +13,9 @@ const patientIdentifierRepository = require('@repositories/patient-identifier/pa
 const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { logger } = require('@lib/logging');
+const { publishDomainEvent, PATIENT_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
 const {
   sanitizeIdentifier,
   resolvePublicIdentifier,
@@ -62,6 +65,69 @@ const ACTIVE_ADMISSION_STATUS = 'ADMITTED';
 const OUTSTANDING_INVOICE_STATUSES = ['SENT', 'OVERDUE'];
 const OUTSTANDING_BILLING_STATUSES = ['ISSUED', 'PARTIAL'];
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+
+const PATIENT_REALTIME_RECIPIENT_ROLES = Object.freeze([
+  ROLES.RECEPTIONIST,
+  ROLES.DOCTOR,
+  ROLES.NURSE,
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN
+]);
+
+const compactId = (value) => String(value || '').trim() || null;
+
+const publishPatientRealtimeEvent = async (event, patient = {}, actorUserId = null) => {
+  try {
+    const tenantId = compactId(patient?.tenant_id);
+    if (!tenantId) return;
+
+    const facilityId = compactId(patient?.facility_id);
+    const patientId = compactId(patient?.id);
+    const occurredAt = new Date().toISOString();
+    const patientPublicId = resolvePublicIdentifier(
+      patient?.patient_public_id,
+      patient?.display_id,
+      patient?.human_friendly_id,
+      patientId
+    );
+    const recipientUserIds = await patientRepository.findRealtimeRecipientUserIds({
+      tenantId,
+      facilityId,
+      roles: PATIENT_REALTIME_RECIPIENT_ROLES,
+      extraUserIds: [actorUserId]
+    });
+
+    publishDomainEvent({
+      event,
+      tenant_id: tenantId,
+      facility_id: facilityId,
+      actor_user_id: actorUserId,
+      resource_type: 'patient',
+      resource_id: patientId,
+      affected: { patient_id: patientId },
+      recipient_user_ids: recipientUserIds,
+      payload: {
+        patient_id: patientId,
+        patient_public_id: patientPublicId,
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        status: patient?.status || null,
+        is_active: patient?.is_active !== undefined ? patient.is_active : patient?.isActive,
+        actor_user_id: actorUserId || null,
+        target_path: patientPublicId ? `/patients?id=${encodeURIComponent(patientPublicId)}` : '/patients',
+        occurred_at: occurredAt
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to publish patient realtime event', {
+      event,
+      patientId: patient?.id,
+      error: error.message
+    });
+  }
+};
+
 
 const PATIENT_RELATION_CONTEXT_INCLUDE = {
   tenant: {
@@ -1082,6 +1148,8 @@ const createPatient = async (data, userId, ipAddress, scope = {}) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishPatientRealtimeEvent(PATIENT_EVENTS.PATIENT_CREATED, decorated, userId);
+
     return decorated;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -1290,6 +1358,8 @@ const updatePatient = async (id, data, userId, ipAddress, scope = {}) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishPatientRealtimeEvent(PATIENT_EVENTS.PATIENT_UPDATED, after, userId);
+
     return after;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -1346,6 +1416,8 @@ const deletePatient = async (id, userId, ipAddress, scope = {}) => {
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});
+
+    await publishPatientRealtimeEvent(PATIENT_EVENTS.PATIENT_DELETED, before, userId);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     const mapped = mapPrismaError(error);

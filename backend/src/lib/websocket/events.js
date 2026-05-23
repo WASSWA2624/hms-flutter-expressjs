@@ -44,6 +44,24 @@ const APPOINTMENT_EVENTS = {
 };
 
 /**
+ * Patient Events
+ */
+const PATIENT_EVENTS = {
+  PATIENT_CREATED: 'patient.created',
+  PATIENT_UPDATED: 'patient.updated',
+  PATIENT_DELETED: 'patient.deleted'
+};
+
+/**
+ * Encounter Events
+ */
+const ENCOUNTER_EVENTS = {
+  ENCOUNTER_CREATED: 'encounter.created',
+  ENCOUNTER_UPDATED: 'encounter.updated',
+  ENCOUNTER_DELETED: 'encounter.deleted'
+};
+
+/**
  * OPD Flow Events
  */
 const OPD_EVENTS = {
@@ -61,6 +79,9 @@ const IPD_EVENTS = {
  * Visit Queue Events
  */
 const VISIT_QUEUE_EVENTS = {
+  VISIT_QUEUE_CREATED: 'visit_queue.created',
+  VISIT_QUEUE_UPDATED: 'visit_queue.updated',
+  VISIT_QUEUE_DELETED: 'visit_queue.deleted',
   VISIT_QUEUE_POSITION_CHANGED: 'visit_queue.position_changed',
   VISIT_QUEUE_TRIAGE_UPDATED: 'visit_queue.triage_updated'
 };
@@ -154,12 +175,24 @@ const EMERGENCY_EVENTS = {
 };
 
 /**
+ * Payment Events
+ */
+const PAYMENT_EVENTS = {
+  PAYMENT_CREATED: 'payment.created',
+  PAYMENT_UPDATED: 'payment.updated',
+  PAYMENT_DELETED: 'payment.deleted',
+  PAYMENT_RECONCILED: 'payment.reconciled'
+};
+
+/**
  * Billing Events
  */
 const BILLING_EVENTS = {
   BILLING_INVOICE_ISSUED: 'billing.invoice_issued',
   BILLING_PAYMENT_RECEIVED: 'billing.payment_received',
-  BILLING_REFUND_PROCESSED: 'billing.refund_processed'
+  BILLING_REFUND_PROCESSED: 'billing.refund_processed',
+  INVOICE_UPDATED: 'invoice.updated',
+  BILLING_BALANCE_UPDATED: 'billing.balance_updated'
 };
 
 /**
@@ -217,6 +250,8 @@ const WS_EVENTS = {
   ...CONNECTION_EVENTS,
   ...AUTH_EVENTS,
   ...APPOINTMENT_EVENTS,
+  ...PATIENT_EVENTS,
+  ...ENCOUNTER_EVENTS,
   ...OPD_EVENTS,
   ...IPD_EVENTS,
   ...VISIT_QUEUE_EVENTS,
@@ -229,6 +264,7 @@ const WS_EVENTS = {
   ...BIOMEDICAL_EVENTS,
   ...INVENTORY_EVENTS,
   ...EMERGENCY_EVENTS,
+  ...PAYMENT_EVENTS,
   ...BILLING_EVENTS,
   ...NOTIFICATION_EVENTS,
   ...SUBSCRIPTION_EVENTS,
@@ -242,6 +278,8 @@ module.exports = {
   CONNECTION_EVENTS,
   AUTH_EVENTS,
   APPOINTMENT_EVENTS,
+  PATIENT_EVENTS,
+  ENCOUNTER_EVENTS,
   OPD_EVENTS,
   IPD_EVENTS,
   VISIT_QUEUE_EVENTS,
@@ -254,6 +292,7 @@ module.exports = {
   BIOMEDICAL_EVENTS,
   INVENTORY_EVENTS,
   EMERGENCY_EVENTS,
+  PAYMENT_EVENTS,
   BILLING_EVENTS,
   NOTIFICATION_EVENTS,
   SUBSCRIPTION_EVENTS,

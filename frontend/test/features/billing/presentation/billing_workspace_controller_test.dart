@@ -78,7 +78,17 @@ void main() {
               invocation.positionalArguments[0] as BillingWorkItem;
           submittedDraft =
               invocation.positionalArguments[1] as BillingPaymentDraft;
-          return const Result<void>.success(null);
+          return Result<BillingMutationResult>.success(
+            BillingMutationResult(
+              invoice: invoice.copyWith(
+                billingStatus: 'PAID',
+                financials: const BillingFinancials(
+                  grossPaidTotal: 1000,
+                  netPaidTotal: 1000,
+                ),
+              ),
+            ),
+          );
         });
 
         final ProviderContainer container = ProviderContainer(

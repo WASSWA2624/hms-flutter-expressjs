@@ -9,10 +9,30 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.appointmentCanceled,
   };
 
-  static const Set<String> opdFlow = <String>{
-    RealtimeEvents.opdFlowUpdated,
+  static const Set<String> encounters = <String>{
+    RealtimeEvents.encounterCreated,
+    RealtimeEvents.encounterUpdated,
+    RealtimeEvents.encounterDeleted,
+  };
+
+  static const Set<String> patients = <String>{
+    RealtimeEvents.patientCreated,
+    RealtimeEvents.patientUpdated,
+    RealtimeEvents.patientDeleted,
+  };
+
+  static const Set<String> visitQueue = <String>{
+    RealtimeEvents.visitQueueCreated,
+    RealtimeEvents.visitQueueUpdated,
+    RealtimeEvents.visitQueueDeleted,
     RealtimeEvents.visitQueuePositionChanged,
     RealtimeEvents.visitQueueTriageUpdated,
+  };
+
+  static const Set<String> opdFlow = <String>{
+    RealtimeEvents.opdFlowUpdated,
+    ...encounters,
+    ...visitQueue,
   };
 
   static const Set<String> admissions = <String>{
@@ -48,10 +68,20 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.inventoryStockAdjusted,
   };
 
+  static const Set<String> payments = <String>{
+    RealtimeEvents.paymentCreated,
+    RealtimeEvents.paymentUpdated,
+    RealtimeEvents.paymentDeleted,
+    RealtimeEvents.paymentReconciled,
+  };
+
   static const Set<String> billing = <String>{
     RealtimeEvents.billingInvoiceIssued,
     RealtimeEvents.billingPaymentReceived,
     RealtimeEvents.billingRefundProcessed,
+    RealtimeEvents.invoiceUpdated,
+    RealtimeEvents.billingBalanceUpdated,
+    ...payments,
   };
 
   static const Set<String> emergency = <String>{
@@ -83,6 +113,7 @@ abstract final class RealtimeEventGroups {
   };
 
   static const Set<String> patientRegistry = <String>{
+    ...patients,
     ...appointments,
     ...opdFlow,
     ...admissions,
