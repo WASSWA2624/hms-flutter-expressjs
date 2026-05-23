@@ -46,6 +46,21 @@ const workflowStageSchema = z.enum([
   "CANCELLED",
 ]);
 
+const workflowStageListSchema = z.preprocess(
+  (value) => {
+    if (value == null || value === "") return undefined;
+    const rawValues = Array.isArray(value) ? value : [value];
+    return rawValues
+      .flatMap((entry) =>
+        String(entry || "")
+          .split(",")
+          .map((item) => item.trim().toUpperCase())
+          .filter(Boolean),
+      );
+  },
+  z.array(workflowStageSchema).min(1).optional(),
+);
+
 const transferStatusSchema = z.enum([
   "REQUESTED",
   "APPROVED",
@@ -109,6 +124,7 @@ const listIpdFlowsQuerySchema = listQuerySchema.extend({
   patient_id: identifierSchema.optional(),
   queue_scope: queueScopeSchema.optional().default("ACTIVE"),
   stage: workflowStageSchema.optional(),
+  stage_any: workflowStageListSchema,
   ward_id: identifierSchema.optional(),
   transfer_status: transferStatusSchema.optional(),
   has_active_bed: booleanFlagSchema,

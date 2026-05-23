@@ -183,131 +183,143 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     OpdFlowAggregateCounts counts,
   ) {
     final Locale locale = Localizations.localeOf(context);
-    AppWorkspaceSummaryCard card(
+    final List<Widget> cards = <Widget>[];
+
+    void addCard(
       String key,
       int value,
       IconData icon, {
       AppWorkspaceStatusTone? tone,
       _OpdTableFilter filter = const _OpdTableFilter(),
     }) {
-      return AppWorkspaceSummaryCard(
-        label: opdSummaryCountLabel(context.l10n, key),
-        value: AppFormatters.compactNumber(value, locale),
-        icon: icon,
-        tone: tone,
-        compact: true,
-        onPressed: () => _applySummaryFilter(filter),
+      if (value <= 0) {
+        return;
+      }
+      cards.add(
+        AppWorkspaceSummaryCard(
+          label: opdSummaryCountLabel(context.l10n, key),
+          value: AppFormatters.compactNumber(value, locale),
+          icon: icon,
+          tone: tone,
+          compact: true,
+          onPressed: () => _applySummaryFilter(filter),
+        ),
       );
     }
 
-    return <Widget>[
-      card('all_patients', counts.allPatients, Icons.groups_outlined),
-      card(
-        'all_opd_patients',
-        counts.allOpdPatients,
-        Icons.local_hospital_outlined,
+    addCard('all_patients', counts.allPatients, Icons.groups_outlined);
+    addCard(
+      'all_opd_patients',
+      counts.allOpdPatients,
+      Icons.local_hospital_outlined,
+    );
+    addCard(
+      'active_opd',
+      counts.activeOpd,
+      Icons.medical_services_outlined,
+      tone: AppWorkspaceStatusTone.success,
+      filter: const _OpdTableFilter(category: _opdCategoryActiveFlow),
+    );
+    addCard(
+      'vitals_needed',
+      counts.vitalsNeeded,
+      Icons.monitor_heart_outlined,
+      tone: AppWorkspaceStatusTone.warning,
+      filter: const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{'VITALS_NEEDED', 'WAITING_VITALS'},
       ),
-      card(
-        'active_opd',
-        counts.activeOpd,
-        Icons.medical_services_outlined,
-        tone: AppWorkspaceStatusTone.success,
-        filter: const _OpdTableFilter(category: _opdCategoryActiveFlow),
+    );
+    addCard(
+      'doctor_needed',
+      counts.doctorNeeded,
+      Icons.assignment_ind_outlined,
+      tone: AppWorkspaceStatusTone.warning,
+      filter: const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{'DOCTOR_NEEDED', 'WAITING_DOCTOR_ASSIGNMENT'},
       ),
-      card(
-        'vitals_needed',
-        counts.vitalsNeeded,
-        Icons.monitor_heart_outlined,
-        tone: AppWorkspaceStatusTone.warning,
-        filter: const _OpdTableFilter(
-          category: _opdCategoryActiveFlow,
-          statuses: <String>{'VITALS_NEEDED'},
-        ),
+    );
+    addCard(
+      'with_doctor',
+      counts.withDoctor,
+      Icons.medical_services_outlined,
+      tone: AppWorkspaceStatusTone.info,
+      filter: const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{'WITH_DOCTOR', 'WAITING_DOCTOR_REVIEW'},
       ),
-      card(
-        'doctor_needed',
-        counts.doctorNeeded,
-        Icons.assignment_ind_outlined,
-        tone: AppWorkspaceStatusTone.warning,
-        filter: const _OpdTableFilter(
-          category: _opdCategoryActiveFlow,
-          statuses: <String>{'DOCTOR_NEEDED'},
-        ),
+    );
+    addCard(
+      'lab_pending',
+      counts.labPending,
+      Icons.science_outlined,
+      tone: AppWorkspaceStatusTone.info,
+      filter: const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{
+          'LAB_PENDING',
+          'SAMPLE_PENDING',
+          'IN_LAB',
+          'LAB_REQUESTED',
+          'LAB_AND_RADIOLOGY_REQUESTED',
+        },
       ),
-      card(
-        'with_doctor',
-        counts.withDoctor,
-        Icons.medical_services_outlined,
-        tone: AppWorkspaceStatusTone.info,
-        filter: const _OpdTableFilter(
-          category: _opdCategoryActiveFlow,
-          statuses: <String>{'WITH_DOCTOR'},
-        ),
+    );
+    addCard(
+      'imaging_pending',
+      counts.imagingPending,
+      Icons.biotech_outlined,
+      tone: AppWorkspaceStatusTone.info,
+      filter: const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{
+          'IMAGING_PENDING',
+          'REPORT_PENDING',
+          'RADIOLOGY_REQUESTED',
+          'LAB_AND_RADIOLOGY_REQUESTED',
+        },
       ),
-      card(
-        'lab_pending',
-        counts.labPending,
-        Icons.science_outlined,
-        tone: AppWorkspaceStatusTone.info,
-        filter: const _OpdTableFilter(
-          category: _opdCategoryActiveFlow,
-          statuses: <String>{'LAB_PENDING', 'SAMPLE_PENDING', 'IN_LAB'},
-        ),
+    );
+    addCard(
+      'pharmacy_pending',
+      counts.pharmacyPending,
+      Icons.medication_outlined,
+      tone: AppWorkspaceStatusTone.warning,
+      filter: const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{'PHARMACY_PENDING', 'PHARMACY_REQUESTED'},
       ),
-      card(
-        'imaging_pending',
-        counts.imagingPending,
-        Icons.biotech_outlined,
-        tone: AppWorkspaceStatusTone.info,
-        filter: const _OpdTableFilter(
-          category: _opdCategoryActiveFlow,
-          statuses: <String>{'IMAGING_PENDING', 'REPORT_PENDING'},
-        ),
+    );
+    addCard(
+      'decision_needed',
+      counts.decisionNeeded,
+      Icons.task_alt_outlined,
+      tone: AppWorkspaceStatusTone.info,
+      filter: const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{
+          'DECISION_NEEDED',
+          'RESULTS_READY',
+          'REPORT_READY',
+          'MEDICINES_DISPENSED',
+          'WAITING_DISPOSITION',
+        },
       ),
-      card(
-        'pharmacy_pending',
-        counts.pharmacyPending,
-        Icons.medication_outlined,
-        tone: AppWorkspaceStatusTone.warning,
-        filter: const _OpdTableFilter(
-          category: _opdCategoryActiveFlow,
-          statuses: <String>{'PHARMACY_PENDING'},
-        ),
+    );
+    addCard(
+      'admission_pending',
+      counts.admissionPending,
+      Icons.bed_outlined,
+      tone: AppWorkspaceStatusTone.warning,
+      filter: const _OpdTableFilter(
+        category: _opdCategoryActiveFlow,
+        statuses: <String>{'ADMISSION_PENDING'},
       ),
-      card(
-        'decision_needed',
-        counts.decisionNeeded,
-        Icons.task_alt_outlined,
-        tone: AppWorkspaceStatusTone.warning,
-        filter: const _OpdTableFilter(
-          category: _opdCategoryActiveFlow,
-          statuses: <String>{
-            'DECISION_NEEDED',
-            'RESULTS_READY',
-            'REPORT_READY',
-            'MEDICINES_DISPENSED',
-          },
-        ),
-      ),
-      card(
-        'admission_pending',
-        counts.admissionPending,
-        Icons.bed_outlined,
-        tone: AppWorkspaceStatusTone.warning,
-        filter: const _OpdTableFilter(
-          category: _opdCategoryActiveFlow,
-          statuses: <String>{'ADMISSION_PENDING'},
-        ),
-      ),
-      card(
-        'discharged_today',
-        counts.dischargedToday,
-        Icons.check_circle_outline,
-        tone: AppWorkspaceStatusTone.success,
-      ),
-    ];
-  }
+    );
 
+    return cards;
+  }
 
   void _applySummaryFilter(_OpdTableFilter filter) {
     if (filter.search.trim().isEmpty && _searchController.text.isNotEmpty) {
@@ -1516,17 +1528,31 @@ AppWorkspaceStatusTone _flowBillingTone(OpdFlowSummary flow) {
 }
 
 String _flowOwnerRole(BuildContext context, OpdFlowSummary flow) {
-  if (_isNonEmpty(flow.assignedStaffRole)) {
-    return flow.assignedStaffRole!;
+  final String? assignedRole = flow.assignedStaffRole;
+  if (_isNonEmpty(assignedRole)) {
+    return _staffRoleLabel(context, assignedRole!);
   }
   return opdResponsibleRoleForStage(
     context.l10n,
     flow.displayCode ?? flow.stage,
-    hasAssignedProvider:
-        _isNonEmpty(flow.providerUserId) ||
-        _isNonEmpty(flow.providerDisplayName) ||
-        _isNonEmpty(flow.assignedStaffDisplayName),
   );
+}
+
+String _staffRoleLabel(BuildContext context, String role) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (role.trim().toUpperCase()) {
+    'SUPER_ADMIN' || 'TENANT_ADMIN' || 'FACILITY_ADMIN' =>
+      l10n.navigationSetupLabel,
+    'RECEPTIONIST' => l10n.opdWorkflowReceptionTitle,
+    'BILLING' => l10n.navigationBillingLabel,
+    'NURSE' => l10n.navigationNursingLabel,
+    'DOCTOR' => l10n.opdWorkflowDoctorTitle,
+    'LAB_TECH' => l10n.navigationLabLabel,
+    'RADIOLOGY_TECH' => l10n.navigationRadiologyLabel,
+    'PHARMACIST' => l10n.navigationPharmacyLabel,
+    'OPERATIONS' => l10n.navigationOperationsLabel,
+    _ => AppDisplay.apiLabel(role),
+  };
 }
 
 String _queueBillingLabel(BuildContext context, OpdQueueEntry entry) {
@@ -2255,7 +2281,7 @@ class _OpdPatientActionsDialogState
           !terminal && status != 'IN_PROGRESS' && status != 'COMPLETED';
       actions.addAll(<AppPermissionActionItem>[
         action(
-          requirement: opdReceptionActionRequirement,
+          requirement: opdFrontDeskActionRequirement,
           label: l10n.opdCheckInAction,
           icon: Icons.login_outlined,
           variant: AppButtonVariant.primary,
@@ -2264,7 +2290,7 @@ class _OpdPatientActionsDialogState
           onPressed: _openAppointmentCheckIn,
         ),
         action(
-          requirement: opdReceptionActionRequirement,
+          requirement: opdFrontDeskActionRequirement,
           label: l10n.opdQueueAction,
           icon: Icons.queue_outlined,
           enabled:
@@ -2278,7 +2304,7 @@ class _OpdPatientActionsDialogState
           ),
         ),
         action(
-          requirement: opdReceptionActionRequirement,
+          requirement: opdFrontDeskActionRequirement,
           label: l10n.opdRescheduleAction,
           icon: Icons.edit_calendar_outlined,
           enabled: !terminal,
@@ -2287,7 +2313,7 @@ class _OpdPatientActionsDialogState
           ),
         ),
         action(
-          requirement: opdReceptionActionRequirement,
+          requirement: opdFrontDeskActionRequirement,
           label: l10n.opdCancelAction,
           icon: Icons.cancel_outlined,
           enabled: !terminal && status != 'CANCELLED',
@@ -2300,7 +2326,7 @@ class _OpdPatientActionsDialogState
     if (queueEntry != null) {
       actions.addAll(<AppPermissionActionItem>[
         action(
-          requirement: opdReceptionActionRequirement,
+          requirement: opdFrontDeskActionRequirement,
           label: l10n.opdStartConsultationAction,
           icon: Icons.play_arrow_outlined,
           variant: AppButtonVariant.primary,
@@ -2312,7 +2338,7 @@ class _OpdPatientActionsDialogState
           ),
         ),
         action(
-          requirement: opdReceptionActionRequirement,
+          requirement: opdFrontDeskActionRequirement,
           label: l10n.opdPrioritizeAction,
           icon: Icons.priority_high_outlined,
           enabled: !terminal,
@@ -2323,7 +2349,7 @@ class _OpdPatientActionsDialogState
           ),
         ),
         action(
-          requirement: opdReceptionActionRequirement,
+          requirement: opdFrontDeskActionRequirement,
           label: l10n.opdMoveQueueAction,
           icon: Icons.sync_alt_outlined,
           enabled: !terminal,
@@ -3136,6 +3162,7 @@ AppWorkspaceStatusTone _stageTone(String? value) {
     'VITALS_NEEDED' ||
     'DOCTOR_NEEDED' ||
     'PHARMACY_PENDING' ||
+    'PHARMACY_REQUESTED' ||
     'ADMISSION_PENDING' => AppWorkspaceStatusTone.warning,
     'WAITING_CONSULTATION_PAYMENT' ||
     'WAITING_VITALS' ||
@@ -3147,6 +3174,9 @@ AppWorkspaceStatusTone _stageTone(String? value) {
     'IN_LAB' ||
     'IMAGING_PENDING' ||
     'REPORT_PENDING' ||
+    'LAB_REQUESTED' ||
+    'RADIOLOGY_REQUESTED' ||
+    'LAB_AND_RADIOLOGY_REQUESTED' ||
     'WAITING_DOCTOR_REVIEW' ||
     'WAITING_DISPOSITION' => AppWorkspaceStatusTone.info,
     _ => AppWorkspaceStatusTone.neutral,

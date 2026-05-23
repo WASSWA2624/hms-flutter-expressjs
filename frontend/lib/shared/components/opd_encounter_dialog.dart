@@ -7,7 +7,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
@@ -39,12 +38,15 @@ import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 const IconData opdEncounterIcon = Icons.person_add_alt_1_outlined;
 
 const AccessRequirement opdEncounterPermissionRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.patientWrite,
-    AppPermissions.clinicalWrite,
-    AppPermissions.billingWrite,
-    AppPermissions.operationsWrite,
-    AppPermissions.emergencyWrite,
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+    AppRole.receptionist,
+    AppRole.nurse,
+    AppRole.doctor,
+    AppRole.operations,
+    AppRole.ambulanceOperator,
   ],
   activeModules: <String>['scheduling-queue'],
 );

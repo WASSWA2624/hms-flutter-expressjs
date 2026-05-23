@@ -3,16 +3,12 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 String opdStatusDisplayLabel(AppLocalizations l10n, OpdFlowSummary flow) {
-  final String code = (flow.displayCode ?? flow.stage ?? '').trim().toUpperCase();
-  final bool hasAssignedStaff = _hasAssignedStaff(flow);
-  if (code == 'WAITING_DOCTOR_ASSIGNMENT' && hasAssignedStaff) {
-    return flow.assignedStaffLabel ?? flow.displayStatus ?? l10n.opdStatusWithDoctorLabel;
-  }
-  if ((code == 'WITH_DOCTOR' || code == 'WAITING_DOCTOR_REVIEW') &&
-      _isNonEmpty(flow.assignedStaffLabel)) {
-    return flow.assignedStaffLabel!;
-  }
-  return _opdLabel(l10n, code) ?? flow.displayStatus ?? AppDisplay.apiLabel(code);
+  final String code = (flow.displayCode ?? flow.stage ?? '')
+      .trim()
+      .toUpperCase();
+  return _opdLabel(l10n, code) ??
+      flow.displayStatus ??
+      AppDisplay.apiLabel(code);
 }
 
 String opdStageDisplayLabel(AppLocalizations l10n, String? value) {
@@ -100,11 +96,3 @@ String? _nextStepLabel(AppLocalizations l10n, String code) {
   };
 }
 
-bool _hasAssignedStaff(OpdFlowSummary flow) {
-  return _isNonEmpty(flow.providerUserId) ||
-      _isNonEmpty(flow.providerDisplayName) ||
-      _isNonEmpty(flow.assignedStaffDisplayName) ||
-      _isNonEmpty(flow.assignedStaffLabel);
-}
-
-bool _isNonEmpty(String? value) => value != null && value.trim().isNotEmpty;

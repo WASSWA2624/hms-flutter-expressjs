@@ -29,10 +29,6 @@ class OpdActionContextPanel extends StatelessWidget {
       flow.patientId,
     ]);
     final String encounterId = flow.apiId;
-    final bool hasAssignedProvider = _isNonEmpty(flow.providerUserId) ||
-        _isNonEmpty(flow.providerDisplayName) ||
-        _isNonEmpty(flow.assignedStaffDisplayName);
-
     return AppSectionPanel(
       title: showTitle ? l10n.opdEncounterContextTitle : null,
       density: AppContentPanelDensity.compact,
@@ -85,7 +81,6 @@ class OpdActionContextPanel extends StatelessWidget {
               value: opdResponsibleRoleForStage(
                 l10n,
                 flow.displayCode ?? flow.stage,
-                hasAssignedProvider: hasAssignedProvider,
               ),
               icon: Icons.badge_outlined,
             ),
@@ -111,18 +106,14 @@ class OpdActionContextPanel extends StatelessWidget {
   }
 }
 
-String opdResponsibleRoleForStage(
-  AppLocalizations l10n,
-  String? stage, {
-  bool hasAssignedProvider = false,
-}) {
+String opdResponsibleRoleForStage(AppLocalizations l10n, String? stage) {
   return switch ((stage ?? '').trim().toUpperCase()) {
     'PAYMENT_DUE' ||
-    'WAITING_CONSULTATION_PAYMENT' => l10n.navigationBillingLabel,
+    'WAITING_CONSULTATION_PAYMENT' =>
+      '${l10n.opdWorkflowReceptionTitle} / ${l10n.navigationBillingLabel}',
     'VITALS_NEEDED' || 'WAITING_VITALS' => l10n.navigationNursingLabel,
-    'DOCTOR_NEEDED' || 'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
-        ? l10n.opdWorkflowDoctorTitle
-        : l10n.opdWorkflowReceptionTitle,
+    'DOCTOR_NEEDED' || 'WAITING_DOCTOR_ASSIGNMENT' =>
+      '${l10n.opdWorkflowReceptionTitle} / ${l10n.navigationNursingLabel}',
     'WITH_DOCTOR' ||
     'WAITING_DOCTOR_REVIEW' ||
     'DECISION_NEEDED' ||
@@ -176,8 +167,6 @@ String? _firstNonEmpty(Iterable<String?> values) {
   }
   return null;
 }
-
-bool _isNonEmpty(String? value) => value?.trim().isNotEmpty ?? false;
 
 Future<void> _copyTextToClipboard(
   BuildContext context,

@@ -377,6 +377,20 @@ flowchart TD
 | `Cancelled` | Admission was cancelled before completion. |
 | `Closed` | Encounter is fully closed in the system. |
 
+### Implemented Backend IPD Stage Contract
+
+The current backend IPD flow module exposes these canonical stages to the frontend worklist. UI labels, filters, summary cards, actions, and role visibility should stay aligned with this contract.
+
+| Backend IPD stage | User meaning | Primary owner |
+|---|---|---|
+| `ADMITTED_PENDING_BED` | Admission exists but bed is not assigned. | Bed manager / Nurse / Operations |
+| `ADMITTED_IN_BED` | Patient is admitted and assigned to a bed. | Ward / Nursing / Doctor |
+| `TRANSFER_REQUESTED` | Transfer has been requested. | Ward / Operations |
+| `TRANSFER_IN_PROGRESS` | Transfer is being processed. | Ward / Operations |
+| `DISCHARGE_PLANNED` | Discharge is planned but not finalized. | Doctor / Nurse / Billing / Pharmacy |
+| `DISCHARGED` | Admission is complete. | Clinical / Billing / Operations |
+| `CANCELLED` | Admission was cancelled or rejected. | Authorized admin / clinical user |
+
 ---
 
 ## 14. Recommended Discharge Statuses

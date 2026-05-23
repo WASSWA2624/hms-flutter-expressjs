@@ -377,6 +377,7 @@ final class OpdWorkspaceController
         'arrival_mode': 'WALK_IN',
         'queued_at': DateTime.now().toUtc().toIso8601String(),
         ...payload,
+        'reuse_open_encounter': true,
       }),
       refreshAfter: true,
     );
@@ -394,6 +395,7 @@ final class OpdWorkspaceController
         'facility_id': appointment.facilityId,
         'provider_user_id': appointment.providerUserId,
         'queued_at': DateTime.now().toUtc().toIso8601String(),
+        'reuse_open_encounter': true,
       }),
       refreshAfter: true,
     );
@@ -474,6 +476,7 @@ final class OpdWorkspaceController
         'arrival_mode': 'WALK_IN',
         'visit_queue_id': entry.apiId,
         'provider_user_id': entry.providerUserId,
+        'reuse_open_encounter': true,
       }),
       refreshAfter: true,
     );

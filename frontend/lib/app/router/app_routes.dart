@@ -91,6 +91,24 @@ abstract final class AppRoutes {
     AppRole.icuManager,
     AppRole.theatreManager,
   ];
+  static const List<AppRole> inpatientFlowWorkspaceRoles = <AppRole>[
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.billing,
+    AppRole.operations,
+    AppRole.wardManager,
+    AppRole.icuManager,
+  ];
+  static const List<AppRole> nursingWorkspaceRoles = <AppRole>[
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.wardManager,
+    AppRole.icuManager,
+  ];
 
   static const AppRouteData home = AppRouteData(
     name: 'home',
@@ -169,7 +187,12 @@ abstract final class AppRoutes {
     name: 'ipd',
     path: '/ipd',
     access: AppRouteAccess.authenticated,
-    requiredAnyPermissions: <AppPermission>[AppPermissions.clinicalRead],
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.clinicalRead,
+      AppPermissions.operationsRead,
+      AppPermissions.billingRead,
+    ],
+    requiredAnyRoles: inpatientFlowWorkspaceRoles,
     requiredActiveModules: <String>['inpatient-bed-management'],
   );
   static const AppRouteData roomsBeds = AppRouteData(
@@ -206,6 +229,7 @@ abstract final class AppRoutes {
       AppPermissions.lastOfficeRead,
       AppPermissions.operationsRead,
     ],
+    requiredAnyRoles: nursingWorkspaceRoles,
     requiredActiveModules: <String>['inpatient-bed-management'],
   );
   static const AppRouteData clinical = AppRouteData(

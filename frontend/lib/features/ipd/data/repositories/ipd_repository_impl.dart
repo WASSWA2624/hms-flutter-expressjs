@@ -31,6 +31,7 @@ final class IpdRepositoryImpl implements IpdRepository {
         'search': query.search,
         'queue_scope': _queueScopeFor(query.scope),
         'stage': _stageFor(query.scope),
+        'stage_any': _stageAnyFor(query.scope),
         'ward_id': query.wardId,
         'include_icu': 'true',
         'sort_by': 'admitted_at',
@@ -212,11 +213,18 @@ String? _stageFor(IpdQueueScope scope) {
   return switch (scope) {
     IpdQueueScope.admissionQueue => 'ADMITTED_PENDING_BED',
     IpdQueueScope.activePatients => 'ADMITTED_IN_BED',
-    IpdQueueScope.transferPending => 'TRANSFER_REQUESTED',
     IpdQueueScope.dischargePlanned ||
     IpdQueueScope.awaitingClearance => 'DISCHARGE_PLANNED',
     IpdQueueScope.discharged => 'DISCHARGED',
-    IpdQueueScope.all => null,
+    IpdQueueScope.transferPending || IpdQueueScope.all => null,
+  };
+}
+
+String? _stageAnyFor(IpdQueueScope scope) {
+  return switch (scope) {
+    IpdQueueScope.transferPending =>
+      'TRANSFER_REQUESTED,TRANSFER_IN_PROGRESS',
+    _ => null,
   };
 }
 

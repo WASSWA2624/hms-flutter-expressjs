@@ -6,10 +6,10 @@ import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
@@ -21,6 +21,38 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
+
+const List<AppRole> _ipdAdminActionRoles = <AppRole>[
+  AppRole.superAdmin,
+  AppRole.tenantAdmin,
+  AppRole.facilityAdmin,
+];
+
+const AccessRequirement _ipdOperationalWriteRequirement = AccessRequirement(
+  anyRoles: <AppRole>[
+    ..._ipdAdminActionRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.operations,
+    AppRole.icuManager,
+  ],
+  anyPermissions: <AppPermission>[
+    AppPermissions.clinicalWrite,
+    AppPermissions.operationsWrite,
+  ],
+  activeModules: <String>['inpatient-bed-management'],
+);
+
+const AccessRequirement _ipdClinicalWriteRequirement = AccessRequirement(
+  anyRoles: <AppRole>[
+    ..._ipdAdminActionRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.icuManager,
+  ],
+  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+  activeModules: <String>['inpatient-bed-management'],
+);
 
 class IpdWorkspacePage extends ConsumerWidget {
   const IpdWorkspacePage({super.key});
@@ -59,11 +91,6 @@ class _IpdWorkspaceContent extends ConsumerStatefulWidget {
 }
 
 class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
-  static const AccessRequirement _writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
-    activeModules: <String>['inpatient-bed-management'],
-  );
-
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   _tableColumnController;
@@ -176,7 +203,6 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       ],
       body: _IpdBoardPanel(
         state: state,
-        writeRequirement: _writeRequirement,
         searchController: _searchController,
         columnVisibilityController: _tableColumnController,
       ),
@@ -187,13 +213,11 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
 class _IpdBoardPanel extends ConsumerWidget {
   const _IpdBoardPanel({
     required this.state,
-    required this.writeRequirement,
     required this.searchController,
     required this.columnVisibilityController,
   });
 
   final IpdWorkspaceState state;
-  final AccessRequirement writeRequirement;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   columnVisibilityController;
@@ -276,7 +300,6 @@ class _IpdBoardPanel extends ConsumerWidget {
               ref,
               state,
               admission,
-              writeRequirement,
             ),
           );
         },
@@ -325,6 +348,18 @@ class _IpdBoardPanel extends ConsumerWidget {
                     appListTableCompareText(left.nextStep, right.nextStep),
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
               return Text(_nextStepLabel(context, item.nextStep));
+            },
+          ),
+          AppListTableColumn<IpdAdmissionSummary>(
+            label: l10n.settingsWorkspaceModuleRole,
+            sortComparator:
+                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                    appListTableCompareText(
+                      _ipdOwnerRoleLabel(context, left.stage),
+                      _ipdOwnerRoleLabel(context, right.stage),
+                    ),
+            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+              return Text(_ipdOwnerRoleLabel(context, item.stage));
             },
           ),
           AppListTableColumn<IpdAdmissionSummary>(
@@ -413,6 +448,7 @@ class _IpdMobileAdmissionRow extends StatelessWidget {
             _joinDisplay(<String?>[
                   admission.location,
                   _nextStepLabel(context, admission.nextStep),
+                  _ipdOwnerRoleLabel(context, admission.stage),
                 ]) ??
                 context.l10n.profileUnknownValue,
             maxLines: 2,
@@ -425,10 +461,9 @@ class _IpdMobileAdmissionRow extends StatelessWidget {
 }
 
 class _IpdDetailPanel extends ConsumerWidget {
-  const _IpdDetailPanel({required this.state, required this.writeRequirement});
+  const _IpdDetailPanel({required this.state});
 
   final IpdWorkspaceState state;
-  final AccessRequirement writeRequirement;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -446,6 +481,11 @@ class _IpdDetailPanel extends ConsumerWidget {
         ),
       );
     }
+
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canOperate = _ipdOperationalWriteRequirement.isAllowed(policy);
+    final bool canClinical = _ipdClinicalWriteRequirement.isAllowed(policy);
+    final bool actionsEnabled = !state.isSaving;
 
     return AppWorkspaceDetailPanel(
       title: l10n.ipdAdmissionDetailTitle,
@@ -516,15 +556,12 @@ class _IpdDetailPanel extends ConsumerWidget {
               ),
             ],
             actions: <Widget>[
-              AppAccessActionGate(
-                requirement: writeRequirement,
-                builder: (BuildContext context, bool isAllowed) {
-                  return _IpdDetailActions(
-                    admission: admission,
-                    state: state,
-                    enabled: isAllowed && !state.isSaving,
-                  );
-                },
+              _IpdDetailActions(
+                admission: admission,
+                state: state,
+                canOperate: canOperate,
+                canClinical: canClinical,
+                actionsEnabled: actionsEnabled,
               ),
             ],
           ),
@@ -587,7 +624,6 @@ Future<void> _openIpdDetailDialog(
   WidgetRef ref,
   IpdWorkspaceState fallbackState,
   IpdAdmissionSummary admission,
-  AccessRequirement writeRequirement,
 ) async {
   final IpdWorkspaceController controller = ref.read(
     ipdWorkspaceControllerProvider.notifier,
@@ -612,10 +648,7 @@ Future<void> _openIpdDetailDialog(
       icon: const Icon(Icons.bed_outlined),
       scrollable: true,
       maxWidth: 980,
-      content: _IpdDetailPanel(
-        state: state,
-        writeRequirement: writeRequirement,
-      ),
+      content: _IpdDetailPanel(state: state),
     ),
   );
 }
@@ -632,53 +665,65 @@ class _IpdDetailActions extends ConsumerWidget {
   const _IpdDetailActions({
     required this.admission,
     required this.state,
-    required this.enabled,
+    required this.canOperate,
+    required this.canClinical,
+    required this.actionsEnabled,
   });
 
   final IpdAdmissionDetail admission;
   final IpdWorkspaceState state;
-  final bool enabled;
+  final bool canOperate;
+  final bool canClinical;
+  final bool actionsEnabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final IpdAdmissionSummary summary = admission.summary;
     final bool terminal = summary.isTerminal;
+    final bool activeBed = summary.hasActiveBed;
+    final bool dischargePlanned = summary.stage == _stageDischargePlanned;
+    final bool hasOpenTransfer = admission.openTransferRequest != null;
+
     return AppActionList(
       actions: <AppActionItem>[
-        if (!summary.hasActiveBed && !terminal)
+        if (canOperate && !activeBed && !terminal)
           AppActionItem(
             label: l10n.ipdAssignBedAction,
             leadingIcon: Icons.bed_outlined,
-            enabled: enabled,
+            enabled: canOperate && actionsEnabled,
             onPressed: () => _openAssignBedDialog(context, ref),
           ),
-        if (summary.hasActiveBed && !terminal)
+        if (canOperate && activeBed && dischargePlanned && !terminal)
           AppActionItem(
             label: l10n.ipdReleaseBedAction,
             leadingIcon: Icons.cleaning_services_outlined,
-            enabled: enabled,
+            enabled: canOperate && actionsEnabled,
             onPressed: () => _openReleaseBedDialog(context, ref),
           ),
-        if (!terminal)
+        if (canOperate &&
+            activeBed &&
+            !hasOpenTransfer &&
+            !dischargePlanned &&
+            !terminal)
           AppActionItem(
             label: l10n.ipdRequestTransferAction,
             leadingIcon: Icons.swap_horiz,
-            enabled: enabled,
+            enabled: canOperate && actionsEnabled,
             onPressed: () => _openTransferRequestDialog(context, ref),
           ),
-        if (admission.openTransferRequest != null && !terminal)
+        if (canOperate && hasOpenTransfer && !terminal)
           AppActionItem(
             label: l10n.ipdManageTransferAction,
             leadingIcon: Icons.move_down_outlined,
-            enabled: enabled,
+            enabled: canOperate && actionsEnabled,
             onPressed: () => _openTransferUpdateDialog(context, ref),
           ),
-        if (!terminal)
+        if (canClinical && activeBed && !terminal)
           AppActionItem(
             label: l10n.ipdAddWardRoundAction,
             leadingIcon: Icons.fact_check_outlined,
-            enabled: enabled,
+            enabled: canClinical && actionsEnabled,
             onPressed: () => _openTextActionDialog(
               context,
               ref,
@@ -691,11 +736,11 @@ class _IpdDetailActions extends ConsumerWidget {
                   .addWardRound(summary, value),
             ),
           ),
-        if (!terminal)
+        if (canClinical && activeBed && !terminal)
           AppActionItem(
             label: l10n.ipdAddNursingNoteAction,
             leadingIcon: Icons.note_add_outlined,
-            enabled: enabled,
+            enabled: canClinical && actionsEnabled,
             onPressed: () => _openTextActionDialog(
               context,
               ref,
@@ -708,18 +753,18 @@ class _IpdDetailActions extends ConsumerWidget {
                   .addNursingNote(summary, value),
             ),
           ),
-        if (!terminal)
+        if (canClinical && activeBed && !terminal)
           AppActionItem(
             label: l10n.ipdRecordMedicationAction,
             leadingIcon: Icons.medication_outlined,
-            enabled: enabled,
+            enabled: canClinical && actionsEnabled,
             onPressed: () => _openMedicationDialog(context, ref),
           ),
-        if (!terminal)
+        if (canClinical && activeBed && !dischargePlanned && !terminal)
           AppActionItem(
             label: l10n.ipdPlanDischargeAction,
             leadingIcon: Icons.fact_check_outlined,
-            enabled: enabled,
+            enabled: canClinical && actionsEnabled,
             onPressed: () => _openTextActionDialog(
               context,
               ref,
@@ -732,11 +777,11 @@ class _IpdDetailActions extends ConsumerWidget {
                   .planDischarge(summary, value),
             ),
           ),
-        if (summary.stage == _stageDischargePlanned)
+        if (canClinical && dischargePlanned && !terminal)
           AppActionItem(
             label: l10n.ipdFinalizeDischargeAction,
             leadingIcon: Icons.logout_outlined,
-            enabled: enabled,
+            enabled: canClinical && actionsEnabled,
             variant: AppActionVariant.primary,
             onPressed: () => _openTextActionDialog(
               context,
@@ -751,11 +796,11 @@ class _IpdDetailActions extends ConsumerWidget {
                   .finalizeDischarge(summary, value),
             ),
           ),
-        if (!summary.hasActiveBed && !terminal)
+        if (canOperate && !activeBed && !terminal)
           AppActionItem(
             label: l10n.ipdRejectAdmissionAction,
             leadingIcon: Icons.cancel_outlined,
-            enabled: enabled,
+            enabled: canOperate && actionsEnabled,
             variant: AppActionVariant.tertiary,
             onPressed: () => _openTextActionDialog(
               context,
@@ -1978,6 +2023,27 @@ List<AppSelectOption<String>> _medicationStatusOptions(AppLocalizations l10n) {
       label: l10n.ipdMedicationRefused,
     ),
   ];
+}
+
+String _ipdOwnerRoleLabel(BuildContext context, String? stage) {
+  final AppLocalizations l10n = context.l10n;
+  return switch ((stage ?? '').toUpperCase()) {
+    _stageAdmittedPendingBed =>
+      '${l10n.navigationOperationsLabel} / ${l10n.navigationNursingLabel}',
+    _stageAdmittedInBed =>
+      '${l10n.navigationNursingLabel} / ${l10n.opdWorkflowDoctorTitle}',
+    _stageTransferRequested || _stageTransferInProgress =>
+      '${l10n.navigationOperationsLabel} / ${l10n.navigationNursingLabel}',
+    _stageDischargePlanned => _joinDisplay(<String>[
+      l10n.opdWorkflowDoctorTitle,
+      l10n.navigationNursingLabel,
+      l10n.navigationBillingLabel,
+      l10n.navigationPharmacyLabel,
+    ])!,
+    _stageDischarged => l10n.navigationDischargeLabel,
+    _stageCancelled => l10n.navigationSetupLabel,
+    _ => l10n.profileUnknownValue,
+  };
 }
 
 AppWorkspaceStatus _stageStatus(BuildContext context, String? stage) {

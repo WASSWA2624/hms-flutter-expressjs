@@ -1468,7 +1468,9 @@ const toQueueCardDto = (snapshot) => {
 };
 
 const matchesDerivedFilters = (snapshot, filters = {}) => {
+  const stageAny = Array.isArray(filters.stage_any) ? filters.stage_any : [];
   if (filters.stage && snapshot.flow?.stage !== filters.stage) return false;
+  if (stageAny.length && !stageAny.includes(snapshot.flow?.stage)) return false;
 
   if (filters.transfer_status) {
     if (
@@ -1531,7 +1533,8 @@ const matchesDerivedFilters = (snapshot, filters = {}) => {
       return false;
   }
 
-  if (filters.queue_scope === QUEUE_SCOPES.ACTIVE && !filters.stage) {
+  const hasStageFilter = Boolean(filters.stage || stageAny.length);
+  if (filters.queue_scope === QUEUE_SCOPES.ACTIVE && !hasStageFilter) {
     if (TERMINAL_STAGES.has(snapshot?.flow?.stage)) return false;
   }
 
@@ -1656,6 +1659,8 @@ const listIpdFlows = async (
     icuQueueScope !== ICU_QUEUE_SCOPES.ALL,
   );
   const includeIcu = toBooleanFlag(filters.include_icu, false) || hasIcuFilters;
+  const stageAny = Array.isArray(filters.stage_any) ? filters.stage_any : [];
+  const hasStageFilter = Boolean(filters.stage || stageAny.length);
 
   const where = {};
 
@@ -1697,7 +1702,7 @@ const listIpdFlows = async (
     where.patient_id = patient.id;
   }
 
-  if (queueScope === QUEUE_SCOPES.ACTIVE && !filters.stage) {
+  if (queueScope === QUEUE_SCOPES.ACTIVE && !hasStageFilter) {
     where.status = { notIn: ["DISCHARGED", "CANCELLED"] };
   }
 
@@ -1743,7 +1748,7 @@ const listIpdFlows = async (
   }
 
   const hasDerivedFilters = Boolean(
-    filters.stage ||
+    hasStageFilter ||
     filters.transfer_status ||
     wardId ||
     typeof filters.has_active_bed === "boolean" ||
@@ -1763,6 +1768,7 @@ const listIpdFlows = async (
       .filter((snapshot) =>
         matchesDerivedFilters(snapshot, {
           stage: filters.stage,
+          stage_any: stageAny,
           transfer_status: filters.transfer_status,
           has_active_bed: filters.has_active_bed,
           ward_id: wardId,

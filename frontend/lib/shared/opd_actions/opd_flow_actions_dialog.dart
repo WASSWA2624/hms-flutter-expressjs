@@ -8,7 +8,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -28,43 +27,54 @@ import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
-const AccessRequirement opdReceptionActionRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.patientWrite,
-    AppPermissions.operationsWrite,
-    AppPermissions.clinicalWrite,
-    AppPermissions.emergencyWrite,
+const List<AppRole> _opdAdminActionRoles = <AppRole>[
+  AppRole.superAdmin,
+  AppRole.tenantAdmin,
+  AppRole.facilityAdmin,
+];
+
+const AccessRequirement opdFrontDeskActionRequirement = AccessRequirement(
+  anyRoles: <AppRole>[
+    ..._opdAdminActionRoles,
+    AppRole.receptionist,
   ],
   activeModules: <String>['scheduling-queue'],
 );
 
-const AccessRequirement opdTriageActionRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalWrite,
-    AppPermissions.emergencyWrite,
+const AccessRequirement opdReceptionActionRequirement = AccessRequirement(
+  anyRoles: <AppRole>[
+    ..._opdAdminActionRoles,
+    AppRole.receptionist,
+    AppRole.nurse,
+  ],
+  activeModules: <String>['scheduling-queue'],
+);
+
+const AccessRequirement opdVitalsActionRequirement = AccessRequirement(
+  anyRoles: <AppRole>[
+    ..._opdAdminActionRoles,
+    AppRole.doctor,
+    AppRole.nurse,
   ],
   activeModules: <String>['scheduling-queue'],
 );
 
 const AccessRequirement opdDoctorActionRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+  anyRoles: <AppRole>[..._opdAdminActionRoles, AppRole.doctor],
   activeModules: <String>['scheduling-queue'],
 );
 
 const AccessRequirement opdBillingActionRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.billingWrite,
-    AppPermissions.patientWrite,
+  anyRoles: <AppRole>[
+    ..._opdAdminActionRoles,
+    AppRole.receptionist,
+    AppRole.billing,
   ],
   activeModules: <String>['scheduling-queue'],
 );
 
 const AccessRequirement opdStageCorrectionRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-  ],
+  anyRoles: _opdAdminActionRoles,
   activeModules: <String>['scheduling-queue'],
 );
 
@@ -178,7 +188,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     );
 
     AppPermissionActionItem vitalsAction() => AppPermissionActionItem(
-      requirement: opdTriageActionRequirement,
+      requirement: opdVitalsActionRequirement,
       label: hasVitals ? l10n.opdEditVitalsAction : l10n.opdRecordVitalsAction,
       icon: Icons.monitor_heart_outlined,
       fullWidth: true,
@@ -227,10 +237,16 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         stage: flow.stage,
         isOpdContext: true,
       );
-      final bool canDispose = isClinicalDoctorDispositionContext(
-        sourceQueue: 'OPD',
-        stage: flow.stage,
-      );
+      final String normalizedDisplayCode = (flow.displayCode ?? '')
+          .trim()
+          .toUpperCase();
+      final bool canDispose = stage == 'WAITING_DISPOSITION' ||
+          <String>{
+            'DECISION_NEEDED',
+            'RESULTS_READY',
+            'REPORT_READY',
+            'MEDICINES_DISPENSED',
+          }.contains(normalizedDisplayCode);
       return AppPermissionActionItem(
         requirement: opdDoctorActionRequirement,
         label: label,
@@ -274,7 +290,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       'DECISION_NEEDED' => 'disposition',
       'ADMISSION_PENDING' => 'handoff',
       _ => switch (stage) {
-        'WAITING_CONSULTATION_PAYMENT' => canPayNow ? 'billing' : 'correct_stage',
+        'WAITING_CONSULTATION_PAYMENT' =>
+            canPayNow ? 'billing' : 'correct_stage',
         'WAITING_VITALS' => 'vitals',
         'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
             ? 'doctor_review'
@@ -289,17 +306,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       },
     };
 
-    AppPermissionActionItem handoffAction() => AppPermissionActionItem(
-      requirement: opdReceptionActionRequirement,
-      label: opdNextStepDisplayLabel(l10n, flow.displayNextStep ?? flow.nextStep ?? flow.displayCode ?? flow.stage),
-      icon: Icons.info_outline,
-      fullWidth: true,
-      hideWhenDenied: true,
-      enabled: false,
-      tooltip: opdStatusDisplayLabel(l10n, flow),
-      onPressed: null,
-    );
-
     final Map<String, AppPermissionActionItem Function()> actionFactories =
         <String, AppPermissionActionItem Function()>{
           'billing': billingAction,
@@ -307,7 +313,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           'assign_doctor': assignDoctorAction,
           'doctor_review': doctorReviewAction,
           'disposition': dispositionAction,
-          'handoff': handoffAction,
         };
     final AppPermissionActionItem Function()? nextFactory =
         actionFactories[nextActionKey];
@@ -318,10 +323,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     if (!terminal) {
       final bool clinicalStage = <String>{
         'WAITING_DOCTOR_REVIEW',
-        'LAB_REQUESTED',
-        'RADIOLOGY_REQUESTED',
-        'LAB_AND_RADIOLOGY_REQUESTED',
-        'PHARMACY_REQUESTED',
         'WAITING_DISPOSITION',
       }.contains(stage);
       final bool canAdjustBilling =
@@ -418,7 +419,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     addAction(
       'print',
       AppPermissionActionItem(
-        requirement: opdTriageActionRequirement,
+        requirement: opdVitalsActionRequirement,
         label: l10n.opdPrintSummaryAction,
         icon: Icons.print_outlined,
         fullWidth: true,
