@@ -158,7 +158,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       return AppWorkspaceStatePanel.loading(
         title: l10n.labDetailLoadingTitle,
         body: l10n.labDetailLoadingBody,
-        minHeight: 280,
       );
     }
 
@@ -167,7 +166,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         title: l10n.labNoSelectionTitle,
         body: l10n.labNoSelectionBody,
         icon: Icons.science_outlined,
-        minHeight: 280,
       );
     }
 
@@ -527,7 +525,7 @@ class _LabResultEntryTableRow extends StatelessWidget {
             item.category == null
                 ? null
                 : '${l10n.labCategoryLabel}: ${item.category}',
-            item.unit == null ? null : item.unit,
+            item.unit ?? item.unit,
           ]) ?? l10n.profileUnknownValue,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,

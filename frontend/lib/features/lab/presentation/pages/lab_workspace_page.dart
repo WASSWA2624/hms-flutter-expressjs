@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -1374,17 +1373,6 @@ Future<void> _openQcDialog(
   );
 }
 
-Future<void> _openReverseDialog(BuildContext context) async {
-  await _showActionResult(
-    context,
-    showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const _ReverseWorkflowDialog(),
-    ),
-  );
-}
-
 Future<void> _showActionResult(
   BuildContext context,
   Future<bool?> result,
@@ -1634,26 +1622,6 @@ String _statusLabel(BuildContext context, String? value) {
   };
 }
 
-String _dateTimeLabel(BuildContext context, DateTime? value) {
-  if (value == null) {
-    return context.l10n.profileUnknownValue;
-  }
-  return AppFormatters.dateTime(
-    value.toLocal(),
-    Localizations.localeOf(context),
-  );
-}
-
-String? _optionalDateTimeLabel(BuildContext context, DateTime? value) {
-  if (value == null) {
-    return null;
-  }
-  return AppFormatters.dateTime(
-    value.toLocal(),
-    Localizations.localeOf(context),
-  );
-}
-
 String _apiLabel(String value) {
   final String normalized = value.trim().replaceAll('_', ' ').toLowerCase();
   if (normalized.isEmpty) {
@@ -1670,11 +1638,3 @@ String _apiLabel(String value) {
       .join(' ');
 }
 
-
-String? _joinDisplay(Iterable<String?> values) {
-  final String joined = values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty)
-      .join(' | ');
-  return joined.isEmpty ? null : joined;
-}
