@@ -6688,6 +6688,42 @@ class AppLocalizationsEn extends AppLocalizations {
       'Loading order details, ordered tests, results, timeline, and available actions.';
 
   @override
+  String get labResultEntryDialogTitle => 'Lab result entry';
+
+  @override
+  String labResultEntryDialogSubtitle(String patientName, String orderId) {
+    return '$patientName · Order $orderId';
+  }
+
+  @override
+  String get labSaveDraftAction => 'Save draft';
+
+  @override
+  String get labSubmitResultsAction => 'Submit results';
+
+  @override
+  String get labDraftSavedMessage => 'Draft results saved.';
+
+  @override
+  String get labOrderStatusFieldLabel => 'Order status';
+
+  @override
+  String get labTestStatusColumnLabel => 'Test status';
+
+  @override
+  String get labReferenceRangeColumnLabel => 'Reference range';
+
+  @override
+  String get labResultInputColumnLabel => 'Result';
+
+  @override
+  String get labNoOrderItemsEntryTitle => 'No tests on this order';
+
+  @override
+  String get labNoOrderItemsEntryBody =>
+      'This order does not have any requested tests to enter results for.';
+
+  @override
   String get labNoSelectionTitle => 'Select an order';
 
   @override

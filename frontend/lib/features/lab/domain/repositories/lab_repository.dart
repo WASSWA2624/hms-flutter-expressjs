@@ -45,6 +45,13 @@ abstract interface class LabRepository {
     List<Map<String, Object?>> results,
   );
 
+  Future<Result<void>> createLabResult(Map<String, Object?> payload);
+
+  Future<Result<void>> updateLabResult(
+    String resultId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<LabOrderWorkflow>> rejectOrderItem(
     String itemId,
     Map<String, Object?> payload,

@@ -248,6 +248,53 @@ final class LabWorkspaceController
     return _mutateWorkflow(() => _repository.verifyOrderResults(orderId, results));
   }
 
+  Future<AppFailure?> saveOrderItemDraft(
+    LabOrderItem item,
+    Map<String, Object?> payload,
+  ) {
+    final LabOrderWorkflow? selected = _currentState?.selectedWorkflow;
+    if (selected == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    final Map<String, Object?> draftPayload = <String, Object?>{
+      'status': 'PENDING',
+      if (payload.containsKey('result_value')) 'result_value': payload['result_value'],
+      if (payload.containsKey('result_unit')) 'result_unit': payload['result_unit'],
+      if (payload.containsKey('result_text')) 'result_text': payload['result_text'],
+    };
+
+    return _mutateWorkflow(() async {
+      final Result<void> saveResult = item.resultId == null
+          ? await _repository.createLabResult(<String, Object?>{
+              ...draftPayload,
+              'lab_order_item_id': item.apiId,
+            })
+          : await _repository.updateLabResult(item.resultId!, draftPayload);
+
+      return saveResult.when(
+        success: (_) => _repository.loadOrderWorkflow(selected.order.apiId),
+        failure: Result.failure,
+      );
+    });
+  }
+
+  Future<AppFailure?> saveOrderItemDrafts(
+    List<({LabOrderItem item, Map<String, Object?> payload})> entries,
+  ) async {
+    AppFailure? lastFailure;
+    for (final ({LabOrderItem item, Map<String, Object?> payload}) entry in entries) {
+      final AppFailure? failure = await saveOrderItemDraft(
+        entry.item,
+        entry.payload,
+      );
+      if (failure != null) {
+        lastFailure = failure;
+      }
+    }
+    return lastFailure;
+  }
+
   Future<AppFailure?> rejectOrderItem(
     String itemId,
     Map<String, Object?> payload,

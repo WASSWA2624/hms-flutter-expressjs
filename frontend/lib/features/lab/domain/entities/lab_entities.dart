@@ -575,6 +575,18 @@ final class LabOrderItem {
     };
   }
 
+  bool get canEnterResult {
+    if (isRejected) {
+      return false;
+    }
+    if (canVerify) {
+      return true;
+    }
+    return hasResult && _normalize(effectiveResultStatus) == 'PENDING';
+  }
+
+  bool get isCompleted => _normalize(status) == 'COMPLETED';
+
   bool get canReject => canVerify;
   bool get canRelease => canVerify;
 }

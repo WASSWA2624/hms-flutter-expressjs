@@ -8643,6 +8643,58 @@
   "@labDetailLoadingBody": {
     "description": "Localized text for labDetailLoadingBody."
   },
+  "labResultEntryDialogTitle": "Lab result entry",
+  "@labResultEntryDialogTitle": {
+    "description": "Title for the lab result entry workspace dialog."
+  },
+  "labResultEntryDialogSubtitle": "{patientName} · Order {orderId}",
+  "@labResultEntryDialogSubtitle": {
+    "description": "Subtitle for the lab result entry dialog showing patient and order.",
+    "placeholders": {
+      "patientName": {
+        "type": "String"
+      },
+      "orderId": {
+        "type": "String"
+      }
+    }
+  },
+  "labSaveDraftAction": "Save draft",
+  "@labSaveDraftAction": {
+    "description": "Action label for saving pending lab results without verification."
+  },
+  "labSubmitResultsAction": "Submit results",
+  "@labSubmitResultsAction": {
+    "description": "Action label for submitting and verifying entered lab results."
+  },
+  "labDraftSavedMessage": "Draft results saved.",
+  "@labDraftSavedMessage": {
+    "description": "Confirmation shown after saving draft lab results."
+  },
+  "labOrderStatusFieldLabel": "Order status",
+  "@labOrderStatusFieldLabel": {
+    "description": "Field label for lab order status in the result entry dialog."
+  },
+  "labTestStatusColumnLabel": "Test status",
+  "@labTestStatusColumnLabel": {
+    "description": "Column label for individual lab test status in result entry table."
+  },
+  "labReferenceRangeColumnLabel": "Reference range",
+  "@labReferenceRangeColumnLabel": {
+    "description": "Column label for reference range in result entry table."
+  },
+  "labResultInputColumnLabel": "Result",
+  "@labResultInputColumnLabel": {
+    "description": "Column label for result value input in result entry table."
+  },
+  "labNoOrderItemsEntryTitle": "No tests on this order",
+  "@labNoOrderItemsEntryTitle": {
+    "description": "Empty state title when a lab order has no test items."
+  },
+  "labNoOrderItemsEntryBody": "This order does not have any requested tests to enter results for.",
+  "@labNoOrderItemsEntryBody": {
+    "description": "Empty state body when a lab order has no test items."
+  },
   "labNoSelectionTitle": "Select an order",
   "@labNoSelectionTitle": {
     "description": "Localized text for labNoSelectionTitle."

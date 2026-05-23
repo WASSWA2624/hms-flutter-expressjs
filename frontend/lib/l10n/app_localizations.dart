@@ -12520,6 +12520,72 @@ abstract class AppLocalizations {
   /// **'Loading order details, ordered tests, results, timeline, and available actions.'**
   String get labDetailLoadingBody;
 
+  /// Title for the lab result entry workspace dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab result entry'**
+  String get labResultEntryDialogTitle;
+
+  /// Subtitle for the lab result entry dialog showing patient and order.
+  ///
+  /// In en, this message translates to:
+  /// **'{patientName} · Order {orderId}'**
+  String labResultEntryDialogSubtitle(String patientName, String orderId);
+
+  /// Action label for saving pending lab results without verification.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft'**
+  String get labSaveDraftAction;
+
+  /// Action label for submitting and verifying entered lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit results'**
+  String get labSubmitResultsAction;
+
+  /// Confirmation shown after saving draft lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft results saved.'**
+  String get labDraftSavedMessage;
+
+  /// Field label for lab order status in the result entry dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Order status'**
+  String get labOrderStatusFieldLabel;
+
+  /// Column label for individual lab test status in result entry table.
+  ///
+  /// In en, this message translates to:
+  /// **'Test status'**
+  String get labTestStatusColumnLabel;
+
+  /// Column label for reference range in result entry table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference range'**
+  String get labReferenceRangeColumnLabel;
+
+  /// Column label for result value input in result entry table.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get labResultInputColumnLabel;
+
+  /// Empty state title when a lab order has no test items.
+  ///
+  /// In en, this message translates to:
+  /// **'No tests on this order'**
+  String get labNoOrderItemsEntryTitle;
+
+  /// Empty state body when a lab order has no test items.
+  ///
+  /// In en, this message translates to:
+  /// **'This order does not have any requested tests to enter results for.'**
+  String get labNoOrderItemsEntryBody;
+
   /// Localized text for labNoSelectionTitle.
   ///
   /// In en, this message translates to:

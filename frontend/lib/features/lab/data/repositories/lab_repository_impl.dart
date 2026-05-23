@@ -181,6 +181,27 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
+  Future<Result<void>> createLabResult(Map<String, Object?> payload) {
+    return _apiClient.post<void>(
+      ApiEndpoints.collection(HmsApiResource.labResults),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> updateLabResult(
+    String resultId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.labResults, resultId),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<LabOrderWorkflow>> rejectOrderItem(
     String itemId,
     Map<String, Object?> payload,
