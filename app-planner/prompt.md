@@ -1,249 +1,548 @@
-Implementation Prompt: Fix Lab, Subscriptions, and Reports workspace load failures in HMS
+## Implementation Prompt: Deep Review and Fix HMS Workspace Loading Failures
 
-You are working on the Hospital Management System codebase with these main folders:
+You are working on the Hospital Management System codebase. The archive contains these main folders:
 
 * `app-planner`
 * `backend`
 * `frontend`
 
-Your task is to fix the workspace pages that currently fail to open:
+Your task is to deeply inspect the existing backend and frontend implementation, identify the blockers causing selected HMS screens/dialogs to fail, and implement focused fixes so the UI opens reliably without breaking.
 
-* `http://127.0.0.1:5201/lab`
-* `http://127.0.0.1:5201/subscriptions`
-* `http://127.0.0.1:5201/reports`
+Do not rewrite the application. Preserve the current architecture, folder structure, naming conventions, coding style, state-management patterns, API patterns, and UI component system.
 
-Current observed behavior:
+---
 
-* `/lab` loads the HMS shell and highlights **Lab**, but the page body shows:
+## 1. Problem to Solve
 
-  * red warning icon
-  * `Connection problem`
-  * `Check your connection and try again.`
-  * blue `Try again` button
-* `/subscriptions` loads the HMS shell and highlights **Subscriptions**, but the page body shows:
+Several HMS workspaces currently open correctly, but some screens or detail dialogs fail with generic connection errors.
 
-  * red warning icon
-  * `Not found`
-  * `The item is not available.`
-* `/reports` loads the HMS shell and highlights **Reports**, but the page body shows:
+Confirmed behavior from the raw task:
 
-  * red warning icon
-  * `Connection problem`
-  * `Check your connection and try again.`
-  * blue `Try again` button
+### Working or mostly working areas
 
-The existing shell, header, sidebar, active menu state, route navigation, and authenticated layout already work. Do not rebuild them. Fix the underlying frontend/backend issues causing these pages to fail.
+These areas currently open and must not regress:
 
-Relevant frontend areas to inspect and modify only if required:
+* Dashboard
+* Patients list
+* Patient detail dialog
+* OPD workspace, although OPD flows are currently empty
+* Emergency workspace
+* Emergency detail dialog
+* IPD workspace
+* Rooms and beds workspace
+* ICU workspace, currently empty
+* Nursing workspace
+* Discharge workspace
+* Discharge detail dialog
+* Physiology workspace, currently empty
+* Theater workspace, currently empty
+* Radiology workspace
+* Radiology flow dialog
+* Pharmacy workspace, currently empty
+* Billing workspace, currently empty
+* Claims workspace, currently empty
+* Operations workspace
+* Operation/request detail dialog
+* Housekeeping workspace
+* Housekeeping detail dialog
+* Biomedical workspace
+* Equipment detail dialog
+* Mortuary workspace
+* Mortuary case dialogs
+* HR workspace
+* Staff detail dialog
+* Communications workspace
+* Alerts integration workspace
+* Gateway dialog
+* Reports/Audit workspace, currently with no reports
+* Settings workspace
+* Setup workspace
 
-* `frontend/lib/app/router/app_routes.dart`
+### Broken or priority areas
+
+Fix these issues:
+
+1. **Clinical workspace**
+
+   * The Clinical page opens.
+   * The clinical worklist is visible.
+   * Clicking a clinical patient fails with the message:
+
+     * “Connection problem”
+     * “Check your connection and try again”
+   * The clinical patient/encounter dialog does not open.
+
+2. **Lab workspace**
+
+   * The Lab page opens into a full-page error state:
+
+     * “Connection problem”
+     * “Check your connection and try again”
+   * A “Try again” button is shown.
+   * Clicking “Try again” does not recover or visibly retry.
+
+3. **Subscriptions workspace**
+
+   * The Subscriptions page opens into a full-page error state:
+
+     * “Connection problem”
+     * “Check your connection and try again”
+   * A “Try again” button is shown.
+   * Clicking “Try again” does not recover or visibly retry.
+
+4. **Mortuary case dialog**
+
+   * Mortuary opens and case dialogs open.
+   * Some actions inside the case dialog are unavailable.
+   * Review this and determine whether the disabled/unavailable actions are intentional business-rule behavior or caused by missing frontend/backend wiring. Fix only if it is a defect supported by the codebase.
+
+---
+
+## 2. Project Areas to Inspect
+
+Use the existing project as the source of truth.
+
+### Frontend
+
+Inspect these frontend areas first:
+
 * `frontend/lib/app/router/app_router.dart`
-* `frontend/lib/app/router/app_route_icons.dart`
+* `frontend/lib/app/router/app_routes.dart`
 * `frontend/lib/core/network/api_endpoints.dart`
-* `frontend/lib/features/lab/**`
-* `frontend/lib/features/subscriptions/**`
-* `frontend/lib/features/reports/**`
-* Shared workspace/error/loading/table/search components only if a real bug is found there.
+* `frontend/lib/core/network/network_failure_mapper.dart`
+* `frontend/lib/core/errors/app_failure.dart`
+* `frontend/lib/shared/components/app_state_view.dart`
+* `frontend/lib/shared/components/`
+* `frontend/lib/l10n/app_en.arb`
 
-Relevant backend areas to inspect and modify only if required:
+Inspect the affected feature folders:
+
+* `frontend/lib/features/clinical/`
+* `frontend/lib/features/lab/`
+* `frontend/lib/features/subscriptions/`
+* `frontend/lib/features/mortuary/`
+
+Important frontend files to review include:
+
+* `frontend/lib/features/clinical/data/repositories/clinical_repository_impl.dart`
+
+* `frontend/lib/features/clinical/domain/entities/clinical_entities.dart`
+
+* `frontend/lib/features/clinical/domain/repositories/clinical_repository.dart`
+
+* `frontend/lib/features/clinical/presentation/controllers/clinical_workspace_controller.dart`
+
+* `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
+
+* `frontend/lib/features/lab/data/repositories/lab_repository_impl.dart`
+
+* `frontend/lib/features/lab/data/dtos/lab_dtos.dart`
+
+* `frontend/lib/features/lab/domain/entities/lab_entities.dart`
+
+* `frontend/lib/features/lab/domain/repositories/lab_repository.dart`
+
+* `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart`
+
+* `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`
+
+* `frontend/lib/features/subscriptions/data/repositories/subscriptions_repository_impl.dart`
+
+* `frontend/lib/features/subscriptions/data/dtos/subscription_dtos.dart`
+
+* `frontend/lib/features/subscriptions/domain/entities/subscription_entities.dart`
+
+* `frontend/lib/features/subscriptions/domain/repositories/subscriptions_repository.dart`
+
+* `frontend/lib/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart`
+
+* `frontend/lib/features/subscriptions/presentation/pages/subscriptions_workspace_page.dart`
+
+### Backend
+
+Inspect the backend root router and affected modules:
 
 * `backend/src/app/router.js`
-* `backend/src/config/feature-flags.js`
-* `backend/.env` and any env/example/dev config files used by the local workflow
-* `backend/src/modules/lab-workspace/**`
-* `backend/src/modules/reports-workspace/**`
-* `backend/src/modules/subscriptions-workspace/**`
-* Related backend modules used by these workspaces:
 
-  * lab order/test/sample/result/QC modules
-  * report definition/run/schedule/dashboard/audit modules
-  * subscription plan/subscription/invoice/module/license modules
+Clinical-related backend modules:
 
-Relevant planner references:
+* `backend/src/modules/encounter/`
+* `backend/src/modules/clinical-note/`
+* `backend/src/modules/diagnosis/`
+* `backend/src/modules/procedure/`
+* `backend/src/modules/care-plan/`
+* `backend/src/modules/lab-order/`
+* `backend/src/modules/radiology-order/`
+* `backend/src/modules/pharmacy-order/`
+* `backend/src/modules/referral/`
+* `backend/src/modules/follow-up/`
+* `backend/src/modules/admission/`
 
+Lab-related backend modules:
+
+* `backend/src/modules/lab-workspace/`
+* `backend/src/modules/lab-order/`
+* `backend/src/modules/lab-order-item/`
+* `backend/src/modules/lab-sample/`
+* `backend/src/modules/lab-result/`
+* `backend/src/modules/lab-test/`
+* `backend/src/modules/lab-panel/`
+* `backend/src/modules/lab-qc-log/`
+
+Subscriptions-related backend modules:
+
+* `backend/src/modules/subscriptions-workspace/`
+* `backend/src/modules/subscription-plan/`
+* `backend/src/modules/subscription/`
+* `backend/src/modules/subscription-invoice/`
+* `backend/src/modules/module/`
+* `backend/src/modules/module-subscription/`
+* `backend/src/modules/license/`
+* `backend/src/lib/subscriptions/`
+
+Also inspect:
+
+* `backend/prisma/schema.prisma`
+* backend validation schemas
+* backend serializers
+* backend authorization/feature-flag handling where relevant
+* backend response format helpers
+
+### App Planner
+
+Use these documents as reference only. Do not edit them unless directly required:
+
+* `app-planner/app-write-up.md`
+* `app-planner/dev-plan/04-api-data.md`
+* `app-planner/dev-plan/10-workspace-ui.md`
+* `app-planner/dev-plan/14-clinical.md`
 * `app-planner/dev-plan/21-lab.md`
 * `app-planner/dev-plan/33-subscriptions.md`
-* `app-planner/dev-plan/35-reports-audit.md`
-* `app-planner/dev-plan/10-workspace-ui.md`
-* Other planner files only if needed for workflow expectations.
+* `app-planner/dev-plan/37-quality-release.md`
+* `frontend/app-planner/app-rules/architecture.md`
+* `frontend/app-planner/app-rules/network_api.md`
+* `frontend/app-planner/app-rules/state_management.md`
+* `frontend/app-planner/app-rules/error_handling.md`
+* `frontend/app-planner/app-rules/reusable_components.md`
+* `frontend/app-planner/app-rules/pagination_data_tables.md`
+* `frontend/app-planner/app-rules/testing.md`
+* `backend/app-planner/app-rules/project-structure.md`
+* `backend/app-planner/app-rules/api.md`
+* `backend/app-planner/app-rules/response-format.md`
+* `backend/app-planner/app-rules/auth-security.md`
+* `backend/app-planner/app-rules/validation.md`
+* `backend/app-planner/app-rules/testing.md`
+* `backend/app-planner/app-rules/coding-standards.md`
 
-Use `app-planner` as workflow guidance, but treat the current source code as authoritative where planner text is stale.
+---
 
-UI/UX requirements:
+## 3. Implementation Requirements
 
-* Preserve the existing HMS layout:
+### A. Clinical patient detail failure
 
-  * top header with HOSSPI logo/title
-  * online status badge
-  * notification bell/avatar area
-  * left sidebar with grouped menu sections
-  * search menu field
-  * existing selected menu styling
-* `/lab` must open as the existing Lab workspace, not a blank page or placeholder.
-* `/subscriptions` must open as the existing Subscriptions workspace, not a `Not found` page.
-* `/reports` must open as the existing Reports and audit workspace, not a connection error page.
-* Keep existing design patterns:
+Investigate the full request flow when a clinical worklist patient is clicked.
 
-  * workspace titles
-  * cards
-  * tables
-  * filters/search
-  * refresh buttons
-  * empty states
-  * `AsyncStateScaffold` / existing failure-state patterns
-* Error screens should appear only for real failures, not because of broken route/API/config integration.
-* If there is no data, show the existing empty-state UI instead of a connection or not-found error.
+The frontend currently loads the clinical encounter bundle by calling related resources such as:
 
-Specific implementation requirements:
+* encounters
+* clinical notes
+* diagnoses
+* procedures
+* care plans
+* lab orders
+* radiology orders
+* pharmacy orders
+* referrals
+* follow-ups
+* admissions
 
-1. Reproduce and identify the failing requests from the frontend and backend logs.
+Verify that:
 
-   Verify these workspace API calls:
+* the frontend query parameters match backend schemas
+* backend routes accept the query parameters being sent
+* `encounter_id`, pagination, sorting, and filtering names are consistent
+* frontend DTO parsing matches backend response shape
+* backend serializers return the fields expected by the frontend
+* backend authorization/tenant/module middleware is not incorrectly blocking the request
+* missing optional records return empty lists instead of server errors
+* failed optional sections do not unnecessarily block the entire clinical dialog unless the current architecture requires all sections to load successfully
 
-   * Lab:
+Implement the root-cause fix so clicking a clinical worklist patient opens the patient/encounter dialog reliably.
 
-     * `GET /api/v1/lab/workbench`
-   * Subscriptions:
+The dialog must preserve the existing clinical UI style and must show clear empty states for sections with no records.
 
-     * `GET /api/v1/subscriptions-workspace/workspace`
-   * Reports:
+### B. Lab workspace full-page connection error
 
-     * `GET /api/v1/reports-workspace`
+Investigate why the Lab workspace fails on initial load.
 
-2. Fix `/lab`.
+The frontend Lab workspace calls the Lab backend workbench flow, including:
 
-   Requirements:
+* `/api/v1/lab/workbench`
+* lab order workflow/detail endpoints
+* lab tests
+* lab panels
+* lab QC logs where applicable
 
-   * Keep the route `AppRoutes.lab` mapped to `LabWorkspacePage`.
-   * Keep the backend route mounted under `/api/v1/lab`.
-   * Ensure `GET /api/v1/lab/workbench` returns HTTP 200 for authorized users.
-   * Ensure the response shape matches the frontend DTO expectations:
+Verify that:
 
-     * `data.summary`
-     * `data.worklist`
-     * `data.pagination.total`
-   * Both lab workbench views must keep working:
+* `frontend/lib/core/network/api_endpoints.dart` maps Lab resources correctly
+* `LabRepositoryImpl` calls the correct backend endpoints
+* backend route `/api/v1/lab/workbench` is registered correctly
+* lab workbench query validation accepts frontend query parameters
+* Prisma query fields and relation filters are valid for the configured database provider
+* backend serializers produce the response shape expected by `LabWorkbenchDto`
+* empty lab data returns a valid empty workspace state, not a server error
+* backend errors are not being incorrectly mapped to a generic connection problem
+* frontend retry actually reissues the failed request
 
-     * `PATIENTS`
-     * `ORDERS`
-   * Empty data must return a valid successful response with an empty worklist, not a server error.
-   * Do not bypass lab permissions, tenant scoping, branch/facility scoping, or module checks.
+Fix both the backend/frontend root cause and the retry behavior.
 
-3. Fix `/subscriptions`.
+The Lab screen must load with either real data or a proper empty state. It must not show a full-page connection error for valid empty data.
 
-   Requirements:
+### C. Subscriptions workspace full-page connection error
 
-   * Keep the route `AppRoutes.subscriptions` mapped to `SubscriptionsWorkspacePage`.
-   * Keep the backend route mounted under `/api/v1/subscriptions-workspace`.
-   * Fix the current `Not found` behavior.
-   * Verify the feature flag/config path for `subscriptions_workspace_v1`.
-   * The archive currently contains a local env value where `FEATURE_SUBSCRIPTIONS_WORKSPACE_V1` is disabled. Verify whether this is the root cause.
-   * Make the development/local configuration consistent with the visible Subscriptions menu and route so that authorized users can open `/subscriptions`.
-   * Do not remove or bypass:
+Investigate why the Subscriptions workspace fails on initial load.
 
-     * route guards
-     * `PERMISSIONS.SUBSCRIPTIONS_READ`
-     * tenant checks
-     * authorization middleware
-   * Ensure `GET /api/v1/subscriptions-workspace/workspace` returns HTTP 200 with the response shape expected by the frontend DTO.
+The frontend currently targets the subscriptions workspace and related resources, including:
 
-4. Fix `/reports`.
+* subscriptions workspace
+* subscription plans
+* subscriptions
+* subscription invoices
+* modules
+* module subscriptions
+* licenses
 
-   Requirements:
+Verify that:
 
-   * Keep the route `AppRoutes.reports` mapped to `ReportsWorkspacePage`.
-   * Keep the backend route mounted under `/api/v1/reports-workspace`.
-   * Ensure `GET /api/v1/reports-workspace` returns HTTP 200 for authorized users.
-   * Verify and fix backend summary/query failures.
-   * Specifically inspect `backend/src/modules/reports-workspace/repositories/reports-workspace.repository.js`.
-   * Check whether summary queries apply `facility_id` or `branch_id` filters to Prisma models that do not have those fields, especially `dashboard_widget`.
-   * Do not pass unsupported filters to Prisma queries.
-   * Preserve tenant scoping and access control.
-   * Ensure the response shape matches `ReportsWorkspaceOverviewDto`.
+* the frontend endpoint construction matches the backend route registration
+* `/api/v1/subscriptions-workspace/workspace` is the intended route
+* the backend route is enabled and reachable
+* feature flag `subscriptions_workspace_v1` is configured correctly or handled gracefully
+* permission checks return clear authorization/feature-disabled states instead of generic connection errors
+* query validation matches frontend parameters
+* Prisma filters/search are compatible with the configured database provider
+* backend serializers return the response shape expected by the frontend DTOs
+* empty subscriptions data returns a normal empty workspace
+* frontend retry actually reissues the failed request and updates state
 
-5. Preserve architecture and style.
+Fix the root cause.
 
-   * Follow existing frontend architecture:
+The Subscriptions screen must load with real data or a proper empty state. If the feature is disabled or the user lacks permission, show a clear existing-style access/disabled state instead of a misleading connection problem.
 
-     * feature folders
-     * domain/data/presentation separation
-     * repositories
-     * DTOs
-     * controllers
-     * existing shared UI components
-   * Follow existing backend architecture:
+### D. Retry behavior
 
-     * routes
-     * controllers
-     * services
-     * repositories
-     * schemas
-     * serializers/helpers
-   * Keep existing naming conventions and code style.
-   * Do not replace real workspace pages with static mock screens.
-   * Do not create fake frontend-only fixes that hide backend errors.
-   * Do not introduce unrelated UI redesigns.
-   * Do not loosen security, permissions, tenant isolation, branch/facility scoping, or module access controls.
+Review the retry behavior used by `AsyncStateScaffold`, Lab, and Subscriptions controllers.
 
-6. Scope limits.
+Fix retry behavior so that when initial loading fails:
 
-   * Modify only files required to fix the three failing pages.
-   * Do not rewrite unrelated modules.
-   * Do not refactor large areas unless required by the bug.
-   * Do not change unrelated routes, permissions, menus, seeds, or UI components.
-   * Do not include generated folders or dependency folders in the final archive.
+* pressing “Try again” triggers a fresh request
+* the UI visibly enters a loading or refreshing state
+* success replaces the error state
+* failure updates with the latest failure
+* retry does not silently no-op when there is no current successful state
 
-7. Testing and verification.
+Preserve the existing Riverpod/state-management architecture.
 
-   Backend:
+Do not replace the shared state system with a new pattern.
 
-   * Run backend linting.
-   * Run relevant backend tests.
-   * Add focused tests if needed for:
+### E. Error handling
 
-     * `GET /api/v1/lab/workbench`
-     * `GET /api/v1/subscriptions-workspace/workspace`
-     * `GET /api/v1/reports-workspace`
-   * Run OpenAPI validation if any API contract/schema changes are made.
-   * Verify the endpoints return HTTP 200 for an authorized demo/development user.
+Improve only where necessary.
 
-   Frontend:
+Ensure that:
 
-   * Run Flutter analysis.
-   * Run relevant Flutter tests.
-   * Verify the app runs on web using the existing local workflow, including `frontend/tool/run_web_5201.ps1` if applicable.
+* backend validation errors map to validation/user-facing errors
+* backend authorization errors map to access-denied states
+* backend feature-disabled/not-found cases are not shown as generic connection failures
+* true network/server failures can still show the existing connection problem message
+* existing localization patterns are preserved
+* new user-facing strings are added to localization files instead of being hard-coded
 
-   Manual browser verification:
+Do not create noisy debug UI.
 
-   * `/clinical` still opens correctly.
-   * `/lab` opens without the centered `Connection problem` error.
-   * `/subscriptions` opens without the centered `Not found` error.
-   * `/reports` opens without the centered `Connection problem` error.
-   * Refresh/Try-again behavior still works for real failures.
-   * Browser console has no relevant runtime errors.
-   * Network tab shows no 404/500 for the workspace load requests.
-   * Empty datasets render valid empty states.
+### F. Mortuary actions
 
-8. Lint and quality requirements.
+Review the disabled/unavailable actions in the Mortuary case dialog.
 
-   * Clear all linter issues introduced by your changes.
-   * Keep formatting consistent with the existing project.
-   * Do not leave debug logs, temporary code, commented-out code, or unused imports.
-   * Do not include build artifacts, caches, screenshots, logs, `node_modules`, `.dart_tool`, or generated temporary files.
+Determine from backend state/status rules and frontend action conditions whether the unavailable actions are intentional.
 
-Final delivery requirements:
+Only change Mortuary behavior if the codebase clearly shows a defect, such as:
 
-* Return one zipped archive.
-* The zip must contain only files and folders that were created or updated.
-* Every changed file must be placed under its correct relative project path, for example:
+* frontend action wired to a missing or wrong endpoint
+* backend action route exists but frontend does not call it
+* action state condition is wrong
+* permissions are checked incorrectly
+* backend response shape prevents the action from appearing
 
-  * `backend/src/...`
-  * `frontend/lib/...`
-  * `app-planner/...`
-* If any file or folder must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those operations.
-* Delete/rename scripts must:
+Do not force-enable actions that are intentionally disabled by case status, role, permission, or business rules.
 
-  * use correct relative paths
-  * check that the target exists before modifying it
-  * avoid deleting unrelated files
-* Do not include unchanged files in the returned archive.
+---
+
+## 4. UI/UX Requirements
+
+No issue screenshots were present in the archive. Use the raw task description and the existing UI patterns as the source of truth.
+
+Preserve the existing HMS visual design:
+
+* workspace layout
+* cards/panels
+* tables
+* dialogs
+* action panels
+* empty states
+* loading states
+* failure states
+* typography
+* spacing
+* colors
+* icons
+* localization approach
+
+Specific UX requirements:
+
+1. Lab must open as a normal workspace.
+
+   * If there are no lab orders, show the existing-style empty state.
+   * Do not show a connection error for empty data.
+   * “Try again” must work when a real failure occurs.
+
+2. Subscriptions must open as a normal workspace.
+
+   * If there are no subscriptions, plans, invoices, modules, or licenses, show existing-style empty states.
+   * Do not show a connection error for empty data.
+   * If disabled by feature flag or blocked by permissions, show a clear existing-style message.
+   * “Try again” must work when a real failure occurs.
+
+3. Clinical patient selection must open the patient/encounter dialog.
+
+   * Related clinical sections should show data where available.
+   * Sections with no records should show empty states.
+   * The user should not see a generic connection error when the selected encounter exists and the backend is reachable.
+
+4. Existing working screens must continue to open and behave as before.
+
+---
+
+## 5. Scope Limits
+
+Stay tightly focused on the requested stability fixes.
+
+Do not:
+
+* rewrite the app architecture
+* replace Riverpod, GoRouter, Dio, Prisma, or Express patterns
+* redesign the UI
+* rename folders unnecessarily
+* move modules unnecessarily
+* introduce unrelated features
+* refactor unrelated screens
+* change working workflows unless required by the fix
+* hard-code fake successful responses
+* hide real backend errors by swallowing them silently
+* modify planner documents unless directly required
+
+Modify only the files required for the requested change.
+
+---
+
+## 6. Testing and Verification
+
+Run and satisfy all relevant checks.
+
+### Frontend
+
+Run:
+
+```bash
+cd frontend
+flutter analyze
+```
+
+Also run relevant frontend tests if present, or add focused tests where useful for changed controller/repository behavior.
+
+Verify manually:
+
+* Clinical page opens.
+* Clicking a clinical worklist patient opens the clinical patient/encounter dialog.
+* Lab page opens without full-page connection error.
+* Lab retry button performs a real retry after a failure.
+* Subscriptions page opens without full-page connection error when valid.
+* Subscriptions retry button performs a real retry after a failure.
+* Existing working screens listed above still open.
+
+### Backend
+
+Run the project’s available backend lint/test commands, including the relevant one or ones from `backend/package.json`.
+
+At minimum, run the backend linter if available:
+
+```bash
+cd backend
+npm run lint
+```
+
+Run relevant backend tests for:
+
+* lab workspace
+* subscriptions workspace
+* clinical related-resource list endpoints
+* authorization/feature-disabled behavior where changed
+
+If no tests exist for a changed behavior, add focused tests only where practical and consistent with the existing test style.
+
+### Required verification points
+
+Confirm that:
+
+* no frontend analyzer issues remain
+* no backend linter issues remain
+* fixed endpoints return valid response envelopes
+* empty datasets return successful empty states
+* retry buttons are functional
+* no unrelated screens regress
+* no unrelated files were modified
+
+---
+
+## 7. Delivery Requirements
+
+Return a zipped archive containing only the files and folders that were created or updated.
+
+All files must be placed in their correct relative project directories, for example:
+
+* `frontend/lib/...`
+* `backend/src/...`
+* `backend/prisma/...`
+
+Do not include the full project unless every included file was actually changed.
+
+If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those operations.
+
+The scripts must:
+
+* use correct relative paths
+* check that the target exists before deleting or renaming
+* avoid deleting unrelated files
+* avoid broad wildcards
+* be safe to run from the project root
+
+Do not delete or rename anything unless it is truly required.
+
+---
+
+## 8. Missing or Unclear Details to Verify from the Codebase
+
+The raw task does not include backend logs, browser console output, API response bodies, or screenshots showing the failing states.
+
+Verify these details directly from the codebase and runtime behavior:
+
+* exact failing API request for Clinical patient click
+* exact failing API request for Lab initial load
+* exact failing API request for Subscriptions initial load
+* exact backend status code and response body for each failure
+* whether Subscriptions is blocked by feature flag, permission, route mismatch, validation, Prisma query failure, serializer mismatch, or frontend DTO parsing
+* whether Lab fails because of backend route/service/query/serializer issues or frontend DTO/retry issues
+* whether Mortuary unavailable actions are intentional or defective
+
+Implement the smallest correct fix after confirming the actual root cause.
