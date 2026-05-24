@@ -13,9 +13,13 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
   const ClinicalAdmissionActionDialog({
     required this.referenceData,
     required this.onSubmit,
+    this.title,
+    this.submitLabel,
+    this.icon = const Icon(Icons.bed_outlined),
     this.reasonLabel,
     this.reasonRequired = false,
     this.notesLabel,
+    this.maxWidth = 900,
     this.leadingSectionsBuilder,
     super.key,
   });
@@ -23,9 +27,13 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
   final ClinicalActionReferenceData referenceData;
   final Future<AppFailure?> Function(ClinicalActionAdmissionInput input)
   onSubmit;
+  final String? title;
+  final String? submitLabel;
+  final Widget icon;
   final String? reasonLabel;
   final bool reasonRequired;
   final String? notesLabel;
+  final double maxWidth;
   final List<Widget> Function(BuildContext context, bool enabled)?
   leadingSectionsBuilder;
 
@@ -94,10 +102,10 @@ class _ClinicalAdmissionActionDialogState
     );
 
     return AppDialog(
-      title: Text(l10n.clinicalRequestAdmissionAction),
-      icon: const Icon(Icons.bed_outlined),
+      title: Text(widget.title ?? l10n.clinicalRequestAdmissionAction),
+      icon: widget.icon,
       closeEnabled: !_isSaving,
-      maxWidth: 900,
+      maxWidth: widget.maxWidth,
       scrollable: true,
       content: Form(
         key: _formKey,
@@ -209,7 +217,7 @@ class _ClinicalAdmissionActionDialogState
       ),
       actions: clinicalActionDialogActions(
         context,
-        l10n.clinicalRequestAdmissionAction,
+        widget.submitLabel ?? l10n.clinicalRequestAdmissionAction,
         _isSaving,
         availableBeds.isEmpty ? null : _submit,
       ),

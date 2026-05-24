@@ -1,8 +1,7 @@
 Review the attached `hms.zip` archive containing the Hospital Management System codebase. The archive includes the main project folders:
-
-* `app-planner`
-* `backend`
-* `frontend`
+- `app-planner`
+- `backend`
+- `frontend`
 
 It may also include screenshots and an appended raw implementation task.
 
@@ -26,16 +25,12 @@ The refined prompt must include:
 10. Reuse components in `frontend\lib\shared\*` folder before creating new ones.
 11. Ensure 100% localization(l10n).
 
-The coding agent must return a zipped archive containing only the files and folders that were created or updated. All files must be placed in their correct relative project directories.
-
-If any files or folders must be deleted or renamed, the coding agent must also include one or more `.ps1` PowerShell scripts that safely perform those delete or rename operations. The scripts must use correct relative paths and must not delete unrelated files.
-
 Final output requirements:
 
-* Return only the polished, actionable prompt.
-* Do not include explanations, commentary, or analysis.
-* Do not invent project details that are not supported by the archive.
-* If the raw task is incomplete or unclear, preserve the known requirements and explicitly mark the missing details that the coding agent must verify from the codebase.
+- Return only the polished, actionable prompt.
+- Do not include explanations, commentary, or analysis.
+- Do not invent project details that are not supported by the archive.
+- If the raw task is incomplete or unclear, preserve the known requirements and explicitly mark the missing details that the coding agent must verify from the codebase.
 
 ## Raw implementation task
 

@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -483,115 +487,142 @@ void main() {
     verifyNever(() => opdRepository.recordTriageVitals(any(), any()));
   });
 
-  testWidgets('DoctorReviewDialog shows the triage summary notes', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository opdRepository = _MockOpdRepository();
-    const OpdFlowSummary flow = OpdFlowSummary(
-      id: 'encounter-1',
-      publicId: 'ENC000001',
-      patientDisplayName: 'Jane Doe',
-      patientIdentifier: 'PAT000001',
-      providerUserId: 'DOC000001',
-      providerDisplayName: 'Dr Able',
-      stage: 'WAITING_DOCTOR_REVIEW',
-      triageLevel: 'LEVEL_2',
-      chiefComplaint: 'Headache',
-      triageNotes: 'Symptoms: Dizziness\nRisk flags: Fall risk',
-    );
+  testWidgets(
+    'FlowActionsDialog doctor review shows the triage summary notes',
+    (WidgetTester tester) async {
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      const OpdFlowSummary flow = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Jane Doe',
+        patientIdentifier: 'PAT000001',
+        providerUserId: 'DOC000001',
+        providerDisplayName: 'Dr Able',
+        stage: 'WAITING_DOCTOR_REVIEW',
+        triageLevel: 'LEVEL_2',
+        chiefComplaint: 'Headache',
+        triageNotes: 'Symptoms: Dizziness\nRisk flags: Fall risk',
+      );
 
-    when(() => opdRepository.listAppointments(any())).thenAnswer(
-      (invocation) async => Result<AppPage<OpdAppointment>>.success(
-        AppPage<OpdAppointment>(
-          items: const <OpdAppointment>[],
-          request:
-              (invocation.positionalArguments.single as OpdAppointmentQuery)
-                  .pageRequest,
-          totalItemCount: 0,
+      when(() => opdRepository.listAppointments(any())).thenAnswer(
+        (invocation) async => Result<AppPage<OpdAppointment>>.success(
+          AppPage<OpdAppointment>(
+            items: const <OpdAppointment>[],
+            request:
+                (invocation.positionalArguments.single as OpdAppointmentQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
         ),
-      ),
-    );
-    when(() => opdRepository.listVisitQueues(any())).thenAnswer(
-      (invocation) async => Result<AppPage<OpdQueueEntry>>.success(
-        AppPage<OpdQueueEntry>(
-          items: const <OpdQueueEntry>[],
-          request: (invocation.positionalArguments.single as OpdQueueQuery)
-              .pageRequest,
-          totalItemCount: 0,
+      );
+      when(() => opdRepository.listVisitQueues(any())).thenAnswer(
+        (invocation) async => Result<AppPage<OpdQueueEntry>>.success(
+          AppPage<OpdQueueEntry>(
+            items: const <OpdQueueEntry>[],
+            request: (invocation.positionalArguments.single as OpdQueueQuery)
+                .pageRequest,
+            totalItemCount: 0,
+          ),
         ),
-      ),
-    );
-    when(() => opdRepository.listOpdFlows(any())).thenAnswer(
-      (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
-        AppPage<OpdFlowSummary>(
-          items: const <OpdFlowSummary>[flow],
-          request: (invocation.positionalArguments.single as OpdFlowQuery)
-              .pageRequest,
-          totalItemCount: 1,
+      );
+      when(() => opdRepository.listOpdFlows(any())).thenAnswer(
+        (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+          AppPage<OpdFlowSummary>(
+            items: const <OpdFlowSummary>[flow],
+            request: (invocation.positionalArguments.single as OpdFlowQuery)
+                .pageRequest,
+            totalItemCount: 1,
+          ),
         ),
-      ),
-    );
-    when(() => opdRepository.listTriageQueue(any())).thenAnswer(
-      (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
-        AppPage<OpdFlowSummary>(
-          items: const <OpdFlowSummary>[],
-          request:
-              (invocation.positionalArguments.single as OpdTriageQueueQuery)
-                  .pageRequest,
-          totalItemCount: 0,
+      );
+      when(() => opdRepository.listTriageQueue(any())).thenAnswer(
+        (invocation) async => Result<AppPage<OpdFlowSummary>>.success(
+          AppPage<OpdFlowSummary>(
+            items: const <OpdFlowSummary>[],
+            request:
+                (invocation.positionalArguments.single as OpdTriageQueueQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
         ),
-      ),
-    );
-    when(
-      () => opdRepository.listClinicalAlertThresholds(
-        vitalType: any(named: 'vitalType'),
-      ),
-    ).thenAnswer(
-      (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
-        <OpdClinicalAlertThreshold>[],
-      ),
-    );
-    when(() => opdRepository.listProviderSchedules()).thenAnswer(
-      (_) async => const Result<List<OpdProviderSchedule>>.success(
-        <OpdProviderSchedule>[],
-      ),
-    );
-    when(
-      () => opdRepository.listAvailableDrugs(search: any(named: 'search')),
-    ).thenAnswer(
-      (_) async => const Result<List<OpdDrugOption>>.success(<OpdDrugOption>[]),
-    );
-    when(() => opdRepository.listAvailableDrugs()).thenAnswer(
-      (_) async => const Result<List<OpdDrugOption>>.success(<OpdDrugOption>[]),
-    );
+      );
+      when(
+        () => opdRepository.listClinicalAlertThresholds(
+          vitalType: any(named: 'vitalType'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+          <OpdClinicalAlertThreshold>[],
+        ),
+      );
+      when(() => opdRepository.listProviderSchedules()).thenAnswer(
+        (_) async => const Result<List<OpdProviderSchedule>>.success(
+          <OpdProviderSchedule>[],
+        ),
+      );
+      when(
+        () => opdRepository.listAvailableDrugs(search: any(named: 'search')),
+      ).thenAnswer(
+        (_) async =>
+            const Result<List<OpdDrugOption>>.success(<OpdDrugOption>[]),
+      );
+      when(() => opdRepository.listAvailableDrugs()).thenAnswer(
+        (_) async =>
+            const Result<List<OpdDrugOption>>.success(<OpdDrugOption>[]),
+      );
+      when(() => opdRepository.getOpdFlow(any())).thenAnswer(
+        (_) async =>
+            const Result<OpdFlowDetail>.success(OpdFlowDetail(summary: flow)),
+      );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [opdRepositoryProvider.overrideWithValue(opdRepository)],
-        child: MaterialApp(
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const Scaffold(body: DoctorReviewDialog(flow: flow)),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            initialSessionStateProvider.overrideWithValue(
+              SessionState.authenticated(
+                session: AuthSession(
+                  tokens: SessionTokens(accessToken: 'test-access-token'),
+                  subject: 'doctor@example.com',
+                  user: const AuthUserProfile(
+                    id: 'doctor-1',
+                    email: 'doctor@example.com',
+                    roles: <String>['DOCTOR'],
+                  ),
+                ),
+              ),
+            ),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: const Scaffold(body: FlowActionsDialog(flow: flow)),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Triage notes'), findsOneWidget);
-    expect(find.textContaining('Dizziness'), findsOneWidget);
-    expect(find.textContaining('Fall risk'), findsOneWidget);
+      await tester.tap(find.text('Doctor review').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-    await tester.tap(find.text('Doctor review').last);
-    await tester.pumpAndSettle();
+      expect(find.text('Triage notes'), findsOneWidget);
+      expect(find.textContaining('Dizziness'), findsOneWidget);
+      expect(find.textContaining('Fall risk'), findsOneWidget);
 
-    expect(
-      find.widgetWithText(AppFailureStateView, 'Check the details'),
-      findsNothing,
-    );
-    expect(find.text('This field is required.'), findsOneWidget);
-  });
+      await tester.tap(find.text('Doctor review').last);
+      await tester.pump();
+
+      expect(
+        find.widgetWithText(AppFailureStateView, 'Check the details'),
+        findsNothing,
+      );
+      expect(find.text('This field is required.'), findsOneWidget);
+    },
+  );
 
   testWidgets('OpdWorkspacePage exposes the required OPD worklist columns', (
     WidgetTester tester,

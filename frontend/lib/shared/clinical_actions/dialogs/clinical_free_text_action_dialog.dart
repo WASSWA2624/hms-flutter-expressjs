@@ -13,25 +13,33 @@ class ClinicalFreeTextActionDialog extends StatefulWidget {
     required this.submitLabel,
     required this.onSubmit,
     this.sectionTitle,
+    this.description,
+    this.initialValue,
+    this.leadingContent = const <Widget>[],
     this.icon = const Icon(Icons.edit_note_outlined),
     this.prefixIcon,
     this.minLines,
     this.maxLines = 5,
     this.maxWidth = 720,
     this.autofocus = true,
+    this.isRequired = true,
     super.key,
   });
 
   final String title;
   final String? sectionTitle;
+  final String? description;
   final String label;
   final String submitLabel;
   final Widget icon;
   final Widget? prefixIcon;
+  final String? initialValue;
+  final List<Widget> leadingContent;
   final int? minLines;
   final int maxLines;
   final double maxWidth;
   final bool autofocus;
+  final bool isRequired;
   final Future<AppFailure?> Function(String value) onSubmit;
 
   @override
@@ -49,7 +57,7 @@ class _ClinicalFreeTextActionDialogState
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    _controller = TextEditingController(text: widget.initialValue ?? '');
   }
 
   @override
@@ -71,9 +79,11 @@ class _ClinicalFreeTextActionDialogState
         key: _formKey,
         child: AppFormSection(
           title: widget.sectionTitle,
+          description: widget.description,
           density: AppFormSectionDensity.spacious,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
+            ...widget.leadingContent,
             AppTextField(
               controller: _controller,
               labelText: widget.label,
@@ -81,10 +91,12 @@ class _ClinicalFreeTextActionDialogState
               minLines: widget.minLines,
               maxLines: widget.maxLines,
               enabled: !_isSaving,
-              isRequired: true,
+              isRequired: widget.isRequired,
               autofocus: widget.autofocus,
               textCapitalization: TextCapitalization.sentences,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+              validator: widget.isRequired
+                  ? AppValidators.requiredText(l10n.validationRequired)
+                  : null,
             ),
           ],
         ),

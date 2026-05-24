@@ -34,10 +34,7 @@ const List<AppRole> _opdAdminActionRoles = <AppRole>[
 ];
 
 const AccessRequirement opdFrontDeskActionRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    ..._opdAdminActionRoles,
-    AppRole.receptionist,
-  ],
+  anyRoles: <AppRole>[..._opdAdminActionRoles, AppRole.receptionist],
   activeModules: <String>['scheduling-queue'],
 );
 
@@ -51,11 +48,7 @@ const AccessRequirement opdReceptionActionRequirement = AccessRequirement(
 );
 
 const AccessRequirement opdVitalsActionRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    ..._opdAdminActionRoles,
-    AppRole.doctor,
-    AppRole.nurse,
-  ],
+  anyRoles: <AppRole>[..._opdAdminActionRoles, AppRole.doctor, AppRole.nurse],
   activeModules: <String>['scheduling-queue'],
 );
 
@@ -226,7 +219,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       hideWhenDenied: true,
       onPressed: terminal
           ? null
-          : () => _openNested(context, DoctorReviewDialog(flow: flow)),
+          : () => _openNested(context, _doctorReviewDialog(context, flow)),
     );
 
     AppPermissionActionItem dispositionAction() {
@@ -240,7 +233,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       final String normalizedDisplayCode = (flow.displayCode ?? '')
           .trim()
           .toUpperCase();
-      final bool canDispose = stage == 'WAITING_DISPOSITION' ||
+      final bool canDispose =
+          stage == 'WAITING_DISPOSITION' ||
           <String>{
             'DECISION_NEEDED',
             'RESULTS_READY',
@@ -269,7 +263,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       );
     }
 
-    final bool hasAssignedProvider = _isNonEmpty(flow.providerUserId) ||
+    final bool hasAssignedProvider =
+        _isNonEmpty(flow.providerUserId) ||
         _isNonEmpty(flow.providerDisplayName) ||
         _isNonEmpty(flow.assignedStaffDisplayName);
     final String displayCode = (flow.displayCode ?? '').trim().toUpperCase();
@@ -291,11 +286,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       'ADMISSION_PENDING' => 'handoff',
       _ => switch (stage) {
         'WAITING_CONSULTATION_PAYMENT' =>
-            canPayNow ? 'billing' : 'correct_stage',
+          canPayNow ? 'billing' : 'correct_stage',
         'WAITING_VITALS' => 'vitals',
-        'WAITING_DOCTOR_ASSIGNMENT' => hasAssignedProvider
-            ? 'doctor_review'
-            : 'assign_doctor',
+        'WAITING_DOCTOR_ASSIGNMENT' =>
+          hasAssignedProvider ? 'doctor_review' : 'assign_doctor',
         'WAITING_DOCTOR_REVIEW' => 'doctor_review',
         'WAITING_DISPOSITION' => 'disposition',
         'LAB_REQUESTED' ||
@@ -467,6 +461,35 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     if (changed == true && closeParentOnChange && context.mounted) {
       Navigator.of(context).pop(true);
     }
+  }
+
+  Widget _doctorReviewDialog(BuildContext context, OpdFlowSummary flow) {
+    final AppLocalizations l10n = context.l10n;
+    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
+    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+    final OpdFlowDetail? detail =
+        selected == null || !_isSameFlow(selected.summary, flow)
+        ? null
+        : selected;
+    final OpdFlowSummary currentFlow = detail?.summary ?? flow;
+
+    return ClinicalFreeTextActionDialog(
+      title: l10n.opdDoctorReviewAction,
+      label: _opdRequiredFieldLabel(l10n, l10n.opdClinicalNoteLabel),
+      submitLabel: l10n.opdDoctorReviewAction,
+      minLines: 3,
+      maxLines: 4,
+      leadingContent: <Widget>[
+        OpdActionContextPanel(flow: currentFlow, showTitle: false),
+        _OpdWorkflowStatusSummary(flow: currentFlow, detail: detail),
+      ],
+      onSubmit: (String note) {
+        return ref.read(opdWorkspaceControllerProvider.notifier).doctorReview(
+          flow,
+          <String, Object?>{'note': note},
+        );
+      },
+    );
   }
 
   Future<ClinicalActionReferenceData?> _loadClinicalReferenceData(
@@ -1131,114 +1154,6 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
   }
 }
 
-class DoctorReviewDialog extends ConsumerStatefulWidget {
-  const DoctorReviewDialog({required this.flow, super.key});
-
-  final OpdFlowSummary flow;
-
-  @override
-  ConsumerState<DoctorReviewDialog> createState() => _DoctorReviewDialogState();
-}
-
-class _DoctorReviewDialogState extends ConsumerState<DoctorReviewDialog> {
-  late final TextEditingController _noteController;
-  bool _isSaving = false;
-  String? _noteErrorText;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _noteController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
-    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
-    final OpdFlowDetail? detail =
-        selected == null || !_isSameFlow(selected.summary, widget.flow)
-        ? null
-        : selected;
-    final OpdFlowSummary flow = detail?.summary ?? widget.flow;
-
-    return AppDialog(
-      title: Text(l10n.opdDoctorReviewAction),
-      icon: const Icon(Icons.edit_note_outlined),
-      maxWidth: 760,
-      scrollable: true,
-      closeEnabled: !_isSaving,
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null) AppFailureStateView(failure: _failure!),
-          AppTextField(
-            controller: _noteController,
-            labelText: _opdRequiredFieldLabel(l10n, l10n.opdClinicalNoteLabel),
-            errorText: _noteErrorText,
-            enabled: !_isSaving,
-            maxLines: 4,
-            onChanged: (_) {
-              if (_noteErrorText != null) {
-                setState(() => _noteErrorText = null);
-              }
-            },
-            validator: AppValidators.requiredText(l10n.validationRequired),
-          ),
-          OpdActionContextPanel(flow: flow, showTitle: false),
-          _OpdWorkflowStatusSummary(flow: flow, detail: detail),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.primary(
-          label: l10n.opdDoctorReviewAction,
-          leadingIcon: Icons.save_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!_isNonEmpty(_noteController.text)) {
-      setState(() {
-        _noteErrorText = context.l10n.validationRequired;
-        _failure = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-      _noteErrorText = null;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .doctorReview(widget.flow, <String, Object?>{
-          'note': _noteController.text.trim(),
-        });
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
 class RoutingDecisionDialog extends ConsumerStatefulWidget {
   const RoutingDecisionDialog({required this.flow, super.key});
 
@@ -1476,16 +1391,16 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
                 PrintFormMetadataItem(
                   label: l10n.opdStageLabel,
                   value: opdStageDisplayLabel(
-          l10n,
-          flow.displayCode ?? flow.stage,
-        ),
+                    l10n,
+                    flow.displayCode ?? flow.stage,
+                  ),
                 ),
                 PrintFormMetadataItem(
                   label: l10n.opdNextStepColumnLabel,
                   value: opdNextStepDisplayLabel(
-          l10n,
-          flow.displayNextStep ?? flow.nextStep,
-        ),
+                    l10n,
+                    flow.displayNextStep ?? flow.nextStep,
+                  ),
                 ),
                 PrintFormMetadataItem(
                   label: l10n.opdPaymentStatusLabel,
@@ -2226,10 +2141,7 @@ class _OpdWorkflowStatusSummary extends StatelessWidget {
       ),
       AppInfoTileData(
         label: l10n.opdStageLabel,
-        value: opdStageDisplayLabel(
-          l10n,
-          flow.displayCode ?? flow.stage,
-        ),
+        value: opdStageDisplayLabel(l10n, flow.displayCode ?? flow.stage),
       ),
       AppInfoTileData(
         label: l10n.opdQueueSummaryLabel,

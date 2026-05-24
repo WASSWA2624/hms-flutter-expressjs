@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_c
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -294,14 +295,7 @@ class _IpdBoardPanel extends ConsumerWidget {
         },
         onPageChanged: controller.changePage,
         onRowSelected: (IpdAdmissionSummary admission) {
-          unawaited(
-            _openIpdDetailDialog(
-              context,
-              ref,
-              state,
-              admission,
-            ),
-          );
+          unawaited(_openIpdDetailDialog(context, ref, state, admission));
         },
         emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
           title: l10n.ipdNoAdmissionsTitle,
@@ -819,12 +813,19 @@ class _IpdDetailActions extends ConsumerWidget {
   }
 
   Future<void> _openAssignBedDialog(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = context.l10n;
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AssignBedDialog(
-        admission: admission.summary,
-        beds: state.referenceData.availableBeds,
+      builder: (_) => ClinicalAdmissionActionDialog(
+        title: l10n.ipdAssignBedAction,
+        submitLabel: l10n.ipdAssignBedAction,
+        referenceData: _ipdAdmissionReferenceData(context, state.referenceData),
+        onSubmit: (ClinicalActionAdmissionInput input) {
+          return ref
+              .read(ipdWorkspaceControllerProvider.notifier)
+              .assignBed(admission.summary, input.bed.apiId);
+        },
       ),
     );
     if (saved == true && context.mounted) {
@@ -907,12 +908,14 @@ class _IpdDetailActions extends ConsumerWidget {
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AppTextActionDialog(
+      builder: (_) => ClinicalFreeTextActionDialog(
         title: title,
         icon: Icon(icon),
-        fieldLabel: fieldLabel,
+        label: fieldLabel,
         submitLabel: submitLabel,
         initialValue: initialValue,
+        minLines: 3,
+        maxLines: 8,
         onSubmit: onSubmit,
       ),
     );
@@ -1243,104 +1246,6 @@ class _IpdKeyValueTile extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class AssignBedDialog extends ConsumerStatefulWidget {
-  const AssignBedDialog({
-    required this.admission,
-    required this.beds,
-    super.key,
-  });
-
-  final IpdAdmissionSummary admission;
-  final List<IpdBedOption> beds;
-
-  @override
-  ConsumerState<AssignBedDialog> createState() => _AssignBedDialogState();
-}
-
-class _AssignBedDialogState extends ConsumerState<AssignBedDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  String? _bedId;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.ipdAssignBedAction),
-      icon: const Icon(Icons.bed_outlined),
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppSelectField<String>.searchable(
-              value: _bedId,
-              labelText: l10n.ipdBedFieldLabel,
-              hintText: l10n.ipdSelectBedHint,
-              enabled: !_isSaving,
-              isRequired: true,
-              validator: AppValidators.requiredValue<String>(
-                l10n.validationRequired,
-              ),
-              options: <AppSelectOption<String>>[
-                for (final IpdBedOption bed in widget.beds)
-                  AppSelectOption<String>(
-                    value: bed.id,
-                    label:
-                        _joinDisplay(<String?>[
-                          bed.displayTitle,
-                          bed.displaySubtitle,
-                        ]) ??
-                        bed.id,
-                  ),
-              ],
-              onChanged: (String? value) => setState(() => _bedId = value),
-            ),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.ipdAssignBedAction,
-          leadingIcon: Icons.bed_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false) || _bedId == null) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(ipdWorkspaceControllerProvider.notifier)
-        .assignBed(widget.admission, _bedId!);
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
   }
 }
 
@@ -2192,6 +2097,96 @@ String _dateTimeLabel(BuildContext context, DateTime? value) {
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
 }
 
+ClinicalActionReferenceData _ipdAdmissionReferenceData(
+  BuildContext context,
+  IpdReferenceData referenceData,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final Map<String, ClinicalActionCatalogOption> wards =
+      <String, ClinicalActionCatalogOption>{
+        for (final IpdWardOption ward in referenceData.wards)
+          ward.id: ClinicalActionCatalogOption(
+            id: ward.id,
+            name: ward.displayTitle,
+            category: ward.wardType,
+            status: ward.isActive ? 'ACTIVE' : 'INACTIVE',
+          ),
+      };
+  final Map<String, ClinicalActionCatalogOption> rooms =
+      <String, ClinicalActionCatalogOption>{};
+  final List<ClinicalActionCatalogOption> beds =
+      <ClinicalActionCatalogOption>[];
+
+  for (final IpdBedOption bed in referenceData.availableBeds) {
+    final String wardId = _ipdBedWardId(bed);
+    final String roomId = _ipdBedRoomId(bed, wardId);
+    wards.putIfAbsent(
+      wardId,
+      () => ClinicalActionCatalogOption(
+        id: wardId,
+        name: _firstDisplayValue(<String?>[
+          bed.wardName,
+          bed.wardId,
+          l10n.profileUnknownValue,
+        ]),
+      ),
+    );
+    rooms.putIfAbsent(
+      roomId,
+      () => ClinicalActionCatalogOption(
+        id: roomId,
+        name: _firstDisplayValue(<String?>[
+          bed.roomName,
+          bed.roomId,
+          l10n.profileUnknownValue,
+        ]),
+        secondaryText: bed.roomFloor,
+        parentId: wardId,
+      ),
+    );
+    beds.add(
+      ClinicalActionCatalogOption(
+        id: bed.id,
+        name: bed.displayTitle,
+        status: bed.status,
+        parentId: wardId,
+        secondaryId: roomId,
+        secondaryText: bed.displaySubtitle,
+      ),
+    );
+  }
+
+  return ClinicalActionReferenceData(
+    wards: wards.values.toList(growable: false),
+    rooms: rooms.values.toList(growable: false),
+    availableBeds: beds,
+  );
+}
+
+String _ipdBedWardId(IpdBedOption bed) {
+  return _trimmedValue(bed.wardId) ?? _ipdUnknownWardId;
+}
+
+String _ipdBedRoomId(IpdBedOption bed, String wardId) {
+  return _trimmedValue(bed.roomId) ??
+      '$_ipdUnknownRoomIdPrefix$wardId:${_trimmedValue(bed.roomName) ?? 'room'}';
+}
+
+String _firstDisplayValue(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String? normalized = _trimmedValue(value);
+    if (normalized != null) {
+      return normalized;
+    }
+  }
+  return '';
+}
+
+String? _trimmedValue(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
+}
+
 String _apiLabel(String value) {
   final String normalized = value.trim();
   if (normalized.isEmpty) {
@@ -2237,6 +2232,8 @@ const String _stageTransferInProgress = 'TRANSFER_IN_PROGRESS';
 const String _stageDischargePlanned = 'DISCHARGE_PLANNED';
 const String _stageDischarged = 'DISCHARGED';
 const String _stageCancelled = 'CANCELLED';
+const String _ipdUnknownWardId = '__ipd_unknown_ward__';
+const String _ipdUnknownRoomIdPrefix = '__ipd_unknown_room__:';
 const String _transferApprove = 'APPROVE';
 const String _transferStart = 'START';
 const String _transferComplete = 'COMPLETE';

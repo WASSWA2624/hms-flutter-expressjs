@@ -15,6 +15,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
 import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -626,23 +627,16 @@ class _ActionsPanel extends ConsumerWidget {
             onPressed: isSaving
                 ? null
                 : () async {
-                    final String? note = await showAppDialog<String>(
-                      context: context,
-                      builder: (_) => _TextActionDialog(
-                        title: l10n.physiotherapyAcceptReferralDialogTitle,
-                        label: l10n.physiotherapyNoteFieldLabel,
-                        submitLabel: l10n.physiotherapySaveAction,
-                        initialValue: item.referralReason,
-                        maxLines: 4,
-                      ),
+                    await _openFreeTextAction(
+                      context,
+                      title: l10n.physiotherapyAcceptReferralDialogTitle,
+                      label: l10n.physiotherapyNoteFieldLabel,
+                      submitLabel: l10n.physiotherapySaveAction,
+                      initialValue: item.referralReason,
+                      maxLines: 4,
+                      isRequired: false,
+                      onSubmit: controller.acceptReferral,
                     );
-                    if (note == null) {
-                      return;
-                    }
-                    if (!context.mounted) {
-                      return;
-                    }
-                    await _runAction(context, controller.acceptReferral(note));
                   },
           ),
           AppPermissionActionItem(
@@ -801,23 +795,13 @@ class _ActionsPanel extends ConsumerWidget {
             onPressed: isSaving
                 ? null
                 : () async {
-                    final String? note = await showAppDialog<String>(
-                      context: context,
-                      builder: (_) => _TextActionDialog(
-                        title: l10n.physiotherapyAddProgressNoteDialogTitle,
-                        label: l10n.physiotherapyNoteFieldLabel,
-                        submitLabel: l10n.physiotherapySaveAction,
-                        maxLines: 5,
-                        required: true,
-                      ),
+                    await _openFreeTextAction(
+                      context,
+                      title: l10n.physiotherapyAddProgressNoteDialogTitle,
+                      label: l10n.physiotherapyNoteFieldLabel,
+                      submitLabel: l10n.physiotherapySaveAction,
+                      onSubmit: controller.addProgressNote,
                     );
-                    if (note == null) {
-                      return;
-                    }
-                    if (!context.mounted) {
-                      return;
-                    }
-                    await _runAction(context, controller.addProgressNote(note));
                   },
           ),
           AppPermissionActionItem(
@@ -828,24 +812,35 @@ class _ActionsPanel extends ConsumerWidget {
             onPressed: isSaving
                 ? null
                 : () async {
-                    final _FollowUpPayload? payload =
-                        await showAppDialog<_FollowUpPayload>(
-                          context: context,
-                          builder: (_) => const _FollowUpDialog(),
-                        );
-                    if (payload == null) {
-                      return;
-                    }
-                    if (!context.mounted) {
-                      return;
-                    }
-                    await _runAction(
-                      context,
-                      controller.scheduleFollowUp(
-                        scheduledAt: payload.scheduledAt,
-                        notes: payload.notes,
+                    final bool? saved = await showAppDialog<bool>(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => ClinicalFollowUpActionDialog(
+                        title: l10n.physiotherapyScheduleFollowUpDialogTitle,
+                        submitLabel: l10n.physiotherapySaveAction,
+                        icon: const Icon(Icons.notification_add_outlined),
+                        dateLabel: l10n.physiotherapyDateFieldLabel,
+                        timeLabel: l10n.physiotherapyTimeFieldLabel,
+                        notesLabel: l10n.physiotherapyNoteFieldLabel,
+                        datePickerButtonLabel: l10n.patientsDatePickerAction,
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 365 * 3),
+                        ),
+                        onSubmit:
+                            ({
+                              required DateTime scheduledAt,
+                              required String notes,
+                            }) {
+                              return controller.scheduleFollowUp(
+                                scheduledAt: scheduledAt,
+                                notes: notes,
+                              );
+                            },
                       ),
                     );
+                    if (saved == true && context.mounted) {
+                      onActionSaved();
+                    }
                   },
           ),
           AppPermissionActionItem(
@@ -856,23 +851,13 @@ class _ActionsPanel extends ConsumerWidget {
             onPressed: isSaving
                 ? null
                 : () async {
-                    final String? summary = await showAppDialog<String>(
-                      context: context,
-                      builder: (_) => _TextActionDialog(
-                        title: l10n.physiotherapyCloseEpisodeDialogTitle,
-                        label: l10n.physiotherapySummaryFieldLabel,
-                        submitLabel: l10n.physiotherapySaveAction,
-                        maxLines: 5,
-                        required: true,
-                      ),
+                    await _openFreeTextAction(
+                      context,
+                      title: l10n.physiotherapyCloseEpisodeDialogTitle,
+                      label: l10n.physiotherapySummaryFieldLabel,
+                      submitLabel: l10n.physiotherapySaveAction,
+                      onSubmit: controller.closeEpisode,
                     );
-                    if (summary == null) {
-                      return;
-                    }
-                    if (!context.mounted) {
-                      return;
-                    }
-                    await _runAction(context, controller.closeEpisode(summary));
                   },
           ),
           AppPermissionActionItem(
@@ -886,6 +871,35 @@ class _ActionsPanel extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openFreeTextAction(
+    BuildContext context, {
+    required String title,
+    required String label,
+    required String submitLabel,
+    required Future<AppFailure?> Function(String value) onSubmit,
+    String? initialValue,
+    int maxLines = 5,
+    bool isRequired = true,
+  }) async {
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalFreeTextActionDialog(
+        title: title,
+        label: label,
+        submitLabel: submitLabel,
+        initialValue: initialValue,
+        minLines: 3,
+        maxLines: maxLines,
+        isRequired: isRequired,
+        onSubmit: onSubmit,
+      ),
+    );
+    if (saved == true && context.mounted) {
+      onActionSaved();
+    }
   }
 
   Future<void> _runAction(
@@ -1056,87 +1070,6 @@ class _InfoRow extends StatelessWidget {
           Expanded(child: Text(value)),
         ],
       ),
-    );
-  }
-}
-
-class _TextActionDialog extends StatefulWidget {
-  const _TextActionDialog({
-    required this.title,
-    required this.label,
-    required this.submitLabel,
-    this.initialValue,
-    this.maxLines = 3,
-    this.required = false,
-  });
-
-  final String title;
-  final String label;
-  final String submitLabel;
-  final String? initialValue;
-  final int maxLines;
-  final bool required;
-
-  @override
-  State<_TextActionDialog> createState() => _TextActionDialogState();
-}
-
-class _TextActionDialogState extends State<_TextActionDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialValue ?? '');
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppDialog(
-      title: Text(widget.title),
-      icon: const Icon(Icons.edit_note_outlined),
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _controller,
-            labelText: widget.label,
-            minLines: 3,
-            maxLines: widget.maxLines,
-            isRequired: widget.required,
-            validator: widget.required
-                ? AppValidators.requiredText(l10n.validationRequired)
-                : null,
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        AppButton.primary(
-          label: widget.submitLabel,
-          leadingIcon: Icons.save_outlined,
-          onPressed: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(_controller.text.trim());
-          },
-        ),
-      ],
     );
   }
 }
@@ -1588,101 +1521,6 @@ class _PlanDialogState extends State<_PlanDialog> {
               plan: _planController.text.trim(),
               startDate: _startDate,
               endDate: _endDate,
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _FollowUpDialog extends StatefulWidget {
-  const _FollowUpDialog();
-
-  @override
-  State<_FollowUpDialog> createState() => _FollowUpDialogState();
-}
-
-class _FollowUpDialogState extends State<_FollowUpDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _notesController = TextEditingController();
-  late DateTime _date;
-  late TimeOfDay _time;
-
-  @override
-  void initState() {
-    super.initState();
-    final DateTime initial = DateTime.now().add(const Duration(days: 7));
-    _date = initial;
-    _time = TimeOfDay.fromDateTime(initial);
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.physiotherapyScheduleFollowUpDialogTitle),
-      icon: const Icon(Icons.notification_add_outlined),
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppResponsiveFieldRow.two(
-            left: AppDateField(
-              value: _date,
-              firstDate: DateTime.now(),
-              lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
-              currentDate: DateTime.now(),
-              pickerButtonLabel: l10n.patientsDatePickerAction,
-              invalidDateMessage: l10n.appDateInvalidMessage,
-              labelText: l10n.physiotherapyDateFieldLabel,
-              isRequired: true,
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              onChanged: (DateTime? value) {
-                if (value != null) {
-                  setState(() => _date = value);
-                }
-              },
-            ),
-            right: AppTimeField(
-              value: _time,
-              pickerButtonLabel: l10n.appTimePickerAction,
-              invalidTimeMessage: l10n.appTimeInvalidMessage,
-              labelText: l10n.physiotherapyTimeFieldLabel,
-              isRequired: true,
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              onChanged: (TimeOfDay? value) {
-                if (value != null) {
-                  setState(() => _time = value);
-                }
-              },
-            ),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.physiotherapyNoteFieldLabel,
-            minLines: 2,
-            maxLines: 4,
-          ),
-        ],
-      ),
-      actions: _dialogActions(
-        context,
-        submitLabel: l10n.physiotherapySaveAction,
-        onSubmit: () {
-          if (!validateAndSaveAppForm(_formKey)) {
-            return;
-          }
-          Navigator.of(context).pop(
-            _FollowUpPayload(
-              scheduledAt: _combineDateTime(_date, _time),
-              notes: _notesController.text.trim(),
             ),
           );
         },
@@ -2178,11 +2016,4 @@ final class _PlanPayload {
   final String plan;
   final DateTime? startDate;
   final DateTime? endDate;
-}
-
-final class _FollowUpPayload {
-  const _FollowUpPayload({required this.scheduledAt, this.notes});
-
-  final DateTime scheduledAt;
-  final String? notes;
 }

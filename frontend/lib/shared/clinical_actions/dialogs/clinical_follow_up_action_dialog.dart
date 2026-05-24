@@ -9,6 +9,15 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 class ClinicalFollowUpActionDialog extends StatefulWidget {
   const ClinicalFollowUpActionDialog({
     required this.onSubmit,
+    this.title,
+    this.submitLabel,
+    this.icon = const Icon(Icons.event_repeat_outlined),
+    this.initialScheduledAt,
+    this.dateLabel,
+    this.timeLabel,
+    this.notesLabel,
+    this.datePickerButtonLabel,
+    this.lastDate,
     this.leadingContent = const <Widget>[],
     super.key,
   });
@@ -18,6 +27,15 @@ class ClinicalFollowUpActionDialog extends StatefulWidget {
     required String notes,
   })
   onSubmit;
+  final String? title;
+  final String? submitLabel;
+  final Widget icon;
+  final DateTime? initialScheduledAt;
+  final String? dateLabel;
+  final String? timeLabel;
+  final String? notesLabel;
+  final String? datePickerButtonLabel;
+  final DateTime? lastDate;
   final List<Widget> leadingContent;
 
   @override
@@ -37,7 +55,9 @@ class _ClinicalFollowUpActionDialogState
   @override
   void initState() {
     super.initState();
-    final DateTime defaultAt = DateTime.now().add(const Duration(days: 7));
+    final DateTime defaultAt =
+        widget.initialScheduledAt ??
+        DateTime.now().add(const Duration(days: 7));
     _followUpDate = _dateOnly(defaultAt);
     _followUpTime = TimeOfDay.fromDateTime(defaultAt);
     _notesController = TextEditingController();
@@ -54,8 +74,8 @@ class _ClinicalFollowUpActionDialogState
     final AppLocalizations l10n = context.l10n;
     final DateTime today = _dateOnly(DateTime.now());
     return AppDialog(
-      title: Text(l10n.opdFollowUpAction),
-      icon: const Icon(Icons.event_repeat_outlined),
+      title: Text(widget.title ?? l10n.opdFollowUpAction),
+      icon: widget.icon,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
@@ -67,12 +87,16 @@ class _ClinicalFollowUpActionDialogState
               gap: AppResponsiveFieldRowGap.form,
               left: AppDateField(
                 value: _followUpDate,
-                labelText: l10n.opdFollowUpDateLabel,
+                labelText: widget.dateLabel ?? l10n.opdFollowUpDateLabel,
                 hintText: l10n.appDateFormatHint,
                 firstDate: today,
-                lastDate: _dateOnly(today.add(const Duration(days: 365))),
+                lastDate:
+                    widget.lastDate ??
+                    _dateOnly(today.add(const Duration(days: 365))),
                 currentDate: today,
-                pickerButtonLabel: l10n.opdDatePickerButtonLabel,
+                pickerButtonLabel:
+                    widget.datePickerButtonLabel ??
+                    l10n.opdDatePickerButtonLabel,
                 invalidDateMessage: l10n.appDateInvalidMessage,
                 enabled: !_isSaving,
                 isRequired: true,
@@ -88,7 +112,7 @@ class _ClinicalFollowUpActionDialogState
               ),
               right: AppTimeField(
                 value: _followUpTime,
-                labelText: l10n.opdFollowUpTimeLabel,
+                labelText: widget.timeLabel ?? l10n.opdFollowUpTimeLabel,
                 hintText: l10n.appTimeFormatHint,
                 pickerButtonLabel: l10n.appTimePickerAction,
                 invalidTimeMessage: l10n.appTimeInvalidMessage,
@@ -107,7 +131,7 @@ class _ClinicalFollowUpActionDialogState
             ),
             AppTextField(
               controller: _notesController,
-              labelText: l10n.opdNotesLabel,
+              labelText: widget.notesLabel ?? l10n.opdNotesLabel,
               enabled: !_isSaving,
               maxLines: 3,
               textCapitalization: TextCapitalization.sentences,
@@ -117,7 +141,7 @@ class _ClinicalFollowUpActionDialogState
       ),
       actions: clinicalActionDialogActions(
         context,
-        l10n.opdFollowUpAction,
+        widget.submitLabel ?? l10n.opdFollowUpAction,
         _isSaving,
         _submit,
       ),

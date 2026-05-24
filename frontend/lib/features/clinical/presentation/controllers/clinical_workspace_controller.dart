@@ -14,7 +14,7 @@ import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_reposi
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_disposition_actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final clinicalWorkspaceControllerProvider =
@@ -963,7 +963,9 @@ final class ClinicalWorkspaceController
           _triageFlows(query),
         ]);
 
-    final bool hasAnySuccess = results.any((Result<AppPage<ClinicalWorklistEntry>> result) => result.isSuccess);
+    final bool hasAnySuccess = results.any(
+      (Result<AppPage<ClinicalWorklistEntry>> result) => result.isSuccess,
+    );
     final AppFailure? firstFailure = _firstFailure(results);
     if (!hasAnySuccess) {
       return Result<AppPage<ClinicalWorklistEntry>>.failure(
@@ -1048,7 +1050,8 @@ final class ClinicalWorkspaceController
 
   ClinicalWorklistEntry _entryFromOpd(OpdFlowSummary item, String sourceQueue) {
     final String triageLevel = (item.triageLevel ?? '').toUpperCase();
-    final bool hasAssignedProvider = _stringValue(item.providerUserId) != null ||
+    final bool hasAssignedProvider =
+        _stringValue(item.providerUserId) != null ||
         _stringValue(item.providerDisplayName) != null ||
         _stringValue(item.assignedStaffDisplayName) != null;
     final String? normalizedStage =
