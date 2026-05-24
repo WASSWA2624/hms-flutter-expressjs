@@ -154,12 +154,13 @@ describe('lab-order.service', () => {
     resolveModelIdOrThrow.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
     labOrderRepository.findById.mockResolvedValue(buildOrderRecord());
+    const manualOrderedAt = '2026-01-19T12:00:00.000Z';
 
     const result = await labOrderService.createLabOrder(
       {
         patient_id: 'PAT0000001',
         encounter_id: 'ENC0000001',
-        ordered_at: now.toISOString(),
+        ordered_at: manualOrderedAt,
         status: 'ORDERED',
         requested_tests: [{ lab_test_id: 'LBT0000001' }],
       },
@@ -178,6 +179,8 @@ describe('lab-order.service', () => {
         },
       })
     );
+    const createdPayload = labOrderRepository.create.mock.calls[0][0];
+    expect(createdPayload.ordered_at.toISOString()).not.toBe(manualOrderedAt);
     expect(createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: mockUserId,

@@ -67,7 +67,6 @@ const createLabOrderSchema = z
     encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     patient_id: uuidOrFriendlyIdentifierSchema,
     status: labOrderStatusSchema.optional().default('ORDERED'),
-    ordered_at: z.string().datetime().optional(),
     requested_tests: z.array(labOrderRequestedTestSchema).max(MAX_REQUESTED_LAB_TESTS).optional(),
     requested_panels: z.array(labOrderRequestedPanelSchema).max(MAX_REQUESTED_LAB_PANELS).optional()
   })

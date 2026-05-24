@@ -6825,6 +6825,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labEncounterIdLabel => 'Encounter ID';
 
   @override
+  String get labOrderContextDialogBody =>
+      'Search and select an existing patient. Encounter and existing order context are optional where available.';
+
+  @override
+  String get labPatientSearchLabel => 'Patient';
+
+  @override
+  String get labPatientSearchHint =>
+      'Search patient name, ID, phone, or identifier';
+
+  @override
+  String get labEncounterContextLabel => 'Encounter';
+
+  @override
+  String get labEncounterContextHint => 'Search or select encounter';
+
+  @override
+  String get labExistingOrderContextLabel => 'Existing lab order context';
+
+  @override
+  String get labExistingOrderContextHint => 'Search or select order context';
+
+  @override
   String get labCatalogSearchLabel => 'Search lab catalog';
 
   @override
@@ -11380,7 +11403,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labPatientsViewAction => 'Patients view';
 
   @override
-  String get labReferenceRangesAction => 'Reference ranges';
+  String get labReferenceRangesAction => 'Lab Configurations';
 
   @override
   String get labPatientsSummaryLabel => 'Patients';
@@ -11479,11 +11502,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labRejectCustomReasonLabel => 'Custom reason';
 
   @override
-  String get labReferenceRangesDialogTitle => 'Lab test configuration';
+  String get labReferenceRangesDialogTitle => 'Lab Configurations';
 
   @override
   String get labReferenceRangesDialogBody =>
-      'Update test details, units, qualitative options, and reference ranges used by backend result interpretation.';
+      'Manage lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.';
 
   @override
   String get labConfigureTestAction => 'Configure test';
@@ -11591,7 +11614,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labNextActionEnterResult => 'Enter result';
 
   @override
-  String get labCreateAction => 'Create Item';
+  String get labCreateAction => 'Create Lab Order';
 
   @override
   String get labCreateChoiceDialogTitle => 'Create laboratory item';
@@ -11601,7 +11624,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose the laboratory record you want to create.';
 
   @override
-  String get labCreateOrderAction => 'Lab order';
+  String get labCreateOrderAction => 'Create lab order';
 
   @override
   String get labCreateOrderChoiceBody =>
@@ -11611,7 +11634,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateOrderDialogTitle => 'Create lab order';
 
   @override
-  String get labCreateTestAction => 'Lab test';
+  String get labCreateTestAction => 'Add test';
 
   @override
   String get labCreateTestChoiceBody =>
@@ -11621,7 +11644,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateTestDialogTitle => 'Create lab test';
 
   @override
-  String get labCreatePanelAction => 'Lab panel';
+  String get labCreatePanelAction => 'Add panel';
 
   @override
   String get labCreatePanelChoiceBody =>
@@ -11641,7 +11664,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labReferenceRangesSearchHint =>
-      'Search lab test, code, category, specimen, unit, or range';
+      'Search test, panel, code, category, specimen, unit, or range';
 
   @override
   String get labActionColumnLabel => 'Action';

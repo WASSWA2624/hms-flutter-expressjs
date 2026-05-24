@@ -20,8 +20,7 @@ describe('Lab Order Schemas', () => {
       encounter_id: '550e8400-e29b-41d4-a716-446655440000',
       patient_id: '550e8400-e29b-41d4-a716-446655440001',
       requested_tests: [{ lab_test_id: 'LBT0000001' }],
-      status: 'ORDERED',
-      ordered_at: '2026-01-19T12:00:00.000Z'
+      status: 'ORDERED'
     };
 
     it('should validate correct lab order data', () => {
@@ -57,11 +56,17 @@ describe('Lab Order Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should accept optional ordered_at', () => {
-      const data = { ...validData };
-      delete data.ordered_at;
+    it('should allow ordered_at to be omitted for server clock assignment', () => {
+      const result = createLabOrderSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      expect(result.data).not.toHaveProperty('ordered_at');
+    });
+
+    it('should strip client ordered_at during create validation', () => {
+      const data = { ...validData, ordered_at: '2026-01-19T12:00:00.000Z' };
       const result = createLabOrderSchema.safeParse(data);
       expect(result.success).toBe(true);
+      expect(result.data).not.toHaveProperty('ordered_at');
     });
 
     it('accepts configured test and panel request selections', () => {
@@ -143,16 +148,18 @@ describe('Lab Order Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid ordered_at datetime', () => {
+    it('should ignore invalid ordered_at datetime during create validation', () => {
       const data = { ...validData, ordered_at: 'invalid-date' };
       const result = createLabOrderSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+      expect(result.data).not.toHaveProperty('ordered_at');
     });
 
-    it('should reject non-ISO datetime for ordered_at', () => {
+    it('should ignore non-ISO ordered_at during create validation', () => {
       const data = { ...validData, ordered_at: '2026-01-19' };
       const result = createLabOrderSchema.safeParse(data);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+      expect(result.data).not.toHaveProperty('ordered_at');
     });
   });
 

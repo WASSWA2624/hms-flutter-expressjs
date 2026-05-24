@@ -46214,7 +46214,8 @@ const createLabOrder = async (data, userId, ipAddress) => {
     }
 
     payload.status = payload.status || 'ORDERED';
-    payload.ordered_at = toDateOrNull(payload.ordered_at, new Date());
+    delete payload.ordered_at;
+    payload.ordered_at = new Date();
     const requestedItems = await resolveRequestedLabOrderItems({
       requestedTests,
       requestedPanels,

@@ -8827,6 +8827,34 @@
   "@labEncounterIdLabel": {
     "description": "Localized text for labEncounterIdLabel."
   },
+  "labOrderContextDialogBody": "Search and select an existing patient. Encounter and existing order context are optional where available.",
+  "@labOrderContextDialogBody": {
+    "description": "Body text for the lab order context selection dialog."
+  },
+  "labPatientSearchLabel": "Patient",
+  "@labPatientSearchLabel": {
+    "description": "Label for the patient search field in lab order creation."
+  },
+  "labPatientSearchHint": "Search patient name, ID, phone, or identifier",
+  "@labPatientSearchHint": {
+    "description": "Hint for searching existing patients in lab order creation."
+  },
+  "labEncounterContextLabel": "Encounter",
+  "@labEncounterContextLabel": {
+    "description": "Label for selecting encounter context in lab order creation."
+  },
+  "labEncounterContextHint": "Search or select encounter",
+  "@labEncounterContextHint": {
+    "description": "Hint for selecting encounter context in lab order creation."
+  },
+  "labExistingOrderContextLabel": "Existing lab order context",
+  "@labExistingOrderContextLabel": {
+    "description": "Label for selecting an existing lab order as context."
+  },
+  "labExistingOrderContextHint": "Search or select order context",
+  "@labExistingOrderContextHint": {
+    "description": "Hint for selecting an existing lab order context."
+  },
   "labCatalogSearchLabel": "Search lab catalog",
   "@labCatalogSearchLabel": {
     "description": "Localized text for labCatalogSearchLabel."
@@ -14774,7 +14802,7 @@
   "@labPatientsViewAction": {
     "description": "Localized text for labPatientsViewAction."
   },
-  "labReferenceRangesAction": "Reference ranges",
+  "labReferenceRangesAction": "Lab Configurations",
   "@labReferenceRangesAction": {
     "description": "Localized text for labReferenceRangesAction."
   },
@@ -14898,11 +14926,11 @@
   "@labRejectReasonInvalidRequest": {
     "description": "Localized text for labRejectReasonInvalidRequest."
   },
-  "labReferenceRangesDialogTitle": "Lab test configuration",
+  "labReferenceRangesDialogTitle": "Lab Configurations",
   "@labReferenceRangesDialogTitle": {
     "description": "Localized text for labReferenceRangesDialogTitle."
   },
-  "labReferenceRangesDialogBody": "Update test details, units, qualitative options, and reference ranges used by backend result interpretation.",
+  "labReferenceRangesDialogBody": "Manage lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.",
   "@labReferenceRangesDialogBody": {
     "description": "Localized text for labReferenceRangesDialogBody."
   },
@@ -15046,7 +15074,7 @@
   "@labNextActionEnterResult": {
     "description": "Localized text for labNextActionEnterResult."
   },
-  "labCreateAction": "Create Item",
+  "labCreateAction": "Create Lab Order",
   "@labCreateAction": {
     "description": "Action label for opening laboratory create actions."
   },
@@ -15058,7 +15086,7 @@
   "@labCreateChoiceDialogBody": {
     "description": "Body text for the laboratory create action picker dialog."
   },
-  "labCreateOrderAction": "Lab order",
+  "labCreateOrderAction": "Create lab order",
   "@labCreateOrderAction": {
     "description": "Action label for creating a lab order."
   },
@@ -15070,7 +15098,7 @@
   "@labCreateOrderDialogTitle": {
     "description": "Title for the create lab order dialog."
   },
-  "labCreateTestAction": "Lab test",
+  "labCreateTestAction": "Add test",
   "@labCreateTestAction": {
     "description": "Action label for creating a lab test."
   },
@@ -15082,7 +15110,7 @@
   "@labCreateTestDialogTitle": {
     "description": "Title for the create lab test dialog."
   },
-  "labCreatePanelAction": "Lab panel",
+  "labCreatePanelAction": "Add panel",
   "@labCreatePanelAction": {
     "description": "Action label for creating a lab panel."
   },
@@ -15106,7 +15134,7 @@
   "@labPanelDescriptionLabel": {
     "description": "Label for the lab panel description field."
   },
-  "labReferenceRangesSearchHint": "Search lab test, code, category, specimen, unit, or range",
+  "labReferenceRangesSearchHint": "Search test, panel, code, category, specimen, unit, or range",
   "@labReferenceRangesSearchHint": {
     "description": "Hint text for the lab test configuration table search."
   },

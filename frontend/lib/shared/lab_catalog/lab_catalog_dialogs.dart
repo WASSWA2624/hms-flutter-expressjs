@@ -1,11 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 typedef LabCatalogSubmit =
@@ -16,28 +23,18 @@ typedef LabCatalogUpdateSubmit =
 
 @immutable
 final class LabOrderContextInput {
-  const LabOrderContextInput({
-    required this.patientId,
-    this.encounterId,
-    this.orderedAt,
-  });
+  const LabOrderContextInput({required this.patientId, this.encounterId});
 
   final String patientId;
   final String? encounterId;
-  final String? orderedAt;
 
   Map<String, Object?> toPayload({
     required List<String> labTestIds,
     required List<String> labPanelIds,
   }) {
-    final String orderedAtText = orderedAt?.trim() ?? '';
-    final DateTime? parsedOrderedAt = orderedAtText.isEmpty
-        ? null
-        : DateTime.tryParse(orderedAtText);
     return <String, Object?>{
       'patient_id': patientId.trim(),
       'encounter_id': encounterId?.trim(),
-      'ordered_at': parsedOrderedAt?.toUtc().toIso8601String() ?? orderedAtText,
       'requested_tests': labTestIds
           .map((String id) => <String, Object?>{'lab_test_id': id})
           .toList(growable: false),
@@ -48,21 +45,38 @@ final class LabOrderContextInput {
   }
 }
 
-class LabOrderContextDialog extends StatefulWidget {
+class LabOrderContextDialog extends ConsumerStatefulWidget {
   const LabOrderContextDialog({required this.worklist, this.order, super.key});
 
   final List<LabOrderSummary> worklist;
   final LabOrderSummary? order;
 
   @override
-  State<LabOrderContextDialog> createState() => _LabOrderContextDialogState();
+  ConsumerState<LabOrderContextDialog> createState() =>
+      _LabOrderContextDialogState();
 }
 
-class _LabOrderContextDialogState extends State<LabOrderContextDialog> {
+class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
+  static const Duration _patientSearchDebounceDuration = Duration(
+    milliseconds: 250,
+  );
+  static const int _patientSearchLimit = 8;
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _patientIdController;
-  late final TextEditingController _encounterIdController;
-  late final TextEditingController _orderedAtController;
+  final List<_LabContextOption> _searchedPatientOptions = <_LabContextOption>[];
+  final List<PatientSummaryRecord> _patientEncounters =
+      <PatientSummaryRecord>[];
+
+  Timer? _patientSearchDebounce;
+  _LabContextOption? _selectedPatientOption;
+  String? _selectedPatientId;
+  String? _selectedEncounterId;
+  String? _selectedOrderId;
+  AppFailure? _failure;
+  bool _isLoadingPatients = false;
+  bool _isLoadingPatientContext = false;
+  int _patientSearchGeneration = 0;
+  int _patientContextGeneration = 0;
 
   bool get _isEditing => widget.order != null;
 
@@ -70,20 +84,27 @@ class _LabOrderContextDialogState extends State<LabOrderContextDialog> {
   void initState() {
     super.initState();
     final LabOrderSummary? order = widget.order;
-    _patientIdController = TextEditingController(text: order?.patientId ?? '');
-    _encounterIdController = TextEditingController(
-      text: order?.encounterId ?? '',
-    );
-    _orderedAtController = TextEditingController(
-      text: order?.orderedAt?.toLocal().toIso8601String() ?? '',
-    );
+    if (order != null) {
+      _selectedPatientId = order.patientId;
+      _selectedEncounterId = order.encounterId;
+      _selectedOrderId = order.apiId;
+      _selectedPatientOption = _patientOptionFromOrder(order);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_searchPatients(''));
+      final String? patientId = _selectedPatientId;
+      if (patientId != null && patientId.trim().isNotEmpty) {
+        unawaited(_loadPatientContext(patientId));
+      }
+    });
   }
 
   @override
   void dispose() {
-    _patientIdController.dispose();
-    _encounterIdController.dispose();
-    _orderedAtController.dispose();
+    _patientSearchDebounce?.cancel();
     super.dispose();
   }
 
@@ -103,29 +124,47 @@ class _LabOrderContextDialogState extends State<LabOrderContextDialog> {
         key: _formKey,
         child: AppFormSection(
           children: <Widget>[
-            LabSearchableTextField(
-              controller: _patientIdController,
-              labelText: l10n.labPatientIdLabel,
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            Text(
+              l10n.labOrderContextDialogBody,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            AppSelectField<String>.searchable(
+              value: _selectedPatientId,
+              labelText: l10n.labPatientSearchLabel,
+              hintText: l10n.labPatientSearchHint,
               isRequired: true,
-              options: _patientSuggestions,
-              prefixIcon: const Icon(Icons.person_search_outlined),
-              validator: AppValidators.requiredText(l10n.validationRequired),
+              isLoading: _isLoadingPatients,
+              allowClear: false,
+              options: _toSelectOptions(_patientOptions),
+              validator: AppValidators.requiredValue(l10n.validationRequired),
+              onSearchTextChanged: _schedulePatientSearch,
+              onChanged: _selectPatient,
             ),
             AppResponsiveFieldRow.two(
               gap: AppResponsiveFieldRowGap.form,
-              left: LabSearchableTextField(
-                controller: _encounterIdController,
-                labelText: l10n.labEncounterIdLabel,
-                options: _encounterSuggestions,
-                prefixIcon: const Icon(Icons.medical_information_outlined),
+              left: AppSelectField<String>.searchable(
+                value: _selectedEncounterId,
+                labelText: l10n.labEncounterContextLabel,
+                hintText: l10n.labEncounterContextHint,
+                enabled:
+                    !_isLoadingPatientContext &&
+                    _selectedPatientId != null &&
+                    _selectedPatientId!.trim().isNotEmpty,
+                isLoading: _isLoadingPatientContext,
+                options: _toSelectOptions(_encounterOptions),
+                onChanged: (String? value) {
+                  setState(() => _selectedEncounterId = value);
+                },
               ),
-              right: AppTextField(
-                controller: _orderedAtController,
-                labelText: l10n.labOrderedAtFieldLabel,
-                helperText: l10n.labDateTimeHint,
-                keyboardType: TextInputType.datetime,
-                prefixIcon: const Icon(Icons.event_outlined),
-                validator: _optionalDateTimeValidator(l10n),
+              right: AppSelectField<String>.searchable(
+                value: _selectedOrderId,
+                labelText: l10n.labExistingOrderContextLabel,
+                hintText: l10n.labExistingOrderContextHint,
+                options: _toSelectOptions(_orderOptions),
+                onChanged: _selectOrderContext,
               ),
             ),
           ],
@@ -145,23 +184,304 @@ class _LabOrderContextDialogState extends State<LabOrderContextDialog> {
     );
   }
 
-  List<String> get _patientSuggestions {
-    return _uniqueNonEmpty(
-      widget.worklist.map((LabOrderSummary order) => order.patientId),
+  List<_LabContextOption> get _patientOptions {
+    return _mergeContextOptions(<_LabContextOption>[
+      ?_selectedPatientOption,
+      ..._searchedPatientOptions,
+      ...widget.worklist
+          .map(_patientOptionFromOrder)
+          .whereType<_LabContextOption>(),
+    ]);
+  }
+
+  List<_LabContextOption> get _encounterOptions {
+    final Iterable<_LabContextOption> workspaceOptions = _patientEncounters
+        .map(_encounterOptionFromSummary)
+        .whereType<_LabContextOption>();
+    final List<_LabContextOption> worklistOptions = widget.worklist
+        .where(_matchesSelectedPatient)
+        .map(_encounterOptionFromOrder)
+        .whereType<_LabContextOption>()
+        .toList(growable: false);
+    return _mergeContextOptions(<_LabContextOption>[
+      ...workspaceOptions,
+      ...worklistOptions,
+    ]);
+  }
+
+  List<_LabContextOption> get _orderOptions {
+    final List<LabOrderSummary> orders = widget.worklist
+        .where((LabOrderSummary order) => !order.isPatientGroup)
+        .toList(growable: false);
+    final List<_LabContextOption> options = orders
+        .where(_matchesSelectedPatient)
+        .map(_orderOption)
+        .whereType<_LabContextOption>()
+        .toList(growable: false);
+    if (_selectedPatientId == null || options.isNotEmpty) {
+      return _mergeContextOptions(options);
+    }
+    return _mergeContextOptions(
+      orders.map(_orderOption).whereType<_LabContextOption>(),
     );
   }
 
-  List<String> get _encounterSuggestions {
-    final String patientText = _patientIdController.text.trim();
-    final Iterable<LabOrderSummary> orders = patientText.isEmpty
-        ? widget.worklist
-        : widget.worklist.where(
-            (LabOrderSummary order) =>
-                order.patientId?.toLowerCase() == patientText.toLowerCase(),
-          );
-    return _uniqueNonEmpty(
-      orders.map((LabOrderSummary order) => order.encounterId),
+  void _schedulePatientSearch(String value) {
+    _patientSearchDebounce?.cancel();
+    _patientSearchDebounce = Timer(_patientSearchDebounceDuration, () {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_searchPatients(value));
+    });
+  }
+
+  Future<void> _searchPatients(String query) async {
+    final int generation = ++_patientSearchGeneration;
+    setState(() {
+      _isLoadingPatients = true;
+      _failure = null;
+    });
+    final Result<AppPage<Patient>> result = await ref
+        .read(patientRepositoryProvider)
+        .listPatients(
+          PatientListQuery(
+            search: query.trim(),
+            pageRequest: const AppPageRequest(pageSize: _patientSearchLimit),
+          ),
+        );
+    if (!mounted || generation != _patientSearchGeneration) {
+      return;
+    }
+    result.when(
+      success: (AppPage<Patient> page) {
+        setState(() {
+          _searchedPatientOptions
+            ..clear()
+            ..addAll(
+              page.items.map(_patientOption).whereType<_LabContextOption>(),
+            );
+          _isLoadingPatients = false;
+          _failure = null;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _isLoadingPatients = false;
+          _failure = failure;
+        });
+      },
     );
+  }
+
+  void _selectPatient(String? patientId) {
+    final _LabContextOption? option = _optionByValue(
+      _patientOptions,
+      patientId,
+    );
+    setState(() {
+      _selectedPatientId = patientId;
+      _selectedPatientOption = option;
+      _selectedEncounterId = null;
+      _selectedOrderId = null;
+      _patientEncounters.clear();
+      _failure = null;
+    });
+    if (patientId == null || patientId.trim().isEmpty) {
+      return;
+    }
+    unawaited(_loadPatientContext(patientId));
+  }
+
+  Future<void> _loadPatientContext(String patientId) async {
+    final int generation = ++_patientContextGeneration;
+    setState(() {
+      _isLoadingPatientContext = true;
+      _failure = null;
+    });
+    final Result<PatientDetail> result = await ref
+        .read(patientRepositoryProvider)
+        .loadPatientDetail(patientId);
+    if (!mounted || generation != _patientContextGeneration) {
+      return;
+    }
+    result.when(
+      success: (PatientDetail detail) {
+        setState(() {
+          _selectedPatientOption ??= _patientOption(detail.patient);
+          _patientEncounters
+            ..clear()
+            ..addAll(detail.workspace.encounters);
+          _isLoadingPatientContext = false;
+          _failure = null;
+        });
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _isLoadingPatientContext = false;
+          _failure = failure;
+        });
+      },
+    );
+  }
+
+  void _selectOrderContext(String? orderId) {
+    if (orderId == null || orderId.trim().isEmpty) {
+      setState(() => _selectedOrderId = null);
+      return;
+    }
+    final LabOrderSummary? order = widget.worklist
+        .where((LabOrderSummary item) => item.apiId == orderId)
+        .firstOrNull;
+    if (order == null) {
+      setState(() => _selectedOrderId = orderId);
+      return;
+    }
+    final _LabContextOption? patientOption = _patientOptionFromOrder(order);
+    setState(() {
+      _selectedOrderId = order.apiId;
+      _selectedPatientId = order.patientId;
+      _selectedPatientOption = patientOption;
+      _selectedEncounterId = order.encounterId;
+      _failure = null;
+    });
+    final String? patientId = order.patientId;
+    if (patientId != null && patientId.trim().isNotEmpty) {
+      unawaited(_loadPatientContext(patientId));
+    }
+  }
+
+  List<AppSelectOption<String>> _toSelectOptions(
+    List<_LabContextOption> options,
+  ) {
+    return <AppSelectOption<String>>[
+      for (final _LabContextOption option in options)
+        AppSelectOption<String>(
+          value: option.value,
+          label: option.label,
+          labelWidget: _LabContextOptionLabel(option: option),
+          leadingIcon: Icon(option.icon),
+        ),
+    ];
+  }
+
+  _LabContextOption? _patientOption(Patient patient) {
+    final String value = _firstNonEmpty(<String?>[
+      patient.id,
+      patient.publicId,
+    ]);
+    if (value.isEmpty) {
+      return null;
+    }
+    final String title = _firstNonEmpty(<String?>[
+      patient.effectiveDisplayName,
+      patient.publicId,
+      patient.id,
+    ]);
+    return _LabContextOption(
+      value: value,
+      label: title,
+      subtitle: _joinNonEmpty(<String?>[
+        patient.publicId,
+        patient.effectiveIdentifier,
+        patient.primaryPhone,
+      ]),
+      icon: Icons.person_outline,
+    );
+  }
+
+  _LabContextOption? _patientOptionFromOrder(LabOrderSummary order) {
+    final String value = _firstNonEmpty(<String?>[order.patientId]);
+    if (value.isEmpty) {
+      return null;
+    }
+    return _LabContextOption(
+      value: value,
+      label: _firstNonEmpty(<String?>[order.patientDisplayName, value]),
+      subtitle: _joinNonEmpty(<String?>[order.patientId, order.encounterId]),
+      icon: Icons.person_outline,
+    );
+  }
+
+  _LabContextOption? _encounterOptionFromSummary(PatientSummaryRecord record) {
+    if (record.id.trim().isEmpty) {
+      return null;
+    }
+    return _LabContextOption(
+      value: record.id,
+      label: record.id,
+      subtitle: _joinNonEmpty(<String?>[record.title, record.status]),
+      icon: Icons.medical_information_outlined,
+    );
+  }
+
+  _LabContextOption? _encounterOptionFromOrder(LabOrderSummary order) {
+    final String value = _firstNonEmpty(<String?>[order.encounterId]);
+    if (value.isEmpty) {
+      return null;
+    }
+    return _LabContextOption(
+      value: value,
+      label: value,
+      subtitle: _joinNonEmpty(<String?>[order.patientDisplayName, order.apiId]),
+      icon: Icons.medical_information_outlined,
+    );
+  }
+
+  _LabContextOption? _orderOption(LabOrderSummary order) {
+    final String value = order.apiId.trim();
+    if (value.isEmpty) {
+      return null;
+    }
+    return _LabContextOption(
+      value: value,
+      label: order.displayId ?? order.id,
+      subtitle: _joinNonEmpty(<String?>[
+        order.patientDisplayName,
+        order.patientId,
+        order.encounterId,
+        order.testsLabel,
+      ]),
+      icon: Icons.assignment_outlined,
+    );
+  }
+
+  bool _matchesSelectedPatient(LabOrderSummary order) {
+    final String? selected = _selectedPatientId?.trim().toLowerCase();
+    if (selected == null || selected.isEmpty) {
+      return true;
+    }
+    return (order.patientId ?? '').trim().toLowerCase() == selected;
+  }
+
+  _LabContextOption? _optionByValue(
+    List<_LabContextOption> options,
+    String? value,
+  ) {
+    if (value == null) {
+      return null;
+    }
+    for (final _LabContextOption option in options) {
+      if (option.value == value) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  List<_LabContextOption> _mergeContextOptions(
+    Iterable<_LabContextOption?> options,
+  ) {
+    final Set<String> seen = <String>{};
+    final List<_LabContextOption> result = <_LabContextOption>[];
+    for (final _LabContextOption? option in options) {
+      final String value = option?.value.trim() ?? '';
+      if (option == null || value.isEmpty || !seen.add(value.toLowerCase())) {
+        continue;
+      }
+      result.add(option);
+    }
+    return result.take(12).toList(growable: false);
   }
 
   void _submit() {
@@ -170,10 +490,51 @@ class _LabOrderContextDialogState extends State<LabOrderContextDialog> {
     }
     Navigator.of(context).pop(
       LabOrderContextInput(
-        patientId: _patientIdController.text.trim(),
-        encounterId: _encounterIdController.text.trim(),
-        orderedAt: _orderedAtController.text.trim(),
+        patientId: _selectedPatientId?.trim() ?? '',
+        encounterId: _selectedEncounterId?.trim(),
       ),
+    );
+  }
+}
+
+@immutable
+final class _LabContextOption {
+  const _LabContextOption({
+    required this.value,
+    required this.label,
+    required this.icon,
+    this.subtitle,
+  });
+
+  final String value;
+  final String label;
+  final String? subtitle;
+  final IconData icon;
+}
+
+class _LabContextOptionLabel extends StatelessWidget {
+  const _LabContextOptionLabel({required this.option});
+
+  final _LabContextOption option;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(option.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        if (option.subtitle != null && option.subtitle!.isNotEmpty)
+          Text(
+            option.subtitle!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1781,16 +2142,6 @@ List<Widget> _dialogActions(
   ];
 }
 
-FormFieldValidator<String> _optionalDateTimeValidator(AppLocalizations l10n) {
-  return (String? value) {
-    final String text = value?.trim() ?? '';
-    if (text.isEmpty || DateTime.tryParse(text) != null) {
-      return null;
-    }
-    return l10n.appDateInvalidMessage;
-  };
-}
-
 FormFieldValidator<String> _decimalNumberValidator(AppLocalizations l10n) {
   return (String? value) {
     final String text = value?.trim() ?? '';
@@ -1889,6 +2240,16 @@ List<String> _uniqueNonEmpty(Iterable<String?> values) {
         left.toLowerCase().compareTo(right.toLowerCase()),
   );
   return result;
+}
+
+String _firstNonEmpty(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String trimmed = value?.trim() ?? '';
+    if (trimmed.isNotEmpty) {
+      return trimmed;
+    }
+  }
+  return '';
 }
 
 String _joinNonEmpty(Iterable<String?> values) {

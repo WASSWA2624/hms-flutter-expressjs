@@ -12784,6 +12784,48 @@ abstract class AppLocalizations {
   /// **'Encounter ID'**
   String get labEncounterIdLabel;
 
+  /// Body text for the lab order context selection dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and select an existing patient. Encounter and existing order context are optional where available.'**
+  String get labOrderContextDialogBody;
+
+  /// Label for the patient search field in lab order creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get labPatientSearchLabel;
+
+  /// Hint for searching existing patients in lab order creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient name, ID, phone, or identifier'**
+  String get labPatientSearchHint;
+
+  /// Label for selecting encounter context in lab order creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter'**
+  String get labEncounterContextLabel;
+
+  /// Hint for selecting encounter context in lab order creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Search or select encounter'**
+  String get labEncounterContextHint;
+
+  /// Label for selecting an existing lab order as context.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing lab order context'**
+  String get labExistingOrderContextLabel;
+
+  /// Hint for selecting an existing lab order context.
+  ///
+  /// In en, this message translates to:
+  /// **'Search or select order context'**
+  String get labExistingOrderContextHint;
+
   /// Localized text for labCatalogSearchLabel.
   ///
   /// In en, this message translates to:
@@ -21486,7 +21528,7 @@ abstract class AppLocalizations {
   /// Localized text for labReferenceRangesAction.
   ///
   /// In en, this message translates to:
-  /// **'Reference ranges'**
+  /// **'Lab Configurations'**
   String get labReferenceRangesAction;
 
   /// Localized text for labPatientsSummaryLabel.
@@ -21672,13 +21714,13 @@ abstract class AppLocalizations {
   /// Localized text for labReferenceRangesDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Lab test configuration'**
+  /// **'Lab Configurations'**
   String get labReferenceRangesDialogTitle;
 
   /// Localized text for labReferenceRangesDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Update test details, units, qualitative options, and reference ranges used by backend result interpretation.'**
+  /// **'Manage lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.'**
   String get labReferenceRangesDialogBody;
 
   /// Localized text for labConfigureTestAction.
@@ -21894,7 +21936,7 @@ abstract class AppLocalizations {
   /// Action label for opening laboratory create actions.
   ///
   /// In en, this message translates to:
-  /// **'Create Item'**
+  /// **'Create Lab Order'**
   String get labCreateAction;
 
   /// Title for the laboratory create action picker dialog.
@@ -21912,7 +21954,7 @@ abstract class AppLocalizations {
   /// Action label for creating a lab order.
   ///
   /// In en, this message translates to:
-  /// **'Lab order'**
+  /// **'Create lab order'**
   String get labCreateOrderAction;
 
   /// Description for the create lab order choice.
@@ -21930,7 +21972,7 @@ abstract class AppLocalizations {
   /// Action label for creating a lab test.
   ///
   /// In en, this message translates to:
-  /// **'Lab test'**
+  /// **'Add test'**
   String get labCreateTestAction;
 
   /// Description for the create lab test choice.
@@ -21948,7 +21990,7 @@ abstract class AppLocalizations {
   /// Action label for creating a lab panel.
   ///
   /// In en, this message translates to:
-  /// **'Lab panel'**
+  /// **'Add panel'**
   String get labCreatePanelAction;
 
   /// Description for the create lab panel choice.
@@ -21984,7 +22026,7 @@ abstract class AppLocalizations {
   /// Hint text for the lab test configuration table search.
   ///
   /// In en, this message translates to:
-  /// **'Search lab test, code, category, specimen, unit, or range'**
+  /// **'Search test, panel, code, category, specimen, unit, or range'**
   String get labReferenceRangesSearchHint;
 
   /// Column label for row actions in lab tables.
