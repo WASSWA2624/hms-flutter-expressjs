@@ -131,7 +131,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       ),
       icon: const Icon(Icons.biotech_outlined),
       scrollable: true,
-      maxWidth: 1120,
+      maxWidth: 1600,
       closeEnabled: !_isSaving,
       content: _buildContent(
         context,
@@ -420,31 +420,32 @@ class _LabResultContextHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final LabOrderSummary firstOrder = workflows.first.order;
-    final List<String> orderIds = _workflowOrderIdentifiers(workflows);
     final List<String> encounterIds = _uniqueNonEmpty(
       workflows.map((LabOrderWorkflow workflow) => workflow.order.encounterId),
     );
-    final String? testsSummary = _patientTestsSummary(workflows);
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: theme.colorScheme.surfaceContainerLowest,
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.md,
+          vertical: theme.spacing.sm,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  firstOrder.patientDisplayName ?? l10n.profileUnknownValue,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                Expanded(
+                  child: Text(
+                    firstOrder.patientDisplayName ?? l10n.profileUnknownValue,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 AppWorkspaceStatusBadge(
@@ -475,8 +476,8 @@ class _LabResultContextHeader extends StatelessWidget {
             ),
             SizedBox(height: theme.spacing.sm),
             Wrap(
-              spacing: theme.spacing.lg,
-              runSpacing: theme.spacing.sm,
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.xs,
               children: <Widget>[
                 _LabContextFact(
                   label: l10n.labPatientIdFieldLabel,
@@ -499,40 +500,8 @@ class _LabResultContextHeader extends StatelessWidget {
                   label: l10n.labOrdersIncludedLabel,
                   value: l10n.labActiveOrderCount(workflows.length),
                 ),
-                if (testsSummary != null)
-                  _LabContextFact(
-                    label: l10n.labTestsColumnLabel,
-                    value: testsSummary,
-                    maxWidth: 420,
-                  ),
               ],
             ),
-            if (orderIds.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              Text(
-                l10n.labOrderFieldLabel,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: theme.spacing.xs),
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: <Widget>[
-                  for (final String orderId in orderIds)
-                    AppCopyableIdentifier(
-                      value: orderId,
-                      tooltip: l10n.copyIdentifierAction,
-                      copiedMessage: l10n.identifierCopiedMessage,
-                      textStyle: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                ],
-              ),
-            ],
           ],
         ),
       ),
@@ -547,7 +516,6 @@ class _LabContextFact extends StatelessWidget {
     this.copyable = false,
     this.copyTooltip,
     this.copiedMessage,
-    this.maxWidth = 240,
   });
 
   final String label;
@@ -555,13 +523,12 @@ class _LabContextFact extends StatelessWidget {
   final bool copyable;
   final String? copyTooltip;
   final String? copiedMessage;
-  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
+      constraints: const BoxConstraints(maxWidth: 240),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -596,15 +563,6 @@ class _LabContextFact extends StatelessWidget {
       ),
     );
   }
-}
-
-List<String> _workflowOrderIdentifiers(List<LabOrderWorkflow> workflows) {
-  return _uniqueNonEmpty(
-    workflows.map(
-      (LabOrderWorkflow workflow) =>
-          workflow.order.displayId ?? workflow.order.apiId,
-    ),
-  );
 }
 
 List<String> _uniqueNonEmpty(Iterable<String?> values) {
@@ -653,11 +611,11 @@ class _LabOrderResultSection extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: theme.colorScheme.surfaceContainerLowest,
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
+        padding: EdgeInsets.all(theme.spacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -716,33 +674,26 @@ class _LabOrderResultSection extends StatelessWidget {
                   ),
               ],
             ),
-            SizedBox(height: theme.spacing.sm),
+            SizedBox(height: theme.spacing.xs),
             Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.xs,
               children: <Widget>[
-                _DetailPill(
-                  label: l10n.labOrderedAtFieldLabel,
-                  value:
-                      _optionalDateTimeLabel(context, order.orderedAt) ??
-                      l10n.profileUnknownValue,
+                _InlineOrderMeta(
                   icon: Icons.event_outlined,
-                ),
-                _DetailPill(
-                  label: l10n.labOrderStatusFieldLabel,
-                  value: _statusLabel(context, order.status),
-                  icon: Icons.info_outline,
+                  text:
+                      '${l10n.labOrderedAtFieldLabel}: ${_optionalDateTimeLabel(context, order.orderedAt) ?? l10n.profileUnknownValue}',
                 ),
                 if (order.encounterId != null &&
                     order.encounterId!.trim().isNotEmpty)
-                  _DetailPill(
-                    label: l10n.labEncounterFieldLabel,
-                    value: order.encounterId!,
+                  _InlineOrderMeta(
                     icon: Icons.medical_information_outlined,
+                    text:
+                        '${l10n.labEncounterFieldLabel}: ${order.encounterId!}',
                   ),
               ],
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             Text(
               l10n.labItemsSectionTitle,
               style: theme.textTheme.titleSmall?.copyWith(
@@ -766,17 +717,6 @@ class _LabOrderResultSection extends StatelessWidget {
                 onReject: onRejectItem,
                 onRemove: onRemoveResult,
               ),
-            if (workflow.results.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.lg),
-              Text(
-                l10n.labResultsSectionTitle,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(height: theme.spacing.sm),
-              _VerifiedResultsList(results: workflow.results),
-            ],
           ],
         ),
       ),
@@ -784,47 +724,162 @@ class _LabOrderResultSection extends StatelessWidget {
   }
 }
 
-class _DetailPill extends StatelessWidget {
-  const _DetailPill({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
+class _InlineOrderMeta extends StatelessWidget {
+  const _InlineOrderMeta({required this.icon, required this.text});
 
-  final String label;
-  final String value;
   final IconData icon;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.42,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(
+          icon,
+          size: theme.appTokens.listIconSize * 0.72,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
+        SizedBox(width: theme.spacing.xs / 2),
+        Text(
+          text,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: theme.appTokens.listIconSize * 0.82),
-            SizedBox(width: theme.spacing.xs),
-            Text(
-              '$label: ',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w700,
+      ],
+    );
+  }
+}
+
+class _CompactStatusRow extends StatelessWidget {
+  const _CompactStatusRow({required this.item});
+
+  final LabOrderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<String> statuses = _uniqueNonEmpty(<String?>[item.status]);
+    return Wrap(
+      spacing: Theme.of(context).spacing.xs,
+      runSpacing: Theme.of(context).spacing.xs,
+      children: <Widget>[
+        for (final String status in statuses)
+          AppWorkspaceStatusBadge(status: _statusBadge(context, status)),
+      ],
+    );
+  }
+}
+
+class _ResponsiveLabResultEntry extends StatelessWidget {
+  const _ResponsiveLabResultEntry({
+    required this.drafts,
+    required this.canMutate,
+    required this.onSaveDraft,
+    required this.onVerify,
+    required this.onReject,
+    required this.onRemove,
+  });
+
+  final List<_ResultDraft> drafts;
+  final bool canMutate;
+  final ValueChanged<_ResultDraft> onSaveDraft;
+  final ValueChanged<_ResultDraft> onVerify;
+  final ValueChanged<LabOrderItem> onReject;
+  final ValueChanged<_ResultDraft> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (constraints.maxWidth < 760) {
+          return _LabResultEntryCards(
+            drafts: drafts,
+            canMutate: canMutate,
+            onSaveDraft: onSaveDraft,
+            onVerify: onVerify,
+            onReject: onReject,
+            onRemove: onRemove,
+          );
+        }
+        return _LabResultEntryRowsTable(
+          drafts: drafts,
+          canMutate: canMutate,
+          onSaveDraft: onSaveDraft,
+          onVerify: onVerify,
+          onReject: onReject,
+          onRemove: onRemove,
+          availableWidth: constraints.maxWidth,
+        );
+      },
+    );
+  }
+}
+
+class _LabResultEntryCards extends StatelessWidget {
+  const _LabResultEntryCards({
+    required this.drafts,
+    required this.canMutate,
+    required this.onSaveDraft,
+    required this.onVerify,
+    required this.onReject,
+    required this.onRemove,
+  });
+
+  final List<_ResultDraft> drafts;
+  final bool canMutate;
+  final ValueChanged<_ResultDraft> onSaveDraft;
+  final ValueChanged<_ResultDraft> onVerify;
+  final ValueChanged<LabOrderItem> onReject;
+  final ValueChanged<_ResultDraft> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (final _ResultDraft draft in drafts) ...<Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLowest,
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(theme.spacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _LabResultTestCell(item: draft.item),
+                  SizedBox(height: theme.spacing.sm),
+                  _LabReferenceRangeCell(item: draft.item),
+                  SizedBox(height: theme.spacing.sm),
+                  draft.item.canEnterResult
+                      ? _CompactResultInput(
+                          draft: draft,
+                          enabled: canMutate && draft.item.canEnterResult,
+                        )
+                      : _CompletedResultReadout(item: draft.item),
+                  SizedBox(height: theme.spacing.sm),
+                  _LabResultFlagCell(item: draft.item, draft: draft),
+                  SizedBox(height: theme.spacing.xs),
+                  _LabResultActionsCell(
+                    draft: draft,
+                    canMutate: canMutate,
+                    onSaveDraft: () => onSaveDraft(draft),
+                    onVerify: () => onVerify(draft),
+                    onReject: () => onReject(draft.item),
+                    onRemove: () => onRemove(draft),
+                  ),
+                ],
               ),
             ),
-            Text(value, style: theme.textTheme.bodySmall),
-          ],
-        ),
-      ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+        ],
+      ],
     );
   }
 }
@@ -864,7 +919,7 @@ class _LabResultEntryTable extends StatelessWidget {
             _PanelGroupHeader(title: group.panelTitle!),
             SizedBox(height: theme.spacing.xs),
           ],
-          _LabResultEntryRowsTable(
+          _ResponsiveLabResultEntry(
             drafts: group.drafts,
             canMutate: canMutate,
             onSaveDraft: onSaveDraft,
@@ -887,6 +942,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     required this.onVerify,
     required this.onReject,
     required this.onRemove,
+    required this.availableWidth,
   });
 
   final List<_ResultDraft> drafts;
@@ -895,23 +951,27 @@ class _LabResultEntryRowsTable extends StatelessWidget {
   final ValueChanged<_ResultDraft> onVerify;
   final ValueChanged<LabOrderItem> onReject;
   final ValueChanged<_ResultDraft> onRemove;
+  final double availableWidth;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
+    final double tableWidth = availableWidth
+        .clamp(860.0, double.infinity)
+        .toDouble();
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 980),
+      child: SizedBox(
+        width: tableWidth,
         child: Table(
           border: TableBorder.all(color: theme.colorScheme.outlineVariant),
           columnWidths: const <int, TableColumnWidth>{
-            0: FlexColumnWidth(2.4),
-            1: FlexColumnWidth(1.6),
-            2: FlexColumnWidth(2.7),
-            3: FlexColumnWidth(1.2),
-            4: FlexColumnWidth(1.6),
+            0: FlexColumnWidth(2.2),
+            1: FlexColumnWidth(1.35),
+            2: FlexColumnWidth(3.4),
+            3: FlexColumnWidth(),
+            4: FlexColumnWidth(1.45),
           },
           children: <TableRow>[
             TableRow(
@@ -1041,16 +1101,7 @@ class _LabResultTestCell extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.xs),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
-          children: <Widget>[
-            AppWorkspaceStatusBadge(status: _statusBadge(context, item.status)),
-            AppWorkspaceStatusBadge(
-              status: _statusBadge(context, item.effectiveResultStatus),
-            ),
-          ],
-        ),
+        _CompactStatusRow(item: item),
       ],
     );
   }
@@ -1228,62 +1279,56 @@ class _CompactResultInputState extends State<_CompactResultInput> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (item.isNumeric) ...<Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTextField(
-                    controller: widget.draft.valueController,
-                    labelText: l10n.labResultValueLabel,
-                    enabled: enabled,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (String? value) {
-                      final String normalized = value?.trim() ?? '';
-                      if (normalized.isEmpty) {
-                        return null;
-                      }
-                      return num.tryParse(normalized) == null
-                          ? l10n.labNumericRangeValidationMessage
-                          : null;
-                    },
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final bool stackFields = constraints.maxWidth < 360;
+                final Widget valueField = AppTextField(
+                  controller: widget.draft.valueController,
+                  labelText: l10n.labResultValueLabel,
+                  enabled: enabled,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
-                ),
-                SizedBox(width: Theme.of(context).spacing.sm),
-                Expanded(
-                  child: item.unitOptions.isEmpty
-                      ? AppTextField(
-                          controller: widget.draft.unitController,
-                          labelText: l10n.labResultUnitLabel,
-                          enabled: enabled,
-                        )
-                      : AppSelectField<String>.searchable(
-                          value: widget.draft.unitController.text.trim().isEmpty
-                              ? null
-                              : widget.draft.unitController.text.trim(),
-                          labelText: l10n.labResultUnitLabel,
-                          enabled: enabled,
-                          options: <AppSelectOption<String>>[
-                            for (final LabUnitOption option in item.unitOptions)
-                              AppSelectOption<String>(
-                                value: option.unit ?? option.label ?? option.id,
-                                label: option.displayLabel,
-                                leadingIcon: const Icon(
-                                  Icons.straighten_outlined,
-                                ),
-                                searchText:
-                                    '${option.id} ${option.label ?? ''} ${option.unit ?? ''}',
-                              ),
-                          ],
-                          onChanged: (String? value) {
-                            setState(() {
-                              widget.draft.unitController.text = value ?? '';
-                            });
-                            widget.draft.notifyChanged();
-                          },
-                        ),
-                ),
-              ],
+                  validator: (String? value) {
+                    final String normalized = value?.trim() ?? '';
+                    if (normalized.isEmpty) {
+                      return null;
+                    }
+                    return num.tryParse(normalized) == null
+                        ? l10n.labNumericRangeValidationMessage
+                        : null;
+                  },
+                );
+                final Widget unitField = _ResultUnitInput(
+                  item: item,
+                  controller: widget.draft.unitController,
+                  enabled: enabled,
+                  onChanged: () {
+                    setState(() {});
+                    widget.draft.notifyChanged();
+                  },
+                );
+
+                if (stackFields) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      valueField,
+                      SizedBox(height: Theme.of(context).spacing.xs),
+                      unitField,
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(flex: 6, child: valueField),
+                    SizedBox(width: Theme.of(context).spacing.sm),
+                    Expanded(flex: 5, child: unitField),
+                  ],
+                );
+              },
             ),
           ] else if (item.isQualitative && item.resultOptions.isNotEmpty)
             AppSelectField<String>.searchable(
@@ -1320,10 +1365,55 @@ class _CompactResultInputState extends State<_CompactResultInput> {
             controller: widget.draft.notesController,
             labelText: l10n.labNotesLabel,
             enabled: enabled,
-            maxLines: 2,
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ResultUnitInput extends StatelessWidget {
+  const _ResultUnitInput({
+    required this.item,
+    required this.controller,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final LabOrderItem item;
+  final TextEditingController controller;
+  final bool enabled;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    if (item.unitOptions.isEmpty) {
+      return AppTextField(
+        controller: controller,
+        labelText: l10n.labResultUnitLabel,
+        enabled: enabled,
+      );
+    }
+
+    return AppSelectField<String>.searchable(
+      value: controller.text.trim().isEmpty ? null : controller.text.trim(),
+      labelText: l10n.labResultUnitLabel,
+      enabled: enabled,
+      options: <AppSelectOption<String>>[
+        for (final LabUnitOption option in item.unitOptions)
+          AppSelectOption<String>(
+            value: option.unit ?? option.label ?? option.id,
+            label: option.displayLabel,
+            leadingIcon: const Icon(Icons.straighten_outlined),
+            searchText:
+                '${option.id} ${option.label ?? ''} ${option.unit ?? ''}',
+          ),
+      ],
+      onChanged: (String? value) {
+        controller.text = value ?? '';
+        onChanged();
+      },
     );
   }
 }
@@ -1374,58 +1464,6 @@ class _CompletedResultReadout extends StatelessWidget {
   }
 }
 
-class _VerifiedResultsList extends StatelessWidget {
-  const _VerifiedResultsList({required this.results});
-
-  final List<LabResult> results;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return Column(
-      children: <Widget>[
-        for (final LabResult result in results)
-          Padding(
-            padding: EdgeInsets.symmetric(
-              vertical: Theme.of(context).spacing.xs,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        result.displayTitle,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        _joinDisplay(<String?>[
-                              result.displayValue,
-                              result.referenceRangeSummary == null
-                                  ? null
-                                  : '${l10n.labReferenceRangeLabel}: ${result.referenceRangeSummary}',
-                            ]) ??
-                            l10n.profileUnknownValue,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                AppWorkspaceStatusBadge(
-                  status: _statusBadge(context, result.status),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _LabReportPreviewDialog extends ConsumerStatefulWidget {
   const _LabReportPreviewDialog({required this.workflows});
 
@@ -1440,6 +1478,7 @@ class _LabReportPreviewDialogState
     extends ConsumerState<_LabReportPreviewDialog> {
   late Set<String> _selectedOrderIds;
   late Set<String> _selectedItemIds;
+  bool _showOrderDetails = true;
   bool _isPrinting = false;
 
   @override
@@ -1483,6 +1522,7 @@ class _LabReportPreviewDialogState
                 : _LabReportPreview(
                     workflows: selectedWorkflows,
                     selectedItemIds: _selectedItemIds,
+                    showOrderDetails: _showOrderDetails,
                   ),
           ),
         ],
@@ -1514,7 +1554,28 @@ class _LabReportPreviewDialogState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLowest,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: SwitchListTile(
+            value: _showOrderDetails,
+            dense: true,
+            title: Text('${l10n.labReportOrderLabel} details'),
+            subtitle: Text(
+              _showOrderDetails
+                  ? 'Include compact order identifiers and dates.'
+                  : 'Print selected tests without order headers.',
+            ),
+            onChanged: (bool value) {
+              setState(() => _showOrderDetails = value);
+            },
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
         for (final LabOrderWorkflow workflow in widget.workflows)
           DecoratedBox(
             decoration: BoxDecoration(
@@ -1627,10 +1688,13 @@ class _LabReportPreviewDialogState
       ref: ref,
       context: context,
       title: l10n.labReportTitle,
-      subtitle:
-          workflows.first.order.patientDisplayName ?? l10n.profileUnknownValue,
       metadata: _reportMetadata(context, workflows),
-      pages: _reportPages(context, workflows, _selectedItemIds),
+      pages: _reportPages(
+        context,
+        workflows,
+        _selectedItemIds,
+        showOrderDetails: _showOrderDetails,
+      ),
       footerNote: l10n.labReportFooter,
     );
     if (mounted) {
@@ -1643,10 +1707,12 @@ class _LabReportPreview extends StatelessWidget {
   const _LabReportPreview({
     required this.workflows,
     required this.selectedItemIds,
+    required this.showOrderDetails,
   });
 
   final List<LabOrderWorkflow> workflows;
   final Set<String> selectedItemIds;
+  final bool showOrderDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -1683,21 +1749,28 @@ class _LabReportPreview extends StatelessWidget {
           ],
         ),
         SizedBox(height: theme.spacing.md),
-        for (final LabOrderWorkflow workflow in workflows) ...<Widget>[
-          Text(
-            '${l10n.labOrderFieldLabel} ${workflow.order.displayId ?? workflow.order.apiId}',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+        if (showOrderDetails)
+          for (final LabOrderWorkflow workflow in workflows) ...<Widget>[
+            Text(
+              '${l10n.labOrderFieldLabel} ${workflow.order.displayId ?? workflow.order.apiId}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          SizedBox(height: theme.spacing.xs),
+            SizedBox(height: theme.spacing.xs),
+            _PreviewResultsTable(
+              items: workflow.order.items
+                  .where(
+                    (LabOrderItem item) =>
+                        selectedItemIds.contains(_itemSelectionKey(item)),
+                  )
+                  .toList(growable: false),
+            ),
+            SizedBox(height: theme.spacing.md),
+          ]
+        else ...<Widget>[
           _PreviewResultsTable(
-            items: workflow.order.items
-                .where(
-                  (LabOrderItem item) =>
-                      selectedItemIds.contains(_itemSelectionKey(item)),
-                )
-                .toList(growable: false),
+            items: _selectedReportItems(workflows, selectedItemIds),
           ),
           SizedBox(height: theme.spacing.md),
         ],
@@ -2485,6 +2558,9 @@ List<PrintFormMetadataItem> _reportMetadata(
 ) {
   final AppLocalizations l10n = context.l10n;
   final LabOrderSummary firstOrder = workflows.first.order;
+  final List<String> encounterIds = _uniqueNonEmpty(
+    workflows.map((LabOrderWorkflow workflow) => workflow.order.encounterId),
+  );
   return <PrintFormMetadataItem>[
     PrintFormMetadataItem(
       label: l10n.labReportPatientLabel,
@@ -2495,39 +2571,61 @@ List<PrintFormMetadataItem> _reportMetadata(
         label: l10n.labPatientIdFieldLabel,
         value: firstOrder.patientId!,
       ),
-    if (firstOrder.encounterId != null)
+    if (encounterIds.length == 1)
       PrintFormMetadataItem(
         label: l10n.labEncounterFieldLabel,
-        value: firstOrder.encounterId!,
+        value: encounterIds.single,
       ),
-    PrintFormMetadataItem(
-      label: l10n.labOrdersIncludedLabel,
-      value: l10n.labActiveOrderCount(workflows.length),
-    ),
   ];
 }
 
 List<PrintFormPage> _reportPages(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
-  Set<String> selectedItemIds,
-) {
+  Set<String> selectedItemIds, {
+  required bool showOrderDetails,
+}) {
   final AppLocalizations l10n = context.l10n;
-  return workflows
-      .map((LabOrderWorkflow workflow) {
-        final List<LabOrderItem> items = workflow.order.items
-            .where(
-              (LabOrderItem item) =>
-                  selectedItemIds.contains(_itemSelectionKey(item)),
-            )
-            .toList(growable: false);
-        return PrintFormPage(
-          title:
-              '${l10n.labOrderFieldLabel} ${workflow.order.displayId ?? workflow.order.apiId}',
-          bodyHtml: _labReportOrderHtml(context, workflow, items),
+  return <PrintFormPage>[
+    PrintFormPage(
+      title: l10n.labReportTitle,
+      bodyHtml: _labReportHtml(
+        context,
+        workflows,
+        selectedItemIds,
+        showOrderDetails: showOrderDetails,
+      ),
+    ),
+  ];
+}
+
+String _labReportHtml(
+  BuildContext context,
+  List<LabOrderWorkflow> workflows,
+  Set<String> selectedItemIds, {
+  required bool showOrderDetails,
+}) {
+  final String body = showOrderDetails
+      ? workflows.map((LabOrderWorkflow workflow) {
+          final List<LabOrderItem> items = workflow.order.items
+              .where(
+                (LabOrderItem item) =>
+                    selectedItemIds.contains(_itemSelectionKey(item)),
+              )
+              .toList(growable: false);
+          return _labReportOrderHtml(context, workflow, items);
+        }).join()
+      : _labReportTableHtml(
+          context,
+          _selectedReportItems(workflows, selectedItemIds),
         );
-      })
-      .toList(growable: false);
+  return '''
+${_labReportPrintStyle()}
+<div class="lab-report-compact">
+  $body
+  ${_labReportSignatureHtml(context)}
+</div>
+''';
 }
 
 String _labReportOrderHtml(
@@ -2552,6 +2650,18 @@ String _labReportOrderHtml(
       value: _statusLabel(context, order.status),
     ),
   ]);
+  final String table = _labReportTableHtml(context, items);
+  return '''
+<section class="lab-report-order">
+  <h2>${PrintFormTemplate.escape('${l10n.labOrderFieldLabel} ${order.displayId ?? order.apiId}')}</h2>
+  $details
+  $table
+</section>
+''';
+}
+
+String _labReportTableHtml(BuildContext context, List<LabOrderItem> items) {
+  final AppLocalizations l10n = context.l10n;
   final String table = PrintFormTemplate.table(
     headers: <String>[
       l10n.labTestsColumnLabel,
@@ -2570,32 +2680,76 @@ String _labReportOrderHtml(
     ],
     emptyText: l10n.labNoOrderItemsEntryTitle,
   );
-  final String signature =
-      '''
+  return '<div class="lab-report-tests">$table</div>';
+}
+
+String _labReportSignatureHtml(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return '''
 <div class="print-template-signatures">
   <div class="print-template-signature">${PrintFormTemplate.escape(l10n.labReportVerifiedLabel)}</div>
   <div class="print-template-signature">${PrintFormTemplate.escape(l10n.labReportSignatureLabel)}</div>
 </div>
 ''';
-  return '$details$table$signature';
+}
+
+String _labReportPrintStyle() {
+  return '''
+<style>
+  .lab-report-compact .print-template-kv {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5mm;
+    margin-bottom: 2.5mm;
+  }
+  .lab-report-compact .print-template-kv-item {
+    padding: 1.5mm;
+  }
+  .lab-report-order {
+    margin: 0 0 4mm;
+  }
+  .lab-report-order h2 {
+    font-size: 12px;
+    line-height: 1.2;
+    margin: 0 0 2mm;
+  }
+  .lab-report-tests .print-template-table th,
+  .lab-report-tests .print-template-table td {
+    padding: 1.6mm;
+  }
+  .lab-report-tests .print-template-table th:nth-child(1),
+  .lab-report-tests .print-template-table td:nth-child(1) {
+    width: 36%;
+  }
+  .lab-report-tests .print-template-table th:nth-child(2),
+  .lab-report-tests .print-template-table td:nth-child(2) {
+    width: 30%;
+  }
+  .lab-report-tests .print-template-table th:nth-child(3),
+  .lab-report-tests .print-template-table td:nth-child(3) {
+    width: 22%;
+  }
+  .lab-report-compact .print-template-signatures {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-top: 12mm;
+  }
+</style>
+''';
 }
 
 String _itemSelectionKey(LabOrderItem item) {
   return _joinDisplay(<String?>[item.labOrderId, item.apiId]) ?? item.apiId;
 }
 
-String? _patientTestsSummary(List<LabOrderWorkflow> workflows) {
-  final List<String> labels = <String>[];
-  for (final LabOrderWorkflow workflow in workflows) {
-    final String? label = workflow.order.testsLabel;
-    if (label != null && label.trim().isNotEmpty && !labels.contains(label)) {
-      labels.add(label);
-    }
-    if (labels.length >= 3) {
-      break;
-    }
-  }
-  return _joinDisplay(labels);
+List<LabOrderItem> _selectedReportItems(
+  List<LabOrderWorkflow> workflows,
+  Set<String> selectedItemIds,
+) {
+  return <LabOrderItem>[
+    for (final LabOrderWorkflow workflow in workflows)
+      for (final LabOrderItem item in workflow.order.items)
+        if (selectedItemIds.contains(_itemSelectionKey(item))) item,
+  ];
 }
 
 int _activeResultItemCount(LabOrderSummary order) {
