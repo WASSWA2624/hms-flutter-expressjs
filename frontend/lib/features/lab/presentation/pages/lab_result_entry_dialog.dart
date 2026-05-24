@@ -1281,7 +1281,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
           if (item.isNumeric) ...<Widget>[
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                final bool stackFields = constraints.maxWidth < 360;
+                final bool stackFields = constraints.maxWidth < 300;
                 final Widget valueField = AppTextField(
                   controller: widget.draft.valueController,
                   labelText: l10n.labResultValueLabel,
@@ -1742,10 +1742,6 @@ class _LabReportPreview extends StatelessWidget {
                 label: l10n.labPatientIdFieldLabel,
                 value: firstOrder.patientId!,
               ),
-            _PreviewMeta(
-              label: l10n.labOrdersIncludedLabel,
-              value: l10n.labActiveOrderCount(workflows.length),
-            ),
           ],
         ),
         SizedBox(height: theme.spacing.md),
