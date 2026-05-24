@@ -12,6 +12,7 @@ const {
   studyWorkflowParamsSchema,
   resultWorkflowParamsSchema,
   createRadiologyOrderSchema,
+  updateRadiologyOrderRequestDetailsSchema,
   assignRadiologyOrderSchema,
   startRadiologyOrderSchema,
   completeRadiologyOrderSchema,
@@ -89,6 +90,17 @@ router.get(
   authenticate(),
   authorize(RADIOLOGY_ALLOWED_ROLES, 'role'),
   radiologyWorkspaceController.getRadiologyOrderWorkflow
+);
+
+router.put(
+  '/orders/:id/request-details',
+  validateRequest({
+    params: orderWorkflowParamsSchema,
+    body: updateRadiologyOrderRequestDetailsSchema,
+  }),
+  authenticate(),
+  authorize(RADIOLOGY_ALLOWED_ROLES, 'role'),
+  radiologyWorkspaceController.updateRadiologyOrderRequestDetails
 );
 
 router.post(

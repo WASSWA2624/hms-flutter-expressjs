@@ -3493,7 +3493,7 @@ abstract class AppLocalizations {
   /// Other patient gender label.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get patientsGenderOther;
 
   /// Unknown patient gender label.
@@ -5425,7 +5425,7 @@ abstract class AppLocalizations {
   /// Other department type label.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get tenantFacilityDepartmentTypeOther;
 
   /// Add department button label.
@@ -5629,7 +5629,7 @@ abstract class AppLocalizations {
   /// Other ward type label.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get tenantFacilityWardTypeOther;
 
   /// Add room button label.
@@ -5983,7 +5983,7 @@ abstract class AppLocalizations {
   /// Other facility type option.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get authFacilityTypeOther;
 
   /// Optional phone field label.
@@ -6835,7 +6835,7 @@ abstract class AppLocalizations {
   /// Clinical radiology request catalog search field hint.
   ///
   /// In en, this message translates to:
-  /// **'Search by test, intervention, modality, equipment, region, code, or priority'**
+  /// **'Search by test, intervention, modality, region, code, or priority'**
   String get clinicalRadiologyRequestSearchHint;
 
   /// Clinical radiology request selected items section title.
@@ -6897,6 +6897,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matching radiology catalog items'**
   String get clinicalRadiologyRequestNoCatalogOptions;
+
+  /// Clinical radiology searchable catalog selector title.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology catalog'**
+  String get clinicalRadiologyCatalogSelectTitle;
+
+  /// Clinical radiology searchable catalog selector body.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and select one matching imaging test, then add it to the request list.'**
+  String get clinicalRadiologyCatalogSelectBody;
+
+  /// Clinical radiology searchable catalog selector label.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging test'**
+  String get clinicalRadiologyCatalogSelectLabel;
+
+  /// Clinical radiology searchable catalog selector hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and select an imaging test'**
+  String get clinicalRadiologyCatalogSelectHint;
+
+  /// Clinical radiology duplicate selected request message.
+  ///
+  /// In en, this message translates to:
+  /// **'This imaging request is already selected.'**
+  String get clinicalRadiologyDuplicateSelectionMessage;
 
   /// Clinical radiology request priority field label.
   ///
@@ -8029,7 +8059,7 @@ abstract class AppLocalizations {
   /// Medication route option for other.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get ipdRouteOther;
 
   /// Medication frequency option for once.
@@ -10174,6 +10204,30 @@ abstract class AppLocalizations {
   /// **'Request details'**
   String get radiologyRequestDetailsTitle;
 
+  /// Radiology workflow compact summary section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow summary'**
+  String get radiologyWorkflowSummaryTitle;
+
+  /// Radiology edit request details action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit request details'**
+  String get radiologyEditRequestDetailsAction;
+
+  /// Radiology edit request details dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit request details'**
+  String get radiologyEditRequestDetailsDialogTitle;
+
+  /// Radiology save request details action.
+  ///
+  /// In en, this message translates to:
+  /// **'Save request details'**
+  String get radiologySaveRequestDetailsAction;
+
   /// Localized text for radiologyStudyLabel.
   ///
   /// In en, this message translates to:
@@ -10204,16 +10258,52 @@ abstract class AppLocalizations {
   /// **'Clinical notes'**
   String get radiologyClinicalNotesLabel;
 
+  /// Radiology routine priority label.
+  ///
+  /// In en, this message translates to:
+  /// **'Routine'**
+  String get radiologyPriorityRoutineLabel;
+
+  /// Radiology urgent priority label.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get radiologyPriorityUrgentLabel;
+
+  /// Radiology stat priority label.
+  ///
+  /// In en, this message translates to:
+  /// **'STAT'**
+  String get radiologyPriorityStatLabel;
+
+  /// Radiology left laterality label.
+  ///
+  /// In en, this message translates to:
+  /// **'LEFT'**
+  String get radiologyLateralityLeft;
+
+  /// Radiology right laterality label.
+  ///
+  /// In en, this message translates to:
+  /// **'RIGHT'**
+  String get radiologyLateralityRight;
+
+  /// Radiology bilateral laterality label.
+  ///
+  /// In en, this message translates to:
+  /// **'BILATERAL'**
+  String get radiologyLateralityBilateral;
+
   /// Localized text for radiologyReportSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Report'**
+  /// **'Findings and report'**
   String get radiologyReportSectionTitle;
 
   /// Localized text for radiologyReportSectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Draft, finalize, attest, and amend radiology reports using system workflow actions.'**
+  /// **'Draft, finalize, attest, and amend radiology reports with clear findings, impression, narrative, and references.'**
   String get radiologyReportSectionBody;
 
   /// Localized text for radiologyDraftReportAction.
@@ -10285,7 +10375,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyGeneratedReportPreviewTitle.
   ///
   /// In en, this message translates to:
-  /// **'Generated report preview'**
+  /// **'Report preview'**
   String get radiologyGeneratedReportPreviewTitle;
 
   /// Localized text for radiologyEmptyReportBody.
@@ -10303,7 +10393,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyStudiesAssetsBody.
   ///
   /// In en, this message translates to:
-  /// **'Track imaging studies, uploaded assets, and PACS synchronization state.'**
+  /// **'Track performed imaging studies, available assets, and PACS synchronization state.'**
   String get radiologyStudiesAssetsBody;
 
   /// Localized text for radiologyNoStudiesTitle.
@@ -10315,7 +10405,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyNoStudiesBody.
   ///
   /// In en, this message translates to:
-  /// **'Studies will appear after imaging is performed.'**
+  /// **'Studies and assets will appear after imaging is performed and saved.'**
   String get radiologyNoStudiesBody;
 
   /// Localized text for radiologySyncPacsAction.
@@ -10357,13 +10447,13 @@ abstract class AppLocalizations {
   /// Localized text for radiologyDoctorReviewReleasedBody.
   ///
   /// In en, this message translates to:
-  /// **'The latest report is released for clinical review.'**
+  /// **'The final radiology report is ready for the requesting clinician or doctor to review.'**
   String get radiologyDoctorReviewReleasedBody;
 
   /// Localized text for radiologyDoctorReviewPendingBody.
   ///
   /// In en, this message translates to:
-  /// **'Clinical review becomes available after report release.'**
+  /// **'No final radiology report is available for doctor review yet.'**
   String get radiologyDoctorReviewPendingBody;
 
   /// Localized text for radiologyDoctorReviewReadyLabel.
@@ -10519,13 +10609,13 @@ abstract class AppLocalizations {
   /// Localized text for radiologyImpressionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Impression'**
+  /// **'Impression/Conclusion'**
   String get radiologyImpressionLabel;
 
   /// Localized text for radiologyReportTextLabel.
   ///
   /// In en, this message translates to:
-  /// **'Report text'**
+  /// **'Report narrative'**
   String get radiologyReportTextLabel;
 
   /// Localized text for radiologyReportTextHelper.
@@ -10675,7 +10765,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyModalityXray.
   ///
   /// In en, this message translates to:
-  /// **'X-ray'**
+  /// **'X-RAY'**
   String get radiologyModalityXray;
 
   /// Localized text for radiologyModalityCt.
@@ -10693,7 +10783,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyModalityUltrasound.
   ///
   /// In en, this message translates to:
-  /// **'Ultrasound'**
+  /// **'ULTRASOUND'**
   String get radiologyModalityUltrasound;
 
   /// Localized text for radiologyModalityPet.
@@ -10711,25 +10801,25 @@ abstract class AppLocalizations {
   /// Localized text for radiologyModalityEcho.
   ///
   /// In en, this message translates to:
-  /// **'Echo'**
+  /// **'ECHO'**
   String get radiologyModalityEcho;
 
   /// Localized text for radiologyModalityEndo.
   ///
   /// In en, this message translates to:
-  /// **'Endoscopy'**
+  /// **'ENDO'**
   String get radiologyModalityEndo;
 
   /// Localized text for radiologyModalityGastro.
   ///
   /// In en, this message translates to:
-  /// **'Gastro'**
+  /// **'GASTRO'**
   String get radiologyModalityGastro;
 
   /// Localized text for radiologyModalityOther.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get radiologyModalityOther;
 
   /// Localized text for radiologyNextActionConfirmBilling.
@@ -13231,7 +13321,7 @@ abstract class AppLocalizations {
   /// Action label for opening an operations report preview.
   ///
   /// In en, this message translates to:
-  /// **'Report'**
+  /// **'Findings and report'**
   String get operationsOpenReportAction;
 
   /// Summary card label for all operations requests.
@@ -13765,7 +13855,7 @@ abstract class AppLocalizations {
   /// Category label for other operations requests.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get operationsCategoryOther;
 
   /// Next action label for open operations requests.
@@ -15528,7 +15618,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsTypeOther.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get integrationsTypeOther;
 
   /// Localized text for integrationsStatusActive.
@@ -17136,7 +17226,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingReportSummaryAction.
   ///
   /// In en, this message translates to:
-  /// **'Report'**
+  /// **'Findings and report'**
   String get housekeepingReportSummaryAction;
 
   /// Localized text for housekeepingPendingTasksSummaryLabel.
@@ -22062,7 +22152,7 @@ abstract class AppLocalizations {
   /// Gender option label for other.
   ///
   /// In en, this message translates to:
-  /// **'Other'**
+  /// **'OTHER'**
   String get labGenderOtherLabel;
 
   /// Gender option label for unknown.
@@ -22428,7 +22518,7 @@ abstract class AppLocalizations {
   /// Radiology configuration dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Manage persisted imaging tests and review equipment records available to radiology workflows.'**
+  /// **'Manage persisted imaging tests and customize standard catalog tests for radiology workflows.'**
   String get radiologyConfigurationsDialogBody;
 
   /// Radiology configuration loading title.
@@ -22440,7 +22530,7 @@ abstract class AppLocalizations {
   /// Radiology configuration loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading imaging tests, standard catalog entries, and equipment records.'**
+  /// **'Loading imaging tests and standard catalog entries.'**
   String get radiologyConfigurationsLoadingBody;
 
   /// Radiology patients summary card label.
@@ -22536,25 +22626,25 @@ abstract class AppLocalizations {
   /// Radiology modality label.
   ///
   /// In en, this message translates to:
-  /// **'Fluoroscopy'**
+  /// **'FLUOROSCOPY'**
   String get radiologyModalityFluoroscopy;
 
   /// Radiology modality label.
   ///
   /// In en, this message translates to:
-  /// **'Mammography'**
+  /// **'MAMMOGRAPHY'**
   String get radiologyModalityMammography;
 
   /// Radiology modality label.
   ///
   /// In en, this message translates to:
-  /// **'Nuclear medicine'**
+  /// **'NUCLEAR MEDICINE'**
   String get radiologyModalityNuclearMedicine;
 
   /// Radiology modality label.
   ///
   /// In en, this message translates to:
-  /// **'Interventional radiology'**
+  /// **'INTERVENTIONAL RADIOLOGY'**
   String get radiologyModalityInterventionalRadiology;
 
   /// Radiology configuration imaging tests tab label.
@@ -22578,7 +22668,7 @@ abstract class AppLocalizations {
   /// Radiology configuration search hint.
   ///
   /// In en, this message translates to:
-  /// **'Search tests, modality, code, source, equipment, or status'**
+  /// **'Search tests, modality, code, source, or status'**
   String get radiologyConfigurationSearchHint;
 
   /// Radiology create imaging test action.
@@ -22776,7 +22866,7 @@ abstract class AppLocalizations {
   /// Radiology disabled image attachment body.
   ///
   /// In en, this message translates to:
-  /// **'Image attachment is disabled here until the storage upload contract is wired end to end.'**
+  /// **'Image attachment stays disabled here until upload storage is fully wired end to end.'**
   String get radiologyAttachImagesDisabledBody;
 
   /// Radiology choose images action.
@@ -22836,7 +22926,7 @@ abstract class AppLocalizations {
   /// Radiology print dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Choose the persisted sections to include, preview the report, then print with the shared clinical template.'**
+  /// **'Choose clinical report sections to include. Patient context, test details, findings, impression, and signer are selected by default; metadata is optional.'**
   String get radiologyPrintReportDialogBody;
 
   /// Radiology print preview title.
@@ -22890,8 +22980,14 @@ abstract class AppLocalizations {
   /// Radiology print include signer label.
   ///
   /// In en, this message translates to:
-  /// **'Signer/release metadata'**
+  /// **'Signer/reporter'**
   String get radiologyPrintIncludeSignerLabel;
+
+  /// Radiology print include technical metadata label.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical metadata'**
+  String get radiologyPrintIncludeMetadataLabel;
 
   /// Radiology print footer note.
   ///
@@ -22926,7 +23022,7 @@ abstract class AppLocalizations {
   /// Radiology print report section title.
   ///
   /// In en, this message translates to:
-  /// **'Report'**
+  /// **'Findings and report'**
   String get radiologyPrintReportSectionTitle;
 
   /// Radiology print references section title.
@@ -22938,7 +23034,7 @@ abstract class AppLocalizations {
   /// Radiology print signer section title.
   ///
   /// In en, this message translates to:
-  /// **'Signer and release metadata'**
+  /// **'Signer and reporter'**
   String get radiologyPrintSignerSectionTitle;
 
   /// Radiology print no sections selected message.

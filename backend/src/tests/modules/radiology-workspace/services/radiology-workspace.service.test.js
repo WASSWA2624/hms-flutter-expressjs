@@ -336,6 +336,87 @@ describe('radiology-workspace.service', () => {
     expect(result.order?.id).toBe('RAD0000001');
   });
 
+
+  it('updates request details and emits a radiology realtime refresh', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+
+    const beforeOrder = buildOrder({
+      clinical_note: 'Old notes',
+      request_details: {
+        modality: 'XRAY',
+        body_region: 'Chest',
+        priority: 'ROUTINE',
+      },
+    });
+    const afterOrder = buildOrder({
+      clinical_note: 'Updated notes',
+      request_details: {
+        modality: 'XRAY',
+        body_region: 'Chest',
+        laterality: 'LEFT',
+        priority: 'URGENT',
+      },
+    });
+
+    radiologyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(beforeOrder)
+      .mockResolvedValueOnce(afterOrder);
+
+    const response = await radiologyWorkspaceService.updateRadiologyOrderRequestDetails(
+      'RAD0000001',
+      {
+        clinical_note: 'Updated notes',
+        request_details: {
+          laterality: 'LEFT',
+          priority: 'URGENT',
+        },
+      },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(radiologyWorkspaceRepository.txUpdateOrder).toHaveBeenCalledWith(
+      {},
+      'order-internal-1',
+      {
+        clinical_note: 'Updated notes',
+        request_details: expect.objectContaining({
+          modality: 'XRAY',
+          body_region: 'Chest',
+          laterality: 'LEFT',
+          priority: 'URGENT',
+        }),
+      }
+    );
+    expect(response.workflow.order.request_details).toEqual(
+      expect.objectContaining({
+        laterality: 'LEFT',
+        priority: 'URGENT',
+      })
+    );
+
+    await flushAsync();
+
+    expect(createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'UPDATE_REQUEST_DETAILS',
+        entity: 'radiology_order',
+        entity_id: 'order-internal-1',
+      })
+    );
+    expect(emitToUsers).toHaveBeenCalledWith(
+      ['user-1', 'user-2'],
+      'diagnostic.radiology_workflow_updated',
+      expect.objectContaining({
+        action: 'UPDATE_REQUEST_DETAILS',
+        order_id: 'RAD0000001',
+      })
+    );
+  });
+
   it('syncStudyToPacs returns FAILED status when pacs is not configured', async () => {
     resolveModelIdOrThrow.mockResolvedValue('study-internal-1');
     radiologyWorkspaceRepository.findStudyById.mockResolvedValue({

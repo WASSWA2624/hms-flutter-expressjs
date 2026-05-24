@@ -321,6 +321,13 @@ final class RadiologyWorkspaceController
     return _mutate(() => _repository.createOrder(payload));
   }
 
+  Future<AppFailure?> updateOrderRequestDetails(Map<String, Object?> payload) {
+    return _mutateSelected(
+      (String orderId) =>
+          _repository.updateOrderRequestDetails(orderId, payload),
+    );
+  }
+
   Future<AppFailure?> assignOrder(Map<String, Object?> payload) {
     return _mutateSelected(
       (String orderId) => _repository.assignOrder(orderId, payload),

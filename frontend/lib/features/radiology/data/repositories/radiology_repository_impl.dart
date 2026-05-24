@@ -151,6 +151,18 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
   }
 
   @override
+  Future<Result<RadiologyWorkflow>> updateOrderRequestDetails(
+    String orderId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<RadiologyWorkflow>(
+      _radiologyEndpoint(<String>['orders', orderId, 'request-details']),
+      data: _withoutEmpty(payload),
+      decoder: _decodeWorkflow,
+    );
+  }
+
+  @override
   Future<Result<RadiologyWorkflow>> assignOrder(
     String orderId,
     Map<String, Object?> payload,

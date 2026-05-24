@@ -4725,7 +4725,7 @@
   "@clinicalRadiologyRequestSearchLabel": {
     "description": "Clinical radiology request catalog search field label."
   },
-  "clinicalRadiologyRequestSearchHint": "Search by test, intervention, modality, equipment, region, code, or priority",
+  "clinicalRadiologyRequestSearchHint": "Search by test, intervention, modality, region, code, or priority",
   "@clinicalRadiologyRequestSearchHint": {
     "description": "Clinical radiology request catalog search field hint."
   },
@@ -4781,6 +4781,26 @@
   "clinicalRadiologyRequestNoCatalogOptions": "No matching radiology catalog items",
   "@clinicalRadiologyRequestNoCatalogOptions": {
     "description": "Clinical radiology request no matching search results message."
+  },
+  "clinicalRadiologyCatalogSelectTitle": "Radiology catalog",
+  "@clinicalRadiologyCatalogSelectTitle": {
+    "description": "Clinical radiology searchable catalog selector title."
+  },
+  "clinicalRadiologyCatalogSelectBody": "Search and select one matching imaging test, then add it to the request list.",
+  "@clinicalRadiologyCatalogSelectBody": {
+    "description": "Clinical radiology searchable catalog selector body."
+  },
+  "clinicalRadiologyCatalogSelectLabel": "Imaging test",
+  "@clinicalRadiologyCatalogSelectLabel": {
+    "description": "Clinical radiology searchable catalog selector label."
+  },
+  "clinicalRadiologyCatalogSelectHint": "Search and select an imaging test",
+  "@clinicalRadiologyCatalogSelectHint": {
+    "description": "Clinical radiology searchable catalog selector hint."
+  },
+  "clinicalRadiologyDuplicateSelectionMessage": "This imaging request is already selected.",
+  "@clinicalRadiologyDuplicateSelectionMessage": {
+    "description": "Clinical radiology duplicate selected request message."
   },
   "clinicalRadiologyPriorityLabel": "Priority",
   "@clinicalRadiologyPriorityLabel": {
@@ -7006,6 +7026,22 @@
   "@radiologyRequestDetailsTitle": {
     "description": "Localized text for radiologyRequestDetailsTitle."
   },
+  "radiologyWorkflowSummaryTitle": "Workflow summary",
+  "@radiologyWorkflowSummaryTitle": {
+    "description": "Radiology workflow compact summary section title."
+  },
+  "radiologyEditRequestDetailsAction": "Edit request details",
+  "@radiologyEditRequestDetailsAction": {
+    "description": "Radiology edit request details action."
+  },
+  "radiologyEditRequestDetailsDialogTitle": "Edit request details",
+  "@radiologyEditRequestDetailsDialogTitle": {
+    "description": "Radiology edit request details dialog title."
+  },
+  "radiologySaveRequestDetailsAction": "Save request details",
+  "@radiologySaveRequestDetailsAction": {
+    "description": "Radiology save request details action."
+  },
   "radiologyStudyLabel": "Study",
   "@radiologyStudyLabel": {
     "description": "Localized text for radiologyStudyLabel."
@@ -7026,11 +7062,35 @@
   "@radiologyClinicalNotesLabel": {
     "description": "Localized text for radiologyClinicalNotesLabel."
   },
+  "radiologyPriorityRoutineLabel": "Routine",
+  "@radiologyPriorityRoutineLabel": {
+    "description": "Radiology routine priority label."
+  },
+  "radiologyPriorityUrgentLabel": "Urgent",
+  "@radiologyPriorityUrgentLabel": {
+    "description": "Radiology urgent priority label."
+  },
+  "radiologyPriorityStatLabel": "STAT",
+  "@radiologyPriorityStatLabel": {
+    "description": "Radiology stat priority label."
+  },
+  "radiologyLateralityLeft": "LEFT",
+  "@radiologyLateralityLeft": {
+    "description": "Radiology left laterality label."
+  },
+  "radiologyLateralityRight": "RIGHT",
+  "@radiologyLateralityRight": {
+    "description": "Radiology right laterality label."
+  },
+  "radiologyLateralityBilateral": "BILATERAL",
+  "@radiologyLateralityBilateral": {
+    "description": "Radiology bilateral laterality label."
+  },
   "radiologyReportSectionTitle": "Report",
   "@radiologyReportSectionTitle": {
     "description": "Localized text for radiologyReportSectionTitle."
   },
-  "radiologyReportSectionBody": "Draft, finalize, attest, and amend radiology reports using system workflow actions.",
+  "radiologyReportSectionBody": "Draft, finalize, attest, and amend radiology reports with clear findings, impression, narrative, and references.",
   "@radiologyReportSectionBody": {
     "description": "Localized text for radiologyReportSectionBody."
   },
@@ -7078,7 +7138,7 @@
   "@radiologyReportedAtLabel": {
     "description": "Localized text for radiologyReportedAtLabel."
   },
-  "radiologyGeneratedReportPreviewTitle": "Generated report preview",
+  "radiologyGeneratedReportPreviewTitle": "Report preview",
   "@radiologyGeneratedReportPreviewTitle": {
     "description": "Localized text for radiologyGeneratedReportPreviewTitle."
   },
@@ -7090,7 +7150,7 @@
   "@radiologyStudiesAssetsTitle": {
     "description": "Localized text for radiologyStudiesAssetsTitle."
   },
-  "radiologyStudiesAssetsBody": "Track imaging studies, uploaded assets, and PACS synchronization state.",
+  "radiologyStudiesAssetsBody": "Track performed imaging studies, available assets, and PACS synchronization state.",
   "@radiologyStudiesAssetsBody": {
     "description": "Localized text for radiologyStudiesAssetsBody."
   },
@@ -7098,7 +7158,7 @@
   "@radiologyNoStudiesTitle": {
     "description": "Localized text for radiologyNoStudiesTitle."
   },
-  "radiologyNoStudiesBody": "Studies will appear after imaging is performed.",
+  "radiologyNoStudiesBody": "Studies and assets will appear after imaging is performed and saved.",
   "@radiologyNoStudiesBody": {
     "description": "Localized text for radiologyNoStudiesBody."
   },
@@ -7126,11 +7186,11 @@
   "@radiologyDoctorReviewTitle": {
     "description": "Localized text for radiologyDoctorReviewTitle."
   },
-  "radiologyDoctorReviewReleasedBody": "The latest report is released for clinical review.",
+  "radiologyDoctorReviewReleasedBody": "The final radiology report is ready for the requesting clinician or doctor to review.",
   "@radiologyDoctorReviewReleasedBody": {
     "description": "Localized text for radiologyDoctorReviewReleasedBody."
   },
-  "radiologyDoctorReviewPendingBody": "Clinical review becomes available after report release.",
+  "radiologyDoctorReviewPendingBody": "No final radiology report is available for doctor review yet.",
   "@radiologyDoctorReviewPendingBody": {
     "description": "Localized text for radiologyDoctorReviewPendingBody."
   },
@@ -7238,11 +7298,11 @@
   "@radiologyFindingsLabel": {
     "description": "Localized text for radiologyFindingsLabel."
   },
-  "radiologyImpressionLabel": "Impression",
+  "radiologyImpressionLabel": "Impression/Conclusion",
   "@radiologyImpressionLabel": {
     "description": "Localized text for radiologyImpressionLabel."
   },
-  "radiologyReportTextLabel": "Report text",
+  "radiologyReportTextLabel": "Report narrative",
   "@radiologyReportTextLabel": {
     "description": "Localized text for radiologyReportTextLabel."
   },
@@ -7342,7 +7402,7 @@
   "@radiologyResultAmended": {
     "description": "Localized text for radiologyResultAmended."
   },
-  "radiologyModalityXray": "X-ray",
+  "radiologyModalityXray": "X-RAY",
   "@radiologyModalityXray": {
     "description": "Localized text for radiologyModalityXray."
   },
@@ -7354,7 +7414,7 @@
   "@radiologyModalityMri": {
     "description": "Localized text for radiologyModalityMri."
   },
-  "radiologyModalityUltrasound": "Ultrasound",
+  "radiologyModalityUltrasound": "ULTRASOUND",
   "@radiologyModalityUltrasound": {
     "description": "Localized text for radiologyModalityUltrasound."
   },
@@ -7366,19 +7426,19 @@
   "@radiologyModalityEcg": {
     "description": "Localized text for radiologyModalityEcg."
   },
-  "radiologyModalityEcho": "Echo",
+  "radiologyModalityEcho": "ECHO",
   "@radiologyModalityEcho": {
     "description": "Localized text for radiologyModalityEcho."
   },
-  "radiologyModalityEndo": "Endoscopy",
+  "radiologyModalityEndo": "ENDO",
   "@radiologyModalityEndo": {
     "description": "Localized text for radiologyModalityEndo."
   },
-  "radiologyModalityGastro": "Gastro",
+  "radiologyModalityGastro": "GASTRO",
   "@radiologyModalityGastro": {
     "description": "Localized text for radiologyModalityGastro."
   },
-  "radiologyModalityOther": "Other",
+  "radiologyModalityOther": "OTHER",
   "@radiologyModalityOther": {
     "description": "Localized text for radiologyModalityOther."
   },
@@ -15432,7 +15492,7 @@
   "@radiologyConfigurationsDialogTitle": {
     "description": "Radiology configuration dialog title."
   },
-  "radiologyConfigurationsDialogBody": "Manage persisted imaging tests and review equipment records available to radiology workflows.",
+  "radiologyConfigurationsDialogBody": "Manage persisted imaging tests and customize standard catalog tests for radiology workflows.",
   "@radiologyConfigurationsDialogBody": {
     "description": "Radiology configuration dialog body."
   },
@@ -15440,7 +15500,7 @@
   "@radiologyConfigurationsLoadingTitle": {
     "description": "Radiology configuration loading title."
   },
-  "radiologyConfigurationsLoadingBody": "Loading imaging tests, standard catalog entries, and equipment records.",
+  "radiologyConfigurationsLoadingBody": "Loading imaging tests and standard catalog entries.",
   "@radiologyConfigurationsLoadingBody": {
     "description": "Radiology configuration loading body."
   },
@@ -15504,19 +15564,19 @@
   "@radiologySelectAtLeastOneTestMessage": {
     "description": "Radiology request validation for missing selected tests."
   },
-  "radiologyModalityFluoroscopy": "Fluoroscopy",
+  "radiologyModalityFluoroscopy": "FLUOROSCOPY",
   "@radiologyModalityFluoroscopy": {
     "description": "Radiology modality label."
   },
-  "radiologyModalityMammography": "Mammography",
+  "radiologyModalityMammography": "MAMMOGRAPHY",
   "@radiologyModalityMammography": {
     "description": "Radiology modality label."
   },
-  "radiologyModalityNuclearMedicine": "Nuclear medicine",
+  "radiologyModalityNuclearMedicine": "NUCLEAR MEDICINE",
   "@radiologyModalityNuclearMedicine": {
     "description": "Radiology modality label."
   },
-  "radiologyModalityInterventionalRadiology": "Interventional radiology",
+  "radiologyModalityInterventionalRadiology": "INTERVENTIONAL RADIOLOGY",
   "@radiologyModalityInterventionalRadiology": {
     "description": "Radiology modality label."
   },
@@ -15532,7 +15592,7 @@
   "@radiologyConfigurationSearchLabel": {
     "description": "Radiology configuration search semantic label."
   },
-  "radiologyConfigurationSearchHint": "Search tests, modality, code, source, equipment, or status",
+  "radiologyConfigurationSearchHint": "Search tests, modality, code, source, or status",
   "@radiologyConfigurationSearchHint": {
     "description": "Radiology configuration search hint."
   },
@@ -15664,7 +15724,7 @@
   "@radiologyAttachImagesTitle": {
     "description": "Radiology attach images panel title."
   },
-  "radiologyAttachImagesDisabledBody": "Image attachment is disabled here until the storage upload contract is wired end to end.",
+  "radiologyAttachImagesDisabledBody": "Image attachment stays disabled here until upload storage is fully wired end to end.",
   "@radiologyAttachImagesDisabledBody": {
     "description": "Radiology disabled image attachment body."
   },
@@ -15704,7 +15764,7 @@
   "@radiologyPrintReportDialogTitle": {
     "description": "Radiology print report dialog title."
   },
-  "radiologyPrintReportDialogBody": "Choose the persisted sections to include, preview the report, then print with the shared clinical template.",
+  "radiologyPrintReportDialogBody": "Choose clinical report sections to include. Patient context, test details, findings, impression, and signer are selected by default; metadata is optional.",
   "@radiologyPrintReportDialogBody": {
     "description": "Radiology print dialog body."
   },
@@ -15740,9 +15800,13 @@
   "@radiologyPrintIncludeReferencesLabel": {
     "description": "Radiology print include references label."
   },
-  "radiologyPrintIncludeSignerLabel": "Signer/release metadata",
+  "radiologyPrintIncludeSignerLabel": "Signer/reporter",
   "@radiologyPrintIncludeSignerLabel": {
     "description": "Radiology print include signer label."
+  },
+  "radiologyPrintIncludeMetadataLabel": "Technical metadata",
+  "@radiologyPrintIncludeMetadataLabel": {
+    "description": "Radiology print include technical metadata label."
   },
   "radiologyPrintFooterNote": "Generated from HMS Radiology workspace.",
   "@radiologyPrintFooterNote": {
@@ -15764,7 +15828,7 @@
   "@radiologyPrintStudiesSectionTitle": {
     "description": "Radiology print studies section title."
   },
-  "radiologyPrintReportSectionTitle": "Report",
+  "radiologyPrintReportSectionTitle": "Findings and report",
   "@radiologyPrintReportSectionTitle": {
     "description": "Radiology print report section title."
   },
@@ -15772,7 +15836,7 @@
   "@radiologyPrintReferencesSectionTitle": {
     "description": "Radiology print references section title."
   },
-  "radiologyPrintSignerSectionTitle": "Signer and release metadata",
+  "radiologyPrintSignerSectionTitle": "Signer and reporter",
   "@radiologyPrintSignerSectionTitle": {
     "description": "Radiology print signer section title."
   },

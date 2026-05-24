@@ -37,6 +37,11 @@ abstract interface class RadiologyRepository {
 
   Future<Result<RadiologyWorkflow>> createOrder(Map<String, Object?> payload);
 
+  Future<Result<RadiologyWorkflow>> updateOrderRequestDetails(
+    String orderId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<RadiologyWorkflow>> assignOrder(
     String orderId,
     Map<String, Object?> payload,

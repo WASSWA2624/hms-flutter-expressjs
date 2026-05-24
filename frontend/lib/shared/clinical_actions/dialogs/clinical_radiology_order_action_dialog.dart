@@ -48,23 +48,10 @@ final class _PendingRadiologyRequest {
 
   String get id => option.apiId;
 }
-
-final class _RadiologyCatalogSearchResults {
-  const _RadiologyCatalogSearchResults({
-    required this.options,
-    required this.totalMatches,
-  });
-
-  final List<ClinicalActionCatalogOption> options;
-  final int totalMatches;
-}
-
 class _RadiologyOrderDialogState
     extends State<ClinicalRadiologyOrderActionDialog> {
-  static const int _maxVisibleCatalogOptions = 100;
   static const Duration _searchDebounceDuration = Duration(milliseconds: 120);
 
-  late final TextEditingController _searchController;
   late final TextEditingController _noteController;
   Timer? _searchDebounce;
   String _searchQuery = '';
@@ -72,6 +59,7 @@ class _RadiologyOrderDialogState
   String? _bodyRegion;
   String? _laterality;
   String? _priority;
+  String? _selectedCatalogId;
   final List<_PendingRadiologyRequest> _requests = <_PendingRadiologyRequest>[];
   int? _editingIndex;
   bool _isSaving = false;
@@ -80,7 +68,6 @@ class _RadiologyOrderDialogState
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
     _noteController = TextEditingController();
     _requests.addAll(_initialPendingRequests());
   }
@@ -107,6 +94,24 @@ class _RadiologyOrderDialogState
     return pending;
   }
 
+  ClinicalActionCatalogOption? _catalogOptionForId(
+    String? id,
+    List<ClinicalActionCatalogOption> options,
+  ) {
+    final String normalizedId = (id ?? '').trim();
+    if (normalizedId.isEmpty) {
+      return null;
+    }
+    for (final ClinicalActionCatalogOption option in options) {
+      if (option.apiId == normalizedId ||
+          option.id == normalizedId ||
+          option.publicId == normalizedId) {
+        return option;
+      }
+    }
+    return null;
+  }
+
   ClinicalActionCatalogOption? _catalogOptionForRequest(
     ClinicalActionRadiologyRequest request,
   ) {
@@ -126,7 +131,6 @@ class _RadiologyOrderDialogState
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    _searchController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -138,16 +142,23 @@ class _RadiologyOrderDialogState
     final double bodyHeight = (MediaQuery.sizeOf(context).height * 0.68)
         .clamp(460.0, 680.0)
         .toDouble();
-    final _RadiologyCatalogSearchResults searchResults = _searchCatalog(
+    final List<ClinicalActionCatalogOption> visibleCatalogOptions = _searchCatalog(
       widget.referenceData.radiologyTests,
     );
+    final ClinicalActionCatalogOption? selectedCatalogOption =
+        _catalogOptionForId(_selectedCatalogId, visibleCatalogOptions);
+    final bool selectedIsDuplicate = selectedCatalogOption != null &&
+        _isDuplicateSelection(selectedCatalogOption);
+    final List<AppSelectOption<String>> catalogSelectOptions =
+        _radiologyCatalogSelectOptions(visibleCatalogOptions);
     final List<AppSelectOption<String>> modalityOptions =
-        _radiologyModalityOptions(widget.referenceData.radiologyTests);
+        _radiologyModalityOptions(l10n, widget.referenceData.radiologyTests);
     final List<AppSelectOption<String>> bodyRegionOptions =
         _radiologyBodyRegionOptions(
           widget.referenceData.radiologyTests,
           modality: _modality,
           laterality: _laterality,
+          priority: _priority,
         );
     return AppDialog(
       title: Text(l10n.clinicalRequestRadiologyAction),
@@ -173,6 +184,7 @@ class _RadiologyOrderDialogState
                     onChanged: (String? value) {
                       setState(() {
                         _modality = value;
+                        _selectedCatalogId = null;
                         if (!_bodyRegionAvailable(value, _bodyRegion)) {
                           _bodyRegion = null;
                         }
@@ -186,17 +198,21 @@ class _RadiologyOrderDialogState
                     enabled: !_isSaving,
                     options: bodyRegionOptions,
                     onChanged: (String? value) {
-                      setState(() => _bodyRegion = value);
+                      setState(() {
+                        _bodyRegion = value;
+                        _selectedCatalogId = null;
+                      });
                     },
                   ),
                   AppSelectField<String>(
                     value: _laterality,
                     labelText: l10n.clinicalRadiologyLateralityLabel,
                     enabled: !_isSaving,
-                    options: clinicalActionStatusOptions(_radiologyLateralityValues),
+                    options: _radiologyLateralityOptions(l10n),
                     onChanged: (String? value) {
                       setState(() {
                         _laterality = value;
+                        _selectedCatalogId = null;
                         if (!_bodyRegionAvailable(_modality, _bodyRegion)) {
                           _bodyRegion = null;
                         }
@@ -215,7 +231,10 @@ class _RadiologyOrderDialogState
                       'STAT',
                     ]),
                     onChanged: (String? value) {
-                      setState(() => _priority = value);
+                      setState(() {
+                        _priority = value;
+                        _selectedCatalogId = null;
+                      });
                     },
                   ),
                   AppTextField(
@@ -265,26 +284,6 @@ class _RadiologyOrderDialogState
               },
             ),
             SizedBox(height: theme.spacing.md),
-            AppTextField(
-              controller: _searchController,
-              labelText: l10n.clinicalRadiologyRequestSearchLabel,
-              hintText: l10n.clinicalRadiologyRequestSearchHint,
-              enabled: !_isSaving,
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchController.text.isEmpty
-                  ? null
-                  : AppIconButton(
-                      icon: Icons.close,
-                      semanticLabel: MaterialLocalizations.of(
-                        context,
-                      ).clearButtonTooltip,
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).clearButtonTooltip,
-                      onPressed: _isSaving ? null : _clearSearch,
-                    ),
-              onChanged: _scheduleSearch,
-            ),
             if (_editingIndex != null) ...<Widget>[
               SizedBox(height: theme.spacing.xs),
               Align(
@@ -302,12 +301,19 @@ class _RadiologyOrderDialogState
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
                   final bool twoColumns = constraints.maxWidth >= 760;
-                  final Widget catalogPanel = _RadiologyCatalogResultsPanel(
-                    results: searchResults,
+                  final Widget catalogPanel = _RadiologyCatalogSelectPanel(
+                    value: _selectedCatalogId,
+                    options: catalogSelectOptions,
                     isSaving: _isSaving,
                     isEditing: _editingIndex != null,
-                    onSelected: _addOrUpdateRequest,
-                    isDuplicate: _isDuplicateSelection,
+                    selectedIsDuplicate: selectedIsDuplicate,
+                    onChanged: (String? value) {
+                      setState(() => _selectedCatalogId = value);
+                    },
+                    onSearchTextChanged: _scheduleSearch,
+                    onAdd: selectedCatalogOption == null || selectedIsDuplicate
+                        ? null
+                        : () => _addOrUpdateRequest(selectedCatalogOption),
                   );
                   final Widget selectedPanel = _RadiologySelectedRequestsPanel(
                     requests: _requests,
@@ -357,7 +363,7 @@ class _RadiologyOrderDialogState
     );
   }
 
-  _RadiologyCatalogSearchResults _searchCatalog(
+  List<ClinicalActionCatalogOption> _searchCatalog(
     List<ClinicalActionCatalogOption> catalog,
   ) {
     final List<String> tokens = _searchQuery
@@ -366,34 +372,20 @@ class _RadiologyOrderDialogState
         .split(RegExp(r'\s+'))
         .where((String token) => token.isNotEmpty)
         .toList(growable: false);
-    final List<ClinicalActionCatalogOption> visible =
-        <ClinicalActionCatalogOption>[];
-    var totalMatches = 0;
-    for (final ClinicalActionCatalogOption option in catalog) {
-      if (!_matchesRadiologyFilters(option)) {
-        continue;
-      }
-      final String searchText = _catalogSearchText(option);
-      final bool isMatch = tokens.isEmpty || tokens.every(searchText.contains);
-      if (!isMatch) {
-        continue;
-      }
-      totalMatches += 1;
-      if (visible.length < _maxVisibleCatalogOptions) {
-        visible.add(option);
-      }
-    }
-
-    return _RadiologyCatalogSearchResults(
-      options: visible,
-      totalMatches: totalMatches,
-    );
+    return <ClinicalActionCatalogOption>[
+      for (final ClinicalActionCatalogOption option in catalog)
+        if (_matchesRadiologyFilters(option) &&
+            (tokens.isEmpty ||
+                tokens.every(_catalogSearchText(option).contains)))
+          option,
+    ];
   }
 
   bool _matchesRadiologyFilters(ClinicalActionCatalogOption option) {
     final String? selectedModality = clinicalActionTrimmedOrNull(_modality);
     final String? selectedBodyRegion = clinicalActionTrimmedOrNull(_bodyRegion);
     final String? selectedLaterality = clinicalActionTrimmedOrNull(_laterality);
+    final String? selectedPriority = clinicalActionTrimmedOrNull(_priority);
     if (selectedModality != null &&
         clinicalActionNormalizedCatalogToken(_radiologyOptionModality(option) ?? '') !=
             clinicalActionNormalizedCatalogToken(selectedModality)) {
@@ -409,6 +401,13 @@ class _RadiologyOrderDialogState
             clinicalActionNormalizedCatalogToken(selectedLaterality)) {
       return false;
     }
+    final String? optionPriority = _radiologyOptionPriority(option);
+    if (selectedPriority != null &&
+        optionPriority != null &&
+        clinicalActionNormalizedCatalogToken(optionPriority) !=
+            clinicalActionNormalizedCatalogToken(selectedPriority)) {
+      return false;
+    }
     return true;
   }
 
@@ -422,6 +421,7 @@ class _RadiologyOrderDialogState
       _radiologyOptionModality(option),
       _radiologyOptionBodyRegion(option),
       _radiologyOptionLaterality(option),
+      _radiologyOptionPriority(option),
       option.category,
       option.secondaryText,
       option.status,
@@ -438,6 +438,7 @@ class _RadiologyOrderDialogState
       widget.referenceData.radiologyTests,
       modality: modality,
       laterality: _laterality,
+      priority: _priority,
     ).any(
       (AppSelectOption<String> option) =>
           clinicalActionNormalizedCatalogToken(option.value) ==
@@ -451,18 +452,17 @@ class _RadiologyOrderDialogState
       if (!mounted) {
         return;
       }
-      setState(() => _searchQuery = value);
+      setState(() {
+        _searchQuery = value;
+        _selectedCatalogId = null;
+      });
     });
-  }
-
-  void _clearSearch() {
-    setState(_resetSearch);
   }
 
   void _resetSearch() {
     _searchDebounce?.cancel();
-    _searchController.clear();
     _searchQuery = '';
+    _selectedCatalogId = null;
   }
 
   void _addOrUpdateRequest(ClinicalActionCatalogOption option) {
@@ -489,6 +489,7 @@ class _RadiologyOrderDialogState
         return;
       }
       _requests.add(request);
+      _resetSearch();
       _resetRequestDetails();
     });
   }
@@ -501,8 +502,8 @@ class _RadiologyOrderDialogState
     setState(() {
       _editingIndex = index;
       _failure = null;
-      _searchController.text = request.option.displayTitle;
-      _searchQuery = request.option.displayTitle;
+      _selectedCatalogId = request.option.apiId;
+      _searchQuery = '';
       _noteController.text = request.clinicalNote ?? '';
       _modality = request.modality ?? _radiologyOptionModality(request.option);
       _bodyRegion =
@@ -522,9 +523,11 @@ class _RadiologyOrderDialogState
         _editingIndex = null;
         _resetSearch();
         _resetRequestDetails();
-      } else if (_editingIndex case final int editingIndex
-          when editingIndex > index) {
-        _editingIndex = editingIndex - 1;
+      } else {
+        final int? editingIndex = _editingIndex;
+        if (editingIndex != null && editingIndex > index) {
+          _editingIndex = editingIndex - 1;
+        }
       }
       _failure = null;
     });
@@ -600,90 +603,26 @@ class _RadiologyOrderDialogState
   }
 }
 
-class _RadiologyCatalogResultsPanel extends StatelessWidget {
-  const _RadiologyCatalogResultsPanel({
-    required this.results,
+class _RadiologyCatalogSelectPanel extends StatelessWidget {
+  const _RadiologyCatalogSelectPanel({
+    required this.value,
+    required this.options,
     required this.isSaving,
     required this.isEditing,
-    required this.onSelected,
-    required this.isDuplicate,
+    required this.selectedIsDuplicate,
+    required this.onChanged,
+    required this.onSearchTextChanged,
+    required this.onAdd,
   });
 
-  final _RadiologyCatalogSearchResults results;
+  final String? value;
+  final List<AppSelectOption<String>> options;
   final bool isSaving;
   final bool isEditing;
-  final ValueChanged<ClinicalActionCatalogOption> onSelected;
-  final bool Function(ClinicalActionCatalogOption option) isDuplicate;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final List<ClinicalActionCatalogOption> options = results.options;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.sm),
-            child: Text(
-              l10n.clinicalRadiologyRequestMatchesLabel(
-                options.length,
-                results.totalMatches,
-              ),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-          Expanded(
-            child: options.isEmpty
-                ? Center(
-                    child: Text(l10n.clinicalRadiologyRequestNoCatalogOptions),
-                  )
-                : ListView.separated(
-                    itemCount: options.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: colorScheme.outlineVariant),
-                    itemBuilder: (BuildContext context, int index) {
-                      final ClinicalActionCatalogOption option = options[index];
-                      final bool duplicate = isDuplicate(option);
-                      return _RadiologyCatalogOptionRow(
-                        option: option,
-                        isSaving: isSaving,
-                        isEditing: isEditing,
-                        isDuplicate: duplicate,
-                        onSelected: duplicate ? null : () => onSelected(option),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RadiologyCatalogOptionRow extends StatelessWidget {
-  const _RadiologyCatalogOptionRow({
-    required this.option,
-    required this.isSaving,
-    required this.isEditing,
-    required this.isDuplicate,
-    required this.onSelected,
-  });
-
-  final ClinicalActionCatalogOption option;
-  final bool isSaving;
-  final bool isEditing;
-  final bool isDuplicate;
-  final VoidCallback? onSelected;
+  final bool selectedIsDuplicate;
+  final ValueChanged<String?> onChanged;
+  final ValueChanged<String> onSearchTextChanged;
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -694,66 +633,68 @@ class _RadiologyCatalogOptionRow extends StatelessWidget {
         ? l10n.clinicalRadiologyUpdateSelectionAction
         : l10n.clinicalRadiologyAddSelectionAction;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            _radiologyCatalogIcon(option),
-            color: colorScheme.primary,
-            size: theme.appTokens.listIconSize,
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              l10n.clinicalRadiologyCatalogSelectTitle,
+              style: theme.textTheme.labelLarge,
+            ),
+            SizedBox(height: theme.spacing.xs),
+            Text(
+              options.isEmpty
+                  ? l10n.clinicalRadiologyRequestNoCatalogOptions
+                  : l10n.clinicalRadiologyCatalogSelectBody,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text(
-                  option.displayTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: AppSelectField<String>.searchable(
+                    value: value,
+                    labelText: l10n.clinicalRadiologyCatalogSelectLabel,
+                    hintText: l10n.clinicalRadiologyCatalogSelectHint,
+                    enabled: !isSaving && options.isNotEmpty,
+                    options: options,
+                    onChanged: onChanged,
+                    onSearchTextChanged: onSearchTextChanged,
+                    menuHeight: 360,
                   ),
                 ),
-                Builder(
-                  builder: (BuildContext context) {
-                    final String subtitle = clinicalActionJoinDisplay(<String?>[
-                      _radiologyOptionModality(option),
-                      _radiologyOptionBodyRegion(option),
-                      _radiologyOptionLaterality(option),
-                      option.status,
-                      option.displaySubtitle,
-                    ]);
-                    if (subtitle.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-                    return Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    );
-                  },
+                SizedBox(width: theme.spacing.sm),
+                Padding(
+                  padding: EdgeInsets.only(top: theme.spacing.xs),
+                  child: AppButton.primary(
+                    label: actionLabel,
+                    leadingIcon: isEditing ? Icons.done_outlined : Icons.add,
+                    enabled: !isSaving && !selectedIsDuplicate && onAdd != null,
+                    onPressed: isSaving || selectedIsDuplicate ? null : onAdd,
+                  ),
                 ),
               ],
             ),
-          ),
-          TextButton.icon(
-            onPressed: isSaving || isDuplicate ? null : onSelected,
-            icon: Icon(
-              isEditing ? Icons.done_outlined : Icons.add,
-              size: theme.appTokens.listIconSize,
-            ),
-            label: Text(actionLabel),
-          ),
-        ],
+            if (selectedIsDuplicate) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                l10n.clinicalRadiologyDuplicateSelectionMessage,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.error,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -852,9 +793,12 @@ class _RadiologySelectedRequestRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String subtitle = clinicalActionJoinDisplay(<String?>[
-      request.modality ?? _radiologyOptionModality(request.option),
+      _radiologyModalityDisplayLabel(
+        l10n,
+        request.modality ?? _radiologyOptionModality(request.option),
+      ),
       request.bodyRegion ?? _radiologyOptionBodyRegion(request.option),
-      request.laterality == null ? null : clinicalActionApiLabel(request.laterality!),
+      _radiologyLateralityLabel(l10n, request.laterality),
       request.priority == null ? null : clinicalActionApiLabel(request.priority!),
       request.option.status,
     ]);
@@ -929,7 +873,76 @@ class _RadiologySelectedRequestRow extends StatelessWidget {
   }
 }
 
+List<AppSelectOption<String>> _radiologyCatalogSelectOptions(
+  List<ClinicalActionCatalogOption> options,
+) {
+  return <AppSelectOption<String>>[
+    for (final ClinicalActionCatalogOption option in options)
+      AppSelectOption<String>(
+        value: option.apiId,
+        label: option.displayTitle,
+        searchText: clinicalActionJoinDisplay(<String?>[
+          option.apiId,
+          option.displayTitle,
+          option.displaySubtitle,
+          _radiologyOptionModality(option),
+          _radiologyOptionBodyRegion(option),
+          _radiologyOptionLaterality(option),
+          _radiologyOptionPriority(option),
+          option.searchText,
+        ]),
+        leadingIcon: Icon(_radiologyCatalogIcon(option)),
+        labelWidget: _RadiologyCatalogOptionLabel(option: option),
+      ),
+  ];
+}
+
+class _RadiologyCatalogOptionLabel extends StatelessWidget {
+  const _RadiologyCatalogOptionLabel({required this.option});
+
+  final ClinicalActionCatalogOption option;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppLocalizations l10n = context.l10n;
+    final String subtitle = clinicalActionJoinDisplay(<String?>[
+      _radiologyModalityDisplayLabel(l10n, _radiologyOptionModality(option)),
+      _radiologyOptionBodyRegion(option),
+      _radiologyOptionLaterality(option),
+      _radiologyOptionPriority(option),
+      option.status,
+      option.displaySubtitle,
+    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          option.displayTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (subtitle.isNotEmpty)
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 List<AppSelectOption<String>> _radiologyModalityOptions(
+  AppLocalizations l10n,
   List<ClinicalActionCatalogOption> catalog,
 ) {
   final List<String> values = _sortedRadiologyValues(
@@ -939,16 +952,8 @@ List<AppSelectOption<String>> _radiologyModalityOptions(
     for (final String value in values)
       AppSelectOption<String>(
         value: value,
-        label: clinicalActionApiLabel(value),
-        leadingIcon: Icon(
-          _radiologyCatalogIcon(
-            ClinicalActionCatalogOption(
-              id: value,
-              name: value,
-              category: value,
-            ),
-          ),
-        ),
+        label: _radiologyModalityDisplayLabel(l10n, value),
+        leadingIcon: Icon(_radiologyModalityIcon(value)),
       ),
   ];
 }
@@ -957,9 +962,11 @@ List<AppSelectOption<String>> _radiologyBodyRegionOptions(
   List<ClinicalActionCatalogOption> catalog, {
   String? modality,
   String? laterality,
+  String? priority,
 }) {
   final String? selectedModality = clinicalActionTrimmedOrNull(modality);
   final String? selectedLaterality = clinicalActionTrimmedOrNull(laterality);
+  final String? selectedPriority = clinicalActionTrimmedOrNull(priority);
   final Iterable<ClinicalActionCatalogOption> filtered = catalog.where((
     ClinicalActionCatalogOption option,
   ) {
@@ -973,6 +980,13 @@ List<AppSelectOption<String>> _radiologyBodyRegionOptions(
             clinicalActionNormalizedCatalogToken(selectedLaterality)) {
       return false;
     }
+    final String? optionPriority = _radiologyOptionPriority(option);
+    if (selectedPriority != null &&
+        optionPriority != null &&
+        clinicalActionNormalizedCatalogToken(optionPriority) !=
+            clinicalActionNormalizedCatalogToken(selectedPriority)) {
+      return false;
+    }
     return true;
   });
   final List<String> values = _sortedRadiologyValues(
@@ -983,7 +997,7 @@ List<AppSelectOption<String>> _radiologyBodyRegionOptions(
       AppSelectOption<String>(
         value: value,
         label: clinicalActionApiLabel(value),
-        leadingIcon: const Icon(Icons.accessibility_new_outlined),
+        leadingIcon: Icon(_radiologyBodyRegionIcon(value)),
       ),
   ];
 }
@@ -1047,6 +1061,11 @@ String? _radiologyOptionLaterality(ClinicalActionCatalogOption option) {
   return null;
 }
 
+String? _radiologyOptionPriority(ClinicalActionCatalogOption option) {
+  return clinicalActionTrimmedOrNull(_radiologyMetadataText(option, 'priority')) ??
+      clinicalActionTrimmedOrNull(_radiologyMetadataText(option, 'urgency'));
+}
+
 String? _radiologyMetadataText(ClinicalActionCatalogOption option, String key) {
   final Object? value = option.metadata[key];
   final String? normalized = clinicalActionTrimmedOrNull(value?.toString());
@@ -1081,20 +1100,102 @@ String? _radiologySecondaryFragment(
 }
 
 IconData _radiologyCatalogIcon(ClinicalActionCatalogOption option) {
-  return switch ((option.category ?? '').toUpperCase()) {
-    'XRAY' => Icons.photo_camera_outlined,
+  return _radiologyModalityIcon(_radiologyOptionModality(option) ?? option.category);
+}
+
+
+List<AppSelectOption<String>> _radiologyLateralityOptions(
+  AppLocalizations l10n,
+) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(value: 'LEFT', label: l10n.radiologyLateralityLeft),
+    AppSelectOption<String>(value: 'RIGHT', label: l10n.radiologyLateralityRight),
+    AppSelectOption<String>(
+      value: 'BILATERAL',
+      label: l10n.radiologyLateralityBilateral,
+    ),
+  ];
+}
+
+String? _radiologyLateralityLabel(AppLocalizations l10n, String? value) {
+  return switch ((value ?? '').trim().toUpperCase()) {
+    'LEFT' => l10n.radiologyLateralityLeft,
+    'RIGHT' => l10n.radiologyLateralityRight,
+    'BILATERAL' => l10n.radiologyLateralityBilateral,
+    '' => null,
+    _ => value,
+  };
+}
+
+IconData _radiologyModalityIcon(String? value) {
+  return switch ((value ?? '').trim().toUpperCase()) {
+    'XRAY' || 'X_RAY' || 'X-RAY' => Icons.photo_camera_outlined,
     'CT' => Icons.donut_large_outlined,
     'MRI' => Icons.all_out_outlined,
-    'ULTRASOUND' => Icons.graphic_eq_outlined,
+    'ULTRASOUND' || 'US' => Icons.graphic_eq_outlined,
     'FLUOROSCOPY' => Icons.video_camera_back_outlined,
     'MAMMOGRAPHY' => Icons.image_search_outlined,
-    'PET' || 'NUCLEAR_MEDICINE' => Icons.blur_on_outlined,
-    'INTERVENTIONAL_RADIOLOGY' => Icons.medical_services_outlined,
+    'PET' => Icons.blur_on_outlined,
+    'NUCLEAR_MEDICINE' || 'NUCLEAR MEDICINE' => Icons.radio_button_checked,
+    'INTERVENTIONAL_RADIOLOGY' || 'INTERVENTIONAL RADIOLOGY' =>
+      Icons.medical_services_outlined,
     'ECG' => Icons.monitor_heart_outlined,
     'ECHO' => Icons.favorite_border,
     'ENDO' || 'GASTRO' => Icons.biotech_outlined,
-    _ => Icons.biotech_outlined,
+    'OTHER' => Icons.image_search_outlined,
+    _ => Icons.image_search_outlined,
   };
+}
+
+String _radiologyModalityDisplayLabel(
+  AppLocalizations l10n,
+  String? value,
+) {
+  final String normalized = (value ?? '').trim().toUpperCase();
+  if (normalized.isEmpty) {
+    return '';
+  }
+  return switch (normalized) {
+    'XRAY' || 'X_RAY' || 'X-RAY' => l10n.radiologyModalityXray,
+    'CT' => l10n.radiologyModalityCt,
+    'MRI' => l10n.radiologyModalityMri,
+    'ULTRASOUND' || 'US' => l10n.radiologyModalityUltrasound,
+    'FLUOROSCOPY' => l10n.radiologyModalityFluoroscopy,
+    'MAMMOGRAPHY' => l10n.radiologyModalityMammography,
+    'PET' => l10n.radiologyModalityPet,
+    'NUCLEAR_MEDICINE' || 'NUCLEAR MEDICINE' =>
+      l10n.radiologyModalityNuclearMedicine,
+    'INTERVENTIONAL_RADIOLOGY' || 'INTERVENTIONAL RADIOLOGY' =>
+      l10n.radiologyModalityInterventionalRadiology,
+    'ECG' => l10n.radiologyModalityEcg,
+    'ECHO' => l10n.radiologyModalityEcho,
+    'ENDO' => l10n.radiologyModalityEndo,
+    'GASTRO' => l10n.radiologyModalityGastro,
+    'OTHER' => l10n.radiologyModalityOther,
+    _ => normalized.replaceAll('_', ' '),
+  };
+}
+
+IconData _radiologyBodyRegionIcon(String value) {
+  final String normalized = value.trim().toUpperCase();
+  if (normalized.contains('CHEST') || normalized.contains('THORAX')) {
+    return Icons.airline_seat_flat_outlined;
+  }
+  if (normalized.contains('HEAD') || normalized.contains('BRAIN')) {
+    return Icons.psychology_alt_outlined;
+  }
+  if (normalized.contains('ABDOM') || normalized.contains('PELV')) {
+    return Icons.accessibility_new_outlined;
+  }
+  if (normalized.contains('SPINE') || normalized.contains('BACK')) {
+    return Icons.align_vertical_center_outlined;
+  }
+  if (normalized.contains('HAND') || normalized.contains('ARM') ||
+      normalized.contains('LEG') || normalized.contains('KNEE') ||
+      normalized.contains('FOOT')) {
+    return Icons.accessibility_new_outlined;
+  }
+  return Icons.accessibility_new_outlined;
 }
 
 const List<String> _radiologyLateralityValues = <String>[

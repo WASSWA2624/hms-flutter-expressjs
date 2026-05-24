@@ -407,47 +407,11 @@ class _RadiologyOrderBoard extends ConsumerWidget {
           );
         },
         columns: <AppListTableColumn<RadiologyOrder>>[
-          AppListTableColumn<RadiologyOrder>(
-            id: 'patient',
-            label: l10n.radiologyPatientColumnLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareText(
-                  left.patientDisplayName,
-                  right.patientDisplayName,
-                ),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              return _TwoLineCell(
-                title: item.patientDisplayName ?? l10n.profileUnknownValue,
-                subtitle: _joinDisplay(<String?>[
-                  item.patientId,
-                  if (item.isPatientGroup)
-                    _activeOrderCountLabel(l10n, item.activeOrderCount)
-                  else
-                    item.displayId,
-                ]),
-              );
-            },
-          ),
-          AppListTableColumn<RadiologyOrder>(
-            id: 'orders',
-            label: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyOrdersColumnLabel
-                : l10n.radiologyOrderColumnLabel,
-            sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
-                appListTableCompareText(
-                  left.effectiveDisplayId,
-                  right.effectiveDisplayId,
-                ),
-            cellBuilder: (BuildContext context, RadiologyOrder item) {
-              if (item.isPatientGroup) {
-                final int activeOrders = item.activeOrderCount > 0
-                    ? item.activeOrderCount
-                    : item.orderCount;
-                return Text(_activeOrderCountLabel(l10n, activeOrders));
-              }
-              return Text(item.effectiveDisplayId);
-            },
-          ),
+          if (state.query.view == RadiologyWorkbenchView.orders)
+            _radiologyOrderIdentifierColumn(l10n, state.query.view),
+          _radiologyPatientColumn(l10n),
+          if (state.query.view == RadiologyWorkbenchView.patients)
+            _radiologyOrderIdentifierColumn(l10n, state.query.view),
           AppListTableColumn<RadiologyOrder>(
             id: 'study',
             label: l10n.radiologyStudyColumnLabel,
@@ -747,38 +711,6 @@ class _RadiologyDetailBody extends ConsumerWidget {
                 icon: Icons.receipt_long_outlined,
               ),
           ],
-          fields: <AppWorkspacePatientContextField>[
-            AppWorkspacePatientContextField(
-              label: l10n.radiologyEncounterLabel,
-              value: '',
-              icon: Icons.assignment_outlined,
-              copyable: true,
-              copyTooltip: l10n.opdCopyEncounterIdAction,
-              copiedMessage: l10n.opdEncounterIdCopiedMessage,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.radiologyOrderedAtLabel,
-              value: _formatDateTime(context, order.orderedAt),
-              icon: Icons.schedule,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.radiologyModalityLabel,
-              value: _modalityLabel(l10n, order.modality),
-              icon: Icons.view_in_ar_outlined,
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.radiologyPaymentLabel,
-              value: _valueOrUnknown(context, order.paymentStatus),
-              icon: Icons.payments_outlined,
-              tone: _gateTone(order.paymentStatus),
-            ),
-            AppWorkspacePatientContextField(
-              label: l10n.radiologyAuthorizationLabel,
-              value: _valueOrUnknown(context, order.authorizationStatus),
-              icon: Icons.verified_user_outlined,
-              tone: _gateTone(order.authorizationStatus),
-            ),
-          ],
           actions: canWork
               ? <Widget>[
                   if (workflow.nextActions.canAssign)
@@ -820,8 +752,10 @@ class _RadiologyDetailBody extends ConsumerWidget {
                 ]
               : const <Widget>[],
         ),
+        SizedBox(height: theme.spacing.md),
+        _WorkflowSummarySection(order: order),
         SizedBox(height: theme.spacing.lg),
-        _RequestSection(order: order),
+        _RequestSection(order: order, canEdit: canWork && !state.isMutating),
         SizedBox(height: theme.spacing.lg),
         _ReportingSection(state: state, workflow: workflow, canWork: canWork),
         SizedBox(height: theme.spacing.lg),
@@ -835,17 +769,65 @@ class _RadiologyDetailBody extends ConsumerWidget {
   }
 }
 
-class _RequestSection extends StatelessWidget {
-  const _RequestSection({required this.order});
+class _WorkflowSummarySection extends StatelessWidget {
+  const _WorkflowSummarySection({required this.order});
 
   final RadiologyOrder order;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    return _DetailSection(
+      title: l10n.radiologyWorkflowSummaryTitle,
+      children: <Widget>[
+        _DetailLine(
+          label: l10n.radiologyOrderedAtLabel,
+          value: _formatDateTimeOrNull(context, order.orderedAt),
+        ),
+        _DetailLine(
+          label: l10n.radiologyModalityLabel,
+          value: _modalityLabelOrNull(l10n, order.modality),
+        ),
+        _DetailLine(
+          label: l10n.radiologyPaymentLabel,
+          value: order.paymentStatus,
+        ),
+        _DetailLine(
+          label: l10n.radiologyAuthorizationLabel,
+          value: order.authorizationStatus,
+        ),
+        if ((order.encounterId ?? '').trim().isNotEmpty)
+          _DetailLine(
+            label: l10n.radiologyEncounterLabel,
+            value: order.encounterId,
+          ),
+      ],
+    );
+  }
+}
+
+class _RequestSection extends ConsumerWidget {
+  const _RequestSection({required this.order, required this.canEdit});
+
+  final RadiologyOrder order;
+  final bool canEdit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
 
     return _DetailSection(
       title: l10n.radiologyRequestDetailsTitle,
+      actions: <Widget>[
+        AppIconButton(
+          icon: Icons.edit_outlined,
+          semanticLabel: l10n.radiologyEditRequestDetailsAction,
+          tooltip: l10n.radiologyEditRequestDetailsAction,
+          onPressed: canEdit
+              ? () => _showEditRequestDetailsDialog(context, ref, order)
+              : null,
+        ),
+      ],
       children: <Widget>[
         _DetailLine(
           label: l10n.radiologyStudyLabel,
@@ -864,6 +846,117 @@ class _RequestSection extends StatelessWidget {
           label: l10n.radiologyClinicalNotesLabel,
           value: order.clinicalNote,
           maxLines: 6,
+        ),
+      ],
+    );
+  }
+}
+
+Future<void> _showEditRequestDetailsDialog(
+  BuildContext context,
+  WidgetRef ref,
+  RadiologyOrder order,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  final Map<String, Object?>? payload = await showAppWorkspaceActionDialog(
+    context: context,
+    title: Text(l10n.radiologyEditRequestDetailsDialogTitle),
+    content: _RequestDetailsEditForm(order: order),
+    icon: const Icon(Icons.edit_outlined),
+    maxWidth: 560,
+  );
+  if (payload == null || !context.mounted) {
+    return;
+  }
+  final AppFailure? failure = await ref
+      .read(radiologyWorkspaceControllerProvider.notifier)
+      .updateOrderRequestDetails(payload);
+  if (context.mounted) {
+    _showMutationResult(context, failure);
+  }
+}
+
+class _RequestDetailsEditForm extends StatefulWidget {
+  const _RequestDetailsEditForm({required this.order});
+
+  final RadiologyOrder order;
+
+  @override
+  State<_RequestDetailsEditForm> createState() => _RequestDetailsEditFormState();
+}
+
+class _RequestDetailsEditFormState extends State<_RequestDetailsEditForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _bodyRegionController;
+  late final TextEditingController _notesController;
+  String? _priority;
+  String? _laterality;
+
+  @override
+  void initState() {
+    super.initState();
+    _priority = _trimmedOrNull(widget.order.priority);
+    _laterality = _trimmedOrNull(widget.order.laterality);
+    _bodyRegionController = TextEditingController(
+      text: widget.order.bodyRegion ?? '',
+    );
+    _notesController = TextEditingController(
+      text: widget.order.clinicalNote ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _bodyRegionController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppFormShell(
+      formKey: _formKey,
+      children: <Widget>[
+        AppSelectField<String>(
+          value: _priority,
+          labelText: l10n.radiologyPriorityLabel,
+          options: _radiologyPriorityOptions(l10n),
+          onChanged: (String? value) => setState(() => _priority = value),
+        ),
+        AppTextField(
+          controller: _bodyRegionController,
+          labelText: l10n.radiologyBodyRegionLabel,
+        ),
+        AppSelectField<String>(
+          value: _laterality,
+          labelText: l10n.radiologyLateralityLabel,
+          options: _radiologyLateralityOptions(l10n),
+          onChanged: (String? value) => setState(() => _laterality = value),
+        ),
+        AppTextField(
+          controller: _notesController,
+          labelText: l10n.radiologyClinicalNotesLabel,
+          maxLines: 5,
+        ),
+        AppFormActions(
+          cancelLabel: l10n.commonCancelActionLabel,
+          submitLabel: l10n.radiologySaveRequestDetailsAction,
+          submitIcon: Icons.save_outlined,
+          onCancel: () => Navigator.of(context).maybePop(),
+          onSubmit: () {
+            if (!validateAndSaveAppForm(_formKey)) {
+              return;
+            }
+            Navigator.of(context).pop(<String, Object?>{
+              'clinical_note': _trimmedOrNull(_notesController.text),
+              'request_details': <String, Object?>{
+                'priority': _priority,
+                'body_region': _trimmedOrNull(_bodyRegionController.text),
+                'laterality': _laterality,
+              },
+            });
+          },
         ),
       ],
     );
@@ -1522,6 +1615,12 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
       padding: EdgeInsets.only(bottom: theme.spacing.xs),
       child: Row(
         children: <Widget>[
+          Icon(
+            _radiologyModalityIcon(request.modality),
+            size: theme.appTokens.listIconSize,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          SizedBox(width: theme.spacing.sm),
           Expanded(
             child: _TwoLineCell(
               title: title,
@@ -1546,7 +1645,6 @@ class _SelectedRadiologyRequestSummary extends StatelessWidget {
   }
 }
 
-enum _RadiologyConfigurationArea { tests, equipment }
 
 Future<void> _showRadiologyConfigurationsDialog(
   BuildContext context,
@@ -1583,17 +1681,12 @@ class _RadiologyConfigurationsDialogState
   final AppListTableColumnVisibilityController<RadiologyCatalogTest>
   _testColumnController =
       AppListTableColumnVisibilityController<RadiologyCatalogTest>();
-  final AppListTableColumnVisibilityController<RadiologyEquipmentRecord>
-  _equipmentColumnController =
-      AppListTableColumnVisibilityController<RadiologyEquipmentRecord>();
-  _RadiologyConfigurationArea _area = _RadiologyConfigurationArea.tests;
   RadiologyWorkspaceState? _dialogState;
 
   @override
   void dispose() {
     _searchController.dispose();
     _testColumnController.dispose();
-    _equipmentColumnController.dispose();
     super.dispose();
   }
 
@@ -1615,14 +1708,6 @@ class _RadiologyConfigurationsDialogState
         : state.catalogTests
               .where((RadiologyCatalogTest test) => test.matchesSearch(query))
               .toList(growable: false);
-    final List<RadiologyEquipmentRecord> equipment = state == null
-        ? const <RadiologyEquipmentRecord>[]
-        : state.equipmentRecords
-              .where(
-                (RadiologyEquipmentRecord record) =>
-                    record.matchesSearch(query),
-              )
-              .toList(growable: false);
     final bool isBusy = state?.isMutating == true || asyncState.isLoading;
 
     return AppDialog(
@@ -1640,26 +1725,14 @@ class _RadiologyConfigurationsDialogState
             ),
           ),
           SizedBox(height: theme.spacing.md),
-          _RadiologyConfigurationTabs(
-            value: _area,
-            onChanged: (_RadiologyConfigurationArea value) {
-              setState(() {
-                _area = value;
-                _searchController.clear();
-              });
-            },
-          ),
-          SizedBox(height: theme.spacing.md),
           if (state == null && asyncState.isLoading)
             AppWorkspaceStatePanel.loading(
               title: l10n.radiologyConfigurationsLoadingTitle,
               body: l10n.radiologyConfigurationsLoadingBody,
               minHeight: 220,
             )
-          else if (_area == _RadiologyConfigurationArea.tests)
-            _buildTestsTable(context, tests, isBusy)
           else
-            _buildEquipmentTable(context, equipment, isBusy),
+            _buildTestsTable(context, tests, isBusy),
         ],
       ),
       actions: <Widget>[
@@ -1732,7 +1805,8 @@ class _RadiologyConfigurationsDialogState
           sortComparator:
               (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
                   appListTableCompareText(left.name, right.name),
-          cellBuilder: (_, RadiologyCatalogTest item) => _TwoLineCell(
+          cellBuilder: (_, RadiologyCatalogTest item) => _IconTwoLineCell(
+            icon: _radiologyModalityIcon(item.modality),
             title: item.name,
             subtitle: _joinDisplay(<String?>[
               item.effectiveId,
@@ -1757,9 +1831,8 @@ class _RadiologyConfigurationsDialogState
           sortComparator:
               (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
                   appListTableCompareText(left.modality, right.modality),
-          cellBuilder: (_, RadiologyCatalogTest item) => Text(
-            _modalityLabelOrNull(l10n, item.modality) ??
-                l10n.profileUnknownValue,
+          cellBuilder: (_, RadiologyCatalogTest item) => _ModalityLabel(
+            modality: item.modality,
           ),
         ),
         _testActionsColumn(context, isBusy),
@@ -1786,12 +1859,6 @@ class _RadiologyConfigurationsDialogState
           cellBuilder: (_, RadiologyCatalogTest item) =>
               Text(item.laterality ?? l10n.profileUnknownValue),
         ),
-        AppListTableColumn<RadiologyCatalogTest>(
-          id: 'equipment',
-          label: l10n.radiologyEquipmentColumnLabel,
-          cellBuilder: (_, RadiologyCatalogTest item) =>
-              Text(item.equipment ?? l10n.profileUnknownValue),
-        ),
       ],
       mobileItemBuilder: (BuildContext context, RadiologyCatalogTest item) {
         return Padding(
@@ -1799,7 +1866,8 @@ class _RadiologyConfigurationsDialogState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _TwoLineCell(
+              _IconTwoLineCell(
+                icon: _radiologyModalityIcon(item.modality),
                 title: item.name,
                 subtitle: _joinDisplay(<String?>[
                   item.code,
@@ -1883,145 +1951,6 @@ class _RadiologyConfigurationsDialogState
     );
   }
 
-  Widget _buildEquipmentTable(
-    BuildContext context,
-    List<RadiologyEquipmentRecord> records,
-    bool isBusy,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppListTable<RadiologyEquipmentRecord>(
-          items: records,
-          isLoading: isBusy,
-          maxVisibleItems: _maxVisibleItems,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          columnVisibilityController: _equipmentColumnController,
-          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
-          columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
-          columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
-          columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
-          search: AppListTableSearch<RadiologyEquipmentRecord>(
-            controller: _searchController,
-            semanticLabel: l10n.radiologyConfigurationSearchLabel,
-            hintText: l10n.radiologyEquipmentSearchHint,
-            matcher: (RadiologyEquipmentRecord item, String query) =>
-                item.matchesSearch(query),
-            onChanged: (_) => setState(() {}),
-            trailingActions: <AppSearchBarAction>[
-              AppSearchBarAction(
-                icon: Icons.refresh_outlined,
-                label: l10n.commonRefreshActionLabel,
-                tooltip: l10n.commonRefreshActionLabel,
-                enabled: !isBusy,
-                onPressed: isBusy
-                    ? null
-                    : () => _refreshConfigurations(context),
-              ),
-            ],
-          ),
-          emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-            title: l10n.radiologyNoEquipmentTitle,
-            body: l10n.radiologyNoEquipmentBody,
-            icon: Icons.precision_manufacturing_outlined,
-            minHeight: 180,
-          ),
-          columns: <AppListTableColumn<RadiologyEquipmentRecord>>[
-            AppListTableColumn<RadiologyEquipmentRecord>(
-              id: 'name',
-              label: l10n.radiologyEquipmentNameColumnLabel,
-              sortComparator:
-                  (
-                    RadiologyEquipmentRecord left,
-                    RadiologyEquipmentRecord right,
-                  ) => appListTableCompareText(
-                    left.equipmentName,
-                    right.equipmentName,
-                  ),
-              cellBuilder: (_, RadiologyEquipmentRecord item) => _TwoLineCell(
-                title: item.equipmentName,
-                subtitle: _joinDisplay(<String?>[
-                  item.equipmentCode,
-                  item.serialNumber,
-                ]),
-              ),
-            ),
-            AppListTableColumn<RadiologyEquipmentRecord>(
-              id: 'status',
-              label: l10n.radiologyStatusColumnLabel,
-              sortComparator:
-                  (
-                    RadiologyEquipmentRecord left,
-                    RadiologyEquipmentRecord right,
-                  ) => appListTableCompareText(left.status, right.status),
-              cellBuilder: (_, RadiologyEquipmentRecord item) =>
-                  Text(item.status ?? l10n.profileUnknownValue),
-            ),
-            AppListTableColumn<RadiologyEquipmentRecord>(
-              id: 'manufacturer_model',
-              label: l10n.radiologyManufacturerModelLabel,
-              cellBuilder: (_, RadiologyEquipmentRecord item) => Text(
-                _joinDisplay(<String?>[
-                  item.manufacturer,
-                  item.modelNumber,
-                ]).ifEmpty(l10n.profileUnknownValue),
-              ),
-            ),
-            AppListTableColumn<RadiologyEquipmentRecord>(
-              id: 'category',
-              label: l10n.radiologyEquipmentCategoryLabel,
-              cellBuilder: (_, RadiologyEquipmentRecord item) =>
-                  Text(item.categoryName ?? l10n.profileUnknownValue),
-            ),
-          ],
-          columnChoices: <AppListTableColumn<RadiologyEquipmentRecord>>[
-            AppListTableColumn<RadiologyEquipmentRecord>(
-              id: 'display_id',
-              label: l10n.radiologyEquipmentCodeColumnLabel,
-              cellBuilder: (_, RadiologyEquipmentRecord item) =>
-                  Text(item.effectiveId),
-            ),
-            AppListTableColumn<RadiologyEquipmentRecord>(
-              id: 'facility',
-              label: l10n.radiologyFacilityColumnLabel,
-              cellBuilder: (_, RadiologyEquipmentRecord item) =>
-                  Text(item.facilityId ?? l10n.profileUnknownValue),
-            ),
-          ],
-          mobileItemBuilder:
-              (BuildContext context, RadiologyEquipmentRecord item) {
-                return Padding(
-                  padding: EdgeInsets.all(theme.spacing.md),
-                  child: _TwoLineCell(
-                    title: item.equipmentName,
-                    subtitle: _joinDisplay(<String?>[
-                      item.status,
-                      item.equipmentCode,
-                      item.serialNumber,
-                      item.categoryName,
-                    ]),
-                  ),
-                );
-              },
-        ),
-        SizedBox(height: theme.spacing.md),
-        // The current Prisma schema does not persist a radiology_test ->
-        // equipment_registry association. Keep this as a visible gap instead of
-        // saving a fake local mapping that would disappear on refresh.
-        AppWorkspaceStatePanel.empty(
-          title: l10n.radiologyEquipmentLinkGapTitle,
-          body: l10n.radiologyEquipmentLinkGapBody,
-          icon: Icons.link_off_outlined,
-          minHeight: 120,
-        ),
-      ],
-    );
-  }
-
   Future<void> _refreshConfigurations(BuildContext context) async {
     final AppFailure? failure = await ref
         .read(radiologyWorkspaceControllerProvider.notifier)
@@ -2098,101 +2027,8 @@ class _RadiologyConfigurationsDialogState
   ) {
     return current == null ||
         current.catalogTests != next.catalogTests ||
-        current.equipmentRecords != next.equipmentRecords ||
         current.isMutating != next.isMutating ||
         current.isRefreshing != next.isRefreshing;
-  }
-}
-
-class _RadiologyConfigurationTabs extends StatelessWidget {
-  const _RadiologyConfigurationTabs({
-    required this.value,
-    required this.onChanged,
-  });
-
-  final _RadiologyConfigurationArea value;
-  final ValueChanged<_RadiologyConfigurationArea> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: _RadiologyConfigurationTab(
-            label: l10n.radiologyImagingTestsTabLabel,
-            icon: Icons.image_search_outlined,
-            selected: value == _RadiologyConfigurationArea.tests,
-            onPressed: () => onChanged(_RadiologyConfigurationArea.tests),
-          ),
-        ),
-        SizedBox(width: Theme.of(context).spacing.sm),
-        Expanded(
-          child: _RadiologyConfigurationTab(
-            label: l10n.radiologyEquipmentTabLabel,
-            icon: Icons.precision_manufacturing_outlined,
-            selected: value == _RadiologyConfigurationArea.equipment,
-            onPressed: () => onChanged(_RadiologyConfigurationArea.equipment),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RadiologyConfigurationTab extends StatelessWidget {
-  const _RadiologyConfigurationTab({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onPressed,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color foreground = selected
-        ? colorScheme.onPrimaryContainer
-        : colorScheme.onSurfaceVariant;
-    return Material(
-      color: selected ? colorScheme.primaryContainer : colorScheme.surface,
-      shape: Border.all(
-        color: selected ? colorScheme.primary : colorScheme.outlineVariant,
-      ),
-      child: InkWell(
-        onTap: selected ? null : onPressed,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.md,
-            vertical: theme.spacing.sm,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(icon, size: theme.appTokens.listIconSize, color: foreground),
-              SizedBox(width: theme.spacing.xs),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: foreground,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -2304,6 +2140,7 @@ class _RadiologyTestConfigurationDialogState
                 AppSelectOption<String>(
                   value: modality,
                   label: _modalityLabel(l10n, modality),
+                  leadingIcon: Icon(_radiologyModalityIcon(modality)),
                 ),
             ],
             validator: AppValidators.requiredValue(
@@ -2522,6 +2359,7 @@ class _StudyFormState extends State<_StudyForm> {
               AppSelectOption<String>(
                 value: modality,
                 label: _modalityLabel(l10n, modality),
+                leadingIcon: Icon(_radiologyModalityIcon(modality)),
               ),
           ],
           onChanged: (String? value) {
@@ -2839,6 +2677,13 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
                 onChanged: (bool value) =>
                     _update(_settings.copyWith(includeSigner: value)),
               ),
+              _printSwitch(
+                context,
+                label: l10n.radiologyPrintIncludeMetadataLabel,
+                value: _settings.includeMetadata,
+                onChanged: (bool value) =>
+                    _update(_settings.copyWith(includeMetadata: value)),
+              ),
             ],
           ),
           SizedBox(height: theme.spacing.md),
@@ -2898,7 +2743,9 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       title: context.l10n.radiologyPrintReportTitle,
       subtitle: widget.workflow.order.patientDisplayName,
       bodyHtml: _radiologyPrintBodyHtml(context, widget.workflow, _settings),
-      metadata: _radiologyPrintMetadata(context, widget.workflow),
+      metadata: _settings.includeMetadata
+          ? _radiologyPrintMetadata(context, widget.workflow)
+          : const <PrintFormMetadataItem>[],
       footerNote: context.l10n.radiologyPrintFooterNote,
     );
     if (mounted) {
@@ -2916,6 +2763,7 @@ final class _RadiologyPrintSettings {
     this.includeReport = true,
     this.includeReferences = true,
     this.includeSigner = true,
+    this.includeMetadata = false,
   });
 
   final bool includePatient;
@@ -2924,6 +2772,7 @@ final class _RadiologyPrintSettings {
   final bool includeReport;
   final bool includeReferences;
   final bool includeSigner;
+  final bool includeMetadata;
 
   _RadiologyPrintSettings copyWith({
     bool? includePatient,
@@ -2932,6 +2781,7 @@ final class _RadiologyPrintSettings {
     bool? includeReport,
     bool? includeReferences,
     bool? includeSigner,
+    bool? includeMetadata,
   }) {
     return _RadiologyPrintSettings(
       includePatient: includePatient ?? this.includePatient,
@@ -2940,6 +2790,7 @@ final class _RadiologyPrintSettings {
       includeReport: includeReport ?? this.includeReport,
       includeReferences: includeReferences ?? this.includeReferences,
       includeSigner: includeSigner ?? this.includeSigner,
+      includeMetadata: includeMetadata ?? this.includeMetadata,
     );
   }
 }
@@ -3005,6 +2856,19 @@ String _radiologyPrintBodyHtml(
           PrintFormMetadataItem(
             label: l10n.radiologyEncounterLabel,
             value: order.encounterId ?? l10n.profileUnknownValue,
+          ),
+          PrintFormMetadataItem(
+            label: l10n.radiologyModalityLabel,
+            value:
+                _modalityLabelOrNull(l10n, order.modality) ??
+                l10n.profileUnknownValue,
+          ),
+          PrintFormMetadataItem(
+            label: l10n.radiologyStudyLabel,
+            value:
+                order.testsSummary ??
+                order.testDisplayName ??
+                l10n.profileUnknownValue,
           ),
           PrintFormMetadataItem(
             label: l10n.radiologyPriorityLabel,
@@ -3249,6 +3113,18 @@ String _radiologyPrintPreviewText(
         workflow.order.latestResult == null
             ? l10n.radiologyNoReportBody
             : _resultStatusLabel(l10n, workflow.order.latestResult!.status),
+      );
+  }
+  if (settings.includeMetadata) {
+    buffer
+      ..writeln('\n${l10n.radiologyPrintIncludeMetadataLabel}')
+      ..writeln(
+        _radiologyPrintMetadata(context, workflow)
+            .map(
+              (PrintFormMetadataItem item) =>
+                  '${item.label}: ${item.value}',
+            )
+            .join('\n'),
       );
   }
   return buffer.toString().trim();
@@ -3751,6 +3627,38 @@ class _NotesOnlyFormState extends State<_NotesOnlyForm> {
   }
 }
 
+List<AppSelectOption<String>> _radiologyPriorityOptions(
+  AppLocalizations l10n,
+) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: 'ROUTINE',
+      label: l10n.radiologyPriorityRoutineLabel,
+    ),
+    AppSelectOption<String>(
+      value: 'URGENT',
+      label: l10n.radiologyPriorityUrgentLabel,
+    ),
+    AppSelectOption<String>(
+      value: 'STAT',
+      label: l10n.radiologyPriorityStatLabel,
+    ),
+  ];
+}
+
+List<AppSelectOption<String>> _radiologyLateralityOptions(
+  AppLocalizations l10n,
+) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(value: 'LEFT', label: l10n.radiologyLateralityLeft),
+    AppSelectOption<String>(value: 'RIGHT', label: l10n.radiologyLateralityRight),
+    AppSelectOption<String>(
+      value: 'BILATERAL',
+      label: l10n.radiologyLateralityBilateral,
+    ),
+  ];
+}
+
 List<AppSelectOption<String>> _referenceOptions(
   List<RadiologyReferenceOption> options,
 ) {
@@ -3770,11 +3678,62 @@ RadiologyWorkspaceState? _watchState(WidgetRef ref) {
   };
 }
 
+AppListTableColumn<RadiologyOrder> _radiologyPatientColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'patient',
+    label: l10n.radiologyPatientColumnLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.patientDisplayName, right.patientDisplayName),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      return _TwoLineCell(
+        title: item.patientDisplayName ?? l10n.profileUnknownValue,
+        subtitle: _joinDisplay(<String?>[
+          item.patientId,
+          if (item.isPatientGroup)
+            _activeOrderCountLabel(l10n, item.activeOrderCount)
+          else
+            item.displayId,
+        ]),
+      );
+    },
+  );
+}
+
+AppListTableColumn<RadiologyOrder> _radiologyOrderIdentifierColumn(
+  AppLocalizations l10n,
+  RadiologyWorkbenchView view,
+) {
+  return AppListTableColumn<RadiologyOrder>(
+    id: 'orders',
+    label: view == RadiologyWorkbenchView.patients
+        ? l10n.radiologyOrdersColumnLabel
+        : l10n.radiologyOrderColumnLabel,
+    sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
+        appListTableCompareText(left.effectiveDisplayId, right.effectiveDisplayId),
+    cellBuilder: (BuildContext context, RadiologyOrder item) {
+      if (item.isPatientGroup) {
+        final int activeOrders = item.activeOrderCount > 0
+            ? item.activeOrderCount
+            : item.orderCount;
+        return Text(_activeOrderCountLabel(l10n, activeOrders));
+      }
+      return Text(item.effectiveDisplayId);
+    },
+  );
+}
+
 class _DetailSection extends StatelessWidget {
-  const _DetailSection({required this.title, required this.children});
+  const _DetailSection({
+    required this.title,
+    required this.children,
+    this.actions = const <Widget>[],
+  });
 
   final String title;
   final List<Widget> children;
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -3790,7 +3749,12 @@ class _DetailSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(title, style: theme.textTheme.titleSmall),
+            Row(
+              children: <Widget>[
+                Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
+                ...actions,
+              ],
+            ),
             SizedBox(height: theme.spacing.sm),
             ...children,
           ],
@@ -3886,6 +3850,63 @@ class _TwoLineCell extends StatelessWidget {
   }
 }
 
+class _IconTwoLineCell extends StatelessWidget {
+  const _IconTwoLineCell({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      children: <Widget>[
+        Icon(
+          icon,
+          size: theme.appTokens.listIconSize,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(child: _TwoLineCell(title: title, subtitle: subtitle)),
+      ],
+    );
+  }
+}
+
+class _ModalityLabel extends StatelessWidget {
+  const _ModalityLabel({required this.modality});
+
+  final String? modality;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    return Row(
+      children: <Widget>[
+        Icon(
+          _radiologyModalityIcon(modality),
+          size: theme.appTokens.listIconSize,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        SizedBox(width: theme.spacing.xs),
+        Expanded(
+          child: Text(
+            _modalityLabelOrNull(l10n, modality) ?? l10n.profileUnknownValue,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 void _showMutationResult(BuildContext context, AppFailure? failure) {
   if (!context.mounted) {
     return;
@@ -3964,14 +3985,16 @@ String _resultStatusLabel(AppLocalizations l10n, String? status) {
 
 String _modalityLabel(AppLocalizations l10n, String? modality) {
   return switch ((modality ?? '').trim().toUpperCase()) {
-    'XRAY' => l10n.radiologyModalityXray,
+    'XRAY' || 'X_RAY' || 'X-RAY' => l10n.radiologyModalityXray,
     'CT' => l10n.radiologyModalityCt,
     'MRI' => l10n.radiologyModalityMri,
     'ULTRASOUND' => l10n.radiologyModalityUltrasound,
     'FLUOROSCOPY' => l10n.radiologyModalityFluoroscopy,
     'MAMMOGRAPHY' => l10n.radiologyModalityMammography,
-    'NUCLEAR_MEDICINE' => l10n.radiologyModalityNuclearMedicine,
-    'INTERVENTIONAL_RADIOLOGY' => l10n.radiologyModalityInterventionalRadiology,
+    'NUCLEAR_MEDICINE' || 'NUCLEAR MEDICINE' =>
+      l10n.radiologyModalityNuclearMedicine,
+    'INTERVENTIONAL_RADIOLOGY' || 'INTERVENTIONAL RADIOLOGY' =>
+      l10n.radiologyModalityInterventionalRadiology,
     'PET' => l10n.radiologyModalityPet,
     'ECG' => l10n.radiologyModalityEcg,
     'ECHO' => l10n.radiologyModalityEcho,
@@ -3985,6 +4008,26 @@ String _modalityLabel(AppLocalizations l10n, String? modality) {
 String? _modalityLabelOrNull(AppLocalizations l10n, String? modality) {
   final String normalized = modality?.trim() ?? '';
   return normalized.isEmpty ? null : _modalityLabel(l10n, normalized);
+}
+
+IconData _radiologyModalityIcon(String? modality) {
+  return switch ((modality ?? '').trim().toUpperCase()) {
+    'XRAY' || 'X_RAY' || 'X-RAY' => Icons.photo_camera_outlined,
+    'CT' => Icons.donut_large_outlined,
+    'MRI' => Icons.all_out_outlined,
+    'ULTRASOUND' || 'US' => Icons.graphic_eq_outlined,
+    'FLUOROSCOPY' => Icons.video_camera_back_outlined,
+    'MAMMOGRAPHY' => Icons.image_search_outlined,
+    'PET' => Icons.blur_on_outlined,
+    'NUCLEAR_MEDICINE' || 'NUCLEAR MEDICINE' => Icons.radio_button_checked,
+    'INTERVENTIONAL_RADIOLOGY' || 'INTERVENTIONAL RADIOLOGY' =>
+      Icons.medical_services_outlined,
+    'ECG' => Icons.monitor_heart_outlined,
+    'ECHO' => Icons.favorite_border,
+    'ENDO' || 'GASTRO' => Icons.biotech_outlined,
+    'OTHER' => Icons.image_search_outlined,
+    _ => Icons.image_search_outlined,
+  };
 }
 
 String _activeOrderCountLabel(AppLocalizations l10n, int count) {
@@ -4107,7 +4150,7 @@ List<AppSearchBarFilterChoice> _radiologyModalityFilterChoices(
       AppSearchBarFilterChoice(
         value: modality,
         label: _modalityLabel(l10n, modality),
-        icon: Icons.biotech_outlined,
+        icon: _radiologyModalityIcon(modality),
       ),
   ];
 }
@@ -4177,30 +4220,6 @@ AppWorkspaceStatusTone _resultStatusTone(String? status) {
   };
 }
 
-AppWorkspaceStatusTone _gateTone(String? value) {
-  final String normalized = (value ?? '').trim().toUpperCase();
-  if (normalized.isEmpty) {
-    return AppWorkspaceStatusTone.neutral;
-  }
-  if (<String>[
-    'PAID',
-    'APPROVED',
-    'AUTHORIZED',
-    'CLEARED',
-  ].contains(normalized)) {
-    return AppWorkspaceStatusTone.success;
-  }
-  if (<String>[
-    'DECLINED',
-    'DENIED',
-    'FAILED',
-    'CANCELLED',
-  ].contains(normalized)) {
-    return AppWorkspaceStatusTone.error;
-  }
-  return AppWorkspaceStatusTone.warning;
-}
-
 IconData _orderStatusIcon(String? status) {
   return switch ((status ?? '').trim().toUpperCase()) {
     'COMPLETED' => Icons.check_circle_outline,
@@ -4221,6 +4240,11 @@ String? _formatDateTimeOrNull(BuildContext context, DateTime? value) {
   return value == null
       ? null
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
+}
+
+String? _trimmedOrNull(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }
 
 String _valueOrUnknown(BuildContext context, String? value) {

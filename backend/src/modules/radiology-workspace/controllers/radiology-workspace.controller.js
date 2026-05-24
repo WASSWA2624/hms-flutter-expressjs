@@ -7,6 +7,7 @@ const getRadiologyWorkbench = asyncHandler(async (req, res) => {
   const {
     stage,
     status,
+    view,
     modality,
     from,
     to,
@@ -23,6 +24,7 @@ const getRadiologyWorkbench = asyncHandler(async (req, res) => {
     {
       stage,
       status,
+      view,
       modality,
       from,
       to,
@@ -62,6 +64,16 @@ const createRadiologyOrder = asyncHandler(async (req, res) => {
 
 const getRadiologyOrderWorkflow = asyncHandler(async (req, res) => {
   const data = await radiologyWorkspaceService.getRadiologyOrderWorkflow(req.params.id);
+  return sendSuccess(res, 200, 'messages.radiology_workspace.workflow.success', data);
+});
+
+const updateRadiologyOrderRequestDetails = asyncHandler(async (req, res) => {
+  const data = await radiologyWorkspaceService.updateRadiologyOrderRequestDetails(
+    req.params.id,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
   return sendSuccess(res, 200, 'messages.radiology_workspace.workflow.success', data);
 });
 
@@ -210,6 +222,7 @@ module.exports = {
   getRadiologyReferenceData,
   createRadiologyOrder,
   getRadiologyOrderWorkflow,
+  updateRadiologyOrderRequestDetails,
   assignRadiologyOrder,
   startRadiologyOrder,
   completeRadiologyOrder,

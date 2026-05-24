@@ -102,6 +102,11 @@ const createRadiologyOrderSchema = z.object({
   }
 );
 
+const updateRadiologyOrderRequestDetailsSchema = z.object({
+  clinical_note: z.string().trim().max(65535).optional().nullable(),
+  request_details: requestDetailsSchema.optional().default({}),
+});
+
 const assignRadiologyOrderSchema = z.object({
   assignee_user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   notes: z.string().trim().max(65535).optional().nullable(),
@@ -191,6 +196,7 @@ module.exports = {
   studyWorkflowParamsSchema,
   resultWorkflowParamsSchema,
   createRadiologyOrderSchema,
+  updateRadiologyOrderRequestDetailsSchema,
   assignRadiologyOrderSchema,
   startRadiologyOrderSchema,
   completeRadiologyOrderSchema,

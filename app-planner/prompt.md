@@ -1,73 +1,22 @@
-# Task: Implement Radiology workspace configuration, reusable imaging request workflow, report/asset usability, and print preview
+# Task: Refine Radiology workspace, imaging-test configuration, reusable request imaging flow, and reporting UX
 
-You are working in the HMS codebase with these main project folders:
+Inspect the attached HMS codebase and implement the requested radiology improvements using the existing architecture, naming conventions, UI patterns, localization approach, and testing style.
 
-* `app-planner`
-* `backend`
-* `frontend`
+## Main problem
 
-Implement the next Radiology workspace iteration. The current `/radiology` page already has a patient/orders view toggle, refresh action, primary `Request imaging` action, summary cards, searchable table, and a request imaging modal. Keep that working, then add the requested configuration and reusable radiology workflow improvements.
+The Radiology module has improved, but several workflows need refinement:
 
-## 1. Problem to solve
+1. The worklist column order must change depending on whether the user is in Orders view or Patients view.
+2. The Radiology configurations dialog should manage Imaging tests only; remove the Equipment tab UI.
+3. Imaging tests must be easier to create, edit, delete, and visually identify by modality.
+4. The reusable Request radiology/imaging component must use a searchable select + Add flow instead of showing a large catalog list.
+5. Radiology workflow details, request details editing, reporting, print preview, studies/assets, and doctor review need better usability while staying synchronized with backend state and realtime updates.
 
-The Radiology workspace currently supports viewing radiology worklists and requesting a single imaging study, but it is missing:
+## Relevant project areas to inspect or modify
 
-* A top-level Radiology configuration button and configuration dialog.
-* Reusable radiology request/configuration/report components.
-* Multi-test imaging requests for one patient.
-* Better reuse of existing shared radiology dialogs/components.
-* Easier report editing, asset/PACS display, image attachment where backend support exists, and professional print preview/printing.
-* Full localization for all visible text.
-* A table layout that shows no more than 4 user-facing data columns at a time.
+Inspect these areas first and modify only the files required for the requested changes.
 
-Implement this without rewriting the whole module or creating duplicate UI patterns.
-
-## 2. Important current UI details to preserve
-
-The coding environment may not include the screenshots, so preserve these written UI requirements:
-
-* The Radiology workspace uses the existing HMS shell with the left navigation. `Radiology` is active under `Diagnostics and medication`.
-* The page title row shows the Radiology icon, `Radiology`, and a green `Live sync` status.
-* In patients view, the top action row currently shows:
-
-  * `Orders view` toggle button with swap icon.
-  * `Refresh` button with refresh icon.
-  * Primary blue `Request imaging` button with plus icon.
-* In orders view, the toggle button label changes to `Patients view`.
-* Add a new secondary configuration button in this same action row without removing the existing buttons. Preferred order:
-
-  1. View toggle
-  2. Configuration
-  3. Refresh
-  4. Primary `Request imaging`
-* Summary cards currently show counts such as `Radiology patients`, `Total orders`, and `Released`. Preserve the compact card style.
-* The worklist search hint is: `Search patient, order, encounter, study, report, or PACS text`.
-* The table currently shows columns such as Patient, Order(s), Study, Priority, Billing. Update it so no more than 4 data columns are visible by default. Put remaining columns in column settings/details rather than removing the information.
-* The current request imaging modal is centered and titled `Request imaging`, with:
-
-  * A top catalog search row: `Catalog search (optional)` and `Search catalog`.
-  * `Patient *` dropdown.
-  * `Encounter (optional)` dropdown.
-  * `Study *` dropdown.
-  * `Clinical notes (optional)` multiline field.
-  * Existing AppDialog-style close/maximize behavior.
-* Keep this request modal easy and responsive, but replace the single-study behavior with a multi-test imaging request workflow.
-
-## 3. Project areas to inspect first
-
-Use these files as the source of truth before modifying anything.
-
-### Planner/reference files
-
-Inspect only; do not edit planner files unless absolutely necessary.
-
-* `app-planner/prompt.md`
-* `app-planner/dev-plan/21-lab.md`
-* `app-planner/dev-plan/22-radiology.md`
-* `app-planner/dev-plan/10-workspace-ui.md`
-* Relevant frontend/backend app rules under `frontend/app-planner/app-rules/*` and `backend/app-planner/app-rules/*`
-
-### Frontend Radiology files
+### Frontend
 
 * `frontend/lib/features/radiology/presentation/pages/radiology_workspace_page.dart`
 * `frontend/lib/features/radiology/presentation/controllers/radiology_workspace_controller.dart`
@@ -75,412 +24,421 @@ Inspect only; do not edit planner files unless absolutely necessary.
 * `frontend/lib/features/radiology/domain/repositories/radiology_repository.dart`
 * `frontend/lib/features/radiology/data/repositories/radiology_repository_impl.dart`
 * `frontend/lib/features/radiology/data/dtos/radiology_dtos.dart`
-
-### Shared frontend components to reuse before creating new ones
-
-* `frontend/lib/shared/components/*`
-* `frontend/lib/shared/forms/*`
-* `frontend/lib/shared/layout/*`
-* `frontend/lib/shared/printing/print_form_template.dart`
-* `frontend/lib/shared/printing/printing.dart`
-* `frontend/lib/shared/components/app_file_upload_panel.dart`
 * `frontend/lib/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart`
 * `frontend/lib/shared/clinical_actions/clinical_action_models.dart`
-* `frontend/lib/shared/lab_catalog/*`
-
-The existing shared `ClinicalRadiologyOrderActionDialog` already supports catalog search and multiple radiology requests. Reuse/refactor this behavior instead of creating a second unrelated multi-test selector.
-
-### Frontend localization files
-
+* `frontend/lib/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart`
+* `frontend/lib/shared/components/*`
 * `frontend/lib/l10n/app_en.arb`
-* `frontend/lib/l10n/app_localizations.dart`
-* `frontend/lib/l10n/app_localizations_en.dart`
-* `frontend/lib/l10n/app_localizations_x.dart`
+* generated l10n files if this project commits them
 
-### Backend Radiology files
+Reuse existing components in `frontend/lib/shared/*` before creating new widgets.
 
-* `backend/src/app/router.js`
-* `backend/src/modules/radiology-workspace/*`
+### Backend
+
+* `backend/src/modules/radiology-workspace/routes`
+* `backend/src/modules/radiology-workspace/controllers`
+* `backend/src/modules/radiology-workspace/schemas`
+* `backend/src/modules/radiology-workspace/services`
+* `backend/src/modules/radiology-workspace/repositories`
 * `backend/src/modules/radiology-test/*`
 * `backend/src/modules/radiology-order/*`
 * `backend/src/modules/radiology-result/*`
 * `backend/src/modules/imaging-study/*`
 * `backend/src/modules/imaging-asset/*`
-* `backend/src/modules/pacs-link/*`
-* `backend/prisma/schema.prisma`
+* `backend/prisma/schema.prisma` only if a verified schema change is truly required
 
-### Backend equipment files
+### App planner
 
-Radiology configuration asks for equipment support. Verify and reuse the existing equipment modules before adding anything new.
+Review relevant planning docs and update only if the project convention requires task-tracking changes:
 
-* `backend/src/modules/equipment-category/*`
-* `backend/src/modules/equipment-registry/*`
-* `frontend/lib/core/network/api_endpoints.dart`
+* `app-planner/dev-plan/22-radiology.md`
+* `app-planner/dev-plan/10-workspace-ui.md`
+* `app-planner/dev-plan/35-reports-audit.md`
+* `app-planner/prompt.md`
 
-Known schema facts to verify in code before implementation:
+## Existing UI details that must be preserved or converted into requirements
 
-* `radiology_test` currently has `tenant_id`, `name`, `code`, `modality`, timestamps, soft delete/version fields.
-* `equipment_registry` exists separately with fields such as `equipment_name`, `equipment_code`, `serial_number`, `manufacturer`, `model_number`, `status`, `facility_id`, and `equipment_category_id`.
-* A direct persisted radiology-test-to-equipment relationship may not exist. Do not fake this relationship in UI state only.
+The coding agent may not have screenshots, so implement using these written UI requirements:
 
-## 4. Architecture and style requirements
+### Current Radiology worklist screen
 
-Preserve the existing architecture:
+The `/radiology` page shows:
 
-* Frontend must continue using Flutter, Riverpod, feature/domain/data/presentation layering, `Result<T>`, DTO mapping, repository interfaces, and existing shared UI components.
-* Backend must continue using the existing Express module structure: routes, schemas, controllers, services, repositories, Prisma, Zod validation, audit logging, soft-delete conventions, and response format conventions.
-* Reuse `frontend/lib/shared/*` components before creating new components.
-* Use `AppWorkspace`, `AppListTable`, `AppListTableSearch`, `AppDialog`, `showAppWorkspaceActionDialog`, shared form fields, `AppFormShell`, `AppFormActions`, `AppWorkspaceDetailPanel`, status badges, and async/error state components.
-* Follow the Lab module’s configuration pattern, especially `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`, but do not copy lab-specific naming or duplicate lab-only logic.
-* Do not perform broad unrelated refactors.
-* Do not rewrite the whole Radiology page.
-* Do not change unrelated modules except where a shared radiology component refactor requires updating existing callers.
-* Modify only the files required for this change.
-* Keep all linter issues cleared.
+* Title: `Radiology`
+* Green `Live sync` status beside the title.
+* Top buttons:
 
-## 5. Frontend implementation requirements
+  * `Patients view`
+  * `Configurations`
+  * `Refresh`
+  * primary `Request imaging`
+* Summary cards:
 
-### A. Add Radiology configuration button
+  * `Total orders`
+  * `Released`
+* Worklist section:
 
-Add a secondary configuration button to the Radiology workspace action row.
+  * Title: `Imaging worklist`
+  * Subtitle: `System imaging orders with modality workflow and report status.`
+  * Search placeholder: `Search patient, order, encounter, study, report, or PACS text`
+  * Table currently shows `#`, `Patient`, `Order`, `Study`, `Priority`.
 
-* Button label: localized `Configurations`.
-* Icon: `Icons.tune_outlined`.
-* Gate it behind the same permission style used elsewhere. Configuration create/edit/delete should require radiology write access.
-* Do not remove:
+### Required worklist behavior
 
-  * View toggle.
-  * Refresh.
-  * Primary `Request imaging`.
-* Disable or show loading consistently while mutations are in progress.
+* In **Orders view**, the first data column after `#` must be `Order`.
 
-### B. Add Radiology configuration dialog
+  * Default order: `#`, `Order`, `Patient`, `Study`, `Priority`.
+* In **Patients view**, the first data column after `#` must be `Patient`.
 
-Create a reusable Radiology configuration dialog using existing AppDialog/list/search/form patterns.
+  * Default order: `#`, `Patient`, `Order`, `Study`, `Priority`.
+* Preserve current filters, search, sorting, settings, pagination, mobile layout, and table-column settings behavior.
+* Do not show more than the current intended number of default data columns unless the existing settings allow it.
 
-Expected dialog:
+Also verify backend support for the `view` query parameter. The frontend already sends a view value, and backend schema/service support it, but confirm that the radiology workspace controller forwards `view` from `req.query` into the service filters.
 
-* Title: localized `Radiology configurations`.
-* Icon: tune/settings icon.
-* Scrollable.
-* Desktop max width similar to lab configuration dialog, around `980`.
-* Responsive layout for desktop/tablet/mobile.
-* Search should be fast and easy while typing.
-* Use validation, disabled states, loading states, and duplicate-submit protection.
+## Radiology configurations dialog
 
-Include these configuration areas:
+Current dialog behavior:
 
-#### Imaging tests
+* Title: `Radiology configurations`
+* Body text currently says it manages persisted imaging tests and equipment records.
+* It has two tabs:
 
-Support listing, searching, creating, editing, and deleting custom radiology/imaging tests using the existing backend radiology-test API.
+  * `Imaging tests`
+  * `Equipment`
+* Imaging tests table columns:
 
-Fields must be based on the actual backend schema. At minimum:
+  * `Name`
+  * `Code`
+  * `Modality`
+  * `Action`
+* Existing rows include standard catalog items such as:
 
-* Name, required.
-* Code, optional.
-* Modality, required/defaulted according to backend rules.
-* Any additional fields only if they are actually persisted or backed by existing backend metadata.
+  * `Abdomen and pelvis Contrast fluoroscopy`
+  * `Abdomen and pelvis CT 3D reconstruction`
+* The current action column is too limited.
 
-Use `/api/v1/radiology-tests` through the existing `ApiEndpoints`/repository pattern. The backend already has `radiologyTests` in `frontend/lib/core/network/api_endpoints.dart`.
+Required behavior:
 
-Also account for the backend standard radiology catalog if available through `include_standard_catalog=true`:
+* Remove the Equipment tab UI completely.
+* Remove the tab strip entirely because there is now only one section: Imaging tests.
+* Update copy/body text so it no longer mentions equipment.
+* Keep the configurations dialog focused on Imaging tests.
+* Preserve the current dialog visual style, spacing, toolbar, search, refresh, and create behavior.
+* Add useful row actions for imaging tests:
 
-* Standard catalog rows should be searchable/selectable.
-* Do not allow editing/deleting standard rows unless backend explicitly supports it.
-* Show read-only state or a localized message for standard rows.
-* If “copy/customize standard test” is implemented, persist it as a custom test using the backend create endpoint.
+  * edit
+  * delete
+  * copy/customize only where still needed for standard catalog rows
+* Do not fake edit/delete for generated standard catalog rows if the backend does not support direct mutation of those rows.
 
-#### Equipment
+  * Standard catalog rows may remain read-only or use a localized “copy/customize” flow.
+  * Once a standard row is copied into a persisted/custom imaging test, the copied row must be editable and deletable.
+* The create/edit form should support the existing backend contract:
 
-Add equipment configuration only using verified backend support.
+  * `name`
+  * optional `code`
+  * `modality`
+* Do not add unsupported imaging-test fields unless verified in the backend model and APIs.
 
-* Reuse existing equipment registry/category APIs if they support the required create/edit/list behavior.
-* Do not create a duplicate equipment model.
-* If direct radiology-test-to-equipment association is not persisted in the current schema, do not fake that association in local UI state.
-* Either:
+## Modality labels and icons
 
-  * manage equipment records separately in the configuration dialog using `equipment-registry`, or
-  * add a narrowly scoped, fully migrated, fully tested persisted relationship if it clearly matches project conventions.
-* If a required equipment-to-test persistence detail is missing or unclear, show a localized disabled/gap state in the dialog and document the backend gap in code comments near the implementation point.
+Current modality labels are inconsistent, for example some display as title case.
 
-### C. Refactor request imaging into reusable shared radiology components
+Required behavior:
 
-The current `_CreateOrderForm` in `radiology_workspace_page.dart` is feature-local and supports one test. Replace/refactor it.
+* Use consistent uppercase display labels for modalities throughout Radiology and reusable request imaging UI.
 
-Requirements:
+  * Examples: `X-RAY`, `CT`, `MRI`, `ULTRASOUND`, `FLUOROSCOPY`, `MAMMOGRAPHY`, `PET`, `NUCLEAR MEDICINE`, `INTERVENTIONAL RADIOLOGY`, `ECG`, `ECHO`, `ENDO`, `GASTRO`, `OTHER`.
+* Preserve stored enum/API values; only change display labels unless backend data truly requires normalization.
+* Add appropriate visual icons for modality options and rows.
 
-* Use or refactor the existing shared `ClinicalRadiologyOrderActionDialog` multi-test catalog behavior.
-* Avoid duplicating the multi-test selector logic.
-* If the existing shared dialog cannot directly handle patient/encounter selection, extract the reusable catalog selector into a neutral shared radiology component, for example under:
+  * Use existing Material icons/shared icon patterns where possible.
+  * Do not add external packages or assets unless absolutely necessary.
+  * Provide sensible fallbacks for unknown modalities.
+* Use these icons consistently in:
 
-  * `frontend/lib/shared/radiology_catalog/`
-* Keep old clinical/OPD callers working if shared code is refactored.
-* Add a barrel export for any new shared radiology folder.
+  * imaging-test configuration rows/forms,
+  * modality filters,
+  * request imaging/radiology selector options,
+  * selected request rows,
+  * workflow detail summaries where appropriate.
 
-Radiology workspace request dialog must support:
+## Reusable Request radiology/imaging component
 
-* Patient selection, required.
-* Encounter selection, optional and filtered by selected patient where possible.
-* One or more selected imaging tests, required.
-* Catalog search.
-* Optional clinical notes.
-* Optional request metadata where supported by backend/reference data:
+There is already a good shared clinical radiology request dialog in:
+
+`frontend/lib/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart`
+
+This shared flow appears from the clinical workspace and currently has:
+
+* `Modality`
+* `Body region`
+* `Laterality`
+* `Priority`
+* `Clinical note`
+* `Search radiology catalog`
+* A large left-side catalog list showing text such as `Showing 100 of 6500 matches`
+* A right-side `Selected radiology requests` panel
+
+The Radiology workspace has a separate `Request imaging` form with:
+
+* `Catalog search (optional)`
+* `Search catalog`
+* `Patient *`
+* `Encounter (optional)`
+* `Clinical notes (optional)`
+* `Selected radiology requests`
+
+Required behavior:
+
+* Reuse/refactor the shared clinical radiology request component instead of maintaining separate request-selection behavior in Radiology.
+* Remove the large catalog results list that shows text like `Showing 100 of 6500 matches`.
+* Replace it with a searchable select/dropdown for radiology catalog items.
+* Place an `Add` button to the right of the searchable select.
+* The `Add` button must remain disabled until a catalog item is selected.
+* When the user clicks `Add`, the selected catalog item is added to `Selected radiology requests`.
+* Prevent duplicate selected requests unless the existing clinical model explicitly supports duplicates.
+* Keep the selected requests list visible and easy to manage.
+* Selected requests should support removing items and editing per-request details where already supported.
+* The catalog dropdown options must narrow based on selected filters:
 
   * modality
   * body region
   * laterality
+  * priority where applicable
+  * search text
+* Example: when `CT` is selected, the dropdown must not show `X-RAY` tests. When `MRI` is selected, it should show MRI-compatible tests only.
+* Use catalog/test metadata from the existing backend/reference-data model; do not hard-code unsupported medical mappings.
+* Body regions should have clear icons where possible.
+* Laterality should include supported values such as `LEFT`, `RIGHT`, and `BILATERAL`; verify any additional values from the existing code/catalog before adding them.
+* The raw task mentions “colono and so on”; treat this as unclear. Verify whether this belongs to body region, modality, procedure, or catalog metadata before implementing. Do not invent unsupported laterality values.
+* The shared selector must remain reusable across clinical, radiology, nursing, IPD, ICU, theater, OPD, physiotherapy, or any future place where radiology requests are made.
+* Keep the Radiology workspace request payload compatible with the existing backend multi-test contract:
+
+  * patient
+  * optional encounter
+  * order notes/clinical notes
+  * one or more selected requested tests
+  * per-test modality, body region, laterality, priority, clinical note/request details
+
+## Radiology workflow detail screen
+
+Current workflow detail shows:
+
+* Header title: `Radiology workflow`
+* Patient name and status.
+* Status such as `Completed`.
+* Warning such as `Billing gate unavailable`.
+* Action button such as `Perform study`.
+* Card-like fields:
+
+  * `Ordered`
+  * `Modality`
+  * `Payment`
+  * `Authorization`
+* Request details:
+
+  * `Study`
+  * `Priority`
+  * `Body region`
+  * `Laterality`
+  * `Clinical notes`
+
+Required behavior:
+
+* Keep patient name and status prominent.
+* Replace the card-like summary fields with a compact property/value layout.
+* Show values as simple rows or inline fields:
+
+  * `Ordered: <date>`
+  * `Modality: <MODALITY>`
+  * `Payment: <value>`
+  * `Authorization: <value>`
+  * include `Encounter: <value>` if available and already supported by the data model
+* Use uppercase modality display in this detail view.
+* Preserve missing values as localized `Not available`.
+* Do not invent billing or authorization data.
+* Make request details editable:
+
   * priority
-* Duplicate prevention.
-* Remove/edit selected tests before submit.
-* Clear validation messages.
-* Good keyboard/mouse responsiveness.
-* Mobile-friendly layout.
+  * body region
+  * laterality
+  * clinical notes
+* Use a focused edit action/dialog or inline edit pattern consistent with existing HMS UI.
+* Persist edits to the backend using the smallest correct existing API path where possible.
+* After saving edits, refresh the selected workflow detail and worklist row.
+* Ensure realtime events or existing refresh mechanisms propagate the update to other open clients.
 
-Payload requirements:
+## Reporting UX
 
-* Use `requested_tests` array when backend support exists.
-* Each selected test should map to a backend-compatible shape similar to:
+Current report section shows:
 
-```json
-{
-  "patient_id": "...",
-  "encounter_id": "...",
-  "ordered_at": "...",
-  "requested_tests": [
-    {
-      "radiology_test_id": "...",
-      "clinical_note": "...",
-      "request_details": {
-        "modality": "...",
-        "body_region": "...",
-        "laterality": "...",
-        "priority": "..."
-      }
-    }
-  ]
-}
-```
+* Report status such as `Final`.
+* Reported timestamp.
+* Generated report preview.
+* Actions such as print, draft, finalize, attest, amend/addendum depending on state.
 
-Do not discard clinical notes. Do not keep the old single-test-only payload unless backend verification shows it is the only supported route.
+Required behavior:
 
-### D. Align frontend with backend multi-test ordering
+* Improve the draft/final report editor so it is easier to use and visually clear.
+* Keep existing backend report lifecycle actions:
 
-The generic backend `/api/v1/radiology-orders` create schema already supports `requested_tests`. The current workspace route `/api/v1/radiology/orders` may only support single-test creation.
+  * draft
+  * finalize
+  * attest/request attestation if present
+  * amend/addendum if present
+* Use clear localized sections such as:
 
-Implement the smallest correct backend/frontend alignment:
+  * Findings
+  * Impression/Conclusion
+  * Report narrative
+  * References/assets where supported
+* Make addendum/amendment entry user-friendly, but do not change backend semantics unless required.
+* Do not add unsupported medical AI/report-generation behavior.
+* Preserve audit/realtime behavior for report mutations.
 
-* Prefer extending the Radiology workspace create route to accept the same `requested_tests` shape and return a workspace-compatible workflow response.
-* Reuse backend radiology-order service logic where possible instead of duplicating multi-test order creation.
-* Preserve current worklist/detail refresh behavior.
-* If multiple orders are created for multiple tests, the UI should return to the same Radiology workspace context and show the updated patient/order group correctly.
-* Do not create frontend-only fake orders.
+## Print/report preview
 
-### E. Radiology worklist table: no more than 4 visible columns
+Current print preview has selectable sections but can show too much metadata.
 
-Update the Radiology table so no more than 4 data columns are visible by default.
+Required behavior:
 
-* Do not globally change `AppListTable` behavior unless absolutely necessary.
-* Prefer passing 4 default `columns` and moving additional available columns into `columnChoices`.
-* Suggested default visible columns:
+* Default print/report preview should emphasize:
 
-  * Patient
-  * Order(s)
-  * Study
-  * Priority
-* Billing, status, next action, modality, dates, and similar fields should remain available through:
+  * patient identity/context
+  * modality
+  * test/study performed
+  * requested details
+  * findings
+  * impression/report text
+  * signer/reporter where available
+* Metadata should be optional and not dominate the default preview.
+* Keep a way for the user to select what appears on the printed report.
+* Use the existing shared print template/components.
+* Do not implement printing by screenshots.
 
-  * column settings,
-  * row/detail panel,
-  * mobile tile,
-  * or workflow detail.
-* Preserve sorting where applicable.
-* Preserve patient and orders views.
-* Convert hard-coded Radiology table labels and empty states to l10n.
+## Studies/assets and PACS
 
-### F. Reporting, images/assets, PACS, and editability
+Current section says studies will appear after imaging is performed and supports tracking imaging studies, uploaded assets, and PACS synchronization state.
 
-Improve Radiology reporting without inventing unsupported backend features.
+Required behavior:
 
-* Keep report drafting/editing easy and focused.
-* Reuse existing report form patterns and shared form components.
-* Make findings, impression/conclusion, and report text easy to edit.
-* Show existing imaging studies, assets, and PACS links using the existing `_StudiesSection`/workflow data pattern, but refactor reusable pieces only if helpful.
-* Reuse `AppFileUploadPanel` for image attachment UI.
-* Wire upload only to verified backend endpoints, such as:
+* Preserve existing studies/assets/PACS display.
+* Support adding images/assets only if the backend and storage contract are already present and can be verified.
+* If upload persistence is not fully wired, do not fake it. Keep or improve the localized empty/disabled state text so users understand what is available.
+* Do not introduce unrelated storage architecture.
 
-  * `/api/v1/radiology/studies/:id/assets/init-upload`
-  * `/api/v1/radiology/studies/:id/assets/commit-upload`
-  * or existing imaging asset endpoints if they are the correct contract.
-* Do not fake uploaded image persistence.
-* Let the user insert an existing asset/PACS reference into the report text if it can be done with current persisted data.
-* Image annotation persistence is unclear in the current archive. Verify backend support before implementing. If no storage model/API exists for annotations, do not fake persistence; show a localized unavailable/gap state or leave the annotation action disabled.
+## Doctor review section
 
-### G. Print configuration and preview
+Current section says the latest report is released for clinical review and shows a `Ready for review` state.
 
-Add a patient/order report print configuration and preview flow.
+Required behavior:
 
-Requirements:
+* Clarify the purpose of this section with concise localized text or tooltip.
+* Meaning: the final/released radiology report is ready for the requesting clinician or doctor to review.
+* If no final report is released, show a clear pending/unavailable state.
+* Do not add new doctor-review workflow actions unless existing backend support is verified.
 
-* Reuse `frontend/lib/shared/printing/print_form_template.dart`.
-* Reuse `printFormTemplateDocument` from `frontend/lib/app/printing/print_form_template_context.dart` if that matches existing patterns.
-* Do not print the visible UI screen directly.
-* Provide a preview/configuration UI where the user can choose what to include.
-* Include available sections such as:
+## Backend and realtime synchronization
 
-  * facility/app header,
-  * patient details,
-  * encounter/order details,
-  * selected imaging tests/studies,
-  * findings,
-  * impression/conclusion,
-  * report text,
-  * image/PACS references where available,
-  * signer/release metadata where available.
-* Use professional report formatting with page numbers and footer, consistent with Lab report printing patterns.
+* Preserve the existing backend architecture and service boundaries.
+* Ensure frontend changes are backed by real backend mutations.
+* Avoid frontend-only fake state.
+* Ensure radiology order creation, request-detail edits, imaging-test CRUD, report actions, study/assets actions, and refreshes remain synchronized.
+* Use the existing realtime group/event system already used by the Radiology workspace.
+* The UI should update after:
 
-## 6. Backend implementation requirements
+  * a user changes data in the UI,
+  * the backend/database changes data and emits existing realtime events,
+  * refresh/polling runs.
+* Verify that creating multiple requested tests remains supported.
+* Verify that radiology reference data refreshes after imaging-test create/update/delete so the request selector reflects new tests.
 
-Update backend only where needed to support the frontend correctly.
+## Localization
 
-### A. Multi-test workspace ordering
+* Ensure 100% localization.
+* No new hard-coded user-facing strings in Dart widgets or backend responses shown directly to users.
+* Add/update l10n keys for:
 
-If `/api/v1/radiology/orders` does not support `requested_tests`, update:
+  * uppercase modality display labels,
+  * imaging-test configuration copy,
+  * edit/delete actions,
+  * request selector searchable dropdown and Add behavior,
+  * request-detail edit labels,
+  * doctor-review explanatory text,
+  * studies/assets empty or disabled states,
+  * report/print section labels.
+* Update generated localization files if that is the project convention.
 
-* `backend/src/modules/radiology-workspace/schemas/radiology-workspace.schema.js`
-* `backend/src/modules/radiology-workspace/services/radiology-workspace.service.js`
-* related controller/repository/serializer files as needed.
+## Scope limits
 
-Requirements:
+* Do not rewrite the Radiology module.
+* Do not redesign unrelated screens.
+* Do not change unrelated backend modules.
+* Do not replace existing shared HMS components when they can be reused.
+* Do not introduce new packages unless there is no reasonable existing project solution.
+* Do not change database schema unless verified as necessary.
+* Do not remove backend equipment APIs unless the codebase proves they are unused and removal is required. The requested removal is specifically for the Radiology configurations UI.
+* Modify only files required for this task.
 
-* Accept single-test legacy payloads and new multi-test `requested_tests`.
-* Preserve backward compatibility for existing callers.
-* Persist `clinical_note` and `request_details`.
-* Prevent duplicate test requests.
-* Create clinical notes if existing generic radiology-order behavior does so and it fits the workspace route.
-* Return a workspace-compatible workflow/order response.
-* Publish realtime/audit events consistently with existing workspace mutations.
-* Add/update backend tests.
+## Testing and verification
 
-### B. Radiology test configuration
+Run existing targeted and general checks according to the project scripts.
 
-Use existing `/api/v1/radiology-tests` behavior first.
+Minimum expected verification:
 
-If the frontend needs extra fields, verify they are supported by:
+### Frontend
 
-* schema,
-* service,
-* Prisma model,
-* serializer,
-* tests.
+* Run Flutter/Dart dependency and generation steps used by this project.
+* Run `flutter analyze`.
+* Run relevant Flutter tests, including existing radiology DTO/controller/widget tests if present.
+* Add or update tests for:
 
-Do not add UI fields that silently disappear after save.
+  * Orders view default column order.
+  * Patients view default column order.
+  * request selector filtering by modality.
+  * Add button disabled/enabled behavior.
+  * selected request population/removal.
+  * imaging-test create/edit/delete UI state where practical.
+  * request detail edit payload/state refresh where practical.
 
-### C. Equipment configuration
+### Backend
 
-Use existing equipment routes if they satisfy the configuration need.
+* Run backend lint.
+* Run backend tests.
+* Add or update tests for:
 
-If a new relation or field is required:
+  * radiology workspace `view` query forwarding/filtering.
+  * imaging-test create/update/delete behavior.
+  * request-detail update path if a new or adjusted endpoint/service method is required.
+  * realtime/event emission or refresh behavior where existing tests cover this pattern.
 
-* Add the Prisma migration.
-* Update schemas, repositories, services, serializers, and tests.
-* Keep it narrowly scoped to Radiology configuration.
-* Do not break Biomedical/equipment modules.
+### Manual verification
 
-## 7. Localization requirements
+Verify manually in the browser:
 
-Ensure 100% l10n for all UI text touched or added.
+1. `/radiology` Patients view shows `Patient` immediately after `#`.
+2. `/radiology` Orders view shows `Order` immediately after `#`.
+3. Configurations dialog shows only Imaging tests and no Equipment tab.
+4. Imaging-test rows have correct available actions.
+5. Create/edit/delete imaging test works for persisted/custom tests.
+6. Modality labels are uppercase and have appropriate icons.
+7. Request imaging/radiology uses searchable select + Add instead of a large catalog list.
+8. Selecting `CT` hides `X-RAY` tests from the dropdown; selecting `MRI` hides non-MRI tests.
+9. Add button is disabled until a catalog item is selected.
+10. Selected radiology requests populate correctly.
+11. Radiology workflow detail uses property/value rows instead of summary cards.
+12. Request details can be edited and persisted.
+13. Report editor is clearer and existing report lifecycle actions still work.
+14. Print preview defaults to clinically useful report content, with metadata optional.
+15. Doctor review section clearly explains its purpose.
+16. Realtime/live refresh still updates the worklist and selected workflow.
 
-* No hard-coded user-visible strings in Dart UI.
-* Add keys to `frontend/lib/l10n/app_en.arb`.
-* Keep generated localization files in sync.
-* Include labels, hints, buttons, tooltips, validation messages, empty states, disabled/gap messages, confirmation text, print section labels, and error messages.
-* Replace existing hard-coded Radiology strings in touched files, including labels like:
+## Final deliverable
 
-  * `Orders view`
-  * `Patients view`
-  * `Radiology patients`
-  * `Patients waiting imaging`
-  * `Orders`
-  * `1 active order`
-  * `{n} active orders`
-  * Radiology empty-state strings.
+Return a zipped archive containing only files and folders that were created or updated, placed in their correct relative project directories.
 
-Backend validation/errors should use existing error-key conventions rather than raw user-facing strings.
+If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those delete or rename operations using correct relative paths. The scripts must not delete unrelated files.
 
-## 8. Responsiveness, UX, and accessibility
-
-* Maintain 100% UI responsiveness across desktop, tablet, and mobile.
-* Use existing breakpoints/layout helpers.
-* Dialogs must not overflow vertically or horizontally.
-* Tables should become usable list/card layouts on small screens.
-* Search must feel responsive while typing.
-* All actions must show loading/disabled states.
-* Prevent duplicate submits.
-* Keep focus/keyboard behavior usable.
-* Use tooltips/semantic labels for icon-only controls.
-* Preserve the HMS visual style, spacing, typography, borders, and button hierarchy.
-
-## 9. Scope limits
-
-Do not:
-
-* Rewrite the Radiology module from scratch.
-* Replace the HMS workspace shell.
-* Create a second unrelated radiology request dialog when shared radiology request logic already exists.
-* Perform broad shared-folder reorganization.
-* Move or rename existing shared components unless directly required.
-* Change unrelated lab/clinical/OPD behavior except to keep shared refactors compiling.
-* Add frontend-only fake data, fake upload state, fake equipment associations, or fake annotations.
-* Modify planner files unless truly required.
-* Include screenshots, logs, build output, generated caches, `node_modules`, `.dart_tool`, or unchanged files in the final archive.
-
-For shared components, organize any new reusable radiology components in a clear folder, such as `frontend/lib/shared/radiology_catalog/`, with a barrel export. Only reorganize existing shared files if it directly removes duplication required by this task.
-
-## 10. Testing and verification
-
-Run the existing relevant checks and fix all issues.
-
-Frontend:
-
-* `cd frontend`
-* `flutter pub get`
-* regenerate l10n using the project’s standard Flutter l10n flow if localization files change
-* `flutter analyze`
-* `flutter test`
-
-Backend:
-
-* `cd backend`
-* `npm run lint`
-* `npm run test:backend`
-* Run targeted Radiology/Radiology workspace tests if available.
-
-Manual verification:
-
-* Open `/radiology`.
-* Verify patients/orders toggle still works.
-* Verify new configuration button opens the configuration dialog.
-* Verify custom radiology test create/edit/delete works with backend persistence.
-* Verify equipment UI only exposes supported persisted behavior.
-* Verify `Request imaging` can submit one or more imaging tests for a selected patient.
-* Verify clinical notes and request details persist.
-* Verify worklist refreshes without losing the selected view/search context.
-* Verify the table shows no more than 4 default data columns.
-* Verify column settings/details still expose hidden information.
-* Verify report editing remains functional.
-* Verify asset/PACS display remains functional.
-* Verify upload actions only appear/work where backend support exists.
-* Verify print preview/print uses the shared print template.
-* Verify desktop and mobile layouts do not overflow.
-* Verify all new/touched visible strings are localized.
-
-## 11. Final deliverable requirements
-
-Return a zipped archive containing only the files and folders that were created or updated.
-
-* Preserve correct relative project paths inside the zip.
-* Do not include unchanged files.
-* Do not include build/cache/log/dependency folders.
-* If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts in the zip that safely perform those delete/rename operations.
-* PowerShell scripts must use correct relative paths and must not delete unrelated files.
-* Ensure the archive is ready to extract over the existing HMS project.
+Clear all linter/analyzer issues before returning the archive.

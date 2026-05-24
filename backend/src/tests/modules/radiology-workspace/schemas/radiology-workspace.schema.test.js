@@ -1,5 +1,6 @@
 const {
   createRadiologyOrderSchema,
+  updateRadiologyOrderRequestDetailsSchema,
 } = require('@validations/radiology-workspace/radiology-workspace.schema');
 
 describe('radiology-workspace.schema createRadiologyOrderSchema', () => {
@@ -57,5 +58,34 @@ describe('radiology-workspace.schema createRadiologyOrderSchema', () => {
 
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.path).toEqual(['requested_tests']);
+  });
+});
+
+describe('radiology-workspace.schema updateRadiologyOrderRequestDetailsSchema', () => {
+  it('accepts editable request detail payloads', () => {
+    const result = updateRadiologyOrderRequestDetailsSchema.safeParse({
+      clinical_note: 'Persistent updated notes',
+      request_details: {
+        body_region: 'Chest',
+        laterality: 'LEFT',
+        priority: 'URGENT',
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects unsupported modality values', () => {
+    const result = updateRadiologyOrderRequestDetailsSchema.safeParse({
+      request_details: {
+        modality: 'XRAY_AND_CT',
+      },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual([
+      'request_details',
+      'modality',
+    ]);
   });
 });

@@ -903,6 +903,101 @@ const getRadiologyOrderWorkflow = async (identifier) => {
   }
 };
 
+
+const updateRadiologyOrderRequestDetails = async (identifier, payload = {}, userId, ipAddress) => {
+  try {
+    const orderId = await resolveModelIdOrThrow({
+      identifier,
+      model: 'radiology_order',
+      where: { deleted_at: null },
+      errorKey: 'errors.radiology_order.not_found',
+    });
+
+    const mutation = await radiologyWorkspaceRepository.withTransaction(async (tx) => {
+      const order = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        orderId,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+      if (!order) {
+        throw new HttpError('errors.radiology_order.not_found', 404);
+      }
+
+      const currentDetails =
+        order.request_details &&
+        typeof order.request_details === 'object' &&
+        !Array.isArray(order.request_details)
+          ? order.request_details
+          : {};
+      const incomingDetails =
+        payload.request_details &&
+        typeof payload.request_details === 'object' &&
+        !Array.isArray(payload.request_details)
+          ? payload.request_details
+          : {};
+      const nextDetails = {
+        ...currentDetails,
+        ...incomingDetails,
+      };
+      const data = {
+        request_details: nextDetails,
+      };
+      if (Object.prototype.hasOwnProperty.call(payload, 'clinical_note')) {
+        data.clinical_note = normalizeText(payload.clinical_note) || null;
+      }
+
+      await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, data);
+
+      const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        order.id,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return {
+        beforeOrder: order,
+        order: refreshedOrder,
+      };
+    });
+
+    createAuditLog({
+      user_id: userId,
+      action: 'UPDATE_REQUEST_DETAILS',
+      entity: 'radiology_order',
+      entity_id: orderId,
+      diff: {
+        before: {
+          clinical_note: mutation.beforeOrder?.clinical_note || null,
+          request_details: mutation.beforeOrder?.request_details || {},
+        },
+        after: {
+          clinical_note: mutation.order?.clinical_note || null,
+          request_details: mutation.order?.request_details || {},
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    const workflow = mapRadiologyOrderWorkflowRecord(mutation.order);
+    publishRadiologyRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'UPDATE_REQUEST_DETAILS',
+      resourceType: 'order',
+      resourceId: workflow?.order?.id || null,
+    }).catch(() => {});
+
+    return {
+      workflow,
+      order: mapRadiologyOrderRecord(mutation.order),
+    };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 const assignRadiologyOrder = async (identifier, payload = {}, userId, ipAddress) => {
   try {
     const orderId = await resolveModelIdOrThrow({
@@ -2135,6 +2230,7 @@ module.exports = {
   getRadiologyReferenceData,
   createRadiologyOrder,
   getRadiologyOrderWorkflow,
+  updateRadiologyOrderRequestDetails,
   assignRadiologyOrder,
   startRadiologyOrder,
   completeRadiologyOrder,

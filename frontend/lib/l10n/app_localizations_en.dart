@@ -3654,7 +3654,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalRadiologyRequestSearchHint =>
-      'Search by test, intervention, modality, equipment, region, code, or priority';
+      'Search by test, intervention, modality, region, code, or priority';
 
   @override
   String get clinicalRadiologyRequestSelectedTitle =>
@@ -3692,6 +3692,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clinicalRadiologyRequestNoCatalogOptions =>
       'No matching radiology catalog items';
+
+  @override
+  String get clinicalRadiologyCatalogSelectTitle => 'Radiology catalog';
+
+  @override
+  String get clinicalRadiologyCatalogSelectBody =>
+      'Search and select one matching imaging test, then add it to the request list.';
+
+  @override
+  String get clinicalRadiologyCatalogSelectLabel => 'Imaging test';
+
+  @override
+  String get clinicalRadiologyCatalogSelectHint =>
+      'Search and select an imaging test';
+
+  @override
+  String get clinicalRadiologyDuplicateSelectionMessage =>
+      'This imaging request is already selected.';
 
   @override
   String get clinicalRadiologyPriorityLabel => 'Priority';
@@ -5429,6 +5447,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyRequestDetailsTitle => 'Request details';
 
   @override
+  String get radiologyWorkflowSummaryTitle => 'Workflow summary';
+
+  @override
+  String get radiologyEditRequestDetailsAction => 'Edit request details';
+
+  @override
+  String get radiologyEditRequestDetailsDialogTitle => 'Edit request details';
+
+  @override
+  String get radiologySaveRequestDetailsAction => 'Save request details';
+
+  @override
   String get radiologyStudyLabel => 'Study';
 
   @override
@@ -5444,11 +5474,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyClinicalNotesLabel => 'Clinical notes';
 
   @override
+  String get radiologyPriorityRoutineLabel => 'Routine';
+
+  @override
+  String get radiologyPriorityUrgentLabel => 'Urgent';
+
+  @override
+  String get radiologyPriorityStatLabel => 'STAT';
+
+  @override
+  String get radiologyLateralityLeft => 'LEFT';
+
+  @override
+  String get radiologyLateralityRight => 'RIGHT';
+
+  @override
+  String get radiologyLateralityBilateral => 'BILATERAL';
+
+  @override
   String get radiologyReportSectionTitle => 'Report';
 
   @override
   String get radiologyReportSectionBody =>
-      'Draft, finalize, attest, and amend radiology reports using system workflow actions.';
+      'Draft, finalize, attest, and amend radiology reports with clear findings, impression, narrative, and references.';
 
   @override
   String get radiologyDraftReportAction => 'Draft report';
@@ -5487,7 +5535,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyReportedAtLabel => 'Reported';
 
   @override
-  String get radiologyGeneratedReportPreviewTitle => 'Generated report preview';
+  String get radiologyGeneratedReportPreviewTitle => 'Report preview';
 
   @override
   String get radiologyEmptyReportBody => 'No report text captured.';
@@ -5497,14 +5545,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyStudiesAssetsBody =>
-      'Track imaging studies, uploaded assets, and PACS synchronization state.';
+      'Track performed imaging studies, available assets, and PACS synchronization state.';
 
   @override
   String get radiologyNoStudiesTitle => 'No imaging studies';
 
   @override
   String get radiologyNoStudiesBody =>
-      'Studies will appear after imaging is performed.';
+      'Studies and assets will appear after imaging is performed and saved.';
 
   @override
   String get radiologySyncPacsAction => 'Sync PACS';
@@ -5526,11 +5574,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyDoctorReviewReleasedBody =>
-      'The latest report is released for clinical review.';
+      'The final radiology report is ready for the requesting clinician or doctor to review.';
 
   @override
   String get radiologyDoctorReviewPendingBody =>
-      'Clinical review becomes available after report release.';
+      'No final radiology report is available for doctor review yet.';
 
   @override
   String get radiologyDoctorReviewReadyLabel => 'Ready for review';
@@ -5615,10 +5663,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyFindingsLabel => 'Findings';
 
   @override
-  String get radiologyImpressionLabel => 'Impression';
+  String get radiologyImpressionLabel => 'Impression/Conclusion';
 
   @override
-  String get radiologyReportTextLabel => 'Report text';
+  String get radiologyReportTextLabel => 'Report narrative';
 
   @override
   String get radiologyReportTextHelper =>
@@ -5694,7 +5742,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyResultAmended => 'Amended';
 
   @override
-  String get radiologyModalityXray => 'X-ray';
+  String get radiologyModalityXray => 'X-RAY';
 
   @override
   String get radiologyModalityCt => 'CT';
@@ -5703,7 +5751,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyModalityMri => 'MRI';
 
   @override
-  String get radiologyModalityUltrasound => 'Ultrasound';
+  String get radiologyModalityUltrasound => 'ULTRASOUND';
 
   @override
   String get radiologyModalityPet => 'PET';
@@ -5712,16 +5760,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyModalityEcg => 'ECG';
 
   @override
-  String get radiologyModalityEcho => 'Echo';
+  String get radiologyModalityEcho => 'ECHO';
 
   @override
-  String get radiologyModalityEndo => 'Endoscopy';
+  String get radiologyModalityEndo => 'ENDO';
 
   @override
-  String get radiologyModalityGastro => 'Gastro';
+  String get radiologyModalityGastro => 'GASTRO';
 
   @override
-  String get radiologyModalityOther => 'Other';
+  String get radiologyModalityOther => 'OTHER';
 
   @override
   String get radiologyNextActionConfirmBilling => 'Confirm billing';
@@ -11894,14 +11942,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyConfigurationsDialogBody =>
-      'Manage persisted imaging tests and review equipment records available to radiology workflows.';
+      'Manage persisted imaging tests and customize standard catalog tests for radiology workflows.';
 
   @override
   String get radiologyConfigurationsLoadingTitle => 'Loading configurations';
 
   @override
   String get radiologyConfigurationsLoadingBody =>
-      'Loading imaging tests, standard catalog entries, and equipment records.';
+      'Loading imaging tests and standard catalog entries.';
 
   @override
   String get radiologyPatientsSummaryLabel => 'Radiology patients';
@@ -11954,17 +12002,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select at least one imaging test.';
 
   @override
-  String get radiologyModalityFluoroscopy => 'Fluoroscopy';
+  String get radiologyModalityFluoroscopy => 'FLUOROSCOPY';
 
   @override
-  String get radiologyModalityMammography => 'Mammography';
+  String get radiologyModalityMammography => 'MAMMOGRAPHY';
 
   @override
-  String get radiologyModalityNuclearMedicine => 'Nuclear medicine';
+  String get radiologyModalityNuclearMedicine => 'NUCLEAR MEDICINE';
 
   @override
   String get radiologyModalityInterventionalRadiology =>
-      'Interventional radiology';
+      'INTERVENTIONAL RADIOLOGY';
 
   @override
   String get radiologyImagingTestsTabLabel => 'Imaging tests';
@@ -11978,7 +12026,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyConfigurationSearchHint =>
-      'Search tests, modality, code, source, equipment, or status';
+      'Search tests, modality, code, source, or status';
 
   @override
   String get radiologyCreateImagingTestAction => 'Create imaging test';
@@ -12086,7 +12134,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyAttachImagesDisabledBody =>
-      'Image attachment is disabled here until the storage upload contract is wired end to end.';
+      'Image attachment stays disabled here until upload storage is fully wired end to end.';
 
   @override
   String get radiologyChooseImagesAction => 'Choose images';
@@ -12119,7 +12167,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyPrintReportDialogBody =>
-      'Choose the persisted sections to include, preview the report, then print with the shared clinical template.';
+      'Choose clinical report sections to include. Patient context, test details, findings, impression, and signer are selected by default; metadata is optional.';
 
   @override
   String get radiologyPrintPreviewTitle => 'Print preview';
@@ -12146,7 +12194,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyPrintIncludeReferencesLabel => 'Image/PACS references';
 
   @override
-  String get radiologyPrintIncludeSignerLabel => 'Signer/release metadata';
+  String get radiologyPrintIncludeSignerLabel => 'Signer/reporter';
+
+  @override
+  String get radiologyPrintIncludeMetadataLabel => 'Technical metadata';
 
   @override
   String get radiologyPrintFooterNote =>
@@ -12165,14 +12216,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyPrintStudiesSectionTitle => 'Imaging tests and studies';
 
   @override
-  String get radiologyPrintReportSectionTitle => 'Report';
+  String get radiologyPrintReportSectionTitle => 'Findings and report';
 
   @override
   String get radiologyPrintReferencesSectionTitle =>
       'Image and PACS references';
 
   @override
-  String get radiologyPrintSignerSectionTitle => 'Signer and release metadata';
+  String get radiologyPrintSignerSectionTitle => 'Signer and reporter';
 
   @override
   String get radiologyPrintNoSectionsSelected => 'No report sections selected.';
