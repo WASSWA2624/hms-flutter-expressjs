@@ -103,6 +103,10 @@ class AppSelectField<T> extends StatefulWidget {
 
 class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   static const int _maxFilteredOptions = 80;
+  static const double _defaultMenuMinHeight = 220.0;
+  static const double _defaultMenuMaxHeight = 360.0;
+  static const double _menuViewportPadding = 8.0;
+  static const double _menuFieldGap = 4.0;
 
   late final TextEditingController _controller;
   late FocusNode _focusNode;
@@ -159,9 +163,11 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   void _attachFocusNode() {
     _ownsFocusNode = widget.focusNode == null;
     _focusNode = widget.focusNode ?? FocusNode();
+    _focusNode.addListener(_handleFocusChanged);
   }
 
   void _detachFocusNode() {
+    _focusNode.removeListener(_handleFocusChanged);
     if (_ownsFocusNode) {
       _focusNode.dispose();
     }
@@ -170,6 +176,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final bool canSelect = widget.enabled;
     Widget field = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -177,9 +184,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             constraints.hasBoundedWidth && constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : null;
-        final double effectiveMenuHeight =
-            widget.menuHeight ??
-            (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 360.0);
+        final double effectiveMenuHeight = _effectiveMenuHeight(context);
         final bool canClear =
             canSelect &&
             widget.allowClear &&
@@ -201,6 +206,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             widget.searchable || widget.filterCallback != null;
         final bool enableSearch =
             widget.searchable || widget.searchCallback != null;
+        final MenuStyle menuStyle = _selectMenuStyle(theme, colorScheme);
+        final List<DropdownMenuEntry<T>> dropdownMenuEntries =
+            _dropdownMenuEntries();
 
         return DropdownMenuFormField<T>(
           key: ValueKey<T?>(widget.value),
@@ -210,6 +218,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           enabled: canSelect,
           width: width,
           menuHeight: effectiveMenuHeight,
+          menuStyle: menuStyle,
+          alignmentOffset: const Offset(0, _menuFieldGap),
           label: appFieldLabelWidget(
             context,
             widget.labelText,
@@ -229,7 +239,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           enableSearch: enableSearch,
           expandedInsets: EdgeInsets.zero,
           filterCallback: enableFilter
-              ? widget.filterCallback ?? _filterEntries
+              ? (List<DropdownMenuEntry<T>> entries, String filter) =>
+                    _filterCurrentEntries(dropdownMenuEntries, filter)
               : null,
           searchCallback: enableSearch
               ? widget.searchCallback ?? _searchEntries
@@ -246,17 +257,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             }
             widget.onChanged?.call(value);
           },
-          dropdownMenuEntries: <DropdownMenuEntry<T>>[
-            for (final AppSelectOption<T> option in widget.options)
-              DropdownMenuEntry<T>(
-                value: option.value,
-                label: option.label,
-                labelWidget: option.labelWidget,
-                leadingIcon: option.leadingIcon,
-                trailingIcon: option.trailingIcon,
-                enabled: option.enabled,
-              ),
-          ],
+          dropdownMenuEntries: dropdownMenuEntries,
         );
       },
     );
@@ -278,6 +279,12 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     widget.onChanged?.call(null);
   }
 
+  void _handleFocusChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   void _handleControllerChanged() {
     final bool hasText = _controller.text.isNotEmpty;
     if (hasText != _hasControllerText) {
@@ -291,14 +298,92 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     }
   }
 
+  double _effectiveMenuHeight(BuildContext context) {
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final double preferredHeight =
+        widget.menuHeight ??
+        (mediaQuery.size.height * 0.42)
+            .clamp(_defaultMenuMinHeight, _defaultMenuMaxHeight)
+            .toDouble();
+    final RenderObject? renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return preferredHeight;
+    }
+
+    final Offset fieldOffset = renderObject.localToGlobal(Offset.zero);
+    final double fieldTop = fieldOffset.dy;
+    final double fieldBottom = fieldTop + renderObject.size.height;
+    final double viewportTop = mediaQuery.padding.top + _menuViewportPadding;
+    final double viewportBottom =
+        mediaQuery.size.height -
+        mediaQuery.padding.bottom -
+        mediaQuery.viewInsets.bottom -
+        _menuViewportPadding;
+    final double spaceBelow = viewportBottom - fieldBottom - _menuFieldGap;
+    final double spaceAbove = fieldTop - viewportTop - _menuFieldGap;
+    final double availableHeight = <double>[
+      spaceBelow,
+      spaceAbove,
+    ].reduce((double left, double right) => left > right ? left : right);
+
+    if (availableHeight <= 0) {
+      return preferredHeight;
+    }
+    return preferredHeight.clamp(0.0, availableHeight).toDouble();
+  }
+
+  MenuStyle _selectMenuStyle(ThemeData theme, ColorScheme colorScheme) {
+    return MenuStyle(
+      elevation: const WidgetStatePropertyAll<double?>(0),
+      shadowColor: const WidgetStatePropertyAll<Color?>(Colors.transparent),
+      surfaceTintColor: const WidgetStatePropertyAll<Color?>(
+        Colors.transparent,
+      ),
+      backgroundColor: WidgetStatePropertyAll<Color?>(
+        colorScheme.surfaceContainer,
+      ),
+      padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
+        EdgeInsets.symmetric(vertical: 4),
+      ),
+      shape: WidgetStatePropertyAll<OutlinedBorder>(
+        RoundedRectangleBorder(
+          side: BorderSide(color: colorScheme.outlineVariant),
+        ),
+      ),
+      visualDensity: theme.visualDensity,
+    );
+  }
+
+  List<DropdownMenuEntry<T>> _dropdownMenuEntries() {
+    return <DropdownMenuEntry<T>>[
+      for (final AppSelectOption<T> option in widget.options)
+        DropdownMenuEntry<T>(
+          value: option.value,
+          label: option.label,
+          labelWidget: option.labelWidget,
+          leadingIcon: option.leadingIcon,
+          trailingIcon: option.trailingIcon,
+          enabled: option.enabled,
+        ),
+    ];
+  }
+
+  List<DropdownMenuEntry<T>> _filterCurrentEntries(
+    List<DropdownMenuEntry<T>> entries,
+    String filter,
+  ) {
+    final FilterCallback<T>? filterCallback = widget.filterCallback;
+    if (filterCallback != null) {
+      return filterCallback(entries, filter);
+    }
+    return _filterEntries(entries, filter);
+  }
+
   String _labelForValue(T? value) {
     return _labelForValueInOptions(value, widget.options);
   }
 
-  String _labelForValueInOptions(
-    T? value,
-    List<AppSelectOption<T>> options,
-  ) {
+  String _labelForValueInOptions(T? value, List<AppSelectOption<T>> options) {
     if (value == null) {
       return '';
     }
@@ -444,4 +529,3 @@ class _SelectTrailingIcon extends StatelessWidget {
     );
   }
 }
-

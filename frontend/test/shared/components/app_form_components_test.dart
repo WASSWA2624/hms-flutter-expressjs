@@ -130,6 +130,51 @@ void main() {
     expect(find.text('Noah Echo').hitTestable(), findsNothing);
   });
 
+  testWidgets(
+    'AppSelectField.searchable filters current options after parent updates',
+    (WidgetTester tester) async {
+      List<AppSelectOption<String>> options = const <AppSelectOption<String>>[
+        AppSelectOption<String>(value: 'ct-chest', label: 'CT chest'),
+      ];
+
+      await pumpComponent(
+        tester,
+        StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AppSelectField<String>.searchable(
+              labelText: 'Imaging test',
+              options: options,
+              onChanged: (_) {},
+              onSearchTextChanged: (String value) {
+                setState(() {
+                  options = value.toLowerCase().contains('ct')
+                      ? const <AppSelectOption<String>>[
+                          AppSelectOption<String>(
+                            value: 'ct-chest',
+                            label: 'CT chest',
+                          ),
+                        ]
+                      : const <AppSelectOption<String>>[];
+                });
+              },
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.byType(EditableText));
+      await tester.enterText(find.byType(EditableText), 'not available');
+      await tester.pumpAndSettle();
+
+      expect(find.text('CT chest').hitTestable(), findsNothing);
+
+      await tester.enterText(find.byType(EditableText), 'ct');
+      await tester.pumpAndSettle();
+
+      expect(find.text('CT chest').hitTestable(), findsOneWidget);
+    },
+  );
+
   testWidgets('AppSelectField clear button clears the selected value', (
     WidgetTester tester,
   ) async {

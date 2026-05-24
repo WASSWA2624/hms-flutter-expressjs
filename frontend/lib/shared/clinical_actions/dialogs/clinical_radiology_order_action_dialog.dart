@@ -48,6 +48,7 @@ final class _PendingRadiologyRequest {
 
   String get id => option.apiId;
 }
+
 class _RadiologyOrderDialogState
     extends State<ClinicalRadiologyOrderActionDialog> {
   static const Duration _searchDebounceDuration = Duration(milliseconds: 120);
@@ -72,11 +73,13 @@ class _RadiologyOrderDialogState
     _requests.addAll(_initialPendingRequests());
   }
 
-
   List<_PendingRadiologyRequest> _initialPendingRequests() {
     final List<_PendingRadiologyRequest> pending = <_PendingRadiologyRequest>[];
-    for (final ClinicalActionRadiologyRequest request in widget.initialRequests) {
-      final ClinicalActionCatalogOption? option = _catalogOptionForRequest(request);
+    for (final ClinicalActionRadiologyRequest request
+        in widget.initialRequests) {
+      final ClinicalActionCatalogOption? option = _catalogOptionForRequest(
+        request,
+      );
       if (option == null) {
         continue;
       }
@@ -142,12 +145,12 @@ class _RadiologyOrderDialogState
     final double bodyHeight = (MediaQuery.sizeOf(context).height * 0.68)
         .clamp(460.0, 680.0)
         .toDouble();
-    final List<ClinicalActionCatalogOption> visibleCatalogOptions = _searchCatalog(
-      widget.referenceData.radiologyTests,
-    );
+    final List<ClinicalActionCatalogOption> visibleCatalogOptions =
+        _searchCatalog(widget.referenceData.radiologyTests);
     final ClinicalActionCatalogOption? selectedCatalogOption =
         _catalogOptionForId(_selectedCatalogId, visibleCatalogOptions);
-    final bool selectedIsDuplicate = selectedCatalogOption != null &&
+    final bool selectedIsDuplicate =
+        selectedCatalogOption != null &&
         _isDuplicateSelection(selectedCatalogOption);
     final List<AppSelectOption<String>> catalogSelectOptions =
         _radiologyCatalogSelectOptions(visibleCatalogOptions);
@@ -387,17 +390,23 @@ class _RadiologyOrderDialogState
     final String? selectedLaterality = clinicalActionTrimmedOrNull(_laterality);
     final String? selectedPriority = clinicalActionTrimmedOrNull(_priority);
     if (selectedModality != null &&
-        clinicalActionNormalizedCatalogToken(_radiologyOptionModality(option) ?? '') !=
+        clinicalActionNormalizedCatalogToken(
+              _radiologyOptionModality(option) ?? '',
+            ) !=
             clinicalActionNormalizedCatalogToken(selectedModality)) {
       return false;
     }
     if (selectedBodyRegion != null &&
-        clinicalActionNormalizedCatalogToken(_radiologyOptionBodyRegion(option) ?? '') !=
+        clinicalActionNormalizedCatalogToken(
+              _radiologyOptionBodyRegion(option) ?? '',
+            ) !=
             clinicalActionNormalizedCatalogToken(selectedBodyRegion)) {
       return false;
     }
     if (selectedLaterality != null &&
-        clinicalActionNormalizedCatalogToken(_radiologyOptionLaterality(option) ?? '') !=
+        clinicalActionNormalizedCatalogToken(
+              _radiologyOptionLaterality(option) ?? '',
+            ) !=
             clinicalActionNormalizedCatalogToken(selectedLaterality)) {
       return false;
     }
@@ -430,7 +439,9 @@ class _RadiologyOrderDialogState
   }
 
   bool _bodyRegionAvailable(String? modality, String? bodyRegion) {
-    final String? normalizedBodyRegion = clinicalActionTrimmedOrNull(bodyRegion);
+    final String? normalizedBodyRegion = clinicalActionTrimmedOrNull(
+      bodyRegion,
+    );
     if (normalizedBodyRegion == null) {
       return true;
     }
@@ -471,10 +482,13 @@ class _RadiologyOrderDialogState
       option: option,
       clinicalNote: clinicalActionTrimmedOrNull(_noteController.text),
       bodyRegion:
-          clinicalActionTrimmedOrNull(_bodyRegion) ?? _radiologyOptionBodyRegion(option),
+          clinicalActionTrimmedOrNull(_bodyRegion) ??
+          _radiologyOptionBodyRegion(option),
       laterality: _laterality ?? _radiologyOptionLaterality(option),
       priority: _priority,
-      modality: clinicalActionTrimmedOrNull(_modality) ?? _radiologyOptionModality(option),
+      modality:
+          clinicalActionTrimmedOrNull(_modality) ??
+          _radiologyOptionModality(option),
     );
 
     setState(() {
@@ -665,7 +679,7 @@ class _RadiologyCatalogSelectPanel extends StatelessWidget {
                     value: value,
                     labelText: l10n.clinicalRadiologyCatalogSelectLabel,
                     hintText: l10n.clinicalRadiologyCatalogSelectHint,
-                    enabled: !isSaving && options.isNotEmpty,
+                    enabled: !isSaving,
                     options: options,
                     onChanged: onChanged,
                     onSearchTextChanged: onSearchTextChanged,
@@ -799,7 +813,9 @@ class _RadiologySelectedRequestRow extends StatelessWidget {
       ),
       request.bodyRegion ?? _radiologyOptionBodyRegion(request.option),
       _radiologyLateralityLabel(l10n, request.laterality),
-      request.priority == null ? null : clinicalActionApiLabel(request.priority!),
+      request.priority == null
+          ? null
+          : clinicalActionApiLabel(request.priority!),
       request.option.status,
     ]);
 
@@ -971,12 +987,16 @@ List<AppSelectOption<String>> _radiologyBodyRegionOptions(
     ClinicalActionCatalogOption option,
   ) {
     if (selectedModality != null &&
-        clinicalActionNormalizedCatalogToken(_radiologyOptionModality(option) ?? '') !=
+        clinicalActionNormalizedCatalogToken(
+              _radiologyOptionModality(option) ?? '',
+            ) !=
             clinicalActionNormalizedCatalogToken(selectedModality)) {
       return false;
     }
     if (selectedLaterality != null &&
-        clinicalActionNormalizedCatalogToken(_radiologyOptionLaterality(option) ?? '') !=
+        clinicalActionNormalizedCatalogToken(
+              _radiologyOptionLaterality(option) ?? '',
+            ) !=
             clinicalActionNormalizedCatalogToken(selectedLaterality)) {
       return false;
     }
@@ -1016,21 +1036,26 @@ List<String> _sortedRadiologyValues(Iterable<String?> values) {
     }
   }
   unique.sort(
-    (String left, String right) => clinicalActionApiLabel(
-      left,
-    ).compareTo(clinicalActionApiLabel(right)),
+    (String left, String right) =>
+        clinicalActionApiLabel(left).compareTo(clinicalActionApiLabel(right)),
   );
   return unique;
 }
 
 String? _radiologyOptionModality(ClinicalActionCatalogOption option) {
-  return clinicalActionTrimmedOrNull(_radiologyMetadataText(option, 'modality')) ??
+  return clinicalActionTrimmedOrNull(
+        _radiologyMetadataText(option, 'modality'),
+      ) ??
       clinicalActionTrimmedOrNull(option.category);
 }
 
 String? _radiologyOptionBodyRegion(ClinicalActionCatalogOption option) {
-  return clinicalActionTrimmedOrNull(_radiologyMetadataText(option, 'body_region')) ??
-      clinicalActionTrimmedOrNull(_radiologyMetadataText(option, 'bodyRegion')) ??
+  return clinicalActionTrimmedOrNull(
+        _radiologyMetadataText(option, 'body_region'),
+      ) ??
+      clinicalActionTrimmedOrNull(
+        _radiologyMetadataText(option, 'bodyRegion'),
+      ) ??
       _radiologySecondaryFragment(
         option,
         exclude: <String?>[
@@ -1062,7 +1087,9 @@ String? _radiologyOptionLaterality(ClinicalActionCatalogOption option) {
 }
 
 String? _radiologyOptionPriority(ClinicalActionCatalogOption option) {
-  return clinicalActionTrimmedOrNull(_radiologyMetadataText(option, 'priority')) ??
+  return clinicalActionTrimmedOrNull(
+        _radiologyMetadataText(option, 'priority'),
+      ) ??
       clinicalActionTrimmedOrNull(_radiologyMetadataText(option, 'urgency'));
 }
 
@@ -1082,7 +1109,9 @@ String? _radiologySecondaryFragment(
       .where((String value) => value.isNotEmpty)
       .toSet();
   final List<String> fragments = <String>[
-    ...?clinicalActionTrimmedOrNull(option.secondaryText)?.split(RegExp(r'[|,;/]+')),
+    ...?clinicalActionTrimmedOrNull(
+      option.secondaryText,
+    )?.split(RegExp(r'[|,;/]+')),
   ];
   for (final String fragment in fragments) {
     final String? normalized = clinicalActionTrimmedOrNull(fragment);
@@ -1100,16 +1129,20 @@ String? _radiologySecondaryFragment(
 }
 
 IconData _radiologyCatalogIcon(ClinicalActionCatalogOption option) {
-  return _radiologyModalityIcon(_radiologyOptionModality(option) ?? option.category);
+  return _radiologyModalityIcon(
+    _radiologyOptionModality(option) ?? option.category,
+  );
 }
-
 
 List<AppSelectOption<String>> _radiologyLateralityOptions(
   AppLocalizations l10n,
 ) {
   return <AppSelectOption<String>>[
     AppSelectOption<String>(value: 'LEFT', label: l10n.radiologyLateralityLeft),
-    AppSelectOption<String>(value: 'RIGHT', label: l10n.radiologyLateralityRight),
+    AppSelectOption<String>(
+      value: 'RIGHT',
+      label: l10n.radiologyLateralityRight,
+    ),
     AppSelectOption<String>(
       value: 'BILATERAL',
       label: l10n.radiologyLateralityBilateral,
@@ -1137,8 +1170,8 @@ IconData _radiologyModalityIcon(String? value) {
     'MAMMOGRAPHY' => Icons.image_search_outlined,
     'PET' => Icons.blur_on_outlined,
     'NUCLEAR_MEDICINE' || 'NUCLEAR MEDICINE' => Icons.radio_button_checked,
-    'INTERVENTIONAL_RADIOLOGY' || 'INTERVENTIONAL RADIOLOGY' =>
-      Icons.medical_services_outlined,
+    'INTERVENTIONAL_RADIOLOGY' ||
+    'INTERVENTIONAL RADIOLOGY' => Icons.medical_services_outlined,
     'ECG' => Icons.monitor_heart_outlined,
     'ECHO' => Icons.favorite_border,
     'ENDO' || 'GASTRO' => Icons.biotech_outlined,
@@ -1147,10 +1180,7 @@ IconData _radiologyModalityIcon(String? value) {
   };
 }
 
-String _radiologyModalityDisplayLabel(
-  AppLocalizations l10n,
-  String? value,
-) {
+String _radiologyModalityDisplayLabel(AppLocalizations l10n, String? value) {
   final String normalized = (value ?? '').trim().toUpperCase();
   if (normalized.isEmpty) {
     return '';
@@ -1163,10 +1193,10 @@ String _radiologyModalityDisplayLabel(
     'FLUOROSCOPY' => l10n.radiologyModalityFluoroscopy,
     'MAMMOGRAPHY' => l10n.radiologyModalityMammography,
     'PET' => l10n.radiologyModalityPet,
-    'NUCLEAR_MEDICINE' || 'NUCLEAR MEDICINE' =>
-      l10n.radiologyModalityNuclearMedicine,
-    'INTERVENTIONAL_RADIOLOGY' || 'INTERVENTIONAL RADIOLOGY' =>
-      l10n.radiologyModalityInterventionalRadiology,
+    'NUCLEAR_MEDICINE' ||
+    'NUCLEAR MEDICINE' => l10n.radiologyModalityNuclearMedicine,
+    'INTERVENTIONAL_RADIOLOGY' ||
+    'INTERVENTIONAL RADIOLOGY' => l10n.radiologyModalityInterventionalRadiology,
     'ECG' => l10n.radiologyModalityEcg,
     'ECHO' => l10n.radiologyModalityEcho,
     'ENDO' => l10n.radiologyModalityEndo,
@@ -1190,8 +1220,10 @@ IconData _radiologyBodyRegionIcon(String value) {
   if (normalized.contains('SPINE') || normalized.contains('BACK')) {
     return Icons.align_vertical_center_outlined;
   }
-  if (normalized.contains('HAND') || normalized.contains('ARM') ||
-      normalized.contains('LEG') || normalized.contains('KNEE') ||
+  if (normalized.contains('HAND') ||
+      normalized.contains('ARM') ||
+      normalized.contains('LEG') ||
+      normalized.contains('KNEE') ||
       normalized.contains('FOOT')) {
     return Icons.accessibility_new_outlined;
   }
