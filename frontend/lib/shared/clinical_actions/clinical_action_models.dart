@@ -143,6 +143,19 @@ final class ClinicalActionLabOrderItem {
   final DateTime? updatedAt;
 }
 
+@immutable
+final class ClinicalActionAdmissionInput {
+  const ClinicalActionAdmissionInput({
+    required this.bed,
+    this.reason,
+    this.notes,
+  });
+
+  final ClinicalActionCatalogOption bed;
+  final String? reason;
+  final String? notes;
+}
+
 String? _joinDisplay(Iterable<String?> values) {
   final String value = values
       .map((String? item) => item?.trim() ?? '')
