@@ -3493,7 +3493,7 @@ abstract class AppLocalizations {
   /// Other patient gender label.
   ///
   /// In en, this message translates to:
-  /// **'OTHER'**
+  /// **'Other'**
   String get patientsGenderOther;
 
   /// Unknown patient gender label.
@@ -5425,7 +5425,7 @@ abstract class AppLocalizations {
   /// Other department type label.
   ///
   /// In en, this message translates to:
-  /// **'OTHER'**
+  /// **'Other'**
   String get tenantFacilityDepartmentTypeOther;
 
   /// Add department button label.
@@ -5629,7 +5629,7 @@ abstract class AppLocalizations {
   /// Other ward type label.
   ///
   /// In en, this message translates to:
-  /// **'OTHER'**
+  /// **'Other'**
   String get tenantFacilityWardTypeOther;
 
   /// Add room button label.
@@ -5983,7 +5983,7 @@ abstract class AppLocalizations {
   /// Other facility type option.
   ///
   /// In en, this message translates to:
-  /// **'OTHER'**
+  /// **'Other'**
   String get authFacilityTypeOther;
 
   /// Optional phone field label.
@@ -8059,7 +8059,7 @@ abstract class AppLocalizations {
   /// Medication route option for other.
   ///
   /// In en, this message translates to:
-  /// **'OTHER'**
+  /// **'Other'**
   String get ipdRouteOther;
 
   /// Medication frequency option for once.
@@ -10297,7 +10297,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyReportSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Findings and report'**
+  /// **'Report'**
   String get radiologyReportSectionTitle;
 
   /// Localized text for radiologyReportSectionBody.
@@ -13321,7 +13321,7 @@ abstract class AppLocalizations {
   /// Action label for opening an operations report preview.
   ///
   /// In en, this message translates to:
-  /// **'Findings and report'**
+  /// **'Report'**
   String get operationsOpenReportAction;
 
   /// Summary card label for all operations requests.
@@ -13855,7 +13855,7 @@ abstract class AppLocalizations {
   /// Category label for other operations requests.
   ///
   /// In en, this message translates to:
-  /// **'OTHER'**
+  /// **'Other'**
   String get operationsCategoryOther;
 
   /// Next action label for open operations requests.
@@ -15618,7 +15618,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsTypeOther.
   ///
   /// In en, this message translates to:
-  /// **'OTHER'**
+  /// **'Other'**
   String get integrationsTypeOther;
 
   /// Localized text for integrationsStatusActive.
@@ -17226,7 +17226,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingReportSummaryAction.
   ///
   /// In en, this message translates to:
-  /// **'Findings and report'**
+  /// **'Report'**
   String get housekeepingReportSummaryAction;
 
   /// Localized text for housekeepingPendingTasksSummaryLabel.
@@ -22152,7 +22152,7 @@ abstract class AppLocalizations {
   /// Gender option label for other.
   ///
   /// In en, this message translates to:
-  /// **'OTHER'**
+  /// **'Other'**
   String get labGenderOtherLabel;
 
   /// Gender option label for unknown.
