@@ -108,6 +108,26 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
+  Future<Result<LabCatalogItem>> createLabTest(Map<String, Object?> payload) {
+    return _apiClient.post<LabCatalogItem>(
+      ApiEndpoints.collection(HmsApiResource.labTests),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          _decodeCatalogItem(data, LabCatalogItemType.test),
+    );
+  }
+
+  @override
+  Future<Result<LabCatalogItem>> createLabPanel(Map<String, Object?> payload) {
+    return _apiClient.post<LabCatalogItem>(
+      ApiEndpoints.collection(HmsApiResource.labPanels),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) =>
+          _decodeCatalogItem(data, LabCatalogItemType.panel),
+    );
+  }
+
+  @override
   Future<Result<LabOrderWorkflow>> collectOrder(
     String orderId,
     Map<String, Object?> payload,
@@ -221,14 +241,9 @@ final class LabRepositoryImpl implements LabRepository {
   ) {
     return _apiClient.put<LabCatalogItem>(
       ApiEndpoints.byId(HmsApiResource.labTests, testId),
-      data: _withoutEmpty(payload),
-      decoder: (Object? data) {
-        final LabJsonMap response = _expectLabMap(data);
-        final LabJsonMap payload = _asLabMap(response['data']).isEmpty
-            ? response
-            : _asLabMap(response['data']);
-        return LabCatalogItemDto(payload, LabCatalogItemType.test).toEntity();
-      },
+      data: _withoutEmpty(payload, preserveEmptyIterables: true),
+      decoder: (Object? data) =>
+          _decodeCatalogItem(data, LabCatalogItemType.test),
     );
   }
 
@@ -266,6 +281,14 @@ final class LabRepositoryImpl implements LabRepository {
     );
   }
 
+  LabCatalogItem _decodeCatalogItem(Object? data, LabCatalogItemType type) {
+    final LabJsonMap response = _expectLabMap(data);
+    final LabJsonMap payload = _asLabMap(response['data']).isEmpty
+        ? response
+        : _asLabMap(response['data']);
+    return LabCatalogItemDto(payload, type).toEntity();
+  }
+
   LabJsonMap _expectLabMap(Object? value) {
     if (value is LabJsonMap) {
       return value;
@@ -288,14 +311,24 @@ final class LabRepositoryImpl implements LabRepository {
     };
   }
 
-  Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {
+  Map<String, Object?> _withoutEmpty(
+    Map<String, Object?> payload, {
+    bool preserveEmptyIterables = false,
+  }) {
     return <String, Object?>{
       for (final MapEntry<String, Object?> entry in payload.entries)
-        if (!_isEmpty(entry.value)) entry.key: entry.value,
+        if (!_isEmpty(
+          entry.value,
+          preserveEmptyIterables: preserveEmptyIterables,
+        ))
+          entry.key: entry.value,
     };
   }
 
-  bool _isEmpty(Object? value) {
+  bool _isEmpty(
+    Object? value, {
+    required bool preserveEmptyIterables,
+  }) {
     if (value == null) {
       return true;
     }
@@ -303,7 +336,7 @@ final class LabRepositoryImpl implements LabRepository {
       return value.trim().isEmpty;
     }
     if (value is Iterable<Object?>) {
-      return value.isEmpty;
+      return !preserveEmptyIterables && value.isEmpty;
     }
     if (value is Map<Object?, Object?>) {
       return value.isEmpty;

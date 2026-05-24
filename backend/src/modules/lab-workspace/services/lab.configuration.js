@@ -89,6 +89,7 @@ const normalizeLabReferenceRanges = (value = []) => {
     .map((entry, index) => {
       if (!entry || typeof entry !== 'object') return null;
       return {
+        id: toOptionalText(entry.id),
         label: toOptionalText(entry.label),
         unit: toOptionalText(entry.unit),
         gender: normalizeGenderValue(entry.gender),
@@ -116,6 +117,7 @@ const normalizeLabUnitOptions = (value = []) => {
       const unit = toOptionalText(entry.unit);
       if (!unit) return null;
       return {
+        id: toOptionalText(entry.id),
         label: toOptionalText(entry.label),
         unit,
         ucum_code: toOptionalText(entry.ucum_code),
@@ -163,6 +165,7 @@ const normalizeLabResultOptions = (value = []) => {
       const optionValue = toText(entry.value).toUpperCase();
       if (!optionValue) return null;
       return {
+        id: toOptionalText(entry.id),
         value: optionValue,
         label: toOptionalText(entry.label),
         aliases_json: normalizeResultOptionAliases(entry.aliases_json || entry.aliases),

@@ -15037,5 +15037,97 @@
   "labNextActionEnterResult": "Enter result",
   "@labNextActionEnterResult": {
     "description": "Localized text for labNextActionEnterResult."
+  },
+  "labCreateAction": "Create",
+  "@labCreateAction": {
+    "description": "Action label for opening laboratory create actions."
+  },
+  "labCreateChoiceDialogTitle": "Create laboratory item",
+  "@labCreateChoiceDialogTitle": {
+    "description": "Title for the laboratory create action picker dialog."
+  },
+  "labCreateChoiceDialogBody": "Choose the laboratory record you want to create.",
+  "@labCreateChoiceDialogBody": {
+    "description": "Body text for the laboratory create action picker dialog."
+  },
+  "labCreateOrderAction": "Lab order",
+  "@labCreateOrderAction": {
+    "description": "Action label for creating a lab order."
+  },
+  "labCreateOrderChoiceBody": "Request tests or panels for a patient.",
+  "@labCreateOrderChoiceBody": {
+    "description": "Description for the create lab order choice."
+  },
+  "labCreateOrderDialogTitle": "Create lab order",
+  "@labCreateOrderDialogTitle": {
+    "description": "Title for the create lab order dialog."
+  },
+  "labCreateTestAction": "Lab test",
+  "@labCreateTestAction": {
+    "description": "Action label for creating a lab test."
+  },
+  "labCreateTestChoiceBody": "Add a configurable test to the lab catalog.",
+  "@labCreateTestChoiceBody": {
+    "description": "Description for the create lab test choice."
+  },
+  "labCreateTestDialogTitle": "Create lab test",
+  "@labCreateTestDialogTitle": {
+    "description": "Title for the create lab test dialog."
+  },
+  "labCreatePanelAction": "Lab panel",
+  "@labCreatePanelAction": {
+    "description": "Action label for creating a lab panel."
+  },
+  "labCreatePanelChoiceBody": "Group existing tests into a reusable panel.",
+  "@labCreatePanelChoiceBody": {
+    "description": "Description for the create lab panel choice."
+  },
+  "labCreatePanelDialogTitle": "Create lab panel",
+  "@labCreatePanelDialogTitle": {
+    "description": "Title for the create lab panel dialog."
+  },
+  "labPanelNameLabel": "Panel name",
+  "@labPanelNameLabel": {
+    "description": "Label for the lab panel name field."
+  },
+  "labPanelCodeLabel": "Panel code",
+  "@labPanelCodeLabel": {
+    "description": "Label for the lab panel code field."
+  },
+  "labPanelDescriptionLabel": "Description",
+  "@labPanelDescriptionLabel": {
+    "description": "Label for the lab panel description field."
+  },
+  "labReferenceRangesSearchHint": "Search lab test, code, category, specimen, unit, or range",
+  "@labReferenceRangesSearchHint": {
+    "description": "Hint text for the lab test configuration table search."
+  },
+  "labActionColumnLabel": "Action",
+  "@labActionColumnLabel": {
+    "description": "Column label for row actions in lab tables."
+  },
+  "labUnitRangeCountColumnLabel": "Unit / ranges",
+  "@labUnitRangeCountColumnLabel": {
+    "description": "Column label for unit and reference range count."
+  },
+  "labGenderOtherLabel": "Other",
+  "@labGenderOtherLabel": {
+    "description": "Gender option label for other."
+  },
+  "labGenderUnknownLabel": "Unknown",
+  "@labGenderUnknownLabel": {
+    "description": "Gender option label for unknown."
+  },
+  "labAgeUnitWeeks": "Weeks",
+  "@labAgeUnitWeeks": {
+    "description": "Label for weeks age unit."
+  },
+  "labAddValueAction": "Add value",
+  "@labAddValueAction": {
+    "description": "Tooltip/action label for adding a value to a multi-value lab field."
+  },
+  "labAddValueFieldHint": "Type a value, then add it",
+  "@labAddValueFieldHint": {
+    "description": "Hint text for adding values to a multi-value lab field."
   }
 }

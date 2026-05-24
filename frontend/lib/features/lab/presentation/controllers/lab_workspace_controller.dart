@@ -203,6 +203,22 @@ final class LabWorkspaceController
     );
   }
 
+  Future<AppFailure?> createLabTest(Map<String, Object?> payload) {
+    return _mutateCatalog(
+      () => _repository.createLabTest(payload),
+      refreshTests: true,
+      refreshPanels: false,
+    );
+  }
+
+  Future<AppFailure?> createLabPanel(Map<String, Object?> payload) {
+    return _mutateCatalog(
+      () => _repository.createLabPanel(payload),
+      refreshTests: false,
+      refreshPanels: true,
+    );
+  }
+
   Future<AppFailure?> collectSelected(Map<String, Object?> payload) {
     final LabOrderWorkflow? selected = _currentState?.selectedWorkflow;
     if (selected == null) {
@@ -323,6 +339,44 @@ final class LabWorkspaceController
           _emit(latest.copyWith(catalogTests: tests, isSaving: false));
         }
         return refresh();
+      },
+      failure: (AppFailure failure) {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> _mutateCatalog(
+    Future<Result<LabCatalogItem>> Function() submit, {
+    required bool refreshTests,
+    required bool refreshPanels,
+  }) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<LabCatalogItem> result = await submit();
+    return result.when(
+      success: (_) async {
+        final List<LabCatalogItem>? tests = refreshTests ? await _tests() : null;
+        final List<LabCatalogItem>? panels = refreshPanels ? await _panels() : null;
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              catalogTests: tests ?? latest.catalogTests,
+              catalogPanels: panels ?? latest.catalogPanels,
+              isSaving: false,
+            ),
+          );
+        }
+        return null;
       },
       failure: (AppFailure failure) {
         final LabWorkspaceState? latest = _currentState;

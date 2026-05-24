@@ -56,8 +56,8 @@ describe('seed-lab-catalog-data script', () => {
       panels: {},
       summary: {
         tenants: 1,
-        tests_per_tenant: 66,
-        panels_per_tenant: 19,
+        tests_per_tenant: 100,
+        panels_per_tenant: 100,
       },
     }));
     const seedLabCatalogForTenant = jest.fn(async () => ({
@@ -86,8 +86,8 @@ describe('seed-lab-catalog-data script', () => {
     }));
     jest.doMock('../../../scripts/seeders/seed-org-pack', () => ({ seedOrgPack }));
     jest.doMock('../../../scripts/seeders/seed-lab-catalog-pack', () => ({
-      LAB_TEST_CATALOG: new Array(66).fill({}),
-      LAB_PANEL_CATALOG: new Array(19).fill({}),
+      LAB_TEST_CATALOG: new Array(100).fill({}),
+      LAB_PANEL_CATALOG: new Array(100).fill({}),
       seedLabCatalogPack,
       seedLabCatalogForTenant,
     }));
@@ -118,8 +118,8 @@ describe('seed-lab-catalog-data script', () => {
       skipped: false,
       summary: {
         tenants: 2,
-        tests_per_tenant: 66,
-        panels_per_tenant: 19,
+        tests_per_tenant: 100,
+        panels_per_tenant: 100,
         additional_tenants_seeded: 1,
       },
     });

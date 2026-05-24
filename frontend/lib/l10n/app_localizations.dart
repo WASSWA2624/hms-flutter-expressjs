@@ -21878,6 +21878,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter result'**
   String get labNextActionEnterResult;
+
+  /// Action label for opening laboratory create actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get labCreateAction;
+
+  /// Title for the laboratory create action picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create laboratory item'**
+  String get labCreateChoiceDialogTitle;
+
+  /// Body text for the laboratory create action picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the laboratory record you want to create.'**
+  String get labCreateChoiceDialogBody;
+
+  /// Action label for creating a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab order'**
+  String get labCreateOrderAction;
+
+  /// Description for the create lab order choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Request tests or panels for a patient.'**
+  String get labCreateOrderChoiceBody;
+
+  /// Title for the create lab order dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create lab order'**
+  String get labCreateOrderDialogTitle;
+
+  /// Action label for creating a lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab test'**
+  String get labCreateTestAction;
+
+  /// Description for the create lab test choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a configurable test to the lab catalog.'**
+  String get labCreateTestChoiceBody;
+
+  /// Title for the create lab test dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create lab test'**
+  String get labCreateTestDialogTitle;
+
+  /// Action label for creating a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab panel'**
+  String get labCreatePanelAction;
+
+  /// Description for the create lab panel choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Group existing tests into a reusable panel.'**
+  String get labCreatePanelChoiceBody;
+
+  /// Title for the create lab panel dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create lab panel'**
+  String get labCreatePanelDialogTitle;
+
+  /// Label for the lab panel name field.
+  ///
+  /// In en, this message translates to:
+  /// **'Panel name'**
+  String get labPanelNameLabel;
+
+  /// Label for the lab panel code field.
+  ///
+  /// In en, this message translates to:
+  /// **'Panel code'**
+  String get labPanelCodeLabel;
+
+  /// Label for the lab panel description field.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get labPanelDescriptionLabel;
+
+  /// Hint text for the lab test configuration table search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search lab test, code, category, specimen, unit, or range'**
+  String get labReferenceRangesSearchHint;
+
+  /// Column label for row actions in lab tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get labActionColumnLabel;
+
+  /// Column label for unit and reference range count.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit / ranges'**
+  String get labUnitRangeCountColumnLabel;
+
+  /// Gender option label for other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get labGenderOtherLabel;
+
+  /// Gender option label for unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get labGenderUnknownLabel;
+
+  /// Label for weeks age unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Weeks'**
+  String get labAgeUnitWeeks;
+
+  /// Tooltip/action label for adding a value to a multi-value lab field.
+  ///
+  /// In en, this message translates to:
+  /// **'Add value'**
+  String get labAddValueAction;
+
+  /// Hint text for adding values to a multi-value lab field.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a value, then add it'**
+  String get labAddValueFieldHint;
 }
 
 class _AppLocalizationsDelegate

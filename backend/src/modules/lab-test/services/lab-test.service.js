@@ -84,9 +84,44 @@ const mergeStandardLabTests = ({ mappedRecords, dbRecords, filters, limit, sortB
     .slice(0, limit);
 };
 
+const withoutChildIdentifier = (entry = {}) => {
+  const { id, ...data } = entry;
+  return data;
+};
+
+const buildNestedChildWritePayload = (entries = [], options = {}) => {
+  const preserveExisting = options.preserveExisting === true;
+
+  if (!preserveExisting) {
+    return {
+      create: entries.map(withoutChildIdentifier),
+    };
+  }
+
+  const existingRows = entries.filter((entry) => toOptionalText(entry.id));
+  const existingIds = existingRows.map((entry) => entry.id);
+  const createRows = entries.filter((entry) => !toOptionalText(entry.id));
+  const payload = {
+    deleteMany: existingIds.length > 0 ? { id: { notIn: existingIds } } : {},
+  };
+
+  if (createRows.length > 0) {
+    payload.create = createRows.map(withoutChildIdentifier);
+  }
+
+  if (existingRows.length > 0) {
+    payload.update = existingRows.map((entry) => ({
+      where: { id: entry.id },
+      data: withoutChildIdentifier(entry),
+    }));
+  }
+
+  return payload;
+};
+
 const buildLabTestWritePayload = (data = {}, options = {}) => {
   const payload = { ...data };
-  const includeDeleteMany = options.includeDeleteMany === true;
+  const preserveExistingChildren = options.includeDeleteMany === true;
   const hasReferenceRanges = hasOwn(payload, 'reference_ranges');
   const normalizedRanges = hasReferenceRanges
     ? normalizeLabReferenceRanges(payload.reference_ranges)
@@ -101,10 +136,9 @@ const buildLabTestWritePayload = (data = {}, options = {}) => {
     : [];
 
   if (hasReferenceRanges) {
-    payload.reference_ranges = {
-      ...(includeDeleteMany ? { deleteMany: {} } : {}),
-      create: normalizedRanges,
-    };
+    payload.reference_ranges = buildNestedChildWritePayload(normalizedRanges, {
+      preserveExisting: preserveExistingChildren,
+    });
   } else {
     delete payload.reference_ranges;
   }
@@ -122,10 +156,9 @@ const buildLabTestWritePayload = (data = {}, options = {}) => {
     || null;
 
   if (hasUnitOptions) {
-    payload.unit_options = {
-      ...(includeDeleteMany ? { deleteMany: {} } : {}),
-      create: normalizedUnitOptions,
-    };
+    payload.unit_options = buildNestedChildWritePayload(normalizedUnitOptions, {
+      preserveExisting: preserveExistingChildren,
+    });
     payload.unit = defaultUnitOption?.unit || fallbackUnit || null;
   } else if (options.createDefaultUnitOption && fallbackUnit) {
     payload.unit_options = {
@@ -145,16 +178,16 @@ const buildLabTestWritePayload = (data = {}, options = {}) => {
   }
 
   if (hasResultOptions) {
-    payload.result_options = {
-      ...(includeDeleteMany ? { deleteMany: {} } : {}),
-      create: normalizedResultOptions,
-    };
+    payload.result_options = buildNestedChildWritePayload(normalizedResultOptions, {
+      preserveExisting: preserveExistingChildren,
+    });
   } else {
     delete payload.result_options;
   }
 
   return payload;
 };
+
 
 const listLabTests = async (filters, page, limit, sortBy, order, userId, ipAddress) => {
   try {

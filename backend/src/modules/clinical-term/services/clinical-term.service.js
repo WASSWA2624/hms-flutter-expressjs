@@ -9,7 +9,6 @@ const clinicalTermRepository = require('@repositories/clinical-term/clinical-ter
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { ROLES } = require('@config/roles');
-const { UGANDA_DIAGNOSIS_TERMS } = require('../data/uganda-diagnosis-terms');
 const { COMMON_PROCEDURE_TERMS } = require('../data/common-procedure-terms');
 
 const SHARED_FAVORITE_ROLES = new Set([
@@ -201,15 +200,39 @@ const createClinicalTermFavorite = async (payload = {}, context = {}) => {
   return favorite;
 };
 
-const loadUgandaDiagnosisCatalog = ({ q }) => {
-  const search = normalizeUpper(q);
-  if (!search) return UGANDA_DIAGNOSIS_TERMS;
+const loadUgandaDiagnosisCatalog = async ({ tenantId, facilityId, q, limit }) => {
+  const search = normalizeText(q);
+  const where = {
+    tenant_id: tenantId,
+    term_type: 'DIAGNOSIS',
+    is_active: true,
+    deleted_at: null,
+    ...(facilityId ? { OR: [{ facility_id: facilityId }, { facility_id: null }] } : { facility_id: null }),
+  };
 
-  return UGANDA_DIAGNOSIS_TERMS.filter((term) => {
-    const description = normalizeUpper(term.description);
-    const code = normalizeUpper(term.code);
-    return description.includes(search) || code.includes(search);
-  });
+  if (search) {
+    where.AND = [
+      {
+        OR: [
+          { code: { contains: search } },
+          { description: { contains: search } },
+          { category: { contains: search } },
+        ],
+      },
+    ];
+  }
+
+  const catalogRows = await clinicalTermRepository.findCatalogTerms(where, limit);
+  return catalogRows.map((row) => ({
+    id: row.id,
+    code: row.code || null,
+    description: row.description,
+    category: row.category || null,
+    origin: 'UGANDA_CATALOG',
+    rank: row.usage_rank || row.sort_order || 0,
+    created_at: row.updated_at || row.created_at,
+    usage_count: 0,
+  }));
 };
 
 const loadCommonProcedureCatalog = ({ q }) => {
@@ -323,7 +346,7 @@ const listClinicalTermSuggestions = async (filters = {}, context = {}) => {
       ? filters.facility_id || null
       : context.facility_id || null;
 
-  const [favorites, recent] = await Promise.all([
+  const [favorites, recent, catalog] = await Promise.all([
     listClinicalTermFavorites(
       {
         term_type: termType,
@@ -339,13 +362,15 @@ const listClinicalTermSuggestions = async (filters = {}, context = {}) => {
       q,
       limit: safeLimit * 3,
     }),
-  ]);
-  const catalog =
     termType === 'DIAGNOSIS'
-      ? loadUgandaDiagnosisCatalog({ q })
-      : termType === 'PROCEDURE'
-        ? loadCommonProcedureCatalog({ q })
-        : [];
+      ? loadUgandaDiagnosisCatalog({
+          tenantId,
+          facilityId,
+          q,
+          limit: safeLimit * 4,
+        })
+      : Promise.resolve(termType === 'PROCEDURE' ? loadCommonProcedureCatalog({ q }) : []),
+  ]);
 
   const personalFavoriteIds = new Set(
     favorites

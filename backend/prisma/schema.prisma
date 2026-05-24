@@ -907,6 +907,7 @@ model tenant {
   registration_follow_ups         registration_follow_up[]
   clinical_vital_alert_thresholds clinical_vital_alert_threshold[]
   clinical_term_favorites         clinical_term_favorite[]
+  clinical_term_catalogs          clinical_term_catalog[]
   staff_positions                 staff_position[]
   staff_profiles                  staff_profile[]
   shifts                          shift[]
@@ -1010,6 +1011,7 @@ model facility {
   registration_follow_ups         registration_follow_up[]
   clinical_vital_alert_thresholds clinical_vital_alert_threshold[]
   clinical_term_favorites         clinical_term_favorite[]
+  clinical_term_catalogs          clinical_term_catalog[]
   shifts                          shift[]
   nurse_rosters                   nurse_roster[]
   shift_templates                 shift_template[]
@@ -2402,6 +2404,41 @@ model clinical_vital_alert_threshold {
   @@index([vital_type])
   @@index([component])
   @@index([age_band])
+  @@index([is_active])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model clinical_term_catalog {
+  id                String           @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?          @db.VarChar(32)
+  tenant_id         String           @db.VarChar(36)
+  facility_id       String?          @db.VarChar(36)
+  catalog_key       String           @db.VarChar(120)
+  term_type         ClinicalTermType
+  code              String?          @db.VarChar(80)
+  description       String           @db.Text
+  category          String?          @db.VarChar(120)
+  source            String?          @db.VarChar(80)
+  sort_order        Int              @default(0)
+  usage_rank        Int              @default(0)
+  is_active         Boolean          @default(true)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+  deleted_at        DateTime?
+  version           Int              @default(1)
+
+  tenant   tenant    @relation(fields: [tenant_id], references: [id])
+  facility facility? @relation(fields: [facility_id], references: [id])
+
+  @@unique([tenant_id, term_type, catalog_key])
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([term_type])
+  @@index([code])
+  @@index([category])
+  @@index([sort_order])
+  @@index([usage_rank])
   @@index([is_active])
   @@index([deleted_at])
   @@index([human_friendly_id])

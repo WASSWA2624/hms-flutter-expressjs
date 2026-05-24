@@ -11583,4 +11583,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labNextActionEnterResult => 'Enter result';
+  @override
+  String get labCreateAction => 'Create';
+
+  @override
+  String get labCreateChoiceDialogTitle => 'Create laboratory item';
+
+  @override
+  String get labCreateChoiceDialogBody => 'Choose the laboratory record you want to create.';
+
+  @override
+  String get labCreateOrderAction => 'Lab order';
+
+  @override
+  String get labCreateOrderChoiceBody => 'Request tests or panels for a patient.';
+
+  @override
+  String get labCreateOrderDialogTitle => 'Create lab order';
+
+  @override
+  String get labCreateTestAction => 'Lab test';
+
+  @override
+  String get labCreateTestChoiceBody => 'Add a configurable test to the lab catalog.';
+
+  @override
+  String get labCreateTestDialogTitle => 'Create lab test';
+
+  @override
+  String get labCreatePanelAction => 'Lab panel';
+
+  @override
+  String get labCreatePanelChoiceBody => 'Group existing tests into a reusable panel.';
+
+  @override
+  String get labCreatePanelDialogTitle => 'Create lab panel';
+
+  @override
+  String get labPanelNameLabel => 'Panel name';
+
+  @override
+  String get labPanelCodeLabel => 'Panel code';
+
+  @override
+  String get labPanelDescriptionLabel => 'Description';
+
+  @override
+  String get labReferenceRangesSearchHint => 'Search lab test, code, category, specimen, unit, or range';
+
+  @override
+  String get labActionColumnLabel => 'Action';
+
+  @override
+  String get labUnitRangeCountColumnLabel => 'Unit / ranges';
+
+  @override
+  String get labGenderOtherLabel => 'Other';
+
+  @override
+  String get labGenderUnknownLabel => 'Unknown';
+
+  @override
+  String get labAgeUnitWeeks => 'Weeks';
+
+  @override
+  String get labAddValueAction => 'Add value';
+
+  @override
+  String get labAddValueFieldHint => 'Type a value, then add it';
+
 }

@@ -87,6 +87,13 @@ const seedClinicalCatalogData = async ({
       tenantResult.pharmacy.stockMovements || {}
     ).length;
 
+    clinicalCatalogPack.clinicalTerms ||= { diagnoses: {} };
+    clinicalCatalogPack.clinicalTerms.diagnoses ||= {};
+    mergeTenantCatalogRecords(
+      clinicalCatalogPack.clinicalTerms.diagnoses,
+      `tenant:${tenant.id}`,
+      tenantResult.clinicalTerms?.diagnoses
+    );
     mergeTenantCatalogRecords(clinicalCatalogPack.lab.tests, `tenant:${tenant.id}`, tenantResult.lab.tests);
     mergeTenantCatalogRecords(clinicalCatalogPack.lab.panels, `tenant:${tenant.id}`, tenantResult.lab.panels);
     mergeTenantCatalogRecords(

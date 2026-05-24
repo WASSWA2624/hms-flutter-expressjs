@@ -70,6 +70,7 @@ const PUBLIC_ID_PREFIXES = Object.freeze({
   message: 'MSG',
   notification: 'NOTI',
   template: 'TPL',
+  clinical_term_catalog: 'CTC',
   equipment_registry: 'EQP',
   equipment_work_order: 'EWO',
   unit_management_assignment: 'UMA',

@@ -8,12 +8,8 @@ const {
 const DEFAULT_DRUG_INITIAL_STOCK = 180;
 const DEFAULT_DRUG_REORDER_LEVEL = 40;
 
-const radiologyTest = (key, name, code, modality) => ({
-  key,
-  name,
-  code,
-  modality,
-});
+const { RADIOLOGY_TEST_CATALOG } = require('./data/uganda-radiology-catalog');
+const { UGANDA_DIAGNOSIS_CATALOG } = require('./data/uganda-diagnosis-catalog');
 
 const drugSpec = ({
   key,
@@ -36,81 +32,6 @@ const drugSpec = ({
   reorder_level: reorderLevel,
   deduction_factor: deductionFactor,
 });
-
-const XRAY_TESTS = [
-  radiologyTest('xray_chest_pa', 'Chest X-Ray PA View', 'XR-CHEST-PA', 'XRAY'),
-  radiologyTest('xray_chest_ap', 'Chest X-Ray AP Portable', 'XR-CHEST-AP', 'XRAY'),
-  radiologyTest('xray_abdomen_erect', 'Abdominal X-Ray Erect', 'XR-ABD-ERECT', 'XRAY'),
-  radiologyTest('xray_abdomen_kub', 'Abdominal X-Ray KUB', 'XR-KUB', 'XRAY'),
-  radiologyTest('xray_cervical_spine', 'Cervical Spine X-Ray', 'XR-CSPINE', 'XRAY'),
-  radiologyTest('xray_thoracic_spine', 'Thoracic Spine X-Ray', 'XR-TSPINE', 'XRAY'),
-  radiologyTest('xray_lumbar_spine', 'Lumbar Spine X-Ray', 'XR-LSPINE', 'XRAY'),
-  radiologyTest('xray_pelvis', 'Pelvis X-Ray AP', 'XR-PELVIS', 'XRAY'),
-  radiologyTest('xray_hip', 'Hip X-Ray', 'XR-HIP', 'XRAY'),
-  radiologyTest('xray_knee', 'Knee X-Ray', 'XR-KNEE', 'XRAY'),
-  radiologyTest('xray_shoulder', 'Shoulder X-Ray', 'XR-SHOULDER', 'XRAY'),
-  radiologyTest('xray_hand_wrist', 'Hand and Wrist X-Ray', 'XR-HAND', 'XRAY'),
-  radiologyTest('xray_ankle_foot', 'Ankle and Foot X-Ray', 'XR-FOOT', 'XRAY'),
-];
-
-const CT_TESTS = [
-  radiologyTest('ct_head_non_contrast', 'CT Head Non-Contrast', 'CT-HEAD-NC', 'CT'),
-  radiologyTest('ct_brain_contrast', 'CT Brain with Contrast', 'CT-BRAIN-C', 'CT'),
-  radiologyTest('ct_cervical_spine', 'CT Cervical Spine', 'CT-CSPINE', 'CT'),
-  radiologyTest('ct_chest', 'CT Chest', 'CT-CHEST', 'CT'),
-  radiologyTest('ct_abdomen_pelvis', 'CT Abdomen and Pelvis', 'CT-ABDPELV', 'CT'),
-  radiologyTest('ct_kub', 'CT KUB', 'CT-KUB', 'CT'),
-  radiologyTest('ct_pulmonary_angiogram', 'CT Pulmonary Angiogram', 'CT-CTPA', 'CT'),
-  radiologyTest('ct_sinuses', 'CT Paranasal Sinuses', 'CT-SINUS', 'CT'),
-];
-
-const MRI_TESTS = [
-  radiologyTest('mri_brain', 'MRI Brain', 'MRI-BRAIN', 'MRI'),
-  radiologyTest('mri_cervical_spine', 'MRI Cervical Spine', 'MRI-CSPINE', 'MRI'),
-  radiologyTest('mri_lumbar_spine', 'MRI Lumbar Spine', 'MRI-LSPINE', 'MRI'),
-  radiologyTest('mri_knee', 'MRI Knee', 'MRI-KNEE', 'MRI'),
-  radiologyTest('mri_shoulder', 'MRI Shoulder', 'MRI-SHOULDER', 'MRI'),
-  radiologyTest('mri_abdomen_pelvis', 'MRI Abdomen and Pelvis', 'MRI-ABDPELV', 'MRI'),
-];
-
-const ULTRASOUND_TESTS = [
-  radiologyTest('uss_abdomen', 'Abdominal Ultrasound', 'USS-ABD', 'ULTRASOUND'),
-  radiologyTest('uss_pelvis', 'Pelvic Ultrasound', 'USS-PELVIS', 'ULTRASOUND'),
-  radiologyTest('uss_obstetric', 'Obstetric Ultrasound', 'USS-OBS', 'ULTRASOUND'),
-  radiologyTest('uss_renal', 'Renal Ultrasound', 'USS-RENAL', 'ULTRASOUND'),
-  radiologyTest('uss_thyroid', 'Thyroid Ultrasound', 'USS-THYROID', 'ULTRASOUND'),
-  radiologyTest('uss_breast', 'Breast Ultrasound', 'USS-BREAST', 'ULTRASOUND'),
-  radiologyTest('uss_dvt_doppler', 'Lower Limb Venous Doppler', 'USS-DOPPLER-DVT', 'ULTRASOUND'),
-];
-
-const CARDIAC_TESTS = [
-  radiologyTest('ecg_resting', 'ECG Resting 12 Lead', 'ECG-12', 'ECG'),
-  radiologyTest('ecg_holter', 'ECG Holter 24 Hour', 'ECG-HOLTER', 'ECG'),
-  radiologyTest('echo_transthoracic', 'Transthoracic Echocardiogram', 'ECHO-TTE', 'ECHO'),
-  radiologyTest('echo_focused', 'Focused Cardiac Ultrasound', 'ECHO-FOCUS', 'ECHO'),
-];
-
-const ENDO_GASTRO_TESTS = [
-  radiologyTest('endo_upper_gi', 'Upper GI Endoscopy', 'ENDO-UGI', 'ENDO'),
-  radiologyTest('endo_bronchoscopy', 'Bronchoscopy', 'ENDO-BRONCH', 'ENDO'),
-  radiologyTest('gastro_colonoscopy', 'Colonoscopy', 'GASTRO-COLON', 'GASTRO'),
-  radiologyTest('gastro_sigmoidoscopy', 'Flexible Sigmoidoscopy', 'GASTRO-SIG', 'GASTRO'),
-];
-
-const OTHER_RADIOLOGY_TESTS = [
-  radiologyTest('other_mammography', 'Mammography Bilateral', 'IMG-MAMMO', 'OTHER'),
-  radiologyTest('other_dexa', 'DEXA Bone Densitometry', 'IMG-DEXA', 'OTHER'),
-];
-
-const RADIOLOGY_TEST_CATALOG = Object.freeze([
-  ...XRAY_TESTS,
-  ...CT_TESTS,
-  ...MRI_TESTS,
-  ...ULTRASOUND_TESTS,
-  ...CARDIAC_TESTS,
-  ...ENDO_GASTRO_TESTS,
-  ...OTHER_RADIOLOGY_TESTS,
-]);
 
 const ANALGESIC_DRUGS = [
   drugSpec({ key: 'paracetamol_500_tablet', name: 'Paracetamol', code: 'PCM500', form: 'Tablet', strength: '500 mg', inventoryUnit: 'tablet', initialStock: 1200, reorderLevel: 250 }),
@@ -292,6 +213,56 @@ const seedRadiologyCatalogForTenant = async (
       }
     );
     result.tests[testSpec.key] = record;
+  }
+
+  return result;
+};
+
+
+const seedClinicalTermCatalogForTenant = async (
+  ctx,
+  {
+    seedKey,
+    tenantId,
+    tenantCode = null,
+    scenarioKey = null,
+  } = {}
+) => {
+  if (!tenantId || !seedKey) {
+    return { diagnoses: {} };
+  }
+
+  const result = { diagnoses: {} };
+
+  for (const [index, termSpec] of UGANDA_DIAGNOSIS_CATALOG.entries()) {
+    const basePayload = {
+      tenant_id: tenantId,
+      facility_id: null,
+      catalog_key: termSpec.key,
+      term_type: 'DIAGNOSIS',
+      code: termSpec.code || null,
+      description: termSpec.description,
+      category: termSpec.category || null,
+      source: termSpec.source || 'UGANDA_CLINICAL_GUIDELINES',
+      sort_order: index,
+      usage_rank: termSpec.rank || index + 1,
+      is_active: true,
+      deleted_at: null,
+    };
+
+    const record = await ctx.upsert(
+      'clinical_term_catalog',
+      `${seedKey}:clinical-term-catalog:diagnosis:${termSpec.key}`,
+      basePayload,
+      {
+        createData: basePayload,
+        updateData: basePayload,
+        tenantCode,
+        scenarioKey,
+        publicIdPrefix: 'CTC',
+      }
+    );
+    result.diagnoses[termSpec.key] = record;
   }
 
   return result;
@@ -485,6 +456,7 @@ const seedClinicalCatalogForTenant = async (
     return {
       lab: { tests: {}, panels: {} },
       radiology: { tests: {} },
+      clinicalTerms: { diagnoses: {} },
       pharmacy: {
         drugs: {},
         formularyItems: {},
@@ -511,6 +483,13 @@ const seedClinicalCatalogForTenant = async (
     scenarioKey,
   });
 
+  const clinicalTerms = await seedClinicalTermCatalogForTenant(ctx, {
+    seedKey,
+    tenantId,
+    tenantCode,
+    scenarioKey,
+  });
+
   const pharmacy = await seedPharmacyCatalogForTenant(ctx, {
     seedKey,
     tenantId,
@@ -522,6 +501,7 @@ const seedClinicalCatalogForTenant = async (
   return {
     lab,
     radiology,
+    clinicalTerms,
     pharmacy,
   };
 };
@@ -534,6 +514,9 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
     },
     radiology: {
       tests: {},
+    },
+    clinicalTerms: {
+      diagnoses: {},
     },
     pharmacy: {
       drugs: {},
@@ -550,6 +533,7 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
       lab_tests_per_tenant: LAB_TEST_CATALOG.length,
       lab_panels_per_tenant: LAB_PANEL_CATALOG.length,
       radiology_tests_per_tenant: RADIOLOGY_TEST_CATALOG.length,
+      diagnosis_terms_per_tenant: UGANDA_DIAGNOSIS_CATALOG.length,
       drugs_per_tenant: DRUG_CATALOG.length,
       formulary_items_per_tenant: DRUG_CATALOG.length,
       inventory_items_per_tenant: DRUG_CATALOG.length,
@@ -585,6 +569,7 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
     mergeCatalogRecords(result.lab.tests, scenario.key, tenantCatalog.lab.tests);
     mergeCatalogRecords(result.lab.panels, scenario.key, tenantCatalog.lab.panels);
     mergeCatalogRecords(result.radiology.tests, scenario.key, tenantCatalog.radiology.tests);
+    mergeCatalogRecords(result.clinicalTerms.diagnoses, scenario.key, tenantCatalog.clinicalTerms?.diagnoses);
     mergeCatalogRecords(result.pharmacy.drugs, scenario.key, tenantCatalog.pharmacy.drugs);
     mergeCatalogRecords(result.pharmacy.formularyItems, scenario.key, tenantCatalog.pharmacy.formularyItems);
     mergeCatalogRecords(result.pharmacy.inventoryItems, scenario.key, tenantCatalog.pharmacy.inventoryItems);
@@ -600,6 +585,8 @@ const seedClinicalCatalogPack = async (ctx, orgPack) => {
 module.exports = {
   DRUG_CATALOG,
   RADIOLOGY_TEST_CATALOG,
+  UGANDA_DIAGNOSIS_CATALOG,
   seedClinicalCatalogForTenant,
+  seedClinicalTermCatalogForTenant,
   seedClinicalCatalogPack,
 };

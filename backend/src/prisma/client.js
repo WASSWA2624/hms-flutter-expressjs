@@ -85,6 +85,7 @@ const MODEL_PREFIX_OVERRIDES = Object.freeze({
   appointment: 'APT',
   encounter: 'ENC',
   admission: 'ADM',
+  clinical_term_catalog: 'CTC',
   invoice: 'INV',
   payment: 'PAY',
   role: 'ROL',

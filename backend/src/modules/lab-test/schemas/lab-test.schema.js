@@ -51,6 +51,7 @@ const optionalBooleanSchema = z.preprocess((value) => {
 
 const labReferenceRangeSchema = z
   .object({
+    id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     label: optionalTrimmedString(120),
     unit: optionalTrimmedString(40),
     gender: labReferenceGenderSchema.optional().nullable(),
@@ -66,7 +67,7 @@ const labReferenceRangeSchema = z
     notes: optionalTrimmedString(255)
   })
   .superRefine((value, ctx) => {
-    const hasAnyValue = Object.values(value).some((entry) => entry !== null && entry !== undefined && String(entry).trim() !== '');
+    const hasAnyValue = Object.entries(value).some(([key, entry]) => key !== 'id' && entry !== null && entry !== undefined && String(entry).trim() !== '');
     if (!hasAnyValue) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -87,6 +88,16 @@ const labReferenceRangeSchema = z
         code: z.ZodIssueCode.custom,
         message: 'Maximum age value and unit must be provided together.',
         path: ['age_max_unit']
+      });
+    }
+
+    const ageMin = value.age_min_value == null ? null : Number(value.age_min_value);
+    const ageMax = value.age_max_value == null ? null : Number(value.age_max_value);
+    if (ageMin != null && ageMax != null && ageMin >= ageMax) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Minimum age must be lower than maximum age.',
+        path: ['age_max_value']
       });
     }
 
@@ -112,6 +123,7 @@ const labReferenceRangeSchema = z
   });
 
 const labUnitOptionSchema = z.object({
+  id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   label: optionalTrimmedString(80),
   unit: z.string().trim().min(1).max(40),
   ucum_code: optionalTrimmedString(40),
@@ -140,6 +152,7 @@ const withUniqueUnitOptions = (schema) =>
   });
 
 const labResultOptionSchema = z.object({
+  id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   value: z.string().trim().min(1).max(80),
   label: optionalTrimmedString(120),
   aliases: z.array(z.string().trim().min(1).max(80)).max(20).optional(),

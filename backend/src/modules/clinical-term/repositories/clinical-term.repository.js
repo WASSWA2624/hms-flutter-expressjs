@@ -1,6 +1,34 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
+
+const findCatalogTerms = async (where = {}, take = 100) => {
+  try {
+    return await prisma.clinical_term_catalog.findMany({
+      where,
+      orderBy: [
+        { sort_order: 'asc' },
+        { usage_rank: 'asc' },
+        { description: 'asc' },
+      ],
+      take,
+      select: {
+        id: true,
+        code: true,
+        description: true,
+        category: true,
+        source: true,
+        sort_order: true,
+        usage_rank: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 const findFavorites = async (where = {}, orderBy = [{ usage_count: 'desc' }, { last_used_at: 'desc' }, { created_at: 'desc' }]) => {
   try {
     return await prisma.clinical_term_favorite.findMany({
@@ -80,6 +108,7 @@ const findRecentDiagnoses = async (where = {}, take = 12) => {
 
 module.exports = {
   createFavorite,
+  findCatalogTerms,
   findFavorite,
   findFavorites,
   findRecentDiagnoses,

@@ -57,6 +57,7 @@ describe('seed-clinical-catalog-data script', () => {
     const seedClinicalCatalogPack = jest.fn(async () => ({
       lab: { tests: {}, panels: {} },
       radiology: { tests: {} },
+      clinicalTerms: { diagnoses: {} },
       pharmacy: {
         drugs: {},
         formularyItems: {},
@@ -69,9 +70,10 @@ describe('seed-clinical-catalog-data script', () => {
       summary: {
         tenants: 1,
         facilities_seeded: 2,
-        lab_tests_per_tenant: 66,
-        lab_panels_per_tenant: 19,
-        radiology_tests_per_tenant: 44,
+        lab_tests_per_tenant: 100,
+        lab_panels_per_tenant: 100,
+        radiology_tests_per_tenant: 100,
+        diagnosis_terms_per_tenant: 100,
         drugs_per_tenant: 83,
         formulary_items_per_tenant: 83,
         inventory_items_per_tenant: 83,
@@ -84,6 +86,7 @@ describe('seed-clinical-catalog-data script', () => {
     const seedClinicalCatalogForTenant = jest.fn(async () => ({
       lab: { tests: { hemoglobin: { id: 'test-1' } }, panels: { cbc: { id: 'panel-1' } } },
       radiology: { tests: { chest: { id: 'rad-1' } } },
+      clinicalTerms: { diagnoses: { malaria: { id: 'term-1' } } },
       pharmacy: {
         drugs: { amoxicillin: { id: 'drug-1' } },
         formularyItems: { amoxicillin: { id: 'form-1' } },
@@ -149,9 +152,10 @@ describe('seed-clinical-catalog-data script', () => {
       summary: {
         tenants: 2,
         facilities_seeded: 3,
-        lab_tests_per_tenant: 66,
-        lab_panels_per_tenant: 19,
-        radiology_tests_per_tenant: 44,
+        lab_tests_per_tenant: 100,
+        lab_panels_per_tenant: 100,
+        radiology_tests_per_tenant: 100,
+        diagnosis_terms_per_tenant: 100,
         drugs_per_tenant: 83,
         formulary_items_per_tenant: 83,
         inventory_items_per_tenant: 83,

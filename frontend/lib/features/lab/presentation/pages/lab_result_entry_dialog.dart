@@ -56,7 +56,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     _disposeDrafts();
     _draftOrderId = orderId;
-    _drafts = workflow.order.items.map(_ResultDraft.new).toList(growable: false);
+    _drafts = workflow.order.items
+        .map(_ResultDraft.new)
+        .toList(growable: false);
   }
 
   @override
@@ -82,7 +84,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         .where((_ResultDraft draft) => draft.item.canVerify && draft.hasEntry)
         .toList(growable: false);
     final List<_ResultDraft> draftableEntries = drafts
-        .where((_ResultDraft draft) => draft.item.canEnterResult && draft.hasEntry)
+        .where(
+          (_ResultDraft draft) => draft.item.canEnterResult && draft.hasEntry,
+        )
         .toList(growable: false);
 
     return AppDialog(
@@ -170,7 +174,10 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
 
     final LabOrderSummary order = workflow.order;
-    final String? orderedAtLabel = _optionalDateTimeLabel(context, order.orderedAt);
+    final String? orderedAtLabel = _optionalDateTimeLabel(
+      context,
+      order.orderedAt,
+    );
 
     return Form(
       key: _formKey,
@@ -214,7 +221,8 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                 copyTooltip: l10n.copyIdentifierAction,
                 copiedMessage: l10n.identifierCopiedMessage,
               ),
-              if (order.encounterId != null && order.encounterId!.trim().isNotEmpty)
+              if (order.encounterId != null &&
+                  order.encounterId!.trim().isNotEmpty)
                 AppWorkspacePatientContextField(
                   label: l10n.labEncounterFieldLabel,
                   value: order.encounterId!,
@@ -258,8 +266,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
             _LabResultEntryTable(
               drafts: drafts,
               canMutate: canMutate,
-              onVerifyItem: ( _ResultDraft draft) => _verifySingle(draft),
-              onRejectItem: (LabOrderItem item) => _openRejectDialog(context, item),
+              onVerifyItem: (_ResultDraft draft) => _verifySingle(draft),
+              onRejectItem: (LabOrderItem item) =>
+                  _openRejectDialog(context, item),
             ),
           if (workflow.results.isNotEmpty) ...<Widget>[
             SizedBox(height: Theme.of(context).spacing.lg),
@@ -280,15 +289,14 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _isSaving = true;
       _failure = null;
     });
-    final LabWorkspaceController controller =
-        ref.read(labWorkspaceControllerProvider.notifier);
+    final LabWorkspaceController controller = ref.read(
+      labWorkspaceControllerProvider.notifier,
+    );
     final List<({LabOrderItem item, Map<String, Object?> payload})> payloads =
         entries
             .map(
-              (_ResultDraft draft) => (
-                item: draft.item,
-                payload: draft.toDraftPayload(),
-              ),
+              (_ResultDraft draft) =>
+                  (item: draft.item, payload: draft.toDraftPayload()),
             )
             .toList(growable: false);
     final AppFailure? failure = await controller.saveOrderItemDrafts(payloads);
@@ -316,8 +324,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _isSaving = true;
       _failure = null;
     });
-    final LabWorkspaceController controller =
-        ref.read(labWorkspaceControllerProvider.notifier);
+    final LabWorkspaceController controller = ref.read(
+      labWorkspaceControllerProvider.notifier,
+    );
     final AppFailure? failure = entries.length == 1
         ? await controller.verifyOrderItem(
             entries.single.item.apiId,
@@ -337,9 +346,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     setState(() => _isSaving = false);
     if (failure == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.labSavedMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.labSavedMessage)));
       return;
     }
     setState(() => _failure = failure);
@@ -361,23 +370,26 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     setState(() => _isSaving = false);
     if (failure == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.labSavedMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.labSavedMessage)));
       return;
     }
     setState(() => _failure = failure);
   }
 
-  Future<void> _openRejectDialog(BuildContext context, LabOrderItem item) async {
+  Future<void> _openRejectDialog(
+    BuildContext context,
+    LabOrderItem item,
+  ) async {
     final bool? saved = await showAppDialog<bool>(
       context: context,
       builder: (_) => _RejectOrderItemDialog(item: item),
     );
-    if (saved == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.labSavedMessage)),
-      );
+    if (saved == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.labSavedMessage)));
     }
   }
 }
@@ -508,7 +520,9 @@ class _LabResultEntryTableRow extends StatelessWidget {
       children: <Widget>[
         Text(
           item.displayTitle,
-          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         if (item.testCode != null && item.testCode!.trim().isNotEmpty)
           Text(
@@ -519,14 +533,15 @@ class _LabResultEntryTableRow extends StatelessWidget {
           ),
         Text(
           _joinDisplay(<String?>[
-            item.specimenType == null
-                ? null
-                : '${l10n.labSpecimenTypeLabel}: ${item.specimenType}',
-            item.category == null
-                ? null
-                : '${l10n.labCategoryLabel}: ${item.category}',
-            item.unit ?? item.unit,
-          ]) ?? l10n.profileUnknownValue,
+                item.specimenType == null
+                    ? null
+                    : '${l10n.labSpecimenTypeLabel}: ${item.specimenType}',
+                item.category == null
+                    ? null
+                    : '${l10n.labCategoryLabel}: ${item.category}',
+                item.unit ?? item.unit,
+              ]) ??
+              l10n.profileUnknownValue,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -816,11 +831,12 @@ class _VerifiedResultsList extends StatelessWidget {
                       ),
                       Text(
                         _joinDisplay(<String?>[
-                          result.displayValue,
-                          result.referenceRangeSummary == null
-                              ? null
-                              : '${l10n.labReferenceRangeLabel}: ${result.referenceRangeSummary}',
-                        ]) ?? l10n.profileUnknownValue,
+                              result.displayValue,
+                              result.referenceRangeSummary == null
+                                  ? null
+                                  : '${l10n.labReferenceRangeLabel}: ${result.referenceRangeSummary}',
+                            ]) ??
+                            l10n.profileUnknownValue,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -918,7 +934,8 @@ class _RejectOrderItemDialog extends ConsumerStatefulWidget {
       _RejectOrderItemDialogState();
 }
 
-class _RejectOrderItemDialogState extends ConsumerState<_RejectOrderItemDialog> {
+class _RejectOrderItemDialogState
+    extends ConsumerState<_RejectOrderItemDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _notesController;
   late final TextEditingController _customReasonController;
