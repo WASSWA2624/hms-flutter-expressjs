@@ -46128,9 +46128,35 @@ const throwEmptyLabPanel = (field = 'requested_panels') => {
   throw new HttpError('errors.lab_order.empty_panel', 400, [{ field }]);
 };
 
+const panelDisplayNameFromCode = (code) =>
+  sanitizeString(code)
+    .toLowerCase()
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(' ');
+
+const buildRequestedItemPayload = ({
+  labTestId,
+  panelId = null,
+  panelDisplayName = null,
+  panelCode = null,
+  panelSortOrder = null,
+  panelItemSortOrder = null,
+}) => ({
+  lab_test_id: labTestId,
+  status: 'ORDERED',
+  panel_id: panelId,
+  panel_display_name: panelDisplayName,
+  panel_code: panelCode,
+  panel_sort_order: panelSortOrder,
+  panel_item_sort_order: panelItemSortOrder,
+});
+
 const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, tenantId, userId, ipAddress }) => {
   const items = [];
   const seenTestIds = new Set();
+  let panelSortOrder = 0;
 
   for (const request of requestedTests) {
     const labTest = await resolveOrCreateRequestedLabTest({
@@ -46142,20 +46168,22 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
 
     if (seenTestIds.has(labTest.id)) continue;
     seenTestIds.add(labTest.id);
-    items.push({
-      lab_test_id: labTest.id,
-      status: 'ORDERED'
-    });
+    items.push(buildRequestedItemPayload({ labTestId: labTest.id }));
   }
 
   for (const request of requestedPanels) {
     const requestedPanelId = sanitizeString(request.lab_panel_id);
+    const currentPanelSortOrder = panelSortOrder;
+    panelSortOrder += 1;
+
     if (requestedPanelId.startsWith('STD_LAB_PANEL:')) {
       const panelCode = requestedPanelId.split(':')[1];
       const standardCodes = STANDARD_LAB_PANELS[sanitizeString(panelCode).toUpperCase()] || [];
       if (!standardCodes.length) {
         throwEmptyLabPanel('requested_panels.lab_panel_id');
       }
+      const normalizedPanelCode = sanitizeString(panelCode).toUpperCase();
+      const panelDisplayName = panelDisplayNameFromCode(normalizedPanelCode);
       for (const standardCode of standardCodes) {
         const labTest = await resolveOrCreateStandardLabTest({
           code: standardCode,
@@ -46165,7 +46193,16 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
         });
         if (!labTest?.id || seenTestIds.has(labTest.id)) continue;
         seenTestIds.add(labTest.id);
-        items.push({ lab_test_id: labTest.id, status: 'ORDERED' });
+        items.push(
+          buildRequestedItemPayload({
+            labTestId: labTest.id,
+            panelId: `STD_LAB_PANEL:${normalizedPanelCode}`,
+            panelDisplayName,
+            panelCode: normalizedPanelCode,
+            panelSortOrder: currentPanelSortOrder,
+            panelItemSortOrder: standardCodes.indexOf(standardCode),
+          })
+        );
       }
       continue;
     }
@@ -46185,13 +46222,25 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
     if (!panelTestIds.length) {
       throwEmptyLabPanel('requested_panels.lab_panel_id');
     }
-    panelTestIds.forEach((labTestId) => {
+    panelTestIds.forEach((labTestId, index) => {
       if (seenTestIds.has(labTestId)) return;
       seenTestIds.add(labTestId);
-      items.push({
-        lab_test_id: labTestId,
-        status: 'ORDERED'
+      const panelItem = panelItems.find((entry) => {
+        const candidateId = entry?.lab_test_id || entry?.lab_test?.id;
+        return candidateId === labTestId;
       });
+      items.push(
+        buildRequestedItemPayload({
+          labTestId,
+          panelId: sanitizeString(labPanel.human_friendly_id) || labPanel.id,
+          panelDisplayName: sanitizeString(labPanel.name) || null,
+          panelCode: sanitizeString(labPanel.code) || null,
+          panelSortOrder: currentPanelSortOrder,
+          panelItemSortOrder: Number.isFinite(Number(panelItem?.sort_order))
+            ? Number(panelItem.sort_order)
+            : index,
+        })
+      );
     });
   }
 

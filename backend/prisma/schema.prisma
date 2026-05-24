@@ -3035,18 +3035,23 @@ model lab_order {
 }
 
 model lab_order_item {
-  id                String         @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?        @db.VarChar(32)
-  lab_order_id      String         @db.VarChar(36)
-  lab_test_id       String         @db.VarChar(36)
-  status            LabOrderStatus
-  rejection_reason  String?        @db.VarChar(255)
-  rejection_notes   String?        @db.Text
-  rejected_at       DateTime?
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
-  deleted_at        DateTime?
-  version           Int            @default(1)
+  id                    String         @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id     String?        @db.VarChar(32)
+  lab_order_id          String         @db.VarChar(36)
+  lab_test_id           String         @db.VarChar(36)
+  panel_id              String?        @db.VarChar(80)
+  panel_display_name    String?        @db.VarChar(255)
+  panel_code            String?        @db.VarChar(80)
+  panel_sort_order      Int?
+  panel_item_sort_order Int?
+  status                LabOrderStatus
+  rejection_reason      String?        @db.VarChar(255)
+  rejection_notes       String?        @db.Text
+  rejected_at           DateTime?
+  created_at            DateTime       @default(now())
+  updated_at            DateTime       @updatedAt
+  deleted_at            DateTime?
+  version               Int            @default(1)
 
   lab_order lab_order    @relation(fields: [lab_order_id], references: [id])
   lab_test  lab_test     @relation(fields: [lab_test_id], references: [id])
@@ -3055,6 +3060,7 @@ model lab_order_item {
   @@unique([human_friendly_id])
   @@index([lab_order_id])
   @@index([lab_test_id])
+  @@index([panel_id])
   @@index([status])
   @@index([deleted_at])
   @@index([rejected_at])

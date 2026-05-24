@@ -4,6 +4,19 @@ jest.mock('@repositories/lab-result/lab-result.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(),
 }));
+jest.mock('@lib/websocket', () => ({
+  emitToUsers: jest.fn(),
+  DIAGNOSTIC_EVENTS: {
+    LAB_WORKFLOW_UPDATED: 'diagnostic.lab_workflow_updated',
+    LAB_RESULT_READY: 'diagnostic.lab_result_ready',
+    LAB_RESULT_UPDATED: 'diagnostic.lab_result_updated',
+  },
+}));
+jest.mock('@prisma/client', () => ({
+  user_role: {
+    findMany: jest.fn(),
+  },
+}));
 jest.mock('@services/lab-workspace/lab.shared', () => {
   const actual = jest.requireActual('@services/lab-workspace/lab.shared');
   return {

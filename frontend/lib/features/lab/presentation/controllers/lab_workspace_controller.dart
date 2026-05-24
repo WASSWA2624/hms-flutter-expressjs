@@ -474,6 +474,41 @@ final class LabWorkspaceController
     );
   }
 
+  Future<AppFailure?> submitOrderItemResults(
+    List<({LabOrderItem item, Map<String, Object?> payload})> entries,
+  ) async {
+    if (entries.isEmpty) {
+      return AppFailure.validation();
+    }
+
+    final Map<String, List<Map<String, Object?>>> resultsByOrder =
+        <String, List<Map<String, Object?>>>{};
+    for (final ({LabOrderItem item, Map<String, Object?> payload}) entry
+        in entries) {
+      final LabOrderWorkflow? workflow = _workflowForItem(entry.item);
+      if (workflow == null) {
+        return AppFailure.validation();
+      }
+      resultsByOrder
+          .putIfAbsent(workflow.order.apiId, () => <Map<String, Object?>>[])
+          .add(entry.payload);
+    }
+
+    AppFailure? lastFailure;
+    for (final MapEntry<String, List<Map<String, Object?>>> entry
+        in resultsByOrder.entries) {
+      final AppFailure? failure = await verifyAllResults(
+        entry.key,
+        entry.value,
+      );
+      if (failure != null) {
+        lastFailure = failure;
+        break;
+      }
+    }
+    return lastFailure;
+  }
+
   Future<AppFailure?> saveOrderItemDraft(
     LabOrderItem item,
     Map<String, Object?> payload,
@@ -1232,8 +1267,11 @@ final class LabWorkspaceController
 
 extension on LabOrderWorkflow {
   LabOrderWorkflow copyWithSummary(LabOrderSummary order) {
+    final bool keepDetailedOrder =
+        this.order.items.isNotEmpty &&
+        (order.items.isEmpty || order.isPatientGroup);
     return LabOrderWorkflow(
-      order: order,
+      order: keepDetailedOrder ? this.order : order,
       results: results,
       timeline: timeline,
       nextActions: nextActions,

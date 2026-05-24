@@ -175,7 +175,13 @@ describe('lab-order.service', () => {
         ordered_at: expect.any(Date),
         status: 'ORDERED',
         items: {
-          create: [{ lab_test_id: 'lab-test-1', status: 'ORDERED' }],
+          create: [
+            expect.objectContaining({
+              lab_test_id: 'lab-test-1',
+              status: 'ORDERED',
+              panel_id: null,
+            }),
+          ],
         },
       })
     );
@@ -207,9 +213,12 @@ describe('lab-order.service', () => {
       .mockResolvedValueOnce({ id: 'lab-test-1' })
       .mockResolvedValueOnce({
         id: 'lab-panel-1',
+        human_friendly_id: 'LPN0000001',
+        name: 'Full blood count',
+        code: 'FBC',
         panel_items: [
-          { lab_test_id: 'lab-test-1' },
-          { lab_test_id: 'lab-test-2' },
+          { lab_test_id: 'lab-test-1', sort_order: 0 },
+          { lab_test_id: 'lab-test-2', sort_order: 10 },
         ],
       });
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
@@ -239,8 +248,20 @@ describe('lab-order.service', () => {
         status: 'ORDERED',
         items: {
           create: [
-            { lab_test_id: 'lab-test-1', status: 'ORDERED' },
-            { lab_test_id: 'lab-test-2', status: 'ORDERED' },
+            expect.objectContaining({
+              lab_test_id: 'lab-test-1',
+              status: 'ORDERED',
+              panel_id: null,
+            }),
+            expect.objectContaining({
+              lab_test_id: 'lab-test-2',
+              status: 'ORDERED',
+              panel_id: 'LPN0000001',
+              panel_display_name: 'Full blood count',
+              panel_code: 'FBC',
+              panel_sort_order: 0,
+              panel_item_sort_order: 10,
+            }),
           ],
         },
       })

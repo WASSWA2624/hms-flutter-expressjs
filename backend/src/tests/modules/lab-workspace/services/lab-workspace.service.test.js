@@ -314,6 +314,83 @@ describe('lab-workspace.service', () => {
     );
   });
 
+  it('returns requested tests and panel metadata in order workflow detail', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    labWorkspaceRepository.findOrderById.mockResolvedValue(
+      buildBaseOrder({
+        items: [
+          {
+            id: 'order-item-internal-1',
+            human_friendly_id: 'LIT0000001',
+            lab_order_id: 'order-internal-1',
+            lab_test_id: 'lab-test-internal-1',
+            panel_id: 'LPN0000001',
+            panel_display_name: 'Full blood count',
+            panel_code: 'FBC',
+            panel_sort_order: 1,
+            panel_item_sort_order: 10,
+            status: 'ORDERED',
+            created_at: now,
+            updated_at: now,
+            lab_test: {
+              id: 'lab-test-internal-1',
+              human_friendly_id: 'LBT0000001',
+              name: 'Hemoglobin',
+              code: 'HGB',
+              unit: 'g/dL',
+              reference_ranges: [],
+              unit_options: [],
+              result_options: [],
+            },
+            results: [],
+          },
+          {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            human_friendly_id: null,
+            lab_order_id: 'order-internal-1',
+            lab_test_id: 'lab-test-internal-2',
+            status: 'ORDERED',
+            created_at: now,
+            updated_at: now,
+            lab_test: {
+              id: 'lab-test-internal-2',
+              human_friendly_id: 'LBT0000002',
+              name: 'White Blood Cell Count',
+              code: 'WBC',
+              unit: '10^9/L',
+              reference_ranges: [],
+              unit_options: [],
+              result_options: [],
+            },
+            results: [],
+          },
+        ],
+      })
+    );
+
+    const result = await labWorkspaceService.getLabOrderWorkflow('LAB0000001');
+
+    expect(result.order.items).toEqual([
+      expect.objectContaining({
+        id: 'LIT0000001',
+        display_id: 'LIT0000001',
+        lab_test_id: 'LBT0000001',
+        panel_id: 'LPN0000001',
+        panel_display_name: 'Full blood count',
+        panel_code: 'FBC',
+        panel_sort_order: 1,
+        panel_item_sort_order: 10,
+        test_display_name: 'Hemoglobin',
+      }),
+      expect.objectContaining({
+        id: '550e8400-e29b-41d4-a716-446655440001',
+        display_id: null,
+        lab_test_id: 'LBT0000002',
+        test_display_name: 'White Blood Cell Count',
+      }),
+    ]);
+  });
+
   it('groups patient workbench records without losing order identifiers', async () => {
     const secondOrder = buildBaseOrder({
       id: 'order-internal-2',

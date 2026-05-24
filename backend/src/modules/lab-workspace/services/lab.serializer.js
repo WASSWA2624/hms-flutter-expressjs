@@ -16,6 +16,14 @@ const toPublicIdentifier = (...candidates) => {
   return null;
 };
 
+const toApiIdentifier = (...candidates) => {
+  for (const candidate of candidates) {
+    const normalized = toText(candidate);
+    if (normalized) return normalized;
+  }
+  return null;
+};
+
 const toIsoDateTime = (value) => {
   if (!value) return null;
   const parsed = value instanceof Date ? value : new Date(value);
@@ -247,7 +255,8 @@ const mapLabOrderItemRecord = (record) => {
   const order = record.lab_order;
   const patient = order?.patient;
   const test = record.lab_test;
-  const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
+  const publicId = toPublicIdentifier(record.human_friendly_id);
+  const apiId = publicId || toApiIdentifier(record.id);
   const latestResult = Array.isArray(record.results) && record.results.length
     ? record.results[0]
     : null;
@@ -262,13 +271,22 @@ const mapLabOrderItemRecord = (record) => {
     : [];
 
   return {
-    id: publicId,
+    id: apiId,
     display_id: publicId,
     status: toText(record.status) || null,
     result_status: toText(latestResult?.status).toUpperCase() || null,
-    lab_order_id: toPublicIdentifier(order?.human_friendly_id, record.lab_order_id),
-    lab_test_id: toPublicIdentifier(test?.human_friendly_id, record.lab_test_id),
-    patient_id: toPublicIdentifier(patient?.human_friendly_id, order?.patient_id),
+    lab_order_id: toPublicIdentifier(order?.human_friendly_id) || toApiIdentifier(record.lab_order_id),
+    lab_test_id: toPublicIdentifier(test?.human_friendly_id) || toApiIdentifier(record.lab_test_id),
+    panel_id: toText(record.panel_id) || null,
+    panel_display_name: toText(record.panel_display_name) || null,
+    panel_code: toText(record.panel_code) || null,
+    panel_sort_order: Number.isFinite(Number(record.panel_sort_order))
+      ? Number(record.panel_sort_order)
+      : null,
+    panel_item_sort_order: Number.isFinite(Number(record.panel_item_sort_order))
+      ? Number(record.panel_item_sort_order)
+      : null,
+    patient_id: toPublicIdentifier(patient?.human_friendly_id) || toApiIdentifier(order?.patient_id),
     patient_display_name: toDisplayName(patient?.first_name, patient?.last_name),
     test_display_name: toText(test?.name) || toText(test?.code) || null,
     test_code: toText(test?.code) || null,
@@ -280,7 +298,7 @@ const mapLabOrderItemRecord = (record) => {
     result_options: resultOptions,
     reference_range: buildLabReferenceRangeSummary(test?.reference_range, referenceRanges),
     reference_ranges: referenceRanges,
-    result_id: toPublicIdentifier(latestResult?.human_friendly_id, latestResult?.id),
+    result_id: toPublicIdentifier(latestResult?.human_friendly_id) || toApiIdentifier(latestResult?.id),
     result_value: toText(latestResult?.result_value) || null,
     result_unit: toText(latestResult?.result_unit) || null,
     result_text: toText(latestResult?.result_text) || null,

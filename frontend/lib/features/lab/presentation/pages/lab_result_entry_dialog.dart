@@ -310,15 +310,18 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _isSaving = true;
       _failure = null;
     });
-    AppFailure? failure;
-    for (final _ResultDraft draft in validDrafts) {
-      failure = await ref
-          .read(labWorkspaceControllerProvider.notifier)
-          .verifyOrderItem(draft.item.apiId, draft.toPayload());
-      if (failure != null || !mounted) {
-        break;
-      }
-    }
+    final AppFailure? failure = await ref
+        .read(labWorkspaceControllerProvider.notifier)
+        .submitOrderItemResults(
+          validDrafts
+              .map(
+                (_ResultDraft draft) => (
+                  item: draft.item,
+                  payload: draft.toPayload(includeOrderItemId: true),
+                ),
+              )
+              .toList(growable: false),
+        );
     if (!mounted) {
       return;
     }
@@ -478,7 +481,8 @@ class _LabResultContextHeader extends StatelessWidget {
                 _LabContextFact(
                   label: l10n.labPatientIdFieldLabel,
                   value: firstOrder.patientId ?? l10n.profileUnknownValue,
-                  copyable: firstOrder.patientId != null &&
+                  copyable:
+                      firstOrder.patientId != null &&
                       firstOrder.patientId!.trim().isNotEmpty,
                   copyTooltip: l10n.copyIdentifierAction,
                   copiedMessage: l10n.identifierCopiedMessage,
@@ -918,9 +922,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
               ),
               children: <Widget>[
                 _LabResultTableCell.header(label: l10n.labTestsColumnLabel),
-                _LabResultTableCell.header(
-                  label: l10n.labReferenceRangeLabel,
-                ),
+                _LabResultTableCell.header(label: l10n.labReferenceRangeLabel),
                 _LabResultTableCell.header(label: l10n.labReportResultLabel),
                 _LabResultTableCell.header(label: l10n.labResultFlagLabel),
                 _LabResultTableCell.header(label: l10n.labActionColumnLabel),
@@ -969,9 +971,9 @@ class _LabResultHeaderText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-        fontWeight: FontWeight.w800,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
     );
   }
 }
