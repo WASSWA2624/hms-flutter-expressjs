@@ -23,7 +23,11 @@ const List<String> radiologyModalities = <String>[
   'CT',
   'MRI',
   'ULTRASOUND',
+  'FLUOROSCOPY',
+  'MAMMOGRAPHY',
   'PET',
+  'NUCLEAR_MEDICINE',
+  'INTERVENTIONAL_RADIOLOGY',
   'ECG',
   'ECHO',
   'ENDO',
@@ -105,6 +109,8 @@ final class RadiologyWorkspaceState {
     required this.summary,
     required this.references,
     required this.query,
+    this.catalogTests = const <RadiologyCatalogTest>[],
+    this.equipmentRecords = const <RadiologyEquipmentRecord>[],
     this.selectedWorkflow,
     this.isRefreshing = false,
     this.isRefreshingDetail = false,
@@ -116,6 +122,8 @@ final class RadiologyWorkspaceState {
   final RadiologySummary summary;
   final RadiologyReferenceData references;
   final RadiologyWorkspaceQuery query;
+  final List<RadiologyCatalogTest> catalogTests;
+  final List<RadiologyEquipmentRecord> equipmentRecords;
   final RadiologyWorkflow? selectedWorkflow;
   final bool isRefreshing;
   final bool isRefreshingDetail;
@@ -148,6 +156,8 @@ final class RadiologyWorkspaceState {
     RadiologySummary? summary,
     RadiologyReferenceData? references,
     RadiologyWorkspaceQuery? query,
+    List<RadiologyCatalogTest>? catalogTests,
+    List<RadiologyEquipmentRecord>? equipmentRecords,
     RadiologyWorkflow? selectedWorkflow,
     bool? isRefreshing,
     bool? isRefreshingDetail,
@@ -161,6 +171,8 @@ final class RadiologyWorkspaceState {
       summary: summary ?? this.summary,
       references: references ?? this.references,
       query: query ?? this.query,
+      catalogTests: catalogTests ?? this.catalogTests,
+      equipmentRecords: equipmentRecords ?? this.equipmentRecords,
       selectedWorkflow: clearSelectedWorkflow
           ? null
           : selectedWorkflow ?? this.selectedWorkflow,
@@ -169,6 +181,132 @@ final class RadiologyWorkspaceState {
       isMutating: isMutating ?? this.isMutating,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
     );
+  }
+}
+
+
+@immutable
+final class RadiologyCatalogTest {
+  const RadiologyCatalogTest({
+    required this.id,
+    required this.name,
+    this.displayId,
+    this.code,
+    this.modality,
+    this.bodyRegion,
+    this.laterality,
+    this.procedureType,
+    this.equipment,
+    this.status,
+    this.source,
+    this.searchText,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String name;
+  final String? displayId;
+  final String? code;
+  final String? modality;
+  final String? bodyRegion;
+  final String? laterality;
+  final String? procedureType;
+  final String? equipment;
+  final String? status;
+  final String? source;
+  final String? searchText;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  String get effectiveId => displayId ?? id;
+
+  bool get isStandard {
+    final String sourceKey = (source ?? status ?? '').trim().toUpperCase();
+    return id.startsWith('STD_RAD_TEST_') ||
+        effectiveId.startsWith('STD_RAD_TEST_') ||
+        sourceKey == 'STANDARD' ||
+        sourceKey == 'STANDARD_RADIOLOGY_CATALOG';
+  }
+
+  bool matchesSearch(String query) {
+    final String normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return true;
+    }
+    final String haystack = <String?>[
+      id,
+      displayId,
+      name,
+      code,
+      modality,
+      bodyRegion,
+      laterality,
+      procedureType,
+      equipment,
+      status,
+      source,
+      searchText,
+    ].whereType<String>().join(' ').toLowerCase();
+    return normalized
+        .split(RegExp(r'\s+'))
+        .where((String token) => token.isNotEmpty)
+        .every(haystack.contains);
+  }
+}
+
+@immutable
+final class RadiologyEquipmentRecord {
+  const RadiologyEquipmentRecord({
+    required this.id,
+    required this.equipmentName,
+    this.displayId,
+    this.equipmentCode,
+    this.serialNumber,
+    this.manufacturer,
+    this.modelNumber,
+    this.status,
+    this.facilityId,
+    this.categoryId,
+    this.categoryName,
+  });
+
+  final String id;
+  final String equipmentName;
+  final String? displayId;
+  final String? equipmentCode;
+  final String? serialNumber;
+  final String? manufacturer;
+  final String? modelNumber;
+  final String? status;
+  final String? facilityId;
+  final String? categoryId;
+  final String? categoryName;
+
+  String get effectiveId => displayId ?? id;
+
+  bool matchesSearch(String query) {
+    final String normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return true;
+    }
+    final String haystack = <String?>[
+      id,
+      displayId,
+      equipmentName,
+      equipmentCode,
+      serialNumber,
+      manufacturer,
+      modelNumber,
+      status,
+      facilityId,
+      categoryId,
+      categoryName,
+    ].whereType<String>().join(' ').toLowerCase();
+    return normalized
+        .split(RegExp(r'\s+'))
+        .where((String token) => token.isNotEmpty)
+        .every(haystack.contains);
   }
 }
 

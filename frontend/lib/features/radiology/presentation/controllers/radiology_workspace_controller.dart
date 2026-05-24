@@ -237,6 +237,49 @@ final class RadiologyWorkspaceController
     );
   }
 
+
+  Future<AppFailure?> refreshConfigurations({String? search}) async {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
+    final AppFailure? failure = await _refreshConfigurations(search: search);
+    final RadiologyWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(
+        latest.copyWith(
+          isRefreshing: false,
+          lastFailure: failure,
+          clearLastFailure: failure == null,
+        ),
+      );
+    }
+    return failure;
+  }
+
+  Future<AppFailure?> createRadiologyTest(Map<String, Object?> payload) {
+    return _mutateConfiguration(
+      () => _repository.createRadiologyCatalogTest(payload),
+    );
+  }
+
+  Future<AppFailure?> updateRadiologyTest(
+    String testId,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateConfiguration(
+      () => _repository.updateRadiologyCatalogTest(testId, payload),
+    );
+  }
+
+  Future<AppFailure?> deleteRadiologyTest(String testId) {
+    return _mutateConfiguration(
+      () => _repository.deleteRadiologyCatalogTest(testId),
+    );
+  }
+
   Future<AppFailure?> selectOrder(RadiologyOrder order) async {
     final RadiologyWorkspaceState? current = _currentState;
     if (current == null) {
@@ -365,6 +408,10 @@ final class RadiologyWorkspaceController
         .getReferenceData();
     final Result<RadiologyWorkbench> workbenchResult = await _repository
         .getWorkbench(query);
+    final Result<List<RadiologyCatalogTest>> catalogResult = await _repository
+        .listRadiologyCatalogTests();
+    final Result<List<RadiologyEquipmentRecord>> equipmentResult =
+        await _repository.listEquipmentRecords();
 
     return workbenchResult.when(
       success: (RadiologyWorkbench workbench) async {
@@ -389,6 +436,14 @@ final class RadiologyWorkspaceController
               failure: (_) => RadiologyReferenceData.empty,
             ),
             query: query,
+            catalogTests: catalogResult.when(
+              success: (List<RadiologyCatalogTest> tests) => tests,
+              failure: (_) => const <RadiologyCatalogTest>[],
+            ),
+            equipmentRecords: equipmentResult.when(
+              success: (List<RadiologyEquipmentRecord> records) => records,
+              failure: (_) => const <RadiologyEquipmentRecord>[],
+            ),
             selectedWorkflow: selectedWorkflow,
             lastFailure: referencesResult.when(
               success: (_) => null,
@@ -494,6 +549,74 @@ final class RadiologyWorkspaceController
         final RadiologyWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(latest.copyWith(isRefreshing: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+
+  Future<AppFailure?> _refreshConfigurations({String? search}) async {
+    final Result<List<RadiologyCatalogTest>> testsResult = await _repository
+        .listRadiologyCatalogTests(search: search);
+    final Result<List<RadiologyEquipmentRecord>> equipmentResult =
+        await _repository.listEquipmentRecords(search: search);
+    AppFailure? failure;
+    List<RadiologyCatalogTest>? tests;
+    List<RadiologyEquipmentRecord>? equipment;
+
+    testsResult.when(
+      success: (List<RadiologyCatalogTest> value) => tests = value,
+      failure: (AppFailure value) => failure ??= value,
+    );
+    equipmentResult.when(
+      success: (List<RadiologyEquipmentRecord> value) => equipment = value,
+      failure: (AppFailure value) => failure ??= value,
+    );
+
+    final RadiologyWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(
+        latest.copyWith(
+          catalogTests: tests ?? latest.catalogTests,
+          equipmentRecords: equipment ?? latest.equipmentRecords,
+          lastFailure: failure,
+          clearLastFailure: failure == null,
+        ),
+      );
+    }
+    return failure;
+  }
+
+  Future<AppFailure?> _mutateConfiguration<T>(
+    Future<Result<T>> Function() submit,
+  ) async {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isMutating: true, clearLastFailure: true));
+    final Result<T> result = await submit();
+    return result.when(
+      success: (_) async {
+        await _refreshConfigurations();
+        final RadiologyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              isMutating: false,
+              clearLastFailure: true,
+            ),
+          );
+        }
+        await searchReferences();
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final RadiologyWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isMutating: false, lastFailure: failure));
         }
         return failure;
       },

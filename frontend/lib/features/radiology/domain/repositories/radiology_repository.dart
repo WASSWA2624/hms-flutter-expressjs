@@ -13,6 +13,26 @@ abstract interface class RadiologyRepository {
     int limit = 20,
   });
 
+  Future<Result<List<RadiologyCatalogTest>>> listRadiologyCatalogTests({
+    String? search,
+    bool includeStandardCatalog = true,
+  });
+
+  Future<Result<RadiologyCatalogTest>> createRadiologyCatalogTest(
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<RadiologyCatalogTest>> updateRadiologyCatalogTest(
+    String testId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deleteRadiologyCatalogTest(String testId);
+
+  Future<Result<List<RadiologyEquipmentRecord>>> listEquipmentRecords({
+    String? search,
+  });
+
   Future<Result<RadiologyWorkflow>> getWorkflow(String orderId);
 
   Future<Result<RadiologyWorkflow>> createOrder(Map<String, Object?> payload);

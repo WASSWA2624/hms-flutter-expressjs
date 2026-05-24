@@ -13,10 +13,12 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
   const ClinicalRadiologyOrderActionDialog({
     required this.referenceData,
     required this.onSubmit,
+    this.initialRequests = const <ClinicalActionRadiologyRequest>[],
     super.key,
   });
 
   final ClinicalActionReferenceData referenceData;
+  final List<ClinicalActionRadiologyRequest> initialRequests;
   final Future<AppFailure?> Function({
     required List<ClinicalActionRadiologyRequest> requests,
   })
@@ -80,6 +82,45 @@ class _RadiologyOrderDialogState
     super.initState();
     _searchController = TextEditingController();
     _noteController = TextEditingController();
+    _requests.addAll(_initialPendingRequests());
+  }
+
+
+  List<_PendingRadiologyRequest> _initialPendingRequests() {
+    final List<_PendingRadiologyRequest> pending = <_PendingRadiologyRequest>[];
+    for (final ClinicalActionRadiologyRequest request in widget.initialRequests) {
+      final ClinicalActionCatalogOption? option = _catalogOptionForRequest(request);
+      if (option == null) {
+        continue;
+      }
+      pending.add(
+        _PendingRadiologyRequest(
+          option: option,
+          clinicalNote: request.clinicalNote,
+          bodyRegion: request.bodyRegion,
+          laterality: request.laterality,
+          priority: request.priority,
+          modality: request.modality,
+        ),
+      );
+    }
+    return pending;
+  }
+
+  ClinicalActionCatalogOption? _catalogOptionForRequest(
+    ClinicalActionRadiologyRequest request,
+  ) {
+    final String id = request.radiologyTestId.trim();
+    if (id.isEmpty) {
+      return null;
+    }
+    for (final ClinicalActionCatalogOption option
+        in widget.referenceData.radiologyTests) {
+      if (option.apiId == id || option.id == id || option.publicId == id) {
+        return option;
+      }
+    }
+    return null;
   }
 
   @override

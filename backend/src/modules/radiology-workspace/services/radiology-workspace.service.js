@@ -5,6 +5,7 @@ const { normalizeIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const prisma = require('@prisma/client');
 const radiologyWorkspaceRepository = require('@repositories/radiology-workspace/radiology-workspace.repository');
+const radiologyOrderService = require('@services/radiology-order/radiology-order.service');
 const { emitToUsers, DIAGNOSTIC_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 const { STORAGE_PROVIDER, RADIOLOGY_ATTESTATION_V2 } = require('@config/env');
@@ -51,6 +52,62 @@ const normalizeWorkbenchView = (value) => {
 };
 
 const normalizeRadiologyStatus = (value) => String(value || '').trim().toUpperCase();
+
+const normalizeWorkspaceOrderRequest = (request = {}, fallback = {}) => {
+  const details = {
+    ...(fallback.request_details && typeof fallback.request_details === 'object'
+      ? fallback.request_details
+      : {}),
+    ...(request.request_details && typeof request.request_details === 'object'
+      ? request.request_details
+      : {}),
+  };
+  return {
+    ...request,
+    clinical_note: request.clinical_note || fallback.clinical_note || fallback.notes || null,
+    request_details: details,
+  };
+};
+
+const normalizeWorkspaceCreateOrderPayload = (payload = {}) => {
+  const requestedTests = Array.isArray(payload.requested_tests)
+    ? payload.requested_tests
+    : [];
+  if (requestedTests.length > 0) {
+    return {
+      ...payload,
+      requested_tests: requestedTests.map((request) =>
+        normalizeWorkspaceOrderRequest(request, payload)
+      ),
+    };
+  }
+
+  const legacyRadiologyTestId = String(payload.radiology_test_id || '').trim();
+  return {
+    ...payload,
+    requested_tests: legacyRadiologyTestId
+      ? [
+          normalizeWorkspaceOrderRequest(
+            { radiology_test_id: legacyRadiologyTestId },
+            payload
+          ),
+        ]
+      : [],
+  };
+};
+
+const publicOrderIdentifierFromCreateResult = (result = {}) => {
+  const firstCreated = Array.isArray(result.created_orders)
+    ? result.created_orders[0]
+    : null;
+  return (
+    result.display_id ||
+    result.id ||
+    firstCreated?.display_id ||
+    firstCreated?.id ||
+    null
+  );
+};
 
 const radiologyPatientGroupKey = (order) =>
   String(order?.patient_id || order?.patient?.id || order?.id || '').trim();
@@ -773,93 +830,36 @@ const getRadiologyReferenceData = async (filters = {}, actorScope = {}) => {
   }
 };
 
-const createRadiologyOrder = async (payload = {}, userId, ipAddress, actorScope = {}) => {
+const createRadiologyOrder = async (payload = {}, userId, ipAddress) => {
   try {
-    const scope = {
-      tenantId: normalizeIdentifier(actorScope.tenant_id) || null,
-      facilityId: normalizeIdentifier(actorScope.facility_id) || null,
-    };
+    const normalizedPayload = normalizeWorkspaceCreateOrderPayload(payload);
 
-    const patient = await resolveModelRecordOrThrow({
-      identifier: payload.patient_id,
-      model: 'patient',
-      where: {
-        deleted_at: null,
-        ...buildScopedWhere(scope),
-      },
-      select: {
-        id: true,
-        tenant_id: true,
-      },
-      errorKey: 'errors.patient.not_found',
+    const created = await radiologyOrderService.createRadiologyOrder(
+      normalizedPayload,
+      userId,
+      ipAddress
+    );
+    const publicIdentifier = publicOrderIdentifierFromCreateResult(created);
+    const orderId = await resolveModelIdOrThrow({
+      identifier: publicIdentifier,
+      model: 'radiology_order',
+      where: { deleted_at: null },
+      errorKey: 'errors.radiology_order.not_found',
     });
 
-    const encounterId = await resolveModelIdOrThrow({
-      identifier: payload.encounter_id,
-      model: 'encounter',
-      where: {
-        deleted_at: null,
-        patient_id: patient.id,
-      },
-      errorKey: 'errors.encounter.not_found',
-      allowNull: true,
-    });
+    const orderRecord = await radiologyWorkspaceRepository.findOrderById(
+      orderId,
+      RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+    );
+    if (!orderRecord) {
+      throw new HttpError('errors.radiology_order.not_found', 404);
+    }
 
-    const radiologyTestId = await resolveModelIdOrThrow({
-      identifier: payload.radiology_test_id,
-      model: 'radiology_test',
-      where: {
-        deleted_at: null,
-        ...(patient?.tenant_id ? { tenant_id: patient.tenant_id } : {}),
-      },
-      errorKey: 'errors.radiology_test.not_found',
-      allowNull: true,
-    });
-
-    const mutation = await radiologyWorkspaceRepository.withTransaction(async (tx) => {
-      const order = await radiologyWorkspaceRepository.txCreateOrder(tx, {
-        patient_id: patient.id,
-        encounter_id: encounterId || null,
-        radiology_test_id: radiologyTestId || null,
-        status: 'ORDERED',
-        ordered_at: toDateOrNull(payload.ordered_at, new Date()),
-      });
-
-      const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
-        tx,
-        order.id,
-        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
-      );
-
-      return {
-        order: refreshedOrder,
-      };
-    });
-
-    createAuditLog({
-      user_id: userId,
-      action: 'CREATE_ORDER',
-      entity: 'radiology_order',
-      entity_id: mutation.order?.id,
-      diff: {
-        metadata: {
-          patient_id: mutation.order?.patient_id || patient.id,
-          encounter_id: mutation.order?.encounter_id || null,
-          radiology_test_id: mutation.order?.radiology_test_id || null,
-          ordered_at: mutation.order?.ordered_at
-            ? new Date(mutation.order.ordered_at).toISOString()
-            : null,
-          notes: payload.notes || null,
-        },
-      },
-      ip_address: ipAddress,
-    }).catch(() => {});
-
-    const workflow = mapRadiologyOrderWorkflowRecord(mutation.order);
+    const workflow = mapRadiologyOrderWorkflowRecord(orderRecord);
 
     publishRadiologyRealtimeUpdates({
       workflow,
-      orderRecord: mutation.order,
+      orderRecord,
       actorUserId: userId || null,
       action: 'CREATE_ORDER',
       resourceType: 'order',
@@ -868,7 +868,10 @@ const createRadiologyOrder = async (payload = {}, userId, ipAddress, actorScope 
 
     return {
       workflow,
-      order: mapRadiologyOrderRecord(mutation.order),
+      order: mapRadiologyOrderRecord(orderRecord),
+      created_orders: Array.isArray(created.created_orders)
+        ? created.created_orders
+        : undefined,
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;

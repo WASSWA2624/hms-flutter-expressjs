@@ -67,6 +67,72 @@ final class RadiologyRepositoryImpl implements RadiologyRepository {
     );
   }
 
+
+  @override
+  Future<Result<List<RadiologyCatalogTest>>> listRadiologyCatalogTests({
+    String? search,
+    bool includeStandardCatalog = true,
+  }) {
+    return _apiClient.get<List<RadiologyCatalogTest>>(
+      ApiEndpoints.collection(HmsApiResource.radiologyTests),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'search': search,
+        'include_standard_catalog': includeStandardCatalog,
+        'limit': 7500,
+        'sort_by': 'name',
+        'order': 'asc',
+      }),
+      decoder: RadiologyCatalogTestDto.listFromResponse,
+    );
+  }
+
+  @override
+  Future<Result<RadiologyCatalogTest>> createRadiologyCatalogTest(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<RadiologyCatalogTest>(
+      ApiEndpoints.collection(HmsApiResource.radiologyTests),
+      data: _withoutEmpty(payload),
+      decoder: radiologyCatalogTestFromResponse,
+    );
+  }
+
+  @override
+  Future<Result<RadiologyCatalogTest>> updateRadiologyCatalogTest(
+    String testId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<RadiologyCatalogTest>(
+      ApiEndpoints.byId(HmsApiResource.radiologyTests, testId),
+      data: _withoutEmpty(payload),
+      decoder: radiologyCatalogTestFromResponse,
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteRadiologyCatalogTest(String testId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.radiologyTests, testId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<List<RadiologyEquipmentRecord>>> listEquipmentRecords({
+    String? search,
+  }) {
+    return _apiClient.get<List<RadiologyEquipmentRecord>>(
+      ApiEndpoints.collection(HmsApiResource.equipmentRegistries),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'search': search,
+        'limit': 100,
+        'sort_by': 'equipment_name',
+        'order': 'asc',
+      }),
+      decoder: RadiologyEquipmentRecordDto.listFromResponse,
+    );
+  }
+
   @override
   Future<Result<RadiologyWorkflow>> getWorkflow(String orderId) {
     return _apiClient.get<RadiologyWorkflow>(

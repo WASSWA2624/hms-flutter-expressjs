@@ -15407,5 +15407,434 @@
         "example": "3"
       }
     }
+  },
+  "commonYesLabel": "Yes",
+  "@commonYesLabel": {
+    "description": "Common yes label."
+  },
+  "commonNoLabel": "No",
+  "@commonNoLabel": {
+    "description": "Common no label."
+  },
+  "radiologyOrdersViewAction": "Orders view",
+  "@radiologyOrdersViewAction": {
+    "description": "Radiology workspace action to switch to orders view."
+  },
+  "radiologyPatientsViewAction": "Patients view",
+  "@radiologyPatientsViewAction": {
+    "description": "Radiology workspace action to switch to patients view."
+  },
+  "radiologyConfigurationsAction": "Configurations",
+  "@radiologyConfigurationsAction": {
+    "description": "Radiology workspace configurations action."
+  },
+  "radiologyConfigurationsDialogTitle": "Radiology configurations",
+  "@radiologyConfigurationsDialogTitle": {
+    "description": "Radiology configuration dialog title."
+  },
+  "radiologyConfigurationsDialogBody": "Manage persisted imaging tests and review equipment records available to radiology workflows.",
+  "@radiologyConfigurationsDialogBody": {
+    "description": "Radiology configuration dialog body."
+  },
+  "radiologyConfigurationsLoadingTitle": "Loading configurations",
+  "@radiologyConfigurationsLoadingTitle": {
+    "description": "Radiology configuration loading title."
+  },
+  "radiologyConfigurationsLoadingBody": "Loading imaging tests, standard catalog entries, and equipment records.",
+  "@radiologyConfigurationsLoadingBody": {
+    "description": "Radiology configuration loading body."
+  },
+  "radiologyPatientsSummaryLabel": "Radiology patients",
+  "@radiologyPatientsSummaryLabel": {
+    "description": "Radiology patients summary card label."
+  },
+  "radiologyPatientsWaitingImagingSummaryLabel": "Patients waiting imaging",
+  "@radiologyPatientsWaitingImagingSummaryLabel": {
+    "description": "Radiology patients waiting imaging summary card label."
+  },
+  "radiologyPatientsWorklistTitle": "Radiology patients",
+  "@radiologyPatientsWorklistTitle": {
+    "description": "Radiology patients worklist title."
+  },
+  "radiologyPatientsWorklistDescription": "Patients grouped by active imaging orders, reporting status, and next action.",
+  "@radiologyPatientsWorklistDescription": {
+    "description": "Radiology patients worklist description."
+  },
+  "radiologyNoPatientsTitle": "No radiology patients",
+  "@radiologyNoPatientsTitle": {
+    "description": "Radiology patients empty state title."
+  },
+  "radiologyNoPatientsBody": "Patients with imaging requests matching this search and filter will appear here.",
+  "@radiologyNoPatientsBody": {
+    "description": "Radiology patients empty state body."
+  },
+  "radiologyTableColumnsTitle": "Radiology columns",
+  "@radiologyTableColumnsTitle": {
+    "description": "Radiology table column settings title."
+  },
+  "radiologyApplyColumnsAction": "Apply columns",
+  "@radiologyApplyColumnsAction": {
+    "description": "Radiology table apply columns action."
+  },
+  "radiologyResetColumnsAction": "Reset columns",
+  "@radiologyResetColumnsAction": {
+    "description": "Radiology table reset columns action."
+  },
+  "radiologyOrdersColumnLabel": "Order(s)",
+  "@radiologyOrdersColumnLabel": {
+    "description": "Radiology grouped orders column label."
+  },
+  "radiologyOneActiveOrderLabel": "1 active order",
+  "@radiologyOneActiveOrderLabel": {
+    "description": "Radiology single active order label."
+  },
+  "radiologyReferenceSearchOptionalLabel": "Catalog search (optional)",
+  "@radiologyReferenceSearchOptionalLabel": {
+    "description": "Radiology request catalog search label."
+  },
+  "radiologySelectImagingTestsAction": "Select imaging tests",
+  "@radiologySelectImagingTestsAction": {
+    "description": "Radiology request select imaging tests action."
+  },
+  "radiologyClearSelectedTestsAction": "Clear selected tests",
+  "@radiologyClearSelectedTestsAction": {
+    "description": "Radiology request clear selected tests action."
+  },
+  "radiologySelectAtLeastOneTestMessage": "Select at least one imaging test.",
+  "@radiologySelectAtLeastOneTestMessage": {
+    "description": "Radiology request validation for missing selected tests."
+  },
+  "radiologyModalityFluoroscopy": "Fluoroscopy",
+  "@radiologyModalityFluoroscopy": {
+    "description": "Radiology modality label."
+  },
+  "radiologyModalityMammography": "Mammography",
+  "@radiologyModalityMammography": {
+    "description": "Radiology modality label."
+  },
+  "radiologyModalityNuclearMedicine": "Nuclear medicine",
+  "@radiologyModalityNuclearMedicine": {
+    "description": "Radiology modality label."
+  },
+  "radiologyModalityInterventionalRadiology": "Interventional radiology",
+  "@radiologyModalityInterventionalRadiology": {
+    "description": "Radiology modality label."
+  },
+  "radiologyImagingTestsTabLabel": "Imaging tests",
+  "@radiologyImagingTestsTabLabel": {
+    "description": "Radiology configuration imaging tests tab label."
+  },
+  "radiologyEquipmentTabLabel": "Equipment",
+  "@radiologyEquipmentTabLabel": {
+    "description": "Radiology configuration equipment tab label."
+  },
+  "radiologyConfigurationSearchLabel": "Search radiology configurations",
+  "@radiologyConfigurationSearchLabel": {
+    "description": "Radiology configuration search semantic label."
+  },
+  "radiologyConfigurationSearchHint": "Search tests, modality, code, source, equipment, or status",
+  "@radiologyConfigurationSearchHint": {
+    "description": "Radiology configuration search hint."
+  },
+  "radiologyCreateImagingTestAction": "Create imaging test",
+  "@radiologyCreateImagingTestAction": {
+    "description": "Radiology create imaging test action."
+  },
+  "radiologyEditImagingTestAction": "Edit imaging test",
+  "@radiologyEditImagingTestAction": {
+    "description": "Radiology edit imaging test action."
+  },
+  "radiologyDeleteImagingTestAction": "Delete imaging test",
+  "@radiologyDeleteImagingTestAction": {
+    "description": "Radiology delete imaging test action."
+  },
+  "radiologyCopyStandardTestAction": "Copy standard test",
+  "@radiologyCopyStandardTestAction": {
+    "description": "Radiology copy standard catalog test action."
+  },
+  "radiologyStandardCatalogBadge": "Standard catalog",
+  "@radiologyStandardCatalogBadge": {
+    "description": "Radiology standard catalog badge."
+  },
+  "radiologyCustomCatalogBadge": "Custom",
+  "@radiologyCustomCatalogBadge": {
+    "description": "Radiology custom catalog badge."
+  },
+  "radiologyTestNameLabel": "Name",
+  "@radiologyTestNameLabel": {
+    "description": "Radiology test name label."
+  },
+  "radiologyTestCodeLabel": "Code",
+  "@radiologyTestCodeLabel": {
+    "description": "Radiology test code label."
+  },
+  "radiologyTestCodeOptionalLabel": "Code (optional)",
+  "@radiologyTestCodeOptionalLabel": {
+    "description": "Radiology test optional code label."
+  },
+  "radiologySourceColumnLabel": "Source",
+  "@radiologySourceColumnLabel": {
+    "description": "Radiology source column label."
+  },
+  "radiologyEquipmentColumnLabel": "Equipment",
+  "@radiologyEquipmentColumnLabel": {
+    "description": "Radiology equipment column label."
+  },
+  "radiologyActionColumnLabel": "Action",
+  "@radiologyActionColumnLabel": {
+    "description": "Radiology action column label."
+  },
+  "radiologyNoImagingTestsTitle": "No imaging tests",
+  "@radiologyNoImagingTestsTitle": {
+    "description": "Radiology imaging tests empty state title."
+  },
+  "radiologyNoImagingTestsBody": "Create a custom imaging test or refresh the standard catalog.",
+  "@radiologyNoImagingTestsBody": {
+    "description": "Radiology imaging tests empty state body."
+  },
+  "radiologyReadOnlyStandardTestTitle": "Standard test is read-only",
+  "@radiologyReadOnlyStandardTestTitle": {
+    "description": "Radiology standard catalog read-only title."
+  },
+  "radiologyReadOnlyStandardTestMessage": "Standard catalog rows cannot be edited directly. Copy one to save a custom test.",
+  "@radiologyReadOnlyStandardTestMessage": {
+    "description": "Radiology standard catalog read-only body."
+  },
+  "radiologyDeleteImagingTestDialogTitle": "Delete imaging test?",
+  "@radiologyDeleteImagingTestDialogTitle": {
+    "description": "Radiology delete imaging test dialog title."
+  },
+  "radiologyTenantRequiredForConfigMessage": "Tenant context is required before a custom imaging test can be saved.",
+  "@radiologyTenantRequiredForConfigMessage": {
+    "description": "Radiology tenant required validation message."
+  },
+  "radiologyEquipmentRecordsTitle": "Equipment records",
+  "@radiologyEquipmentRecordsTitle": {
+    "description": "Radiology equipment records title."
+  },
+  "radiologyEquipmentRecordsBody": "Equipment is managed through the existing equipment registry.",
+  "@radiologyEquipmentRecordsBody": {
+    "description": "Radiology equipment records body."
+  },
+  "radiologyEquipmentNameColumnLabel": "Equipment",
+  "@radiologyEquipmentNameColumnLabel": {
+    "description": "Radiology equipment name column label."
+  },
+  "radiologyEquipmentCodeColumnLabel": "Equipment ID",
+  "@radiologyEquipmentCodeColumnLabel": {
+    "description": "Radiology equipment code column label."
+  },
+  "radiologyManufacturerModelLabel": "Manufacturer / model",
+  "@radiologyManufacturerModelLabel": {
+    "description": "Radiology manufacturer model column label."
+  },
+  "radiologyEquipmentCategoryLabel": "Category",
+  "@radiologyEquipmentCategoryLabel": {
+    "description": "Radiology equipment category label."
+  },
+  "radiologyFacilityColumnLabel": "Facility",
+  "@radiologyFacilityColumnLabel": {
+    "description": "Radiology facility column label."
+  },
+  "radiologyEquipmentSearchHint": "Search equipment name, code, serial, manufacturer, model, category, or status",
+  "@radiologyEquipmentSearchHint": {
+    "description": "Radiology equipment search hint."
+  },
+  "radiologyNoEquipmentTitle": "No equipment records",
+  "@radiologyNoEquipmentTitle": {
+    "description": "Radiology equipment empty title."
+  },
+  "radiologyNoEquipmentBody": "Equipment registry records matching this search will appear here.",
+  "@radiologyNoEquipmentBody": {
+    "description": "Radiology equipment empty body."
+  },
+  "radiologyEquipmentLinkGapTitle": "Test equipment mapping unavailable",
+  "@radiologyEquipmentLinkGapTitle": {
+    "description": "Radiology equipment-test mapping gap title."
+  },
+  "radiologyEquipmentLinkGapBody": "The current backend schema does not persist a direct imaging-test-to-equipment relationship, so this workspace does not save local-only mappings.",
+  "@radiologyEquipmentLinkGapBody": {
+    "description": "Radiology equipment-test mapping gap body."
+  },
+  "radiologySaveConfigurationAction": "Save configuration",
+  "@radiologySaveConfigurationAction": {
+    "description": "Radiology save configuration action."
+  },
+  "radiologyAttachImagesTitle": "Attach images",
+  "@radiologyAttachImagesTitle": {
+    "description": "Radiology attach images panel title."
+  },
+  "radiologyAttachImagesDisabledBody": "Image attachment is disabled here until the storage upload contract is wired end to end.",
+  "@radiologyAttachImagesDisabledBody": {
+    "description": "Radiology disabled image attachment body."
+  },
+  "radiologyChooseImagesAction": "Choose images",
+  "@radiologyChooseImagesAction": {
+    "description": "Radiology choose images action."
+  },
+  "radiologyClearSelectedImagesAction": "Clear images",
+  "@radiologyClearSelectedImagesAction": {
+    "description": "Radiology clear images action."
+  },
+  "radiologyReportReferencesTitle": "Report references",
+  "@radiologyReportReferencesTitle": {
+    "description": "Radiology report references section title."
+  },
+  "radiologyReportReferencesBody": "Insert an existing asset or PACS reference into the report text.",
+  "@radiologyReportReferencesBody": {
+    "description": "Radiology report references body."
+  },
+  "radiologyNoReportReferencesLabel": "No asset or PACS references available.",
+  "@radiologyNoReportReferencesLabel": {
+    "description": "Radiology no report references label."
+  },
+  "radiologyAssetReferencePrefix": "Asset reference",
+  "@radiologyAssetReferencePrefix": {
+    "description": "Radiology asset reference prefix."
+  },
+  "radiologyPacsReferencePrefix": "PACS reference",
+  "@radiologyPacsReferencePrefix": {
+    "description": "Radiology PACS reference prefix."
+  },
+  "radiologyPrintReportAction": "Print report",
+  "@radiologyPrintReportAction": {
+    "description": "Radiology print report action."
+  },
+  "radiologyPrintReportDialogTitle": "Print radiology report",
+  "@radiologyPrintReportDialogTitle": {
+    "description": "Radiology print report dialog title."
+  },
+  "radiologyPrintReportDialogBody": "Choose the persisted sections to include, preview the report, then print with the shared clinical template.",
+  "@radiologyPrintReportDialogBody": {
+    "description": "Radiology print dialog body."
+  },
+  "radiologyPrintPreviewTitle": "Print preview",
+  "@radiologyPrintPreviewTitle": {
+    "description": "Radiology print preview title."
+  },
+  "radiologyPrintAction": "Print",
+  "@radiologyPrintAction": {
+    "description": "Radiology print action."
+  },
+  "radiologyPrintIncludeHeaderLabel": "Facility/app header",
+  "@radiologyPrintIncludeHeaderLabel": {
+    "description": "Radiology print include header label."
+  },
+  "radiologyPrintIncludePatientLabel": "Patient details",
+  "@radiologyPrintIncludePatientLabel": {
+    "description": "Radiology print include patient label."
+  },
+  "radiologyPrintIncludeOrderLabel": "Encounter/order details",
+  "@radiologyPrintIncludeOrderLabel": {
+    "description": "Radiology print include order label."
+  },
+  "radiologyPrintIncludeStudiesLabel": "Imaging tests/studies",
+  "@radiologyPrintIncludeStudiesLabel": {
+    "description": "Radiology print include studies label."
+  },
+  "radiologyPrintIncludeReportLabel": "Findings and report text",
+  "@radiologyPrintIncludeReportLabel": {
+    "description": "Radiology print include report label."
+  },
+  "radiologyPrintIncludeReferencesLabel": "Image/PACS references",
+  "@radiologyPrintIncludeReferencesLabel": {
+    "description": "Radiology print include references label."
+  },
+  "radiologyPrintIncludeSignerLabel": "Signer/release metadata",
+  "@radiologyPrintIncludeSignerLabel": {
+    "description": "Radiology print include signer label."
+  },
+  "radiologyPrintFooterNote": "Generated from HMS Radiology workspace.",
+  "@radiologyPrintFooterNote": {
+    "description": "Radiology print footer note."
+  },
+  "radiologyPrintReportTitle": "Radiology report",
+  "@radiologyPrintReportTitle": {
+    "description": "Radiology print report title."
+  },
+  "radiologyPrintPatientSectionTitle": "Patient details",
+  "@radiologyPrintPatientSectionTitle": {
+    "description": "Radiology print patient section title."
+  },
+  "radiologyPrintOrderSectionTitle": "Encounter and order details",
+  "@radiologyPrintOrderSectionTitle": {
+    "description": "Radiology print order section title."
+  },
+  "radiologyPrintStudiesSectionTitle": "Imaging tests and studies",
+  "@radiologyPrintStudiesSectionTitle": {
+    "description": "Radiology print studies section title."
+  },
+  "radiologyPrintReportSectionTitle": "Report",
+  "@radiologyPrintReportSectionTitle": {
+    "description": "Radiology print report section title."
+  },
+  "radiologyPrintReferencesSectionTitle": "Image and PACS references",
+  "@radiologyPrintReferencesSectionTitle": {
+    "description": "Radiology print references section title."
+  },
+  "radiologyPrintSignerSectionTitle": "Signer and release metadata",
+  "@radiologyPrintSignerSectionTitle": {
+    "description": "Radiology print signer section title."
+  },
+  "radiologyPrintNoSectionsSelected": "No report sections selected.",
+  "@radiologyPrintNoSectionsSelected": {
+    "description": "Radiology print no sections selected message."
+  },
+  "radiologyPatientIdLabel": "Patient ID",
+  "@radiologyPatientIdLabel": {
+    "description": "Radiology patient ID label."
+  },
+  "radiologyFinalizationRequestedLabel": "Finalization requested",
+  "@radiologyFinalizationRequestedLabel": {
+    "description": "Radiology finalization requested label."
+  },
+  "radiologyFinalizationAttestedLabel": "Finalization attested",
+  "@radiologyFinalizationAttestedLabel": {
+    "description": "Radiology finalization attested label."
+  },
+  "radiologyActiveOrdersLabel": "{count} active orders",
+  "@radiologyActiveOrdersLabel": {
+    "description": "Radiology active order count label.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "radiologyDeleteImagingTestDialogBody": "Delete {name}? This custom imaging test will no longer be available for new requests.",
+  "@radiologyDeleteImagingTestDialogBody": {
+    "description": "Radiology delete imaging test dialog body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyInsertAssetReferenceAction": "Insert asset: {label}",
+  "@radiologyInsertAssetReferenceAction": {
+    "description": "Radiology insert asset reference action.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyInsertPacsReferenceAction": "Insert PACS: {label}",
+  "@radiologyInsertPacsReferenceAction": {
+    "description": "Radiology insert PACS reference action.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "radiologyPrintStudyCount": "{count} studies",
+  "@radiologyPrintStudyCount": {
+    "description": "Radiology print study count label.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

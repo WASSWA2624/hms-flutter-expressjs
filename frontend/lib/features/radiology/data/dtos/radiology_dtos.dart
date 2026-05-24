@@ -103,6 +103,92 @@ final class RadiologyWorkflowDto {
   }
 }
 
+
+final class RadiologyCatalogTestDto {
+  const RadiologyCatalogTestDto(this.json);
+
+  final RadiologyJsonMap json;
+
+  RadiologyCatalogTest toEntity() {
+    final String id =
+        _string(json['id']) ??
+        _string(json['display_id']) ??
+        _string(json['human_friendly_id']) ??
+        '';
+    return RadiologyCatalogTest(
+      id: id,
+      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      name: _string(json['name']) ?? _string(json['code']) ?? id,
+      code: _string(json['code']),
+      modality: _string(json['modality']),
+      bodyRegion: _string(json['body_region']) ?? _string(json['bodyRegion']),
+      laterality: _string(json['laterality']),
+      procedureType: _string(json['procedure_type']),
+      equipment: _string(json['equipment']),
+      status: _string(json['status']),
+      source: _string(json['source']),
+      searchText: _string(json['search_text']),
+      createdAt: _date(json['created_at']),
+      updatedAt: _date(json['updated_at']),
+    );
+  }
+
+  static List<RadiologyCatalogTest> listFromResponse(Object? responseData) {
+    return _entityRows(responseData)
+        .map(RadiologyCatalogTestDto.new)
+        .map((RadiologyCatalogTestDto dto) => dto.toEntity())
+        .where((RadiologyCatalogTest item) => item.id.isNotEmpty)
+        .toList(growable: false);
+  }
+}
+
+final class RadiologyEquipmentRecordDto {
+  const RadiologyEquipmentRecordDto(this.json);
+
+  final RadiologyJsonMap json;
+
+  RadiologyEquipmentRecord toEntity() {
+    final RadiologyJsonMap category = _map(json['equipment_category']);
+    final String id =
+        _string(json['id']) ??
+        _string(json['display_id']) ??
+        _string(json['human_friendly_id']) ??
+        '';
+    return RadiologyEquipmentRecord(
+      id: id,
+      displayId: _string(json['display_id']) ?? _string(json['human_friendly_id']),
+      equipmentName:
+          _string(json['equipment_name']) ??
+          _string(json['name']) ??
+          _string(json['equipment_code']) ??
+          id,
+      equipmentCode: _string(json['equipment_code']),
+      serialNumber: _string(json['serial_number']),
+      manufacturer: _string(json['manufacturer']),
+      modelNumber: _string(json['model_number']),
+      status: _string(json['status']),
+      facilityId: _string(json['facility_id']),
+      categoryId: _string(json['equipment_category_id']),
+      categoryName: _string(category['name']) ?? _string(category['category_name']),
+    );
+  }
+
+  static List<RadiologyEquipmentRecord> listFromResponse(Object? responseData) {
+    return _entityRows(responseData)
+        .map(RadiologyEquipmentRecordDto.new)
+        .map((RadiologyEquipmentRecordDto dto) => dto.toEntity())
+        .where((RadiologyEquipmentRecord item) => item.id.isNotEmpty)
+        .toList(growable: false);
+  }
+}
+
+RadiologyCatalogTest radiologyCatalogTestFromResponse(Object? responseData) {
+  final RadiologyJsonMap response = _expectMap(responseData);
+  final Object? data = response['data'];
+  final RadiologyJsonMap row = data is RadiologyJsonMap ? data : response;
+  return RadiologyCatalogTestDto(row).toEntity();
+}
+
 final class RadiologySummaryDto {
   const RadiologySummaryDto(this.json);
 
@@ -426,6 +512,33 @@ final class RadiologyReferenceOptionDto {
       patientId: _string(json['patient_id']),
     );
   }
+}
+
+
+List<RadiologyJsonMap> _entityRows(Object? responseData) {
+  final RadiologyJsonMap response = _expectMap(responseData);
+  final Object? data = response['data'];
+  if (data is List) {
+    return data.whereType<RadiologyJsonMap>().toList(growable: false);
+  }
+  if (data is RadiologyJsonMap) {
+    for (final String key in <String>[
+      'items',
+      'data',
+      'rows',
+      'results',
+      'radiologyTests',
+      'radiology_tests',
+      'equipmentRegistries',
+      'equipment_registries',
+    ]) {
+      final Object? value = data[key];
+      if (value is List) {
+        return value.whereType<RadiologyJsonMap>().toList(growable: false);
+      }
+    }
+  }
+  return const <RadiologyJsonMap>[];
 }
 
 RadiologyJsonMap _expectMap(Object? value) {

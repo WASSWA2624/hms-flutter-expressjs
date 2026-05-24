@@ -11873,4 +11873,341 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get commonYesLabel => 'Yes';
+
+  @override
+  String get commonNoLabel => 'No';
+
+  @override
+  String get radiologyOrdersViewAction => 'Orders view';
+
+  @override
+  String get radiologyPatientsViewAction => 'Patients view';
+
+  @override
+  String get radiologyConfigurationsAction => 'Configurations';
+
+  @override
+  String get radiologyConfigurationsDialogTitle => 'Radiology configurations';
+
+  @override
+  String get radiologyConfigurationsDialogBody =>
+      'Manage persisted imaging tests and review equipment records available to radiology workflows.';
+
+  @override
+  String get radiologyConfigurationsLoadingTitle => 'Loading configurations';
+
+  @override
+  String get radiologyConfigurationsLoadingBody =>
+      'Loading imaging tests, standard catalog entries, and equipment records.';
+
+  @override
+  String get radiologyPatientsSummaryLabel => 'Radiology patients';
+
+  @override
+  String get radiologyPatientsWaitingImagingSummaryLabel =>
+      'Patients waiting imaging';
+
+  @override
+  String get radiologyPatientsWorklistTitle => 'Radiology patients';
+
+  @override
+  String get radiologyPatientsWorklistDescription =>
+      'Patients grouped by active imaging orders, reporting status, and next action.';
+
+  @override
+  String get radiologyNoPatientsTitle => 'No radiology patients';
+
+  @override
+  String get radiologyNoPatientsBody =>
+      'Patients with imaging requests matching this search and filter will appear here.';
+
+  @override
+  String get radiologyTableColumnsTitle => 'Radiology columns';
+
+  @override
+  String get radiologyApplyColumnsAction => 'Apply columns';
+
+  @override
+  String get radiologyResetColumnsAction => 'Reset columns';
+
+  @override
+  String get radiologyOrdersColumnLabel => 'Order(s)';
+
+  @override
+  String get radiologyOneActiveOrderLabel => '1 active order';
+
+  @override
+  String get radiologyReferenceSearchOptionalLabel =>
+      'Catalog search (optional)';
+
+  @override
+  String get radiologySelectImagingTestsAction => 'Select imaging tests';
+
+  @override
+  String get radiologyClearSelectedTestsAction => 'Clear selected tests';
+
+  @override
+  String get radiologySelectAtLeastOneTestMessage =>
+      'Select at least one imaging test.';
+
+  @override
+  String get radiologyModalityFluoroscopy => 'Fluoroscopy';
+
+  @override
+  String get radiologyModalityMammography => 'Mammography';
+
+  @override
+  String get radiologyModalityNuclearMedicine => 'Nuclear medicine';
+
+  @override
+  String get radiologyModalityInterventionalRadiology =>
+      'Interventional radiology';
+
+  @override
+  String get radiologyImagingTestsTabLabel => 'Imaging tests';
+
+  @override
+  String get radiologyEquipmentTabLabel => 'Equipment';
+
+  @override
+  String get radiologyConfigurationSearchLabel =>
+      'Search radiology configurations';
+
+  @override
+  String get radiologyConfigurationSearchHint =>
+      'Search tests, modality, code, source, equipment, or status';
+
+  @override
+  String get radiologyCreateImagingTestAction => 'Create imaging test';
+
+  @override
+  String get radiologyEditImagingTestAction => 'Edit imaging test';
+
+  @override
+  String get radiologyDeleteImagingTestAction => 'Delete imaging test';
+
+  @override
+  String get radiologyCopyStandardTestAction => 'Copy standard test';
+
+  @override
+  String get radiologyStandardCatalogBadge => 'Standard catalog';
+
+  @override
+  String get radiologyCustomCatalogBadge => 'Custom';
+
+  @override
+  String get radiologyTestNameLabel => 'Name';
+
+  @override
+  String get radiologyTestCodeLabel => 'Code';
+
+  @override
+  String get radiologyTestCodeOptionalLabel => 'Code (optional)';
+
+  @override
+  String get radiologySourceColumnLabel => 'Source';
+
+  @override
+  String get radiologyEquipmentColumnLabel => 'Equipment';
+
+  @override
+  String get radiologyActionColumnLabel => 'Action';
+
+  @override
+  String get radiologyNoImagingTestsTitle => 'No imaging tests';
+
+  @override
+  String get radiologyNoImagingTestsBody =>
+      'Create a custom imaging test or refresh the standard catalog.';
+
+  @override
+  String get radiologyReadOnlyStandardTestTitle => 'Standard test is read-only';
+
+  @override
+  String get radiologyReadOnlyStandardTestMessage =>
+      'Standard catalog rows cannot be edited directly. Copy one to save a custom test.';
+
+  @override
+  String get radiologyDeleteImagingTestDialogTitle => 'Delete imaging test?';
+
+  @override
+  String get radiologyTenantRequiredForConfigMessage =>
+      'Tenant context is required before a custom imaging test can be saved.';
+
+  @override
+  String get radiologyEquipmentRecordsTitle => 'Equipment records';
+
+  @override
+  String get radiologyEquipmentRecordsBody =>
+      'Equipment is managed through the existing equipment registry.';
+
+  @override
+  String get radiologyEquipmentNameColumnLabel => 'Equipment';
+
+  @override
+  String get radiologyEquipmentCodeColumnLabel => 'Equipment ID';
+
+  @override
+  String get radiologyManufacturerModelLabel => 'Manufacturer / model';
+
+  @override
+  String get radiologyEquipmentCategoryLabel => 'Category';
+
+  @override
+  String get radiologyFacilityColumnLabel => 'Facility';
+
+  @override
+  String get radiologyEquipmentSearchHint =>
+      'Search equipment name, code, serial, manufacturer, model, category, or status';
+
+  @override
+  String get radiologyNoEquipmentTitle => 'No equipment records';
+
+  @override
+  String get radiologyNoEquipmentBody =>
+      'Equipment registry records matching this search will appear here.';
+
+  @override
+  String get radiologyEquipmentLinkGapTitle =>
+      'Test equipment mapping unavailable';
+
+  @override
+  String get radiologyEquipmentLinkGapBody =>
+      'The current backend schema does not persist a direct imaging-test-to-equipment relationship, so this workspace does not save local-only mappings.';
+
+  @override
+  String get radiologySaveConfigurationAction => 'Save configuration';
+
+  @override
+  String get radiologyAttachImagesTitle => 'Attach images';
+
+  @override
+  String get radiologyAttachImagesDisabledBody =>
+      'Image attachment is disabled here until the storage upload contract is wired end to end.';
+
+  @override
+  String get radiologyChooseImagesAction => 'Choose images';
+
+  @override
+  String get radiologyClearSelectedImagesAction => 'Clear images';
+
+  @override
+  String get radiologyReportReferencesTitle => 'Report references';
+
+  @override
+  String get radiologyReportReferencesBody =>
+      'Insert an existing asset or PACS reference into the report text.';
+
+  @override
+  String get radiologyNoReportReferencesLabel =>
+      'No asset or PACS references available.';
+
+  @override
+  String get radiologyAssetReferencePrefix => 'Asset reference';
+
+  @override
+  String get radiologyPacsReferencePrefix => 'PACS reference';
+
+  @override
+  String get radiologyPrintReportAction => 'Print report';
+
+  @override
+  String get radiologyPrintReportDialogTitle => 'Print radiology report';
+
+  @override
+  String get radiologyPrintReportDialogBody =>
+      'Choose the persisted sections to include, preview the report, then print with the shared clinical template.';
+
+  @override
+  String get radiologyPrintPreviewTitle => 'Print preview';
+
+  @override
+  String get radiologyPrintAction => 'Print';
+
+  @override
+  String get radiologyPrintIncludeHeaderLabel => 'Facility/app header';
+
+  @override
+  String get radiologyPrintIncludePatientLabel => 'Patient details';
+
+  @override
+  String get radiologyPrintIncludeOrderLabel => 'Encounter/order details';
+
+  @override
+  String get radiologyPrintIncludeStudiesLabel => 'Imaging tests/studies';
+
+  @override
+  String get radiologyPrintIncludeReportLabel => 'Findings and report text';
+
+  @override
+  String get radiologyPrintIncludeReferencesLabel => 'Image/PACS references';
+
+  @override
+  String get radiologyPrintIncludeSignerLabel => 'Signer/release metadata';
+
+  @override
+  String get radiologyPrintFooterNote =>
+      'Generated from HMS Radiology workspace.';
+
+  @override
+  String get radiologyPrintReportTitle => 'Radiology report';
+
+  @override
+  String get radiologyPrintPatientSectionTitle => 'Patient details';
+
+  @override
+  String get radiologyPrintOrderSectionTitle => 'Encounter and order details';
+
+  @override
+  String get radiologyPrintStudiesSectionTitle => 'Imaging tests and studies';
+
+  @override
+  String get radiologyPrintReportSectionTitle => 'Report';
+
+  @override
+  String get radiologyPrintReferencesSectionTitle =>
+      'Image and PACS references';
+
+  @override
+  String get radiologyPrintSignerSectionTitle => 'Signer and release metadata';
+
+  @override
+  String get radiologyPrintNoSectionsSelected => 'No report sections selected.';
+
+  @override
+  String get radiologyPatientIdLabel => 'Patient ID';
+
+  @override
+  String get radiologyFinalizationRequestedLabel => 'Finalization requested';
+
+  @override
+  String get radiologyFinalizationAttestedLabel => 'Finalization attested';
+
+  @override
+  String radiologyActiveOrdersLabel(int count) {
+    return '$count active orders';
+  }
+
+  @override
+  String radiologyDeleteImagingTestDialogBody(String name) {
+    return 'Delete $name? This custom imaging test will no longer be available for new requests.';
+  }
+
+  @override
+  String radiologyInsertAssetReferenceAction(String label) {
+    return 'Insert asset: $label';
+  }
+
+  @override
+  String radiologyInsertPacsReferenceAction(String label) {
+    return 'Insert PACS: $label';
+  }
+
+  @override
+  String radiologyPrintStudyCount(int count) {
+    return '$count studies';
+  }
 }

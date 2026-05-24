@@ -22388,6 +22388,612 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one {1 range} other {{count} ranges}}'**
   String labReferenceRangeCount(int count);
+
+  /// Common yes label.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get commonYesLabel;
+
+  /// Common no label.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get commonNoLabel;
+
+  /// Radiology workspace action to switch to orders view.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders view'**
+  String get radiologyOrdersViewAction;
+
+  /// Radiology workspace action to switch to patients view.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients view'**
+  String get radiologyPatientsViewAction;
+
+  /// Radiology workspace configurations action.
+  ///
+  /// In en, this message translates to:
+  /// **'Configurations'**
+  String get radiologyConfigurationsAction;
+
+  /// Radiology configuration dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology configurations'**
+  String get radiologyConfigurationsDialogTitle;
+
+  /// Radiology configuration dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage persisted imaging tests and review equipment records available to radiology workflows.'**
+  String get radiologyConfigurationsDialogBody;
+
+  /// Radiology configuration loading title.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading configurations'**
+  String get radiologyConfigurationsLoadingTitle;
+
+  /// Radiology configuration loading body.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading imaging tests, standard catalog entries, and equipment records.'**
+  String get radiologyConfigurationsLoadingBody;
+
+  /// Radiology patients summary card label.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology patients'**
+  String get radiologyPatientsSummaryLabel;
+
+  /// Radiology patients waiting imaging summary card label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients waiting imaging'**
+  String get radiologyPatientsWaitingImagingSummaryLabel;
+
+  /// Radiology patients worklist title.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology patients'**
+  String get radiologyPatientsWorklistTitle;
+
+  /// Radiology patients worklist description.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients grouped by active imaging orders, reporting status, and next action.'**
+  String get radiologyPatientsWorklistDescription;
+
+  /// Radiology patients empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No radiology patients'**
+  String get radiologyNoPatientsTitle;
+
+  /// Radiology patients empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients with imaging requests matching this search and filter will appear here.'**
+  String get radiologyNoPatientsBody;
+
+  /// Radiology table column settings title.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology columns'**
+  String get radiologyTableColumnsTitle;
+
+  /// Radiology table apply columns action.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply columns'**
+  String get radiologyApplyColumnsAction;
+
+  /// Radiology table reset columns action.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset columns'**
+  String get radiologyResetColumnsAction;
+
+  /// Radiology grouped orders column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Order(s)'**
+  String get radiologyOrdersColumnLabel;
+
+  /// Radiology single active order label.
+  ///
+  /// In en, this message translates to:
+  /// **'1 active order'**
+  String get radiologyOneActiveOrderLabel;
+
+  /// Radiology request catalog search label.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog search (optional)'**
+  String get radiologyReferenceSearchOptionalLabel;
+
+  /// Radiology request select imaging tests action.
+  ///
+  /// In en, this message translates to:
+  /// **'Select imaging tests'**
+  String get radiologySelectImagingTestsAction;
+
+  /// Radiology request clear selected tests action.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selected tests'**
+  String get radiologyClearSelectedTestsAction;
+
+  /// Radiology request validation for missing selected tests.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one imaging test.'**
+  String get radiologySelectAtLeastOneTestMessage;
+
+  /// Radiology modality label.
+  ///
+  /// In en, this message translates to:
+  /// **'Fluoroscopy'**
+  String get radiologyModalityFluoroscopy;
+
+  /// Radiology modality label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mammography'**
+  String get radiologyModalityMammography;
+
+  /// Radiology modality label.
+  ///
+  /// In en, this message translates to:
+  /// **'Nuclear medicine'**
+  String get radiologyModalityNuclearMedicine;
+
+  /// Radiology modality label.
+  ///
+  /// In en, this message translates to:
+  /// **'Interventional radiology'**
+  String get radiologyModalityInterventionalRadiology;
+
+  /// Radiology configuration imaging tests tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging tests'**
+  String get radiologyImagingTestsTabLabel;
+
+  /// Radiology configuration equipment tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get radiologyEquipmentTabLabel;
+
+  /// Radiology configuration search semantic label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search radiology configurations'**
+  String get radiologyConfigurationSearchLabel;
+
+  /// Radiology configuration search hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tests, modality, code, source, equipment, or status'**
+  String get radiologyConfigurationSearchHint;
+
+  /// Radiology create imaging test action.
+  ///
+  /// In en, this message translates to:
+  /// **'Create imaging test'**
+  String get radiologyCreateImagingTestAction;
+
+  /// Radiology edit imaging test action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit imaging test'**
+  String get radiologyEditImagingTestAction;
+
+  /// Radiology delete imaging test action.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete imaging test'**
+  String get radiologyDeleteImagingTestAction;
+
+  /// Radiology copy standard catalog test action.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy standard test'**
+  String get radiologyCopyStandardTestAction;
+
+  /// Radiology standard catalog badge.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard catalog'**
+  String get radiologyStandardCatalogBadge;
+
+  /// Radiology custom catalog badge.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get radiologyCustomCatalogBadge;
+
+  /// Radiology test name label.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get radiologyTestNameLabel;
+
+  /// Radiology test code label.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get radiologyTestCodeLabel;
+
+  /// Radiology test optional code label.
+  ///
+  /// In en, this message translates to:
+  /// **'Code (optional)'**
+  String get radiologyTestCodeOptionalLabel;
+
+  /// Radiology source column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get radiologySourceColumnLabel;
+
+  /// Radiology equipment column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get radiologyEquipmentColumnLabel;
+
+  /// Radiology action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get radiologyActionColumnLabel;
+
+  /// Radiology imaging tests empty state title.
+  ///
+  /// In en, this message translates to:
+  /// **'No imaging tests'**
+  String get radiologyNoImagingTestsTitle;
+
+  /// Radiology imaging tests empty state body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a custom imaging test or refresh the standard catalog.'**
+  String get radiologyNoImagingTestsBody;
+
+  /// Radiology standard catalog read-only title.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard test is read-only'**
+  String get radiologyReadOnlyStandardTestTitle;
+
+  /// Radiology standard catalog read-only body.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard catalog rows cannot be edited directly. Copy one to save a custom test.'**
+  String get radiologyReadOnlyStandardTestMessage;
+
+  /// Radiology delete imaging test dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete imaging test?'**
+  String get radiologyDeleteImagingTestDialogTitle;
+
+  /// Radiology tenant required validation message.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant context is required before a custom imaging test can be saved.'**
+  String get radiologyTenantRequiredForConfigMessage;
+
+  /// Radiology equipment records title.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment records'**
+  String get radiologyEquipmentRecordsTitle;
+
+  /// Radiology equipment records body.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment is managed through the existing equipment registry.'**
+  String get radiologyEquipmentRecordsBody;
+
+  /// Radiology equipment name column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get radiologyEquipmentNameColumnLabel;
+
+  /// Radiology equipment code column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment ID'**
+  String get radiologyEquipmentCodeColumnLabel;
+
+  /// Radiology manufacturer model column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer / model'**
+  String get radiologyManufacturerModelLabel;
+
+  /// Radiology equipment category label.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get radiologyEquipmentCategoryLabel;
+
+  /// Radiology facility column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get radiologyFacilityColumnLabel;
+
+  /// Radiology equipment search hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search equipment name, code, serial, manufacturer, model, category, or status'**
+  String get radiologyEquipmentSearchHint;
+
+  /// Radiology equipment empty title.
+  ///
+  /// In en, this message translates to:
+  /// **'No equipment records'**
+  String get radiologyNoEquipmentTitle;
+
+  /// Radiology equipment empty body.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment registry records matching this search will appear here.'**
+  String get radiologyNoEquipmentBody;
+
+  /// Radiology equipment-test mapping gap title.
+  ///
+  /// In en, this message translates to:
+  /// **'Test equipment mapping unavailable'**
+  String get radiologyEquipmentLinkGapTitle;
+
+  /// Radiology equipment-test mapping gap body.
+  ///
+  /// In en, this message translates to:
+  /// **'The current backend schema does not persist a direct imaging-test-to-equipment relationship, so this workspace does not save local-only mappings.'**
+  String get radiologyEquipmentLinkGapBody;
+
+  /// Radiology save configuration action.
+  ///
+  /// In en, this message translates to:
+  /// **'Save configuration'**
+  String get radiologySaveConfigurationAction;
+
+  /// Radiology attach images panel title.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach images'**
+  String get radiologyAttachImagesTitle;
+
+  /// Radiology disabled image attachment body.
+  ///
+  /// In en, this message translates to:
+  /// **'Image attachment is disabled here until the storage upload contract is wired end to end.'**
+  String get radiologyAttachImagesDisabledBody;
+
+  /// Radiology choose images action.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose images'**
+  String get radiologyChooseImagesAction;
+
+  /// Radiology clear images action.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear images'**
+  String get radiologyClearSelectedImagesAction;
+
+  /// Radiology report references section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Report references'**
+  String get radiologyReportReferencesTitle;
+
+  /// Radiology report references body.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert an existing asset or PACS reference into the report text.'**
+  String get radiologyReportReferencesBody;
+
+  /// Radiology no report references label.
+  ///
+  /// In en, this message translates to:
+  /// **'No asset or PACS references available.'**
+  String get radiologyNoReportReferencesLabel;
+
+  /// Radiology asset reference prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset reference'**
+  String get radiologyAssetReferencePrefix;
+
+  /// Radiology PACS reference prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'PACS reference'**
+  String get radiologyPacsReferencePrefix;
+
+  /// Radiology print report action.
+  ///
+  /// In en, this message translates to:
+  /// **'Print report'**
+  String get radiologyPrintReportAction;
+
+  /// Radiology print report dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Print radiology report'**
+  String get radiologyPrintReportDialogTitle;
+
+  /// Radiology print dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the persisted sections to include, preview the report, then print with the shared clinical template.'**
+  String get radiologyPrintReportDialogBody;
+
+  /// Radiology print preview title.
+  ///
+  /// In en, this message translates to:
+  /// **'Print preview'**
+  String get radiologyPrintPreviewTitle;
+
+  /// Radiology print action.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get radiologyPrintAction;
+
+  /// Radiology print include header label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility/app header'**
+  String get radiologyPrintIncludeHeaderLabel;
+
+  /// Radiology print include patient label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient details'**
+  String get radiologyPrintIncludePatientLabel;
+
+  /// Radiology print include order label.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter/order details'**
+  String get radiologyPrintIncludeOrderLabel;
+
+  /// Radiology print include studies label.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging tests/studies'**
+  String get radiologyPrintIncludeStudiesLabel;
+
+  /// Radiology print include report label.
+  ///
+  /// In en, this message translates to:
+  /// **'Findings and report text'**
+  String get radiologyPrintIncludeReportLabel;
+
+  /// Radiology print include references label.
+  ///
+  /// In en, this message translates to:
+  /// **'Image/PACS references'**
+  String get radiologyPrintIncludeReferencesLabel;
+
+  /// Radiology print include signer label.
+  ///
+  /// In en, this message translates to:
+  /// **'Signer/release metadata'**
+  String get radiologyPrintIncludeSignerLabel;
+
+  /// Radiology print footer note.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated from HMS Radiology workspace.'**
+  String get radiologyPrintFooterNote;
+
+  /// Radiology print report title.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology report'**
+  String get radiologyPrintReportTitle;
+
+  /// Radiology print patient section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient details'**
+  String get radiologyPrintPatientSectionTitle;
+
+  /// Radiology print order section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter and order details'**
+  String get radiologyPrintOrderSectionTitle;
+
+  /// Radiology print studies section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging tests and studies'**
+  String get radiologyPrintStudiesSectionTitle;
+
+  /// Radiology print report section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get radiologyPrintReportSectionTitle;
+
+  /// Radiology print references section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Image and PACS references'**
+  String get radiologyPrintReferencesSectionTitle;
+
+  /// Radiology print signer section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Signer and release metadata'**
+  String get radiologyPrintSignerSectionTitle;
+
+  /// Radiology print no sections selected message.
+  ///
+  /// In en, this message translates to:
+  /// **'No report sections selected.'**
+  String get radiologyPrintNoSectionsSelected;
+
+  /// Radiology patient ID label.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get radiologyPatientIdLabel;
+
+  /// Radiology finalization requested label.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalization requested'**
+  String get radiologyFinalizationRequestedLabel;
+
+  /// Radiology finalization attested label.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalization attested'**
+  String get radiologyFinalizationAttestedLabel;
+
+  /// Radiology active order count label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active orders'**
+  String radiologyActiveOrdersLabel(int count);
+
+  /// Radiology delete imaging test dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}? This custom imaging test will no longer be available for new requests.'**
+  String radiologyDeleteImagingTestDialogBody(String name);
+
+  /// Radiology insert asset reference action.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert asset: {label}'**
+  String radiologyInsertAssetReferenceAction(String label);
+
+  /// Radiology insert PACS reference action.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert PACS: {label}'**
+  String radiologyInsertPacsReferenceAction(String label);
+
+  /// Radiology print study count label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} studies'**
+  String radiologyPrintStudyCount(int count);
 }
 
 class _AppLocalizationsDelegate

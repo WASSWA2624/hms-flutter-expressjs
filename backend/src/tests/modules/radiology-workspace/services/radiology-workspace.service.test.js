@@ -22,6 +22,9 @@ jest.mock('@lib/dicomweb/client', () => ({
   stowStudy: jest.fn(),
   buildStudyUrl: jest.fn(),
 }));
+jest.mock('@services/radiology-order/radiology-order.service', () => ({
+  createRadiologyOrder: jest.fn(),
+}));
 jest.mock('@services/radiology-workspace/radiology.shared', () => {
   const actual = jest.requireActual('@services/radiology-workspace/radiology.shared');
   return {
@@ -32,6 +35,7 @@ jest.mock('@services/radiology-workspace/radiology.shared', () => {
 });
 
 const radiologyWorkspaceRepository = require('@repositories/radiology-workspace/radiology-workspace.repository');
+const radiologyOrderService = require('@services/radiology-order/radiology-order.service');
 const { createAuditLog } = require('@lib/audit');
 const { emitToUsers } = require('@lib/websocket');
 const prisma = require('@prisma/client');
@@ -132,6 +136,105 @@ describe('radiology-workspace.service', () => {
         action: 'ASSIGN',
         order_id: 'RAD0000001',
       })
+    );
+  });
+
+  it('creates workspace radiology orders through the shared multi-test order service', async () => {
+    radiologyOrderService.createRadiologyOrder.mockResolvedValue({
+      display_id: 'RAD0000001',
+      created_orders: [
+        { id: 'order-internal-1', display_id: 'RAD0000001' },
+        { id: 'order-internal-2', display_id: 'RAD0000002' },
+      ],
+    });
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    radiologyWorkspaceRepository.findOrderById.mockResolvedValue(buildOrder());
+
+    const result = await radiologyWorkspaceService.createRadiologyOrder(
+      {
+        patient_id: 'PAT0000001',
+        encounter_id: 'ENC0000001',
+        notes: 'Persistent request note',
+        requested_tests: [
+          {
+            radiology_test_id: 'RADT000001',
+            clinical_note: 'Chest pain',
+            request_details: { modality: 'XRAY', priority: 'URGENT' },
+          },
+          {
+            radiology_test_id: 'STD_RAD_TEST_RAD-00002',
+            request_details: { modality: 'CT', body_region: 'Head' },
+          },
+        ],
+      },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(radiologyOrderService.createRadiologyOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patient_id: 'PAT0000001',
+        encounter_id: 'ENC0000001',
+        requested_tests: [
+          expect.objectContaining({
+            radiology_test_id: 'RADT000001',
+            clinical_note: 'Chest pain',
+            request_details: expect.objectContaining({
+              modality: 'XRAY',
+              priority: 'URGENT',
+            }),
+          }),
+          expect.objectContaining({
+            radiology_test_id: 'STD_RAD_TEST_RAD-00002',
+            clinical_note: 'Persistent request note',
+            request_details: expect.objectContaining({
+              modality: 'CT',
+              body_region: 'Head',
+            }),
+          }),
+        ],
+      }),
+      'actor-1',
+      '127.0.0.1'
+    );
+    expect(result.created_orders).toHaveLength(2);
+    expect(result.workflow.order.id).toBe('RAD0000001');
+  });
+
+  it('keeps legacy single-test workspace order payloads compatible', async () => {
+    radiologyOrderService.createRadiologyOrder.mockResolvedValue({
+      display_id: 'RAD0000001',
+    });
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    radiologyWorkspaceRepository.findOrderById.mockResolvedValue(buildOrder());
+
+    await radiologyWorkspaceService.createRadiologyOrder(
+      {
+        patient_id: 'PAT0000001',
+        encounter_id: 'ENC0000001',
+        radiology_test_id: 'RADT000001',
+        notes: 'Legacy clinical note',
+        request_details: { modality: 'XRAY', priority: 'ROUTINE' },
+      },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(radiologyOrderService.createRadiologyOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requested_tests: [
+          expect.objectContaining({
+            radiology_test_id: 'RADT000001',
+            clinical_note: 'Legacy clinical note',
+            request_details: expect.objectContaining({
+              modality: 'XRAY',
+              priority: 'ROUTINE',
+            }),
+          }),
+        ],
+      }),
+      'actor-1',
+      '127.0.0.1'
     );
   });
 
