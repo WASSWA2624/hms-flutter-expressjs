@@ -15038,7 +15038,7 @@
   "@labNextActionEnterResult": {
     "description": "Localized text for labNextActionEnterResult."
   },
-  "labCreateAction": "Create",
+  "labCreateAction": "Create Item",
   "@labCreateAction": {
     "description": "Action label for opening laboratory create actions."
   },

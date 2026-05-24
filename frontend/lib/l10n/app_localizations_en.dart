@@ -11585,7 +11585,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labNextActionEnterResult => 'Enter result';
 
   @override
-  String get labCreateAction => 'Create';
+  String get labCreateAction => 'Create Item';
 
   @override
   String get labCreateChoiceDialogTitle => 'Create laboratory item';
