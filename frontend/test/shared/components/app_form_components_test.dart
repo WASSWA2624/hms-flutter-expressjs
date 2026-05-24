@@ -99,6 +99,37 @@ void main() {
     expect(selected, 'live');
   });
 
+  testWidgets('AppSelectField.searchable matches hidden option search text', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppSelectField<String>.searchable(
+        labelText: 'Patient',
+        options: const <AppSelectOption<String>>[
+          AppSelectOption<String>(
+            value: 'PAT000001',
+            label: 'Amina Stone',
+            searchText: 'Amina Stone PAT000001 +256700000001',
+          ),
+          AppSelectOption<String>(
+            value: 'PAT000002',
+            label: 'Noah Echo',
+            searchText: 'Noah Echo PAT000002',
+          ),
+        ],
+        onChanged: (_) {},
+      ),
+    );
+
+    await tester.tap(find.byType(EditableText));
+    await tester.enterText(find.byType(EditableText), 'stone 256');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Amina Stone').hitTestable(), findsOneWidget);
+    expect(find.text('Noah Echo').hitTestable(), findsNothing);
+  });
+
   testWidgets('AppSelectField clear button clears the selected value', (
     WidgetTester tester,
   ) async {

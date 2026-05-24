@@ -168,6 +168,101 @@ describe('lab-workspace.service', () => {
     expect(JSON.stringify(orderWhere)).not.toContain('branch_id');
   });
 
+  it('searches lab order context patients through lab-scoped patient fields', async () => {
+    labWorkspaceRepository.findManyPatients.mockResolvedValue([
+      {
+        id: 'patient-internal-1',
+        human_friendly_id: 'PAT0000001',
+        first_name: 'Amina',
+        last_name: 'Stone',
+        contacts: [
+          { contact_type: 'PHONE', value: '+256700000001', is_primary: true },
+        ],
+        identifiers: [
+          { identifier_value: 'NIN123', is_primary: true },
+        ],
+      },
+    ]);
+
+    const result = await labWorkspaceService.searchLabOrderContextPatients(
+      { search: 'Amina', limit: '8' },
+      { tenant_id: 'tenant-internal-1', facility_id: 'facility-internal-1' }
+    );
+
+    expect(labWorkspaceRepository.findManyPatients).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenant_id: 'tenant-internal-1',
+        facility_id: 'facility-internal-1',
+        OR: expect.arrayContaining([
+          { first_name: { contains: 'Amina' } },
+          { human_friendly_id: { contains: 'AMINA' } },
+        ]),
+      }),
+      0,
+      8,
+      [{ updated_at: 'desc' }, { created_at: 'desc' }],
+      expect.any(Object)
+    );
+    expect(result.patients).toEqual([
+      {
+        id: 'PAT0000001',
+        display_id: 'PAT0000001',
+        display_name: 'Amina Stone',
+        identifier: 'NIN123',
+        primary_phone: '+256700000001',
+      },
+    ]);
+  });
+
+  it('loads lab order patient context without requiring patient module access', async () => {
+    labWorkspaceRepository.findPatientById.mockResolvedValue({
+      id: 'patient-internal-1',
+      human_friendly_id: 'PAT0000001',
+      first_name: 'Amina',
+      last_name: 'Stone',
+      contacts: [],
+      identifiers: [],
+      encounters: [
+        {
+          id: 'encounter-internal-1',
+          human_friendly_id: 'ENC0000001',
+          encounter_type: 'OPD',
+          status: 'OPEN',
+          started_at: now,
+          ended_at: null,
+        },
+      ],
+    });
+
+    const result = await labWorkspaceService.getLabOrderPatientContext(
+      'PAT0000001',
+      { tenant_id: 'tenant-internal-1' }
+    );
+
+    expect(labWorkspaceRepository.findPatientById).toHaveBeenCalledWith(
+      'PAT0000001',
+      { tenant_id: 'tenant-internal-1' },
+      expect.any(Object)
+    );
+    expect(result).toEqual({
+      patient: expect.objectContaining({
+        id: 'PAT0000001',
+        display_name: 'Amina Stone',
+      }),
+      encounters: [
+        {
+          id: 'ENC0000001',
+          display_id: 'ENC0000001',
+          title: 'ENC0000001',
+          status: 'OPEN',
+          type: 'OPD',
+          started_at: now,
+          ended_at: null,
+        },
+      ],
+    });
+  });
+
   it('returns an order workbench response with pagination total', async () => {
     labWorkspaceRepository.findManyOrders
       .mockResolvedValueOnce([buildBaseOrder()])

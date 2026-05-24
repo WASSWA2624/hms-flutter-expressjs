@@ -13,6 +13,10 @@ jest.mock('@prisma/client', () => ({
   lab_result: {
     count: jest.fn(),
   },
+  patient: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+  },
   $transaction: jest.fn(),
 }));
 
@@ -57,6 +61,48 @@ describe('lab-workspace.repository', () => {
         deleted_at: null,
         status: 'CRITICAL',
       },
+    });
+  });
+
+  it('findManyPatients applies soft-delete protection and query options', async () => {
+    prisma.patient.findMany.mockResolvedValue([]);
+
+    await subject.findManyPatients(
+      { tenant_id: 'tenant-1' },
+      0,
+      8,
+      { updated_at: 'desc' },
+      { contacts: true }
+    );
+
+    expect(prisma.patient.findMany).toHaveBeenCalledWith({
+      where: {
+        deleted_at: null,
+        tenant_id: 'tenant-1',
+      },
+      skip: 0,
+      take: 8,
+      orderBy: { updated_at: 'desc' },
+      include: { contacts: true },
+    });
+  });
+
+  it('findPatientById applies soft-delete protection and scope', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ id: 'patient-1' });
+
+    await subject.findPatientById(
+      'PAT000001',
+      { tenant_id: 'tenant-1' },
+      { encounters: true }
+    );
+
+    expect(prisma.patient.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'PAT000001',
+        deleted_at: null,
+        tenant_id: 'tenant-1',
+      },
+      include: { encounters: true },
     });
   });
 

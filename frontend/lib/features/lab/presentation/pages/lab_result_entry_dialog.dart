@@ -720,7 +720,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                           labelText: l10n.labResultUnitLabel,
                           enabled: enabled,
                         )
-                      : AppSelectField<String>(
+                      : AppSelectField<String>.searchable(
                           value: widget.draft.unitController.text.trim().isEmpty
                               ? null
                               : widget.draft.unitController.text.trim(),
@@ -731,6 +731,12 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                               AppSelectOption<String>(
                                 value: option.unit ?? option.label ?? option.id,
                                 label: option.displayLabel,
+                                leadingIcon: const Icon(
+                                  Icons.straighten_outlined,
+                                ),
+                                searchText:
+                                    '${option.id} ${option.label ?? ''} '
+                                    '${option.unit ?? ''}',
                               ),
                           ],
                           onChanged: (String? value) {
@@ -741,7 +747,7 @@ class _CompactResultInputState extends State<_CompactResultInput> {
               ],
             ),
           ] else if (item.isQualitative && item.resultOptions.isNotEmpty)
-            AppSelectField<String>(
+            AppSelectField<String>.searchable(
               value: widget.draft.selectedOption,
               labelText: l10n.labResultValueLabel,
               enabled: enabled,
@@ -750,6 +756,11 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                   AppSelectOption<String>(
                     value: option.value ?? option.label ?? option.id,
                     label: option.displayLabel,
+                    leadingIcon: const Icon(Icons.checklist_outlined),
+                    searchText:
+                        '${option.id} ${option.label ?? ''} '
+                        '${option.value ?? ''} ${option.status ?? ''} '
+                        '${option.resultFlag ?? ''}',
                   ),
               ],
               onChanged: enabled
@@ -994,7 +1005,7 @@ class _RejectOrderItemDialogState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
-            AppSelectField<String>(
+            AppSelectField<String>.searchable(
               value: _reason,
               labelText: l10n.labRejectReasonLabel,
               enabled: !_isSaving,
@@ -1003,18 +1014,22 @@ class _RejectOrderItemDialogState
                 AppSelectOption<String>(
                   value: l10n.labRejectReasonNotPerformedHere,
                   label: l10n.labRejectReasonNotPerformedHere,
+                  leadingIcon: const Icon(Icons.location_off_outlined),
                 ),
                 AppSelectOption<String>(
                   value: l10n.labRejectReasonInsufficientInfo,
                   label: l10n.labRejectReasonInsufficientInfo,
+                  leadingIcon: const Icon(Icons.info_outline),
                 ),
                 AppSelectOption<String>(
                   value: l10n.labRejectReasonInvalidRequest,
                   label: l10n.labRejectReasonInvalidRequest,
+                  leadingIcon: const Icon(Icons.report_problem_outlined),
                 ),
                 AppSelectOption<String>(
                   value: l10n.labRejectReasonOther,
                   label: l10n.labRejectReasonOther,
+                  leadingIcon: const Icon(Icons.more_horiz),
                 ),
               ],
               onChanged: (String? value) => setState(() => _reason = value),

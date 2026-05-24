@@ -12,6 +12,8 @@ describe('lab-workspace.routes contract', () => {
     expect(routes).toEqual(
       expect.arrayContaining([
         { path: '/workbench', methods: ['get'] },
+        { path: '/order-context/patients', methods: ['get'] },
+        { path: '/order-context/patients/:id', methods: ['get'] },
         { path: '/resolve-legacy/:resource/:id', methods: ['get'] },
         { path: '/orders/:id/workflow', methods: ['get'] },
         { path: '/orders/:id/collect', methods: ['post'] },

@@ -54,6 +54,42 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
+  Future<Result<List<LabOrderPatientContext>>> searchOrderContextPatients({
+    String? search,
+    int limit = 8,
+  }) {
+    return _apiClient.get<List<LabOrderPatientContext>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.lab.path,
+        'order-context',
+        'patients',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'page': 1,
+        'limit': limit,
+        'search': search,
+      }),
+      decoder: decodeLabOrderContextPatients,
+    );
+  }
+
+  @override
+  Future<Result<LabOrderPatientContextDetail>> loadOrderPatientContext(
+    String patientId,
+  ) {
+    return _apiClient.get<LabOrderPatientContextDetail>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.lab.path,
+        'order-context',
+        'patients',
+        patientId,
+      ]),
+      decoder: (Object? data) =>
+          LabOrderPatientContextDetailDto.fromResponse(data).detail,
+    );
+  }
+
+  @override
   Future<Result<List<LabCatalogItem>>> listTests({String? search}) {
     return _apiClient.get<List<LabCatalogItem>>(
       ApiEndpoints.collection(HmsApiResource.labTests),

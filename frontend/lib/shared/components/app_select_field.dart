@@ -9,6 +9,7 @@ class AppSelectOption<T> {
     this.labelWidget,
     this.leadingIcon,
     this.trailingIcon,
+    this.searchText,
     this.enabled = true,
   });
 
@@ -17,6 +18,7 @@ class AppSelectOption<T> {
   final Widget? labelWidget;
   final Widget? leadingIcon;
   final Widget? trailingIcon;
+  final String? searchText;
   final bool enabled;
 }
 
@@ -100,6 +102,8 @@ class AppSelectField<T> extends StatefulWidget {
 }
 
 class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
+  static const int _maxFilteredOptions = 80;
+
   late final TextEditingController _controller;
   bool _hasControllerText = false;
   bool _isSyncingControllerText = false;
@@ -202,10 +206,10 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           enableSearch: enableSearch,
           expandedInsets: EdgeInsets.zero,
           filterCallback: enableFilter
-              ? widget.filterCallback ?? _defaultFilter
+              ? widget.filterCallback ?? _filterEntries
               : null,
           searchCallback: enableSearch
-              ? widget.searchCallback ?? _defaultSearch
+              ? widget.searchCallback ?? _searchEntries
               : null,
           requestFocusOnTap: true,
           focusNode: widget.focusNode,
@@ -275,48 +279,82 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     }
     return '';
   }
-}
 
-List<DropdownMenuEntry<T>> _defaultFilter<T>(
-  List<DropdownMenuEntry<T>> entries,
-  String filter,
-) {
-  final String query = filter.trim().toLowerCase();
-  if (query.isEmpty) {
-    return entries;
+  List<DropdownMenuEntry<T>> _filterEntries(
+    List<DropdownMenuEntry<T>> entries,
+    String filter,
+  ) {
+    final List<String> tokens = _queryTokens(filter);
+    if (tokens.isEmpty) {
+      return entries;
+    }
+
+    return entries
+        .where((DropdownMenuEntry<T> entry) {
+          final String searchable = _searchTextForEntry(entry);
+          return tokens.every(searchable.contains);
+        })
+        .take(_maxFilteredOptions)
+        .toList(growable: false);
   }
 
-  return entries
-      .where(
-        (DropdownMenuEntry<T> entry) =>
-            entry.label.toLowerCase().contains(query) ||
-            entry.value.toString().toLowerCase().contains(query),
-      )
+  int? _searchEntries(List<DropdownMenuEntry<T>> entries, String query) {
+    final List<String> tokens = _queryTokens(query);
+    if (tokens.isEmpty) {
+      return null;
+    }
+
+    final String firstToken = tokens.first;
+    final int startsWithIndex = entries.indexWhere(
+      (DropdownMenuEntry<T> entry) =>
+          _searchTextForEntry(entry).startsWith(firstToken),
+    );
+    if (startsWithIndex >= 0) {
+      return startsWithIndex;
+    }
+
+    final int containsIndex = entries.indexWhere((DropdownMenuEntry<T> entry) {
+      final String searchable = _searchTextForEntry(entry);
+      return tokens.every(searchable.contains);
+    });
+
+    return containsIndex >= 0 ? containsIndex : null;
+  }
+
+  String _searchTextForEntry(DropdownMenuEntry<T> entry) {
+    final AppSelectOption<T>? option = _optionForValue(entry.value);
+    final String raw = <String>[
+      entry.label,
+      option?.label ?? '',
+      option?.searchText ?? '',
+      entry.value.toString(),
+    ].where((String value) => value.trim().isNotEmpty).join(' ');
+    return _normalizeSearchText(raw);
+  }
+
+  AppSelectOption<T>? _optionForValue(T value) {
+    for (final AppSelectOption<T> option in widget.options) {
+      if (option.value == value) {
+        return option;
+      }
+    }
+    return null;
+  }
+}
+
+List<String> _queryTokens(String query) {
+  final String normalized = _normalizeSearchText(query);
+  if (normalized.isEmpty) {
+    return const <String>[];
+  }
+  return normalized
+      .split(RegExp(r'\s+'))
+      .where((String token) => token.isNotEmpty)
       .toList(growable: false);
 }
 
-int? _defaultSearch<T>(List<DropdownMenuEntry<T>> entries, String query) {
-  final String normalized = query.trim().toLowerCase();
-  if (normalized.isEmpty) {
-    return null;
-  }
-
-  final int startsWithIndex = entries.indexWhere(
-    (DropdownMenuEntry<T> entry) =>
-        entry.label.toLowerCase().startsWith(normalized) ||
-        entry.value.toString().toLowerCase().startsWith(normalized),
-  );
-  if (startsWithIndex >= 0) {
-    return startsWithIndex;
-  }
-
-  final int containsIndex = entries.indexWhere(
-    (DropdownMenuEntry<T> entry) =>
-        entry.label.toLowerCase().contains(normalized) ||
-        entry.value.toString().toLowerCase().contains(normalized),
-  );
-
-  return containsIndex >= 0 ? containsIndex : null;
+String _normalizeSearchText(String value) {
+  return value.trim().toLowerCase();
 }
 
 class _SelectTrailingIcon extends StatelessWidget {

@@ -62,6 +62,64 @@ final class LabWorkbenchSummaryDto {
   }
 }
 
+final class LabOrderPatientContextDto {
+  const LabOrderPatientContextDto(this.json);
+
+  final LabJsonMap json;
+
+  LabOrderPatientContext toEntity() {
+    return LabOrderPatientContext(
+      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      displayId: _string(json['display_id']),
+      displayName: _string(json['display_name']),
+      identifier: _string(json['identifier']),
+      primaryPhone: _string(json['primary_phone']),
+    );
+  }
+}
+
+final class LabOrderEncounterContextDto {
+  const LabOrderEncounterContextDto(this.json);
+
+  final LabJsonMap json;
+
+  LabOrderEncounterContext toEntity() {
+    return LabOrderEncounterContext(
+      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      displayId: _string(json['display_id']),
+      title: _string(json['title']),
+      status: _string(json['status']),
+      type: _string(json['type']),
+      startedAt: _date(json['started_at']),
+      endedAt: _date(json['ended_at']),
+    );
+  }
+}
+
+final class LabOrderPatientContextDetailDto {
+  const LabOrderPatientContextDetailDto({required this.detail});
+
+  final LabOrderPatientContextDetail detail;
+
+  factory LabOrderPatientContextDetailDto.fromResponse(Object? responseData) {
+    final LabJsonMap response = _expectMap(responseData);
+    final LabJsonMap data = _map(response['data']);
+    final LabOrderPatientContext patient = LabOrderPatientContextDto(
+      _map(data['patient']),
+    ).toEntity();
+    return LabOrderPatientContextDetailDto(
+      detail: LabOrderPatientContextDetail(
+        patient: patient,
+        encounters: _list(data['encounters'])
+            .map(LabOrderEncounterContextDto.new)
+            .map((LabOrderEncounterContextDto dto) => dto.toEntity())
+            .where((LabOrderEncounterContext item) => item.id.isNotEmpty)
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
 final class LabCatalogItemDto {
   const LabCatalogItemDto(this.json, this.type);
 
@@ -417,7 +475,10 @@ final class LabWorkflowNextActionsDto {
       canCollect: _bool(json['can_collect']),
       canReceiveSample: _bool(json['can_receive_sample']),
       canReleaseResult: _bool(json['can_release_result']),
-      canVerifyResult: _bool(json['can_verify_result'], fallback: _bool(json['can_release_result'])),
+      canVerifyResult: _bool(
+        json['can_verify_result'],
+        fallback: _bool(json['can_release_result']),
+      ),
       canVerifyAll: _bool(json['can_verify_all']),
       canRejectOrderItem: _bool(json['can_reject_order_item']),
       canReverseWorkflow: _bool(json['can_reverse_workflow']),
@@ -451,6 +512,18 @@ List<LabQcLog> decodeLabQcLogs(Object? responseData) {
       .map(LabQcLogDto.new)
       .map((LabQcLogDto dto) => dto.toEntity())
       .where((LabQcLog item) => item.id.isNotEmpty)
+      .toList(growable: false);
+}
+
+List<LabOrderPatientContext> decodeLabOrderContextPatients(
+  Object? responseData,
+) {
+  final LabJsonMap response = _expectMap(responseData);
+  final LabJsonMap data = _map(response['data']);
+  return _list(data['patients'])
+      .map(LabOrderPatientContextDto.new)
+      .map((LabOrderPatientContextDto dto) => dto.toEntity())
+      .where((LabOrderPatientContext item) => item.id.isNotEmpty)
       .toList(growable: false);
 }
 

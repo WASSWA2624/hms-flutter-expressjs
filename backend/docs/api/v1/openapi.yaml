@@ -12819,58 +12819,9 @@ paths:
                   - $ref: '#/components/schemas/PaginatedEnvelope'
                   - properties:
                       data:
-                        type: object
-                        additionalProperties: true
-                        properties:
-                          state:
-                            type: string
-                            enum:
-                              - ready
-                              - tenant_context_required
-                          generated_at:
-                            type: string
-                            format: date-time
-                          profile:
-                            $ref: '#/components/schemas/GenericRecord'
-                          hero:
-                            $ref: '#/components/schemas/GenericRecord'
-                          status_strip:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/GenericRecord'
-                          quick_action_ids:
-                            type: array
-                            items:
-                              type: string
-                          trend:
-                            type: object
-                            additionalProperties: true
-                            properties:
-                              title:
-                                type: string
-                              subtitle:
-                                type: string
-                              points:
-                                type: array
-                                items:
-                                  $ref: '#/components/schemas/GenericRecord'
-                          distribution:
-                            type: object
-                            additionalProperties: true
-                            properties:
-                              title:
-                                type: string
-                              subtitle:
-                                type: string
-                              total:
-                                type: number
-                              segments:
-                                type: array
-                                items:
-                                  $ref: '#/components/schemas/GenericRecord'
-                          overview:
-                            type: object
-                            additionalProperties: true
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GenericRecord'
         '401':
           $ref: '#/components/responses/UnauthorizedProblem'
         '403':
@@ -15660,6 +15611,70 @@ paths:
           $ref: '#/components/responses/ForbiddenProblem'
         '404':
           $ref: '#/components/responses/NotFoundProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+      x-route-family: emergency-cases
+      x-offline-policy: no-store
+      x-route-source: src/modules/emergency-case/routes/emergency-case.routes.js
+      x-websocket-events:
+        - emergency.case_assigned
+        - emergency.ambulance_dispatched
+        - emergency.ambulance_arrival_updated
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericMutationRequest'
+  /api/v1/emergency-cases/{id}/handoff:
+    post:
+      tags:
+        - Emergency Cases
+      summary: Handoff Emergency Case
+      description: |-
+        Operations for the Emergency Cases route family.
+
+        Offline policy: `no-store`.
+
+        WebSocket events: emergency.case_assigned, emergency.ambulance_dispatched, emergency.ambulance_arrival_updated.
+      operationId: post_api_v1_emergency_cases_id_handoff
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: id
+          in: path
+          required: true
+          description: Id identifier.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response envelope.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Offline-Policy:
+              $ref: '#/components/headers/XOfflinePolicy'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResourceEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/GenericRecord'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
         '422':
           $ref: '#/components/responses/ValidationProblem'
         '500':
@@ -26807,7 +26822,7 @@ paths:
 
         Offline policy: `revalidate`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: get_api_v1_invoices
       security:
         - BearerAuth: []
@@ -26858,6 +26873,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
     post:
       tags:
         - Invoices
@@ -26867,7 +26884,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: post_api_v1_invoices
       security:
         - BearerAuth: []
@@ -26907,6 +26924,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -26923,7 +26942,7 @@ paths:
 
         Offline policy: `revalidate`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: get_api_v1_invoices_id
       security:
         - BearerAuth: []
@@ -26974,6 +26993,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
     put:
       tags:
         - Invoices
@@ -26983,7 +27004,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: put_api_v1_invoices_id
       security:
         - BearerAuth: []
@@ -27030,6 +27051,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -27045,7 +27068,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: delete_api_v1_invoices_id
       security:
         - BearerAuth: []
@@ -27082,6 +27105,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -28571,6 +28596,116 @@ paths:
       x-route-family: lab
       x-offline-policy: revalidate
       x-route-source: src/modules/lab-workspace/routes/lab-workspace.routes.js
+  /api/v1/lab/order-context/patients:
+    get:
+      tags:
+        - Lab
+      summary: Get Order Context Patients for Lab
+      description: |-
+        Operations for the Lab route family.
+
+        Offline policy: `revalidate`.
+      operationId: get_api_v1_lab_order_context_patients
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfNoneMatch'
+        - $ref: '#/components/parameters/IfModifiedSince'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Since'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: Successful response envelope.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Offline-Policy:
+              $ref: '#/components/headers/XOfflinePolicy'
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Last-Modified:
+              $ref: '#/components/headers/LastModified'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GenericRecord'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+      x-route-family: lab
+      x-offline-policy: revalidate
+      x-route-source: src/modules/lab-workspace/routes/lab-workspace.routes.js
+  /api/v1/lab/order-context/patients/{id}:
+    get:
+      tags:
+        - Lab
+      summary: Get Order Context Patients for Lab
+      description: |-
+        Operations for the Lab route family.
+
+        Offline policy: `revalidate`.
+      operationId: get_api_v1_lab_order_context_patients_id
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfNoneMatch'
+        - $ref: '#/components/parameters/IfModifiedSince'
+        - name: id
+          in: path
+          required: true
+          description: Id identifier.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response envelope.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Offline-Policy:
+              $ref: '#/components/headers/XOfflinePolicy'
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Last-Modified:
+              $ref: '#/components/headers/LastModified'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResourceEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/GenericRecord'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+      x-route-family: lab
+      x-offline-policy: revalidate
+      x-route-source: src/modules/lab-workspace/routes/lab-workspace.routes.js
   /api/v1/lab/resolve-legacy/{resource}/{id}:
     get:
       tags:
@@ -28871,6 +29006,122 @@ paths:
 
         Offline policy: `no-store`.
       operationId: post_api_v1_lab_order_items_id_release
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: id
+          in: path
+          required: true
+          description: Id identifier.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response envelope.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Offline-Policy:
+              $ref: '#/components/headers/XOfflinePolicy'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResourceEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/GenericRecord'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+      x-route-family: lab
+      x-offline-policy: no-store
+      x-route-source: src/modules/lab-workspace/routes/lab-workspace.routes.js
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericMutationRequest'
+  /api/v1/lab/orders/{id}/verify-results:
+    post:
+      tags:
+        - Lab
+      summary: Verify Results Lab
+      description: |-
+        Operations for the Lab route family.
+
+        Offline policy: `no-store`.
+      operationId: post_api_v1_lab_orders_id_verify_results
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: id
+          in: path
+          required: true
+          description: Id identifier.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response envelope.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Offline-Policy:
+              $ref: '#/components/headers/XOfflinePolicy'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResourceEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/GenericRecord'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+      x-route-family: lab
+      x-offline-policy: no-store
+      x-route-source: src/modules/lab-workspace/routes/lab-workspace.routes.js
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericMutationRequest'
+  /api/v1/lab/order-items/{id}/reject:
+    post:
+      tags:
+        - Lab
+      summary: Reject Lab
+      description: |-
+        Operations for the Lab route family.
+
+        Offline policy: `no-store`.
+      operationId: post_api_v1_lab_order_items_id_reject
       security:
         - BearerAuth: []
       parameters:
@@ -35282,6 +35533,65 @@ paths:
       x-route-source: src/modules/opd-flow/routes/opd-flow.routes.js
       x-websocket-events:
         - opd.flow.updated
+  /api/v1/opd-flows/summary:
+    get:
+      tags:
+        - OPD Flows
+      summary: Get Summary
+      description: |-
+        Operations for the OPD Flows route family.
+
+        Offline policy: `revalidate`.
+
+        WebSocket events: opd.flow.updated.
+      operationId: get_api_v1_opd_flows_summary
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfNoneMatch'
+        - $ref: '#/components/parameters/IfModifiedSince'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/Since'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: Successful response envelope.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Offline-Policy:
+              $ref: '#/components/headers/XOfflinePolicy'
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Last-Modified:
+              $ref: '#/components/headers/LastModified'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GenericRecord'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+      x-route-family: opd-flows
+      x-offline-policy: revalidate
+      x-route-source: src/modules/opd-flow/routes/opd-flow.routes.js
+      x-websocket-events:
+        - opd.flow.updated
   /api/v1/opd-flows/resolve-legacy/{resource}/{id}:
     get:
       tags:
@@ -35510,6 +35820,68 @@ paths:
         - opd.flow.updated
       requestBody:
         required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericMutationRequest'
+  /api/v1/opd-flows/{id}/context:
+    patch:
+      tags:
+        - OPD Flows
+      summary: Context OPD Flow
+      description: |-
+        Operations for the OPD Flows route family.
+
+        Offline policy: `no-store`.
+
+        WebSocket events: opd.flow.updated.
+      operationId: patch_api_v1_opd_flows_id_context
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: id
+          in: path
+          required: true
+          description: Id identifier.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response envelope.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Offline-Policy:
+              $ref: '#/components/headers/XOfflinePolicy'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResourceEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/GenericRecord'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
+        '404':
+          $ref: '#/components/responses/NotFoundProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+      x-route-family: opd-flows
+      x-offline-policy: no-store
+      x-route-source: src/modules/opd-flow/routes/opd-flow.routes.js
+      x-websocket-events:
+        - opd.flow.updated
+      requestBody:
+        required: false
         content:
           application/json:
             schema:
@@ -39328,7 +39700,7 @@ paths:
 
         Offline policy: `revalidate`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: get_api_v1_payments
       security:
         - BearerAuth: []
@@ -39379,6 +39751,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
     post:
       tags:
         - Payments
@@ -39388,7 +39762,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: post_api_v1_payments
       security:
         - BearerAuth: []
@@ -39428,6 +39802,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -39444,7 +39820,7 @@ paths:
 
         Offline policy: `revalidate`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: get_api_v1_payments_id
       security:
         - BearerAuth: []
@@ -39495,6 +39871,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
     put:
       tags:
         - Payments
@@ -39504,7 +39882,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: put_api_v1_payments_id
       security:
         - BearerAuth: []
@@ -39551,6 +39929,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -39566,7 +39946,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: delete_api_v1_payments_id
       security:
         - BearerAuth: []
@@ -39603,6 +39983,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -39619,7 +40001,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: post_api_v1_payments_id_reconcile
       security:
         - BearerAuth: []
@@ -39667,6 +40049,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -39683,7 +40067,7 @@ paths:
 
         Offline policy: `revalidate`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: get_api_v1_payments_id_channel_breakdown
       security:
         - BearerAuth: []
@@ -39734,6 +40118,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
   /api/v1/payroll-items:
     get:
       tags:
@@ -46359,7 +46745,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: get_api_v1_refunds
       security:
         - BearerAuth: []
@@ -46406,6 +46792,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
     post:
       tags:
         - Refunds
@@ -46415,7 +46803,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: post_api_v1_refunds
       security:
         - BearerAuth: []
@@ -46455,6 +46843,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -46471,7 +46861,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: get_api_v1_refunds_id
       security:
         - BearerAuth: []
@@ -46518,6 +46908,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
     put:
       tags:
         - Refunds
@@ -46527,7 +46919,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: put_api_v1_refunds_id
       security:
         - BearerAuth: []
@@ -46574,6 +46966,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -46589,7 +46983,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed.
+        WebSocket events: billing.invoice_issued, billing.payment_received, billing.refund_processed, invoice.updated, billing.balance_updated.
       operationId: delete_api_v1_refunds_id
       security:
         - BearerAuth: []
@@ -46626,6 +47020,8 @@ paths:
         - billing.invoice_issued
         - billing.payment_received
         - billing.refund_processed
+        - invoice.updated
+        - billing.balance_updated
       requestBody:
         required: true
         content:
@@ -59166,7 +59562,7 @@ paths:
 
         Offline policy: `sync`.
 
-        WebSocket events: visit_queue.position_changed, visit_queue.triage_updated.
+        WebSocket events: visit_queue.created, visit_queue.updated, visit_queue.deleted, visit_queue.position_changed, visit_queue.triage_updated.
       operationId: get_api_v1_visit_queues
       security:
         - BearerAuth: []
@@ -59214,6 +59610,9 @@ paths:
       x-offline-policy: sync
       x-route-source: src/modules/visit-queue/routes/visit-queue.routes.js
       x-websocket-events:
+        - visit_queue.created
+        - visit_queue.updated
+        - visit_queue.deleted
         - visit_queue.position_changed
         - visit_queue.triage_updated
     post:
@@ -59225,7 +59624,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: visit_queue.position_changed, visit_queue.triage_updated.
+        WebSocket events: visit_queue.created, visit_queue.updated, visit_queue.deleted, visit_queue.position_changed, visit_queue.triage_updated.
       operationId: post_api_v1_visit_queues
       security:
         - BearerAuth: []
@@ -59262,6 +59661,9 @@ paths:
       x-offline-policy: no-store
       x-route-source: src/modules/visit-queue/routes/visit-queue.routes.js
       x-websocket-events:
+        - visit_queue.created
+        - visit_queue.updated
+        - visit_queue.deleted
         - visit_queue.position_changed
         - visit_queue.triage_updated
       requestBody:
@@ -59280,7 +59682,7 @@ paths:
 
         Offline policy: `sync`.
 
-        WebSocket events: visit_queue.position_changed, visit_queue.triage_updated.
+        WebSocket events: visit_queue.created, visit_queue.updated, visit_queue.deleted, visit_queue.position_changed, visit_queue.triage_updated.
       operationId: get_api_v1_visit_queues_id
       security:
         - BearerAuth: []
@@ -59328,6 +59730,9 @@ paths:
       x-offline-policy: sync
       x-route-source: src/modules/visit-queue/routes/visit-queue.routes.js
       x-websocket-events:
+        - visit_queue.created
+        - visit_queue.updated
+        - visit_queue.deleted
         - visit_queue.position_changed
         - visit_queue.triage_updated
     put:
@@ -59339,7 +59744,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: visit_queue.position_changed, visit_queue.triage_updated.
+        WebSocket events: visit_queue.created, visit_queue.updated, visit_queue.deleted, visit_queue.position_changed, visit_queue.triage_updated.
       operationId: put_api_v1_visit_queues_id
       security:
         - BearerAuth: []
@@ -59383,6 +59788,9 @@ paths:
       x-offline-policy: no-store
       x-route-source: src/modules/visit-queue/routes/visit-queue.routes.js
       x-websocket-events:
+        - visit_queue.created
+        - visit_queue.updated
+        - visit_queue.deleted
         - visit_queue.position_changed
         - visit_queue.triage_updated
       requestBody:
@@ -59400,7 +59808,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: visit_queue.position_changed, visit_queue.triage_updated.
+        WebSocket events: visit_queue.created, visit_queue.updated, visit_queue.deleted, visit_queue.position_changed, visit_queue.triage_updated.
       operationId: delete_api_v1_visit_queues_id
       security:
         - BearerAuth: []
@@ -59434,6 +59842,9 @@ paths:
       x-offline-policy: no-store
       x-route-source: src/modules/visit-queue/routes/visit-queue.routes.js
       x-websocket-events:
+        - visit_queue.created
+        - visit_queue.updated
+        - visit_queue.deleted
         - visit_queue.position_changed
         - visit_queue.triage_updated
       requestBody:
@@ -59452,7 +59863,7 @@ paths:
 
         Offline policy: `no-store`.
 
-        WebSocket events: visit_queue.position_changed, visit_queue.triage_updated.
+        WebSocket events: visit_queue.created, visit_queue.updated, visit_queue.deleted, visit_queue.position_changed, visit_queue.triage_updated.
       operationId: post_api_v1_visit_queues_id_prioritize
       security:
         - BearerAuth: []
@@ -59497,6 +59908,9 @@ paths:
       x-offline-policy: no-store
       x-route-source: src/modules/visit-queue/routes/visit-queue.routes.js
       x-websocket-events:
+        - visit_queue.created
+        - visit_queue.updated
+        - visit_queue.deleted
         - visit_queue.position_changed
         - visit_queue.triage_updated
       requestBody:
@@ -61717,7 +62131,7 @@ components:
         parameter_overrides_json:
           $ref: '#/components/schemas/JsonObject'
       additionalProperties: false
-x-generated-at: '2026-05-21T12:18:22.516Z'
+x-generated-at: '2026-05-24T08:44:48.123Z'
 x-generated-from:
   router: src/app/router.js
   mounted_family_count: 196
@@ -61941,7 +62355,7 @@ x-generated-from:
     - path: /api/v1/emergency-cases
       module: emergency-cases
       route_file: src/modules/emergency-case/routes/emergency-case.routes.js
-      operations: 5
+      operations: 6
     - path: /api/v1/emergency-responses
       module: emergency-responses
       route_file: src/modules/emergency-response/routes/emergency-response.routes.js
@@ -62109,7 +62523,7 @@ x-generated-from:
     - path: /api/v1/lab
       module: lab
       route_file: src/modules/lab-workspace/routes/lab-workspace.routes.js
-      operations: 8
+      operations: 12
     - path: /api/v1/lab-order-items
       module: lab-order-items
       route_file: src/modules/lab-order-item/routes/lab-order-item.routes.js
@@ -62193,7 +62607,7 @@ x-generated-from:
     - path: /api/v1/opd-flows
       module: opd-flows
       route_file: src/modules/opd-flow/routes/opd-flow.routes.js
-      operations: 11
+      operations: 13
     - path: /api/v1/pacs-links
       module: pacs-links
       route_file: src/modules/pacs-link/routes/pacs-link.routes.js

@@ -117,6 +117,87 @@ final class LabWorkbenchSummary {
   }
 }
 
+@immutable
+final class LabOrderPatientContext {
+  const LabOrderPatientContext({
+    required this.id,
+    this.displayId,
+    this.displayName,
+    this.identifier,
+    this.primaryPhone,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? displayName;
+  final String? identifier;
+  final String? primaryPhone;
+
+  String get displayTitle {
+    return _firstNonEmpty(<String?>[displayName, displayId, id]) ?? id;
+  }
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[displayId, identifier, primaryPhone]);
+  }
+
+  String get searchText {
+    return _joinDisplay(<String?>[
+          id,
+          displayId,
+          displayName,
+          identifier,
+          primaryPhone,
+        ]) ??
+        displayTitle;
+  }
+}
+
+@immutable
+final class LabOrderEncounterContext {
+  const LabOrderEncounterContext({
+    required this.id,
+    this.displayId,
+    this.title,
+    this.status,
+    this.type,
+    this.startedAt,
+    this.endedAt,
+  });
+
+  final String id;
+  final String? displayId;
+  final String? title;
+  final String? status;
+  final String? type;
+  final DateTime? startedAt;
+  final DateTime? endedAt;
+
+  String get displayTitle {
+    return _firstNonEmpty(<String?>[title, displayId, id]) ?? id;
+  }
+
+  String? get displaySubtitle {
+    return _joinDisplay(<String?>[type, status, displayId]);
+  }
+
+  String get searchText {
+    return _joinDisplay(<String?>[id, displayId, title, status, type]) ??
+        displayTitle;
+  }
+}
+
+@immutable
+final class LabOrderPatientContextDetail {
+  const LabOrderPatientContextDetail({
+    required this.patient,
+    this.encounters = const <LabOrderEncounterContext>[],
+  });
+
+  final LabOrderPatientContext patient;
+  final List<LabOrderEncounterContext> encounters;
+}
+
 enum LabCatalogItemType { test, panel }
 
 @immutable
@@ -179,20 +260,26 @@ final class LabCatalogItem {
     ]);
   }
 
+  String get searchText {
+    return _joinDisplay(<String?>[
+          id,
+          displayId,
+          name,
+          code,
+          category,
+          specimenType,
+          resultKind,
+          unit,
+          description,
+          referenceRange,
+          for (final LabReferenceRange range in referenceRanges)
+            range.displayLabel,
+        ]) ??
+        displayTitle;
+  }
+
   bool matchesSearch(String query) {
-    return _containsAny(query, <String?>[
-      id,
-      displayId,
-      name,
-      code,
-      category,
-      specimenType,
-      resultKind,
-      unit,
-      description,
-      referenceRange,
-      for (final LabReferenceRange range in referenceRanges) range.displayLabel,
-    ]);
+    return _containsAny(query, <String?>[searchText]);
   }
 }
 
@@ -419,7 +506,8 @@ final class LabOrderSummary {
   }
 
   bool get hasRejectedItem {
-    return rejectedItemCount > 0 || items.any((LabOrderItem item) => item.isRejected);
+    return rejectedItemCount > 0 ||
+        items.any((LabOrderItem item) => item.isRejected);
   }
 
   int get verifiableItemCount {
@@ -543,8 +631,11 @@ final class LabOrderItem {
   }
 
   String? get effectiveResultStatus {
-    return _firstNonEmpty(<String?>[resultStatus, resultFlag, status])
-        ?.toUpperCase();
+    return _firstNonEmpty(<String?>[
+      resultStatus,
+      resultFlag,
+      status,
+    ])?.toUpperCase();
   }
 
   String? get displayResultValue {
@@ -590,7 +681,6 @@ final class LabOrderItem {
   bool get canReject => canVerify;
   bool get canRelease => canVerify;
 }
-
 
 @immutable
 final class LabSample {
@@ -891,7 +981,9 @@ bool labOrderMatchesScope(LabOrderSummary order, LabQueueScope scope) {
     LabQueueScope.all => true,
     LabQueueScope.collection => status == 'ORDERED' || status == 'COLLECTED',
     LabQueueScope.processing => status == 'IN_PROCESS',
-    LabQueueScope.results => order.items.any((LabOrderItem item) => item.canVerify),
+    LabQueueScope.results => order.items.any(
+      (LabOrderItem item) => item.canVerify,
+    ),
     LabQueueScope.critical => order.hasCriticalResult,
     LabQueueScope.completed => status == 'COMPLETED',
     LabQueueScope.cancelled => status == 'CANCELLED',

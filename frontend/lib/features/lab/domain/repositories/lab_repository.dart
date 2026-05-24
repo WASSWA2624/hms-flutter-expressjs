@@ -7,6 +7,15 @@ abstract interface class LabRepository {
 
   Future<Result<LabOrderWorkflow>> loadOrderWorkflow(String orderId);
 
+  Future<Result<List<LabOrderPatientContext>>> searchOrderContextPatients({
+    String? search,
+    int limit = 8,
+  });
+
+  Future<Result<LabOrderPatientContextDetail>> loadOrderPatientContext(
+    String patientId,
+  );
+
   Future<Result<List<LabCatalogItem>>> listTests({String? search});
 
   Future<Result<List<LabCatalogItem>>> listPanels({String? search});

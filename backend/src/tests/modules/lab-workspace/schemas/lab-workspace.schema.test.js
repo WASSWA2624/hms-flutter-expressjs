@@ -1,6 +1,7 @@
 const {
   collectLabOrderSchema,
   getLabWorkbenchQuerySchema,
+  labOrderContextPatientParamsSchema,
   orderItemWorkflowParamsSchema,
   orderWorkflowParamsSchema,
   receiveLabSampleSchema,
@@ -8,6 +9,7 @@ const {
   releaseLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
   sampleWorkflowParamsSchema,
+  searchLabOrderContextPatientsQuerySchema,
 } = require('@validations/lab-workspace/lab-workspace.schema');
 
 describe('lab-workspace schemas', () => {
@@ -35,6 +37,18 @@ describe('lab-workspace schemas', () => {
         criticality: 'SEVERE',
       }).success
     ).toBe(false);
+  });
+
+  it('accepts lab order context patient search filters', () => {
+    expect(
+      searchLabOrderContextPatientsQuerySchema.safeParse({
+        search: 'Amina PAT000001',
+        limit: '8',
+      }).success
+    ).toBe(true);
+    expect(
+      labOrderContextPatientParamsSchema.safeParse({ id: 'PAT000001' }).success
+    ).toBe(true);
   });
 
   it('accepts friendly identifiers in workflow params', () => {

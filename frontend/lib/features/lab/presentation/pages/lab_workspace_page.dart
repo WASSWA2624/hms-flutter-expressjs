@@ -1354,6 +1354,8 @@ class _QcDialogState extends ConsumerState<_QcDialog> {
                   AppSelectOption<String>(
                     value: item.apiId,
                     label: item.displayTitle,
+                    leadingIcon: const Icon(Icons.science_outlined),
+                    searchText: item.searchText,
                   ),
               ],
               onChanged: (String? value) => setState(() => _labTestId = value),

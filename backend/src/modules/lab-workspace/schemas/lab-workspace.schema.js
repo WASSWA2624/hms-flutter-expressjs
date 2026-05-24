@@ -37,6 +37,14 @@ const getLabWorkbenchQuerySchema = listQuerySchema.extend({
   search: z.string().trim().optional(),
 });
 
+const searchLabOrderContextPatientsQuerySchema = listQuerySchema.extend({
+  search: z.string().trim().max(120).optional(),
+});
+
+const labOrderContextPatientParamsSchema = z.object({
+  id: uuidOrFriendlyIdentifierSchema,
+});
+
 const collectLabOrderSchema = z.object({
   sample_id: uuidOrFriendlyIdentifierSchema.optional(),
   collected_at: z.string().datetime().optional(),
@@ -84,6 +92,8 @@ const reverseLabOrderWorkflowSchema = z.object({
 
 module.exports = {
   getLabWorkbenchQuerySchema,
+  searchLabOrderContextPatientsQuerySchema,
+  labOrderContextPatientParamsSchema,
   orderWorkflowParamsSchema,
   sampleWorkflowParamsSchema,
   orderItemWorkflowParamsSchema,

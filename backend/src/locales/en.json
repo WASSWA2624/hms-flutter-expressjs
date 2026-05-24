@@ -1000,6 +1000,8 @@
   "messages.interop.migration_import.success": "Migration import processed successfully",
   "messages.lab_result.release.success": "Lab result released successfully",
   "messages.lab_workspace.workbench.success": "Lab workspace loaded successfully",
+  "messages.lab_workspace.order_context.patients.success": "Lab order patient options loaded successfully",
+  "messages.lab_workspace.order_context.patient.success": "Lab order patient context loaded successfully",
   "messages.lab_workspace.workflow.success": "Lab workflow loaded successfully",
   "messages.lab_workspace.collect.success": "Lab order collected successfully",
   "messages.lab_workspace.receive.success": "Lab sample received successfully",

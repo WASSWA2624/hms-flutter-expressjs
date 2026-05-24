@@ -42,6 +42,22 @@ const getLabWorkbench = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.lab_workspace.workbench.success', data);
 });
 
+const searchLabOrderContextPatients = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.searchLabOrderContextPatients(
+    req.query,
+    req.user
+  );
+  return sendSuccess(res, 200, 'messages.lab_workspace.order_context.patients.success', data);
+});
+
+const getLabOrderPatientContext = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.getLabOrderPatientContext(
+    req.params.id,
+    req.user
+  );
+  return sendSuccess(res, 200, 'messages.lab_workspace.order_context.patient.success', data);
+});
+
 const getLabOrderWorkflow = asyncHandler(async (req, res) => {
   const data = await labWorkspaceService.getLabOrderWorkflow(req.params.id);
   return sendSuccess(res, 200, 'messages.lab_workspace.workflow.success', data);
@@ -127,6 +143,8 @@ const resolveLegacyRoute = asyncHandler(async (req, res) => {
 
 module.exports = {
   getLabWorkbench,
+  searchLabOrderContextPatients,
+  getLabOrderPatientContext,
   getLabOrderWorkflow,
   collectLabOrder,
   receiveLabSample,

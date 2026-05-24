@@ -6,13 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
-import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
-import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 typedef LabCatalogSubmit =
@@ -60,12 +58,11 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
   static const Duration _patientSearchDebounceDuration = Duration(
     milliseconds: 250,
   );
-  static const int _patientSearchLimit = 8;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final List<_LabContextOption> _searchedPatientOptions = <_LabContextOption>[];
-  final List<PatientSummaryRecord> _patientEncounters =
-      <PatientSummaryRecord>[];
+  final List<LabOrderEncounterContext> _patientEncounters =
+      <LabOrderEncounterContext>[];
 
   Timer? _patientSearchDebounce;
   _LabContextOption? _selectedPatientOption;
@@ -242,24 +239,19 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
       _isLoadingPatients = true;
       _failure = null;
     });
-    final Result<AppPage<Patient>> result = await ref
-        .read(patientRepositoryProvider)
-        .listPatients(
-          PatientListQuery(
-            search: query.trim(),
-            pageRequest: const AppPageRequest(pageSize: _patientSearchLimit),
-          ),
-        );
+    final Result<List<LabOrderPatientContext>> result = await ref
+        .read(labRepositoryProvider)
+        .searchOrderContextPatients(search: query.trim());
     if (!mounted || generation != _patientSearchGeneration) {
       return;
     }
     result.when(
-      success: (AppPage<Patient> page) {
+      success: (List<LabOrderPatientContext> patients) {
         setState(() {
           _searchedPatientOptions
             ..clear()
             ..addAll(
-              page.items.map(_patientOption).whereType<_LabContextOption>(),
+              patients.map(_patientOption).whereType<_LabContextOption>(),
             );
           _isLoadingPatients = false;
           _failure = null;
@@ -299,19 +291,19 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
       _isLoadingPatientContext = true;
       _failure = null;
     });
-    final Result<PatientDetail> result = await ref
-        .read(patientRepositoryProvider)
-        .loadPatientDetail(patientId);
+    final Result<LabOrderPatientContextDetail> result = await ref
+        .read(labRepositoryProvider)
+        .loadOrderPatientContext(patientId);
     if (!mounted || generation != _patientContextGeneration) {
       return;
     }
     result.when(
-      success: (PatientDetail detail) {
+      success: (LabOrderPatientContextDetail detail) {
         setState(() {
           _selectedPatientOption ??= _patientOption(detail.patient);
           _patientEncounters
             ..clear()
-            ..addAll(detail.workspace.encounters);
+            ..addAll(detail.encounters);
           _isLoadingPatientContext = false;
           _failure = null;
         });
@@ -361,32 +353,25 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
           label: option.label,
           labelWidget: _LabContextOptionLabel(option: option),
           leadingIcon: Icon(option.icon),
+          searchText: option.searchText,
         ),
     ];
   }
 
-  _LabContextOption? _patientOption(Patient patient) {
+  _LabContextOption? _patientOption(LabOrderPatientContext patient) {
     final String value = _firstNonEmpty(<String?>[
       patient.id,
-      patient.publicId,
+      patient.displayId,
     ]);
     if (value.isEmpty) {
       return null;
     }
-    final String title = _firstNonEmpty(<String?>[
-      patient.effectiveDisplayName,
-      patient.publicId,
-      patient.id,
-    ]);
     return _LabContextOption(
       value: value,
-      label: title,
-      subtitle: _joinNonEmpty(<String?>[
-        patient.publicId,
-        patient.effectiveIdentifier,
-        patient.primaryPhone,
-      ]),
+      label: patient.displayTitle,
+      subtitle: patient.displaySubtitle,
       icon: Icons.person_outline,
+      searchText: patient.searchText,
     );
   }
 
@@ -400,18 +385,26 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
       label: _firstNonEmpty(<String?>[order.patientDisplayName, value]),
       subtitle: _joinNonEmpty(<String?>[order.patientId, order.encounterId]),
       icon: Icons.person_outline,
+      searchText: _joinNonEmpty(<String?>[
+        order.patientDisplayName,
+        order.patientId,
+        order.encounterId,
+      ]),
     );
   }
 
-  _LabContextOption? _encounterOptionFromSummary(PatientSummaryRecord record) {
+  _LabContextOption? _encounterOptionFromSummary(
+    LabOrderEncounterContext record,
+  ) {
     if (record.id.trim().isEmpty) {
       return null;
     }
     return _LabContextOption(
       value: record.id,
-      label: record.id,
-      subtitle: _joinNonEmpty(<String?>[record.title, record.status]),
+      label: record.displayTitle,
+      subtitle: record.displaySubtitle,
       icon: Icons.medical_information_outlined,
+      searchText: record.searchText,
     );
   }
 
@@ -425,6 +418,11 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
       label: value,
       subtitle: _joinNonEmpty(<String?>[order.patientDisplayName, order.apiId]),
       icon: Icons.medical_information_outlined,
+      searchText: _joinNonEmpty(<String?>[
+        value,
+        order.patientDisplayName,
+        order.apiId,
+      ]),
     );
   }
 
@@ -443,6 +441,14 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
         order.testsLabel,
       ]),
       icon: Icons.assignment_outlined,
+      searchText: _joinNonEmpty(<String?>[
+        order.displayId,
+        order.id,
+        order.patientDisplayName,
+        order.patientId,
+        order.encounterId,
+        order.testsLabel,
+      ]),
     );
   }
 
@@ -504,12 +510,14 @@ final class _LabContextOption {
     required this.label,
     required this.icon,
     this.subtitle,
+    this.searchText,
   });
 
   final String value;
   final String label;
   final String? subtitle;
   final IconData icon;
+  final String? searchText;
 }
 
 class _LabContextOptionLabel extends StatelessWidget {
@@ -1710,6 +1718,7 @@ class _PanelTestPicker extends StatelessWidget {
           value: test.apiId,
           label: test.displayTitle,
           leadingIcon: const Icon(Icons.science_outlined),
+          searchText: test.searchText,
           enabled: !_containsCatalogItem(selectedTests, test),
         ),
     ];

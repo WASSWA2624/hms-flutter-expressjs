@@ -218,6 +218,46 @@ void main() {
     expect(find.text('Beta'), findsOneWidget);
   });
 
+  testWidgets('AppListTable search matches multi-token queries', (
+    WidgetTester tester,
+  ) async {
+    final searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 420,
+        child: AppListTable<_RowItem>(
+          items: const <_RowItem>[
+            _RowItem(id: '1', title: 'Amina Stone', status: 'Verified'),
+            _RowItem(id: '2', title: 'Noah Echo', status: 'Pending'),
+          ],
+          columns: _columns,
+          search: AppListTableSearch<_RowItem>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            matcher: (_RowItem item, String query) {
+              final String haystack = '${item.title} ${item.status}'
+                  .toLowerCase();
+              return haystack.contains(query.toLowerCase());
+            },
+          ),
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    await tester.enterText(find.byType(EditableText), 'Amina Verified');
+    await tester.pump();
+
+    expect(find.text('Amina Stone'), findsOneWidget);
+    expect(find.text('Noah Echo'), findsNothing);
+  });
+
   testWidgets('AppListTable toggles sortable text headers', (
     WidgetTester tester,
   ) async {

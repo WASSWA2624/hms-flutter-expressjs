@@ -779,13 +779,19 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     String query,
     AppListTableSearchMatcher<T> matcher,
   ) {
-    final String normalizedQuery = query.trim();
+    final String normalizedQuery = _normalizeTableSearchQuery(query);
     if (normalizedQuery.isEmpty) {
       return sourceItems;
     }
+    final List<String> tokens = _tableSearchTokens(normalizedQuery);
 
     return sourceItems
-        .where((T item) => matcher(item, normalizedQuery))
+        .where(
+          (T item) =>
+              matcher(item, normalizedQuery) ||
+              (tokens.length > 1 &&
+                  tokens.every((String token) => matcher(item, token))),
+        )
         .toList(growable: false);
   }
 
@@ -1003,6 +1009,21 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         if (column.alwaysVisible) column.key,
     };
   }
+}
+
+String _normalizeTableSearchQuery(String query) {
+  return query.trim().replaceAll(RegExp(r'\s+'), ' ');
+}
+
+List<String> _tableSearchTokens(String query) {
+  final String normalized = _normalizeTableSearchQuery(query);
+  if (normalized.isEmpty) {
+    return const <String>[];
+  }
+  return normalized
+      .split(' ')
+      .where((String token) => token.isNotEmpty)
+      .toList(growable: false);
 }
 
 class _ListTableTitle extends StatelessWidget {

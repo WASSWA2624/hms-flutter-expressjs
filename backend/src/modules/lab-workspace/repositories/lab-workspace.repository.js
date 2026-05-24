@@ -62,6 +62,25 @@ const countResults = async (where) =>
     })
   );
 
+const findManyPatients = async (where, skip, take, orderBy, include) =>
+  withDbErrorHandling(() =>
+    prisma.patient.findMany({
+      where: { deleted_at: null, ...(where || {}) },
+      skip,
+      take,
+      orderBy,
+      include,
+    })
+  );
+
+const findPatientById = async (id, where, include) =>
+  withDbErrorHandling(() =>
+    prisma.patient.findFirst({
+      where: { id, deleted_at: null, ...(where || {}) },
+      include,
+    })
+  );
+
 const findOrderById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.lab_order.findFirst({
@@ -166,6 +185,8 @@ module.exports = {
   countOrderItems,
   countSamples,
   countResults,
+  findManyPatients,
+  findPatientById,
   findOrderById,
   withTransaction,
   txFindOrderById,

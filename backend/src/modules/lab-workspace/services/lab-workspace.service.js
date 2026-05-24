@@ -79,6 +79,52 @@ const REVERSE_STEP_PRIORITY = Object.freeze({
   RELEASE: 4,
 });
 
+const LAB_ORDER_CONTEXT_PATIENT_INCLUDE = {
+  contacts: {
+    where: { deleted_at: null },
+    orderBy: [
+      { is_primary: 'desc' },
+      { updated_at: 'desc' },
+    ],
+    take: 3,
+    select: {
+      contact_type: true,
+      value: true,
+      is_primary: true,
+    },
+  },
+  identifiers: {
+    where: { deleted_at: null },
+    orderBy: [
+      { is_primary: 'desc' },
+      { updated_at: 'desc' },
+    ],
+    take: 3,
+    select: {
+      identifier_type: true,
+      identifier_value: true,
+      is_primary: true,
+    },
+  },
+};
+
+const LAB_ORDER_CONTEXT_PATIENT_DETAIL_INCLUDE = {
+  ...LAB_ORDER_CONTEXT_PATIENT_INCLUDE,
+  encounters: {
+    where: { deleted_at: null },
+    orderBy: { started_at: 'desc' },
+    take: 12,
+    select: {
+      id: true,
+      human_friendly_id: true,
+      encounter_type: true,
+      status: true,
+      started_at: true,
+      ended_at: true,
+    },
+  },
+};
+
 const PATIENT_WORKBENCH_SCAN_LIMIT = 5000;
 const WORKBENCH_VIEWS = new Set(['PATIENTS', 'ORDERS']);
 const LAB_WORKBENCH_SORT_FIELDS = new Set([
@@ -222,17 +268,25 @@ const appendAnd = (where, clause) => {
   where.AND.push(clause);
 };
 
-const buildWorkbenchPatientScope = (user = {}) => {
+const buildLabPatientRecordScope = (user = {}) => {
   const tenantId = normalizeIdentifier(user?.tenant_id || user?.tenantId);
   const facilityId = normalizeIdentifier(user?.facility_id || user?.facilityId);
 
-  if (!tenantId && !facilityId) return null;
+  return {
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+    ...(facilityId ? { facility_id: facilityId } : {}),
+  };
+};
+
+const buildWorkbenchPatientScope = (user = {}) => {
+  const scope = buildLabPatientRecordScope(user);
+
+  if (Object.keys(scope).length === 0) return null;
 
   return {
     patient: {
       deleted_at: null,
-      ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
+      ...scope,
     },
   };
 };
@@ -535,6 +589,152 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
   }
 
   return where;
+};
+
+const toText = (value) => (value == null ? '' : String(value).trim());
+
+const firstNonEmpty = (...values) => {
+  for (const value of values) {
+    const normalized = toText(value);
+    if (normalized) return normalized;
+  }
+  return null;
+};
+
+const primaryContactValue = (patient, contactType) => {
+  const contacts = Array.isArray(patient?.contacts) ? patient.contacts : [];
+  const preferred = contacts.find(
+    (entry) =>
+      toText(entry?.contact_type).toUpperCase() === contactType &&
+      entry?.is_primary
+  );
+  const fallback = contacts.find(
+    (entry) => toText(entry?.contact_type).toUpperCase() === contactType
+  );
+  return firstNonEmpty(preferred?.value, fallback?.value);
+};
+
+const primaryIdentifierValue = (patient) => {
+  const identifiers = Array.isArray(patient?.identifiers) ? patient.identifiers : [];
+  const preferred = identifiers.find((entry) => entry?.is_primary);
+  return firstNonEmpty(preferred?.identifier_value, identifiers[0]?.identifier_value);
+};
+
+const mapLabOrderContextPatient = (patient) => {
+  if (!patient || typeof patient !== 'object') return null;
+  const publicId = toPublicIdentifier(patient.human_friendly_id, patient.id);
+  const id = firstNonEmpty(publicId, patient.id);
+  if (!id) return null;
+
+  return {
+    id,
+    display_id: publicId,
+    display_name: firstNonEmpty(
+      [patient.first_name, patient.last_name].map(toText).filter(Boolean).join(' '),
+      publicId,
+      patient.id
+    ),
+    identifier: primaryIdentifierValue(patient),
+    primary_phone: primaryContactValue(patient, 'PHONE'),
+  };
+};
+
+const mapLabOrderContextEncounter = (encounter) => {
+  if (!encounter || typeof encounter !== 'object') return null;
+  const publicId = toPublicIdentifier(encounter.human_friendly_id, encounter.id);
+  const id = firstNonEmpty(publicId, encounter.id);
+  if (!id) return null;
+
+  return {
+    id,
+    display_id: publicId,
+    title: firstNonEmpty(publicId, encounter.id),
+    status: firstNonEmpty(encounter.status),
+    type: firstNonEmpty(encounter.encounter_type),
+    started_at: encounter.started_at || null,
+    ended_at: encounter.ended_at || null,
+  };
+};
+
+const buildLabOrderContextPatientWhere = (filters = {}, user = {}) => {
+  const where = buildLabPatientRecordScope(user);
+  const searchTerm = normalizeSearchTerm(filters.search);
+  if (!searchTerm) return where;
+
+  where.OR = [
+    { human_friendly_id: { contains: searchTerm.upper } },
+    { first_name: { contains: searchTerm.raw } },
+    { last_name: { contains: searchTerm.raw } },
+    {
+      identifiers: {
+        some: {
+          deleted_at: null,
+          identifier_value: { contains: searchTerm.raw },
+        },
+      },
+    },
+    {
+      contacts: {
+        some: {
+          deleted_at: null,
+          value: { contains: searchTerm.raw },
+        },
+      },
+    },
+  ];
+
+  return where;
+};
+
+const searchLabOrderContextPatients = async (filters = {}, user = {}) => {
+  try {
+    const limit = Math.min(Math.max(Number(filters.limit) || 8, 1), 25);
+    const where = buildLabOrderContextPatientWhere(filters, user);
+    const patients = await labWorkspaceRepository.findManyPatients(
+      where,
+      0,
+      limit,
+      [{ updated_at: 'desc' }, { created_at: 'desc' }],
+      LAB_ORDER_CONTEXT_PATIENT_INCLUDE
+    );
+
+    return {
+      patients: (patients || [])
+        .map(mapLabOrderContextPatient)
+        .filter(Boolean),
+    };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const getLabOrderPatientContext = async (patientId, user = {}) => {
+  try {
+    const normalized = normalizeIdentifier(patientId);
+    if (!normalized) {
+      throw new HttpError('errors.patient.not_found', 404);
+    }
+
+    const patient = await labWorkspaceRepository.findPatientById(
+      normalized,
+      buildLabPatientRecordScope(user),
+      LAB_ORDER_CONTEXT_PATIENT_DETAIL_INCLUDE
+    );
+    if (!patient) {
+      throw new HttpError('errors.patient.not_found', 404);
+    }
+
+    return {
+      patient: mapLabOrderContextPatient(patient),
+      encounters: (patient.encounters || [])
+        .map(mapLabOrderContextEncounter)
+        .filter(Boolean),
+    };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
 };
 
 const mapReleasedResultFromOrder = (orderRecord, releasedResultId) => {
@@ -1732,6 +1932,8 @@ const resolveLegacyRouteIdentifier = async (resource, identifier) => {
 };
 
 module.exports = {
+  searchLabOrderContextPatients,
+  getLabOrderPatientContext,
   getLabWorkbench,
   getLabOrderWorkflow,
   collectLabOrder,

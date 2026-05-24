@@ -15,11 +15,13 @@ const { uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
 const {
   collectLabOrderSchema,
   getLabWorkbenchQuerySchema,
+  labOrderContextPatientParamsSchema,
   orderItemWorkflowParamsSchema,
   orderWorkflowParamsSchema,
   receiveLabSampleSchema,
   rejectLabSampleSchema,
   releaseLabOrderItemSchema,
+  searchLabOrderContextPatientsQuerySchema,
   verifyLabOrderResultsSchema,
   rejectLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
@@ -63,6 +65,22 @@ router.get(
   authenticate(),
   authorize(LAB_READ_ROLES, 'role'),
   labWorkspaceController.getLabWorkbench
+);
+
+router.get(
+  '/order-context/patients',
+  validateRequest({ query: searchLabOrderContextPatientsQuerySchema }),
+  authenticate(),
+  authorize(LAB_READ_ROLES, 'role'),
+  labWorkspaceController.searchLabOrderContextPatients
+);
+
+router.get(
+  '/order-context/patients/:id',
+  validateRequest({ params: labOrderContextPatientParamsSchema }),
+  authenticate(),
+  authorize(LAB_READ_ROLES, 'role'),
+  labWorkspaceController.getLabOrderPatientContext
 );
 
 router.get(

@@ -67,6 +67,47 @@ describe('lab-workspace.controller', () => {
     );
   });
 
+  it('loads lab order context patient options', async () => {
+    service.searchLabOrderContextPatients.mockResolvedValue({
+      patients: [{ id: 'PAT000001' }],
+    });
+    req.query = { search: 'amina', limit: '8' };
+
+    await subject.searchLabOrderContextPatients(req, res);
+
+    expect(service.searchLabOrderContextPatients).toHaveBeenCalledWith(
+      { search: 'amina', limit: '8' },
+      req.user
+    );
+    expect(sendSuccess).toHaveBeenCalledWith(
+      res,
+      200,
+      'messages.lab_workspace.order_context.patients.success',
+      expect.any(Object)
+    );
+  });
+
+  it('loads lab order patient context detail', async () => {
+    service.getLabOrderPatientContext.mockResolvedValue({
+      patient: { id: 'PAT000001' },
+      encounters: [],
+    });
+    req.params = { id: 'PAT000001' };
+
+    await subject.getLabOrderPatientContext(req, res);
+
+    expect(service.getLabOrderPatientContext).toHaveBeenCalledWith(
+      'PAT000001',
+      req.user
+    );
+    expect(sendSuccess).toHaveBeenCalledWith(
+      res,
+      200,
+      'messages.lab_workspace.order_context.patient.success',
+      expect.any(Object)
+    );
+  });
+
   it('submits collect and receive workflow actions', async () => {
     service.collectLabOrder.mockResolvedValue({ workflow: { order: { id: 'LAB000001' } } });
     service.receiveLabSample.mockResolvedValue({ workflow: { order: { id: 'LAB000001' } } });
