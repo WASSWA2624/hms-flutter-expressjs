@@ -80,7 +80,7 @@ class _AppDialogState extends State<AppDialog> {
     final BoxConstraints dialogConstraints = BoxConstraints(
       maxWidth: desktopInteractive
           ? (desktopSize?.width ?? defaultWidth)
-          : widget.maxWidth,
+          : defaultWidth,
       maxHeight: desktopInteractive
           ? (desktopSize?.height ?? maxHeight)
           : maxHeight,

@@ -106,22 +106,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
 
     final List<_ResultDraft> drafts = _drafts ?? const <_ResultDraft>[];
     final bool canMutate = widget.canMutate && !_isSaving;
-    final List<_ResultDraft> draftableEntries = drafts
-        .where((_ResultDraft draft) => _canSaveDraft(draft))
-        .toList(growable: false);
-    final List<_ResultDraft> submittableDrafts = drafts
-        .where(_canSubmitDraft)
-        .toList(growable: false);
-    final List<_ResultDraft> verifiableDrafts = drafts
-        .where(_canVerifyDraft)
-        .toList(growable: false);
-    final List<_ResultDraft> removableDrafts = drafts
-        .where((draft) => _canRemoveResult(draft.item, draft))
-        .toList(growable: false);
-    final List<LabOrderItem> rejectableItems = drafts
-        .map((_ResultDraft draft) => draft.item)
-        .where((LabOrderItem item) => item.canReject)
-        .toList(growable: false);
 
     return AppDialog(
       title: Column(
@@ -188,41 +172,6 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                 enabled: !_isSaving,
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              if (canMutate && draftableEntries.isNotEmpty)
-                AppButton.secondary(
-                  label: 'Save all drafts',
-                  leadingIcon: Icons.save_outlined,
-                  isLoading: _isSaving,
-                  onPressed: () => _saveDrafts(draftableEntries),
-                ),
-              if (canMutate && submittableDrafts.isNotEmpty)
-                AppButton.secondary(
-                  label: 'Submit all',
-                  leadingIcon: Icons.outbox_outlined,
-                  isLoading: _isSaving,
-                  onPressed: () => _submitDrafts(submittableDrafts),
-                ),
-              if (canMutate && verifiableDrafts.isNotEmpty)
-                AppButton.primary(
-                  label: l10n.labVerifyAllAction,
-                  leadingIcon: Icons.verified_outlined,
-                  isLoading: _isSaving,
-                  onPressed: () => _verifyDrafts(verifiableDrafts),
-                ),
-              if (canMutate && removableDrafts.isNotEmpty)
-                AppButton.tertiary(
-                  label: 'Remove drafts',
-                  leadingIcon: Icons.delete_sweep_outlined,
-                  isLoading: _isSaving,
-                  onPressed: () => _removeDraftResults(removableDrafts),
-                ),
-              if (canMutate && rejectableItems.length > 1)
-                AppButton.tertiary(
-                  label: 'Reject all tests',
-                  leadingIcon: Icons.block_outlined,
-                  isLoading: _isSaving,
-                  onPressed: () => _openRejectDialog(rejectableItems),
-                ),
             ],
     );
   }
@@ -252,6 +201,30 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       );
     }
 
+    final List<_ResultDraft> draftableEntries = drafts
+        .where((_ResultDraft draft) => _canSaveDraft(draft))
+        .toList(growable: false);
+    final List<_ResultDraft> submittableDrafts = drafts
+        .where(_canSubmitDraft)
+        .toList(growable: false);
+    final List<_ResultDraft> verifiableDrafts = drafts
+        .where(_canVerifyDraft)
+        .toList(growable: false);
+    final List<_ResultDraft> removableDrafts = drafts
+        .where((draft) => _canRemoveResult(draft.item, draft))
+        .toList(growable: false);
+    final List<LabOrderItem> rejectableItems = drafts
+        .map((_ResultDraft draft) => draft.item)
+        .where((LabOrderItem item) => item.canReject)
+        .toList(growable: false);
+    final bool hasBulkActions =
+        canMutate &&
+        (draftableEntries.isNotEmpty ||
+            submittableDrafts.isNotEmpty ||
+            verifiableDrafts.isNotEmpty ||
+            removableDrafts.isNotEmpty ||
+            rejectableItems.length > 1);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -261,6 +234,22 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         ],
         _LabResultContextHeader(workflows: workflows),
         SizedBox(height: Theme.of(context).spacing.md),
+        if (hasBulkActions) ...<Widget>[
+          _LabBulkResultActionsBar(
+            draftableEntries: draftableEntries,
+            submittableDrafts: submittableDrafts,
+            verifiableDrafts: verifiableDrafts,
+            removableDrafts: removableDrafts,
+            rejectableItems: rejectableItems,
+            isSaving: _isSaving,
+            onSaveDrafts: _saveDrafts,
+            onSubmitDrafts: _submitDrafts,
+            onVerifyDrafts: _verifyDrafts,
+            onRemoveDrafts: _removeDraftResults,
+            onRejectItems: _openRejectDialog,
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+        ],
         if (isLoading) ...<Widget>[
           const LinearProgressIndicator(minHeight: 2),
           SizedBox(height: Theme.of(context).spacing.md),
@@ -637,6 +626,95 @@ class _LabResultContextHeader extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LabBulkResultActionsBar extends StatelessWidget {
+  const _LabBulkResultActionsBar({
+    required this.draftableEntries,
+    required this.submittableDrafts,
+    required this.verifiableDrafts,
+    required this.removableDrafts,
+    required this.rejectableItems,
+    required this.isSaving,
+    required this.onSaveDrafts,
+    required this.onSubmitDrafts,
+    required this.onVerifyDrafts,
+    required this.onRemoveDrafts,
+    required this.onRejectItems,
+  });
+
+  final List<_ResultDraft> draftableEntries;
+  final List<_ResultDraft> submittableDrafts;
+  final List<_ResultDraft> verifiableDrafts;
+  final List<_ResultDraft> removableDrafts;
+  final List<LabOrderItem> rejectableItems;
+  final bool isSaving;
+  final ValueChanged<List<_ResultDraft>> onSaveDrafts;
+  final ValueChanged<List<_ResultDraft>> onSubmitDrafts;
+  final ValueChanged<List<_ResultDraft>> onVerifyDrafts;
+  final ValueChanged<List<_ResultDraft>> onRemoveDrafts;
+  final ValueChanged<List<LabOrderItem>> onRejectItems;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Wrap(
+        spacing: theme.spacing.sm,
+        runSpacing: theme.spacing.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
+            child: Text(
+              'Bulk result actions',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          if (draftableEntries.isNotEmpty)
+            AppButton.secondary(
+              label: 'Save all drafts',
+              leadingIcon: Icons.save_outlined,
+              isLoading: isSaving,
+              onPressed: () => onSaveDrafts(draftableEntries),
+            ),
+          if (submittableDrafts.isNotEmpty)
+            AppButton.secondary(
+              label: 'Submit all',
+              leadingIcon: Icons.outbox_outlined,
+              isLoading: isSaving,
+              onPressed: () => onSubmitDrafts(submittableDrafts),
+            ),
+          if (verifiableDrafts.isNotEmpty)
+            AppButton.primary(
+              label: l10n.labVerifyAllAction,
+              leadingIcon: Icons.verified_outlined,
+              isLoading: isSaving,
+              onPressed: () => onVerifyDrafts(verifiableDrafts),
+            ),
+          if (removableDrafts.isNotEmpty)
+            AppButton.tertiary(
+              label: 'Remove drafts',
+              leadingIcon: Icons.delete_sweep_outlined,
+              isLoading: isSaving,
+              onPressed: () => onRemoveDrafts(removableDrafts),
+            ),
+          if (rejectableItems.length > 1)
+            AppButton.tertiary(
+              label: 'Reject all tests',
+              leadingIcon: Icons.block_outlined,
+              isLoading: isSaving,
+              onPressed: () => onRejectItems(rejectableItems),
+            ),
+        ],
       ),
     );
   }
