@@ -15,6 +15,13 @@ abstract interface class LabRepository {
 
   Future<Result<void>> createOrder(Map<String, Object?> payload);
 
+  Future<Result<void>> updateOrder(
+    String orderId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deleteOrder(String orderId, String reason);
+
   Future<Result<LabCatalogItem>> createLabTest(Map<String, Object?> payload);
 
   Future<Result<LabCatalogItem>> createLabPanel(Map<String, Object?> payload);
@@ -65,6 +72,15 @@ abstract interface class LabRepository {
     String testId,
     Map<String, Object?> payload,
   );
+
+  Future<Result<LabCatalogItem>> updateLabPanel(
+    String panelId,
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<void>> deleteLabTest(String testId, String reason);
+
+  Future<Result<void>> deleteLabPanel(String panelId, String reason);
 
   Future<Result<LabOrderWorkflow>> reverseWorkflow(
     String orderId,

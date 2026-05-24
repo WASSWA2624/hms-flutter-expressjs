@@ -16,9 +16,18 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Full-screen lab result entry workspace opened from the lab worklist or queue.
 class LabResultEntryDialog extends ConsumerStatefulWidget {
-  const LabResultEntryDialog({required this.canMutate, super.key});
+  const LabResultEntryDialog({
+    required this.canMutate,
+    this.onEditOrder,
+    this.onDeleteOrder,
+    super.key,
+  });
 
   final bool canMutate;
+  final Future<void> Function(BuildContext context, LabOrderWorkflow workflow)?
+  onEditOrder;
+  final Future<void> Function(BuildContext context, LabOrderWorkflow workflow)?
+  onDeleteOrder;
 
   @override
   ConsumerState<LabResultEntryDialog> createState() =>
@@ -126,6 +135,21 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
               ),
             ]
           : <Widget>[
+              if (canMutate && widget.onEditOrder != null)
+                AppButton.secondary(
+                  label: l10n.labEditOrderAction,
+                  leadingIcon: Icons.edit_outlined,
+                  enabled: !_isSaving,
+                  onPressed: () => widget.onEditOrder?.call(context, workflow),
+                ),
+              if (canMutate && widget.onDeleteOrder != null)
+                AppButton.tertiary(
+                  label: l10n.labDeleteOrderAction,
+                  leadingIcon: Icons.delete_outline,
+                  enabled: !_isSaving,
+                  onPressed: () =>
+                      widget.onDeleteOrder?.call(context, workflow),
+                ),
               AppButton.tertiary(
                 label: l10n.commonCloseActionLabel,
                 enabled: !_isSaving,

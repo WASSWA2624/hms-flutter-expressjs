@@ -273,17 +273,42 @@ describe('lab-panel.service', () => {
 
     const result = await labPanelService.deleteLabPanel(
       'LBP0000001',
+      { reason: 'Duplicate panel configuration' },
       mockUserId,
       mockIpAddress
     );
 
     expect(labPanelRepository.softDelete).toHaveBeenCalledWith('panel-internal-1');
+    expect(createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'DELETE',
+        entity: 'lab_panel',
+        diff: expect.objectContaining({
+          deletion_reason: 'Duplicate panel configuration',
+        }),
+      })
+    );
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LBP0000001',
         name: 'Complete Metabolic Panel',
       })
     );
+  });
+
+  it('requires a deletion reason when deleting lab panels', async () => {
+    await expect(
+      labPanelService.deleteLabPanel(
+        'LBP0000001',
+        { reason: ' ' },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.validation.required',
+      statusCode: 400,
+    });
+    expect(labPanelRepository.softDelete).not.toHaveBeenCalled();
   });
 
   it('rethrows HttpError instances without wrapping them', async () => {

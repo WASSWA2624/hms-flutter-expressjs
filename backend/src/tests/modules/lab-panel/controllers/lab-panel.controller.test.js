@@ -251,6 +251,7 @@ describe('Lab Panel Controller', () => {
   describe('deleteLabPanel', () => {
     it('should delete lab panel successfully', async () => {
       mockReq.params = { id: '123e4567-e89b-12d3-a456-426614174000' };
+      mockReq.body = { reason: 'Duplicate panel configuration' };
 
       labPanelService.deleteLabPanel.mockResolvedValue({
         id: '123e4567-e89b-12d3-a456-426614174000',
@@ -261,6 +262,7 @@ describe('Lab Panel Controller', () => {
 
       expect(labPanelService.deleteLabPanel).toHaveBeenCalledWith(
         '123e4567-e89b-12d3-a456-426614174000',
+        mockReq.body,
         mockReq.user.id,
         mockReq.ip
       );

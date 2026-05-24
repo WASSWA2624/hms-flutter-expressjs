@@ -21459,6 +21459,18 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get commonSaveActionLabel;
 
+  /// Shared next step action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get commonNextActionLabel;
+
+  /// Shared remove action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get commonRemoveActionLabel;
+
   /// Localized text for labOrdersViewAction.
   ///
   /// In en, this message translates to:
@@ -21882,7 +21894,7 @@ abstract class AppLocalizations {
   /// Action label for opening laboratory create actions.
   ///
   /// In en, this message translates to:
-  /// **'Create'**
+  /// **'Create Item'**
   String get labCreateAction;
 
   /// Title for the laboratory create action picker dialog.
@@ -22016,6 +22028,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type a value, then add it'**
   String get labAddValueFieldHint;
+
+  /// Action label for editing a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit order'**
+  String get labEditOrderAction;
+
+  /// Dialog title for editing lab order patient and encounter context.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit lab order context'**
+  String get labEditOrderDialogTitle;
+
+  /// Action label for updating a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Update lab order'**
+  String get labUpdateOrderSubmitAction;
+
+  /// Action label for deleting a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete order'**
+  String get labDeleteOrderAction;
+
+  /// Action label for deleting a lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete test'**
+  String get labDeleteTestAction;
+
+  /// Action label for deleting a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete panel'**
+  String get labDeletePanelAction;
+
+  /// Field label for the required reason when deleting a lab record.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion reason'**
+  String get labDeleteReasonLabel;
+
+  /// Hint text for a required lab deletion reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain why this lab record should be deleted'**
+  String get labDeleteReasonHint;
+
+  /// Validation message shown when a lab deletion reason is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a deletion reason.'**
+  String get labDeleteReasonValidationMessage;
+
+  /// Dialog title for deleting a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete lab order'**
+  String get labDeleteOrderDialogTitle;
+
+  /// Confirmation body for deleting a lab order.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove lab order {orderId} from the active laboratory queue. A reason is required for the audit trail.'**
+  String labDeleteOrderDialogBody(String orderId);
+
+  /// Dialog title for deleting a lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete lab test'**
+  String get labDeleteTestDialogTitle;
+
+  /// Confirmation body for deleting a lab test.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove {testName} from the configurable lab catalog. A reason is required for the audit trail.'**
+  String labDeleteTestDialogBody(String testName);
+
+  /// Dialog title for deleting a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete lab panel'**
+  String get labDeletePanelDialogTitle;
+
+  /// Confirmation body for deleting a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove {panelName} from the configurable lab catalog. A reason is required for the audit trail.'**
+  String labDeletePanelDialogBody(String panelName);
+
+  /// Snackbar shown after a lab record is deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory record deleted.'**
+  String get labDeletedMessage;
+
+  /// Validation message for duplicate lab test names.
+  ///
+  /// In en, this message translates to:
+  /// **'A lab test with this name already exists.'**
+  String get labDuplicateTestNameMessage;
+
+  /// Validation message for duplicate lab test codes.
+  ///
+  /// In en, this message translates to:
+  /// **'A lab test with this code already exists.'**
+  String get labDuplicateTestCodeMessage;
+
+  /// Validation message for duplicate lab panel names.
+  ///
+  /// In en, this message translates to:
+  /// **'A lab panel with this name already exists.'**
+  String get labDuplicatePanelNameMessage;
+
+  /// Validation message for duplicate lab panel codes.
+  ///
+  /// In en, this message translates to:
+  /// **'A lab panel with this code already exists.'**
+  String get labDuplicatePanelCodeMessage;
+
+  /// Dialog title for editing a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit lab panel'**
+  String get labUpdatePanelDialogTitle;
+
+  /// Action label for editing or saving a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit panel'**
+  String get labUpdatePanelAction;
+
+  /// Section title for selecting tests in a lab panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Panel tests'**
+  String get labPanelTestsLabel;
+
+  /// Field label for selecting a lab test to add to a panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab test'**
+  String get labPanelTestSelectLabel;
+
+  /// Action label for adding a selected lab test to a panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add test'**
+  String get labPanelAddTestAction;
+
+  /// Title for selected tests in a lab panel form.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected tests'**
+  String get labPanelSelectedTestsTitle;
+
+  /// Empty state for the selected tests list in a lab panel form.
+  ///
+  /// In en, this message translates to:
+  /// **'No tests selected for this panel.'**
+  String get labPanelNoSelectedTests;
+
+  /// Field label for lab test description.
+  ///
+  /// In en, this message translates to:
+  /// **'Test description'**
+  String get labTestDescriptionLabel;
+
+  /// Field label for reference range notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference notes'**
+  String get labReferenceNotesLabel;
+
+  /// Default positive qualitative lab result option.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive'**
+  String get labPositiveOption;
+
+  /// Default negative qualitative lab result option.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative'**
+  String get labNegativeOption;
+
+  /// Default adult lab reference range label.
+  ///
+  /// In en, this message translates to:
+  /// **'Adult'**
+  String get labAdultRangeLabel;
+
+  /// Default pediatric lab reference range label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pediatric'**
+  String get labPediatricRangeLabel;
+
+  /// Default neonate lab reference range label.
+  ///
+  /// In en, this message translates to:
+  /// **'Neonate'**
+  String get labNeonateRangeLabel;
+
+  /// Pluralized active order count label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 active order} other {{count} active orders}}'**
+  String labActiveOrderCount(int count);
+
+  /// Pluralized reference range count label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 range} other {{count} ranges}}'**
+  String labReferenceRangeCount(int count);
 }
 
 class _AppLocalizationsDelegate

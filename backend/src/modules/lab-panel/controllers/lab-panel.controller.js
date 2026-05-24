@@ -120,7 +120,7 @@ const deleteLabPanel = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await labPanelService.deleteLabPanel(id, userId, ipAddress);
+  await labPanelService.deleteLabPanel(id, req.body, userId, ipAddress);
 
   sendSuccess(res, 204, null, null);
 });

@@ -17,9 +17,11 @@ import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_c
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
@@ -355,11 +357,7 @@ class _LabWorklistPanel extends ConsumerWidget {
                 final int activeOrders = item.activeOrderCount > 0
                     ? item.activeOrderCount
                     : item.orderCount;
-                return Text(
-                  activeOrders == 1
-                      ? '1 active order'
-                      : '$activeOrders active orders',
-                );
+                return Text(l10n.labActiveOrderCount(activeOrders));
               }
               return AppCopyableIdentifier(
                 value: item.displayId,
@@ -472,6 +470,17 @@ class _LabOrderIdentity extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final String? subtitle = order.isPatientGroup
+        ? _joinNonEmpty(<String?>[
+            order.patientId,
+            order.encounterId,
+            context.l10n.labActiveOrderCount(
+              order.activeOrderCount > 0
+                  ? order.activeOrderCount
+                  : order.orderCount,
+            ),
+          ])
+        : order.displaySubtitle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -481,9 +490,9 @@ class _LabOrderIdentity extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleSmall,
         ),
-        if (order.displaySubtitle != null)
+        if (subtitle != null && subtitle.isNotEmpty)
           Text(
-            order.displaySubtitle!,
+            subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -527,7 +536,15 @@ Future<void> _openLabDetailDialog(
 
   await showAppDialog<void>(
     context: context,
-    builder: (_) => LabResultEntryDialog(canMutate: canMutate),
+    builder: (_) => LabResultEntryDialog(
+      canMutate: canMutate,
+      onEditOrder: (BuildContext dialogContext, LabOrderWorkflow workflow) {
+        return _openEditLabOrderDialog(dialogContext, state, workflow);
+      },
+      onDeleteOrder: (BuildContext dialogContext, LabOrderWorkflow workflow) {
+        return _openDeleteLabOrderDialog(dialogContext, workflow);
+      },
+    ),
   );
 }
 
@@ -696,6 +713,7 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
   late final AppListTableColumnVisibilityController<LabCatalogItem>
   _columnVisibilityController;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  LabCatalogItemType _catalogType = LabCatalogItemType.test;
 
   @override
   void initState() {
@@ -726,7 +744,8 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
               failure: (_) => null,
             ) ??
         widget.state;
-    final List<LabCatalogItem> tests = _filteredTests(state);
+    final List<LabCatalogItem> items = _filteredItems(state);
+    final bool showingTests = _catalogType == LabCatalogItemType.test;
 
     return AppDialog(
       title: Text(l10n.labReferenceRangesDialogTitle),
@@ -743,8 +762,31 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
             ),
           ),
           SizedBox(height: theme.spacing.md),
+          SegmentedButton<LabCatalogItemType>(
+            segments: <ButtonSegment<LabCatalogItemType>>[
+              ButtonSegment<LabCatalogItemType>(
+                value: LabCatalogItemType.test,
+                icon: const Icon(Icons.science_outlined),
+                label: Text(l10n.labTestsTabLabel),
+              ),
+              ButtonSegment<LabCatalogItemType>(
+                value: LabCatalogItemType.panel,
+                icon: const Icon(Icons.dashboard_customize_outlined),
+                label: Text(l10n.labPanelsTabLabel),
+              ),
+            ],
+            selected: <LabCatalogItemType>{_catalogType},
+            onSelectionChanged: (Set<LabCatalogItemType> value) {
+              setState(() {
+                _catalogType = value.first;
+                _filterValue = AppSearchBarFilterValue.empty;
+                _searchController.clear();
+              });
+            },
+          ),
+          SizedBox(height: theme.spacing.md),
           AppListTable<LabCatalogItem>(
-            items: tests,
+            items: items,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             columnVisibilityController: _columnVisibilityController,
@@ -769,21 +811,22 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
                   label: l10n.labCategoryLabel,
                   allLabel: l10n.labScopeAll,
                   choices: _filterChoices(
-                    state.catalogTests.map(
-                      (LabCatalogItem item) => item.category,
-                    ),
+                    _catalogItems(
+                      state,
+                    ).map((LabCatalogItem item) => item.category),
                   ),
                 ),
-                AppSearchBarFilterGroup(
-                  key: _resultKindFilterKey,
-                  label: l10n.labResultKindLabel,
-                  allLabel: l10n.labScopeAll,
-                  choices: _filterChoices(
-                    state.catalogTests.map(
-                      (LabCatalogItem item) => item.resultKind,
+                if (showingTests)
+                  AppSearchBarFilterGroup(
+                    key: _resultKindFilterKey,
+                    label: l10n.labResultKindLabel,
+                    allLabel: l10n.labScopeAll,
+                    choices: _filterChoices(
+                      state.catalogTests.map(
+                        (LabCatalogItem item) => item.resultKind,
+                      ),
                     ),
                   ),
-                ),
               ],
               filterValue: _filterValue,
               hasActiveFilters: _filterValue.isActive,
@@ -796,7 +839,9 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
             columns: <AppListTableColumn<LabCatalogItem>>[
               AppListTableColumn<LabCatalogItem>(
                 id: 'test',
-                label: l10n.labTestNameLabel,
+                label: showingTests
+                    ? l10n.labTestNameLabel
+                    : l10n.labPanelNameLabel,
                 sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
                     appListTableCompareText(left.name, right.name),
                 cellBuilder: (_, LabCatalogItem item) => Text(
@@ -807,7 +852,9 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
               ),
               AppListTableColumn<LabCatalogItem>(
                 id: 'code',
-                label: l10n.labTestCodeLabel,
+                label: showingTests
+                    ? l10n.labTestCodeLabel
+                    : l10n.labPanelCodeLabel,
                 sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
                     appListTableCompareText(left.code, right.code),
                 cellBuilder: (_, LabCatalogItem item) => Text(item.code ?? '—'),
@@ -820,40 +867,72 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
                 cellBuilder: (_, LabCatalogItem item) =>
                     Text(item.category ?? '—'),
               ),
-              AppListTableColumn<LabCatalogItem>(
-                id: 'specimen',
-                label: l10n.labSpecimenTypeLabel,
-                sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
-                    appListTableCompareText(
-                      left.specimenType,
-                      right.specimenType,
-                    ),
-                cellBuilder: (_, LabCatalogItem item) =>
-                    Text(item.specimenType ?? '—'),
-              ),
-              AppListTableColumn<LabCatalogItem>(
-                id: 'kind',
-                label: l10n.labResultKindLabel,
-                sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
-                    appListTableCompareText(left.resultKind, right.resultKind),
-                cellBuilder: (_, LabCatalogItem item) =>
-                    Text(_resultKindLabel(l10n, item.resultKind)),
-              ),
+              if (showingTests)
+                AppListTableColumn<LabCatalogItem>(
+                  id: 'specimen',
+                  label: l10n.labSpecimenTypeLabel,
+                  sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+                      appListTableCompareText(
+                        left.specimenType,
+                        right.specimenType,
+                      ),
+                  cellBuilder: (_, LabCatalogItem item) =>
+                      Text(item.specimenType ?? '—'),
+                ),
+              if (showingTests)
+                AppListTableColumn<LabCatalogItem>(
+                  id: 'kind',
+                  label: l10n.labResultKindLabel,
+                  sortComparator: (LabCatalogItem left, LabCatalogItem right) =>
+                      appListTableCompareText(
+                        left.resultKind,
+                        right.resultKind,
+                      ),
+                  cellBuilder: (_, LabCatalogItem item) =>
+                      Text(_resultKindLabel(l10n, item.resultKind)),
+                ),
               AppListTableColumn<LabCatalogItem>(
                 id: 'range',
-                label: l10n.labUnitRangeCountColumnLabel,
-                cellBuilder: (_, LabCatalogItem item) =>
-                    Text(_unitRangeSummary(item)),
+                label: showingTests
+                    ? l10n.labUnitRangeCountColumnLabel
+                    : l10n.labTestsColumnLabel,
+                cellBuilder: (_, LabCatalogItem item) => Text(
+                  showingTests
+                      ? _unitRangeSummary(context, item)
+                      : l10n.clinicalLabOrderItemCount(item.testCount),
+                ),
               ),
               AppListTableColumn<LabCatalogItem>(
                 id: 'action',
                 label: l10n.labActionColumnLabel,
                 cellBuilder: (BuildContext context, LabCatalogItem item) {
-                  return AppButton.tertiary(
-                    label: l10n.labConfigureTestAction,
-                    leadingIcon: Icons.edit_outlined,
-                    onPressed: () =>
-                        _openLabTestConfigurationDialog(context, state, item),
+                  return Wrap(
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    children: <Widget>[
+                      AppButton.tertiary(
+                        label: showingTests
+                            ? l10n.labConfigureTestAction
+                            : l10n.labUpdatePanelAction,
+                        leadingIcon: Icons.edit_outlined,
+                        onPressed: () => showingTests
+                            ? _openLabTestConfigurationDialog(
+                                context,
+                                state,
+                                item,
+                              )
+                            : _openLabPanelDialog(context, state, null, item),
+                      ),
+                      AppButton.tertiary(
+                        label: showingTests
+                            ? l10n.labDeleteTestAction
+                            : l10n.labDeletePanelAction,
+                        leadingIcon: Icons.delete_outline,
+                        onPressed: () => showingTests
+                            ? _openDeleteLabTestDialog(context, item)
+                            : _openDeleteLabPanelDialog(context, item),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -863,15 +942,42 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
                 title: item.displayTitle,
                 subtitle: _joinNonEmpty(<String?>[
                   item.category,
-                  item.specimenType,
-                  _resultKindLabel(l10n, item.resultKind),
-                  _unitRangeSummary(item),
+                  if (showingTests) item.specimenType,
+                  if (showingTests) _resultKindLabel(l10n, item.resultKind),
+                  showingTests
+                      ? _unitRangeSummary(context, item)
+                      : l10n.clinicalLabOrderItemCount(item.testCount),
                 ]),
-                trailing: AppButton.tertiary(
-                  label: l10n.labConfigureTestAction,
-                  leadingIcon: Icons.edit_outlined,
-                  onPressed: () =>
-                      _openLabTestConfigurationDialog(context, state, item),
+                trailing: Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    AppButton.tertiary(
+                      label: showingTests
+                          ? l10n.labConfigureTestAction
+                          : l10n.labUpdatePanelAction,
+                      leadingIcon: Icons.edit_outlined,
+                      onPressed: () => showingTests
+                          ? _openLabTestConfigurationDialog(
+                              context,
+                              state,
+                              item,
+                            )
+                          : _openLabPanelDialog(context, state, null, item),
+                    ),
+                    AppIconButton(
+                      icon: Icons.delete_outline,
+                      semanticLabel: showingTests
+                          ? l10n.labDeleteTestAction
+                          : l10n.labDeletePanelAction,
+                      tooltip: showingTests
+                          ? l10n.labDeleteTestAction
+                          : l10n.labDeletePanelAction,
+                      onPressed: () => showingTests
+                          ? _openDeleteLabTestDialog(context, item)
+                          : _openDeleteLabPanelDialog(context, item),
+                    ),
+                  ],
                 ),
               );
             },
@@ -896,15 +1002,23 @@ class _TestCatalogDialogState extends ConsumerState<_TestCatalogDialog> {
     );
   }
 
-  List<LabCatalogItem> _filteredTests(LabWorkspaceState state) {
+  List<LabCatalogItem> _catalogItems(LabWorkspaceState state) {
+    return _catalogType == LabCatalogItemType.test
+        ? state.catalogTests
+        : state.catalogPanels;
+  }
+
+  List<LabCatalogItem> _filteredItems(LabWorkspaceState state) {
     final String? category = _filterValue.option(_categoryFilterKey);
     final String? resultKind = _filterValue.option(_resultKindFilterKey);
-    return state.catalogTests
+    return _catalogItems(state)
         .where((LabCatalogItem item) {
           if (category != null && item.category != category) {
             return false;
           }
-          if (resultKind != null && item.resultKind != resultKind) {
+          if (_catalogType == LabCatalogItemType.test &&
+              resultKind != null &&
+              item.resultKind != resultKind) {
             return false;
           }
           return true;
@@ -2670,12 +2784,50 @@ Future<void> _openCreateLabOrderDialog(
   BuildContext context,
   LabWorkspaceState state,
 ) async {
+  final LabOrderContextInput? orderContext =
+      await showAppDialog<LabOrderContextInput>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => LabOrderContextDialog(worklist: state.worklist.items),
+      );
+  if (orderContext == null || !context.mounted) {
+    return;
+  }
+
   await _showActionResult(
     context,
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _CreateLabOrderDialog(state: state),
+      builder: (_) => ClinicalLabOrderActionDialog(
+        referenceData: _clinicalReferenceData(state),
+        onRequest:
+            ({
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+            }) {
+              return _readLabController(context).createOrder(
+                orderContext.toPayload(
+                  labTestIds: labTestIds,
+                  labPanelIds: labPanelIds,
+                ),
+              );
+            },
+        onUpdate:
+            ({
+              required String labOrderId,
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+            }) {
+              return _readLabController(context).updateOrder(
+                labOrderId,
+                orderContext.toPayload(
+                  labTestIds: labTestIds,
+                  labPanelIds: labPanelIds,
+                ),
+              );
+            },
+      ),
     ),
   );
 }
@@ -2691,10 +2843,14 @@ Future<void> _openLabTestConfigurationDialog(
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _LabTestConfigurationDialog(
-        state: state,
+      builder: (_) => LabCatalogTestDialog(
+        catalogTests: state.catalogTests,
         item: item,
         tenantId: tenantId,
+        onCreate: (Map<String, Object?> payload) =>
+            _readLabController(context).createLabTest(payload),
+        onUpdate: (String id, Map<String, Object?> payload) =>
+            _readLabController(context).updateLabTest(id, payload),
       ),
     ),
   );
@@ -2703,16 +2859,151 @@ Future<void> _openLabTestConfigurationDialog(
 Future<void> _openLabPanelDialog(
   BuildContext context,
   LabWorkspaceState state,
-  String? tenantId,
-) async {
+  String? tenantId, [
+  LabCatalogItem? item,
+]) async {
   await _showActionResult(
     context,
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _LabPanelDialog(state: state, tenantId: tenantId),
+      builder: (_) => LabCatalogPanelDialog(
+        catalogTests: state.catalogTests,
+        catalogPanels: state.catalogPanels,
+        item: item,
+        tenantId: tenantId,
+        onCreate: (Map<String, Object?> payload) =>
+            _readLabController(context).createLabPanel(payload),
+        onUpdate: (String id, Map<String, Object?> payload) =>
+            _readLabController(context).updateLabPanel(id, payload),
+      ),
     ),
   );
+}
+
+Future<void> _openEditLabOrderDialog(
+  BuildContext context,
+  LabWorkspaceState state,
+  LabOrderWorkflow workflow,
+) async {
+  final LabOrderSummary order = workflow.order;
+  final LabOrderContextInput? orderContext =
+      await showAppDialog<LabOrderContextInput>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) =>
+            LabOrderContextDialog(worklist: state.worklist.items, order: order),
+      );
+  if (orderContext == null || !context.mounted) {
+    return;
+  }
+
+  await _showActionResult(
+    context,
+    showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalLabOrderActionDialog(
+        referenceData: _clinicalReferenceData(state),
+        existingOrder: _clinicalLabOrderRecord(order),
+        onRequest:
+            ({
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+            }) {
+              return _readLabController(context).createOrder(
+                orderContext.toPayload(
+                  labTestIds: labTestIds,
+                  labPanelIds: labPanelIds,
+                ),
+              );
+            },
+        onUpdate:
+            ({
+              required String labOrderId,
+              required List<String> labTestIds,
+              required List<String> labPanelIds,
+            }) {
+              return _readLabController(context).updateOrder(
+                labOrderId,
+                orderContext.toPayload(
+                  labTestIds: labTestIds,
+                  labPanelIds: labPanelIds,
+                ),
+              );
+            },
+      ),
+    ),
+  );
+}
+
+Future<void> _openDeleteLabOrderDialog(
+  BuildContext context,
+  LabOrderWorkflow workflow,
+) async {
+  final bool? deleted = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => LabDeleteReasonDialog(
+      title: context.l10n.labDeleteOrderDialogTitle,
+      body: context.l10n.labDeleteOrderDialogBody(
+        workflow.order.displayId ?? workflow.order.apiId,
+      ),
+      submitLabel: context.l10n.labDeleteOrderAction,
+      onDelete: (String reason) =>
+          _readLabController(context).deleteOrder(workflow.order.apiId, reason),
+    ),
+  );
+  if (deleted == true && context.mounted) {
+    unawaited(Navigator.of(context).maybePop());
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.labDeletedMessage)));
+  }
+}
+
+Future<void> _openDeleteLabTestDialog(
+  BuildContext context,
+  LabCatalogItem item,
+) async {
+  final bool? deleted = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => LabDeleteReasonDialog(
+      title: context.l10n.labDeleteTestDialogTitle,
+      body: context.l10n.labDeleteTestDialogBody(item.displayTitle),
+      submitLabel: context.l10n.labDeleteTestAction,
+      onDelete: (String reason) =>
+          _readLabController(context).deleteLabTest(item.apiId, reason),
+    ),
+  );
+  if (deleted == true && context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.labDeletedMessage)));
+  }
+}
+
+Future<void> _openDeleteLabPanelDialog(
+  BuildContext context,
+  LabCatalogItem item,
+) async {
+  final bool? deleted = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => LabDeleteReasonDialog(
+      title: context.l10n.labDeletePanelDialogTitle,
+      body: context.l10n.labDeletePanelDialogBody(item.displayTitle),
+      submitLabel: context.l10n.labDeletePanelAction,
+      onDelete: (String reason) =>
+          _readLabController(context).deleteLabPanel(item.apiId, reason),
+    ),
+  );
+  if (deleted == true && context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.labDeletedMessage)));
+  }
 }
 
 Future<void> _openQcDialog(
@@ -2739,6 +3030,74 @@ Future<void> _showActionResult(
       context,
     ).showSnackBar(SnackBar(content: Text(context.l10n.labSavedMessage)));
   }
+}
+
+LabWorkspaceController _readLabController(BuildContext context) {
+  return ProviderScope.containerOf(
+    context,
+  ).read(labWorkspaceControllerProvider.notifier);
+}
+
+ClinicalActionReferenceData _clinicalReferenceData(LabWorkspaceState state) {
+  return ClinicalActionReferenceData(
+    labTests: state.catalogTests
+        .map(_clinicalCatalogOption)
+        .toList(growable: false),
+    labPanels: state.catalogPanels
+        .map(_clinicalCatalogOption)
+        .toList(growable: false),
+  );
+}
+
+ClinicalActionCatalogOption _clinicalCatalogOption(LabCatalogItem item) {
+  return ClinicalActionCatalogOption(
+    id: item.id,
+    publicId: item.displayId,
+    name: item.name,
+    code: item.code,
+    category: item.category,
+    secondaryText: _joinNonEmpty(<String?>[
+      item.specimenType,
+      item.resultKind,
+      item.unit,
+      item.referenceRange,
+    ]),
+    metadata: <String, Object?>{
+      'type': item.type.name,
+      if (item.description != null) 'description': item.description,
+    },
+    childIds: item.panelItems
+        .map((LabPanelItem item) => item.labTestId)
+        .whereType<String>()
+        .toList(growable: false),
+    childCodes: item.panelItems
+        .map((LabPanelItem item) => item.testCode)
+        .whereType<String>()
+        .toList(growable: false),
+  );
+}
+
+ClinicalActionLabOrderRecord _clinicalLabOrderRecord(LabOrderSummary order) {
+  return ClinicalActionLabOrderRecord(
+    id: order.apiId,
+    labOrderItems: order.items
+        .map(
+          (LabOrderItem item) => ClinicalActionLabOrderItem(
+            id: item.apiId,
+            status: item.status,
+            resultStatus: item.resultStatus,
+            labTestId: item.labTestId,
+            testDisplayName: item.testDisplayName,
+            testCode: item.testCode,
+            category: item.category,
+            specimenType: item.specimenType,
+            unit: item.unit,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          ),
+        )
+        .toList(growable: false),
+  );
 }
 
 List<Widget> _dialogActions(
@@ -2815,19 +3174,18 @@ String _resultKindLabel(AppLocalizations l10n, String? value) {
   };
 }
 
-String _unitRangeSummary(LabCatalogItem item) {
+String _unitRangeSummary(BuildContext context, LabCatalogItem item) {
   final int rangeCount = item.referenceRangeCount > 0
       ? item.referenceRangeCount
       : item.referenceRanges.length;
-  return _joinNonEmpty(<String?>[
-        item.unit,
-        if (rangeCount > 0) '$rangeCount ranges' else item.referenceRange,
-      ]).isEmpty
-      ? '—'
-      : _joinNonEmpty(<String?>[
-          item.unit,
-          if (rangeCount > 0) '$rangeCount ranges' else item.referenceRange,
-        ]);
+  final String summary = _joinNonEmpty(<String?>[
+    item.unit,
+    if (rangeCount > 0)
+      context.l10n.labReferenceRangeCount(rangeCount)
+    else
+      item.referenceRange,
+  ]);
+  return summary.isEmpty ? context.l10n.profileUnknownValue : summary;
 }
 
 FormFieldValidator<String> _optionalDateTimeValidator(AppLocalizations l10n) {

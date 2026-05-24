@@ -437,17 +437,42 @@ describe('lab-test.service', () => {
 
     const result = await labTestService.deleteLabTest(
       'LBT0000001',
+      { reason: 'Duplicate catalog test' },
       mockUserId,
       mockIpAddress
     );
 
     expect(labTestRepository.softDelete).toHaveBeenCalledWith('lab-test-internal-1');
+    expect(createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'DELETE',
+        entity: 'lab_test',
+        diff: expect.objectContaining({
+          deletion_reason: 'Duplicate catalog test',
+        }),
+      })
+    );
     expect(result).toEqual(
       expect.objectContaining({
         id: 'LBT0000001',
         name: 'Complete Blood Count',
       })
     );
+  });
+
+  it('requires a deletion reason when deleting lab tests', async () => {
+    await expect(
+      labTestService.deleteLabTest(
+        'LBT0000001',
+        { reason: ' ' },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.validation.required',
+      statusCode: 400,
+    });
+    expect(labTestRepository.softDelete).not.toHaveBeenCalled();
   });
 
   it('rethrows HttpError instances without wrapping them', async () => {

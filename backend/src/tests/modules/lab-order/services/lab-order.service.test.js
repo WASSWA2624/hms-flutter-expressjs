@@ -290,6 +290,7 @@ describe('lab-order.service', () => {
     );
     const removed = await labOrderService.deleteLabOrder(
       'LAB0000001',
+      { reason: 'Duplicate order entered' },
       mockUserId,
       mockIpAddress
     );
@@ -298,6 +299,15 @@ describe('lab-order.service', () => {
       status: 'COMPLETED',
     });
     expect(labOrderRepository.softDelete).toHaveBeenCalledWith('order-internal-1');
+    expect(createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'DELETE',
+        entity: 'lab_order',
+        diff: expect.objectContaining({
+          deletion_reason: 'Duplicate order entered',
+        }),
+      })
+    );
     expect(updated).toEqual(
       expect.objectContaining({
         id: 'LAB0000001',
@@ -310,6 +320,21 @@ describe('lab-order.service', () => {
         status: 'ORDERED',
       })
     );
+  });
+
+  it('requires a deletion reason when deleting lab orders', async () => {
+    await expect(
+      labOrderService.deleteLabOrder(
+        'LAB0000001',
+        { reason: ' ' },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.validation.required',
+      statusCode: 400,
+    });
+    expect(labOrderRepository.softDelete).not.toHaveBeenCalled();
   });
 
   it('rethrows HttpError instances without wrapping them', async () => {

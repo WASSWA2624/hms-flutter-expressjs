@@ -108,6 +108,27 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
+  Future<Result<void>> updateOrder(
+    String orderId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.labOrders, orderId),
+      data: _withoutEmpty(payload, preserveEmptyIterables: true),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteOrder(String orderId, String reason) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.labOrders, orderId),
+      data: <String, Object?>{'reason': reason},
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<LabCatalogItem>> createLabTest(Map<String, Object?> payload) {
     return _apiClient.post<LabCatalogItem>(
       ApiEndpoints.collection(HmsApiResource.labTests),
@@ -192,12 +213,10 @@ final class LabRepositoryImpl implements LabRepository {
     String orderId,
     List<Map<String, Object?>> results,
   ) {
-    return _postWorkflow(<String>[
-      HmsApiResource.lab.path,
-      'orders',
-      orderId,
-      'verify-results',
-    ], <String, Object?>{'results': results});
+    return _postWorkflow(
+      <String>[HmsApiResource.lab.path, 'orders', orderId, 'verify-results'],
+      <String, Object?>{'results': results},
+    );
   }
 
   @override
@@ -244,6 +263,37 @@ final class LabRepositoryImpl implements LabRepository {
       data: _withoutEmpty(payload, preserveEmptyIterables: true),
       decoder: (Object? data) =>
           _decodeCatalogItem(data, LabCatalogItemType.test),
+    );
+  }
+
+  @override
+  Future<Result<LabCatalogItem>> updateLabPanel(
+    String panelId,
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.put<LabCatalogItem>(
+      ApiEndpoints.byId(HmsApiResource.labPanels, panelId),
+      data: _withoutEmpty(payload, preserveEmptyIterables: true),
+      decoder: (Object? data) =>
+          _decodeCatalogItem(data, LabCatalogItemType.panel),
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteLabTest(String testId, String reason) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.labTests, testId),
+      data: <String, Object?>{'reason': reason},
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteLabPanel(String panelId, String reason) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.labPanels, panelId),
+      data: <String, Object?>{'reason': reason},
+      decoder: (_) {},
     );
   }
 
@@ -325,10 +375,7 @@ final class LabRepositoryImpl implements LabRepository {
     };
   }
 
-  bool _isEmpty(
-    Object? value, {
-    required bool preserveEmptyIterables,
-  }) {
+  bool _isEmpty(Object? value, {required bool preserveEmptyIterables}) {
     if (value == null) {
       return true;
     }

@@ -231,6 +231,10 @@ const updateLabTestSchema = withUniqueResultOptions(
   )
 );
 
+const deleteLabTestSchema = z.object({
+  reason: z.string().trim().min(3).max(500)
+});
+
 // ==================== URL Params ====================
 
 /**
@@ -264,6 +268,7 @@ const listLabTestsQuerySchema = listQuerySchema.extend({
 module.exports = {
   createLabTestSchema,
   updateLabTestSchema,
+  deleteLabTestSchema,
   labTestIdParamsSchema,
   listLabTestsQuerySchema
 };

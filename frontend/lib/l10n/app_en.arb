@@ -14758,6 +14758,14 @@
   "@commonSaveActionLabel": {
     "description": "Localized text for commonSaveActionLabel."
   },
+  "commonNextActionLabel": "Next",
+  "@commonNextActionLabel": {
+    "description": "Shared next step action label."
+  },
+  "commonRemoveActionLabel": "Remove",
+  "@commonRemoveActionLabel": {
+    "description": "Shared remove action label."
+  },
   "labOrdersViewAction": "Orders view",
   "@labOrdersViewAction": {
     "description": "Localized text for labOrdersViewAction."
@@ -15129,5 +15137,179 @@
   "labAddValueFieldHint": "Type a value, then add it",
   "@labAddValueFieldHint": {
     "description": "Hint text for adding values to a multi-value lab field."
+  },
+  "labEditOrderAction": "Edit order",
+  "@labEditOrderAction": {
+    "description": "Action label for editing a lab order."
+  },
+  "labEditOrderDialogTitle": "Edit lab order context",
+  "@labEditOrderDialogTitle": {
+    "description": "Dialog title for editing lab order patient and encounter context."
+  },
+  "labUpdateOrderSubmitAction": "Update lab order",
+  "@labUpdateOrderSubmitAction": {
+    "description": "Action label for updating a lab order."
+  },
+  "labDeleteOrderAction": "Delete order",
+  "@labDeleteOrderAction": {
+    "description": "Action label for deleting a lab order."
+  },
+  "labDeleteTestAction": "Delete test",
+  "@labDeleteTestAction": {
+    "description": "Action label for deleting a lab test."
+  },
+  "labDeletePanelAction": "Delete panel",
+  "@labDeletePanelAction": {
+    "description": "Action label for deleting a lab panel."
+  },
+  "labDeleteReasonLabel": "Deletion reason",
+  "@labDeleteReasonLabel": {
+    "description": "Field label for the required reason when deleting a lab record."
+  },
+  "labDeleteReasonHint": "Explain why this lab record should be deleted",
+  "@labDeleteReasonHint": {
+    "description": "Hint text for a required lab deletion reason."
+  },
+  "labDeleteReasonValidationMessage": "Enter a deletion reason.",
+  "@labDeleteReasonValidationMessage": {
+    "description": "Validation message shown when a lab deletion reason is missing."
+  },
+  "labDeleteOrderDialogTitle": "Delete lab order",
+  "@labDeleteOrderDialogTitle": {
+    "description": "Dialog title for deleting a lab order."
+  },
+  "labDeleteOrderDialogBody": "This will remove lab order {orderId} from the active laboratory queue. A reason is required for the audit trail.",
+  "@labDeleteOrderDialogBody": {
+    "description": "Confirmation body for deleting a lab order.",
+    "placeholders": {
+      "orderId": {
+        "type": "String",
+        "example": "LAB0000001"
+      }
+    }
+  },
+  "labDeleteTestDialogTitle": "Delete lab test",
+  "@labDeleteTestDialogTitle": {
+    "description": "Dialog title for deleting a lab test."
+  },
+  "labDeleteTestDialogBody": "This will remove {testName} from the configurable lab catalog. A reason is required for the audit trail.",
+  "@labDeleteTestDialogBody": {
+    "description": "Confirmation body for deleting a lab test.",
+    "placeholders": {
+      "testName": {
+        "type": "String",
+        "example": "Complete Blood Count"
+      }
+    }
+  },
+  "labDeletePanelDialogTitle": "Delete lab panel",
+  "@labDeletePanelDialogTitle": {
+    "description": "Dialog title for deleting a lab panel."
+  },
+  "labDeletePanelDialogBody": "This will remove {panelName} from the configurable lab catalog. A reason is required for the audit trail.",
+  "@labDeletePanelDialogBody": {
+    "description": "Confirmation body for deleting a lab panel.",
+    "placeholders": {
+      "panelName": {
+        "type": "String",
+        "example": "Complete Metabolic Panel"
+      }
+    }
+  },
+  "labDeletedMessage": "Laboratory record deleted.",
+  "@labDeletedMessage": {
+    "description": "Snackbar shown after a lab record is deleted."
+  },
+  "labDuplicateTestNameMessage": "A lab test with this name already exists.",
+  "@labDuplicateTestNameMessage": {
+    "description": "Validation message for duplicate lab test names."
+  },
+  "labDuplicateTestCodeMessage": "A lab test with this code already exists.",
+  "@labDuplicateTestCodeMessage": {
+    "description": "Validation message for duplicate lab test codes."
+  },
+  "labDuplicatePanelNameMessage": "A lab panel with this name already exists.",
+  "@labDuplicatePanelNameMessage": {
+    "description": "Validation message for duplicate lab panel names."
+  },
+  "labDuplicatePanelCodeMessage": "A lab panel with this code already exists.",
+  "@labDuplicatePanelCodeMessage": {
+    "description": "Validation message for duplicate lab panel codes."
+  },
+  "labUpdatePanelDialogTitle": "Edit lab panel",
+  "@labUpdatePanelDialogTitle": {
+    "description": "Dialog title for editing a lab panel."
+  },
+  "labUpdatePanelAction": "Edit panel",
+  "@labUpdatePanelAction": {
+    "description": "Action label for editing or saving a lab panel."
+  },
+  "labPanelTestsLabel": "Panel tests",
+  "@labPanelTestsLabel": {
+    "description": "Section title for selecting tests in a lab panel."
+  },
+  "labPanelTestSelectLabel": "Lab test",
+  "@labPanelTestSelectLabel": {
+    "description": "Field label for selecting a lab test to add to a panel."
+  },
+  "labPanelAddTestAction": "Add test",
+  "@labPanelAddTestAction": {
+    "description": "Action label for adding a selected lab test to a panel."
+  },
+  "labPanelSelectedTestsTitle": "Selected tests",
+  "@labPanelSelectedTestsTitle": {
+    "description": "Title for selected tests in a lab panel form."
+  },
+  "labPanelNoSelectedTests": "No tests selected for this panel.",
+  "@labPanelNoSelectedTests": {
+    "description": "Empty state for the selected tests list in a lab panel form."
+  },
+  "labTestDescriptionLabel": "Test description",
+  "@labTestDescriptionLabel": {
+    "description": "Field label for lab test description."
+  },
+  "labReferenceNotesLabel": "Reference notes",
+  "@labReferenceNotesLabel": {
+    "description": "Field label for reference range notes."
+  },
+  "labPositiveOption": "Positive",
+  "@labPositiveOption": {
+    "description": "Default positive qualitative lab result option."
+  },
+  "labNegativeOption": "Negative",
+  "@labNegativeOption": {
+    "description": "Default negative qualitative lab result option."
+  },
+  "labAdultRangeLabel": "Adult",
+  "@labAdultRangeLabel": {
+    "description": "Default adult lab reference range label."
+  },
+  "labPediatricRangeLabel": "Pediatric",
+  "@labPediatricRangeLabel": {
+    "description": "Default pediatric lab reference range label."
+  },
+  "labNeonateRangeLabel": "Neonate",
+  "@labNeonateRangeLabel": {
+    "description": "Default neonate lab reference range label."
+  },
+  "labActiveOrderCount": "{count, plural, one {1 active order} other {{count} active orders}}",
+  "@labActiveOrderCount": {
+    "description": "Pluralized active order count label.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "labReferenceRangeCount": "{count, plural, one {1 range} other {{count} ranges}}",
+  "@labReferenceRangeCount": {
+    "description": "Pluralized reference range count label.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
   }
 }

@@ -253,6 +253,7 @@ describe('Lab Test Controller', () => {
   describe('deleteLabTest', () => {
     it('should delete lab test successfully', async () => {
       mockReq.params = { id: '123e4567-e89b-12d3-a456-426614174000' };
+      mockReq.body = { reason: 'Duplicate catalog test' };
 
       labTestService.deleteLabTest.mockResolvedValue({
         id: '123e4567-e89b-12d3-a456-426614174000',
@@ -263,6 +264,7 @@ describe('Lab Test Controller', () => {
 
       expect(labTestService.deleteLabTest).toHaveBeenCalledWith(
         '123e4567-e89b-12d3-a456-426614174000',
+        mockReq.body,
         mockReq.user.id,
         mockReq.ip
       );

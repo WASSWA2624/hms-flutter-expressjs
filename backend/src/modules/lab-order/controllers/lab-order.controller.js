@@ -120,7 +120,7 @@ const deleteLabOrder = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await labOrderService.deleteLabOrder(id, userId, ipAddress);
+  await labOrderService.deleteLabOrder(id, req.body, userId, ipAddress);
 
   sendNoContent(res, 'messages.lab_order.delete.success');
 });

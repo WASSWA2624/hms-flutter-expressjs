@@ -289,8 +289,15 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
   }
 };
 
-const deleteLabPanel = async (id, userId, ipAddress) => {
+const deleteLabPanel = async (id, data = {}, userId, ipAddress) => {
   try {
+    const deletionReason = normalizeText(data?.reason);
+    if (!deletionReason) {
+      throw new HttpError('errors.validation.required', 400, [
+        { field: 'reason' },
+      ]);
+    }
+
     const before = await resolveModelRecordOrThrow({
       identifier: id,
       model: 'lab_panel',
@@ -306,7 +313,7 @@ const deleteLabPanel = async (id, userId, ipAddress) => {
       action: 'DELETE',
       entity: 'lab_panel',
       entity_id: labPanel.id,
-      diff: { before },
+      diff: { before, deletion_reason: deletionReason },
       ip_address: ipAddress,
     }).catch(() => {});
 

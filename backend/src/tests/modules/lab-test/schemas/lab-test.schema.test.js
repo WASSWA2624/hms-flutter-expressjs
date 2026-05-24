@@ -9,6 +9,7 @@
 const {
   createLabTestSchema,
   updateLabTestSchema,
+  deleteLabTestSchema,
   labTestIdParamsSchema,
   listLabTestsQuerySchema
 } = require('@validations/lab-test/lab-test.schema');
@@ -332,6 +333,14 @@ describe('Lab Test Schema Validation', () => {
 
       const result = labTestIdParamsSchema.safeParse(invalidParams);
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('deleteLabTestSchema', () => {
+    it('requires a non-empty deletion reason', () => {
+      expect(deleteLabTestSchema.safeParse({ reason: 'Duplicate' }).success).toBe(true);
+      expect(deleteLabTestSchema.safeParse({ reason: ' ' }).success).toBe(false);
+      expect(deleteLabTestSchema.safeParse({}).success).toBe(false);
     });
   });
 

@@ -11368,6 +11368,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonSaveActionLabel => 'Save';
 
   @override
+  String get commonNextActionLabel => 'Next';
+
+  @override
+  String get commonRemoveActionLabel => 'Remove';
+
+  @override
   String get labOrdersViewAction => 'Orders view';
 
   @override
@@ -11657,4 +11663,139 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labAddValueFieldHint => 'Type a value, then add it';
+
+  @override
+  String get labEditOrderAction => 'Edit order';
+
+  @override
+  String get labEditOrderDialogTitle => 'Edit lab order context';
+
+  @override
+  String get labUpdateOrderSubmitAction => 'Update lab order';
+
+  @override
+  String get labDeleteOrderAction => 'Delete order';
+
+  @override
+  String get labDeleteTestAction => 'Delete test';
+
+  @override
+  String get labDeletePanelAction => 'Delete panel';
+
+  @override
+  String get labDeleteReasonLabel => 'Deletion reason';
+
+  @override
+  String get labDeleteReasonHint =>
+      'Explain why this lab record should be deleted';
+
+  @override
+  String get labDeleteReasonValidationMessage => 'Enter a deletion reason.';
+
+  @override
+  String get labDeleteOrderDialogTitle => 'Delete lab order';
+
+  @override
+  String labDeleteOrderDialogBody(String orderId) {
+    return 'This will remove lab order $orderId from the active laboratory queue. A reason is required for the audit trail.';
+  }
+
+  @override
+  String get labDeleteTestDialogTitle => 'Delete lab test';
+
+  @override
+  String labDeleteTestDialogBody(String testName) {
+    return 'This will remove $testName from the configurable lab catalog. A reason is required for the audit trail.';
+  }
+
+  @override
+  String get labDeletePanelDialogTitle => 'Delete lab panel';
+
+  @override
+  String labDeletePanelDialogBody(String panelName) {
+    return 'This will remove $panelName from the configurable lab catalog. A reason is required for the audit trail.';
+  }
+
+  @override
+  String get labDeletedMessage => 'Laboratory record deleted.';
+
+  @override
+  String get labDuplicateTestNameMessage =>
+      'A lab test with this name already exists.';
+
+  @override
+  String get labDuplicateTestCodeMessage =>
+      'A lab test with this code already exists.';
+
+  @override
+  String get labDuplicatePanelNameMessage =>
+      'A lab panel with this name already exists.';
+
+  @override
+  String get labDuplicatePanelCodeMessage =>
+      'A lab panel with this code already exists.';
+
+  @override
+  String get labUpdatePanelDialogTitle => 'Edit lab panel';
+
+  @override
+  String get labUpdatePanelAction => 'Edit panel';
+
+  @override
+  String get labPanelTestsLabel => 'Panel tests';
+
+  @override
+  String get labPanelTestSelectLabel => 'Lab test';
+
+  @override
+  String get labPanelAddTestAction => 'Add test';
+
+  @override
+  String get labPanelSelectedTestsTitle => 'Selected tests';
+
+  @override
+  String get labPanelNoSelectedTests => 'No tests selected for this panel.';
+
+  @override
+  String get labTestDescriptionLabel => 'Test description';
+
+  @override
+  String get labReferenceNotesLabel => 'Reference notes';
+
+  @override
+  String get labPositiveOption => 'Positive';
+
+  @override
+  String get labNegativeOption => 'Negative';
+
+  @override
+  String get labAdultRangeLabel => 'Adult';
+
+  @override
+  String get labPediatricRangeLabel => 'Pediatric';
+
+  @override
+  String get labNeonateRangeLabel => 'Neonate';
+
+  @override
+  String labActiveOrderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active orders',
+      one: '1 active order',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String labReferenceRangeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ranges',
+      one: '1 range',
+    );
+    return '$_temp0';
+  }
 }

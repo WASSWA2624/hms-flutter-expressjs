@@ -203,6 +203,87 @@ final class LabWorkspaceController
     );
   }
 
+  Future<AppFailure?> updateOrder(
+    String orderId,
+    Map<String, Object?> payload,
+  ) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<void> result = await _repository.updateOrder(orderId, payload);
+    return result.when(
+      success: (_) async {
+        final Result<LabOrderWorkflow> workflowResult = await _repository
+            .loadOrderWorkflow(orderId);
+        return workflowResult.when(
+          success: (LabOrderWorkflow workflow) async {
+            final LabWorkspaceState? latest = _currentState;
+            if (latest != null) {
+              _emit(
+                latest.copyWith(
+                  selectedWorkflow: workflow,
+                  worklist: _replaceOrder(latest.worklist, workflow.order),
+                  isSaving: false,
+                ),
+              );
+            }
+            unawaited(_refreshWorkbench(showLoading: false));
+            return null;
+          },
+          failure: (AppFailure failure) {
+            final LabWorkspaceState? latest = _currentState;
+            if (latest != null) {
+              _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+            }
+            return failure;
+          },
+        );
+      },
+      failure: (AppFailure failure) {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> deleteOrder(String orderId, String reason) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<void> result = await _repository.deleteOrder(orderId, reason);
+    return result.when(
+      success: (_) async {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              worklist: _removeOrder(latest.worklist, orderId),
+              isSaving: false,
+              clearSelectedWorkflow: true,
+            ),
+          );
+        }
+        return _refreshWorkbench(showLoading: false);
+      },
+      failure: (AppFailure failure) {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
   Future<AppFailure?> createLabTest(Map<String, Object?> payload) {
     return _mutateCatalog(
       () => _repository.createLabTest(payload),
@@ -216,6 +297,57 @@ final class LabWorkspaceController
       () => _repository.createLabPanel(payload),
       refreshTests: false,
       refreshPanels: true,
+    );
+  }
+
+  Future<AppFailure?> updateLabPanel(
+    String panelId,
+    Map<String, Object?> payload,
+  ) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<LabCatalogItem> result = await _repository.updateLabPanel(
+      panelId,
+      payload,
+    );
+    return result.when(
+      success: (LabCatalogItem updated) async {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          final List<LabCatalogItem> panels = <LabCatalogItem>[
+            for (final LabCatalogItem item in latest.catalogPanels)
+              item.id == updated.id || item.apiId == updated.apiId
+                  ? updated
+                  : item,
+          ];
+          _emit(latest.copyWith(catalogPanels: panels, isSaving: false));
+        }
+        return refresh();
+      },
+      failure: (AppFailure failure) {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> deleteLabTest(String testId, String reason) {
+    return _deleteCatalogItem(
+      () => _repository.deleteLabTest(testId, reason),
+      removeTestId: testId,
+    );
+  }
+
+  Future<AppFailure?> deleteLabPanel(String panelId, String reason) {
+    return _deleteCatalogItem(
+      () => _repository.deleteLabPanel(panelId, reason),
+      removePanelId: panelId,
     );
   }
 
@@ -261,7 +393,9 @@ final class LabWorkspaceController
     String orderId,
     List<Map<String, Object?>> results,
   ) {
-    return _mutateWorkflow(() => _repository.verifyOrderResults(orderId, results));
+    return _mutateWorkflow(
+      () => _repository.verifyOrderResults(orderId, results),
+    );
   }
 
   Future<AppFailure?> saveOrderItemDraft(
@@ -275,9 +409,12 @@ final class LabWorkspaceController
 
     final Map<String, Object?> draftPayload = <String, Object?>{
       'status': 'PENDING',
-      if (payload.containsKey('result_value')) 'result_value': payload['result_value'],
-      if (payload.containsKey('result_unit')) 'result_unit': payload['result_unit'],
-      if (payload.containsKey('result_text')) 'result_text': payload['result_text'],
+      if (payload.containsKey('result_value'))
+        'result_value': payload['result_value'],
+      if (payload.containsKey('result_unit'))
+        'result_unit': payload['result_unit'],
+      if (payload.containsKey('result_text'))
+        'result_text': payload['result_text'],
     };
 
     return _mutateWorkflow(() async {
@@ -299,7 +436,8 @@ final class LabWorkspaceController
     List<({LabOrderItem item, Map<String, Object?> payload})> entries,
   ) async {
     AppFailure? lastFailure;
-    for (final ({LabOrderItem item, Map<String, Object?> payload}) entry in entries) {
+    for (final ({LabOrderItem item, Map<String, Object?> payload}) entry
+        in entries) {
       final AppFailure? failure = await saveOrderItemDraft(
         entry.item,
         entry.payload,
@@ -327,14 +465,19 @@ final class LabWorkspaceController
       return refresh();
     }
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
-    final Result<LabCatalogItem> result = await _repository.updateLabTest(testId, payload);
+    final Result<LabCatalogItem> result = await _repository.updateLabTest(
+      testId,
+      payload,
+    );
     return result.when(
       success: (LabCatalogItem updated) async {
         final LabWorkspaceState? latest = _currentState;
         if (latest != null) {
           final List<LabCatalogItem> tests = <LabCatalogItem>[
             for (final LabCatalogItem item in latest.catalogTests)
-              item.id == updated.id || item.apiId == updated.apiId ? updated : item,
+              item.id == updated.id || item.apiId == updated.apiId
+                  ? updated
+                  : item,
           ];
           _emit(latest.copyWith(catalogTests: tests, isSaving: false));
         }
@@ -364,14 +507,58 @@ final class LabWorkspaceController
     final Result<LabCatalogItem> result = await submit();
     return result.when(
       success: (_) async {
-        final List<LabCatalogItem>? tests = refreshTests ? await _tests() : null;
-        final List<LabCatalogItem>? panels = refreshPanels ? await _panels() : null;
+        final List<LabCatalogItem>? tests = refreshTests
+            ? await _tests()
+            : null;
+        final List<LabCatalogItem>? panels = refreshPanels
+            ? await _panels()
+            : null;
         final LabWorkspaceState? latest = _currentState;
         if (latest != null) {
           _emit(
             latest.copyWith(
               catalogTests: tests ?? latest.catalogTests,
               catalogPanels: panels ?? latest.catalogPanels,
+              isSaving: false,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> _deleteCatalogItem(
+    Future<Result<void>> Function() submit, {
+    String? removeTestId,
+    String? removePanelId,
+  }) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<void> result = await submit();
+    return result.when(
+      success: (_) async {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              catalogTests: removeTestId == null
+                  ? latest.catalogTests
+                  : _removeCatalogItem(latest.catalogTests, removeTestId),
+              catalogPanels: removePanelId == null
+                  ? latest.catalogPanels
+                  : _removeCatalogItem(latest.catalogPanels, removePanelId),
               isSaving: false,
             ),
           );
@@ -691,6 +878,39 @@ final class LabWorkspaceController
           ? page.totalItemCount
           : page.totalItemCount! + 1,
     );
+  }
+
+  AppPage<LabOrderSummary> _removeOrder(
+    AppPage<LabOrderSummary> page,
+    String orderId,
+  ) {
+    final List<LabOrderSummary> items = page.items
+        .where(
+          (LabOrderSummary order) =>
+              order.id != orderId &&
+              order.apiId != orderId &&
+              order.displayId != orderId,
+        )
+        .toList(growable: false);
+    return AppPage<LabOrderSummary>(
+      items: items,
+      request: page.request,
+      totalItemCount: page.totalItemCount == null
+          ? null
+          : page.totalItemCount! - (page.items.length - items.length),
+    );
+  }
+
+  List<LabCatalogItem> _removeCatalogItem(
+    List<LabCatalogItem> items,
+    String id,
+  ) {
+    return items
+        .where(
+          (LabCatalogItem item) =>
+              item.id != id && item.apiId != id && item.displayId != id,
+        )
+        .toList(growable: false);
   }
 
   bool _isSameOrder(LabOrderSummary left, LabOrderSummary right) {

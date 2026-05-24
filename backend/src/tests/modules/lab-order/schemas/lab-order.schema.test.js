@@ -6,7 +6,13 @@
  * Per testing.mdc: Comprehensive validation schema tests required
  */
 
-const { createLabOrderSchema, updateLabOrderSchema, labOrderIdParamsSchema, listLabOrdersQuerySchema } = require('@validations/lab-order/lab-order.schema');
+const {
+  createLabOrderSchema,
+  updateLabOrderSchema,
+  deleteLabOrderSchema,
+  labOrderIdParamsSchema,
+  listLabOrdersQuerySchema
+} = require('@validations/lab-order/lab-order.schema');
 
 describe('Lab Order Schemas', () => {
   describe('createLabOrderSchema', () => {
@@ -264,6 +270,14 @@ describe('Lab Order Schemas', () => {
       const data = { id: 123 };
       const result = labOrderIdParamsSchema.safeParse(data);
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('deleteLabOrderSchema', () => {
+    it('requires a non-empty deletion reason', () => {
+      expect(deleteLabOrderSchema.safeParse({ reason: 'Duplicate' }).success).toBe(true);
+      expect(deleteLabOrderSchema.safeParse({ reason: ' ' }).success).toBe(false);
+      expect(deleteLabOrderSchema.safeParse({}).success).toBe(false);
     });
   });
 

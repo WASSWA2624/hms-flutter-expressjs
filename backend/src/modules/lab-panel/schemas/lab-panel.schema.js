@@ -32,7 +32,8 @@ const optionalBooleanSchema = z.preprocess((value) => {
 const labPanelItemSchema = z.object({
   lab_test_id: uuidOrFriendlyIdentifierSchema,
   is_required: z.boolean().optional(),
-  instructions: optionalTrimmedString(255)
+  instructions: optionalTrimmedString(255),
+  sort_order: z.number().int().nonnegative().optional()
 });
 
 const withUniquePanelItems = (schema) =>
@@ -88,6 +89,10 @@ const updateLabPanelSchema = withUniquePanelItems(
   })
 );
 
+const deleteLabPanelSchema = z.object({
+  reason: z.string().trim().min(3).max(500)
+});
+
 // ==================== URL Params ====================
 
 /**
@@ -118,6 +123,7 @@ const listLabPanelsQuerySchema = listQuerySchema.extend({
 module.exports = {
   createLabPanelSchema,
   updateLabPanelSchema,
+  deleteLabPanelSchema,
   labPanelIdParamsSchema,
   listLabPanelsQuerySchema
 };

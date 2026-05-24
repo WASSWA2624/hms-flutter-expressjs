@@ -9,6 +9,7 @@
 const {
   createLabPanelSchema,
   updateLabPanelSchema,
+  deleteLabPanelSchema,
   labPanelIdParamsSchema,
   listLabPanelsQuerySchema
 } = require('@validations/lab-panel/lab-panel.schema');
@@ -25,6 +26,7 @@ describe('Lab Panel Schema Validation', () => {
             lab_test_id: 'LBT0000001',
             is_required: true,
             instructions: 'Collect fasting sample',
+            sort_order: 0,
           },
         ],
       };
@@ -229,6 +231,14 @@ describe('Lab Panel Schema Validation', () => {
 
       const result = labPanelIdParamsSchema.safeParse(invalidParams);
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('deleteLabPanelSchema', () => {
+    it('requires a non-empty deletion reason', () => {
+      expect(deleteLabPanelSchema.safeParse({ reason: 'Duplicate' }).success).toBe(true);
+      expect(deleteLabPanelSchema.safeParse({ reason: ' ' }).success).toBe(false);
+      expect(deleteLabPanelSchema.safeParse({}).success).toBe(false);
     });
   });
 

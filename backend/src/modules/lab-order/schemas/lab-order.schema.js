@@ -96,6 +96,10 @@ const updateLabOrderSchema = z.object({
   requested_panels: z.array(labOrderRequestedPanelSchema).max(MAX_REQUESTED_LAB_PANELS).optional()
 });
 
+const deleteLabOrderSchema = z.object({
+  reason: z.string().trim().min(3).max(500)
+});
+
 // ==================== URL Params ====================
 
 /**
@@ -125,6 +129,7 @@ const listLabOrdersQuerySchema = listQuerySchema.extend({
 module.exports = {
   createLabOrderSchema,
   updateLabOrderSchema,
+  deleteLabOrderSchema,
   labOrderIdParamsSchema,
   listLabOrdersQuerySchema
 };

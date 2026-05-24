@@ -126,7 +126,7 @@ const deleteLabTest = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await labTestService.deleteLabTest(id, userId, ipAddress);
+  await labTestService.deleteLabTest(id, req.body, userId, ipAddress);
 
   sendSuccess(res, 204, null, null);
 });

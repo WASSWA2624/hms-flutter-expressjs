@@ -13,6 +13,7 @@ const { ROLES } = require('@config/roles');
 const {
   createLabPanelSchema,
   updateLabPanelSchema,
+  deleteLabPanelSchema,
   labPanelIdParamsSchema,
   listLabPanelsQuerySchema,
 } = require('@validations/lab-panel/lab-panel.schema');
@@ -69,7 +70,7 @@ router.put(
 
 router.delete(
   '/:id',
-  validateRequest({ params: labPanelIdParamsSchema }),
+  validateRequest({ params: labPanelIdParamsSchema, body: deleteLabPanelSchema }),
   authenticate(),
   authorize(LAB_WRITE_ROLES, 'role'),
   labPanelController.deleteLabPanel
