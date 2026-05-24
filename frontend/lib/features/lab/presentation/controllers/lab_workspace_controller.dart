@@ -15,6 +15,22 @@ final labWorkspaceControllerProvider =
       LabWorkspaceController.new,
     );
 
+typedef _LabOrderItemResultEntry = ({
+  LabOrderItem item,
+  Map<String, Object?> payload,
+});
+
+typedef _LabOrderItemResultGroup = ({
+  LabOrderWorkflow workflow,
+  List<_LabOrderItemResultEntry> entries,
+});
+
+typedef _LabOrderItemResultPersister =
+    Future<Result<void>> Function(
+      LabOrderItem item,
+      Map<String, Object?> payload,
+    );
+
 final class LabWorkspaceController
     extends AsyncNotifier<Result<LabWorkspaceState>> {
   static const Duration _syncInterval = Duration(seconds: 10);
@@ -518,30 +534,11 @@ final class LabWorkspaceController
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
-    final String resultStatus = (item.effectiveResultStatus ?? '')
-        .trim()
-        .toUpperCase();
-    final bool shouldSaveAsPending =
-        item.resultId == null ||
-        resultStatus.isEmpty ||
-        resultStatus == 'PENDING';
-    final Map<String, Object?> draftPayload = <String, Object?>{
-      if (shouldSaveAsPending) 'status': 'PENDING',
-      if (payload.containsKey('result_value'))
-        'result_value': payload['result_value'],
-      if (payload.containsKey('result_unit'))
-        'result_unit': payload['result_unit'],
-      if (payload.containsKey('result_text'))
-        'result_text': payload['result_text'],
-    };
-
     return _mutateWorkflow(() async {
-      final Result<void> saveResult = item.resultId == null
-          ? await _repository.createLabResult(<String, Object?>{
-              ...draftPayload,
-              'lab_order_item_id': item.apiId,
-            })
-          : await _repository.updateLabResult(item.resultId!, draftPayload);
+      final Result<void> saveResult = await _saveOrderItemDraftResult(
+        item,
+        payload,
+      );
 
       return saveResult.when(
         success: (_) => _repository.loadOrderWorkflow(selected.order.apiId),
@@ -553,18 +550,35 @@ final class LabWorkspaceController
   Future<AppFailure?> saveOrderItemDrafts(
     List<({LabOrderItem item, Map<String, Object?> payload})> entries,
   ) async {
-    AppFailure? lastFailure;
-    for (final ({LabOrderItem item, Map<String, Object?> payload}) entry
-        in entries) {
-      final AppFailure? failure = await saveOrderItemDraft(
-        entry.item,
-        entry.payload,
-      );
-      if (failure != null) {
-        lastFailure = failure;
-      }
+    return _persistOrderItemResultEntries(entries, _saveOrderItemDraftResult);
+  }
+
+  Future<AppFailure?> submitOrderItemDraft(
+    LabOrderItem item,
+    Map<String, Object?> payload,
+  ) {
+    final LabOrderWorkflow? selected = _workflowForItem(item);
+    if (selected == null) {
+      return Future<AppFailure?>.value(AppFailure.validation());
     }
-    return lastFailure;
+
+    return _mutateWorkflow(() async {
+      final Result<void> submitResult = await _upsertOrderItemResult(
+        item,
+        payload,
+      );
+
+      return submitResult.when(
+        success: (_) => _repository.loadOrderWorkflow(selected.order.apiId),
+        failure: Result.failure,
+      );
+    });
+  }
+
+  Future<AppFailure?> submitOrderItemDrafts(
+    List<({LabOrderItem item, Map<String, Object?> payload})> entries,
+  ) async {
+    return _persistOrderItemResultEntries(entries, _upsertOrderItemResult);
   }
 
   Future<AppFailure?> removeOrderItemDraftResult(LabOrderItem item) {
@@ -590,6 +604,82 @@ final class LabWorkspaceController
     Map<String, Object?> payload,
   ) {
     return _mutateWorkflow(() => _repository.rejectOrderItem(itemId, payload));
+  }
+
+  Future<AppFailure?> _persistOrderItemResultEntries(
+    List<_LabOrderItemResultEntry> entries,
+    _LabOrderItemResultPersister persist,
+  ) async {
+    if (entries.isEmpty) {
+      return AppFailure.validation();
+    }
+
+    final Map<String, _LabOrderItemResultGroup> entriesByOrder =
+        <String, _LabOrderItemResultGroup>{};
+    for (final _LabOrderItemResultEntry entry in entries) {
+      final LabOrderWorkflow? workflow = _workflowForItem(entry.item);
+      if (workflow == null) {
+        return AppFailure.validation();
+      }
+      entriesByOrder
+          .putIfAbsent(
+            workflow.order.apiId,
+            () => (workflow: workflow, entries: <_LabOrderItemResultEntry>[]),
+          )
+          .entries
+          .add(entry);
+    }
+
+    AppFailure? lastFailure;
+    for (final _LabOrderItemResultGroup group in entriesByOrder.values) {
+      final AppFailure? failure = await _mutateWorkflow(() async {
+        for (final _LabOrderItemResultEntry entry in group.entries) {
+          final Result<void> result = await persist(entry.item, entry.payload);
+          final AppFailure? itemFailure = result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+          if (itemFailure != null) {
+            return Result<LabOrderWorkflow>.failure(itemFailure);
+          }
+        }
+        return _repository.loadOrderWorkflow(group.workflow.order.apiId);
+      });
+      if (failure != null) {
+        lastFailure = failure;
+        break;
+      }
+    }
+    return lastFailure;
+  }
+
+  Future<Result<void>> _saveOrderItemDraftResult(
+    LabOrderItem item,
+    Map<String, Object?> payload,
+  ) {
+    final bool shouldSaveAsPending = !item.isCompleted;
+    final Map<String, Object?> draftPayload = <String, Object?>{
+      if (shouldSaveAsPending) 'status': 'PENDING',
+      if (payload.containsKey('result_value'))
+        'result_value': payload['result_value'],
+      if (payload.containsKey('result_unit'))
+        'result_unit': payload['result_unit'],
+      if (payload.containsKey('result_text'))
+        'result_text': payload['result_text'],
+    };
+    return _upsertOrderItemResult(item, draftPayload);
+  }
+
+  Future<Result<void>> _upsertOrderItemResult(
+    LabOrderItem item,
+    Map<String, Object?> payload,
+  ) {
+    return item.resultId == null
+        ? _repository.createLabResult(<String, Object?>{
+            ...payload,
+            'lab_order_item_id': item.apiId,
+          })
+        : _repository.updateLabResult(item.resultId!, payload);
   }
 
   Future<AppFailure?> updateLabTest(
