@@ -11583,6 +11583,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labNextActionEnterResult => 'Enter result';
+
   @override
   String get labCreateAction => 'Create';
 
@@ -11590,13 +11591,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateChoiceDialogTitle => 'Create laboratory item';
 
   @override
-  String get labCreateChoiceDialogBody => 'Choose the laboratory record you want to create.';
+  String get labCreateChoiceDialogBody =>
+      'Choose the laboratory record you want to create.';
 
   @override
   String get labCreateOrderAction => 'Lab order';
 
   @override
-  String get labCreateOrderChoiceBody => 'Request tests or panels for a patient.';
+  String get labCreateOrderChoiceBody =>
+      'Request tests or panels for a patient.';
 
   @override
   String get labCreateOrderDialogTitle => 'Create lab order';
@@ -11605,7 +11608,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreateTestAction => 'Lab test';
 
   @override
-  String get labCreateTestChoiceBody => 'Add a configurable test to the lab catalog.';
+  String get labCreateTestChoiceBody =>
+      'Add a configurable test to the lab catalog.';
 
   @override
   String get labCreateTestDialogTitle => 'Create lab test';
@@ -11614,7 +11618,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labCreatePanelAction => 'Lab panel';
 
   @override
-  String get labCreatePanelChoiceBody => 'Group existing tests into a reusable panel.';
+  String get labCreatePanelChoiceBody =>
+      'Group existing tests into a reusable panel.';
 
   @override
   String get labCreatePanelDialogTitle => 'Create lab panel';
@@ -11629,7 +11634,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labPanelDescriptionLabel => 'Description';
 
   @override
-  String get labReferenceRangesSearchHint => 'Search lab test, code, category, specimen, unit, or range';
+  String get labReferenceRangesSearchHint =>
+      'Search lab test, code, category, specimen, unit, or range';
 
   @override
   String get labActionColumnLabel => 'Action';
@@ -11651,5 +11657,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labAddValueFieldHint => 'Type a value, then add it';
-
 }
