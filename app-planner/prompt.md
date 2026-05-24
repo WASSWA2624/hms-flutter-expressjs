@@ -1,4 +1,4 @@
-# Implementation Prompt: Improve Lab Worklist Realtime Stability, Patient/Order Result Entry Flow, and Lab Report Print Preview
+# Implementation Prompt: Refine Lab Worklist View Switching, Enforce Valid Lab Orders, and Simplify Result Entry
 
 You are working in the HMS codebase with these main folders:
 
@@ -6,19 +6,43 @@ You are working in the HMS codebase with these main folders:
 * `backend`
 * `frontend`
 
-Implement the requested Lab module improvements using the existing project architecture, naming conventions, coding style, shared components, localization system, and UI patterns.
+Implement the next Lab module improvements using the existing architecture, folder structure, naming conventions, coding style, shared components, localization system, permission gates, realtime sync patterns, and UI patterns already present in the project.
 
 ## Problem to solve
 
-The Lab screen currently works visually, but the worklist table feels unstable because it reloads/clears itself instead of staying visible while data refreshes. The expected behavior is:
+The Lab workspace is close to the desired workflow, but the result-entry flow is still not simple enough and some invalid lab orders can appear without tests.
 
-* The Lab worklist is up to date when loaded.
-* Creating/updating/deleting lab orders, entering results, editing results, deleting/removing results, and changing lab configuration updates the Lab screen automatically without a disruptive full table reload.
-* Clicking a patient or lab order opens a useful patient/order result-entry detail view.
-* The result-entry workflow should be simple, clear, and fast.
-* Lab reports should have a proper print preview and use the shared print system.
+Fix the following:
 
-## Relevant areas to inspect and modify
+1. In the Lab worklist, the primary column must change based on the selected view:
+
+   * In **Patients view**, the **Patient** column must appear first.
+   * In **Orders view**, the **Order/Orders** column must appear first.
+
+2. A lab order must never exist without at least one resolved lab test item.
+
+   * Creating a lab order with no selected tests/panels must be blocked.
+   * Creating a lab order from an empty panel must be blocked.
+   * Updating an order must not leave it with zero active tests.
+   * Existing invalid lab orders with no active tests must be safely removed or hidden according to backend soft-delete patterns.
+
+3. The Lab result entry screen must make adding, editing, verifying, and removing results obvious and fast.
+
+   * The user must clearly see the ordered tests.
+   * Each test must show reference range, editable result value, and flag.
+   * Existing results must be editable where business rules permit.
+   * Draft/pending results must be removable.
+   * Single tests must be removable/rejected safely without deleting unrelated order data.
+
+4. The patient/order detail header in the result-entry dialog must be simplified.
+
+   * Do not show a patient avatar.
+   * Do not display patient details as large cards.
+   * Show clean property/value pairs instead.
+
+5. Keep the existing professional report preview and shared print system working.
+
+## Relevant project areas to inspect and modify
 
 ### Frontend
 
@@ -31,336 +55,272 @@ Inspect and modify only where required:
 * `frontend/lib/features/lab/domain/repositories/lab_repository.dart`
 * `frontend/lib/features/lab/data/repositories/lab_repository_impl.dart`
 * `frontend/lib/features/lab/data/dtos/lab_dtos.dart`
-* `frontend/lib/shared/printing/print_form_template.dart`
-* `frontend/lib/app/printing/print_form_template_context.dart`
-* `frontend/lib/shared/components/app_report_actions.dart`
-* `frontend/lib/shared/components/app_list_table.dart`
-* `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart`
 * `frontend/lib/shared/clinical_actions/dialogs/clinical_lab_order_action_dialog.dart`
+* `frontend/lib/shared/lab_catalog/lab_catalog_dialogs.dart`
+* `frontend/lib/shared/components/*`
+* `frontend/lib/shared/forms/*`
+* `frontend/lib/shared/printing/*`
 * `frontend/lib/l10n/app_en.arb`
-* generated localization files under `frontend/lib/l10n/`
+* `frontend/lib/l10n/app_localizations.dart`
+* `frontend/lib/l10n/app_localizations_en.dart`
 
-Reuse existing shared components in `frontend/lib/shared/*` before creating new components.
+Reuse components in `frontend/lib/shared/*` before creating feature-local widgets.
 
 ### Backend
 
-Inspect and modify only if needed:
+Inspect and modify only where required:
 
-* `backend/src/modules/lab-workspace/routes/lab-workspace.routes.js`
-* `backend/src/modules/lab-workspace/controllers/lab-workspace.controller.js`
-* `backend/src/modules/lab-workspace/services/lab-workspace.service.js`
-* `backend/src/modules/lab-workspace/services/lab.serializer.js`
-* `backend/src/modules/lab-workspace/services/lab.shared.js`
 * `backend/src/modules/lab-order/*`
 * `backend/src/modules/lab-order-item/*`
 * `backend/src/modules/lab-result/*`
-* `backend/src/modules/lab-test/*`
-* `backend/src/modules/lab-panel/*`
-* relevant backend tests under `backend/src/tests/modules/lab-*`
+* `backend/src/modules/lab-workspace/*`
+* `backend/prisma/schema.prisma`
+* `backend/prisma/migrations/*` only if a schema/data cleanup migration is genuinely required
+* `backend/scripts/seeders/seed-clinical-pack.js`
+* `backend/scripts/seed-demo-data.js`
+* `backend/scripts/verify-demo-data.js`
+* Relevant backend tests under `backend/src/tests/modules/lab-*`
 
-Only add backend support if the current API cannot supply the required frontend data safely.
+Use existing backend response, validation, repository, service, audit, soft-delete, Prisma, and websocket patterns.
 
 ### App planner
 
-Inspect:
+Use as guidance only unless a change is truly required:
 
 * `app-planner/dev-plan/21-lab.md`
+* `app-planner/dev-plan/10-workspace-ui.md`
+* `backend/app-planner/app-rules/*`
+* `frontend/app-planner/app-rules/*`
 
-Use it as guidance for Lab architecture and UI rules. Do not modify planner files unless the project convention requires it.
+Do not edit planner files unless the implementation genuinely requires documentation alignment.
 
-## Existing UI behavior to preserve from screenshots
+## UI/UX requirements
 
-The current Lab screen uses:
+### Lab worklist
 
-* Left navigation with Lab selected.
-* Main Lab worklist titled `Patient lab worklist`.
-* Search placeholder similar to `Search patient, order, test, or encounter`.
-* Summary cards above the table.
-* `AppListTable`-style table.
-* Patient rows showing patient name, patient ID, encounter/order context, order count, tests summary, and status badges.
-* Lab result entry dialog with:
+* Preserve the current Lab workspace layout:
 
-  * title `Lab result entry`
-  * subtitle like `Nia Demo-Charlie · Order LAB0000003`
-  * patient header card with patient name, copyable patient ID, and order status badge
-  * detail cards for lab order, ordered date/time, order status, and tests
-  * `Ordered tests` section
-  * empty state: beaker icon, `No tests on this order`, and explanatory text
-  * bottom actions: `Edit order`, `Delete order`, `Close`
-  * maximize/restore and close controls
+  * title: Laboratory
+  * live sync status
+  * summary cards
+  * Patients view / Orders view toggle
+  * Create Lab Order action
+  * Lab Configurations action
+  * Refresh action
+  * searchable/filterable `AppListTable`
 
-Preserve this visual language: clean healthcare UI, simple cards, copyable identifiers, status badges, clear empty states, and bottom action buttons.
+* In **Patients view**:
 
-## Required implementation
+  * first main column: Patient
+  * second main column: Orders
+  * row identity should prioritize patient name and patient ID.
 
-### 1. Stabilize the Lab worklist refresh behavior
+* In **Orders view**:
 
-The Lab table must not disappear, blank out, or visually reload during normal refreshes.
+  * first main column: Order/Orders
+  * second main column: Patient
+  * row identity should prioritize lab order ID, with patient context after it.
 
-Implement non-disruptive updates for:
+* Apply the same priority on mobile list items:
 
-* realtime Lab events
-* polling refreshes
-* creating lab orders
-* updating lab orders
-* deleting lab orders
-* entering/saving/submitting/verifying/rejecting results
-* creating/updating/deleting lab tests
-* creating/updating/deleting lab panels
-* lab configuration changes
+  * Patients view starts with patient identity.
+  * Orders view starts with order identity.
 
-Use the existing Lab realtime system and controller patterns. Keep polling as a fallback, but do not use polling in a way that causes table flicker.
+* Do not break sorting, search, filters, pagination, column visibility, row selection, or live refresh.
 
-Important implementation details:
+### Invalid lab orders with no tests
 
-* Keep current table rows visible while background refreshes happen.
-* Do not pass a normal background refresh state into `AppListTable` in a way that replaces rows with a loading state.
-* Use subtle refresh indicators instead of clearing the table.
-* Preserve the active search, filters, selected Lab view, current page, sort, and column state while refreshing.
-* Deduplicate overlapping refreshes and ignore stale refresh responses.
-* For mutations made by the current user, update local state from the mutation response immediately, then run a background refresh only if needed.
-* For realtime events from other users, update the affected order/workflow/catalog data without a full workspace reload when possible.
-* Avoid broad `refresh()` calls after catalog updates unless no targeted update is possible.
+* The UI must not show a usable lab order that has no tests.
+* The backend must reject lab order creation/update if the final resolved item list is empty.
+* If a panel is selected but resolves to zero tests, reject the request with a localized validation error.
+* If existing invalid rows are found, clean them safely:
 
-### 2. Simplify the main Lab worklist table
+  * Prefer soft delete using `deleted_at`.
+  * Do not hard-delete clinical records.
+  * Do not delete unrelated orders.
+  * If the invalid rows are from demo seed data, fix the seed/verification logic.
+  * If a migration or cleanup script is needed, follow the project’s existing Prisma/script pattern.
 
-The main worklist table should show a maximum of four main/default columns.
+### Lab result entry dialog
 
-Use this default column model:
+Replace the current confusing result-entry layout with a simple report-like editable workflow.
 
-| Column        | Required content                                                                |
-| ------------- | ------------------------------------------------------------------------------- |
-| Patient       | Patient name, patient ID, and compact encounter/order context                   |
-| Orders        | Active order count for patient view, or lab order ID/copy chip for order view   |
-| Entry status  | Ordered, partially entered, pending results, verified, rejected, etc.           |
-| Result status | Ordered, partially filled, filled, verified/completed, critical, rejected, etc. |
+The top header must show:
+
+* Patient name
+* Patient ID with copy action
+* Encounter ID with copy action if available
+* Orders included, for example: `1 active order`
+* Lab order IDs below the main patient details, each copyable
+* Tests summary when available
+
+Do not show:
+
+* patient avatar/icon block
+* large card-style patient detail boxes
+* empty “Tests Not available” blocks when tests exist
+
+Use simple property/value rows or a compact key/value grid. Use existing shared components such as `AppCopyableIdentifier` where appropriate.
+
+### Ordered tests and result entry
+
+For each selected order, show a clear table-like section similar to the report preview:
+
+| Tests | Reference range | Result | Flag | Actions |
+| ----- | --------------- | ------ | ---- | ------- |
 
 Requirements:
 
-* Remove `Next action` from the default visible table.
-* Do not show `Tests` as a default main column if it causes more than four columns or horizontal scrolling.
-* If tests are still useful, keep them available only through column settings/details, not as a required default column.
-* Avoid horizontal scrolling on normal desktop width for the default four-column layout.
-* Use localized labels for all headings, statuses, empty states, tooltips, and actions.
-* Do not introduce hardcoded user-facing strings such as `active order` or `active orders`.
+* Use `workflow.order.items` as the source of ordered tests.
+* If an order was created from a panel, show the resolved child tests from that panel.
+* If an order was created from individual tests, show those individual tests.
+* Never show an empty ordered-tests area for a valid order.
+* The **Result** column must be editable inline:
 
-### 3. Improve patient/order detail opening behavior
+  * numeric tests: result value field + unit field/select
+  * qualitative tests: dropdown/select using configured result options where available
+  * text tests: text field/textarea
+* Pre-fill existing result data from:
 
-Clicking a patient row or a lab order row should open a detailed result-entry view.
+  * `resultValue`
+  * `resultUnit`
+  * `resultText`
+  * `resultFlag`
+  * `resultId`
+* Show the reference range beside each test.
+* Show flags clearly, for example normal, high, low, abnormal, critical, positive.
+* Keep abnormal/critical results visually clear but not cluttered.
 
-For patient-group rows:
+### Result actions
 
-* Do not force the user through a separate order selector first.
-* Open a patient-centered detail dialog/page that shows all active lab orders for that patient.
-* If there is only one order, show it directly.
-* If there are multiple orders, show them as clear order sections, cards, tabs, or accordions inside the same detail view.
+Each test row must make actions obvious:
 
-For order rows:
+* Add result / Save draft for tests without a result
+* Edit result for tests with existing result values
+* Verify/Submit result where allowed
+* Remove draft/pending result where allowed
+* Remove/reject a single test where allowed
 
-* Open the selected order directly.
+Use existing APIs where possible:
 
-The detail view must show:
+* Create draft result: `POST /api/v1/lab-results`
+* Update result: `PUT /api/v1/lab-results/:id`
+* Delete draft/pending result: `DELETE /api/v1/lab-results/:id`
+* Verify/release order item: `POST /api/v1/lab/order-items/:id/release`
+* Reject/remove order item: `POST /api/v1/lab/order-items/:id/reject`
+* Load workflow: `GET /api/v1/lab/orders/:id/workflow`
 
-* Patient name
-* Patient ID
-* relevant encounter/order context
-* each lab order ID
-* ordered date/time
-* order status
-* ordered tests
-* result-entry controls
-* edit/delete actions where permitted
-* print/preview action
+Important safety rules:
 
-If the current worklist payload only contains grouped order IDs, load each order workflow by ID or add a minimal backend endpoint only if necessary.
+* Do not hard-delete completed clinical data.
+* Use confirmation dialogs for destructive actions.
+* Preserve audit logging.
+* Preserve backend status synchronization for lab order, order item, and result status.
+* If a completed/verified result cannot be safely deleted under current rules, allow editing through the safe audited path and make deletion unavailable with a clear localized reason.
+* If removing a single test from an already processed order, use the existing reject/cancel item workflow rather than deleting the whole order.
 
-### 4. Show panels and tests correctly
+### Report preview and printing
 
-For each lab order:
+* Keep `LabReportPreviewDialog`, `AppReportPreviewPanel`, `AppReportActionButton`, `PrintFormTemplate`, and `printFormTemplateDocument`.
+* Do not print the UI directly.
+* The report preview must continue to show:
 
-* Show single tests as individual test rows.
-* Show panels as a parent panel label with the panel’s child tests listed underneath.
-* Result entry should happen at the actual test/result item level, not on the panel container unless the existing domain model explicitly supports panel-level results.
-* Empty orders must keep the existing clear empty state.
+  * lab order
+  * patient context
+  * tests
+  * reference range
+  * result
+  * flag
+  * signature/stamp section
+* The result-entry table should visually align with the report preview table, but remain editable.
 
-Verify whether the backend currently exposes enough panel grouping information on order workflow items.
+## Realtime and refresh requirements
 
-If panel grouping is missing:
+* Preserve the current stable worklist behavior.
+* Do not clear/reload the whole table after each mutation.
+* After creating/updating/deleting lab orders, entering/editing/removing results, rejecting/removing a test, or changing lab configuration:
 
-* Prefer a safe frontend inference from existing catalog panel child IDs only if it is reliable.
-* Otherwise, add backend serialization support to expose the panel relationship/grouping for order items.
-* Do not invent panel/test relationships that are not present in the data.
+  * update the affected selected workflow
+  * update the affected worklist row
+  * update summary counts
+  * update report preview data if open
+  * refresh catalogs only when catalog/configuration changes
+* If backend result mutations do not currently emit lab realtime events, add appropriate realtime emission using existing websocket/event patterns.
+* Keep `LabWorkspaceController` targeted-refresh behavior and avoid disruptive full-screen loading after normal mutations.
 
-### 5. Make result entry, editing, and removal simple
+## Localization requirements
 
-Reuse and extend the existing result-entry table/draft patterns.
+* Ensure 100% localization.
+* Do not add hard-coded user-facing strings.
+* Add all new UI labels, validation messages, tooltips, empty states, confirmation titles, button labels, and snackbars to the l10n system.
+* Update:
 
-Each test row should clearly show:
+  * `frontend/lib/l10n/app_en.arb`
+  * generated localization files if this project tracks them manually
+* Ensure `frontend/test/l10n/hard_coded_ui_text_test.dart` still passes.
 
-* test name
-* reference range
-* result input or current result
-* unit where applicable
-* flag/status: normal, low, high, abnormal, critical, pending, verified, rejected
-* simple actions to save/edit/remove where permitted
+## Testing and verification
 
-Behavior requirements:
+Add or update tests where appropriate.
 
-* Entering a result should be straightforward from the row.
-* Editing an unverified result should be simple.
-* Removing a draft/unverified result should be supported if the backend allows it.
-* For verified/finalized results, do not hard-delete clinical data. Use the existing reverse/reject/correction workflow if that is the project pattern.
-* If the backend lacks a safe result-delete/remove endpoint, implement the smallest safe backend change needed, or explicitly preserve the existing clinical safety workflow.
-* After every result mutation, update the detail view and main worklist statuses immediately.
+Backend coverage should include:
 
-### 6. Improve Lab statuses
+* creating a lab order with no tests/panels is rejected
+* creating a lab order from an empty panel is rejected
+* updating an order cannot leave zero active tests
+* existing invalid no-test lab orders are excluded or safely soft-deleted
+* result create/update/delete works with friendly IDs
+* result verification updates item/order status correctly
+* rejecting/removing a single order item does not delete the whole order
+* workbench Patients/Orders views still return valid data
 
-Update the status logic so the main table and detail view accurately reflect result-entry progress.
+Frontend coverage should include where practical:
 
-At minimum, distinguish:
+* Patients view shows Patient column first
+* Orders view shows Order/Orders column first
+* result-entry dialog renders property/value patient details without avatar cards
+* ordered tests render in table-like rows
+* result value editing pre-fills existing values
+* result draft save / verify / remove actions call the correct controller methods
+* no hard-coded UI text is introduced
 
-* ordered / no results started
-* partially entered
-* pending results
-* filled / results entered
-* verified / completed
-* rejected / cancelled
-* critical where applicable
+Run and fix all relevant checks:
 
-Use existing backend/domain status fields where possible. Do not rely only on display text. Result-bearing test counts should exclude rejected/cancelled items and should not incorrectly count panel parent containers as result-bearing tests unless the domain model requires that.
+Backend:
 
-### 7. Add Lab report print preview
-
-Add a print/preview action to the Lab result detail view.
-
-On click:
-
-* Open an in-app print preview dialog first.
-* Do not immediately trigger browser print.
-* Reuse the existing shared print/report components:
-
-  * `PrintFormTemplate`
-  * `PrintFormPage`
-  * `PrintFormMetadataItem`
-  * `AppReportPreviewPanel`
-  * `printFormTemplateDocument`
-  * existing print context/provider patterns
-* Do not create a separate duplicate print system.
-
-The preview must allow the user to choose what to print:
-
-* include/exclude individual orders
-* include/exclude individual tests/results
-* remove items from the preview before printing
-* reset selection if practical
-
-The printed report layout must be simple and professional.
-
-Report table columns:
-
-| Column          | Required content                             |
-| --------------- | -------------------------------------------- |
-| Test            | Test name                                    |
-| Reference range | Reference range/normal range                 |
-| Result          | Result value/text with unit where applicable |
-| Flag            | Normal, Low, High, Abnormal, Critical, etc.  |
-
-Include patient/order context, facility/report header, printed timestamp, page numbers, and verification/signature block where existing data supports it.
-
-### 8. Fix the shared print template patient-details repetition bug
-
-The current shared print template must not repeat patient details on every printed page.
-
-Requirement:
-
-* Patient/order metadata should appear only on the first page.
-* Page numbers and footer information may continue on every page.
-* Facility/report header behavior should follow the existing template design.
-* Do not break other modules that already use the shared print template.
-
-Make the change in the shared print template in a backward-compatible way where possible.
-
-### 9. Backend requirements if backend changes are needed
-
-Preserve existing backend architecture and safety rules.
-
-If adding or changing backend behavior:
-
-* keep tenant/facility scoping intact
-* preserve authorization checks
-* preserve audit behavior
-* preserve realtime event publishing
-* update serializers consistently
-* update schemas/controllers/services/repositories according to existing module patterns
-* add or update tests
-* update OpenAPI only if that is the project convention for changed endpoints
-
-Do not add database migrations unless absolutely required.
-
-### 10. Localization
-
-Ensure 100% localization.
-
-* No new hardcoded user-facing strings in Dart.
-* Add all new labels/messages/tooltips/statuses to `frontend/lib/l10n/app_en.arb`.
-* Regenerate localization outputs using the existing Flutter l10n setup.
-* Include updated generated localization files if they are tracked in the repository.
-
-### 11. Testing and verification
-
-Run the relevant checks before producing the final archive.
+```bash
+cd backend
+npm run lint
+npm run test:backend
+npm run i18n:check
+npm run openapi:validate
+```
 
 Frontend:
 
-* `flutter pub get`
-* Flutter l10n generation using the project’s existing setup
-* `dart format` on changed Dart files
-* `flutter analyze`
-* relevant Flutter tests, if present
-
-Backend, if touched:
-
-* `npm run lint`
-* relevant Jest tests for Lab modules
-* `npm run test:backend:unit` or targeted backend test command
-* `npm run openapi:validate` if OpenAPI was changed
-
-Also manually verify:
-
-* Lab worklist does not flicker or clear during refresh.
-* Creating/editing/deleting lab orders updates the table smoothly.
-* Lab configuration changes update affected UI smoothly.
-* Patient rows open a detail view with all active orders.
-* Order rows open the selected order directly.
-* Panels display parent panel plus child tests.
-* Single tests display normally.
-* Result entry/edit/removal updates statuses immediately.
-* Print preview opens before printing.
-* Patient details appear only on the first printed page.
-* Default Lab table has no more than four visible main columns.
+```bash
+cd frontend
+flutter analyze
+flutter test
+```
 
 ## Scope limits
 
-* Modify only the files required for this task.
-* Do not rewrite unrelated Lab screens.
-* Do not refactor unrelated shared components.
-* Do not change global shell/navigation layout.
-* Do not change unrelated backend modules.
-* Do not introduce a new design system.
-* Reuse `frontend/lib/shared/*` components before creating new ones.
-* Preserve existing folder structure, naming conventions, and coding style.
-* Clear all linter/analyzer issues caused by your changes.
+* Modify only the files required for this Lab task.
+* Do not rewrite unrelated modules.
+* Do not replace the existing Lab architecture.
+* Do not introduce duplicate table, dialog, form, print, permission, or status systems when shared components already exist.
+* Do not change unrelated routing, authentication, billing, pharmacy, radiology, OPD, IPD, or dashboard behavior.
+* Do not create frontend-only fake workflows. Every state change must be backed by the existing backend contract or a properly implemented backend change.
+* Do not hard-delete clinical records.
+* Clear all linter/analyzer issues in touched files.
 
-## Final deliverable
+## Final delivery requirements for the coding agent
 
-Return a zipped archive containing only the files and folders that were created or updated, placed in their correct relative project directories.
+Return a zipped archive containing only the files and folders that were created or updated.
 
-Do not include:
+All files must be placed in their correct relative project directories.
 
-* the whole repository
-* build outputs
-* dependency folders
-* cache folders
-* unrelated files
+If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those delete or rename operations. The scripts must use correct relative paths and must not delete unrelated files.
 
-If any files or folders must be deleted or renamed, include one or more `.ps1` PowerShell scripts that safely perform those delete/rename operations using correct relative paths. The scripts must not delete unrelated files.
+Do not return the full project archive.
