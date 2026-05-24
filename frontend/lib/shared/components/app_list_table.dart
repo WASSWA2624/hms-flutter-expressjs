@@ -61,9 +61,18 @@ List<AppListTableColumn<T>> appListTableDefaultVisibleColumns<T>(
       configuredDefault == null || configuredDefault.isEmpty
       ? availableColumns
       : configuredDefault;
-  return defaultSource
+  final List<AppListTableColumn<T>> visible = defaultSource
       .take(math.min(defaultSource.length, _maxVisibleTableColumns))
       .toList(growable: false);
+  final Set<String> visibleKeys = visible
+      .map((AppListTableColumn<T> column) => column.key)
+      .toSet();
+  for (final AppListTableColumn<T> column in availableColumns) {
+    if (column.alwaysVisible && visibleKeys.add(column.key)) {
+      visible.add(column);
+    }
+  }
+  return visible;
 }
 
 int appListTableCompareText(String? left, String? right) {
@@ -133,7 +142,7 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     final List<AppListTableColumn<T>> columns = _availableColumns
         .where(
           (AppListTableColumn<T> column) =>
-              _visibleColumnKeys.contains(column.key),
+              column.alwaysVisible || _visibleColumnKeys.contains(column.key),
         )
         .toList(growable: false);
     if (columns.isNotEmpty || _availableColumns.isEmpty) {
@@ -149,6 +158,10 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
   }
 
   bool isColumnVisible(String key) {
+    final AppListTableColumn<T>? column = _columnByKey(key);
+    if (column?.alwaysVisible ?? false) {
+      return true;
+    }
     return _visibleColumnKeys.contains(key);
   }
 
@@ -206,7 +219,7 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
       return;
     }
 
-    _visibleColumnKeys = value;
+    _visibleColumnKeys = _withAlwaysVisibleColumnKeys(value);
     notifyListeners();
   }
 
@@ -214,6 +227,23 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     return appListTableDefaultVisibleColumns(
       _availableColumns,
     ).map((AppListTableColumn<T> column) => column.key).toSet();
+  }
+
+  AppListTableColumn<T>? _columnByKey(String key) {
+    for (final AppListTableColumn<T> column in _availableColumns) {
+      if (column.key == key) {
+        return column;
+      }
+    }
+    return null;
+  }
+
+  Set<String> _withAlwaysVisibleColumnKeys(Set<String> keys) {
+    return <String>{
+      ...keys,
+      for (final AppListTableColumn<T> column in _availableColumns)
+        if (column.alwaysVisible) column.key,
+    };
   }
 }
 
@@ -354,6 +384,7 @@ class AppListTableColumn<T> {
     required this.cellBuilder,
     this.id,
     this.numeric = false,
+    this.alwaysVisible = false,
     this.tooltip,
     this.sortComparator,
   });
@@ -362,6 +393,7 @@ class AppListTableColumn<T> {
   final String label;
   final AppListTableCellBuilder<T> cellBuilder;
   final bool numeric;
+  final bool alwaysVisible;
   final String? tooltip;
   final AppListTableSortComparator<T>? sortComparator;
 
@@ -826,7 +858,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final List<AppListTableColumn<T>> visibleColumns = availableColumns
         .where(
           (AppListTableColumn<T> column) =>
-              _visibleColumnKeys.contains(column.key),
+              column.alwaysVisible || _visibleColumnKeys.contains(column.key),
         )
         .toList(growable: false);
     if (visibleColumns.isNotEmpty || availableColumns.isEmpty) {
@@ -950,9 +982,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     }
 
     setState(() {
-      _visibleColumnKeys = value;
+      _visibleColumnKeys = _withAlwaysVisibleColumnKeys(value);
       final String? sortColumnKey = _sortColumnKey;
-      if (sortColumnKey != null && !value.contains(sortColumnKey)) {
+      if (sortColumnKey != null &&
+          !_visibleColumnKeys.contains(sortColumnKey)) {
         _sortColumnKey = null;
         _sortAscending = true;
       }
@@ -961,6 +994,14 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
   String get _columnVisibilityLabel {
     return widget.columnVisibilityLabel ?? 'Table column settings';
+  }
+
+  Set<String> _withAlwaysVisibleColumnKeys(Set<String> keys) {
+    return <String>{
+      ...keys,
+      for (final AppListTableColumn<T> column in _availableColumns)
+        if (column.alwaysVisible) column.key,
+    };
   }
 }
 
@@ -1048,9 +1089,12 @@ class _ColumnVisibilityDialogState<T>
           for (final AppListTableColumn<T> column in widget.columns)
             Builder(
               builder: (BuildContext context) {
-                final bool isChecked = _visibleColumnKeys.contains(column.key);
+                final bool isChecked =
+                    column.alwaysVisible ||
+                    _visibleColumnKeys.contains(column.key);
                 final bool canChange =
-                    !isChecked || _visibleColumnKeys.length > 1;
+                    !column.alwaysVisible &&
+                    (!isChecked || _visibleColumnKeys.length > 1);
 
                 return CheckboxListTile(
                   value: isChecked,

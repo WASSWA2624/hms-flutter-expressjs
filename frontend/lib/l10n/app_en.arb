@@ -14806,6 +14806,18 @@
   "@labReferenceRangesAction": {
     "description": "Localized text for labReferenceRangesAction."
   },
+  "labTableColumnsTitle": "Lab table columns",
+  "@labTableColumnsTitle": {
+    "description": "Title for Lab table column visibility settings."
+  },
+  "labApplyColumnsAction": "Apply columns",
+  "@labApplyColumnsAction": {
+    "description": "Action label for applying Lab table column visibility settings."
+  },
+  "labResetColumnsAction": "Reset columns",
+  "@labResetColumnsAction": {
+    "description": "Action label for resetting Lab table column visibility settings."
+  },
   "labPatientsSummaryLabel": "Patients",
   "@labPatientsSummaryLabel": {
     "description": "Localized text for labPatientsSummaryLabel."

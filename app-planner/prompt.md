@@ -1,4 +1,4 @@
-# Implementation Prompt: Refactor Laboratory Workspace Order Creation and Lab Configurations
+# Implementation Prompt: Complete and Harden Laboratory Workspace Order Creation + Lab Configurations Refactor
 
 You are working in the HMS codebase with these main folders:
 
@@ -6,13 +6,43 @@ You are working in the HMS codebase with these main folders:
 * `backend`
 * `frontend`
 
-Refactor the Laboratory module so the main Lab workspace has a clearer order-creation flow and a dedicated Lab Configurations area for tests, panels, and reference ranges. Treat this as a major but focused Lab-module refactor. Preserve the existing project architecture, folder structure, naming conventions, coding style, shared component patterns, and localization approach.
+Complete and harden the focused Laboratory module refactor so Lab staff have a clear order-creation flow and a dedicated Lab Configurations area for tests, panels, and reference ranges.
 
-## Relevant areas to inspect
+Use the actual codebase as the source of truth. Preserve the existing architecture, folder structure, naming conventions, coding style, Riverpod/controller patterns, shared component patterns, backend route style, authorization/scoping patterns, realtime behavior, and localization approach.
+
+No task-specific screenshots were present in the archive. Use the existing Lab UI/code and the written requirements below as the visual/UX source of truth.
+
+---
+
+## Problem to Solve
+
+The Lab workspace must prioritize creating lab orders for existing patients. Lab catalog management must be moved into a dedicated Lab Configurations area.
+
+Required behavior:
+
+1. The main Lab toolbar must show `Create Lab Order`, not a generic `Create Item`.
+2. `Create Lab Order` must open the lab order creation flow directly.
+3. The generic chooser flow with `Lab order`, `Lab test`, and `Lab panel` must not appear from the main Lab toolbar.
+4. Lab order creation must allow selecting/searching an existing patient.
+5. Encounter and existing lab order context search/selection must be supported where the current codebase supports it.
+6. The Lab order flow must not create a new patient.
+7. The Lab order flow must not show or require editable order time fields such as `ordered_at`, `ordered time`, or equivalent.
+8. The frontend must not send manual `ordered_at` during Lab order creation.
+9. Lab order creation time must come from the backend/server clock.
+10. The main Lab toolbar must show `Lab Configurations`, not `Reference ranges`.
+11. `Lab Configurations` must manage Lab tests, Lab panels, and reference ranges.
+12. Lab tests and Lab panels must support add, edit, and delete.
+13. Reference ranges must be editable through the Lab test configuration flow.
+14. Lab tables, search bars, and searchable selects must remain responsive while typing.
+15. Frontend state, backend state, and existing Lab realtime/polling behavior must remain synchronized.
+
+---
+
+## Relevant Project Areas to Inspect and Modify Only Where Needed
 
 ### Frontend
 
-Inspect and modify only the required files, especially:
+Inspect these files first and modify only the files required for the task:
 
 * `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`
 * `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart`
@@ -26,13 +56,14 @@ Inspect and modify only the required files, especially:
 * `frontend/lib/shared/clinical_actions/clinical_action_models.dart`
 * `frontend/lib/shared/components/*`
 * `frontend/lib/l10n/app_en.arb`
-* generated localization files, if this project commits them
+* `frontend/lib/l10n/app_localizations.dart`
+* `frontend/lib/l10n/app_localizations_en.dart`
 
-Reuse existing shared components in `frontend/lib/shared/*` before creating new components.
+Reuse existing shared components in `frontend/lib/shared/*` before creating new ones.
 
 ### Backend
 
-Inspect and modify only where needed:
+Inspect these files/modules and modify only where needed:
 
 * `backend/src/modules/lab-workspace/*`
 * `backend/src/modules/lab-order/*`
@@ -43,107 +74,139 @@ Inspect and modify only where needed:
 * `backend/src/modules/lab-sample/*`
 * `backend/src/app/router.js`
 * `backend/prisma/schema.prisma`
-* lab seeders/scripts only if catalog data shape changes
+* Lab seeders/scripts only if the catalog data shape actually changes
 
-### App planner
+### App Planner
 
-Use this as implementation guidance, not as a rewrite target unless a codebase rule requires it:
+Use as guidance only; do not rewrite planner files unless required by an existing project rule:
 
 * `app-planner/dev-plan/21-lab.md`
 
-The plan emphasizes reusing `AppWorkspace`, `AppListTable`, `AppSearchBar` / `AppListTableSearch`, `AppDialog`, shared form fields, access gates, and existing Lab API route families.
+The planner emphasizes preserving the existing Lab architecture and reusing `AppWorkspace`, `AppListTable`, `AppSearchBar` / `AppListTableSearch`, `AppDialog`, shared form fields, access gates, and existing Lab API route families.
 
-## Problem to solve
+---
 
-The current Lab workspace has a generic `Create Item` action and a `Reference ranges` action. This is confusing because Lab staff mainly need to create lab orders for existing patients, while tests, panels, and reference ranges belong in configuration.
+## Existing Codebase Facts to Preserve
 
-Refactor the flow as follows:
+The current Lab frontend already uses:
 
-1. Replace `Create Item` with `Create Lab Order`.
-2. `Create Lab Order` must open the lab order creation flow directly.
-3. Lab staff must be able to search/select an existing patient, encounter, or existing lab order context where supported.
-4. The Lab order flow must not create a new patient.
-5. The Lab order flow must not expose or require manual order time entry. The order creation time must come from the backend/system clock.
-6. Replace `Reference ranges` with `Lab Configurations`.
-7. `Lab Configurations` must manage lab tests, lab panels, and reference ranges.
-8. Lab tests and panels must support add, edit, and delete actions.
-9. Reference ranges must be editable through the lab test configuration flow.
-10. Tables, searchable selects, and search bars in the Lab module must feel responsive and should not become sluggish while typing.
-11. Backend and frontend state must remain synchronized, including existing Lab realtime behavior.
+* `AppWorkspace` for the Lab page shell.
+* `AppListTable` and `AppListTableSearch` for Lab worklists/configuration tables.
+* `AppDialog` for Lab dialogs.
+* `LabWorkspaceController` with Riverpod state, polling, and realtime refresh.
+* `LabOrderContextDialog` for selecting existing patient/encounter/order context.
+* `ClinicalLabOrderActionDialog` for selecting tests/panels for an order.
+* `LabCatalogTestDialog` and `LabCatalogPanelDialog` for Lab catalog configuration.
+* `LabDeleteReasonDialog` for delete confirmation/reason flows.
+* Shared searchable/select/form/table/dialog components.
 
-## UI/UX requirements
+The backend Lab order creation flow already has server-side order time behavior in the Lab order service. Verify this behavior and do not regress it.
 
-### Main Lab workspace
+---
 
-The Lab page currently shows:
+## Main Lab Workspace Requirements
 
-* Header: `Laboratory` with beaker icon and green `Live sync` indicator.
-* Right-side actions: `Orders view`, `Create Item`, `Reference ranges`, and refresh.
-* Summary cards: `Patients`, `Patients awaiting results`, `Patients completed`.
-* Worklist panel titled `Patient lab worklist`.
-* Search hint: `Search patient, order, test, or encounter`.
-* Worklist table with patient/order/test/status/result information.
+On `/lab`, preserve the existing workspace layout and behavior:
 
-Update this screen:
+* Header: `Laboratory` with Lab/beaker-style icon.
+* Green `Live sync` indicator when not saving.
+* Toolbar actions:
 
-* Rename the toolbar button `Create Item` to `Create Lab Order`.
-* Rename the toolbar button `Reference ranges` to `Lab Configurations`.
-* Keep the current workspace layout, cards, worklist, search bar, filter icon, settings icon, refresh action, and Live sync indicator.
-* Do not introduce unrelated layout changes.
+  * `Orders view` / `Patients view`
+  * `Create Lab Order`
+  * `Lab Configurations`
+  * Refresh
+* Summary cards:
 
-### Create Lab Order flow
+  * `Patients`
+  * `Patients awaiting results`
+  * `Patients completed`
+* Worklist panel:
+
+  * Patient Lab worklist / Lab worklist according to the current view.
+* Search hint:
+
+  * `Search patient, order, test, or encounter`
+* Existing filter/settings/search/table behavior.
+* Existing responsive layout.
+* Existing worklist table behavior.
+* Existing refresh behavior.
+* Existing access/permission gates.
+
+Do not redesign the whole Lab workspace.
+
+---
+
+## Create Lab Order Flow Requirements
 
 When the user clicks `Create Lab Order`:
 
-* Do not show the current chooser dialog with `Lab order`, `Lab test`, and `Lab panel`.
-* Open the lab order creation flow directly.
-* The form must allow selecting/searching an existing patient.
-* Support encounter and/or lab order context search where existing backend/frontend functionality allows it.
-* Do not allow creating a new patient from this flow.
-* Do not show an editable `ordered_at`, `ordered time`, or equivalent timestamp field during lab order creation.
-* Do not send manual `ordered_at` from the frontend during creation.
-* Rely on the backend/server clock for order creation time.
-* Continue using the existing shared lab order/test/panel selection patterns where possible, especially the existing catalog-driven lab order dialog.
-* Add icons to searchable options where appropriate, for example patient, encounter, order, test, and panel options.
+1. Open the Lab order creation flow directly.
+2. Do not show a generic create chooser with `Lab order`, `Lab test`, and `Lab panel`.
+3. Use the existing patient/context selection pattern where possible.
+4. Allow selecting/searching an existing patient.
+5. Support encounter selection/search where the existing patient detail/workspace or backend API supports it.
+6. Support existing Lab order context selection where currently supported.
+7. Do not allow creating a new patient from this flow.
+8. Do not expose `ordered_at`, `ordered time`, or any editable manual order timestamp.
+9. Do not send `ordered_at` in the frontend create payload.
+10. Use the backend/server clock for Lab order creation time.
+11. Continue using the existing catalog-driven Lab order dialog for selecting tests/panels where possible.
+12. Add/keep icons in searchable options where supported:
 
-### Lab Configurations dialog
+    * Patient
+    * Encounter
+    * Existing order
+    * Test
+    * Panel
+13. Keep keyboard and mouse usability.
+14. Keep search responsive and cancel-safe.
+
+If the shared `ClinicalLabOrderActionDialog` needs Lab-specific wording, add localized optional overrides or context-aware labels without breaking existing clinical-action usage elsewhere.
+
+---
+
+## Lab Configurations Dialog Requirements
 
 When the user clicks `Lab Configurations`:
 
-* Open a dialog for configuring lab tests, lab panels, and reference ranges.
-* The dialog title should reflect the wider scope, for example `Lab Configurations`.
-* The body text should explain that this area manages lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.
-* Keep the existing dialog shell behavior, including close and fullscreen/expand controls if provided by `AppDialog`.
+1. Open a configuration dialog using the existing dialog shell.
+2. The visible title must be `Lab Configurations`.
+3. The body text must explain that this area manages Lab tests, panels, units, qualitative options, and reference ranges used by backend result interpretation.
+4. Preserve existing `AppDialog` behavior, including close and fullscreen/expand controls if available.
+5. Include these tabs:
 
-The dialog must include:
+   * `Tests`
+   * `Panels`
+6. Tabs must use flat/squared styling.
+7. Avoid rounded pill/capsule styling on the `Tests` and `Panels` tabs.
+8. Include a search bar with filter/settings actions consistent with the existing Lab UI.
+9. Include an add action for the active tab:
 
-* `Tests` tab.
-* `Panels` tab.
-* Flat/squared tab styling. Avoid rounded pill/capsule corners on the `Tests` and `Panels` tabs.
-* Search bar with filter/settings actions consistent with existing Lab UI.
-* Add action for the active tab:
+   * `Add test` on the Tests tab
+   * `Add panel` on the Panels tab
+10. Every test row must have edit and delete actions.
+11. Every panel row must have edit and delete actions.
+12. Reference ranges must be editable through the Lab test add/edit dialog.
+13. Preserve any existing Lab QC/configuration action that is already part of the Lab configuration dialog unless it conflicts with this task.
 
-  * `Add test` on Tests tab.
-  * `Add panel` on Panels tab.
-* Edit and delete actions for every test row.
-* Edit and delete actions for every panel row.
-* Reference range editing through the test add/edit dialog.
+---
 
-### Lab Configurations tables
+## Lab Configurations Table Requirements
 
-For the Lab Configurations tables only:
+For Lab Configurations tables only:
 
-* Do not show more than 3 main data columns by default.
-* Keep the row number and action column usable.
-* The action column must be visible by default.
-* The table must scroll horizontally when additional columns are available.
-* Do not let important actions become hidden or clipped.
-* Preserve column settings behavior if the existing table supports it.
-* Use compact, elegant actions with icons and localized labels/tooltips.
+1. Do not show more than 3 main data columns by default.
+2. Keep the row number column usable.
+3. Keep the action column visible by default.
+4. The action column must not be hidden, clipped, or pushed out of reach.
+5. Tables must support horizontal scrolling when additional columns are available.
+6. Preserve column settings behavior if the existing table supports it.
+7. Use compact, elegant icon actions with localized labels/tooltips.
 
-Suggested default visible columns:
+Default visible columns:
 
-Tests table:
+### Tests Table
 
 * Test name
 * Test code
@@ -157,7 +220,7 @@ Additional columns may remain available through horizontal scroll or column sett
 * Unit
 * Reference range details
 
-Panels table:
+### Panels Table
 
 * Panel name
 * Panel code
@@ -169,124 +232,180 @@ Additional columns may remain available through horizontal scroll or column sett
 * Tests count
 * Description or other supported metadata
 
-## Implementation requirements
+---
 
-### Frontend
+## Frontend Implementation Requirements
 
-* Refactor the main Lab toolbar action so `Create Lab Order` calls the lab order creation flow directly.
-* Remove or stop using the generic create-item chooser from this toolbar path.
-* If the old create-item chooser becomes unused, remove it only if doing so does not create unrelated churn.
-* Move test and panel creation into `Lab Configurations`.
-* Reuse existing shared dialogs where possible:
+1. Refactor or verify the main Lab toolbar so `Create Lab Order` calls the Lab order creation flow directly.
+2. Remove or stop using the generic create-item chooser from the main Lab toolbar path.
+3. If the old chooser becomes unused, remove it only if doing so does not cause unrelated churn.
+4. Keep test and panel creation inside `Lab Configurations`.
+5. Reuse existing shared dialogs where possible:
 
-  * existing lab test dialog
-  * existing lab panel dialog
-  * existing delete reason dialog
-  * existing clinical lab order action dialog
-  * existing shared form, search, select, table, and dialog components
-* If a reusable search/select improvement is needed, place it under `frontend/lib/shared/*` and wire Lab to use it.
-* Ensure all user-facing labels, hints, empty states, errors, tooltips, action text, and semantic labels are localized.
-* Do not hardcode English strings in Dart widgets.
-* Update `app_en.arb` and regenerate committed localization outputs if that is the project convention.
-* Keep Riverpod/controller patterns already used by the Lab module.
-* Keep current `AppWorkspace`, `AppListTable`, `AppSearchBar`, `AppDialog`, and shared component conventions.
-* Fix any existing analyzer/linter issues touched by this refactor.
+   * Existing Lab test dialog
+   * Existing Lab panel dialog
+   * Existing delete reason dialog
+   * Existing clinical Lab order action dialog
+   * Existing shared form/search/select/table/dialog components
+6. If a reusable search/select improvement is needed, place it under `frontend/lib/shared/*`.
+7. Keep the existing Riverpod/controller patterns used by the Lab module.
+8. Keep current `AppWorkspace`, `AppListTable`, `AppListTableSearch`, `AppDialog`, and shared component conventions.
+9. Do not introduce new UI libraries.
+10. Do not duplicate shared dialogs/components that already exist in `frontend/lib/shared/*`.
+11. Fix analyzer/linter issues in all touched files.
+12. Remove unused imports, dead code, and stale references caused by the refactor.
 
-### Search and performance
+---
 
-Review all Lab-module tables, search bars, and searchable selects affected by this flow.
+## Localization Requirements
 
-Improve typing UX by:
+Ensure 100% localization/l10n.
 
-* Debouncing expensive searches.
-* Avoiding backend requests on every keystroke unless debounced and cancel-safe.
-* Limiting rendered suggestion counts.
-* Reusing normalized searchable text where useful.
-* Avoiding full widget rebuilds for large option lists where possible.
-* Keeping local search instant for small lists.
-* Showing clear icons in option rows where supported.
-* Preserving keyboard and mouse usability.
+1. Do not hardcode English strings in Dart widgets.
+2. Localize all visible labels, hints, empty states, errors, dialog titles, body text, tab labels, tooltips, action labels, semantic labels, and confirmation messages.
+3. Audit touched Lab UI code for hardcoded user-facing strings, including strings produced by entity/display helpers if those strings appear in widgets.
+4. Update `frontend/lib/l10n/app_en.arb`.
+5. Regenerate committed localization outputs because this project commits generated localization files.
+6. Existing legacy key names may remain if renaming them would cause unnecessary churn; the visible localized text must match the required UX.
 
-### Backend
+---
 
-* Verify that creating a lab order without `ordered_at` uses the backend/server clock.
-* If frontend currently sends `ordered_at`, remove that from the create payload.
-* Do not create patients from the Lab order endpoint or UI.
-* Use existing patient/encounter/order search endpoints if they already exist.
-* If existing search support is missing, add only the minimal backend support required for selecting an existing patient/encounter/order context, following existing auth, facility/tenant scoping, validation, and response style.
-* Confirm lab test and lab panel create/update/delete payloads align with existing backend schemas.
-* Confirm reference range payloads remain compatible with backend result interpretation.
-* Ensure relevant Lab mutations update frontend state and existing realtime/polling behavior correctly.
-* If backend Lab catalog mutations are expected to emit realtime events, follow the existing Lab realtime event pattern.
+## Search and Performance Requirements
 
-## Synchronization requirements
+Review affected Lab tables, search bars, searchable selects, and catalog selectors.
 
-After creating, editing, or deleting lab orders, tests, panels, or reference range data:
+Improve or preserve typing responsiveness by:
 
-* The visible UI should update without requiring a manual page reload.
-* Lab worklist counts and rows should refresh when a new order affects them.
-* Lab configuration tables should update after add/edit/delete.
-* Use targeted state updates where practical.
-* Avoid full workspace reloads unless the current architecture requires it.
-* Preserve existing polling and realtime sync behavior in `LabWorkspaceController`.
+1. Debouncing expensive searches.
+2. Avoiding backend requests on every keystroke unless debounced and cancel-safe.
+3. Using generation tokens/cancel-safe logic for async search where applicable.
+4. Limiting rendered suggestion counts.
+5. Reusing normalized searchable text where useful.
+6. Avoiding full widget rebuilds for large option lists where practical.
+7. Keeping local search instant for small lists.
+8. Showing clear icons in option rows where supported.
+9. Preserving keyboard and mouse usability.
+10. Avoiding sluggishness in Lab worklist search, patient search, encounter/order context search, and test/panel catalog search.
 
-## Missing details the coding agent must verify from the codebase
+---
 
-Verify before implementing:
+## Backend Implementation Requirements
 
-* The existing patient search/list API and frontend repository/component patterns.
-* The existing encounter search/list API and whether the Lab create-order flow should resolve encounter context by ID, code, or selected encounter object.
-* Whether selecting an existing lab order should only prefill context or also support adding new items to that order.
-* Whether multiple reference ranges per test are fully supported by the backend and should be editable now, or whether the current single-primary-range UI should be preserved while keeping existing extra ranges intact.
-* Whether generated localization files are manually committed in this repository and must be regenerated.
+1. Verify Lab order creation works without `ordered_at`.
+2. Verify the Lab order create schema does not require frontend-supplied `ordered_at`.
+3. Ensure Lab order creation uses backend/server time.
+4. Do not create patients from the Lab order endpoint or Lab order UI.
+5. Use existing patient, encounter, and order lookup/search patterns where available.
+6. If search support is missing, add only the minimal backend support required for selecting an existing patient/encounter/order context.
+7. Follow existing auth, facility/tenant scoping, validation, response shape, and error handling.
+8. Confirm Lab test create/update/delete payloads align with existing backend schemas.
+9. Confirm Lab panel create/update/delete payloads align with existing backend schemas.
+10. Confirm reference range payloads remain compatible with backend result interpretation.
+11. Preserve existing audit logging behavior.
+12. Preserve existing Lab realtime/polling behavior.
+13. If backend Lab catalog mutations are expected to emit realtime events, follow the existing Lab realtime event pattern; do not invent unrelated event families.
+14. Do not make Prisma schema changes unless the existing schema cannot support the required behavior.
 
-Do not guess these details. Use the existing codebase as the source of truth.
+---
 
-## Testing and verification
+## State Synchronization Requirements
+
+After creating, editing, or deleting Lab orders, tests, panels, or reference range data:
+
+1. The visible UI must update without requiring a manual page reload.
+2. Lab worklist counts and rows must refresh when a new order affects them.
+3. Lab configuration tables must update after add/edit/delete.
+4. Use targeted state updates where practical.
+5. Avoid full workspace reloads unless the current controller architecture requires it.
+6. Preserve existing polling and realtime sync behavior in `LabWorkspaceController`.
+
+---
+
+## Missing Details to Verify From the Codebase Before Implementing
+
+Do not guess these details. Verify from the current codebase and preserve existing behavior where appropriate:
+
+1. The current patient search/list API and frontend repository/component pattern.
+2. The current encounter search/list API and whether Lab create-order context should resolve encounter by ID, code, or selected encounter object.
+3. Whether selecting an existing Lab order should only prefill context or should support adding new items to that existing order.
+4. Whether multiple reference ranges per test are fully supported in the UI/backend now, or whether the current single-primary-range editing UI should be preserved while keeping existing additional ranges intact.
+5. Whether any legacy `Reference ranges` localization keys should be renamed or kept to avoid unnecessary churn.
+6. Whether generated Flutter localization files must be regenerated after ARB changes.
+7. Whether Lab catalog mutations should emit realtime events in addition to local state updates.
+8. Whether any existing tests cover Lab workspace, Lab catalog dialogs, or shared searchable/select/table components.
+
+---
+
+## Testing and Verification
 
 Run and fix all relevant checks.
 
-Frontend:
+### Frontend
+
+Run:
 
 * `flutter analyze`
-* Run existing Flutter tests relevant to Lab/shared components if present.
-* Add or update focused tests only where the project already has a suitable test pattern.
+* Existing Flutter tests relevant to Lab/shared components, if present
+* Localization generation/checks according to the project convention
 
-Backend:
+Add or update focused tests only where the project already has a suitable test pattern.
 
-* Run the backend lint/test scripts defined in `backend/package.json`.
-* Verify Lab order creation still passes backend validation without `ordered_at`.
-* Verify lab test/panel create, update, and delete still work.
+### Backend
 
-Manual verification:
+From `backend`, run and fix:
+
+* `npm run lint`
+* `npm run test`
+* `npm run openapi:validate` if backend API contracts are changed
+* Any narrower relevant backend tests if available
+
+Verify:
+
+1. Lab order creation passes backend validation without `ordered_at`.
+2. Lab order creation uses server time.
+3. Lab test create/update/delete still works.
+4. Lab panel create/update/delete still works.
+5. Reference range payloads still work with backend interpretation.
+
+---
+
+## Manual Verification Checklist
 
 1. Open `/lab`.
-2. Confirm main toolbar shows `Create Lab Order` and `Lab Configurations`.
-3. Click `Create Lab Order`.
-4. Confirm no generic create-item chooser appears.
-5. Confirm the flow allows selecting/searching an existing patient/context.
-6. Confirm no manual order time field is shown.
-7. Create a lab order and confirm it appears in the Lab worklist/state without page reload.
-8. Click `Lab Configurations`.
-9. Confirm Tests and Panels tabs are flat/squared, not rounded pills.
-10. Confirm Tests table shows no more than 3 main data columns by default and keeps actions visible.
-11. Confirm Panels table shows no more than 3 main data columns by default and keeps actions visible.
-12. Confirm tables scroll horizontally when needed.
-13. Confirm add/edit/delete works for tests.
-14. Confirm add/edit/delete works for panels.
-15. Confirm reference ranges can be edited through test configuration.
-16. Confirm Lab search bars and searchable selects remain responsive while typing.
-17. Confirm all new visible strings are localized.
-18. Confirm no linter/analyzer issues remain.
+2. Confirm the main toolbar shows `Create Lab Order`.
+3. Confirm the main toolbar shows `Lab Configurations`.
+4. Click `Create Lab Order`.
+5. Confirm no generic create-item chooser appears.
+6. Confirm the flow allows searching/selecting an existing patient.
+7. Confirm encounter/order context behavior matches verified codebase support.
+8. Confirm no manual order time field is shown.
+9. Confirm the frontend create payload does not send `ordered_at`.
+10. Create a Lab order and confirm it appears in the Lab worklist/state without page reload.
+11. Confirm Lab worklist counts update correctly.
+12. Click `Lab Configurations`.
+13. Confirm `Tests` and `Panels` tabs are flat/squared, not rounded pills.
+14. Confirm the Tests table shows no more than 3 main data columns by default and keeps actions visible.
+15. Confirm the Panels table shows no more than 3 main data columns by default and keeps actions visible.
+16. Confirm both tables scroll horizontally when additional columns are available.
+17. Confirm add/edit/delete works for tests.
+18. Confirm add/edit/delete works for panels.
+19. Confirm reference ranges can be edited through test configuration.
+20. Confirm Lab search bars and searchable selects remain responsive while typing.
+21. Confirm all new/touched visible strings are localized.
+22. Confirm no analyzer/linter/test issues remain.
 
-## Scope limits
+---
 
-* Modify only files required for this Lab refactor.
-* Do not rewrite unrelated modules.
-* Do not redesign the whole HMS layout.
-* Do not replace the existing state-management architecture.
-* Do not introduce new UI libraries.
-* Do not duplicate shared dialogs/components when existing `frontend/lib/shared/*` components can be reused or extended.
-* Do not create new patients from the Lab order flow.
-* Do not expose manual order creation time in the create-order form.
-* Do not leave dead code, unused imports, untranslated strings, or lint issues.
+## Scope Limits
+
+1. Modify only files required for this Lab refactor.
+2. Do not rewrite unrelated modules.
+3. Do not redesign the whole HMS layout.
+4. Do not replace the existing state-management architecture.
+5. Do not introduce new UI libraries.
+6. Do not duplicate shared dialogs/components when existing `frontend/lib/shared/*` components can be reused or extended.
+7. Do not create new patients from the Lab order flow.
+8. Do not expose manual order creation time in the create-order form.
+9. Do not send manual `ordered_at` from frontend Lab order creation.
+10. Do not make backend schema/database changes unless strictly required.
+11. Do not leave dead code, unused imports, untranslated strings, stale labels, or lint issues.

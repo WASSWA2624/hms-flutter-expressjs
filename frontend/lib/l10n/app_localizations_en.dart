@@ -11406,6 +11406,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labReferenceRangesAction => 'Lab Configurations';
 
   @override
+  String get labTableColumnsTitle => 'Lab table columns';
+
+  @override
+  String get labApplyColumnsAction => 'Apply columns';
+
+  @override
+  String get labResetColumnsAction => 'Reset columns';
+
+  @override
   String get labPatientsSummaryLabel => 'Patients';
 
   @override

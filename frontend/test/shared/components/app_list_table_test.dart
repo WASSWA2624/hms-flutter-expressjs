@@ -290,6 +290,51 @@ void main() {
     expect(find.text('Table columns'), findsOneWidget);
   });
 
+  testWidgets('AppListTable keeps always-visible columns selected', (
+    WidgetTester tester,
+  ) async {
+    final searchController = TextEditingController();
+    addTearDown(searchController.dispose);
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 420,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columnsWithPinnedStatus,
+          search: AppListTableSearch<_RowItem>(
+            controller: searchController,
+            semanticLabel: 'Search rows',
+            matcher: (_, _) => true,
+          ),
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(900, 600),
+    );
+
+    await tester.tap(find.byTooltip('Table column settings'));
+    await tester.pumpAndSettle();
+
+    final CheckboxListTile pinnedStatus = tester.widget<CheckboxListTile>(
+      find.widgetWithText(CheckboxListTile, 'Status'),
+    );
+    expect(pinnedStatus.value, isTrue);
+    expect(pinnedStatus.onChanged, isNull);
+
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Title'));
+    await tester.pump();
+    await tester.tap(find.text('Apply columns'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.text('Title'), findsNothing);
+    expect(find.text('Active'), findsOneWidget);
+  });
+
   testWidgets('AppListTable wires page controls to page requests', (
     WidgetTester tester,
   ) async {
@@ -436,6 +481,16 @@ const List<AppListTableColumn<_RowItem>> _columns =
         label: 'Status',
         cellBuilder: _statusCell,
         sortComparator: _compareStatus,
+      ),
+    ];
+
+const List<AppListTableColumn<_RowItem>> _columnsWithPinnedStatus =
+    <AppListTableColumn<_RowItem>>[
+      AppListTableColumn<_RowItem>(label: 'Title', cellBuilder: _titleCell),
+      AppListTableColumn<_RowItem>(
+        label: 'Status',
+        alwaysVisible: true,
+        cellBuilder: _statusCell,
       ),
     ];
 

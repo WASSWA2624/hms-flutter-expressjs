@@ -326,6 +326,10 @@ class _LabWorklistPanel extends ConsumerWidget {
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        columnVisibilityTitle: l10n.labTableColumnsTitle,
+        columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
+        columnVisibilityResetLabel: l10n.labResetColumnsAction,
+        columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
         search: AppListTableSearch<LabOrderSummary>(
           controller: searchController,
           semanticLabel: l10n.labSearchLabel,
@@ -809,6 +813,10 @@ class _LabConfigurationsDialogState
             physics: const NeverScrollableScrollPhysics(),
             columnVisibilityController: _columnVisibilityController,
             columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+            columnVisibilityTitle: l10n.labTableColumnsTitle,
+            columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
+            columnVisibilityResetLabel: l10n.labResetColumnsAction,
+            columnVisibilityCancelLabel: l10n.commonCancelActionLabel,
             search: AppListTableSearch<LabCatalogItem>(
               controller: _searchController,
               semanticLabel: l10n.labCatalogSearchLabel,
@@ -1075,6 +1083,7 @@ class _LabConfigurationsDialogState
     return AppListTableColumn<LabCatalogItem>(
       id: 'actions',
       label: l10n.labActionColumnLabel,
+      alwaysVisible: true,
       cellBuilder: (BuildContext context, LabCatalogItem item) {
         return Wrap(
           spacing: Theme.of(context).spacing.xs,

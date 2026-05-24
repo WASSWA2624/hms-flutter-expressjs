@@ -21531,6 +21531,24 @@ abstract class AppLocalizations {
   /// **'Lab Configurations'**
   String get labReferenceRangesAction;
 
+  /// Title for Lab table column visibility settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab table columns'**
+  String get labTableColumnsTitle;
+
+  /// Action label for applying Lab table column visibility settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply columns'**
+  String get labApplyColumnsAction;
+
+  /// Action label for resetting Lab table column visibility settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset columns'**
+  String get labResetColumnsAction;
+
   /// Localized text for labPatientsSummaryLabel.
   ///
   /// In en, this message translates to:
