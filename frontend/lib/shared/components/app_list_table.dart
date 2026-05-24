@@ -420,6 +420,7 @@ class AppListTable<T> extends StatefulWidget {
     this.errorBuilder,
     this.footer,
     this.rowColorBuilder,
+    this.maxVisibleItems,
     this.isLoading = false,
     this.error,
     this.shrinkWrap = false,
@@ -462,6 +463,7 @@ class AppListTable<T> extends StatefulWidget {
   final Widget Function(BuildContext context, Object error)? errorBuilder;
   final Widget? footer;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
+  final int? maxVisibleItems;
   final bool isLoading;
   final Object? error;
   final bool shrinkWrap;
@@ -641,21 +643,30 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     }
 
     final List<T> sortedItems = _sortedItems(visibleItems);
+    final List<T> renderedItems = _limitedVisibleItems(sortedItems);
     if (usesExternalSearchListenable &&
         normalizedQuery.isNotEmpty &&
         page != null) {
       return (
         disablePagination: true,
-        items: sortedItems,
+        items: renderedItems,
         page: AppPage<T>(
-          items: sortedItems,
+          items: renderedItems,
           request: page.request.first(),
           totalItemCount: sortedItems.length,
         ),
       );
     }
 
-    return (disablePagination: false, items: sortedItems, page: page);
+    return (disablePagination: false, items: renderedItems, page: page);
+  }
+
+  List<T> _limitedVisibleItems(List<T> items) {
+    final int? limit = widget.maxVisibleItems;
+    if (limit == null || limit <= 0 || items.length <= limit) {
+      return items;
+    }
+    return items.take(limit).toList(growable: false);
   }
 
   Widget _buildForItems(BuildContext context, List<T> visibleItems) {

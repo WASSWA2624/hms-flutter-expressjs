@@ -742,19 +742,30 @@ class _LabConfigurationsDialogState
     extends ConsumerState<_LabConfigurationsDialog> {
   static const String _categoryFilterKey = 'category';
   static const String _resultKindFilterKey = 'result_kind';
+  static const int _maxVisibleCatalogItems = 160;
 
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<LabCatalogItem>
   _columnVisibilityController;
+  late LabWorkspaceState _dialogState;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   LabCatalogItemType _catalogType = LabCatalogItemType.test;
 
   @override
   void initState() {
     super.initState();
+    _dialogState = widget.state;
     _searchController = TextEditingController();
     _columnVisibilityController =
         AppListTableColumnVisibilityController<LabCatalogItem>();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LabConfigurationsDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_shouldSyncCatalogState(_dialogState, widget.state)) {
+      _dialogState = widget.state;
+    }
   }
 
   @override
@@ -768,16 +779,18 @@ class _LabConfigurationsDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final LabWorkspaceState state =
-        ref
-            .watch(labWorkspaceControllerProvider)
-            .asData
-            ?.value
-            .when(
-              success: (LabWorkspaceState value) => value,
-              failure: (_) => null,
-            ) ??
-        widget.state;
+    ref.listen<AsyncValue<Result<LabWorkspaceState>>>(
+      labWorkspaceControllerProvider,
+      (_, AsyncValue<Result<LabWorkspaceState>> next) {
+        final LabWorkspaceState? nextState = _workspaceStateFromAsync(next);
+        if (nextState == null ||
+            !_shouldSyncCatalogState(_dialogState, nextState)) {
+          return;
+        }
+        setState(() => _dialogState = nextState);
+      },
+    );
+    final LabWorkspaceState state = _dialogState;
     final List<LabCatalogItem> items = _filteredItems(state);
     final bool showingTests = _catalogType == LabCatalogItemType.test;
 
@@ -809,6 +822,7 @@ class _LabConfigurationsDialogState
           SizedBox(height: theme.spacing.md),
           AppListTable<LabCatalogItem>(
             items: items,
+            maxVisibleItems: _maxVisibleCatalogItems,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             columnVisibilityController: _columnVisibilityController,
@@ -959,6 +973,24 @@ class _LabConfigurationsDialogState
     return _catalogType == LabCatalogItemType.test
         ? state.catalogTests
         : state.catalogPanels;
+  }
+
+  LabWorkspaceState? _workspaceStateFromAsync(
+    AsyncValue<Result<LabWorkspaceState>> value,
+  ) {
+    return value.asData?.value.when(
+      success: (LabWorkspaceState state) => state,
+      failure: (_) => null,
+    );
+  }
+
+  bool _shouldSyncCatalogState(
+    LabWorkspaceState current,
+    LabWorkspaceState next,
+  ) {
+    return current.catalogTests != next.catalogTests ||
+        current.catalogPanels != next.catalogPanels ||
+        current.qcLogs != next.qcLogs;
   }
 
   List<LabCatalogItem> _filteredItems(LabWorkspaceState state) {
@@ -1451,6 +1483,19 @@ Future<void> _openCreateLabOrderDialog(
     return;
   }
 
+  ClinicalActionLabOrderRecord? existingOrder;
+  final String? existingOrderId = orderContext.normalizedExistingOrderId;
+  if (existingOrderId != null) {
+    existingOrder = await _loadExistingLabOrderRecord(
+      context,
+      state,
+      existingOrderId,
+    );
+    if (existingOrder == null || !context.mounted) {
+      return;
+    }
+  }
+
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -1458,6 +1503,7 @@ Future<void> _openCreateLabOrderDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalLabOrderActionDialog(
         referenceData: _clinicalReferenceData(state),
+        existingOrder: existingOrder,
         onRequest:
             ({
               required List<String> labTestIds,
@@ -1555,6 +1601,19 @@ Future<void> _openEditLabOrderDialog(
     return;
   }
 
+  ClinicalActionLabOrderRecord? existingOrder;
+  final String? existingOrderId = orderContext.normalizedExistingOrderId;
+  if (existingOrderId != null) {
+    existingOrder = await _loadExistingLabOrderRecord(
+      context,
+      state,
+      existingOrderId,
+    );
+    if (existingOrder == null || !context.mounted) {
+      return;
+    }
+  }
+
   await _showActionResult(
     context,
     showAppDialog<bool>(
@@ -1562,7 +1621,7 @@ Future<void> _openEditLabOrderDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalLabOrderActionDialog(
         referenceData: _clinicalReferenceData(state),
-        existingOrder: _clinicalLabOrderRecord(order),
+        existingOrder: existingOrder,
         onRequest:
             ({
               required List<String> labTestIds,
@@ -1592,6 +1651,65 @@ Future<void> _openEditLabOrderDialog(
       ),
     ),
   );
+}
+
+Future<ClinicalActionLabOrderRecord?> _loadExistingLabOrderRecord(
+  BuildContext context,
+  LabWorkspaceState fallbackState,
+  String orderId,
+) async {
+  final AppFailure? failure = await _readLabController(
+    context,
+  ).selectOrderById(orderId);
+  if (!context.mounted) {
+    return null;
+  }
+  _showFailureIfNeeded(context, failure);
+  if (failure != null) {
+    return null;
+  }
+
+  final LabOrderWorkflow? workflow = _readLabStateFromContext(
+    context,
+  )?.selectedWorkflow;
+  if (workflow != null && _isSameLabOrder(workflow.order, orderId)) {
+    return _clinicalLabOrderRecord(workflow.order);
+  }
+
+  final LabOrderSummary? fallbackOrder = _findLabOrderById(
+    fallbackState.worklist.items,
+    orderId,
+  );
+  return fallbackOrder == null ? null : _clinicalLabOrderRecord(fallbackOrder);
+}
+
+LabOrderSummary? _findLabOrderById(
+  Iterable<LabOrderSummary> orders,
+  String orderId,
+) {
+  for (final LabOrderSummary order in orders) {
+    if (_isSameLabOrder(order, orderId)) {
+      return order;
+    }
+  }
+  return null;
+}
+
+bool _isSameLabOrder(LabOrderSummary order, String orderId) {
+  final String normalized = orderId.trim().toLowerCase();
+  return normalized.isNotEmpty &&
+      (<String?>[order.apiId, order.id, order.displayId]
+          .whereType<String>()
+          .map((String value) => value.trim().toLowerCase())
+          .contains(normalized));
+}
+
+LabWorkspaceState? _readLabStateFromContext(BuildContext context) {
+  return ProviderScope.containerOf(context)
+      .read(labWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(success: (LabWorkspaceState state) => state, failure: (_) => null);
 }
 
 Future<void> _openDeleteLabOrderDialog(

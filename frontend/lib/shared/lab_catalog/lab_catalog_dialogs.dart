@@ -21,10 +21,20 @@ typedef LabCatalogUpdateSubmit =
 
 @immutable
 final class LabOrderContextInput {
-  const LabOrderContextInput({required this.patientId, this.encounterId});
+  const LabOrderContextInput({
+    required this.patientId,
+    this.encounterId,
+    this.existingOrderId,
+  });
 
   final String patientId;
   final String? encounterId;
+  final String? existingOrderId;
+
+  String? get normalizedExistingOrderId {
+    final String value = existingOrderId?.trim() ?? '';
+    return value.isEmpty ? null : value;
+  }
 
   Map<String, Object?> toPayload({
     required List<String> labTestIds,
@@ -134,7 +144,6 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
               hintText: l10n.labPatientSearchHint,
               isRequired: true,
               isLoading: _isLoadingPatients,
-              allowClear: false,
               options: _toSelectOptions(_patientOptions),
               validator: AppValidators.requiredValue(l10n.validationRequired),
               onSearchTextChanged: _schedulePatientSearch,
@@ -147,7 +156,6 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
                 labelText: l10n.labEncounterContextLabel,
                 hintText: l10n.labEncounterContextHint,
                 enabled:
-                    !_isLoadingPatientContext &&
                     _selectedPatientId != null &&
                     _selectedPatientId!.trim().isNotEmpty,
                 isLoading: _isLoadingPatientContext,
@@ -267,22 +275,29 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
   }
 
   void _selectPatient(String? patientId) {
+    final String? normalizedPatientId = _emptyToNull(patientId);
     final _LabContextOption? option = _optionByValue(
       _patientOptions,
-      patientId,
+      normalizedPatientId,
     );
     setState(() {
-      _selectedPatientId = patientId;
+      _selectedPatientId = normalizedPatientId;
       _selectedPatientOption = option;
       _selectedEncounterId = null;
       _selectedOrderId = null;
       _patientEncounters.clear();
       _failure = null;
+      if (normalizedPatientId == null) {
+        _patientSearchGeneration += 1;
+        _patientContextGeneration += 1;
+        _isLoadingPatients = false;
+        _isLoadingPatientContext = false;
+      }
     });
-    if (patientId == null || patientId.trim().isEmpty) {
+    if (normalizedPatientId == null) {
       return;
     }
-    unawaited(_loadPatientContext(patientId));
+    unawaited(_loadPatientContext(normalizedPatientId));
   }
 
   Future<void> _loadPatientContext(String patientId) async {
@@ -497,7 +512,8 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
     Navigator.of(context).pop(
       LabOrderContextInput(
         patientId: _selectedPatientId?.trim() ?? '',
-        encounterId: _selectedEncounterId?.trim(),
+        encounterId: _emptyToNull(_selectedEncounterId),
+        existingOrderId: _emptyToNull(_selectedOrderId),
       ),
     );
   }
@@ -2249,6 +2265,11 @@ List<String> _uniqueNonEmpty(Iterable<String?> values) {
         left.toLowerCase().compareTo(right.toLowerCase()),
   );
   return result;
+}
+
+String? _emptyToNull(String? value) {
+  final String trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 String _firstNonEmpty(Iterable<String?> values) {

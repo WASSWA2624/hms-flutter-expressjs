@@ -105,12 +105,15 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   static const int _maxFilteredOptions = 80;
 
   late final TextEditingController _controller;
+  late FocusNode _focusNode;
+  late bool _ownsFocusNode;
   bool _hasControllerText = false;
   bool _isSyncingControllerText = false;
 
   @override
   void initState() {
     super.initState();
+    _attachFocusNode();
     _controller = TextEditingController(text: _labelForValue(widget.value));
     _hasControllerText = _controller.text.isNotEmpty;
     _controller.addListener(_handleControllerChanged);
@@ -119,9 +122,19 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   @override
   void didUpdateWidget(covariant AppSelectField<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      _detachFocusNode();
+      _attachFocusNode();
+    }
+
     final bool selectionChanged = oldWidget.value != widget.value;
     final bool selectedOptionMayHaveChanged =
-        widget.value != null && oldWidget.options != widget.options;
+        widget.value != null &&
+        oldWidget.options != widget.options &&
+        (!_focusNode.hasFocus ||
+            _controller.text.isEmpty ||
+            _controller.text ==
+                _labelForValueInOptions(widget.value, oldWidget.options));
     if (selectionChanged || selectedOptionMayHaveChanged) {
       final String label = _labelForValue(widget.value);
       if (_controller.text != label) {
@@ -139,13 +152,25 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   void dispose() {
     _controller.removeListener(_handleControllerChanged);
     _controller.dispose();
+    _detachFocusNode();
     super.dispose();
+  }
+
+  void _attachFocusNode() {
+    _ownsFocusNode = widget.focusNode == null;
+    _focusNode = widget.focusNode ?? FocusNode();
+  }
+
+  void _detachFocusNode() {
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool canSelect = widget.enabled && !widget.isLoading;
+    final bool canSelect = widget.enabled;
     Widget field = LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double? width =
@@ -160,20 +185,18 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             widget.allowClear &&
             widget.onChanged != null &&
             (widget.value != null || _hasControllerText);
-        final Widget trailingIcon = widget.isLoading
-            ? const _SelectLoadingIcon()
-            : _SelectTrailingIcon(
-                showClear: canClear,
-                isExpanded: false,
-                onClear: _clearSelection,
-              );
-        final Widget selectedTrailingIcon = widget.isLoading
-            ? const _SelectLoadingIcon()
-            : _SelectTrailingIcon(
-                showClear: canClear,
-                isExpanded: true,
-                onClear: _clearSelection,
-              );
+        final Widget trailingIcon = _SelectTrailingIcon(
+          showClear: canClear,
+          isExpanded: false,
+          isLoading: widget.isLoading,
+          onClear: _clearSelection,
+        );
+        final Widget selectedTrailingIcon = _SelectTrailingIcon(
+          showClear: canClear,
+          isExpanded: true,
+          isLoading: widget.isLoading,
+          onClear: _clearSelection,
+        );
         final bool enableFilter =
             widget.searchable || widget.filterCallback != null;
         final bool enableSearch =
@@ -212,7 +235,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
               ? widget.searchCallback ?? _searchEntries
               : null,
           requestFocusOnTap: true,
-          focusNode: widget.focusNode,
+          focusNode: _focusNode,
           autovalidateMode: widget.autovalidateMode,
           validator: widget.validator,
           onSaved: widget.onSaved,
@@ -269,10 +292,17 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   }
 
   String _labelForValue(T? value) {
+    return _labelForValueInOptions(value, widget.options);
+  }
+
+  String _labelForValueInOptions(
+    T? value,
+    List<AppSelectOption<T>> options,
+  ) {
     if (value == null) {
       return '';
     }
-    for (final AppSelectOption<T> option in widget.options) {
+    for (final AppSelectOption<T> option in options) {
       if (option.value == value) {
         return option.label;
       }
@@ -361,11 +391,13 @@ class _SelectTrailingIcon extends StatelessWidget {
   const _SelectTrailingIcon({
     required this.showClear,
     required this.isExpanded,
+    required this.isLoading,
     required this.onClear,
   });
 
   final bool showClear;
   final bool isExpanded;
+  final bool isLoading;
   final VoidCallback? onClear;
 
   @override
@@ -374,7 +406,7 @@ class _SelectTrailingIcon extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return SizedBox(
-      width: showClear ? 76 : 44,
+      width: (showClear ? 76.0 : 44.0) + (isLoading ? 28.0 : 0.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
@@ -392,6 +424,14 @@ class _SelectTrailingIcon extends StatelessWidget {
               ),
               onPressed: onClear,
             ),
+          if (isLoading)
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
+              child: SizedBox.square(
+                dimension: theme.appTokens.listIconSize * 0.78,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
           Padding(
             padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
             child: Icon(
@@ -405,19 +445,3 @@ class _SelectTrailingIcon extends StatelessWidget {
   }
 }
 
-class _SelectLoadingIcon extends StatelessWidget {
-  const _SelectLoadingIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Padding(
-      padding: EdgeInsets.all(theme.spacing.sm),
-      child: SizedBox.square(
-        dimension: theme.appTokens.listIconSize,
-        child: const CircularProgressIndicator(strokeWidth: 2),
-      ),
-    );
-  }
-}

@@ -309,15 +309,14 @@ class _AppSearchBarState extends State<AppSearchBar> {
       valueListenable: widget.controller,
       builder: (BuildContext context, TextEditingValue value, _) {
         final ThemeData theme = Theme.of(context);
-        final bool canEdit = widget.enabled && !widget.isLoading;
+        final bool canEdit = widget.enabled;
         final String clearLabel =
             widget.clearLabel ??
             MaterialLocalizations.of(context).clearButtonTooltip;
         final bool canClear =
             widget.showClearButton &&
             value.text.isNotEmpty &&
-            widget.enabled &&
-            !widget.isLoading;
+            widget.enabled;
         final bool showFilters = _shouldShowFilterButton;
         final BorderSide borderSide = _borderSide(theme);
         final double minHeight =
@@ -400,26 +399,34 @@ class _AppSearchBarState extends State<AppSearchBar> {
   }
 
   Widget? _suffixIcon(String clearLabel, bool canClear) {
-    if (widget.isLoading) {
-      final ThemeData theme = Theme.of(context);
-      return Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: SizedBox.square(
-          dimension: theme.appTokens.listIconSize,
-          child: const CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
-    if (!canClear) {
+    if (!widget.isLoading && !canClear) {
       return null;
     }
 
-    return AppIconButton(
-      icon: Icons.close,
-      semanticLabel: clearLabel,
-      tooltip: clearLabel,
-      onPressed: _clear,
+    final ThemeData theme = Theme.of(context);
+    return SizedBox(
+      width: canClear && widget.isLoading ? 76.0 : 48.0,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (canClear)
+            AppIconButton(
+              icon: Icons.close,
+              semanticLabel: clearLabel,
+              tooltip: clearLabel,
+              onPressed: _clear,
+            ),
+          if (widget.isLoading)
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
+              child: SizedBox.square(
+                dimension: theme.appTokens.listIconSize * 0.82,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

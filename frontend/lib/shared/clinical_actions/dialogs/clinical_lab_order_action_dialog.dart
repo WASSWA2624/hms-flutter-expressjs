@@ -123,6 +123,15 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                 ),
               ],
               selected: <_LabRequestSelectionKind>{_selectionKind},
+              showSelectedIcon: false,
+              style: ButtonStyle(
+                minimumSize: WidgetStatePropertyAll<Size>(
+                  Size(theme.spacing.none, 44),
+                ),
+                shape: const WidgetStatePropertyAll<OutlinedBorder>(
+                  RoundedRectangleBorder(),
+                ),
+              ),
               onSelectionChanged: _isSaving
                   ? null
                   : (Set<_LabRequestSelectionKind> values) {
