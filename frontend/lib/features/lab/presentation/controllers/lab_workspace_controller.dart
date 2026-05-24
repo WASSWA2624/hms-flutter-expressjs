@@ -23,6 +23,7 @@ final class LabWorkspaceController
 
   Timer? _syncTimer;
   bool _isSyncing = false;
+  int _workbenchRefreshSequence = 0;
 
   @override
   Future<Result<LabWorkspaceState>> build() async {
@@ -133,11 +134,69 @@ final class LabWorkspaceController
   }
 
   Future<AppFailure?> selectOrder(LabOrderSummary order) {
+    if (order.isPatientGroup) {
+      final List<String> orderIds = _workflowIdentifiersFor(order);
+      if (orderIds.isEmpty) {
+        return Future<AppFailure?>.value(AppFailure.validation());
+      }
+      return selectOrdersById(orderIds);
+    }
+
     final String? orderId = _workflowIdentifierFor(order);
     if (orderId == null) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
     return selectOrderById(orderId);
+  }
+
+  Future<AppFailure?> selectOrdersById(List<String> orderIds) async {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    final List<String> distinctOrderIds = _distinctNonEmpty(orderIds);
+    if (distinctOrderIds.isEmpty) {
+      return AppFailure.validation();
+    }
+
+    if (distinctOrderIds.length == 1) {
+      return selectOrderById(distinctOrderIds.first);
+    }
+
+    _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
+    final List<LabOrderWorkflow> workflows = <LabOrderWorkflow>[];
+    AppFailure? failure;
+    for (final String orderId in distinctOrderIds) {
+      final Result<LabOrderWorkflow> result = await _repository
+          .loadOrderWorkflow(orderId);
+      result.when(
+        success: workflows.add,
+        failure: (AppFailure value) => failure ??= value,
+      );
+    }
+
+    final LabWorkspaceState? latest = _currentState;
+    if (latest == null) {
+      return failure;
+    }
+
+    if (workflows.isEmpty) {
+      _emit(latest.copyWith(isRefreshingDetail: false, lastFailure: failure));
+      return failure ?? AppFailure.validation();
+    }
+
+    _emit(
+      latest.copyWith(
+        selectedWorkflow: workflows.first,
+        selectedWorkflows: workflows,
+        worklist: _replaceOrders(latest.worklist, workflows),
+        isRefreshingDetail: false,
+        lastFailure: failure,
+        clearLastFailure: failure == null,
+      ),
+    );
+    return failure;
   }
 
   Future<AppFailure?> selectOrderById(String orderId) async {
@@ -157,6 +216,7 @@ final class LabWorkspaceController
           _emit(
             latest.copyWith(
               selectedWorkflow: workflow,
+              selectedWorkflows: <LabOrderWorkflow>[workflow],
               worklist: _replaceOrder(latest.worklist, workflow.order),
               isRefreshingDetail: false,
               clearLastFailure: true,
@@ -225,6 +285,10 @@ final class LabWorkspaceController
               _emit(
                 latest.copyWith(
                   selectedWorkflow: workflow,
+                  selectedWorkflows: _replaceSelectedWorkflow(
+                    latest.selectedWorkflows,
+                    workflow,
+                  ),
                   worklist: _replaceOrder(latest.worklist, workflow.order),
                   isSaving: false,
                 ),
@@ -264,11 +328,22 @@ final class LabWorkspaceController
       success: (_) async {
         final LabWorkspaceState? latest = _currentState;
         if (latest != null) {
+          final List<LabOrderWorkflow> remainingWorkflows = latest
+              .selectedWorkflows
+              .where(
+                (LabOrderWorkflow workflow) =>
+                    !_orderMatchesIdentifier(workflow.order, orderId),
+              )
+              .toList(growable: false);
           _emit(
             latest.copyWith(
               worklist: _removeOrder(latest.worklist, orderId),
+              selectedWorkflow: remainingWorkflows.isEmpty
+                  ? null
+                  : remainingWorkflows.first,
+              selectedWorkflows: remainingWorkflows,
               isSaving: false,
-              clearSelectedWorkflow: true,
+              clearSelectedWorkflow: remainingWorkflows.isEmpty,
             ),
           );
         }
@@ -325,7 +400,8 @@ final class LabWorkspaceController
           ];
           _emit(latest.copyWith(catalogPanels: panels, isSaving: false));
         }
-        return refresh();
+        unawaited(_refreshWorkbench(showLoading: false));
+        return null;
       },
       failure: (AppFailure failure) {
         final LabWorkspaceState? latest = _currentState;
@@ -402,7 +478,7 @@ final class LabWorkspaceController
     LabOrderItem item,
     Map<String, Object?> payload,
   ) {
-    final LabOrderWorkflow? selected = _currentState?.selectedWorkflow;
+    final LabOrderWorkflow? selected = _workflowForItem(item);
     if (selected == null) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
@@ -449,6 +525,24 @@ final class LabWorkspaceController
     return lastFailure;
   }
 
+  Future<AppFailure?> removeOrderItemDraftResult(LabOrderItem item) {
+    final String? resultId = item.resultId;
+    final LabOrderWorkflow? selected = _workflowForItem(item);
+    if (resultId == null || selected == null || item.isCompleted) {
+      return Future<AppFailure?>.value(AppFailure.validation());
+    }
+
+    return _mutateWorkflow(() async {
+      final Result<void> deleteResult = await _repository.deleteLabResult(
+        resultId,
+      );
+      return deleteResult.when(
+        success: (_) => _repository.loadOrderWorkflow(selected.order.apiId),
+        failure: Result.failure,
+      );
+    });
+  }
+
   Future<AppFailure?> rejectOrderItem(
     String itemId,
     Map<String, Object?> payload,
@@ -481,7 +575,8 @@ final class LabWorkspaceController
           ];
           _emit(latest.copyWith(catalogTests: tests, isSaving: false));
         }
-        return refresh();
+        unawaited(_refreshWorkbench(showLoading: false));
+        return null;
       },
       failure: (AppFailure failure) {
         final LabWorkspaceState? latest = _currentState;
@@ -626,6 +721,7 @@ final class LabWorkspaceController
 
     final _LabReferenceData referenceData = await _referenceData();
     LabOrderWorkflow? selectedWorkflow;
+    List<LabOrderWorkflow> selectedWorkflows = const <LabOrderWorkflow>[];
     if (workbench.worklist.items.isNotEmpty) {
       final String? initialOrderId = _workflowIdentifierFor(
         workbench.worklist.items.first,
@@ -634,6 +730,9 @@ final class LabWorkspaceController
         final Result<LabOrderWorkflow> detailResult = await _repository
             .loadOrderWorkflow(initialOrderId);
         selectedWorkflow = _successOrNull(detailResult);
+        if (selectedWorkflow != null) {
+          selectedWorkflows = <LabOrderWorkflow>[selectedWorkflow];
+        }
       }
     }
 
@@ -646,6 +745,7 @@ final class LabWorkspaceController
         catalogPanels: referenceData.panels,
         qcLogs: referenceData.qcLogs,
         selectedWorkflow: selectedWorkflow,
+        selectedWorkflows: selectedWorkflows,
       ),
     );
   }
@@ -698,24 +798,27 @@ final class LabWorkspaceController
         }
       }
 
-      final LabOrderWorkflow? selected = _currentState?.selectedWorkflow;
-      if (selected != null) {
-        final Result<LabOrderWorkflow> detailResult = await _repository
-            .loadOrderWorkflow(selected.order.apiId);
-        detailResult.when(
-          success: (LabOrderWorkflow workflow) {
-            final LabWorkspaceState? latest = _currentState;
-            if (latest != null) {
-              _emit(
-                latest.copyWith(
-                  selectedWorkflow: workflow,
-                  worklist: _replaceOrder(latest.worklist, workflow.order),
-                ),
-              );
-            }
-          },
-          failure: (_) {},
-        );
+      final List<LabOrderWorkflow> selectedWorkflows =
+          _currentSelectedWorkflows();
+      if (selectedWorkflows.isNotEmpty) {
+        final List<LabOrderWorkflow> refreshed = <LabOrderWorkflow>[];
+        for (final LabOrderWorkflow selected in selectedWorkflows) {
+          final Result<LabOrderWorkflow> detailResult = await _repository
+              .loadOrderWorkflow(selected.order.apiId);
+          detailResult.when(success: refreshed.add, failure: (_) {});
+        }
+        if (refreshed.isNotEmpty) {
+          final LabWorkspaceState? latest = _currentState;
+          if (latest != null) {
+            _emit(
+              latest.copyWith(
+                selectedWorkflow: refreshed.first,
+                selectedWorkflows: refreshed,
+                worklist: _replaceOrders(latest.worklist, refreshed),
+              ),
+            );
+          }
+        }
       }
 
       return null;
@@ -734,34 +837,52 @@ final class LabWorkspaceController
       return null;
     }
 
+    final int requestSequence = ++_workbenchRefreshSequence;
+    final LabWorkbenchQuery requestedQuery = current.query;
     final Result<LabWorkbenchBundle> result = await _repository.loadWorkbench(
-      current.query,
+      requestedQuery,
     );
     return result.when(
       success: (LabWorkbenchBundle bundle) {
         final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          final LabOrderWorkflow? selected = _selectedAfterRefresh(
-            bundle.worklist,
-            latest.selectedWorkflow,
-          );
-          _emit(
-            latest.copyWith(
-              summary: bundle.summary,
-              worklist: bundle.worklist,
-              selectedWorkflow: selected,
-              isRefreshing: false,
-              clearSelectedWorkflow:
-                  latest.selectedWorkflow != null && selected == null,
-              clearLastFailure: true,
-            ),
-          );
+        if (latest == null ||
+            requestSequence != _workbenchRefreshSequence ||
+            !_isSameQuery(latest.query, requestedQuery)) {
+          return null;
         }
+
+        final LabOrderWorkflow? selected = _selectedAfterRefresh(
+          bundle.worklist,
+          latest.selectedWorkflow,
+        );
+        final List<LabOrderWorkflow> selectedWorkflows =
+            _selectedWorkflowsAfterRefresh(
+              bundle.worklist,
+              latest.selectedWorkflows,
+            );
+        _emit(
+          latest.copyWith(
+            summary: bundle.summary,
+            worklist: bundle.worklist,
+            selectedWorkflow: selectedWorkflows.isNotEmpty
+                ? selectedWorkflows.first
+                : selected,
+            selectedWorkflows: selectedWorkflows,
+            isRefreshing: false,
+            clearSelectedWorkflow:
+                latest.selectedWorkflow != null &&
+                selected == null &&
+                selectedWorkflows.isEmpty,
+            clearLastFailure: true,
+          ),
+        );
         return null;
       },
       failure: (AppFailure failure) {
         final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
+        if (latest != null &&
+            requestSequence == _workbenchRefreshSequence &&
+            _isSameQuery(latest.query, requestedQuery)) {
           _emit(latest.copyWith(isRefreshing: false, lastFailure: failure));
         }
         return failure;
@@ -786,6 +907,10 @@ final class LabWorkspaceController
           _emit(
             latest.copyWith(
               selectedWorkflow: workflow,
+              selectedWorkflows: _replaceSelectedWorkflow(
+                latest.selectedWorkflows,
+                workflow,
+              ),
               worklist: _replaceOrder(latest.worklist, workflow.order),
               isSaving: false,
             ),
@@ -835,6 +960,38 @@ final class LabWorkspaceController
     );
   }
 
+  List<LabOrderWorkflow> _currentSelectedWorkflows() {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return const <LabOrderWorkflow>[];
+    }
+    if (current.selectedWorkflows.isNotEmpty) {
+      return current.selectedWorkflows;
+    }
+    final LabOrderWorkflow? selected = current.selectedWorkflow;
+    return selected == null
+        ? const <LabOrderWorkflow>[]
+        : <LabOrderWorkflow>[selected];
+  }
+
+  LabOrderWorkflow? _workflowForItem(LabOrderItem item) {
+    final List<LabOrderWorkflow> workflows = _currentSelectedWorkflows();
+    for (final LabOrderWorkflow workflow in workflows) {
+      if (_itemBelongsToOrder(item, workflow.order)) {
+        return workflow;
+      }
+    }
+    return workflows.isEmpty ? null : workflows.first;
+  }
+
+  bool _itemBelongsToOrder(LabOrderItem item, LabOrderSummary order) {
+    final String? labOrderId = item.labOrderId;
+    return labOrderId == null ||
+        labOrderId == order.id ||
+        labOrderId == order.apiId ||
+        labOrderId == order.displayId;
+  }
+
   LabOrderWorkflow? _selectedAfterRefresh(
     AppPage<LabOrderSummary> page,
     LabOrderWorkflow? selected,
@@ -848,6 +1005,36 @@ final class LabWorkspaceController
       }
     }
     return selected;
+  }
+
+  List<LabOrderWorkflow> _selectedWorkflowsAfterRefresh(
+    AppPage<LabOrderSummary> page,
+    List<LabOrderWorkflow> selected,
+  ) {
+    if (selected.isEmpty) {
+      return const <LabOrderWorkflow>[];
+    }
+    return selected
+        .map((LabOrderWorkflow workflow) {
+          for (final LabOrderSummary order in page.items) {
+            if (_isSameOrder(order, workflow.order)) {
+              return workflow.copyWithSummary(order);
+            }
+          }
+          return workflow;
+        })
+        .toList(growable: false);
+  }
+
+  AppPage<LabOrderSummary> _replaceOrders(
+    AppPage<LabOrderSummary> page,
+    List<LabOrderWorkflow> workflows,
+  ) {
+    var next = page;
+    for (final LabOrderWorkflow workflow in workflows) {
+      next = _replaceOrder(next, workflow.order);
+    }
+    return next;
   }
 
   AppPage<LabOrderSummary> _replaceOrder(
@@ -919,6 +1106,55 @@ final class LabWorkspaceController
         (left.displayId != null && left.displayId == right.displayId);
   }
 
+  bool _orderMatchesIdentifier(LabOrderSummary order, String identifier) {
+    return order.id == identifier ||
+        order.apiId == identifier ||
+        order.displayId == identifier ||
+        order.orderIds.contains(identifier) ||
+        order.orderDisplayIds.contains(identifier);
+  }
+
+  List<LabOrderWorkflow> _replaceSelectedWorkflow(
+    List<LabOrderWorkflow> current,
+    LabOrderWorkflow workflow,
+  ) {
+    if (current.isEmpty) {
+      return <LabOrderWorkflow>[workflow];
+    }
+
+    var replaced = false;
+    final List<LabOrderWorkflow> next = <LabOrderWorkflow>[];
+    for (final LabOrderWorkflow selected in current) {
+      if (_isSameOrder(selected.order, workflow.order)) {
+        if (!replaced) {
+          next.add(workflow);
+          replaced = true;
+        }
+      } else {
+        next.add(selected);
+      }
+    }
+    if (!replaced) {
+      next.add(workflow);
+    }
+    return next;
+  }
+
+  bool _isSameQuery(LabWorkbenchQuery left, LabWorkbenchQuery right) {
+    return left.search == right.search &&
+        left.scope == right.scope &&
+        left.view == right.view &&
+        left.pageRequest.pageIndex == right.pageRequest.pageIndex &&
+        left.pageRequest.pageSize == right.pageRequest.pageSize;
+  }
+
+  List<String> _workflowIdentifiersFor(LabOrderSummary order) {
+    final List<String> preferred = order.orderDisplayIds.isNotEmpty
+        ? order.orderDisplayIds
+        : order.orderIds;
+    return _distinctNonEmpty(preferred);
+  }
+
   String? _workflowIdentifierFor(LabOrderSummary order) {
     if (order.isPatientGroup) {
       final String? groupedOrderDisplayId = _firstNonEmpty(
@@ -933,6 +1169,22 @@ final class LabWorkspaceController
       }
     }
     return _firstNonEmpty(<String?>[order.displayId, order.id]);
+  }
+
+  List<String> _distinctNonEmpty(Iterable<String?> values) {
+    final Set<String> seen = <String>{};
+    final List<String> distinct = <String>[];
+    for (final String? value in values) {
+      final String? normalized = value?.trim();
+      if (normalized == null ||
+          normalized.isEmpty ||
+          seen.contains(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      distinct.add(normalized);
+    }
+    return distinct;
   }
 
   String? _firstNonEmpty(Iterable<String?> values) {

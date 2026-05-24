@@ -11821,6 +11821,42 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get labPreviewReportAction => 'Preview report';
+
+  @override
+  String get labPrintReportAction => 'Print report';
+
+  @override
+  String get labResetReportSelectionAction => 'Reset selection';
+
+  @override
+  String get labReportSelectionTitle => 'Choose report content';
+
+  @override
+  String get labReportNoSelectionLabel => 'No report items selected';
+
+  @override
+  String get labOrdersIncludedLabel => 'Orders included';
+
+  @override
+  String get labRemoveDraftResultAction => 'Remove result';
+
+  @override
+  String get labDraftRemovedMessage => 'Result removed.';
+
+  @override
+  String get labStatusFilled => 'Filled';
+
+  @override
+  String get labStatusPartiallyEntered => 'Partially entered';
+
+  @override
+  String get labStatusPartiallyFilled => 'Partially filled';
+
+  @override
+  String get labReportSignatureLabel => 'Signature / stamp';
+
+  @override
   String labReferenceRangeCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

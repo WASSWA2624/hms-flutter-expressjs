@@ -466,10 +466,7 @@ final class LabOrderSummary {
 
   String? get displaySubtitle {
     if (isPatientGroup) {
-      final String ordersLabel = activeOrderCount == 1
-          ? '1 active order'
-          : '$activeOrderCount active orders';
-      return _joinDisplay(<String?>[patientId, encounterId, ordersLabel]);
+      return _joinDisplay(<String?>[patientId, encounterId]);
     }
     return _joinDisplay(<String?>[patientId, encounterId, displayId ?? id]);
   }
@@ -555,6 +552,11 @@ final class LabOrderItem {
     this.resultStatus,
     this.labOrderId,
     this.labTestId,
+    this.panelId,
+    this.panelDisplayName,
+    this.panelCode,
+    this.panelSortOrder,
+    this.panelItemSortOrder,
     this.testDisplayName,
     this.testCode,
     this.category,
@@ -587,6 +589,11 @@ final class LabOrderItem {
   final String? resultStatus;
   final String? labOrderId;
   final String? labTestId;
+  final String? panelId;
+  final String? panelDisplayName;
+  final String? panelCode;
+  final int? panelSortOrder;
+  final int? panelItemSortOrder;
   final String? testDisplayName;
   final String? testCode;
   final String? category;
@@ -619,6 +626,12 @@ final class LabOrderItem {
         labTestId ??
         apiId;
   }
+
+  String? get panelKey => _firstNonEmpty(<String?>[panelId, panelCode, panelDisplayName]);
+
+  String? get panelTitle => _joinDisplay(<String?>[panelDisplayName, panelCode]) ?? panelKey;
+
+  bool get hasPanel => panelKey != null;
 
   String? get displaySubtitle {
     return _joinDisplay(<String?>[
@@ -912,6 +925,7 @@ final class LabWorkspaceState {
     this.catalogPanels = const <LabCatalogItem>[],
     this.qcLogs = const <LabQcLog>[],
     this.selectedWorkflow,
+    this.selectedWorkflows = const <LabOrderWorkflow>[],
     this.lastFailure,
     this.isRefreshing = false,
     this.isRefreshingDetail = false,
@@ -925,6 +939,7 @@ final class LabWorkspaceState {
   final List<LabCatalogItem> catalogPanels;
   final List<LabQcLog> qcLogs;
   final LabOrderWorkflow? selectedWorkflow;
+  final List<LabOrderWorkflow> selectedWorkflows;
   final Object? lastFailure;
   final bool isRefreshing;
   final bool isRefreshingDetail;
@@ -950,6 +965,7 @@ final class LabWorkspaceState {
     List<LabCatalogItem>? catalogPanels,
     List<LabQcLog>? qcLogs,
     LabOrderWorkflow? selectedWorkflow,
+    List<LabOrderWorkflow>? selectedWorkflows,
     Object? lastFailure,
     bool? isRefreshing,
     bool? isRefreshingDetail,
@@ -967,6 +983,9 @@ final class LabWorkspaceState {
       selectedWorkflow: clearSelectedWorkflow
           ? null
           : selectedWorkflow ?? this.selectedWorkflow,
+      selectedWorkflows: clearSelectedWorkflow
+          ? const <LabOrderWorkflow>[]
+          : selectedWorkflows ?? this.selectedWorkflows,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,

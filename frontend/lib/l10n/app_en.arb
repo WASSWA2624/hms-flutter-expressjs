@@ -15342,6 +15342,54 @@
       }
     }
   },
+  "labPreviewReportAction": "Preview report",
+  "@labPreviewReportAction": {
+    "description": "Action label for opening a lab report print preview."
+  },
+  "labPrintReportAction": "Print report",
+  "@labPrintReportAction": {
+    "description": "Action label for printing a lab report from the preview."
+  },
+  "labResetReportSelectionAction": "Reset selection",
+  "@labResetReportSelectionAction": {
+    "description": "Action label for resetting selected lab report items."
+  },
+  "labReportSelectionTitle": "Choose report content",
+  "@labReportSelectionTitle": {
+    "description": "Title for the lab report print preview selection controls."
+  },
+  "labReportNoSelectionLabel": "No report items selected",
+  "@labReportNoSelectionLabel": {
+    "description": "Empty state title shown when no lab report items are selected for print preview."
+  },
+  "labOrdersIncludedLabel": "Orders included",
+  "@labOrdersIncludedLabel": {
+    "description": "Metadata label for the number of lab orders included in a detail view or report."
+  },
+  "labRemoveDraftResultAction": "Remove result",
+  "@labRemoveDraftResultAction": {
+    "description": "Action label for removing a draft or unverified lab result."
+  },
+  "labDraftRemovedMessage": "Result removed.",
+  "@labDraftRemovedMessage": {
+    "description": "Snackbar message shown after a draft or unverified lab result is removed."
+  },
+  "labStatusFilled": "Filled",
+  "@labStatusFilled": {
+    "description": "Lab status label for items with all result values entered."
+  },
+  "labStatusPartiallyEntered": "Partially entered",
+  "@labStatusPartiallyEntered": {
+    "description": "Lab status label for orders with some result values entered."
+  },
+  "labStatusPartiallyFilled": "Partially filled",
+  "@labStatusPartiallyFilled": {
+    "description": "Lab status label for orders with some completed result items."
+  },
+  "labReportSignatureLabel": "Signature / stamp",
+  "@labReportSignatureLabel": {
+    "description": "Label for the lab report verification signature block."
+  },
   "labReferenceRangeCount": "{count, plural, one {1 range} other {{count} ranges}}",
   "@labReferenceRangeCount": {
     "description": "Pluralized reference range count label.",

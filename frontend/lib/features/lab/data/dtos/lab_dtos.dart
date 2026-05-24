@@ -303,6 +303,11 @@ final class LabOrderItemDto {
       resultStatus: _string(json['result_status']),
       labOrderId: _string(json['lab_order_id']),
       labTestId: _string(json['lab_test_id']),
+      panelId: _string(json['panel_id']),
+      panelDisplayName: _string(json['panel_display_name']),
+      panelCode: _string(json['panel_code']),
+      panelSortOrder: _nullableInt(json['panel_sort_order']),
+      panelItemSortOrder: _nullableInt(json['panel_item_sort_order']),
       testDisplayName: _string(json['test_display_name']),
       testCode: _string(json['test_code']),
       category: _string(json['category']),
@@ -598,6 +603,22 @@ int _int(Object? value) {
     return int.tryParse(value) ?? 0;
   }
   return 0;
+}
+
+int? _nullableInt(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value.trim());
+  }
+  return null;
 }
 
 bool _bool(Object? value, {bool fallback = false}) {

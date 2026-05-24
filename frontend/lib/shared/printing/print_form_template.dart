@@ -103,6 +103,7 @@ abstract final class PrintFormTemplate {
         footerNote: footerNote,
         explicitPages: explicitPages,
         showHeader: pageNumber == 1,
+        showMetadata: !explicitPages || pageNumber == 1,
       );
     }).join();
 
@@ -212,6 +213,7 @@ $renderedPages
     required String? footerNote,
     required bool explicitPages,
     required bool showHeader,
+    required bool showMetadata,
   }) {
     return '''
 <article class="print-template-page">
@@ -221,7 +223,7 @@ $renderedPages
       <h1>${escape(title)}</h1>
       ${_optionalText(subtitle, 'p', 'print-template-subtitle')}
     </div>
-    ${_metadata(metadata)}
+    ${showMetadata ? _metadata(metadata) : ''}
   </section>
   <section class="print-template-content">
     $bodyHtml

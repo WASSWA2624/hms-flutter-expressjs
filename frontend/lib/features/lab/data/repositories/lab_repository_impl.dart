@@ -277,6 +277,14 @@ final class LabRepositoryImpl implements LabRepository {
   }
 
   @override
+  Future<Result<void>> deleteLabResult(String resultId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.byId(HmsApiResource.labResults, resultId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<LabOrderWorkflow>> rejectOrderItem(
     String itemId,
     Map<String, Object?> payload,

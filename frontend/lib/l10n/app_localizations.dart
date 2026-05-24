@@ -22299,6 +22299,78 @@ abstract class AppLocalizations {
   /// **'{count, plural, one {1 active order} other {{count} active orders}}'**
   String labActiveOrderCount(int count);
 
+  /// Action label for opening a lab report print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview report'**
+  String get labPreviewReportAction;
+
+  /// Action label for printing a lab report from the preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Print report'**
+  String get labPrintReportAction;
+
+  /// Action label for resetting selected lab report items.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset selection'**
+  String get labResetReportSelectionAction;
+
+  /// Title for the lab report print preview selection controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose report content'**
+  String get labReportSelectionTitle;
+
+  /// Empty state title shown when no lab report items are selected for print preview.
+  ///
+  /// In en, this message translates to:
+  /// **'No report items selected'**
+  String get labReportNoSelectionLabel;
+
+  /// Metadata label for the number of lab orders included in a detail view or report.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders included'**
+  String get labOrdersIncludedLabel;
+
+  /// Action label for removing a draft or unverified lab result.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove result'**
+  String get labRemoveDraftResultAction;
+
+  /// Snackbar message shown after a draft or unverified lab result is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Result removed.'**
+  String get labDraftRemovedMessage;
+
+  /// Lab status label for items with all result values entered.
+  ///
+  /// In en, this message translates to:
+  /// **'Filled'**
+  String get labStatusFilled;
+
+  /// Lab status label for orders with some result values entered.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially entered'**
+  String get labStatusPartiallyEntered;
+
+  /// Lab status label for orders with some completed result items.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially filled'**
+  String get labStatusPartiallyFilled;
+
+  /// Label for the lab report verification signature block.
+  ///
+  /// In en, this message translates to:
+  /// **'Signature / stamp'**
+  String get labReportSignatureLabel;
+
   /// Pluralized reference range count label.
   ///
   /// In en, this message translates to:
