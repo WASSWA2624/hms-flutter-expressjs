@@ -247,6 +247,83 @@ describe('lab-order.service', () => {
     );
   });
 
+  it('rejects creating a lab order without resolved tests', async () => {
+    resolveModelRecordOrThrow.mockResolvedValueOnce({
+      id: 'patient-internal-1',
+      tenant_id: 'tenant-1',
+    });
+
+    await expect(
+      labOrderService.createLabOrder(
+        {
+          patient_id: 'PAT0000001',
+          requested_tests: [],
+          requested_panels: [],
+        },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.no_tests',
+      statusCode: 400,
+    });
+    expect(labOrderRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects creating a lab order from an empty panel', async () => {
+    resolveModelRecordOrThrow
+      .mockResolvedValueOnce({
+        id: 'patient-internal-1',
+        tenant_id: 'tenant-1',
+      })
+      .mockResolvedValueOnce({
+        id: 'lab-panel-1',
+        panel_items: [],
+      });
+
+    await expect(
+      labOrderService.createLabOrder(
+        {
+          patient_id: 'PAT0000001',
+          requested_panels: [{ lab_panel_id: 'LPN0000001' }],
+        },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.empty_panel',
+      statusCode: 400,
+    });
+    expect(labOrderRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects replacing lab order items with an empty resolved item list', async () => {
+    resolveModelRecordOrThrow.mockResolvedValueOnce(
+      buildOrderRecord({
+        patient: {
+          id: 'patient-internal-1',
+          tenant_id: 'tenant-1',
+        },
+      })
+    );
+
+    await expect(
+      labOrderService.updateLabOrder(
+        'LAB0000001',
+        {
+          requested_tests: [],
+          requested_panels: [],
+        },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.no_tests',
+      statusCode: 400,
+    });
+    expect(labOrderRepository.update).not.toHaveBeenCalled();
+  });
+
   it('swallows audit failures after a successful create', async () => {
     resolveModelRecordOrThrow
       .mockResolvedValueOnce({

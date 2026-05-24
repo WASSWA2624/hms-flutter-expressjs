@@ -483,8 +483,15 @@ final class LabWorkspaceController
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
+    final String resultStatus = (item.effectiveResultStatus ?? '')
+        .trim()
+        .toUpperCase();
+    final bool shouldSaveAsPending =
+        item.resultId == null ||
+        resultStatus.isEmpty ||
+        resultStatus == 'PENDING';
     final Map<String, Object?> draftPayload = <String, Object?>{
-      'status': 'PENDING',
+      if (shouldSaveAsPending) 'status': 'PENDING',
       if (payload.containsKey('result_value'))
         'result_value': payload['result_value'],
       if (payload.containsKey('result_unit'))

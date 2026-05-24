@@ -163,6 +163,11 @@ describe('lab-workspace.service', () => {
             facility_id: 'facility-internal-1',
           },
         },
+        {
+          items: {
+            some: { deleted_at: null, status: { not: 'CANCELLED' } },
+          },
+        },
       ])
     );
     expect(JSON.stringify(orderWhere)).not.toContain('branch_id');

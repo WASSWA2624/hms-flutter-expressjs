@@ -490,6 +490,14 @@ const buildWorkbenchOrderWhere = async (filters = {}, options = {}) => {
   const where = {};
 
   appendAnd(where, buildWorkbenchPatientScope(options.user));
+  appendAnd(where, {
+    items: {
+      some: {
+        deleted_at: null,
+        status: { not: 'CANCELLED' },
+      },
+    },
+  });
 
   if (filters.patient_id) {
     where.patient_id = await resolveModelIdOrThrow({
@@ -1654,6 +1662,17 @@ const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) =
         from: item.status,
         to: 'CANCELLED',
       });
+
+      const remainingActiveItems = await labWorkspaceRepository.txCountOrderItems(tx, {
+        lab_order_id: item.lab_order_id,
+        id: { not: item.id },
+        status: { not: 'CANCELLED' },
+      });
+      if (remainingActiveItems === 0) {
+        throw new HttpError('errors.lab_order.at_least_one_active_test_required', 409, [
+          { field: 'lab_order_item_id' },
+        ]);
+      }
 
       await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
         status: 'CANCELLED',

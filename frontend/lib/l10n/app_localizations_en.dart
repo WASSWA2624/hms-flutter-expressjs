@@ -11842,6 +11842,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labRemoveDraftResultAction => 'Remove result';
 
   @override
+  String get labRemoveDraftResultDialogTitle => 'Remove lab result?';
+
+  @override
+  String get labRemoveDraftResultDialogBody =>
+      'This draft result will be removed from the selected test.';
+
+  @override
   String get labDraftRemovedMessage => 'Result removed.';
 
   @override

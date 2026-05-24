@@ -1,6 +1,9 @@
 const labResultRepository = require('@repositories/lab-result/lab-result.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { emitToUsers, DIAGNOSTIC_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
+const prisma = require('@prisma/client');
 const {
   LAB_RESULT_WITH_RELATIONS_INCLUDE,
   buildPagination,
@@ -11,6 +14,84 @@ const {
 } = require('@services/lab-workspace/lab.shared');
 const { evaluateLabResult } = require('@services/lab-workspace/lab.interpretation');
 const { mapLabResultRecord } = require('@services/lab-workspace/lab.serializer');
+
+const LAB_RECIPIENT_ROLES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.TENANT_ADMIN,
+  ROLES.FACILITY_ADMIN,
+  ROLES.DOCTOR,
+  ROLES.NURSE,
+  ROLES.LAB_TECH,
+];
+
+const displayPatientName = (patient = {}) =>
+  [patient.first_name, patient.last_name]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(' ') || null;
+
+const resolveLabResultRecipients = async (resultRecord, actorUserId = null) => {
+  const patient = resultRecord?.lab_order_item?.lab_order?.patient || {};
+  const tenantId = String(patient.tenant_id || '').trim();
+  if (!tenantId || !prisma?.user_role?.findMany) return [];
+  const facilityId = String(patient.facility_id || '').trim();
+  const rows = await prisma.user_role.findMany({
+    where: {
+      deleted_at: null,
+      tenant_id: tenantId,
+      role: {
+        name: { in: LAB_RECIPIENT_ROLES },
+        deleted_at: null,
+      },
+      ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {}),
+    },
+    select: { user_id: true },
+  });
+  return rows
+    .map((row) => row.user_id)
+    .filter((userId) => userId && userId !== actorUserId);
+};
+
+const buildLabResultRealtimePayload = ({ resultRecord, action }) => {
+  const order = resultRecord?.lab_order_item?.lab_order || {};
+  const patient = order.patient || {};
+  const result = mapLabResultRecord(resultRecord);
+  const orderId = String(order.human_friendly_id || order.id || '').trim() || null;
+  const patientId = String(patient.human_friendly_id || patient.id || '').trim() || null;
+  const resourceId = result?.id || String(resultRecord?.human_friendly_id || resultRecord?.id || '').trim() || null;
+
+  return {
+    order_id: orderId,
+    order_public_id: orderId,
+    patient_id: patientId,
+    patient_public_id: patientId,
+    patient_display_name: displayPatientName(patient),
+    status: result?.status || resultRecord?.status || null,
+    action: String(action || 'UPDATED').trim().toUpperCase(),
+    resource_type: 'result',
+    resource_id: resourceId,
+    occurred_at: new Date().toISOString(),
+    target_path: orderId ? `/lab?id=${orderId}` : '/lab',
+    result,
+  };
+};
+
+const publishLabResultRealtimeUpdate = async ({ resultRecord, action, actorUserId = null }) => {
+  try {
+    if (!resultRecord) return;
+    const recipients = await resolveLabResultRecipients(resultRecord, actorUserId);
+    if (!recipients.length) return;
+    const payload = buildLabResultRealtimePayload({ resultRecord, action });
+    emitToUsers(recipients, DIAGNOSTIC_EVENTS.LAB_RESULT_UPDATED, payload);
+    emitToUsers(recipients, DIAGNOSTIC_EVENTS.LAB_WORKFLOW_UPDATED, payload);
+    const status = String(payload.status || '').trim().toUpperCase();
+    if (status && status !== 'PENDING') {
+      emitToUsers(recipients, DIAGNOSTIC_EVENTS.LAB_RESULT_READY, payload);
+    }
+  } catch (_) {
+    // Realtime updates must not block the clinical write path.
+  }
+};
 
 const resolveInterpretationContext = async (labOrderItemIdentifier) =>
   resolveModelRecordOrThrow({
@@ -195,6 +276,11 @@ const createLabResult = async (data, userId, ipAddress) => {
       diff: { after: createdResult || labResult },
       ip_address: ipAddress,
     }).catch(() => {});
+    publishLabResultRealtimeUpdate({
+      resultRecord: createdResult || labResult,
+      action: 'CREATED',
+      actorUserId: userId,
+    });
 
     return mapLabResultRecord(createdResult || labResult);
   } catch (error) {
@@ -273,6 +359,11 @@ const updateLabResult = async (id, data, userId, ipAddress) => {
       diff: { before, after: labResult },
       ip_address: ipAddress,
     }).catch(() => {});
+    publishLabResultRealtimeUpdate({
+      resultRecord: labResult || updated,
+      action: 'UPDATED',
+      actorUserId: userId,
+    });
 
     return mapLabResultRecord(labResult || updated);
   } catch (error) {
@@ -301,6 +392,11 @@ const deleteLabResult = async (id, userId, ipAddress) => {
       diff: { before },
       ip_address: ipAddress,
     }).catch(() => {});
+    publishLabResultRealtimeUpdate({
+      resultRecord: before,
+      action: 'DELETED',
+      actorUserId: userId,
+    });
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -359,6 +455,11 @@ const releaseLabResult = async (id, data = {}, userId, ipAddress) => {
       },
       ip_address: ipAddress,
     }).catch(() => {});
+    publishLabResultRealtimeUpdate({
+      resultRecord: labResult || updated,
+      action: 'RELEASED',
+      actorUserId: userId,
+    });
 
     return mapLabResultRecord(labResult || updated);
   } catch (error) {

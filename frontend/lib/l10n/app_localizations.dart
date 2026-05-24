@@ -22341,6 +22341,18 @@ abstract class AppLocalizations {
   /// **'Remove result'**
   String get labRemoveDraftResultAction;
 
+  /// Confirmation dialog title for removing a draft or unverified lab result.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove lab result?'**
+  String get labRemoveDraftResultDialogTitle;
+
+  /// Confirmation dialog body for removing a draft or unverified lab result.
+  ///
+  /// In en, this message translates to:
+  /// **'This draft result will be removed from the selected test.'**
+  String get labRemoveDraftResultDialogBody;
+
   /// Snackbar message shown after a draft or unverified lab result is removed.
   ///
   /// In en, this message translates to:

@@ -15370,6 +15370,14 @@
   "@labRemoveDraftResultAction": {
     "description": "Action label for removing a draft or unverified lab result."
   },
+  "labRemoveDraftResultDialogTitle": "Remove lab result?",
+  "@labRemoveDraftResultDialogTitle": {
+    "description": "Confirmation dialog title for removing a draft or unverified lab result."
+  },
+  "labRemoveDraftResultDialogBody": "This draft result will be removed from the selected test.",
+  "@labRemoveDraftResultDialogBody": {
+    "description": "Confirmation dialog body for removing a draft or unverified lab result."
+  },
   "labDraftRemovedMessage": "Result removed.",
   "@labDraftRemovedMessage": {
     "description": "Snackbar message shown after a draft or unverified lab result is removed."

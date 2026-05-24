@@ -384,39 +384,14 @@ class _LabWorklistPanel extends ConsumerWidget {
               icon: Icons.science_outlined,
             ),
             columns: <AppListTableColumn<LabOrderSummary>>[
-              AppListTableColumn<LabOrderSummary>(
-                id: 'patient',
-                label: l10n.labPatientColumnLabel,
-                sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-                    appListTableCompareText(
-                      left.displayTitle,
-                      right.displayTitle,
-                    ),
-                cellBuilder: (_, LabOrderSummary item) {
-                  return _LabOrderIdentity(order: item);
-                },
-              ),
-              AppListTableColumn<LabOrderSummary>(
-                id: 'orders',
-                label: state.query.view == LabWorkbenchView.patients
-                    ? l10n.labOrdersColumnLabel
-                    : l10n.labOrderColumnLabel,
-                sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-                    appListTableCompareText(left.apiId, right.apiId),
-                cellBuilder: (BuildContext context, LabOrderSummary item) {
-                  if (item.isPatientGroup) {
-                    final int activeOrders = item.activeOrderCount > 0
-                        ? item.activeOrderCount
-                        : item.orderCount;
-                    return Text(l10n.labActiveOrderCount(activeOrders));
-                  }
-                  return AppCopyableIdentifier(
-                    value: item.displayId,
-                    tooltip: context.l10n.copyIdentifierAction,
-                    copiedMessage: context.l10n.identifierCopiedMessage,
-                  );
-                },
-              ),
+              if (state.query.view == LabWorkbenchView.orders)
+                _orderWorklistColumn(context, state.query.view)
+              else
+                _patientWorklistColumn(context),
+              if (state.query.view == LabWorkbenchView.orders)
+                _patientWorklistColumn(context)
+              else
+                _orderWorklistColumn(context, state.query.view),
               AppListTableColumn<LabOrderSummary>(
                 id: 'entry_status',
                 label: l10n.labEntryStatusColumnLabel,
@@ -471,6 +446,8 @@ class _LabWorklistPanel extends ConsumerWidget {
             ],
             mobileItemBuilder: (BuildContext context, LabOrderSummary item) {
               final ThemeData theme = Theme.of(context);
+              final bool ordersView =
+                  state.query.view == LabWorkbenchView.orders;
               return Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: theme.spacing.sm,
@@ -479,7 +456,15 @@ class _LabWorklistPanel extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _LabOrderIdentity(order: item),
+                    if (ordersView) ...<Widget>[
+                      _LabOrderIdentifier(order: item),
+                      SizedBox(height: theme.spacing.xs),
+                      _LabOrderIdentity(order: item),
+                    ] else ...<Widget>[
+                      _LabOrderIdentity(order: item),
+                      SizedBox(height: theme.spacing.xs),
+                      _LabOrderIdentifier(order: item),
+                    ],
                     SizedBox(height: theme.spacing.xs),
                     Text(
                       item.testsLabel ?? l10n.profileUnknownValue,
@@ -516,6 +501,110 @@ class _LabWorklistPanel extends ConsumerWidget {
               child: LinearProgressIndicator(minHeight: 2),
             ),
         ],
+      ),
+    );
+  }
+}
+
+AppListTableColumn<LabOrderSummary> _patientWorklistColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'patient',
+    label: l10n.labPatientColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(
+          _patientSortKey(left),
+          _patientSortKey(right),
+        ),
+    cellBuilder: (_, LabOrderSummary item) {
+      return _LabOrderIdentity(order: item);
+    },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _orderWorklistColumn(
+  BuildContext context,
+  LabWorkbenchView view,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'orders',
+    label: view == LabWorkbenchView.patients
+        ? l10n.labOrdersColumnLabel
+        : l10n.labOrderColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(_orderSortKey(left), _orderSortKey(right)),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return _LabOrderIdentifier(order: item);
+    },
+  );
+}
+
+String _patientSortKey(LabOrderSummary order) {
+  final String value = _joinNonEmpty(<String?>[
+    order.patientDisplayName,
+    order.patientId,
+    order.displayTitle,
+  ]);
+  return value.isNotEmpty ? value : order.id;
+}
+
+String _orderSortKey(LabOrderSummary order) {
+  if (order.isPatientGroup) {
+    final int activeOrders = order.activeOrderCount > 0
+        ? order.activeOrderCount
+        : order.orderCount;
+    return activeOrders.toString().padLeft(4, '0');
+  }
+  return order.apiId;
+}
+
+class _LabOrderIdentifier extends StatelessWidget {
+  const _LabOrderIdentifier({required this.order});
+
+  final LabOrderSummary order;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    if (order.isPatientGroup) {
+      final int activeOrders = order.activeOrderCount > 0
+          ? order.activeOrderCount
+          : order.orderCount;
+      final List<String> ids = order.orderDisplayIds.isNotEmpty
+          ? order.orderDisplayIds
+          : order.orderIds;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            l10n.labActiveOrderCount(activeOrders),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall,
+          ),
+          if (ids.isNotEmpty)
+            Text(
+              ids.take(3).join(', '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      );
+    }
+
+    return AppCopyableIdentifier(
+      value: order.apiId,
+      tooltip: l10n.copyIdentifierAction,
+      copiedMessage: l10n.identifierCopiedMessage,
+      textStyle: theme.textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w700,
       ),
     );
   }

@@ -46120,6 +46120,14 @@ const getLabOrderById = async (id, userId, ipAddress) => {
   }
 };
 
+const throwNoResolvedLabTests = (field = 'requested_tests') => {
+  throw new HttpError('errors.lab_order.no_tests', 400, [{ field }]);
+};
+
+const throwEmptyLabPanel = (field = 'requested_panels') => {
+  throw new HttpError('errors.lab_order.empty_panel', 400, [{ field }]);
+};
+
 const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, tenantId, userId, ipAddress }) => {
   const items = [];
   const seenTestIds = new Set();
@@ -46145,6 +46153,9 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
     if (requestedPanelId.startsWith('STD_LAB_PANEL:')) {
       const panelCode = requestedPanelId.split(':')[1];
       const standardCodes = STANDARD_LAB_PANELS[sanitizeString(panelCode).toUpperCase()] || [];
+      if (!standardCodes.length) {
+        throwEmptyLabPanel('requested_panels.lab_panel_id');
+      }
       for (const standardCode of standardCodes) {
         const labTest = await resolveOrCreateStandardLabTest({
           code: standardCode,
@@ -46168,9 +46179,14 @@ const resolveRequestedLabOrderItems = async ({ requestedTests, requestedPanels, 
     });
 
     const panelItems = Array.isArray(labPanel?.panel_items) ? labPanel.panel_items : [];
-    panelItems.forEach((panelItem) => {
-      const labTestId = panelItem?.lab_test_id || panelItem?.lab_test?.id;
-      if (!labTestId || seenTestIds.has(labTestId)) return;
+    const panelTestIds = panelItems
+      .map((panelItem) => panelItem?.lab_test_id || panelItem?.lab_test?.id)
+      .filter(Boolean);
+    if (!panelTestIds.length) {
+      throwEmptyLabPanel('requested_panels.lab_panel_id');
+    }
+    panelTestIds.forEach((labTestId) => {
+      if (seenTestIds.has(labTestId)) return;
       seenTestIds.add(labTestId);
       items.push({
         lab_test_id: labTestId,
@@ -46224,7 +46240,7 @@ const createLabOrder = async (data, userId, ipAddress) => {
       ipAddress
     });
     if (!requestedItems.length) {
-      throw new HttpError('errors.validation.required', 400, [{ field: 'requested_tests' }]);
+      throwNoResolvedLabTests();
     }
     if (requestedItems.length > 0) {
       payload.items = {
@@ -46314,7 +46330,7 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
         ipAddress
       });
       if (!requestedItems.length) {
-        throw new HttpError('errors.validation.required', 400, [{ field: 'requested_tests' }]);
+        throwNoResolvedLabTests();
       }
       payload.items = {
         updateMany: {
