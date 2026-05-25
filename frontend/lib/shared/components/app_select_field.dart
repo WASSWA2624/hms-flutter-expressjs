@@ -287,7 +287,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
 
   void _handleControllerChanged() {
     final bool hasText = _controller.text.isNotEmpty;
-    if (hasText != _hasControllerText) {
+    final bool shouldRefreshSearchEntries =
+        !_isSyncingControllerText && widget.searchable;
+    if (hasText != _hasControllerText || shouldRefreshSearchEntries) {
       setState(() {
         _hasControllerText = hasText;
       });
@@ -355,8 +357,9 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   }
 
   List<DropdownMenuEntry<T>> _dropdownMenuEntries() {
+    final Iterable<AppSelectOption<T>> options = _menuOptions();
     return <DropdownMenuEntry<T>>[
-      for (final AppSelectOption<T> option in widget.options)
+      for (final AppSelectOption<T> option in options)
         DropdownMenuEntry<T>(
           value: option.value,
           label: option.label,
@@ -377,6 +380,24 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       return filterCallback(entries, filter);
     }
     return _filterEntries(entries, filter);
+  }
+
+  Iterable<AppSelectOption<T>> _menuOptions() {
+    if (!widget.searchable || widget.filterCallback != null) {
+      return widget.options;
+    }
+
+    final List<String> tokens = _queryTokens(_controller.text);
+    if (tokens.isEmpty) {
+      return widget.options.take(_maxFilteredOptions);
+    }
+
+    return widget.options
+        .where((AppSelectOption<T> option) {
+          final String searchable = _searchTextForOption(option);
+          return tokens.every(searchable.contains);
+        })
+        .take(_maxFilteredOptions);
   }
 
   String _labelForValue(T? value) {
@@ -454,6 +475,15 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       }
     }
     return null;
+  }
+
+  String _searchTextForOption(AppSelectOption<T> option) {
+    final String raw = <String>[
+      option.label,
+      option.searchText ?? '',
+      option.value.toString(),
+    ].where((String value) => value.trim().isNotEmpty).join(' ');
+    return _normalizeSearchText(raw);
   }
 }
 

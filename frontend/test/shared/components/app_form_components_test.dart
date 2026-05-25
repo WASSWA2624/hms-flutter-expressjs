@@ -175,6 +175,38 @@ void main() {
     },
   );
 
+  testWidgets('AppSelectField.searchable caps empty-query menu entries', (
+    WidgetTester tester,
+  ) async {
+    final List<AppSelectOption<String>> options = <AppSelectOption<String>>[
+      for (var index = 0; index < 120; index += 1)
+        AppSelectOption<String>(
+          value: 'study-$index',
+          label: 'Study ${index.toString().padLeft(3, '0')}',
+        ),
+    ];
+
+    await pumpComponent(
+      tester,
+      AppSelectField<String>.searchable(
+        labelText: 'Imaging test',
+        options: options,
+        onChanged: (_) {},
+      ),
+    );
+
+    await tester.tap(find.byType(EditableText));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Study 079'), findsOneWidget);
+    expect(find.text('Study 080'), findsNothing);
+
+    await tester.enterText(find.byType(EditableText), 'Study 119');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Study 119').hitTestable(), findsOneWidget);
+  });
+
   testWidgets('AppSelectField clear button clears the selected value', (
     WidgetTester tester,
   ) async {
