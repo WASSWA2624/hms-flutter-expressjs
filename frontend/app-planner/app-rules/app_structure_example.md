@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Example App Structure
 
 ## Scope

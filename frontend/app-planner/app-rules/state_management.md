@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # State Management and Dependency Injection
 
 ## Scope

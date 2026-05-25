@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Forms Strategy
 
 ## Scope

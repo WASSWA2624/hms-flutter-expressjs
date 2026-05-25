@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Authentication and Session Strategy
 
 ## Scope

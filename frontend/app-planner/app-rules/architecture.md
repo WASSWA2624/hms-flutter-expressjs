@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Architecture Conventions
 
 ## Scope

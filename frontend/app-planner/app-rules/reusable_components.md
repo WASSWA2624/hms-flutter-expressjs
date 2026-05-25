@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Reusable Components
 
 ## Scope

@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Validation Strategy
 
 ## Scope

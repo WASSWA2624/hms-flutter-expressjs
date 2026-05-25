@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Feature Workflow
 
 ## Scope

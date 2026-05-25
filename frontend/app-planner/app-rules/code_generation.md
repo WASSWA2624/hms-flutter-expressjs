@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Code Generation Strategy
 
 ## Scope

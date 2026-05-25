@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Asset and Branding Strategy
 
 ## Scope

@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Observability Strategy
 
 ## Scope

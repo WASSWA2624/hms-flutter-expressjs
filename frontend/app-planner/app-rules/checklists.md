@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Checklists and Final Standard
 
 ## Scope

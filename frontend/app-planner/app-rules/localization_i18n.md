@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Localization and Internationalization
 
 ## Scope

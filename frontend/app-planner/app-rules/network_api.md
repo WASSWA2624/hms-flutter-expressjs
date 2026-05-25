@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Network and API Strategy
 
 ## Scope

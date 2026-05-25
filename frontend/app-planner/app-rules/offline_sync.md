@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Offline and Sync Strategy
 
 ## Scope

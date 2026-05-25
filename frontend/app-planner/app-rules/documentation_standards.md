@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Documentation Standards
 
 ## Scope

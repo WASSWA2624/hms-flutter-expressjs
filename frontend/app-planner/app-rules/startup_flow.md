@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Startup Flow
 
 ## Scope

@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Data Modeling Strategy
 
 ## Scope

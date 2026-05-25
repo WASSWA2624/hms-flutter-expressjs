@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Pagination, Lists, and Data Tables
 
 ## Scope

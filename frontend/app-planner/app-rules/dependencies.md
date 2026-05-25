@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Dependency Strategy
 
 ## Scope

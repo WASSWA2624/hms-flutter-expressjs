@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Permissions and Authorization
 
 ## Scope

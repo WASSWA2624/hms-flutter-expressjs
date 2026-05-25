@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Date, Time, and Formatting Strategy
 
 ## Scope

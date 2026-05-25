@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Environment Configuration
 
 ## Scope

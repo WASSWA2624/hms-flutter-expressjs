@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Repository Pattern Example
 
 ## Scope

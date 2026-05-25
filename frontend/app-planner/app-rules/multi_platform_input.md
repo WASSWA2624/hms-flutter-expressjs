@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Multi-Platform Input
 
 ## Scope

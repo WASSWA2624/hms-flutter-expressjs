@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Search and Filtering
 
 ## Scope

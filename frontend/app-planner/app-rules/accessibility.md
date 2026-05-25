@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Accessibility Strategy
 
 ## Scope

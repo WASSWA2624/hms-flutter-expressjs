@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Error Handling Strategy
 
 ## Scope

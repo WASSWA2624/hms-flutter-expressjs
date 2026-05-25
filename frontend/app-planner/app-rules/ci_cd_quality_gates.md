@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # CI/CD and Quality Gates
 
 ## Scope

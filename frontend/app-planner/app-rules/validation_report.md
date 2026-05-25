@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Rules and Dev Plan Validation Report
 
 ## Status
