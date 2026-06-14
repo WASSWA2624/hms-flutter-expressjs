@@ -6,7 +6,7 @@
   "APP_ADMIN_EMAIL": "wasswawilson0001@gmail.com",
   "APP_ADMIN_PHONE": "+256783230321",
   "APP_SUPPORT_URL": "https://hosspi.com/support",
-  "API_BASE_URL": "https://api.example.com",
+  "API_BASE_URL": "https://api.hosspi.com",
   "API_TIMEOUT_SECONDS": "30",
   "LOG_LEVEL": "warn",
   "FEATURE_DEVELOPER_TOOLS_ENABLED": "false"
