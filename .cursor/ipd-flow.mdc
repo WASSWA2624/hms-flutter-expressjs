@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+description: Use this file whenever a change is made to an IPD module/flow/action
+alwaysApply: false
 ---
 ## 1. Step-by-Step IPD Workflow
 

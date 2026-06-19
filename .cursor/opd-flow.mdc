@@ -1,7 +1,7 @@
 ---
-alwaysApply: true
+description: Use this file whenever a change is made to an OPD module/flow/action
+alwaysApply: false
 ---
-
 # OPD Patient Flow
 
 ## 0. Overview
