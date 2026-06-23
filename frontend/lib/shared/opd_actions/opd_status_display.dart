@@ -1,6 +1,7 @@
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 String opdStatusDisplayLabel(AppLocalizations l10n, OpdFlowSummary flow) {
   final String code = (flow.displayCode ?? flow.stage ?? '')
@@ -21,6 +22,44 @@ String opdNextStepDisplayLabel(AppLocalizations l10n, String? value) {
   return _nextStepLabel(l10n, code) ??
       _opdLabel(l10n, code) ??
       AppDisplay.apiLabel(code);
+}
+
+AppWorkspaceStatusTone opdStageStatusTone(String? value) {
+  return switch ((value ?? '').toUpperCase()) {
+    'COMPLETED' ||
+    'DISCHARGED' ||
+    'ADMITTED' ||
+    'RESULTS_READY' ||
+    'REPORT_READY' ||
+    'MEDICINES_DISPENSED' => AppWorkspaceStatusTone.success,
+    'NORMAL' || 'ROUTINE' => AppWorkspaceStatusTone.success,
+    'CANCELLED' || 'NO_SHOW' => AppWorkspaceStatusTone.error,
+    'CRITICAL' => AppWorkspaceStatusTone.error,
+    'ABNORMAL' ||
+    'SERVICE_ONLY' ||
+    'PAYMENT_DUE' ||
+    'VITALS_NEEDED' ||
+    'DOCTOR_NEEDED' ||
+    'PHARMACY_PENDING' ||
+    'PHARMACY_REQUESTED' ||
+    'ADMISSION_PENDING' => AppWorkspaceStatusTone.warning,
+    'WAITING_CONSULTATION_PAYMENT' ||
+    'WAITING_VITALS' ||
+    'WAITING_DOCTOR_ASSIGNMENT' => AppWorkspaceStatusTone.warning,
+    'IN_PROGRESS' ||
+    'WITH_DOCTOR' ||
+    'LAB_PENDING' ||
+    'SAMPLE_PENDING' ||
+    'IN_LAB' ||
+    'IMAGING_PENDING' ||
+    'REPORT_PENDING' ||
+    'LAB_REQUESTED' ||
+    'RADIOLOGY_REQUESTED' ||
+    'LAB_AND_RADIOLOGY_REQUESTED' ||
+    'WAITING_DOCTOR_REVIEW' ||
+    'WAITING_DISPOSITION' => AppWorkspaceStatusTone.info,
+    _ => AppWorkspaceStatusTone.neutral,
+  };
 }
 
 String opdSummaryCountLabel(AppLocalizations l10n, String key) {

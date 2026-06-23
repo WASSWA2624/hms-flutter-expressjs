@@ -97,33 +97,44 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
   Widget build(BuildContext context) {
     final OpdWorkspaceState? workspaceState = _workspaceState(ref);
     final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+    final bool isRefreshingDetail = workspaceState?.isRefreshingDetail ?? false;
+    final bool isSaving = workspaceState?.isSaving ?? false;
     final OpdFlowDetail? detail =
         selected == null || !_isSameFlow(selected.summary, widget.flow)
         ? null
         : selected;
     final OpdFlowSummary flow = detail?.summary ?? widget.flow;
+    final bool isLoadingDetail = detail == null && !isSaving;
 
     return AppDialog(
-      title: Text(flow.displayTitle),
-      icon: const Icon(Icons.medical_services_outlined),
-      maxWidth: 860,
-      scrollable: true,
-      content: AppFormSection(
-        density: AppFormSectionDensity.compact,
-        children: <Widget>[
-          OpdActionContextPanel(flow: flow, detail: detail),
-          if (detail == null) const LinearProgressIndicator(),
-          _actionGrid(context, flow, detail),
-        ],
-      ),
-    );
+        title: Text(flow.displayTitle),
+        icon: const Icon(Icons.medical_services_outlined),
+        maxWidth: 860,
+        scrollable: true,
+        closeEnabled: !isSaving,
+        content: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            OpdActionContextPanel(flow: flow, detail: detail),
+            if (isSaving || isRefreshingDetail || isLoadingDetail)
+              const LinearProgressIndicator(),
+            _actionGrid(
+              context,
+              flow,
+              detail,
+              actionsEnabled: !isSaving && !isRefreshingDetail,
+            ),
+          ],
+        ),
+      );
   }
 
   Widget _actionGrid(
     BuildContext context,
     OpdFlowSummary flow,
-    OpdFlowDetail? detail,
-  ) {
+    OpdFlowDetail? detail, {
+    required bool actionsEnabled,
+  }) {
     final AppLocalizations l10n = context.l10n;
     final String stage = _normalizedStage(flow.stage);
     final bool terminal = flow.isTerminal;
@@ -154,9 +165,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         requirement: action.requirement,
         label: action.label,
         icon: action.icon,
-        onPressed: action.onPressed,
+        onPressed: actionsEnabled ? action.onPressed : null,
         variant: AppButtonVariant.primary,
-        enabled: action.enabled,
+        enabled: actionsEnabled && action.enabled,
         isLoading: action.isLoading,
         fullWidth: action.fullWidth,
         hideWhenDenied: action.hideWhenDenied,
@@ -175,6 +186,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       icon: Icons.payments_outlined,
       fullWidth: true,
       hideWhenDenied: true,
+      enabled: actionsEnabled && !terminal,
       onPressed: terminal
           ? null
           : () => _openNested(context, ConsultationPaymentDialog(flow: flow)),
@@ -186,6 +198,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       icon: Icons.monitor_heart_outlined,
       fullWidth: true,
       hideWhenDenied: true,
+      enabled: actionsEnabled && !terminal,
       onPressed: terminal
           ? null
           : () => _openNested(
@@ -206,6 +219,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       icon: Icons.assignment_ind_outlined,
       fullWidth: true,
       hideWhenDenied: true,
+      enabled: actionsEnabled && !terminal,
       onPressed: terminal
           ? null
           : () => _openNested(context, AssignDoctorDialog(flow: flow)),
@@ -217,6 +231,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       icon: Icons.edit_note_outlined,
       fullWidth: true,
       hideWhenDenied: true,
+      enabled: actionsEnabled && !terminal,
       onPressed: terminal
           ? null
           : () => _openNested(context, _doctorReviewDialog(context, flow)),
@@ -247,9 +262,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         icon: Icons.task_alt_outlined,
         fullWidth: true,
         hideWhenDenied: true,
-        enabled: !terminal && canDispose,
+        enabled: actionsEnabled && !terminal && canDispose,
         tooltip: canDispose ? null : opdStageDisplayLabel(l10n, stage),
-        onPressed: terminal || !canDispose
+        onPressed: terminal || !canDispose || !actionsEnabled
             ? null
             : () => _openNested(
                 context,
@@ -336,7 +351,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.rule_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            onPressed: () => _openDiagnosisDialog(context, flow),
+            enabled: actionsEnabled,
+            onPressed: actionsEnabled
+                ? () => _openDiagnosisDialog(context, flow)
+                : null,
           ),
         );
         addAction(
@@ -347,7 +365,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.science_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            onPressed: () => _openLabOrderDialog(context, flow),
+            enabled: actionsEnabled,
+            onPressed: actionsEnabled
+                ? () => _openLabOrderDialog(context, flow)
+                : null,
           ),
         );
         addAction(
@@ -358,7 +379,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.biotech_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            onPressed: () => _openRadiologyOrderDialog(context, flow),
+            enabled: actionsEnabled,
+            onPressed: actionsEnabled
+                ? () => _openRadiologyOrderDialog(context, flow)
+                : null,
           ),
         );
         addAction(
@@ -369,7 +393,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.medication_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            onPressed: () => _openPrescriptionDialog(context, flow),
+            enabled: actionsEnabled,
+            onPressed: actionsEnabled
+                ? () => _openPrescriptionDialog(context, flow)
+                : null,
           ),
         );
         addAction(
@@ -380,7 +407,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.healing_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            onPressed: () => _openProcedureDialog(context, flow),
+            enabled: actionsEnabled,
+            onPressed: actionsEnabled
+                ? () => _openProcedureDialog(context, flow)
+                : null,
           ),
         );
         addAction(
@@ -391,7 +421,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.alt_route_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            onPressed: () => _openNested(context, ReferralDialog(flow: flow)),
+            enabled: actionsEnabled,
+            onPressed: actionsEnabled
+                ? () => _openNested(context, ReferralDialog(flow: flow))
+                : null,
           ),
         );
         addAction(
@@ -402,13 +435,16 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             icon: Icons.event_repeat_outlined,
             fullWidth: true,
             hideWhenDenied: true,
-            onPressed: () => _openNested(context, FollowUpDialog(flow: flow)),
+            enabled: actionsEnabled,
+            onPressed: actionsEnabled
+                ? () => _openNested(context, FollowUpDialog(flow: flow))
+                : null,
           ),
         );
       }
-      addAction('correct_stage', _correctStageAction(context, flow));
+      addAction('correct_stage', _correctStageAction(context, flow, actionsEnabled: actionsEnabled));
     } else {
-      addAction('correct_stage', _correctStageAction(context, flow));
+      addAction('correct_stage', _correctStageAction(context, flow, actionsEnabled: actionsEnabled));
     }
     addAction(
       'print',
@@ -418,11 +454,13 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         icon: Icons.print_outlined,
         fullWidth: true,
         hideWhenDenied: true,
-        onPressed: () => _openNested(
-          context,
-          PrintOpdSummaryDialog(flow: flow, detail: detail),
-          closeParentOnChange: false,
-        ),
+        enabled: actionsEnabled,
+        onPressed: actionsEnabled
+            ? () => _openNested(
+                context,
+                PrintOpdSummaryDialog(flow: flow, detail: detail),
+              )
+            : null,
       ),
     );
 
@@ -436,29 +474,45 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
   AppPermissionActionItem _correctStageAction(
     BuildContext context,
-    OpdFlowSummary flow,
-  ) {
+    OpdFlowSummary flow, {
+    required bool actionsEnabled,
+  }) {
     return AppPermissionActionItem(
       requirement: opdStageCorrectionRequirement,
       label: context.l10n.opdCorrectStageAction,
       icon: Icons.sync_alt_outlined,
       fullWidth: true,
       hideWhenDenied: true,
-      onPressed: () => _openNested(context, CorrectStageDialog(flow: flow)),
+      enabled: actionsEnabled,
+      onPressed: actionsEnabled
+          ? () => _openNested(context, CorrectStageDialog(flow: flow))
+          : null,
     );
   }
 
   Future<void> _openNested(
     BuildContext context,
     Widget dialog, {
-    bool closeParentOnChange = true,
+    bool closeParentOnChange = false,
   }) async {
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => dialog,
     );
-    if (changed == true && closeParentOnChange && context.mounted) {
+    if (!context.mounted || changed != true) {
+      return;
+    }
+
+    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
+    final OpdFlowSummary? updatedFlow = workspaceState?.selectedFlow?.summary;
+    final bool isTerminal = updatedFlow?.isTerminal ?? false;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.opdSavedMessage)),
+    );
+
+    if (closeParentOnChange || isTerminal) {
       Navigator.of(context).pop(true);
     }
   }
@@ -935,6 +989,7 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
     return AppDialog(
       title: Text(l10n.opdCorrectStageAction),
       icon: const Icon(Icons.edit_note_outlined),
+      scrollable: true,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,

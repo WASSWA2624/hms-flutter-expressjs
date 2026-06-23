@@ -6,6 +6,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
@@ -24,18 +25,69 @@ class OpdActionContextPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final String? patientId = _firstNonEmpty(<String?>[
       flow.patientIdentifier,
       flow.patientId,
     ]);
     final String encounterId = flow.apiId;
+    final OpdBillingDisplay billing = opdFlowBillingDisplay(context, flow);
+    final String stageLabel = opdStatusDisplayLabel(l10n, flow);
+    final String nextStepLabel = opdNextStepDisplayLabel(
+      l10n,
+      flow.displayNextStep ?? flow.nextStep,
+    );
+
     return AppSectionPanel(
       title: showTitle ? l10n.opdEncounterContextTitle : null,
       density: AppContentPanelDensity.compact,
       children: <Widget>[
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              flow.displayTitle,
+              style: theme.textTheme.titleMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (_isNonEmpty(patientId) && patientId != flow.displayTitle)
+              Padding(
+                padding: EdgeInsets.only(top: theme.spacing.xs),
+                child: Text(
+                  patientId!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
         Wrap(
-          spacing: Theme.of(context).spacing.sm,
-          runSpacing: Theme.of(context).spacing.sm,
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            AppStatusText(
+              label: stageLabel.isEmpty ? l10n.profileUnknownValue : stageLabel,
+              tone: opdStageStatusTone(flow.displayCode ?? flow.stage),
+            ),
+            AppStatusText(label: billing.label, tone: billing.tone),
+            if (_isNonEmpty(flow.triageLevel))
+              AppStatusText(
+                label: _apiLabel(flow.triageLevel),
+                tone: appTriageToneForValue(flow.triageLevel),
+              ),
+            if (nextStepLabel.isNotEmpty)
+              AppStatusText(
+                label: nextStepLabel,
+                tone: AppWorkspaceStatusTone.info,
+              ),
+          ],
+        ),
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
           children: <Widget>[
             if (patientId != null)
               AppButton.secondary(
@@ -64,30 +116,12 @@ class OpdActionContextPanel extends StatelessWidget {
           emptyValue: l10n.profileUnknownValue,
           items: <AppInfoTileData>[
             AppInfoTileData(
-              label: l10n.opdStageLabel,
-              value: opdStatusDisplayLabel(l10n, flow),
-              icon: Icons.flag_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.opdNextStepColumnLabel,
-              value: opdNextStepDisplayLabel(
-                l10n,
-                flow.displayNextStep ?? flow.nextStep,
-              ),
-              icon: Icons.next_plan_outlined,
-            ),
-            AppInfoTileData(
               label: l10n.settingsWorkspaceModuleRole,
               value: opdResponsibleRoleForStage(
                 l10n,
                 flow.displayCode ?? flow.stage,
               ),
               icon: Icons.badge_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.opdPaymentStatusLabel,
-              value: opdFlowBillingDisplay(context, flow).label,
-              icon: Icons.payments_outlined,
             ),
             AppInfoTileData(
               label: l10n.opdProviderColumnLabel,
@@ -99,6 +133,12 @@ class OpdActionContextPanel extends StatelessWidget {
               value: _completedActionSummary(detail),
               icon: Icons.check_circle_outline,
             ),
+            if (detail != null)
+              AppInfoTileData(
+                label: l10n.opdServicesSummaryLabel,
+                value: _servicesCountLabel(l10n, detail!),
+                icon: Icons.medical_information_outlined,
+              ),
           ],
         ),
       ],
@@ -153,9 +193,27 @@ String _completedActionSummary(OpdFlowDetail? detail) {
   return actions.reversed.take(4).join(' • ');
 }
 
+String _servicesCountLabel(AppLocalizations l10n, OpdFlowDetail detail) {
+  final int serviceCount =
+      detail.labOrders.length +
+      detail.radiologyOrders.length +
+      detail.pharmacyOrders.length +
+      detail.procedures.length;
+  return AppDisplay.joinNonEmpty(<String?>[
+    '${detail.vitalSigns.length} ${l10n.opdVitalsSummaryLabel}',
+    if (serviceCount > 0) '$serviceCount ${l10n.opdServicesSummaryLabel}',
+    if (detail.clinicalNotes.isNotEmpty)
+      '${detail.clinicalNotes.length} ${l10n.opdClinicalNotesSummaryLabel}',
+  ], separator: ' • ');
+}
+
 String _apiLabel(String? value) {
   final String label = AppDisplay.apiLabel(value ?? '');
   return label.isEmpty ? '' : label;
+}
+
+bool _isNonEmpty(String? value) {
+  return value != null && value.trim().isNotEmpty;
 }
 
 String? _firstNonEmpty(Iterable<String?> values) {
