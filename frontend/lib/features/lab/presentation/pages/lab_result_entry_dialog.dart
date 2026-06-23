@@ -362,112 +362,104 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   }
 
   Future<void> _saveDrafts(List<_ResultDraft> drafts) async {
-    final List<_ResultDraft> validDrafts = drafts
-        .where(
-          (_ResultDraft draft) =>
-              draft.formKey.currentState?.validate() ?? true,
-        )
-        .toList(growable: false);
-    if (validDrafts.length != drafts.length) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(labWorkspaceControllerProvider.notifier)
-        .saveOrderItemDrafts(
-          validDrafts
-              .map(
-                (_ResultDraft draft) =>
-                    (item: draft.item, payload: draft.toDraftPayload()),
-              )
-              .toList(growable: false),
-        );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-    if (failure == null && validDrafts.isNotEmpty && mounted) {
-      _showSuccessMessage(context.l10n.labDraftSavedMessage);
-    }
+    await _persistDrafts(
+      drafts,
+      (List<_ResultDraft> validDrafts) => ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .saveOrderItemDrafts(
+            validDrafts
+                .map(
+                  (_ResultDraft draft) =>
+                      (item: draft.item, payload: draft.toDraftPayload()),
+                )
+                .toList(growable: false),
+          ),
+      successMessage: context.l10n.labDraftSavedMessage,
+      partialMessage: context.l10n.labBatchPartialSaveMessage,
+    );
   }
 
   Future<void> _submitDrafts(List<_ResultDraft> drafts) async {
-    final List<_ResultDraft> validDrafts = drafts
-        .where(
-          (_ResultDraft draft) =>
-              draft.formKey.currentState?.validate() ?? true,
-        )
-        .toList(growable: false);
-    if (validDrafts.length != drafts.length) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(labWorkspaceControllerProvider.notifier)
-        .submitOrderItemDrafts(
-          validDrafts
-              .map(
-                (_ResultDraft draft) =>
-                    (item: draft.item, payload: draft.toSubmittedPayload()),
-              )
-              .toList(growable: false),
-        );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-    if (failure == null && validDrafts.isNotEmpty && mounted) {
-      _showSuccessMessage(context.l10n.labResultsSubmittedMessage);
-    }
+    await _persistDrafts(
+      drafts,
+      (List<_ResultDraft> validDrafts) => ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .submitOrderItemDrafts(
+            validDrafts
+                .map(
+                  (_ResultDraft draft) =>
+                      (item: draft.item, payload: draft.toSubmittedPayload()),
+                )
+                .toList(growable: false),
+          ),
+      successMessage: context.l10n.labResultsSubmittedMessage,
+      partialMessage: context.l10n.labBatchPartialSubmitMessage,
+    );
   }
 
   Future<void> _verifyDrafts(List<_ResultDraft> drafts) async {
-    final List<_ResultDraft> validDrafts = drafts
-        .where(
-          (_ResultDraft draft) =>
-              draft.formKey.currentState?.validate() ?? true,
-        )
-        .toList(growable: false);
-    if (validDrafts.length != drafts.length) {
+    await _persistDrafts(
+      drafts,
+      (List<_ResultDraft> validDrafts) => ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .submitOrderItemResults(
+            validDrafts
+                .map(
+                  (_ResultDraft draft) => (
+                    item: draft.item,
+                    payload: draft.toVerifiedPayload(includeOrderItemId: true),
+                  ),
+                )
+                .toList(growable: false),
+          ),
+      successMessage: context.l10n.labResultsVerifiedMessage,
+      partialMessage: context.l10n.labBatchPartialVerifyMessage,
+    );
+  }
+
+  Future<void> _persistDrafts(
+    List<_ResultDraft> drafts,
+    Future<LabBatchPersistOutcome> Function(List<_ResultDraft> validDrafts)
+    persist, {
+    required String successMessage,
+    required String Function(int savedCount, int skippedCount) partialMessage,
+  }) async {
+    final List<_ResultDraft> validDrafts = <_ResultDraft>[];
+    var invalidCount = 0;
+    for (final _ResultDraft draft in drafts) {
+      final bool isValid = draft.formKey.currentState?.validate() ?? true;
+      draft.showValidationError = !isValid;
+      if (isValid) {
+        validDrafts.add(draft);
+      } else {
+        invalidCount += 1;
+      }
+    }
+    if (validDrafts.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
       return;
     }
     setState(() {
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await ref
-        .read(labWorkspaceControllerProvider.notifier)
-        .submitOrderItemResults(
-          validDrafts
-              .map(
-                (_ResultDraft draft) => (
-                  item: draft.item,
-                  payload: draft.toVerifiedPayload(includeOrderItemId: true),
-                ),
-              )
-              .toList(growable: false),
-        );
+    final LabBatchPersistOutcome outcome = await persist(validDrafts);
     if (!mounted) {
       return;
     }
     setState(() {
-      _failure = failure;
+      _failure = outcome.lastFailure;
       _isSaving = false;
     });
-    if (failure == null && validDrafts.isNotEmpty && mounted) {
-      _showSuccessMessage(context.l10n.labResultsVerifiedMessage);
+    if (!mounted) {
+      return;
+    }
+    final int savedCount = outcome.savedCount;
+    final int skippedCount = outcome.skippedCount + invalidCount;
+    if (savedCount > 0 && skippedCount > 0) {
+      _showSuccessMessage(partialMessage(savedCount, skippedCount));
+    } else if (savedCount > 0 && outcome.lastFailure == null) {
+      _showSuccessMessage(successMessage);
     }
   }
 
@@ -1034,6 +1026,8 @@ class _LabOrderResultSection extends StatelessWidget {
               ],
             ),
             SizedBox(height: theme.spacing.sm),
+            _LabWorkflowProgressIndicator(workflow: workflow),
+            SizedBox(height: theme.spacing.sm),
             Text(
               l10n.labItemsSectionTitle,
               style: theme.textTheme.titleSmall?.copyWith(
@@ -1063,6 +1057,103 @@ class _LabOrderResultSection extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LabWorkflowProgressIndicator extends StatelessWidget {
+  const _LabWorkflowProgressIndicator({required this.workflow});
+
+  final LabOrderWorkflow workflow;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final String currentStep = _currentWorkflowStepLabel(context, workflow);
+    final String? nextStep = _nextWorkflowStepLabel(context, workflow.nextActions);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Wrap(
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.xs,
+              children: <Widget>[
+                _WorkflowStepFact(
+                  label: l10n.labWorkflowCurrentStepLabel,
+                  value: currentStep,
+                  icon: Icons.radio_button_checked_outlined,
+                ),
+                if (nextStep != null)
+                  _WorkflowStepFact(
+                    label: l10n.labWorkflowNextStepLabel,
+                    value: nextStep,
+                    icon: Icons.arrow_forward_outlined,
+                  ),
+              ],
+            ),
+            if (workflow.timeline.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (final LabWorkflowTimelineItem step in workflow.timeline)
+                    AppWorkspaceStatusBadge(
+                      status: AppWorkspaceStatus(
+                        label: step.label ?? step.type ?? step.id,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkflowStepFact extends StatelessWidget {
+  const _WorkflowStepFact({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: theme.appTokens.listIconSize * 0.72),
+        SizedBox(width: theme.spacing.xs / 2),
+        Text(
+          '$label: ',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1228,7 +1319,7 @@ class _LabResultEntryCards extends StatelessWidget {
                           ),
                   ),
                   SizedBox(height: theme.spacing.sm),
-                  _LabReferenceRangeCell(item: draft.item),
+                  _LabReferenceRangeCell(draft: draft),
                   SizedBox(height: theme.spacing.sm),
                   draft.item.canEnterResult
                       ? _CompactResultInput(
@@ -1237,7 +1328,11 @@ class _LabResultEntryCards extends StatelessWidget {
                         )
                       : _CompletedResultReadout(item: draft.item),
                   SizedBox(height: theme.spacing.sm),
-                  _LabResultFlagCell(item: draft.item, draft: draft),
+                  _LabResultFlagCell(
+                    item: draft.item,
+                    draft: draft,
+                    canMutate: canMutate,
+                  ),
                   SizedBox(height: theme.spacing.xs),
                   _LabResultActionsCell(
                     draft: draft,
@@ -1475,14 +1570,18 @@ TableRow _labResultEntryTableRow(
           onSelectionChanged: onSelectionChanged,
         ),
       ),
-      _LabResultTableCell(child: _LabReferenceRangeCell(item: item)),
+      _LabResultTableCell(child: _LabReferenceRangeCell(draft: draft)),
       _LabResultTableCell(
         child: item.canEnterResult
             ? _CompactResultInput(draft: draft, enabled: canEdit)
             : _CompletedResultReadout(item: item),
       ),
       _LabResultTableCell(
-        child: _LabResultFlagCell(item: item, draft: draft),
+        child: _LabResultFlagCell(
+          item: item,
+          draft: draft,
+          canMutate: canMutate,
+        ),
       ),
       _LabResultTableCell(
         child: _LabResultActionsCell(
@@ -1572,39 +1671,92 @@ class _LabResultLifecycleBadge extends StatelessWidget {
 }
 
 class _LabReferenceRangeCell extends StatelessWidget {
-  const _LabReferenceRangeCell({required this.item});
+  const _LabReferenceRangeCell({required this.draft});
 
-  final LabOrderItem item;
+  final _ResultDraft draft;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Text(
-      item.displayReferenceRange ?? context.l10n.profileUnknownValue,
-      style: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
+    final AppLocalizations l10n = context.l10n;
+    final LabOrderItem item = draft.item;
+    final String? autoRange = item.displayReferenceRange;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          autoRange ?? l10n.profileUnknownValue,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        if (draft.interpretationOverride) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          AppTextField(
+            controller: draft.referenceRangeOverrideController,
+            labelText: l10n.labReferenceRangeOverrideLabel,
+            enabled: draft.enabled,
+            onChanged: (_) => draft.notifyChanged(),
+          ),
+        ],
+      ],
     );
   }
 }
 
 class _LabResultFlagCell extends StatelessWidget {
-  const _LabResultFlagCell({required this.item, required this.draft});
+  const _LabResultFlagCell({
+    required this.item,
+    required this.draft,
+    required this.canMutate,
+  });
 
   final LabOrderItem item;
   final _ResultDraft draft;
+  final bool canMutate;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
     final bool abnormal = _isAbnormalEntry(item, draft);
-    return AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: _resultFlagLabel(context, item, draft),
-        tone: abnormal
-            ? AppWorkspaceStatusTone.error
-            : AppWorkspaceStatusTone.neutral,
-        icon: abnormal ? Icons.warning_amber_outlined : Icons.check_outlined,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label: _resultFlagLabel(context, item, draft),
+            tone: abnormal
+                ? AppWorkspaceStatusTone.error
+                : AppWorkspaceStatusTone.neutral,
+            icon: abnormal ? Icons.warning_amber_outlined : Icons.check_outlined,
+          ),
+        ),
+        if (canMutate && draft.enabled) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              l10n.labInterpretationOverrideLabel,
+              style: theme.textTheme.bodySmall,
+            ),
+            value: draft.interpretationOverride,
+            onChanged: (bool? value) {
+              draft.interpretationOverride = value ?? false;
+              draft.notifyChanged();
+            },
+          ),
+          if (draft.interpretationOverride)
+            AppTextField(
+              controller: draft.resultFlagOverrideController,
+              labelText: l10n.labResultFlagOverrideLabel,
+              enabled: draft.enabled,
+              onChanged: (_) => draft.notifyChanged(),
+            ),
+        ],
+      ],
     );
   }
 }
@@ -1843,6 +1995,15 @@ class _CompactResultInputState extends State<_CompactResultInput> {
             enabled: enabled,
             onChanged: enabled ? (_) => widget.draft.notifyChanged() : null,
           ),
+          if (widget.draft.showValidationError) ...<Widget>[
+            SizedBox(height: Theme.of(context).spacing.xs),
+            Text(
+              l10n.labBatchEntryValidationMessage,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -2362,7 +2523,14 @@ final class _ResultDraft {
       ),
       textController = TextEditingController(text: item.resultText ?? ''),
       notesController = TextEditingController(),
-      selectedOption = item.resultText ?? item.resultValue;
+      referenceRangeOverrideController = TextEditingController(
+        text: item.referenceRangeOverride ?? item.referenceRangeSummary ?? '',
+      ),
+      resultFlagOverrideController = TextEditingController(
+        text: item.resultFlagOverride ?? item.resultFlag ?? '',
+      ),
+      selectedOption = item.resultText ?? item.resultValue,
+      interpretationOverride = item.interpretationOverride;
 
   final LabOrderItem item;
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -2370,8 +2538,14 @@ final class _ResultDraft {
   final TextEditingController unitController;
   final TextEditingController textController;
   final TextEditingController notesController;
+  final TextEditingController referenceRangeOverrideController;
+  final TextEditingController resultFlagOverrideController;
   VoidCallback? _onChanged;
   String? selectedOption;
+  bool interpretationOverride;
+  bool showValidationError = false;
+
+  bool get enabled => item.canEnterResult;
 
   bool get hasEntry {
     if (item.isNumeric) {
@@ -2405,6 +2579,8 @@ final class _ResultDraft {
     unitController.addListener(listener);
     textController.addListener(listener);
     notesController.addListener(listener);
+    referenceRangeOverrideController.addListener(listener);
+    resultFlagOverrideController.addListener(listener);
   }
 
   void removeListener(VoidCallback listener) {
@@ -2412,6 +2588,8 @@ final class _ResultDraft {
     unitController.removeListener(listener);
     textController.removeListener(listener);
     notesController.removeListener(listener);
+    referenceRangeOverrideController.removeListener(listener);
+    resultFlagOverrideController.removeListener(listener);
     if (_onChanged == listener) {
       _onChanged = null;
     }
@@ -2434,6 +2612,19 @@ final class _ResultDraft {
     unitController.dispose();
     textController.dispose();
     notesController.dispose();
+    referenceRangeOverrideController.dispose();
+    resultFlagOverrideController.dispose();
+  }
+
+  Map<String, Object?> _interpretationPayload() {
+    if (!interpretationOverride) {
+      return const <String, Object?>{'interpretation_override': false};
+    }
+    return <String, Object?>{
+      'interpretation_override': true,
+      'reference_range_override': referenceRangeOverrideController.text.trim(),
+      'result_flag_override': resultFlagOverrideController.text.trim(),
+    };
   }
 
   Map<String, Object?> toPayload({
@@ -2456,6 +2647,7 @@ final class _ResultDraft {
       'reported_at': DateTime.now().toIso8601String(),
       if (notesController.text.trim().isNotEmpty)
         'notes': notesController.text.trim(),
+      ..._interpretationPayload(),
     };
 
     if (item.isNumeric) {
@@ -2658,6 +2850,14 @@ bool _isAbnormalStatus(String? status) {
 }
 
 bool _isAbnormalEntry(LabOrderItem item, _ResultDraft draft) {
+  if (draft.interpretationOverride) {
+    final String overrideFlag = draft.resultFlagOverrideController.text
+        .trim()
+        .toUpperCase();
+    if (overrideFlag.isNotEmpty) {
+      return _isAbnormalStatus(overrideFlag);
+    }
+  }
   if (!draft.hasChangedEntry && _isAbnormalStatus(item.effectiveResultStatus)) {
     return true;
   }
@@ -2686,6 +2886,12 @@ String _resultFlagLabel(
   _ResultDraft draft,
 ) {
   final AppLocalizations l10n = context.l10n;
+  if (draft.interpretationOverride) {
+    final String overrideFlag = draft.resultFlagOverrideController.text.trim();
+    if (overrideFlag.isNotEmpty) {
+      return _statusLabel(context, overrideFlag);
+    }
+  }
   final String? explicitFlag = item.resultFlag;
   if (explicitFlag != null && explicitFlag.trim().isNotEmpty) {
     return _statusLabel(context, explicitFlag);
@@ -3038,6 +3244,50 @@ List<LabOrderWorkflow> _selectedWorkflows(LabWorkspaceState? state) {
     return const <LabOrderWorkflow>[];
   }
   return <LabOrderWorkflow>[workflow];
+}
+
+String _currentWorkflowStepLabel(
+  BuildContext context,
+  LabOrderWorkflow workflow,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final LabOrderSummary order = workflow.order;
+  if (order.hasRejectedItem) {
+    return l10n.labStatusRejected;
+  }
+  if (_isVerifiedOrder(order)) {
+    return l10n.labWorkflowStepVerified;
+  }
+  if (order.completedItemCount > 0) {
+    return l10n.labWorkflowStepResultsEntered;
+  }
+  if (order.inProcessItemCount > 0 || order.sampleCount > 0) {
+    return l10n.labWorkflowStepInProcess;
+  }
+  return l10n.labWorkflowStepOrdered;
+}
+
+String? _nextWorkflowStepLabel(
+  BuildContext context,
+  LabWorkflowNextActions nextActions,
+) {
+  final AppLocalizations l10n = context.l10n;
+  if (nextActions.canVerifyResult || nextActions.canVerifyAll) {
+    return l10n.labWorkflowNextVerifyResults;
+  }
+  if (nextActions.canReleaseResult) {
+    return l10n.labWorkflowNextEnterResults;
+  }
+  if (nextActions.canReceiveSample) {
+    return l10n.labWorkflowNextReceiveSample;
+  }
+  if (nextActions.canCollect) {
+    return l10n.labWorkflowNextCollectSample;
+  }
+  if (nextActions.canRejectOrderItem) {
+    return l10n.labWorkflowNextReviewItems;
+  }
+  return null;
 }
 
 String _detailSubtitle(BuildContext context, List<LabOrderWorkflow> workflows) {

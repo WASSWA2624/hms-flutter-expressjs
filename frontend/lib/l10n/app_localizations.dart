@@ -12730,6 +12730,132 @@ abstract class AppLocalizations {
   /// **'Draft results saved.'**
   String get labDraftSavedMessage;
 
+  /// Shown when a batch save completes with some invalid or failed entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {savedCount} results. {skippedCount} entries need attention.'**
+  String labBatchPartialSaveMessage(int savedCount, int skippedCount);
+
+  /// Shown when a batch submit completes with some invalid or failed entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted {savedCount} results. {skippedCount} entries need attention.'**
+  String labBatchPartialSubmitMessage(int savedCount, int skippedCount);
+
+  /// Shown when a batch verify completes with some invalid or failed entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified {savedCount} results. {skippedCount} entries need attention.'**
+  String labBatchPartialVerifyMessage(int savedCount, int skippedCount);
+
+  /// Inline validation message for invalid lab result rows during batch operations.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete or correct this entry before it can be saved in bulk.'**
+  String get labBatchEntryValidationMessage;
+
+  /// Label for the current lab workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Current step'**
+  String get labWorkflowCurrentStepLabel;
+
+  /// Label for the next recommended lab workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Next step'**
+  String get labWorkflowNextStepLabel;
+
+  /// Workflow step label when tests are ordered.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get labWorkflowStepOrdered;
+
+  /// Workflow step label when samples are being processed.
+  ///
+  /// In en, this message translates to:
+  /// **'In process'**
+  String get labWorkflowStepInProcess;
+
+  /// Workflow step label when results have been entered.
+  ///
+  /// In en, this message translates to:
+  /// **'Results entered'**
+  String get labWorkflowStepResultsEntered;
+
+  /// Workflow step label when results are verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get labWorkflowStepVerified;
+
+  /// Next workflow action to collect a sample.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect sample'**
+  String get labWorkflowNextCollectSample;
+
+  /// Next workflow action to receive a sample.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive sample'**
+  String get labWorkflowNextReceiveSample;
+
+  /// Next workflow action to enter lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter results'**
+  String get labWorkflowNextEnterResults;
+
+  /// Next workflow action to verify lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify results'**
+  String get labWorkflowNextVerifyResults;
+
+  /// Next workflow action to review pending lab order items.
+  ///
+  /// In en, this message translates to:
+  /// **'Review pending items'**
+  String get labWorkflowNextReviewItems;
+
+  /// Label for manually overriding the applied reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference range override'**
+  String get labReferenceRangeOverrideLabel;
+
+  /// Toggle label for manually overriding result interpretation.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual interpretation'**
+  String get labInterpretationOverrideLabel;
+
+  /// Label for manually overriding the result flag.
+  ///
+  /// In en, this message translates to:
+  /// **'Result flag override'**
+  String get labResultFlagOverrideLabel;
+
+  /// Realtime notice shown to clinicians when lab results are ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab results are ready for {patientName}.'**
+  String clinicalLabResultReadyNotice(String patientName);
+
+  /// Realtime notice shown to clinicians when lab results are updated.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab results updated for {patientName}.'**
+  String clinicalLabResultUpdatedNotice(String patientName);
+
+  /// Section label for favorite lab tests in the order dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently used tests'**
+  String get labOrderFavoriteTestsLabel;
+
   /// Title for the bulk lab result actions toolbar.
   ///
   /// In en, this message translates to:

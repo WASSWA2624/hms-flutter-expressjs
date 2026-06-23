@@ -25,7 +25,10 @@ const createLabResultSchema = z.object({
   result_value: z.string().trim().max(120).optional().nullable(),
   result_unit: z.string().trim().max(40).optional().nullable(),
   result_text: z.string().optional().nullable(),
-  reported_at: z.string().datetime().optional().nullable()
+  reported_at: z.string().datetime().optional().nullable(),
+  interpretation_override: z.boolean().optional(),
+  reference_range_override: z.string().trim().max(255).optional().nullable(),
+  result_flag_override: z.string().trim().max(40).optional().nullable(),
 });
 
 /**
@@ -38,7 +41,10 @@ const updateLabResultSchema = z.object({
   result_value: z.string().trim().max(120).optional().nullable(),
   result_unit: z.string().trim().max(40).optional().nullable(),
   result_text: z.string().optional().nullable(),
-  reported_at: z.string().datetime().optional().nullable()
+  reported_at: z.string().datetime().optional().nullable(),
+  interpretation_override: z.boolean().optional(),
+  reference_range_override: z.string().trim().max(255).optional().nullable(),
+  result_flag_override: z.string().trim().max(40).optional().nullable(),
 });
 
 /**

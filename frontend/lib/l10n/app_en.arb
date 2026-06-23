@@ -8791,6 +8791,108 @@
   "@labDraftSavedMessage": {
     "description": "Confirmation shown after saving draft lab results."
   },
+  "labBatchPartialSaveMessage": "Saved {savedCount} results. {skippedCount} entries need attention.",
+  "@labBatchPartialSaveMessage": {
+    "description": "Shown when a batch save completes with some invalid or failed entries.",
+    "placeholders": {
+      "savedCount": { "type": "int" },
+      "skippedCount": { "type": "int" }
+    }
+  },
+  "labBatchPartialSubmitMessage": "Submitted {savedCount} results. {skippedCount} entries need attention.",
+  "@labBatchPartialSubmitMessage": {
+    "description": "Shown when a batch submit completes with some invalid or failed entries.",
+    "placeholders": {
+      "savedCount": { "type": "int" },
+      "skippedCount": { "type": "int" }
+    }
+  },
+  "labBatchPartialVerifyMessage": "Verified {savedCount} results. {skippedCount} entries need attention.",
+  "@labBatchPartialVerifyMessage": {
+    "description": "Shown when a batch verify completes with some invalid or failed entries.",
+    "placeholders": {
+      "savedCount": { "type": "int" },
+      "skippedCount": { "type": "int" }
+    }
+  },
+  "labBatchEntryValidationMessage": "Complete or correct this entry before it can be saved in bulk.",
+  "@labBatchEntryValidationMessage": {
+    "description": "Inline validation message for invalid lab result rows during batch operations."
+  },
+  "labWorkflowCurrentStepLabel": "Current step",
+  "@labWorkflowCurrentStepLabel": {
+    "description": "Label for the current lab workflow step."
+  },
+  "labWorkflowNextStepLabel": "Next step",
+  "@labWorkflowNextStepLabel": {
+    "description": "Label for the next recommended lab workflow step."
+  },
+  "labWorkflowStepOrdered": "Ordered",
+  "@labWorkflowStepOrdered": {
+    "description": "Workflow step label when tests are ordered."
+  },
+  "labWorkflowStepInProcess": "In process",
+  "@labWorkflowStepInProcess": {
+    "description": "Workflow step label when samples are being processed."
+  },
+  "labWorkflowStepResultsEntered": "Results entered",
+  "@labWorkflowStepResultsEntered": {
+    "description": "Workflow step label when results have been entered."
+  },
+  "labWorkflowStepVerified": "Verified",
+  "@labWorkflowStepVerified": {
+    "description": "Workflow step label when results are verified."
+  },
+  "labWorkflowNextCollectSample": "Collect sample",
+  "@labWorkflowNextCollectSample": {
+    "description": "Next workflow action to collect a sample."
+  },
+  "labWorkflowNextReceiveSample": "Receive sample",
+  "@labWorkflowNextReceiveSample": {
+    "description": "Next workflow action to receive a sample."
+  },
+  "labWorkflowNextEnterResults": "Enter results",
+  "@labWorkflowNextEnterResults": {
+    "description": "Next workflow action to enter lab results."
+  },
+  "labWorkflowNextVerifyResults": "Verify results",
+  "@labWorkflowNextVerifyResults": {
+    "description": "Next workflow action to verify lab results."
+  },
+  "labWorkflowNextReviewItems": "Review pending items",
+  "@labWorkflowNextReviewItems": {
+    "description": "Next workflow action to review pending lab order items."
+  },
+  "labReferenceRangeOverrideLabel": "Reference range override",
+  "@labReferenceRangeOverrideLabel": {
+    "description": "Label for manually overriding the applied reference range."
+  },
+  "labInterpretationOverrideLabel": "Manual interpretation",
+  "@labInterpretationOverrideLabel": {
+    "description": "Toggle label for manually overriding result interpretation."
+  },
+  "labResultFlagOverrideLabel": "Result flag override",
+  "@labResultFlagOverrideLabel": {
+    "description": "Label for manually overriding the result flag."
+  },
+  "clinicalLabResultReadyNotice": "Lab results are ready for {patientName}.",
+  "@clinicalLabResultReadyNotice": {
+    "description": "Realtime notice shown to clinicians when lab results are ready.",
+    "placeholders": {
+      "patientName": { "type": "String" }
+    }
+  },
+  "clinicalLabResultUpdatedNotice": "Lab results updated for {patientName}.",
+  "@clinicalLabResultUpdatedNotice": {
+    "description": "Realtime notice shown to clinicians when lab results are updated.",
+    "placeholders": {
+      "patientName": { "type": "String" }
+    }
+  },
+  "labOrderFavoriteTestsLabel": "Frequently used tests",
+  "@labOrderFavoriteTestsLabel": {
+    "description": "Section label for favorite lab tests in the order dialog."
+  },
   "labBulkResultActionsTitle": "Bulk actions",
   "@labBulkResultActionsTitle": {
     "description": "Title for the bulk lab result actions toolbar."

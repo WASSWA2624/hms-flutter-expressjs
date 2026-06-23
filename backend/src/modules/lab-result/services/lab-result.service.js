@@ -2,8 +2,6 @@ const labResultRepository = require('@repositories/lab-result/lab-result.reposit
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { emitToUsers, DIAGNOSTIC_EVENTS } = require('@lib/websocket');
-const { ROLES } = require('@config/roles');
-const prisma = require('@prisma/client');
 const {
   LAB_RESULT_WITH_RELATIONS_INCLUDE,
   buildPagination,
@@ -12,17 +10,10 @@ const {
   resolveModelRecordOrThrow,
   toDateOrNull,
 } = require('@services/lab-workspace/lab.shared');
+const { toOptionalText } = require('@services/lab-workspace/lab.configuration');
 const { evaluateLabResult } = require('@services/lab-workspace/lab.interpretation');
+const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
 const { mapLabResultRecord } = require('@services/lab-workspace/lab.serializer');
-
-const LAB_RECIPIENT_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.DOCTOR,
-  ROLES.NURSE,
-  ROLES.LAB_TECH,
-];
 
 const displayPatientName = (patient = {}) =>
   [patient.first_name, patient.last_name]
@@ -30,27 +21,8 @@ const displayPatientName = (patient = {}) =>
     .filter(Boolean)
     .join(' ') || null;
 
-const resolveLabResultRecipients = async (resultRecord, actorUserId = null) => {
-  const patient = resultRecord?.lab_order_item?.lab_order?.patient || {};
-  const tenantId = String(patient.tenant_id || '').trim();
-  if (!tenantId || !prisma?.user_role?.findMany) return [];
-  const facilityId = String(patient.facility_id || '').trim();
-  const rows = await prisma.user_role.findMany({
-    where: {
-      deleted_at: null,
-      tenant_id: tenantId,
-      role: {
-        name: { in: LAB_RECIPIENT_ROLES },
-        deleted_at: null,
-      },
-      ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {}),
-    },
-    select: { user_id: true },
-  });
-  return rows
-    .map((row) => row.user_id)
-    .filter((userId) => userId && userId !== actorUserId);
-};
+const resolveLabResultRecipients = async (resultRecord, actorUserId = null) =>
+  resolveLabRealtimeRecipients({ resultRecord, actorUserId });
 
 const buildLabResultRealtimePayload = ({ resultRecord, action }) => {
   const order = resultRecord?.lab_order_item?.lab_order || {};
@@ -134,13 +106,33 @@ const applyInterpretationIfNeeded = ({
   fallbackStatus = 'PENDING',
 }) => {
   const nextPayload = { ...payload };
+  const interpretationOverride = Boolean(nextPayload.interpretation_override);
+
   if (!shouldInterpret) {
     nextPayload.result_unit =
       nextPayload.result_unit || itemContext?.lab_test?.unit || null;
     nextPayload.result_flag = null;
     nextPayload.is_positive = false;
-    nextPayload.reference_range_label = null;
-    nextPayload.reference_range_summary = null;
+    if (!interpretationOverride) {
+      nextPayload.reference_range_label = null;
+      nextPayload.reference_range_summary = null;
+    }
+    return nextPayload;
+  }
+
+  if (interpretationOverride) {
+    const overrideRange = toOptionalText(nextPayload.reference_range_override);
+    const overrideFlag = toOptionalText(nextPayload.result_flag_override);
+    if (overrideRange) {
+      nextPayload.reference_range_summary = overrideRange;
+    }
+    if (overrideFlag) {
+      nextPayload.result_flag = overrideFlag;
+    }
+    nextPayload.result_unit =
+      nextPayload.result_unit || itemContext?.lab_test?.unit || null;
+    delete nextPayload.reference_range_override;
+    delete nextPayload.result_flag_override;
     return nextPayload;
   }
 

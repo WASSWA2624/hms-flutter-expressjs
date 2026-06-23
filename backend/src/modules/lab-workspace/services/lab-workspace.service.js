@@ -5,7 +5,6 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const prisma = require('@prisma/client');
 const labWorkspaceRepository = require('@repositories/lab-workspace/lab-workspace.repository');
 const { emitToUsers, DIAGNOSTIC_EVENTS } = require('@lib/websocket');
-const { ROLES } = require('@config/roles');
 const {
   LAB_ORDER_WITH_RELATIONS_INCLUDE,
   buildPagination,
@@ -16,6 +15,7 @@ const {
   applyDateRangeFilter,
 } = require('@services/lab-workspace/lab.shared');
 const { evaluateLabResult } = require('@services/lab-workspace/lab.interpretation');
+const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
 const {
   toPublicIdentifier,
   mapLabOrderRecord,
@@ -27,14 +27,6 @@ const ORDER_COMPLETION_STATES = new Set(['COMPLETED', 'CANCELLED']);
 const SAMPLE_COLLECTABLE_STATES = new Set(['PENDING', 'COLLECTED']);
 const SAMPLE_REJECTABLE_STATES = new Set(['PENDING', 'COLLECTED', 'RECEIVED']);
 const RESULT_REOPENABLE_STATES = new Set(['NORMAL', 'ABNORMAL', 'CRITICAL']);
-const LAB_RECIPIENT_ROLES = [
-  ROLES.SUPER_ADMIN,
-  ROLES.TENANT_ADMIN,
-  ROLES.FACILITY_ADMIN,
-  ROLES.DOCTOR,
-  ROLES.NURSE,
-  ROLES.LAB_TECH,
-];
 const LEGACY_ROUTE_CONFIG = Object.freeze({
   'lab-orders': {
     model: 'lab_order',
@@ -862,27 +854,12 @@ const persistLabOrderItemResult = async (tx, item, payload = {}) => {
 const resolveAuditTenantId = (orderRecord) =>
   String(orderRecord?.patient?.tenant_id || '').trim() || null;
 
-const resolveRoleRecipients = async ({ tenantId, facilityId = null }) => {
-  if (!tenantId || !prisma?.user_role?.findMany) return [];
-
-  const rows = await prisma.user_role.findMany({
-    where: {
-      deleted_at: null,
-      tenant_id: tenantId,
-      role: {
-        name: {
-          in: LAB_RECIPIENT_ROLES,
-        },
-        deleted_at: null,
-      },
-      ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {}),
-    },
-    select: {
-      user_id: true,
-    },
+const resolveRoleRecipients = async ({ tenantId, facilityId = null, orderRecord = null, actorUserId = null }) => {
+  if (!tenantId) return [];
+  return resolveLabRealtimeRecipients({
+    orderRecord: orderRecord || { patient: { tenant_id: tenantId, facility_id: facilityId } },
+    actorUserId,
   });
-
-  return rows.map((item) => item.user_id).filter(Boolean);
 };
 
 const buildLabRealtimePayload = ({
@@ -929,11 +906,11 @@ const publishLabRealtimeUpdates = async ({
     const recipientUserIds = await resolveRoleRecipients({
       tenantId,
       facilityId,
+      orderRecord,
+      actorUserId,
     });
 
-    const recipients = recipientUserIds.filter(
-      (userId) => userId && userId !== actorUserId
-    );
+    const recipients = recipientUserIds.filter(Boolean);
     if (!recipients.length) return;
 
     const workflowPayload = buildLabRealtimePayload({

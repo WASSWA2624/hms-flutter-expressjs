@@ -688,10 +688,25 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     if (!mounted || !context.mounted || referenceData == null) {
       return;
     }
+    final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
     await _openNested(
       context,
       ClinicalLabOrderActionDialog(
         referenceData: referenceData,
+        onSearchLabTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return repository.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 80,
+                source: source,
+              );
+            },
         onRequest:
             ({
               required List<String> labTestIds,

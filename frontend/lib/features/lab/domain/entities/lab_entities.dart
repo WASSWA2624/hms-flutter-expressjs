@@ -575,6 +575,9 @@ final class LabOrderItem {
     this.isPositive = false,
     this.referenceRangeLabel,
     this.referenceRangeSummary,
+    this.interpretationOverride = false,
+    this.referenceRangeOverride,
+    this.resultFlagOverride,
     this.reportedAt,
     this.rejectionReason,
     this.rejectionNotes,
@@ -612,6 +615,9 @@ final class LabOrderItem {
   final bool isPositive;
   final String? referenceRangeLabel;
   final String? referenceRangeSummary;
+  final bool interpretationOverride;
+  final String? referenceRangeOverride;
+  final String? resultFlagOverride;
   final DateTime? reportedAt;
   final String? rejectionReason;
   final String? rejectionNotes;
@@ -656,6 +662,10 @@ final class LabOrderItem {
   }
 
   String? get displayReferenceRange {
+    if (interpretationOverride &&
+        _firstNonEmpty(<String?>[referenceRangeOverride]) != null) {
+      return referenceRangeOverride;
+    }
     return _firstNonEmpty(<String?>[
       referenceRangeSummary,
       referenceRange,

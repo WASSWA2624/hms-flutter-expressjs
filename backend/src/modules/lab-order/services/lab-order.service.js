@@ -3,7 +3,6 @@ const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { emitToUsers, DIAGNOSTIC_EVENTS } = require('@lib/websocket');
-const { ROLES } = require('@config/roles');
 const {
   LAB_ORDER_WITH_RELATIONS_INCLUDE,
   LAB_PANEL_WITH_RELATIONS_INCLUDE,
@@ -15,9 +14,9 @@ const {
   toDateOrNull
 } = require('@services/lab-workspace/lab.shared');
 const { mapLabOrderRecord } = require('@services/lab-workspace/lab.serializer');
+const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
 
 const sanitizeString = (value) => (typeof value === 'string' ? value.trim() : '');
-const LAB_RECIPIENT_ROLES = [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.DOCTOR, ROLES.NURSE, ROLES.LAB_TECH];
 
 const STANDARD_LAB_TESTS = Object.freeze({
   "CBC": {
@@ -45841,31 +45840,13 @@ const STANDARD_LAB_PANELS = Object.freeze({
   ]
 });
 
-const resolveLabOrderRealtimeRecipients = async (orderRecord) => {
-  const tenantId = orderRecord?.patient?.tenant_id || null;
-  if (!tenantId || !prisma?.user_role?.findMany) return [];
+const resolveLabOrderRealtimeRecipients = async (orderRecord, actorUserId = null) =>
+  resolveLabRealtimeRecipients({ orderRecord, actorUserId });
 
-  const facilityId = orderRecord?.patient?.facility_id || null;
-  const rows = await prisma.user_role.findMany({
-    where: {
-      deleted_at: null,
-      tenant_id: tenantId,
-      role: {
-        deleted_at: null,
-        name: { in: LAB_RECIPIENT_ROLES }
-      },
-      ...(facilityId ? { OR: [{ facility_id: null }, { facility_id: facilityId }] } : {})
-    },
-    select: { user_id: true }
-  });
-
-  return [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
-};
-
-const publishLabOrderRealtimeUpdate = async ({ orderRecord, action }) => {
+const publishLabOrderRealtimeUpdate = async ({ orderRecord, action, actorUserId = null }) => {
   try {
     if (!orderRecord) return;
-    const recipientUserIds = await resolveLabOrderRealtimeRecipients(orderRecord);
+    const recipientUserIds = await resolveLabOrderRealtimeRecipients(orderRecord, actorUserId);
     if (!recipientUserIds.length) return;
 
     const order = mapLabOrderRecord(orderRecord);
@@ -46281,6 +46262,7 @@ const createLabOrder = async (data, userId, ipAddress) => {
     payload.status = payload.status || 'ORDERED';
     delete payload.ordered_at;
     payload.ordered_at = new Date();
+    payload.ordered_by_user_id = userId || null;
     const requestedItems = await resolveRequestedLabOrderItems({
       requestedTests,
       requestedPanels,
@@ -46310,7 +46292,8 @@ const createLabOrder = async (data, userId, ipAddress) => {
     }).catch(() => {});
     publishLabOrderRealtimeUpdate({
       orderRecord: createdOrder || labOrder,
-      action: 'CREATED'
+      action: 'CREATED',
+      actorUserId: userId,
     });
 
     return mapLabOrderRecord(createdOrder || labOrder);
@@ -46410,7 +46393,8 @@ const updateLabOrder = async (id, data, userId, ipAddress) => {
     }).catch(() => {});
     publishLabOrderRealtimeUpdate({
       orderRecord: labOrder || updated,
-      action: 'UPDATED'
+      action: 'UPDATED',
+      actorUserId: userId,
     });
 
     return mapLabOrderRecord(labOrder || updated);
@@ -46449,7 +46433,8 @@ const deleteLabOrder = async (id, data = {}, userId, ipAddress) => {
     }).catch(() => {});
     publishLabOrderRealtimeUpdate({
       orderRecord: before,
-      action: 'DELETED'
+      action: 'DELETED',
+      actorUserId: userId,
     });
 
     return mapLabOrderRecord(before);

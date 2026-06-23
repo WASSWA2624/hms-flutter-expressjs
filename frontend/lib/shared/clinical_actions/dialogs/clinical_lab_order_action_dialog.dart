@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_layer_selector.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -14,12 +17,20 @@ class ClinicalLabOrderActionDialog extends StatefulWidget {
     required this.referenceData,
     required this.onRequest,
     required this.onUpdate,
+    required this.onSearchLabTests,
     this.existingOrder,
     super.key,
   });
 
   final ClinicalActionReferenceData referenceData;
   final ClinicalActionLabOrderRecord? existingOrder;
+  final Future<Result<List<ClinicalActionCatalogOption>>> Function({
+    required String termType,
+    String? query,
+    int? limit,
+    String source,
+  })
+  onSearchLabTests;
   final Future<AppFailure?> Function({
     required List<String> labTestIds,
     required List<String> labPanelIds,
@@ -59,12 +70,21 @@ final class _LabCatalogSearchResults {
 
 class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   static const int _maxVisibleCatalogOptions = 80;
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 160);
 
   late final TextEditingController _searchController;
+  Timer? _searchDebounce;
   _LabRequestSelectionKind _selectionKind = _LabRequestSelectionKind.tests;
+  ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.all;
   String _searchQuery = '';
+  int _searchRequest = 0;
+  List<ClinicalActionCatalogOption> _testCatalogOptions =
+      const <ClinicalActionCatalogOption>[];
+  List<ClinicalActionCatalogOption> _favoriteTestOptions =
+      const <ClinicalActionCatalogOption>[];
   final List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
   int? _editingIndex;
+  bool _isSearching = false;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -73,10 +93,14 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
     super.initState();
     _searchController = TextEditingController();
     _requests.addAll(_initialRequests());
+    _searchRequest += 1;
+    unawaited(_loadTestCatalog('', _searchRequest));
+    unawaited(_loadFavoriteTests());
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -136,8 +160,51 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                         _selectionKind = values.first;
                         _failure = null;
                       });
+                      if (values.first == _LabRequestSelectionKind.tests) {
+                        _searchRequest += 1;
+                        unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
+                      }
                     },
             ),
+            if (_selectionKind == _LabRequestSelectionKind.tests) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              ClinicalCatalogLayerSelector(
+                value: _catalogSource,
+                enabled: !_isSaving,
+                onChanged: (ClinicalCatalogSource source) {
+                  setState(() => _catalogSource = source);
+                  _searchRequest += 1;
+                  unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
+                },
+              ),
+              if (_favoriteTestOptions.isNotEmpty) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    l10n.labOrderFavoriteTestsLabel,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    for (final ClinicalActionCatalogOption option
+                        in _favoriteTestOptions)
+                      ActionChip(
+                        label: Text(option.displayTitle),
+                        onPressed: _isSaving
+                            ? null
+                            : () => _addOrUpdateRequest(option),
+                      ),
+                  ],
+                ),
+              ],
+            ],
             SizedBox(height: theme.spacing.md),
             AppTextField(
               controller: _searchController,
@@ -159,6 +226,11 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
                     ),
               onChanged: _scheduleSearch,
             ),
+            if (_isSearching &&
+                _selectionKind == _LabRequestSelectionKind.tests) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              const LinearProgressIndicator(),
+            ],
             if (_editingIndex != null) ...<Widget>[
               SizedBox(height: theme.spacing.xs),
               Align(
@@ -306,9 +378,51 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
 
   List<ClinicalActionCatalogOption> _catalogForSelection() {
     return switch (_selectionKind) {
-      _LabRequestSelectionKind.tests => widget.referenceData.labTests,
+      _LabRequestSelectionKind.tests =>
+        _testCatalogOptions.isNotEmpty
+            ? _testCatalogOptions
+            : widget.referenceData.labTests,
       _LabRequestSelectionKind.panels => widget.referenceData.labPanels,
     };
+  }
+
+  Future<void> _loadTestCatalog(String query, int requestId) async {
+    setState(() => _isSearching = true);
+    final Result<List<ClinicalActionCatalogOption>> result =
+        await widget.onSearchLabTests(
+      termType: ClinicalCatalogTermType.labTest.apiValue,
+      query: query.trim().isEmpty ? null : query.trim(),
+      limit: _maxVisibleCatalogOptions,
+      source: _catalogSource.apiValue,
+    );
+    if (!mounted || requestId != _searchRequest) {
+      return;
+    }
+    setState(() {
+      _isSearching = false;
+      _testCatalogOptions = result.when(
+        success: (List<ClinicalActionCatalogOption> value) => value,
+        failure: (_) => widget.referenceData.labTests,
+      );
+    });
+  }
+
+  Future<void> _loadFavoriteTests() async {
+    final Result<List<ClinicalActionCatalogOption>> result =
+        await widget.onSearchLabTests(
+      termType: ClinicalCatalogTermType.labTest.apiValue,
+      limit: 12,
+      source: ClinicalCatalogSource.favorites.apiValue,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _favoriteTestOptions = result.when(
+        success: (List<ClinicalActionCatalogOption> value) => value,
+        failure: (_) => const <ClinicalActionCatalogOption>[],
+      );
+    });
   }
 
   _LabCatalogSearchResults _searchCatalog(
@@ -365,6 +479,14 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
 
   void _scheduleSearch(String value) {
     setState(() => _searchQuery = value.trim());
+    if (_selectionKind != _LabRequestSelectionKind.tests) {
+      return;
+    }
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(_searchDebounceDuration, () {
+      _searchRequest += 1;
+      unawaited(_loadTestCatalog(_searchQuery, _searchRequest));
+    });
   }
 
   void _clearSearch() {

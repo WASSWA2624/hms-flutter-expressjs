@@ -718,6 +718,7 @@ final class ClinicalWorkspaceState {
     this.referenceData = const ClinicalReferenceData(),
     this.selectedBundle,
     this.lastFailure,
+    this.realtimeNotice,
     this.isRefreshing = false,
     this.isRefreshingDetail = false,
     this.isSaving = false,
@@ -728,6 +729,7 @@ final class ClinicalWorkspaceState {
   final ClinicalReferenceData referenceData;
   final ClinicalEncounterBundle? selectedBundle;
   final Object? lastFailure;
+  final String? realtimeNotice;
   final bool isRefreshing;
   final bool isRefreshingDetail;
   final bool isSaving;
@@ -798,11 +800,13 @@ final class ClinicalWorkspaceState {
     ClinicalReferenceData? referenceData,
     ClinicalEncounterBundle? selectedBundle,
     Object? lastFailure,
+    String? realtimeNotice,
     bool? isRefreshing,
     bool? isRefreshingDetail,
     bool? isSaving,
     bool clearSelectedBundle = false,
     bool clearLastFailure = false,
+    bool clearRealtimeNotice = false,
   }) {
     return ClinicalWorkspaceState(
       query: query ?? this.query,
@@ -812,6 +816,9 @@ final class ClinicalWorkspaceState {
           ? null
           : selectedBundle ?? this.selectedBundle,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
+      realtimeNotice: clearRealtimeNotice
+          ? null
+          : realtimeNotice ?? this.realtimeNotice,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
       isSaving: isSaving ?? this.isSaving,

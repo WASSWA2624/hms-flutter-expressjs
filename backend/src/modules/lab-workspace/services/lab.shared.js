@@ -72,6 +72,7 @@ const LAB_ORDER_ITEM_WITH_RELATIONS_INCLUDE = {
 const LAB_ORDER_WITH_RELATIONS_INCLUDE = {
   patient: { select: PATIENT_PUBLIC_SELECT },
   encounter: { select: ENCOUNTER_PUBLIC_SELECT },
+  ordered_by: { select: { id: true, human_friendly_id: true } },
   items: {
     where: { deleted_at: null },
     orderBy: { created_at: 'asc' },

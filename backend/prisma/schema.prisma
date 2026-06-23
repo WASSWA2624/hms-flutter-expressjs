@@ -1352,6 +1352,7 @@ model user {
   data_processing_logs          data_processing_log[]
   appointments                  appointment[]
   encounters                    encounter[]
+  lab_orders_ordered            lab_order[]               @relation("lab_order_ordered_by")
   clinical_notes                clinical_note[]
   acknowledged_clinical_alerts  clinical_alert[]          @relation("clinical_alert_acknowledged_by")
   resolved_clinical_alerts      clinical_alert[]          @relation("clinical_alert_resolved_by")
@@ -3050,27 +3051,30 @@ model lab_panel_item {
 }
 
 model lab_order {
-  id                String         @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?        @db.VarChar(32)
-  encounter_id      String?        @db.VarChar(36)
-  patient_id        String         @db.VarChar(36)
-  status            LabOrderStatus
-  ordered_at        DateTime       @default(now())
-  created_at        DateTime       @default(now())
-  updated_at        DateTime       @updatedAt
-  deleted_at        DateTime?
-  version           Int            @default(1)
+  id                 String         @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id  String?        @db.VarChar(32)
+  encounter_id       String?        @db.VarChar(36)
+  patient_id         String         @db.VarChar(36)
+  status             LabOrderStatus
+  ordered_at         DateTime       @default(now())
+  ordered_by_user_id String?        @db.VarChar(36)
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
+  deleted_at         DateTime?
+  version            Int            @default(1)
 
-  encounter encounter?       @relation(fields: [encounter_id], references: [id])
-  patient   patient          @relation(fields: [patient_id], references: [id])
-  items     lab_order_item[]
-  samples   lab_sample[]
+  encounter   encounter?       @relation(fields: [encounter_id], references: [id])
+  patient     patient          @relation(fields: [patient_id], references: [id])
+  ordered_by  user?            @relation("lab_order_ordered_by", fields: [ordered_by_user_id], references: [id])
+  items       lab_order_item[]
+  samples     lab_sample[]
 
   @@unique([human_friendly_id])
   @@index([encounter_id])
   @@index([patient_id])
   @@index([status])
   @@index([ordered_at])
+  @@index([ordered_by_user_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
@@ -3130,22 +3134,25 @@ model lab_sample {
 }
 
 model lab_result {
-  id                String          @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?         @db.VarChar(32)
-  lab_order_item_id String          @db.VarChar(36)
-  status            LabResultStatus
-  result_value      String?         @db.VarChar(120)
-  result_unit       String?         @db.VarChar(40)
-  result_flag       String?         @db.VarChar(40)
-  is_positive       Boolean         @default(false)
-  reference_range_label   String?   @db.VarChar(120)
-  reference_range_summary String?   @db.VarChar(255)
-  result_text       String?         @db.Text
-  reported_at       DateTime?
-  created_at        DateTime        @default(now())
-  updated_at        DateTime        @updatedAt
-  deleted_at        DateTime?
-  version           Int             @default(1)
+  id                      String          @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id        String?         @db.VarChar(32)
+  lab_order_item_id       String          @db.VarChar(36)
+  status                  LabResultStatus
+  result_value            String?         @db.VarChar(120)
+  result_unit             String?         @db.VarChar(40)
+  result_flag             String?         @db.VarChar(40)
+  is_positive             Boolean         @default(false)
+  reference_range_label   String?         @db.VarChar(120)
+  reference_range_summary String?         @db.VarChar(255)
+  interpretation_override Boolean         @default(false)
+  reference_range_override String?        @db.VarChar(255)
+  result_flag_override    String?         @db.VarChar(40)
+  result_text             String?         @db.Text
+  reported_at             DateTime?
+  created_at              DateTime        @default(now())
+  updated_at              DateTime        @updatedAt
+  deleted_at              DateTime?
+  version                 Int             @default(1)
 
   lab_order_item lab_order_item @relation(fields: [lab_order_item_id], references: [id])
 

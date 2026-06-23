@@ -31,6 +31,33 @@ class ClinicalWorkspacePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    ref.listen<AsyncValue<Result<ClinicalWorkspaceState>>>(
+      clinicalWorkspaceControllerProvider,
+      (AsyncValue<Result<ClinicalWorkspaceState>>? previous,
+          AsyncValue<Result<ClinicalWorkspaceState>> next) {
+        final String? notice = next.asData?.value.when(
+          success: (ClinicalWorkspaceState value) => value.realtimeNotice,
+          failure: (_) => null,
+        );
+        if (notice == null || notice.isEmpty) {
+          return;
+        }
+        final List<String> parts = notice.split('::');
+        if (parts.length < 2) {
+          return;
+        }
+        final String patientName = parts.sublist(1).join('::');
+        final String message = parts.first == 'LAB_RESULT_READY'
+            ? l10n.clinicalLabResultReadyNotice(patientName)
+            : l10n.clinicalLabResultUpdatedNotice(patientName);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(message)));
+        ref
+            .read(clinicalWorkspaceControllerProvider.notifier)
+            .clearRealtimeNotice();
+      },
+    );
     final AsyncValue<Result<ClinicalWorkspaceState>> state = ref.watch(
       clinicalWorkspaceControllerProvider,
     );
@@ -2435,6 +2462,20 @@ Future<void> _openLabDialog(
         existingOrder: existingOrder == null
             ? null
             : _clinicalActionLabOrderRecord(existingOrder),
+        onSearchLabTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return controller.searchClinicalTerms(
+                termType: termType,
+                query: query,
+                limit: limit ?? 80,
+                source: source,
+              );
+            },
         onRequest: controller.requestLab,
         onUpdate: controller.updateLabOrder,
       ),

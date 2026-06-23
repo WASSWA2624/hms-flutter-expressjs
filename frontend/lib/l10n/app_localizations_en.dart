@@ -6800,6 +6800,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labDraftSavedMessage => 'Draft results saved.';
 
   @override
+  String labBatchPartialSaveMessage(int savedCount, int skippedCount) {
+    return 'Saved $savedCount results. $skippedCount entries need attention.';
+  }
+
+  @override
+  String labBatchPartialSubmitMessage(int savedCount, int skippedCount) {
+    return 'Submitted $savedCount results. $skippedCount entries need attention.';
+  }
+
+  @override
+  String labBatchPartialVerifyMessage(int savedCount, int skippedCount) {
+    return 'Verified $savedCount results. $skippedCount entries need attention.';
+  }
+
+  @override
+  String get labBatchEntryValidationMessage =>
+      'Complete or correct this entry before it can be saved in bulk.';
+
+  @override
+  String get labWorkflowCurrentStepLabel => 'Current step';
+
+  @override
+  String get labWorkflowNextStepLabel => 'Next step';
+
+  @override
+  String get labWorkflowStepOrdered => 'Ordered';
+
+  @override
+  String get labWorkflowStepInProcess => 'In process';
+
+  @override
+  String get labWorkflowStepResultsEntered => 'Results entered';
+
+  @override
+  String get labWorkflowStepVerified => 'Verified';
+
+  @override
+  String get labWorkflowNextCollectSample => 'Collect sample';
+
+  @override
+  String get labWorkflowNextReceiveSample => 'Receive sample';
+
+  @override
+  String get labWorkflowNextEnterResults => 'Enter results';
+
+  @override
+  String get labWorkflowNextVerifyResults => 'Verify results';
+
+  @override
+  String get labWorkflowNextReviewItems => 'Review pending items';
+
+  @override
+  String get labReferenceRangeOverrideLabel => 'Reference range override';
+
+  @override
+  String get labInterpretationOverrideLabel => 'Manual interpretation';
+
+  @override
+  String get labResultFlagOverrideLabel => 'Result flag override';
+
+  @override
+  String clinicalLabResultReadyNotice(String patientName) {
+    return 'Lab results are ready for $patientName.';
+  }
+
+  @override
+  String clinicalLabResultUpdatedNotice(String patientName) {
+    return 'Lab results updated for $patientName.';
+  }
+
+  @override
+  String get labOrderFavoriteTestsLabel => 'Frequently used tests';
+
+  @override
   String get labBulkResultActionsTitle => 'Bulk actions';
 
   @override

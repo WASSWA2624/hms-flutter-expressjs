@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dialog.dart';
@@ -1541,6 +1542,22 @@ Future<void> _openCreateLabOrderDialog(
       builder: (_) => ClinicalLabOrderActionDialog(
         referenceData: _clinicalReferenceData(state),
         existingOrder: existingOrder,
+        onSearchLabTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return ProviderScope.containerOf(context)
+                  .read(clinicalRepositoryProvider)
+                  .searchClinicalTerms(
+                    termType: termType,
+                    query: query,
+                    limit: limit ?? 80,
+                    source: source,
+                  );
+            },
         onRequest:
             ({
               required List<String> labTestIds,
@@ -1659,6 +1676,22 @@ Future<void> _openEditLabOrderDialog(
       builder: (_) => ClinicalLabOrderActionDialog(
         referenceData: _clinicalReferenceData(state),
         existingOrder: existingOrder,
+        onSearchLabTests:
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
+              return ProviderScope.containerOf(context)
+                  .read(clinicalRepositoryProvider)
+                  .searchClinicalTerms(
+                    termType: termType,
+                    query: query,
+                    limit: limit ?? 80,
+                    source: source,
+                  );
+            },
         onRequest:
             ({
               required List<String> labTestIds,

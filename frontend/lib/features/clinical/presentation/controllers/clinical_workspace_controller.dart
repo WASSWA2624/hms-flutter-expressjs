@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -41,15 +42,57 @@ final class ClinicalWorkspaceController
       ref: ref,
       events: RealtimeEventGroups.clinical,
       shouldRefresh: _clinicalRealtimeEventTouchesVisibleData,
-      onRefresh: (_) => _syncFromRealtime(),
+      onRefresh: _handleClinicalRealtime,
     );
     final Result<ClinicalWorkspaceState> result = await _loadInitialState();
     _startSync();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
+  Future<void> _handleClinicalRealtime(RealtimeMessage message) async {
+    _maybeSetRealtimeNotice(message);
     await _syncVisibleData();
+  }
+
+  void _maybeSetRealtimeNotice(RealtimeMessage message) {
+    if (!RealtimeEventGroups.diagnostics.contains(message.event)) {
+      return;
+    }
+    if (!_clinicalRealtimeEventTouchesVisibleData(message)) {
+      return;
+    }
+    final ClinicalWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    final Map<String, Object?> payload = message.payload;
+    final String patientName =
+        _stringValue(payload['patient_display_name']) ??
+        current.selectedBundle?.entry.patientDisplayName ??
+        'patient';
+    final String? notice = switch (message.event) {
+      RealtimeEvents.labResultReady => _labResultReadyNotice(patientName),
+      RealtimeEvents.labResultUpdated => _labResultUpdatedNotice(patientName),
+      _ => null,
+    };
+    if (notice == null) {
+      return;
+    }
+    _emit(current.copyWith(realtimeNotice: notice));
+  }
+
+  String _labResultReadyNotice(String patientName) =>
+      'LAB_RESULT_READY::$patientName';
+
+  String _labResultUpdatedNotice(String patientName) =>
+      'LAB_RESULT_UPDATED::$patientName';
+
+  void clearRealtimeNotice() {
+    final ClinicalWorkspaceState? current = _currentState;
+    if (current == null || current.realtimeNotice == null) {
+      return;
+    }
+    _emit(current.copyWith(clearRealtimeNotice: true));
   }
 
   Future<AppFailure?> refresh() {

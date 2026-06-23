@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -30,6 +31,22 @@ typedef _LabOrderItemResultPersister =
       LabOrderItem item,
       Map<String, Object?> payload,
     );
+
+@immutable
+final class LabBatchPersistOutcome {
+  const LabBatchPersistOutcome({
+    this.savedCount = 0,
+    this.skippedCount = 0,
+    this.lastFailure,
+  });
+
+  final int savedCount;
+  final int skippedCount;
+  final AppFailure? lastFailure;
+
+  bool get hasSavedEntries => savedCount > 0;
+  bool get hasSkippedEntries => skippedCount > 0;
+}
 
 final class LabWorkspaceController
     extends AsyncNotifier<Result<LabWorkspaceState>> {
@@ -490,11 +507,11 @@ final class LabWorkspaceController
     );
   }
 
-  Future<AppFailure?> submitOrderItemResults(
+  Future<LabBatchPersistOutcome> submitOrderItemResults(
     List<({LabOrderItem item, Map<String, Object?> payload})> entries,
   ) async {
     if (entries.isEmpty) {
-      return AppFailure.validation();
+      return LabBatchPersistOutcome(lastFailure: AppFailure.validation());
     }
 
     final Map<String, List<Map<String, Object?>>> resultsByOrder =
@@ -503,13 +520,15 @@ final class LabWorkspaceController
         in entries) {
       final LabOrderWorkflow? workflow = _workflowForItem(entry.item);
       if (workflow == null) {
-        return AppFailure.validation();
+        return LabBatchPersistOutcome(lastFailure: AppFailure.validation());
       }
       resultsByOrder
           .putIfAbsent(workflow.order.apiId, () => <Map<String, Object?>>[])
           .add(entry.payload);
     }
 
+    var savedCount = 0;
+    var skippedCount = 0;
     AppFailure? lastFailure;
     for (final MapEntry<String, List<Map<String, Object?>>> entry
         in resultsByOrder.entries) {
@@ -518,11 +537,17 @@ final class LabWorkspaceController
         entry.value,
       );
       if (failure != null) {
+        skippedCount += entry.value.length;
         lastFailure = failure;
-        break;
+        continue;
       }
+      savedCount += entry.value.length;
     }
-    return lastFailure;
+    return LabBatchPersistOutcome(
+      savedCount: savedCount,
+      skippedCount: skippedCount,
+      lastFailure: lastFailure,
+    );
   }
 
   Future<AppFailure?> saveOrderItemDraft(
@@ -547,7 +572,7 @@ final class LabWorkspaceController
     });
   }
 
-  Future<AppFailure?> saveOrderItemDrafts(
+  Future<LabBatchPersistOutcome> saveOrderItemDrafts(
     List<({LabOrderItem item, Map<String, Object?> payload})> entries,
   ) async {
     return _persistOrderItemResultEntries(entries, _saveOrderItemDraftResult);
@@ -575,7 +600,7 @@ final class LabWorkspaceController
     });
   }
 
-  Future<AppFailure?> submitOrderItemDrafts(
+  Future<LabBatchPersistOutcome> submitOrderItemDrafts(
     List<({LabOrderItem item, Map<String, Object?> payload})> entries,
   ) async {
     return _persistOrderItemResultEntries(entries, _upsertOrderItemResult);
@@ -606,12 +631,12 @@ final class LabWorkspaceController
     return _mutateWorkflow(() => _repository.rejectOrderItem(itemId, payload));
   }
 
-  Future<AppFailure?> _persistOrderItemResultEntries(
+  Future<LabBatchPersistOutcome> _persistOrderItemResultEntries(
     List<_LabOrderItemResultEntry> entries,
     _LabOrderItemResultPersister persist,
   ) async {
     if (entries.isEmpty) {
-      return AppFailure.validation();
+      return LabBatchPersistOutcome(lastFailure: AppFailure.validation());
     }
 
     final Map<String, _LabOrderItemResultGroup> entriesByOrder =
@@ -619,7 +644,7 @@ final class LabWorkspaceController
     for (final _LabOrderItemResultEntry entry in entries) {
       final LabOrderWorkflow? workflow = _workflowForItem(entry.item);
       if (workflow == null) {
-        return AppFailure.validation();
+        return LabBatchPersistOutcome(lastFailure: AppFailure.validation());
       }
       entriesByOrder
           .putIfAbsent(
@@ -630,27 +655,50 @@ final class LabWorkspaceController
           .add(entry);
     }
 
+    var savedCount = 0;
+    var skippedCount = 0;
     AppFailure? lastFailure;
     for (final _LabOrderItemResultGroup group in entriesByOrder.values) {
-      final AppFailure? failure = await _mutateWorkflow(() async {
-        for (final _LabOrderItemResultEntry entry in group.entries) {
-          final Result<void> result = await persist(entry.item, entry.payload);
-          final AppFailure? itemFailure = result.when(
-            success: (_) => null,
-            failure: (AppFailure failure) => failure,
-          );
-          if (itemFailure != null) {
-            return Result<LabOrderWorkflow>.failure(itemFailure);
-          }
+      var groupSavedCount = 0;
+      for (final _LabOrderItemResultEntry entry in group.entries) {
+        final Result<void> result = await persist(entry.item, entry.payload);
+        final AppFailure? itemFailure = result.when(
+          success: (_) => null,
+          failure: (AppFailure failure) => failure,
+        );
+        if (itemFailure != null) {
+          skippedCount += 1;
+          lastFailure = itemFailure;
+          continue;
         }
-        return _repository.loadOrderWorkflow(group.workflow.order.apiId);
-      });
-      if (failure != null) {
-        lastFailure = failure;
-        break;
+        groupSavedCount += 1;
+        savedCount += 1;
+      }
+      if (groupSavedCount > 0) {
+        final AppFailure? refreshFailure = await _mutateWorkflow(
+          () => _repository.loadOrderWorkflow(group.workflow.order.apiId),
+        );
+        if (refreshFailure != null) {
+          lastFailure = refreshFailure;
+        }
       }
     }
-    return lastFailure;
+    return LabBatchPersistOutcome(
+      savedCount: savedCount,
+      skippedCount: skippedCount,
+      lastFailure: lastFailure,
+    );
+  }
+
+  Map<String, Object?> _interpretationPayloadFields(Map<String, Object?> payload) {
+    return <String, Object?>{
+      if (payload.containsKey('interpretation_override'))
+        'interpretation_override': payload['interpretation_override'],
+      if (payload.containsKey('reference_range_override'))
+        'reference_range_override': payload['reference_range_override'],
+      if (payload.containsKey('result_flag_override'))
+        'result_flag_override': payload['result_flag_override'],
+    };
   }
 
   Future<Result<void>> _saveOrderItemDraftResult(
@@ -666,6 +714,7 @@ final class LabWorkspaceController
         'result_unit': payload['result_unit'],
       if (payload.containsKey('result_text'))
         'result_text': payload['result_text'],
+      ..._interpretationPayloadFields(payload),
     };
     return _upsertOrderItemResult(item, draftPayload);
   }
