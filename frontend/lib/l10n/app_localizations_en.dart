@@ -6839,6 +6839,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check the highlighted tests below and complete any missing or invalid values.';
 
   @override
+  String labBatchActionFailedMessage(String actionLabel) {
+    return '$actionLabel could not be completed.';
+  }
+
+  @override
+  String labBatchActionValidationMessage(String actionLabel) {
+    return '$actionLabel could not run because some selected tests still need attention.';
+  }
+
+  @override
+  String labBatchActionFailedDetailMessage(String actionLabel, String detail) {
+    return '$actionLabel failed: $detail';
+  }
+
+  @override
+  String get labBatchInvalidTransitionMessage =>
+      'Some selected tests cannot be verified yet. Enter and submit results for the highlighted tests first, or remove rejected tests from the selection.';
+
+  @override
+  String get labBatchItemNotFoundMessage =>
+      'One or more selected tests are no longer available. Refresh the order and try again.';
+
+  @override
   String get labResultLifecycleDraft => 'Draft';
 
   @override

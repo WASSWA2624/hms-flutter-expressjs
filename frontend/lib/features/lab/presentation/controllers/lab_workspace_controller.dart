@@ -510,43 +510,18 @@ final class LabWorkspaceController
   Future<LabBatchPersistOutcome> submitOrderItemResults(
     List<({LabOrderItem item, Map<String, Object?> payload})> entries,
   ) async {
-    if (entries.isEmpty) {
-      return LabBatchPersistOutcome(lastFailure: AppFailure.validation());
-    }
-
-    final Map<String, List<Map<String, Object?>>> resultsByOrder =
-        <String, List<Map<String, Object?>>>{};
-    for (final ({LabOrderItem item, Map<String, Object?> payload}) entry
-        in entries) {
-      final LabOrderWorkflow? workflow = _workflowForItem(entry.item);
-      if (workflow == null) {
-        return LabBatchPersistOutcome(lastFailure: AppFailure.validation());
-      }
-      resultsByOrder
-          .putIfAbsent(workflow.order.apiId, () => <Map<String, Object?>>[])
-          .add(entry.payload);
-    }
-
-    var savedCount = 0;
-    var skippedCount = 0;
-    AppFailure? lastFailure;
-    for (final MapEntry<String, List<Map<String, Object?>>> entry
-        in resultsByOrder.entries) {
-      final AppFailure? failure = await verifyAllResults(
-        entry.key,
-        entry.value,
-      );
-      if (failure != null) {
-        skippedCount += entry.value.length;
-        lastFailure = failure;
-        continue;
-      }
-      savedCount += entry.value.length;
-    }
-    return LabBatchPersistOutcome(
-      savedCount: savedCount,
-      skippedCount: skippedCount,
-      lastFailure: lastFailure,
+    return _persistOrderItemResultEntries(
+      entries,
+      (LabOrderItem item, Map<String, Object?> payload) async {
+        final Result<LabOrderWorkflow> result = await _repository.verifyOrderItem(
+          item.apiId,
+          payload,
+        );
+        return result.when(
+          success: (_) => const Result<void>.success(null),
+          failure: Result.failure,
+        );
+      },
     );
   }
 

@@ -12772,6 +12772,36 @@ abstract class AppLocalizations {
   /// **'Check the highlighted tests below and complete any missing or invalid values.'**
   String get labBatchValidationSummaryHint;
 
+  /// Generic failure message for a lab batch action.
+  ///
+  /// In en, this message translates to:
+  /// **'{actionLabel} could not be completed.'**
+  String labBatchActionFailedMessage(String actionLabel);
+
+  /// Validation failure message for a lab batch action.
+  ///
+  /// In en, this message translates to:
+  /// **'{actionLabel} could not run because some selected tests still need attention.'**
+  String labBatchActionValidationMessage(String actionLabel);
+
+  /// Detailed failure message for a lab batch action.
+  ///
+  /// In en, this message translates to:
+  /// **'{actionLabel} failed: {detail}'**
+  String labBatchActionFailedDetailMessage(String actionLabel, String detail);
+
+  /// Shown when lab workflow transition fails during batch verify or submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Some selected tests cannot be verified yet. Enter and submit results for the highlighted tests first, or remove rejected tests from the selection.'**
+  String get labBatchInvalidTransitionMessage;
+
+  /// Shown when a selected lab test cannot be resolved during batch actions.
+  ///
+  /// In en, this message translates to:
+  /// **'One or more selected tests are no longer available. Refresh the order and try again.'**
+  String get labBatchItemNotFoundMessage;
+
   /// Badge label for lab results saved locally but not yet submitted.
   ///
   /// In en, this message translates to:

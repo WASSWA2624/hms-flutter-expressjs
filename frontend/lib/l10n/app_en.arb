@@ -8834,6 +8834,36 @@
   "@labBatchValidationSummaryHint": {
     "description": "Hint shown under the batch lab validation summary banner."
   },
+  "labBatchActionFailedMessage": "{actionLabel} could not be completed.",
+  "@labBatchActionFailedMessage": {
+    "description": "Generic failure message for a lab batch action.",
+    "placeholders": {
+      "actionLabel": { "type": "String" }
+    }
+  },
+  "labBatchActionValidationMessage": "{actionLabel} could not run because some selected tests still need attention.",
+  "@labBatchActionValidationMessage": {
+    "description": "Validation failure message for a lab batch action.",
+    "placeholders": {
+      "actionLabel": { "type": "String" }
+    }
+  },
+  "labBatchActionFailedDetailMessage": "{actionLabel} failed: {detail}",
+  "@labBatchActionFailedDetailMessage": {
+    "description": "Detailed failure message for a lab batch action.",
+    "placeholders": {
+      "actionLabel": { "type": "String" },
+      "detail": { "type": "String" }
+    }
+  },
+  "labBatchInvalidTransitionMessage": "Some selected tests cannot be verified yet. Enter and submit results for the highlighted tests first, or remove rejected tests from the selection.",
+  "@labBatchInvalidTransitionMessage": {
+    "description": "Shown when lab workflow transition fails during batch verify or submit."
+  },
+  "labBatchItemNotFoundMessage": "One or more selected tests are no longer available. Refresh the order and try again.",
+  "@labBatchItemNotFoundMessage": {
+    "description": "Shown when a selected lab test cannot be resolved during batch actions."
+  },
   "labResultLifecycleDraft": "Draft",
   "@labResultLifecycleDraft": {
     "description": "Badge label for lab results saved locally but not yet submitted."

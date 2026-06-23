@@ -42,6 +42,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   bool _selectionInitialized = false;
   AppFailure? _failure;
   int? _batchValidationIssueCount;
+  String? _labActionFailureMessage;
   bool _isSaving = false;
 
   @override
@@ -54,8 +55,15 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     if (mounted) {
       setState(() {
         _batchValidationIssueCount = null;
+        _labActionFailureMessage = null;
       });
     }
+  }
+
+  void _clearLabActionFeedback() {
+    _batchValidationIssueCount = null;
+    _labActionFailureMessage = null;
+    _failure = null;
   }
 
   void _disposeDrafts() {
@@ -270,13 +278,20 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
 
     final List<_ResultDraft> selectedDrafts = _selectedDrafts(drafts);
-    final List<_ResultDraft> draftableEntries = selectedDrafts
-        .where((_ResultDraft draft) => _canSaveDraft(draft))
+    final List<_ResultDraft> saveTargets = _selectedSaveTargets(selectedDrafts);
+    final List<_ResultDraft> submitTargets = _selectedSubmitTargets(
+      selectedDrafts,
+    );
+    final List<_ResultDraft> verifyTargets = _selectedVerifyTargets(
+      selectedDrafts,
+    );
+    final List<_ResultDraft> draftableEntries = saveTargets
+        .where(_canSaveDraft)
         .toList(growable: false);
-    final List<_ResultDraft> submittableDrafts = selectedDrafts
+    final List<_ResultDraft> submittableDrafts = submitTargets
         .where(_canSubmitDraft)
         .toList(growable: false);
-    final List<_ResultDraft> verifiableDrafts = selectedDrafts
+    final List<_ResultDraft> verifiableDrafts = verifyTargets
         .where(_canVerifyDraft)
         .toList(growable: false);
     final List<_ResultDraft> removableDrafts = selectedDrafts
@@ -291,8 +306,8 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         canMutate &&
         selectableCount > 0 &&
         (draftableEntries.isNotEmpty ||
-            submittableDrafts.isNotEmpty ||
-            verifiableDrafts.isNotEmpty ||
+            submitTargets.isNotEmpty ||
+            verifyTargets.isNotEmpty ||
             removableDrafts.isNotEmpty ||
             rejectableItems.isNotEmpty);
 
@@ -303,6 +318,10 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           _LabBatchValidationBanner(
             issueCount: _batchValidationIssueCount!,
           ),
+          SizedBox(height: Theme.of(context).spacing.md),
+        ],
+        if (_labActionFailureMessage != null) ...<Widget>[
+          _LabActionFailureBanner(message: _labActionFailureMessage!),
           SizedBox(height: Theme.of(context).spacing.md),
         ],
         if (_failure != null) ...<Widget>[
@@ -324,6 +343,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
             onSaveDrafts: _saveDrafts,
             onSubmitDrafts: _submitDrafts,
             onVerifyDrafts: _verifyDrafts,
+            saveTargets: saveTargets,
+            submitTargets: submitTargets,
+            verifyTargets: verifyTargets,
             onRemoveDrafts: _removeDraftResults,
             onRejectItems: _openRejectDialog,
             onSelectAll: () => _selectAllItems(drafts),
@@ -385,6 +407,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           ),
       successMessage: context.l10n.labDraftSavedMessage,
       partialMessage: context.l10n.labBatchPartialSaveMessage,
+      actionLabel: context.l10n.labSaveAllDraftsAction,
     );
   }
 
@@ -403,28 +426,86 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           ),
       successMessage: context.l10n.labResultsSubmittedMessage,
       partialMessage: context.l10n.labBatchPartialSubmitMessage,
+      actionLabel: context.l10n.labSubmitAllResultsAction,
     );
   }
 
   Future<void> _verifyDrafts(List<_ResultDraft> drafts) async {
     await _persistDrafts(
       drafts,
-      (List<_ResultDraft> validDrafts) => ref
-          .read(labWorkspaceControllerProvider.notifier)
-          .submitOrderItemResults(
-            validDrafts
-                .map(
-                  (_ResultDraft draft) => (
-                    item: draft.item,
-                    payload: draft.toVerifiedPayload(includeOrderItemId: true),
-                  ),
-                )
-                .toList(growable: false),
-          ),
+      _verifyValidDrafts,
       successMessage: context.l10n.labResultsVerifiedMessage,
       partialMessage: context.l10n.labBatchPartialVerifyMessage,
       forVerify: true,
+      actionLabel: context.l10n.labVerifyAllAction,
     );
+  }
+
+  Future<LabBatchPersistOutcome> _verifyValidDrafts(
+    List<_ResultDraft> validDrafts,
+  ) async {
+    final List<_ResultDraft> needsSubmit = validDrafts
+        .where(
+          (_ResultDraft draft) =>
+              draft.hasEntry &&
+              !_hasSavedResult(draft.item) &&
+              draft.item.canEnterResult,
+        )
+        .toList(growable: false);
+    if (needsSubmit.isNotEmpty) {
+      final LabBatchPersistOutcome submitOutcome = await ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .submitOrderItemDrafts(
+            needsSubmit
+                .map(
+                  (_ResultDraft draft) => (
+                    item: draft.item,
+                    payload: draft.toSubmittedPayload(),
+                  ),
+                )
+                .toList(growable: false),
+          );
+      if (submitOutcome.savedCount == 0) {
+        return submitOutcome;
+      }
+    }
+
+    final List<({LabOrderItem item, Map<String, Object?> payload})> entries =
+        <({LabOrderItem item, Map<String, Object?> payload})>[];
+    for (final _ResultDraft draft in validDrafts) {
+      final LabOrderItem? freshItem = _freshItemForDraft(draft);
+      if (freshItem == null) {
+        return LabBatchPersistOutcome(
+          lastFailure: AppFailure.validation(code: 'lab.result.item_not_found'),
+        );
+      }
+      entries.add((
+        item: freshItem,
+        payload: draft.toVerifiedPayload(includeOrderItemId: true),
+      ));
+    }
+    return ref
+        .read(labWorkspaceControllerProvider.notifier)
+        .submitOrderItemResults(entries);
+  }
+
+  LabOrderItem? _freshItemForDraft(_ResultDraft draft) {
+    final LabWorkspaceState? state = ref
+        .read(labWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(success: (LabWorkspaceState value) => value, failure: (_) => null);
+    if (state == null) {
+      return draft.item;
+    }
+    for (final LabOrderWorkflow workflow in _selectedWorkflows(state)) {
+      for (final LabOrderItem item in workflow.order.items) {
+        if (item.apiId == draft.item.apiId) {
+          return item;
+        }
+      }
+    }
+    return draft.item;
   }
 
   Future<void> _persistDrafts(
@@ -433,8 +514,12 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     persist, {
     required String successMessage,
     required String Function(int savedCount, int skippedCount) partialMessage,
+    required String actionLabel,
     bool forVerify = false,
   }) async {
+    for (final _ResultDraft draft in drafts) {
+      draft.showValidationError = false;
+    }
     final List<_ResultDraft> validDrafts = <_ResultDraft>[];
     var invalidCount = 0;
     for (final _ResultDraft draft in drafts) {
@@ -446,7 +531,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     if (validDrafts.isEmpty) {
       setState(() {
-        _failure = null;
+        _clearLabActionFeedback();
         _batchValidationIssueCount = invalidCount;
       });
       _scrollToFirstInvalidDraft(drafts);
@@ -454,36 +539,80 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     setState(() {
       _isSaving = true;
-      _failure = null;
-      _batchValidationIssueCount = null;
+      _clearLabActionFeedback();
     });
     final LabBatchPersistOutcome outcome = await persist(validDrafts);
     if (!mounted) {
       return;
     }
+    final int savedCount = outcome.savedCount;
+    final int skippedCount = outcome.skippedCount + invalidCount;
     setState(() {
-      _failure = outcome.lastFailure;
       _isSaving = false;
+      if (savedCount == 0) {
+        _failure = null;
+        _labActionFailureMessage = _labBatchActionFailureMessage(
+          outcome.lastFailure,
+          actionLabel: actionLabel,
+          invalidCount: invalidCount,
+          skippedCount: skippedCount,
+        );
+        if (invalidCount > 0) {
+          _batchValidationIssueCount = invalidCount;
+        }
+      } else if (outcome.lastFailure != null) {
+        _failure = outcome.lastFailure;
+        _labActionFailureMessage = null;
+        if (invalidCount > 0) {
+          _batchValidationIssueCount = invalidCount;
+        }
+      } else {
+        _failure = null;
+        _labActionFailureMessage = null;
+      }
     });
     if (!mounted) {
       return;
     }
-    final int savedCount = outcome.savedCount;
-    final int skippedCount = outcome.skippedCount + invalidCount;
     if (savedCount > 0 && skippedCount > 0) {
       _showSuccessMessage(partialMessage(savedCount, skippedCount));
     } else if (savedCount > 0 && outcome.lastFailure == null) {
       _showSuccessMessage(successMessage);
-    } else if (savedCount == 0 && invalidCount > 0) {
-      setState(() => _batchValidationIssueCount = invalidCount);
+    } else if (invalidCount > 0) {
       _scrollToFirstInvalidDraft(drafts);
     }
+  }
+
+  String _labBatchActionFailureMessage(
+    AppFailure? failure, {
+    required String actionLabel,
+    required int invalidCount,
+    required int skippedCount,
+  }) {
+    final AppLocalizations l10n = context.l10n;
+    if (invalidCount > 0) {
+      return l10n.labBatchValidationSummaryMessage(invalidCount);
+    }
+    if (failure == null) {
+      return l10n.labBatchActionFailedMessage(actionLabel);
+    }
+    return switch (failure.code) {
+      'errors.lab_workflow.invalid_transition' =>
+        l10n.labBatchInvalidTransitionMessage,
+      'lab.result.item_not_found' => l10n.labBatchItemNotFoundMessage,
+      _ when failure.category == AppFailureCategory.validation =>
+        l10n.labBatchActionValidationMessage(actionLabel),
+      _ => l10n.labBatchActionFailedDetailMessage(
+        actionLabel,
+        l10n.failureMessage(failure),
+      ),
+    };
   }
 
   Future<void> _verifyOrderItem(_ResultDraft draft) async {
     if (!_validateDraftForPersist(draft, forVerify: true)) {
       setState(() {
-        _failure = null;
+        _clearLabActionFeedback();
         _batchValidationIssueCount = 1;
       });
       _scrollToFirstInvalidDraft(<_ResultDraft>[draft]);
@@ -491,20 +620,32 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     setState(() {
       _isSaving = true;
-      _failure = null;
-      _batchValidationIssueCount = null;
+      _clearLabActionFeedback();
     });
-    final AppFailure? failure = await ref
-        .read(labWorkspaceControllerProvider.notifier)
-        .verifyOrderItem(draft.item.apiId, draft.toVerifiedPayload());
+    final LabBatchPersistOutcome outcome = await _verifyValidDrafts(<_ResultDraft>[
+      draft,
+    ]);
     if (!mounted) {
       return;
     }
     setState(() {
-      _failure = failure;
       _isSaving = false;
+      if (outcome.savedCount > 0 && outcome.lastFailure == null) {
+        _failure = null;
+        _labActionFailureMessage = null;
+      } else {
+        _failure = outcome.lastFailure;
+        _labActionFailureMessage = _labBatchActionFailureMessage(
+          outcome.lastFailure,
+          actionLabel: context.l10n.labVerifyResultAction,
+          invalidCount: 0,
+          skippedCount: outcome.skippedCount,
+        );
+      }
     });
-    if (failure == null && mounted) {
+    if (outcome.savedCount > 0 &&
+        outcome.lastFailure == null &&
+        mounted) {
       _showSuccessMessage(context.l10n.labResultsVerifiedMessage);
     }
   }
@@ -736,6 +877,9 @@ class _LabBulkResultActionsBar extends StatelessWidget {
     required this.draftableEntries,
     required this.submittableDrafts,
     required this.verifiableDrafts,
+    required this.saveTargets,
+    required this.submitTargets,
+    required this.verifyTargets,
     required this.removableDrafts,
     required this.rejectableItems,
     required this.selectedCount,
@@ -753,6 +897,9 @@ class _LabBulkResultActionsBar extends StatelessWidget {
   final List<_ResultDraft> draftableEntries;
   final List<_ResultDraft> submittableDrafts;
   final List<_ResultDraft> verifiableDrafts;
+  final List<_ResultDraft> saveTargets;
+  final List<_ResultDraft> submitTargets;
+  final List<_ResultDraft> verifyTargets;
   final List<_ResultDraft> removableDrafts;
   final List<LabOrderItem> rejectableItems;
   final int selectedCount;
@@ -814,26 +961,26 @@ class _LabBulkResultActionsBar extends StatelessWidget {
             runSpacing: theme.spacing.sm,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
-              if (draftableEntries.isNotEmpty)
+              if (saveTargets.isNotEmpty)
                 AppButton.secondary(
                   label: l10n.labSaveAllDraftsAction,
                   leadingIcon: Icons.save_outlined,
                   isLoading: isSaving,
-                  onPressed: () => onSaveDrafts(draftableEntries),
+                  onPressed: () => onSaveDrafts(saveTargets),
                 ),
-              if (submittableDrafts.isNotEmpty)
+              if (submitTargets.isNotEmpty)
                 AppButton.secondary(
                   label: l10n.labSubmitAllResultsAction,
                   leadingIcon: Icons.outbox_outlined,
                   isLoading: isSaving,
-                  onPressed: () => onSubmitDrafts(submittableDrafts),
+                  onPressed: () => onSubmitDrafts(submitTargets),
                 ),
-              if (verifiableDrafts.isNotEmpty)
+              if (verifyTargets.isNotEmpty)
                 AppButton.primary(
                   label: l10n.labVerifyAllAction,
                   leadingIcon: Icons.verified_outlined,
                   isLoading: isSaving,
-                  onPressed: () => onVerifyDrafts(verifiableDrafts),
+                  onPressed: () => onVerifyDrafts(verifyTargets),
                 ),
               if (removableDrafts.isNotEmpty)
                 AppButton.tertiary(
@@ -901,6 +1048,63 @@ class _LabBatchValidationBanner extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LabActionFailureBanner extends StatelessWidget {
+  const _LabActionFailureBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.45),
+        border: Border.all(color: theme.colorScheme.error),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(Icons.error_outline, color: theme.colorScheme.error),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Text(
+                message,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LabResultValidationMessage extends StatelessWidget {
+  const _LabResultValidationMessage({required this.draft});
+
+  final _ResultDraft draft;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    return Text(
+      draft.hasEntry
+          ? l10n.labBatchEntryValidationMessage
+          : l10n.labResultEntryRequiredMessage,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.error,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
@@ -1662,9 +1866,18 @@ TableRow _labResultEntryTableRow(
       ),
       _LabResultTableCell(child: _LabReferenceRangeCell(draft: draft)),
       _LabResultTableCell(
-        child: item.canEnterResult
-            ? _CompactResultInput(draft: draft, enabled: canEdit)
-            : _CompletedResultReadout(item: item),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            item.canEnterResult
+                ? _CompactResultInput(draft: draft, enabled: canEdit)
+                : _CompletedResultReadout(item: item),
+            if (draft.showValidationError && !item.canEnterResult) ...<Widget>[
+              SizedBox(height: Theme.of(context).spacing.xs),
+              _LabResultValidationMessage(draft: draft),
+            ],
+          ],
+        ),
       ),
       _LabResultTableCell(
         child: _LabResultFlagCell(
@@ -1725,6 +1938,10 @@ class _LabResultTestCell extends StatelessWidget {
             _LabResultLifecycleBadge(draft: draft),
           ],
         ),
+        if (draft.showValidationError) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          _LabResultValidationMessage(draft: draft),
+        ],
       ],
     );
 
@@ -3191,6 +3408,35 @@ bool _hasSavedResult(LabOrderItem item) {
 
 bool _canSaveDraft(_ResultDraft draft) {
   return draft.item.canEnterResult && draft.hasEntry;
+}
+
+List<_ResultDraft> _selectedSaveTargets(List<_ResultDraft> selected) {
+  return selected
+      .where(
+        (_ResultDraft draft) =>
+            draft.item.canEnterResult && !draft.item.isRejected,
+      )
+      .toList(growable: false);
+}
+
+List<_ResultDraft> _selectedSubmitTargets(List<_ResultDraft> selected) {
+  return selected
+      .where(
+        (_ResultDraft draft) =>
+            draft.item.canEnterResult &&
+            !draft.item.isCompleted &&
+            !draft.item.isRejected,
+      )
+      .toList(growable: false);
+}
+
+List<_ResultDraft> _selectedVerifyTargets(List<_ResultDraft> selected) {
+  return selected
+      .where(
+        (_ResultDraft draft) =>
+            draft.item.canVerify && !draft.item.isRejected,
+      )
+      .toList(growable: false);
 }
 
 bool _canSubmitDraft(_ResultDraft draft) {
