@@ -15241,6 +15241,26 @@
   "@labVerifyResultAction": {
     "description": "Localized text for labVerifyResultAction."
   },
+  "labEditVerifiedResultAction": "Edit verified result",
+  "@labEditVerifiedResultAction": {
+    "description": "Action label to reopen a verified lab result for correction."
+  },
+  "labReopenVerifiedResultDialogTitle": "Edit verified result",
+  "@labReopenVerifiedResultDialogTitle": {
+    "description": "Title for the dialog that reopens a verified lab result."
+  },
+  "labReopenVerifiedResultDialogBody": "Provide a reason before changing a verified result. The test will reopen for correction and must be verified again after editing.",
+  "@labReopenVerifiedResultDialogBody": {
+    "description": "Body text for the verified result reopen dialog."
+  },
+  "labReopenVerifiedReasonLabel": "Reason for edit",
+  "@labReopenVerifiedReasonLabel": {
+    "description": "Label for the required reason when reopening a verified lab result."
+  },
+  "labVerifiedResultReopenedMessage": "Result reopened for editing.",
+  "@labVerifiedResultReopenedMessage": {
+    "description": "Success message after a verified lab result is reopened."
+  },
   "labRejectOrderItemAction": "Reject test",
   "@labRejectOrderItemAction": {
     "description": "Localized text for labRejectOrderItemAction."

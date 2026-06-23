@@ -689,6 +689,16 @@ final class LabOrderItem {
     };
   }
 
+  bool get canReopenResult {
+    if (isRejected || !isCompleted || !hasResult) {
+      return false;
+    }
+    return switch (_normalize(resultStatus)) {
+      'NORMAL' || 'ABNORMAL' || 'CRITICAL' => true,
+      _ => false,
+    };
+  }
+
   bool get canEnterResult {
     if (isRejected) {
       return false;

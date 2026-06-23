@@ -22125,6 +22125,36 @@ abstract class AppLocalizations {
   /// **'Verify result'**
   String get labVerifyResultAction;
 
+  /// Action label to reopen a verified lab result for correction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit verified result'**
+  String get labEditVerifiedResultAction;
+
+  /// Title for the dialog that reopens a verified lab result.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit verified result'**
+  String get labReopenVerifiedResultDialogTitle;
+
+  /// Body text for the verified result reopen dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide a reason before changing a verified result. The test will reopen for correction and must be verified again after editing.'**
+  String get labReopenVerifiedResultDialogBody;
+
+  /// Label for the required reason when reopening a verified lab result.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for edit'**
+  String get labReopenVerifiedReasonLabel;
+
+  /// Success message after a verified lab result is reopened.
+  ///
+  /// In en, this message translates to:
+  /// **'Result reopened for editing.'**
+  String get labVerifiedResultReopenedMessage;
+
   /// Localized text for labRejectOrderItemAction.
   ///
   /// In en, this message translates to:

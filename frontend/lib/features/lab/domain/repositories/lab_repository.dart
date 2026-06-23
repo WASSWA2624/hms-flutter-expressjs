@@ -79,6 +79,11 @@ abstract interface class LabRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<LabOrderWorkflow>> reopenOrderItemResult(
+    String itemId,
+    Map<String, Object?> payload,
+  );
+
   Future<Result<LabCatalogItem>> updateLabTest(
     String testId,
     Map<String, Object?> payload,

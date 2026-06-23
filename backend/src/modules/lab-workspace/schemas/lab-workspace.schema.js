@@ -90,6 +90,11 @@ const reverseLabOrderWorkflowSchema = z.object({
   reason: z.string().trim().min(2).max(65535),
 });
 
+const reopenLabOrderItemResultSchema = z.object({
+  reason: z.string().trim().min(2).max(65535),
+  notes: z.string().trim().max(65535).optional().nullable(),
+});
+
 module.exports = {
   getLabWorkbenchQuerySchema,
   searchLabOrderContextPatientsQuerySchema,
@@ -104,4 +109,5 @@ module.exports = {
   verifyLabOrderResultsSchema,
   rejectLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
+  reopenLabOrderItemResultSchema,
 };

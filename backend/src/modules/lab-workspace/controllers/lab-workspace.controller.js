@@ -133,6 +133,16 @@ const reverseLabOrderWorkflow = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.lab_workspace.reverse.success', data);
 });
 
+const reopenLabOrderItemResult = asyncHandler(async (req, res) => {
+  const data = await labWorkspaceService.reopenLabOrderItemResult(
+    req.params.id,
+    req.body,
+    req.user?.id,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.lab_workspace.reopen_result.success', data);
+});
+
 const resolveLegacyRoute = asyncHandler(async (req, res) => {
   const data = await labWorkspaceService.resolveLegacyRouteIdentifier(
     req.params.resource,
@@ -152,6 +162,7 @@ module.exports = {
   releaseLabOrderItem,
   verifyLabOrderResults,
   rejectLabOrderItem,
+  reopenLabOrderItemResult,
   reverseLabOrderWorkflow,
   resolveLegacyRoute,
 };

@@ -11748,6 +11748,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labVerifyResultAction => 'Verify result';
 
   @override
+  String get labEditVerifiedResultAction => 'Edit verified result';
+
+  @override
+  String get labReopenVerifiedResultDialogTitle => 'Edit verified result';
+
+  @override
+  String get labReopenVerifiedResultDialogBody =>
+      'Provide a reason before changing a verified result. The test will reopen for correction and must be verified again after editing.';
+
+  @override
+  String get labReopenVerifiedReasonLabel => 'Reason for edit';
+
+  @override
+  String get labVerifiedResultReopenedMessage => 'Result reopened for editing.';
+
+  @override
   String get labRejectOrderItemAction => 'Reject test';
 
   @override

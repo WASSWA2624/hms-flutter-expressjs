@@ -25,6 +25,7 @@ const {
   verifyLabOrderResultsSchema,
   rejectLabOrderItemSchema,
   reverseLabOrderWorkflowSchema,
+  reopenLabOrderItemResultSchema,
   sampleWorkflowParamsSchema,
 } = require('@validations/lab-workspace/lab-workspace.schema');
 
@@ -165,6 +166,17 @@ router.post(
   authenticate(),
   authorize(LAB_MUTATION_ROLES, 'role'),
   labWorkspaceController.reverseLabOrderWorkflow
+);
+
+router.post(
+  '/order-items/:id/reopen-result',
+  validateRequest({
+    params: orderItemWorkflowParamsSchema,
+    body: reopenLabOrderItemResultSchema,
+  }),
+  authenticate(),
+  authorize(LAB_MUTATION_ROLES, 'role'),
+  labWorkspaceController.reopenLabOrderItemResult
 );
 
 module.exports = router;

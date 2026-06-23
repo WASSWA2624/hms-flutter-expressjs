@@ -608,6 +608,15 @@ final class LabWorkspaceController
     return _mutateWorkflow(() => _repository.rejectOrderItem(itemId, payload));
   }
 
+  Future<AppFailure?> reopenOrderItemResult(
+    String itemId,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateWorkflow(
+      () => _repository.reopenOrderItemResult(itemId, payload),
+    );
+  }
+
   Future<LabBatchPersistOutcome> _persistOrderItemResultEntries(
     List<_LabOrderItemResultEntry> entries,
     _LabOrderItemResultPersister persist,

@@ -453,6 +453,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
                   onSaveDraft: _saveDraft,
                   onSubmitItem: _submitDraft,
                   onVerifyItem: _verifyOrderItem,
+                  onEditVerified: _editVerifiedResult,
                   onRejectItem: (LabOrderItem item) =>
                       _openRejectDialog(<LabOrderItem>[item]),
                   onRemoveResult: _removeDraftResult,
@@ -930,6 +931,28 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     );
   }
 
+  Future<void> _editVerifiedResult(_ResultDraft draft) async {
+    final bool? reopened = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => _ReopenVerifiedResultDialog(item: draft.item),
+    );
+    if (reopened != true || !mounted) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _clearLabActionFeedback();
+    });
+    _applyWorkflowUpdates(affectedItemIds: <String>{draft.item.apiId});
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isSaving = false;
+    });
+    _showSuccessMessage(context.l10n.labVerifiedResultReopenedMessage);
+  }
+
   Future<void> _openPrintPreview(
     BuildContext context,
     List<LabOrderWorkflow> workflows,
@@ -1401,6 +1424,7 @@ class _LabOrderResultSection extends StatelessWidget {
     required this.onSaveDraft,
     required this.onSubmitItem,
     required this.onVerifyItem,
+    required this.onEditVerified,
     required this.onRejectItem,
     required this.onRemoveResult,
     this.onToggleItemSelection,
@@ -1418,6 +1442,7 @@ class _LabOrderResultSection extends StatelessWidget {
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmitItem;
   final ValueChanged<_ResultDraft> onVerifyItem;
+  final ValueChanged<_ResultDraft> onEditVerified;
   final ValueChanged<LabOrderItem> onRejectItem;
   final ValueChanged<_ResultDraft> onRemoveResult;
   final VoidCallback? onEditOrder;
@@ -1540,6 +1565,7 @@ class _LabOrderResultSection extends StatelessWidget {
                 onSaveDraft: onSaveDraft,
                 onSubmit: onSubmitItem,
                 onVerify: onVerifyItem,
+                onEditVerified: onEditVerified,
                 onReject: onRejectItem,
                 onRemove: onRemoveResult,
               ),
@@ -1704,6 +1730,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
+    required this.onEditVerified,
     required this.onReject,
     required this.onRemove,
     this.onToggleItemSelection,
@@ -1717,6 +1744,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmit;
   final ValueChanged<_ResultDraft> onVerify;
+  final ValueChanged<_ResultDraft> onEditVerified;
   final ValueChanged<LabOrderItem> onReject;
   final ValueChanged<_ResultDraft> onRemove;
 
@@ -1733,6 +1761,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
             onSaveDraft: onSaveDraft,
             onSubmit: onSubmit,
             onVerify: onVerify,
+            onEditVerified: onEditVerified,
             onReject: onReject,
             onRemove: onRemove,
           );
@@ -1745,6 +1774,7 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
           onSaveDraft: onSaveDraft,
           onSubmit: onSubmit,
           onVerify: onVerify,
+          onEditVerified: onEditVerified,
           onReject: onReject,
           onRemove: onRemove,
           availableWidth: constraints.maxWidth,
@@ -1762,6 +1792,7 @@ class _LabResultEntryCards extends StatelessWidget {
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
+    required this.onEditVerified,
     required this.onReject,
     required this.onRemove,
     this.onToggleItemSelection,
@@ -1775,6 +1806,7 @@ class _LabResultEntryCards extends StatelessWidget {
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmit;
   final ValueChanged<_ResultDraft> onVerify;
+  final ValueChanged<_ResultDraft> onEditVerified;
   final ValueChanged<LabOrderItem> onReject;
   final ValueChanged<_ResultDraft> onRemove;
 
@@ -1838,6 +1870,7 @@ class _LabResultEntryCards extends StatelessWidget {
                     onSaveDraft: () => onSaveDraft(draft),
                     onSubmit: () => onSubmit(draft),
                     onVerify: () => onVerify(draft),
+                    onEditVerified: () => onEditVerified(draft),
                     onReject: () => onReject(draft.item),
                     onRemove: () => onRemove(draft),
                   ),
@@ -1862,6 +1895,7 @@ class _LabResultEntryTable extends StatelessWidget {
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
+    required this.onEditVerified,
     required this.onReject,
     required this.onRemove,
     this.onToggleItemSelection,
@@ -1876,6 +1910,7 @@ class _LabResultEntryTable extends StatelessWidget {
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmit;
   final ValueChanged<_ResultDraft> onVerify;
+  final ValueChanged<_ResultDraft> onEditVerified;
   final ValueChanged<LabOrderItem> onReject;
   final ValueChanged<_ResultDraft> onRemove;
 
@@ -1903,6 +1938,7 @@ class _LabResultEntryTable extends StatelessWidget {
             onSaveDraft: onSaveDraft,
             onSubmit: onSubmit,
             onVerify: onVerify,
+            onEditVerified: onEditVerified,
             onReject: onReject,
             onRemove: onRemove,
           ),
@@ -1921,6 +1957,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
+    required this.onEditVerified,
     required this.onReject,
     required this.onRemove,
     required this.availableWidth,
@@ -1935,6 +1972,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmit;
   final ValueChanged<_ResultDraft> onVerify;
+  final ValueChanged<_ResultDraft> onEditVerified;
   final ValueChanged<LabOrderItem> onReject;
   final ValueChanged<_ResultDraft> onRemove;
   final double availableWidth;
@@ -1991,6 +2029,7 @@ class _LabResultEntryRowsTable extends StatelessWidget {
                 onSaveDraft: () => onSaveDraft(draft),
                 onSubmit: () => onSubmit(draft),
                 onVerify: () => onVerify(draft),
+                onEditVerified: () => onEditVerified(draft),
                 onReject: () => onReject(draft.item),
                 onRemove: () => onRemove(draft),
               ),
@@ -2044,6 +2083,7 @@ TableRow _labResultEntryTableRow(
   required VoidCallback onSaveDraft,
   required VoidCallback onSubmit,
   required VoidCallback onVerify,
+  required VoidCallback onEditVerified,
   required VoidCallback onReject,
   required VoidCallback onRemove,
   ValueChanged<bool?>? onSelectionChanged,
@@ -2106,6 +2146,7 @@ TableRow _labResultEntryTableRow(
           onSaveDraft: onSaveDraft,
           onSubmit: onSubmit,
           onVerify: onVerify,
+          onEditVerified: onEditVerified,
           onReject: onReject,
           onRemove: onRemove,
         ),
@@ -2288,6 +2329,7 @@ class _LabResultActionsCell extends StatelessWidget {
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
+    required this.onEditVerified,
     required this.onReject,
     required this.onRemove,
   });
@@ -2297,6 +2339,7 @@ class _LabResultActionsCell extends StatelessWidget {
   final VoidCallback onSaveDraft;
   final VoidCallback onSubmit;
   final VoidCallback onVerify;
+  final VoidCallback onEditVerified;
   final VoidCallback onReject;
   final VoidCallback onRemove;
 
@@ -2314,6 +2357,12 @@ class _LabResultActionsCell extends StatelessWidget {
         resultStatus.isEmpty ||
         resultStatus == 'PENDING';
     final List<Widget> actions = <Widget>[
+      if (canMutate && item.canReopenResult)
+        AppButton.tertiary(
+          label: l10n.labEditVerifiedResultAction,
+          leadingIcon: Icons.edit_outlined,
+          onPressed: onEditVerified,
+        ),
       if (canMutate && item.canEnterResult && draft.hasEntry)
         AppButton.tertiary(
           label: savesPendingDraft
@@ -3391,6 +3440,128 @@ final class _ResultDraft {
     payload.remove('notes');
     payload.remove('status');
     return payload;
+  }
+}
+
+class _ReopenVerifiedResultDialog extends ConsumerStatefulWidget {
+  const _ReopenVerifiedResultDialog({required this.item});
+
+  final LabOrderItem item;
+
+  @override
+  ConsumerState<_ReopenVerifiedResultDialog> createState() =>
+      _ReopenVerifiedResultDialogState();
+}
+
+class _ReopenVerifiedResultDialogState
+    extends ConsumerState<_ReopenVerifiedResultDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _reasonController;
+  late final TextEditingController _notesController;
+  AppFailure? _failure;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonController = TextEditingController();
+    _notesController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.labReopenVerifiedResultDialogTitle),
+      icon: const Icon(Icons.edit_outlined),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (_failure != null) AppFailureStateView(failure: _failure!),
+            Text(
+              l10n.labReopenVerifiedResultDialogBody,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            SizedBox(height: Theme.of(context).spacing.sm),
+            Text(
+              widget.item.displayTitle,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: Theme.of(context).spacing.sm),
+            AppTextField(
+              controller: _reasonController,
+              labelText: l10n.labReopenVerifiedReasonLabel,
+              enabled: !_isSaving,
+              maxLines: 2,
+              validator: AppValidators.minLength(
+                2,
+                l10n.validationRequired,
+                allowEmpty: false,
+                trim: true,
+              ),
+            ),
+            AppTextField(
+              controller: _notesController,
+              labelText: l10n.labNotesLabel,
+              enabled: !_isSaving,
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.labEditVerifiedResultAction,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(labWorkspaceControllerProvider.notifier)
+        .reopenOrderItemResult(widget.item.apiId, <String, Object?>{
+          'reason': _reasonController.text.trim(),
+          if (_notesController.text.trim().isNotEmpty)
+            'notes': _notesController.text.trim(),
+        });
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
   }
 }
 

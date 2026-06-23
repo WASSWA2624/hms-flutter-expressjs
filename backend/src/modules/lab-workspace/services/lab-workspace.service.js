@@ -1707,6 +1707,110 @@ const rejectLabOrderItem = async (identifier, payload = {}, userId, ipAddress) =
   }
 };
 
+const reopenLabOrderItemResult = async (identifier, payload = {}, userId, ipAddress) => {
+  try {
+    const reason = String(payload?.reason || '').trim();
+    if (!reason) {
+      throw new HttpError('errors.validation.field.required', 400, [{ field: 'reason' }]);
+    }
+
+    const orderItemId = await resolveModelIdOrThrow({
+      identifier,
+      model: 'lab_order_item',
+      where: { deleted_at: null },
+      errorKey: 'errors.lab_order_item.not_found',
+    });
+
+    const mutation = await labWorkspaceRepository.withTransaction(async (tx) => {
+      const item = await labWorkspaceRepository.txFindOrderItemById(tx, orderItemId, {
+        lab_order: { select: { id: true, status: true } },
+      });
+      if (!item) {
+        throw new HttpError('errors.lab_order_item.not_found', 404);
+      }
+
+      const result = await labWorkspaceRepository.txFindFirstResult(
+        tx,
+        { lab_order_item_id: item.id },
+        { created_at: 'desc' }
+      );
+      if (!result) {
+        throw new HttpError('errors.lab_result.not_found', 404);
+      }
+
+      assertTransition(normalizeStatus(item.status) === 'COMPLETED', {
+        from: item.status,
+        to: 'IN_PROCESS',
+      });
+      assertTransition(
+        RESULT_REOPENABLE_STATES.has(normalizeStatus(result.status)),
+        {
+          from: result.status,
+          to: 'PENDING',
+        }
+      );
+
+      await labWorkspaceRepository.txUpdateResult(tx, result.id, {
+        status: 'PENDING',
+        result_flag: null,
+        reported_at: null,
+      });
+      await labWorkspaceRepository.txUpdateOrderItem(tx, item.id, {
+        status: 'IN_PROCESS',
+      });
+
+      const progress = await syncLabOrderProgress(tx, item.lab_order_id);
+      const refreshedOrder = await labWorkspaceRepository.txFindOrderById(
+        tx,
+        item.lab_order_id,
+        LAB_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return {
+        beforeItemStatus: item.status,
+        beforeOrderStatus: item.lab_order?.status || null,
+        order: refreshedOrder,
+        progress,
+        reopenedResultId: result.id,
+      };
+    });
+
+    createAuditLog({
+      tenant_id: resolveAuditTenantId(mutation.order),
+      user_id: userId,
+      action: 'REOPEN_RESULT',
+      entity: 'lab_order_item',
+      entity_id: orderItemId,
+      diff: {
+        metadata: {
+          reason,
+          notes: payload.notes || null,
+          before_item_status: mutation.beforeItemStatus,
+          before_order_status: mutation.beforeOrderStatus,
+          after_order_status: mutation.order?.status || null,
+          reopened_result_id: mutation.reopenedResultId,
+        },
+      },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    const workflow = mapLabOrderWorkflowRecord(mutation.order);
+    publishLabRealtimeUpdates({
+      workflow,
+      orderRecord: mutation.order,
+      actorUserId: userId || null,
+      action: 'REOPEN_RESULT',
+      resourceType: 'order-item',
+      resourceId: identifier,
+    }).catch(() => {});
+
+    return { workflow };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 
 const reverseLabOrderWorkflow = async (identifier, payload = {}, userId, ipAddress) => {
   try {
@@ -1938,6 +2042,7 @@ module.exports = {
   releaseLabOrderItem,
   verifyLabOrderResults,
   rejectLabOrderItem,
+  reopenLabOrderItemResult,
   reverseLabOrderWorkflow,
   resolveLegacyRouteIdentifier,
 };
