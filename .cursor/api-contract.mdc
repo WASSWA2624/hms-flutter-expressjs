@@ -116,7 +116,39 @@ Cursor-based lists may use `next_cursor` / `has_more` instead when documented.
 
 ## WebSocket events
 
-- Event payloads use stable `snake_case` fields (see `backend/.cursor/websockets.mdc`).
+Realtime sync keeps multi-user UI state aligned with persisted data.
+
+### Transport
+
+- Endpoint: `/ws` on the API host (scheme mirrors HTTP: `ws` / `wss`).
+- Auth: JWT access token in `token` query parameter; connection rejected when invalid.
+- Envelope: `{ "event": "<domain.action>", "payload": { ... } }` — all fields `snake_case`.
+
+### Domain envelope (server → client)
+
+| Field | Purpose |
+|---|---|
+| `event` | Stable event name (mirrored in `backend/src/lib/websocket/events.js` and `frontend/lib/core/realtime/realtime_events.dart`) |
+| `tenant_id` | Tenant scope for UI filtering |
+| `facility_id` | Facility scope for UI filtering |
+| `actor_user_id` | User who triggered the change |
+| `resource_type` | Entity family (`patient`, `encounter`, `ward`, …) |
+| `resource_id` | Primary resource identifier |
+| `affected` | Related IDs for targeted refresh |
+| `payload` | Module-specific refresh hints (`status`, `target_path`, `operation`, …) |
+| `occurred_at` | ISO-8601 UTC timestamp |
+
+### CRUD flow
+
+1. Client performs create/update/delete via `/api/v1/*` HTTP endpoints.
+2. Backend service persists, audits, then publishes a domain event to scoped recipients.
+3. Connected clients refresh visible data via HTTP — they do not apply websocket payloads as authoritative state.
+
+### Client rules
+
+- Workspace controllers subscribe through `listenForRealtimeRefresh` (see `frontend/.cursor/realtime_sync.mdc`).
+- Filter events with tenant/facility scope before triggering refresh.
+- Debounce bursty updates; defer refresh while local saves are in flight.
 
 ## Related rules
 

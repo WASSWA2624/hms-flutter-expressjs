@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/integrations/data/repositories/integrations_repository_impl.dart';
 import 'package:hosspi_hms/features/integrations/domain/entities/integration_entities.dart';
@@ -21,6 +23,11 @@ final class IntegrationsWorkspaceController
 
   @override
   Future<Result<IntegrationWorkspaceState>> build() async {
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.integrations,
+      onRefresh: (_) => refresh(),
+    );
     return _loadSnapshot(const IntegrationWorkspaceQuery());
   }
 

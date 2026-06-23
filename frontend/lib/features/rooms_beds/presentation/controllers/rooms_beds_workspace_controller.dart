@@ -2,6 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
 import 'package:hosspi_hms/features/rooms_beds/data/repositories/rooms_beds_repository_impl.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/repositories/rooms_beds_repository.dart';
@@ -20,6 +24,18 @@ final class RoomsBedsWorkspaceController
 
   @override
   Future<Result<RoomsBedsWorkspaceState>> build() {
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.roomsBeds,
+      shouldRefresh: (RealtimeMessage message) {
+        final String? facilityId = ref.read(appAccessPolicyProvider).facilityId;
+        return RealtimeScope.matchesMessage(
+          message: message,
+          facilityId: facilityId,
+        );
+      },
+      onRefresh: (_) => refresh(),
+    );
     final String? facilityId = ref.read(appAccessPolicyProvider).facilityId;
     return _loadState(RoomsBedsQuery(facilityId: facilityId));
   }

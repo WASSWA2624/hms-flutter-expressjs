@@ -225,4 +225,25 @@ abstract final class RealtimeEventGroups {
   static const Set<String> mortuary = <String>{...admissions, ...billing};
 
   static const Set<String> theater = <String>{...admissions, ...criticalAlerts};
+
+  static const Set<String> roomsBeds = <String>{
+    RealtimeEvents.facilityLayoutUpdated,
+    ...admissions,
+  };
+
+  static const Set<String> subscriptions = <String>{
+    RealtimeEvents.subscriptionCreated,
+    RealtimeEvents.subscriptionUpdated,
+    RealtimeEvents.subscriptionDeleted,
+    RealtimeEvents.subscriptionActivated,
+    RealtimeEvents.subscriptionDeactivated,
+    RealtimeEvents.subscriptionExpiring,
+    RealtimeEvents.moduleEntitlementUpdated,
+  };
+
+  static const Set<String> integrations = <String>{
+    RealtimeEvents.integrationWebhookRetry,
+    RealtimeEvents.integrationFailure,
+    RealtimeEvents.integrationReplayComplete,
+  };
 }

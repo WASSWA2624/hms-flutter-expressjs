@@ -28,12 +28,14 @@ const {
   BILLING_EVENTS,
   NOTIFICATION_EVENTS,
   SUBSCRIPTION_EVENTS,
+  FACILITY_LAYOUT_EVENTS,
   INTEGRATION_EVENTS,
   ACCESS_CONTROL_EVENTS,
   LAST_OFFICE_EVENTS
 } = require('@lib/websocket/events');
 
 const { emitToUser, emitBroadcast, emitToUsers, publishDomainEvent } = require('@lib/websocket/emit');
+const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 
 module.exports = {
   // Event constants
@@ -59,6 +61,7 @@ module.exports = {
   BILLING_EVENTS,
   NOTIFICATION_EVENTS,
   SUBSCRIPTION_EVENTS,
+  FACILITY_LAYOUT_EVENTS,
   INTEGRATION_EVENTS,
   ACCESS_CONTROL_EVENTS,
   LAST_OFFICE_EVENTS,
@@ -67,6 +70,7 @@ module.exports = {
   emitToUser,
   emitBroadcast,
   emitToUsers,
-  publishDomainEvent
+  publishDomainEvent,
+  publishCrudRealtimeEvent
 };
 

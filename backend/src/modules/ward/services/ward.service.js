@@ -10,6 +10,32 @@
 const wardRepository = require('@repositories/ward/ward.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
+
+const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN,
+  ROLES.NURSE
+]);
+
+const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorUserId, payload = {}) => {
+  await publishCrudRealtimeEvent({
+    event: FACILITY_LAYOUT_EVENTS.FACILITY_LAYOUT_UPDATED,
+    resource,
+    resource_type: resourceType,
+    actor_user_id: actorUserId,
+    recipient_roles: FACILITY_LAYOUT_RECIPIENT_ROLES,
+    affected: {
+      ward_id: resource?.ward_id || resource?.id || null,
+      room_id: resource?.room_id || null
+    },
+    payload: {
+      layout_entity: resourceType,
+      ...payload
+    }
+  });
+};
 
 /**
  * List wards with pagination and filters
@@ -162,6 +188,12 @@ const createWard = async (data, context = {}) => {
     }
   });
 
+  await publishFacilityLayoutRealtimeEvent(ward, 'ward', context.user_id, {
+    operation: 'created',
+    name: ward.name,
+    ward_type: ward.ward_type
+  });
+
   return ward;
 };
 
@@ -222,6 +254,12 @@ const updateWard = async (id, data, context = {}) => {
     }
   });
 
+  await publishFacilityLayoutRealtimeEvent(ward, 'ward', context.user_id, {
+    operation: 'updated',
+    name: ward.name,
+    ward_type: ward.ward_type
+  });
+
   return ward;
 };
 
@@ -265,6 +303,12 @@ const deleteWard = async (id, context = {}) => {
       name: ward.name,
       ward_type: ward.ward_type
     }
+  });
+
+  await publishFacilityLayoutRealtimeEvent(ward, 'ward', context.user_id, {
+    operation: 'deleted',
+    name: ward.name,
+    ward_type: ward.ward_type
   });
 };
 

@@ -23,6 +23,7 @@ presentation -> domain -> data contracts
 - Domain entities must not depend on Flutter widgets.
 - `core` must not contain feature-specific business rules.
 - Feature modules expose only intentional public entry points.
+- Workspace controllers that show shared data must register realtime listeners (see [`realtime_sync.mdc`](./realtime_sync.mdc)).
 - Use cases required when business decisions span multiple repositories or rules.
 - Mapping between DTOs, database models, and domain entities must be explicit.
 
@@ -41,4 +42,5 @@ presentation -> domain -> data contracts
 - [`project_structure.mdc`](./project_structure.mdc)
 - [`state_management.mdc`](./state_management.mdc)
 - [`network_api.mdc`](./network_api.mdc)
+- [`realtime_sync.mdc`](./realtime_sync.mdc)
 - [`reference/repository-pattern-example.mdc`](./reference/repository-pattern-example.mdc)

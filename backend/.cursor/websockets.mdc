@@ -3,12 +3,52 @@ alwaysApply: false
 ---
 # WebSocket Rules
 
-Purpose: define realtime transport behavior.
+Purpose: define realtime transport and CRUD synchronization behavior.
+
+## Architecture
+
+- WebSocket bootstrap lives in `src/websockets/*` (`server.js`, `gateway.js`).
+- Services own business logic and emit events; controllers and gateways must not embed domain rules.
+- Use `@lib/websocket` helpers (`publishDomainEvent`, `publishCrudRealtimeEvent`, `emitToUsers`) from the **service layer only**, after successful persistence.
+- Event constants live in `src/lib/websocket/events.js`; never hardcode event strings in modules.
+- Recipient resolution for scoped broadcasts uses `@lib/realtime/recipients.js` or repository wrappers that delegate to it.
+
+## CRUD synchronization contract
+
+Every user-visible mutation path must follow:
+
+```txt
+HTTP write -> service validates + persists -> audit log -> publish domain event -> gateway delivers to scoped recipients
+```
 
 Rules:
-- websocket bootstrap lives in `src/websockets/*`
-- clients authenticate before subscribing to privileged channels
-- services emit domain events through shared websocket helpers; gateways do not own business logic
-- event payloads use stable `snake_case` fields
-- channel names and event families must align with module boundaries
-- clinical alerts, queue changes, roster publishing, biomedical work orders, mortuary custody changes, notifications, and closeout progress are valid realtime domains
+
+- Publish **after** the database transaction commits. Delivery failure must not roll back persistence.
+- Payloads use stable `snake_case` fields and the shared domain envelope from `publishDomainEvent`.
+- Do not send raw Prisma entities; sanitize IDs and include only fields needed for UI refresh routing.
+- Scope recipients by tenant, facility, role, and module entitlements — same boundaries as HTTP authorization.
+- Name events `{domain}.{action}` (e.g. `patient.updated`, `facility.layout_updated`).
+- Include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at` in the envelope.
+- Use `publishCrudRealtimeEvent` for standard create/update/delete broadcasts when a module does not need a bespoke payload shape.
+
+## Connection rules
+
+- Clients authenticate before subscribing to privileged channels (JWT in connection query).
+- Gateway maintains `userId -> sockets` routing; supports multiple tabs per user.
+- Heartbeat/ping is mandatory; idle connections are closed per env configuration.
+- RBAC is enforced for sensitive **inbound** client events; outbound domain events are filtered by recipient resolution.
+
+## Valid realtime domains
+
+Clinical alerts, queue changes, roster publishing, biomedical work orders, mortuary custody, notifications, closeout progress, billing/payment state, facility layout (wards/rooms/beds), subscriptions/entitlements, and integration health.
+
+## Shutdown
+
+`src/server.js` must close websocket resources during graceful shutdown (see `architecture.mdc`).
+
+## See also
+
+- [`architecture.mdc`](./architecture.mdc)
+- [`module-creation.mdc`](./module-creation.mdc)
+- [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
+- [`frontend/.cursor/realtime_sync.mdc`](../../frontend/.cursor/realtime_sync.mdc)

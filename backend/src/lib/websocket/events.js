@@ -210,10 +210,20 @@ const NOTIFICATION_EVENTS = {
  * Subscription & Entitlement Events
  */
 const SUBSCRIPTION_EVENTS = {
+  SUBSCRIPTION_CREATED: 'subscription.created',
+  SUBSCRIPTION_UPDATED: 'subscription.updated',
+  SUBSCRIPTION_DELETED: 'subscription.deleted',
   SUBSCRIPTION_ACTIVATED: 'subscription.activated',
   SUBSCRIPTION_DEACTIVATED: 'subscription.deactivated',
   SUBSCRIPTION_EXPIRING: 'subscription.expiring',
   MODULE_ENTITLEMENT_UPDATED: 'module.entitlement_updated'
+};
+
+/**
+ * Facility layout events (wards, rooms, beds)
+ */
+const FACILITY_LAYOUT_EVENTS = {
+  FACILITY_LAYOUT_UPDATED: 'facility.layout_updated'
 };
 
 /**
@@ -268,6 +278,7 @@ const WS_EVENTS = {
   ...BILLING_EVENTS,
   ...NOTIFICATION_EVENTS,
   ...SUBSCRIPTION_EVENTS,
+  ...FACILITY_LAYOUT_EVENTS,
   ...INTEGRATION_EVENTS,
   ...ACCESS_CONTROL_EVENTS,
   ...LAST_OFFICE_EVENTS
@@ -296,6 +307,7 @@ module.exports = {
   BILLING_EVENTS,
   NOTIFICATION_EVENTS,
   SUBSCRIPTION_EVENTS,
+  FACILITY_LAYOUT_EVENTS,
   INTEGRATION_EVENTS,
   ACCESS_CONTROL_EVENTS,
   LAST_OFFICE_EVENTS,

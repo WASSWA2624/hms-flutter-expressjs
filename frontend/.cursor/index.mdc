@@ -55,6 +55,7 @@ Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).
 | [`database_strategy.mdc`](./database_strategy.mdc) | Drift local storage |
 | [`storage_strategy.mdc`](./storage_strategy.mdc) | Secure and preference storage |
 | [`offline_sync.mdc`](./offline_sync.mdc) | Offline queue and sync |
+| [`realtime_sync.mdc`](./realtime_sync.mdc) | WebSocket refresh and live UI sync |
 
 ### Security and auth
 

@@ -99,4 +99,18 @@ abstract final class RealtimeEvents {
   static const String conversationThreadUpdated = 'conversation.thread_updated';
   static const String conversationReadStateUpdated =
       'conversation.read_state_updated';
+
+  static const String subscriptionCreated = 'subscription.created';
+  static const String subscriptionUpdated = 'subscription.updated';
+  static const String subscriptionDeleted = 'subscription.deleted';
+  static const String subscriptionActivated = 'subscription.activated';
+  static const String subscriptionDeactivated = 'subscription.deactivated';
+  static const String subscriptionExpiring = 'subscription.expiring';
+  static const String moduleEntitlementUpdated = 'module.entitlement_updated';
+
+  static const String facilityLayoutUpdated = 'facility.layout_updated';
+
+  static const String integrationWebhookRetry = 'integration.webhook_retry';
+  static const String integrationFailure = 'integration.failure';
+  static const String integrationReplayComplete = 'integration.replay_complete';
 }

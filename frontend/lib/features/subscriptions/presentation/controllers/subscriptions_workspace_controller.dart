@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
@@ -22,6 +24,11 @@ final class SubscriptionsWorkspaceController
 
   @override
   Future<Result<SubscriptionsWorkspaceState>> build() {
+    listenForRealtimeRefresh(
+      ref: ref,
+      events: RealtimeEventGroups.subscriptions,
+      onRefresh: (_) => refresh(),
+    );
     return _loadInitialState();
   }
 

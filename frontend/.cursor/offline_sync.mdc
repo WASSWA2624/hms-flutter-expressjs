@@ -16,6 +16,7 @@ Purpose: client-side offline behavior per [`.cursor/api-contract.mdc`](../../.cu
 - Do not silently discard offline changes.
 - Conflict handling explicit; surface `409` with version metadata.
 - Repositories expose consistent local + remote views.
+- After HTTP writes succeed, expect matching domain events from the backend; controllers refresh from HTTP, not from raw websocket payloads.
 
 ## Online-only (never queue)
 
@@ -36,4 +37,5 @@ Auth/session changes, entitlement/break-glass approval, payments/refunds, mortua
 
 - [`database_strategy.mdc`](./database_strategy.mdc)
 - [`network_api.mdc`](./network_api.mdc)
+- [`realtime_sync.mdc`](./realtime_sync.mdc)
 - [`ui-feedback.mdc`](./ui-feedback.mdc)

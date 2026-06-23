@@ -11,6 +11,33 @@ const bedRepository = require('@repositories/bed/bed.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForFilter } = require('@lib/identifiers/service-identifier-resolution');
+const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
+
+const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN,
+  ROLES.NURSE
+]);
+
+const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorUserId, payload = {}) => {
+  await publishCrudRealtimeEvent({
+    event: FACILITY_LAYOUT_EVENTS.FACILITY_LAYOUT_UPDATED,
+    resource,
+    resource_type: resourceType,
+    actor_user_id: actorUserId,
+    recipient_roles: FACILITY_LAYOUT_RECIPIENT_ROLES,
+    affected: {
+      ward_id: resource?.ward_id || null,
+      room_id: resource?.room_id || null,
+      bed_id: resource?.id || null
+    },
+    payload: {
+      layout_entity: resourceType,
+      ...payload
+    }
+  });
+};
 
 /**
  * List beds with pagination and filters
@@ -152,6 +179,14 @@ const createBed = async (data, context = {}) => {
     }
   });
 
+  await publishFacilityLayoutRealtimeEvent(bed, 'bed', context.user_id, {
+    operation: 'created',
+    label: bed.label,
+    status: bed.status,
+    ward_id: bed.ward_id,
+    room_id: bed.room_id
+  });
+
   return bed;
 };
 
@@ -212,6 +247,14 @@ const updateBed = async (id, data, context = {}) => {
     }
   });
 
+  await publishFacilityLayoutRealtimeEvent(bed, 'bed', context.user_id, {
+    operation: 'updated',
+    label: bed.label,
+    status: bed.status,
+    ward_id: bed.ward_id,
+    room_id: bed.room_id
+  });
+
   return bed;
 };
 
@@ -256,6 +299,14 @@ const deleteBed = async (id, context = {}) => {
       label: bed.label,
       status: bed.status
     }
+  });
+
+  await publishFacilityLayoutRealtimeEvent(bed, 'bed', context.user_id, {
+    operation: 'deleted',
+    label: bed.label,
+    status: bed.status,
+    ward_id: bed.ward_id,
+    room_id: bed.room_id
   });
 };
 

@@ -17,6 +17,7 @@ Purpose: HTTP access against `hms-backend` per [`.cursor/api-contract.mdc`](../.
 - No logging of tokens, passwords, or sensitive payloads.
 - Handle `401` through session manager.
 - Environment-driven base URLs and timeouts.
+- HTTP owns CRUD mutations; WebSocket listeners refresh UI after server broadcasts (see [`realtime_sync.mdc`](./realtime_sync.mdc)).
 
 ## Client layout
 
@@ -34,3 +35,4 @@ core/network/
 - [`authentication_session.mdc`](./authentication_session.mdc)
 - [`error_handling.mdc`](./error_handling.mdc)
 - [`offline_sync.mdc`](./offline_sync.mdc)
+- [`realtime_sync.mdc`](./realtime_sync.mdc)

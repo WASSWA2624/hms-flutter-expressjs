@@ -8,6 +8,8 @@
 const subscriptionRepository = require('@repositories/subscription/subscription.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { publishCrudRealtimeEvent, SUBSCRIPTION_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
 const {
   createSubscriptionPublicId,
   PUBLIC_ID_PREFIXES,
@@ -45,6 +47,26 @@ const SUBSCRIPTION_INCLUDE = Object.freeze({
   },
   tenant: true,
 });
+
+const SUBSCRIPTION_REALTIME_RECIPIENT_ROLES = Object.freeze([
+  ROLES.TENANT_ADMIN,
+  ROLES.FACILITY_ADMIN
+]);
+
+const publishSubscriptionRealtimeEvent = async (event, subscription, actorUserId, payload = {}) => {
+  await publishCrudRealtimeEvent({
+    event,
+    resource: subscription,
+    resource_type: 'subscription',
+    actor_user_id: actorUserId,
+    recipient_roles: SUBSCRIPTION_REALTIME_RECIPIENT_ROLES,
+    payload: {
+      status: subscription?.status || null,
+      plan_id: subscription?.plan_id || null,
+      ...payload
+    }
+  });
+};
 
 const requireTenantScope = (user = {}) => {
   const scope = resolveUserTenantScope(user);
@@ -322,6 +344,13 @@ const createSubscription = async (data, user, ip) => {
     ip_address: ip,
   }).catch(() => {});
 
+  await publishSubscriptionRealtimeEvent(
+    SUBSCRIPTION_EVENTS.SUBSCRIPTION_CREATED,
+    subscription,
+    user?.id || null,
+    { operation: 'created' }
+  );
+
   return serializeSubscription(subscription);
 };
 
@@ -340,6 +369,13 @@ const updateSubscription = async (id, data, user, ip) => {
     diff: { before, after: subscription },
     ip_address: ip,
   }).catch(() => {});
+
+  await publishSubscriptionRealtimeEvent(
+    SUBSCRIPTION_EVENTS.SUBSCRIPTION_UPDATED,
+    subscription,
+    user?.id || null,
+    { operation: 'updated' }
+  );
 
   return serializeSubscription(subscription);
 };
@@ -373,6 +409,13 @@ const cancelSubscription = async (id, user, ip) => {
     ip_address: ip,
   }).catch(() => {});
 
+  await publishSubscriptionRealtimeEvent(
+    SUBSCRIPTION_EVENTS.SUBSCRIPTION_DEACTIVATED,
+    subscription,
+    user?.id || null,
+    { operation: 'cancelled' }
+  );
+
   return serializeSubscription(subscription);
 };
 
@@ -405,6 +448,13 @@ const reactivateSubscription = async (id, user, ip) => {
     ip_address: ip,
   }).catch(() => {});
 
+  await publishSubscriptionRealtimeEvent(
+    SUBSCRIPTION_EVENTS.SUBSCRIPTION_ACTIVATED,
+    subscription,
+    user?.id || null,
+    { operation: 'reactivated' }
+  );
+
   return serializeSubscription(subscription);
 };
 
@@ -421,6 +471,13 @@ const deleteSubscription = async (id, user, ip) => {
     diff: { before, after: subscription },
     ip_address: ip,
   }).catch(() => {});
+
+  await publishSubscriptionRealtimeEvent(
+    SUBSCRIPTION_EVENTS.SUBSCRIPTION_DELETED,
+    subscription,
+    user?.id || null,
+    { operation: 'deleted' }
+  );
 
   return subscription;
 };

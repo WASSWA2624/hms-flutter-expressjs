@@ -1,0 +1,65 @@
+---
+description: WebSocket transport, CRUD sync contract, and realtime refresh rules
+alwaysApply: false
+globs: ["frontend/lib/core/realtime/**", "frontend/lib/features/**/presentation/controllers/**"]
+---
+# Realtime Sync
+
+Purpose: keep visible UI state aligned with backend persistence through authenticated WebSockets.
+
+## Sync model
+
+1. **Writes** — UI controllers call repositories over HTTP (`dio`). Repositories persist through REST endpoints.
+2. **Persistence** — backend services commit mutations, audit, then publish domain events.
+3. **Broadcast** — connected clients receive `{ "event": "...", "payload": {} }` envelopes.
+4. **Refresh** — frontend controllers subscribe through `listenForRealtimeRefresh` and reload visible data.
+
+WebSockets are for **server → client** state propagation. CRUD mutations must not be sent over WebSockets.
+
+## Mandatory rules
+
+- Connect only when authenticated; token travels in the `/ws?token=` query per session lifecycle.
+- Never parse websocket payloads in widgets; controllers own refresh logic.
+- Every workspace that displays shared, multi-user data must register realtime listeners in `build()`.
+- Use `RealtimeEventGroups` for event sets; do not duplicate long event lists per module.
+- Filter events with `RealtimeScope` when the workspace is tenant/facility scoped.
+- Debounce bursty events (default 250ms); defer refresh while local saves are in flight.
+- Refresh by re-fetching authoritative HTTP data — do not merge raw websocket payloads into domain entities.
+- Websocket failures must not block writes; HTTP remains source of truth for mutations.
+- Reconnect on auth token rotation via `realtimeMessagesProvider`.
+
+## Core layout
+
+```txt
+core/realtime/
+├── realtime_service.dart      # connection, reconnect, ping/pong
+├── realtime_providers.dart    # Riverpod wiring tied to session
+├── realtime_message.dart      # envelope decode
+├── realtime_events.dart       # event constants (mirror backend)
+├── realtime_event_groups.dart # workspace event bundles
+├── realtime_refresh.dart      # debounced controller listener
+└── realtime_scope.dart        # tenant/facility payload filters
+```
+
+## Controller pattern
+
+```dart
+listenForRealtimeRefresh(
+  ref: ref,
+  events: RealtimeEventGroups.opd,
+  shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+  shouldRefresh: (message) => RealtimeScope.matchesMessage(
+    message: message,
+    facilityId: _currentFacilityId,
+  ),
+  onRefresh: (_) => _syncFromRealtime(),
+);
+```
+
+## See also
+
+- [`network_api.mdc`](./network_api.mdc)
+- [`state_management.mdc`](./state_management.mdc)
+- [`offline_sync.mdc`](./offline_sync.mdc)
+- [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
+- [`backend/.cursor/websockets.mdc`](../../backend/.cursor/websockets.mdc)
