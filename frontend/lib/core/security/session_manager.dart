@@ -26,7 +26,7 @@ final class SessionManager {
       return const SessionState.unauthenticated();
     }
 
-    if (tokens.isAccessTokenExpired(_now())) {
+    if (tokens.isAccessTokenExpired(_now()) && !tokens.hasRefreshToken) {
       await clearSession();
       return const SessionState.expired();
     }
@@ -44,7 +44,7 @@ final class SessionManager {
       return null;
     }
 
-    if (tokens.isAccessTokenExpired(_now())) {
+    if (tokens.isAccessTokenExpired(_now()) && !tokens.hasRefreshToken) {
       await clearSession();
       return null;
     }

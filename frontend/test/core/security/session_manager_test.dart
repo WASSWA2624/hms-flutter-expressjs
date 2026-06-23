@@ -20,10 +20,9 @@ void main() {
       expect(await manager.readAccessToken(), 'access-token');
     });
 
-    test('clears expired tokens during restoration', () async {
+    test('clears expired tokens during restoration when refresh is unavailable', () async {
       final storage = _MemorySecureStorage()
         ..values[SecureStorageKeys.accessToken] = 'expired-token'
-        ..values[SecureStorageKeys.refreshToken] = 'refresh-token'
         ..values[SecureStorageKeys.accessTokenExpiresAt] = DateTime.utc(
           2024,
         ).toIso8601String();
@@ -38,6 +37,28 @@ void main() {
       expect(storage.values, isEmpty);
       expect(await manager.readAccessToken(), isNull);
     });
+
+    test(
+      'restores refreshable sessions when the access token is expired',
+      () async {
+        final storage = _MemorySecureStorage()
+          ..values[SecureStorageKeys.accessToken] = 'expired-token'
+          ..values[SecureStorageKeys.refreshToken] = 'refresh-token'
+          ..values[SecureStorageKeys.accessTokenExpiresAt] = DateTime.utc(
+            2024,
+          ).toIso8601String();
+        final manager = SessionManager(
+          sessionStorage: SecureAppSessionStorage(storage),
+          now: () => DateTime.utc(2026),
+        );
+
+        final readiness = await manager.restore();
+
+        expect(readiness.status, SessionStatus.authenticated);
+        expect(storage.values, isNotEmpty);
+        expect(await manager.readAccessToken(), 'expired-token');
+      },
+    );
 
     test(
       'persists session tokens through the secure session boundary',

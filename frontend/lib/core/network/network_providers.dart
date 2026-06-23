@@ -7,7 +7,7 @@ import 'package:hosspi_hms/core/network/api_interceptors.dart';
 import 'package:hosspi_hms/core/network/dio_adapter_configurer.dart';
 import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
-import 'package:hosspi_hms/core/security/session_manager.dart';
+import 'package:hosspi_hms/core/security/session_token_provider.dart';
 
 final networkFailureMapperProvider = Provider<NetworkFailureMapper>((ref) {
   return const NetworkFailureMapper();
@@ -15,7 +15,7 @@ final networkFailureMapperProvider = Provider<NetworkFailureMapper>((ref) {
 
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
-  final sessionManager = ref.watch(sessionManagerProvider);
+  final tokenProvider = ref.watch(sessionTokenProvider);
   BaseOptions baseOptions() {
     return BaseOptions(
       baseUrl: config.apiBaseUrl.toString(),
@@ -33,12 +33,16 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.addAll(<Interceptor>[
     CsrfInterceptor(tokenDio: csrfDio),
     AuthInterceptor(
-      readAccessToken: sessionManager.readAccessToken,
+      readAccessToken: tokenProvider.readAccessToken,
+      onTokenRefresh: () async {
+        return (await tokenProvider.refreshStoredSession()) != null;
+      },
       onUnauthorizedResponse: () async {
         await ref
             .read(sessionStateProvider.notifier)
             .handleUnauthorizedResponse();
       },
+      retryClient: dio,
     ),
     SafeDiagnosticsInterceptor(
       enabled: !config.isProduction && config.logLevel == AppLogLevel.debug,

@@ -41,18 +41,31 @@ final class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<AuthSession?>> restoreSession() async {
     try {
-      final state = await _sessionManager.restore();
-      final session = state.session;
-      if (session == null) {
+      final tokens = await _sessionManager.readTokens();
+      if (tokens == null) {
         return const Result<AuthSession?>.success(null);
       }
 
-      if (!session.tokens.isAccessTokenExpired(DateTime.now().toUtc())) {
-        return Result<AuthSession?>.success(session);
+      if (!tokens.isAccessTokenExpired(DateTime.now().toUtc())) {
+        return Result<AuthSession?>.success(AuthSession.fromTokens(tokens));
       }
 
-      final refreshResult = await refreshSession(session.tokens);
-      return refreshResult.map<AuthSession?>((session) => session);
+      if (!tokens.hasRefreshToken) {
+        await _sessionManager.clearSession();
+        return const Result<AuthSession?>.success(null);
+      }
+
+      final refreshResult = await refreshSession(tokens);
+      return refreshResult.when(
+        success: (AuthSession session) async {
+          await _sessionManager.persistSession(session);
+          return Result<AuthSession?>.success(session);
+        },
+        failure: (AppFailure failure) async {
+          await _sessionManager.clearSession();
+          return Result<AuthSession?>.failure(failure);
+        },
+      );
     } catch (error, stackTrace) {
       return Result<AuthSession?>.failure(
         _failureMapper.map(error, stackTrace),

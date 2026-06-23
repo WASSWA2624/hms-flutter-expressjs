@@ -3,21 +3,29 @@ import 'package:hosspi_hms/core/logging/app_logger.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 
 typedef AuthTokenReader = Future<String?> Function();
+typedef TokenRefreshHandler = Future<bool> Function();
 typedef UnauthorizedResponseHandler = Future<void> Function();
 typedef DiagnosticsLogSink = void Function(String message);
 
 const authorizationHeaderName = 'Authorization';
 const csrfHeaderName = 'x-csrf-token';
+const authRetryExtraKey = 'auth_retry';
 
 final class AuthInterceptor extends QueuedInterceptor {
   AuthInterceptor({
     required AuthTokenReader readAccessToken,
+    TokenRefreshHandler? onTokenRefresh,
     UnauthorizedResponseHandler? onUnauthorizedResponse,
+    Dio? retryClient,
   }) : _readAccessToken = readAccessToken,
-       _onUnauthorizedResponse = onUnauthorizedResponse;
+       _onTokenRefresh = onTokenRefresh,
+       _onUnauthorizedResponse = onUnauthorizedResponse,
+       _retryClient = retryClient;
 
   final AuthTokenReader _readAccessToken;
+  final TokenRefreshHandler? _onTokenRefresh;
   final UnauthorizedResponseHandler? _onUnauthorizedResponse;
+  final Dio? _retryClient;
 
   @override
   void onRequest(
@@ -38,15 +46,57 @@ final class AuthInterceptor extends QueuedInterceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
+    if (err.response?.statusCode != 401) {
+      handler.next(err);
+      return;
+    }
+
+    if (_shouldSkipRefresh(err.requestOptions)) {
       try {
         await _onUnauthorizedResponse?.call();
       } catch (_) {
         // Session recovery failures are mapped by the repository boundary.
       }
+      handler.next(err);
+      return;
     }
 
-    handler.next(err);
+    try {
+      final bool refreshed = await _onTokenRefresh?.call() ?? false;
+      if (!refreshed) {
+        await _onUnauthorizedResponse?.call();
+        handler.next(err);
+        return;
+      }
+
+      final String? token = (await _readAccessToken())?.trim();
+      final RequestOptions requestOptions = err.requestOptions;
+      requestOptions.extra[authRetryExtraKey] = true;
+      if (token != null && token.isNotEmpty) {
+        requestOptions.headers[authorizationHeaderName] = 'Bearer $token';
+      }
+
+      final Dio client = _retryClient ?? Dio();
+      final Response<dynamic> response = await client.fetch<dynamic>(
+        requestOptions,
+      );
+      handler.resolve(response);
+    } catch (_) {
+      try {
+        await _onUnauthorizedResponse?.call();
+      } catch (_) {
+        // Session recovery failures are mapped by the repository boundary.
+      }
+      handler.next(err);
+    }
+  }
+
+  static bool _shouldSkipRefresh(RequestOptions options) {
+    if (options.extra[authRetryExtraKey] == true) {
+      return true;
+    }
+
+    return options.uri.path.endsWith('/auth/refresh');
   }
 }
 
