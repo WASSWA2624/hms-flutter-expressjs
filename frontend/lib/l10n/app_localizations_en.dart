@@ -6816,7 +6816,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labBatchEntryValidationMessage =>
-      'Complete or correct this entry before it can be saved in bulk.';
+      'Correct the highlighted value before continuing.';
+
+  @override
+  String get labResultEntryRequiredMessage =>
+      'Enter a result value before saving, submitting, or verifying.';
+
+  @override
+  String labBatchValidationSummaryMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count selected tests need attention before this action can continue.',
+      one: '1 selected test needs attention before this action can continue.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get labBatchValidationSummaryHint =>
+      'Check the highlighted tests below and complete any missing or invalid values.';
+
+  @override
+  String get labResultLifecycleDraft => 'Draft';
+
+  @override
+  String get labResultLifecycleSubmitted => 'Submitted';
+
+  @override
+  String get labResultLifecycleBlank => 'Not entered';
 
   @override
   String get labWorkflowCurrentStepLabel => 'Current step';
@@ -12041,7 +12070,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labResetReportSelectionAction => 'Reset selection';
 
   @override
-  String get labReportSelectionTitle => 'Choose report content';
+  String get labReportSelectionTitle => 'Select tests for the report';
+
+  @override
+  String get labReportSelectionHint =>
+      'Use the checkboxes on each result row below to choose what to print.';
+
+  @override
+  String get labReportOrderDetailsToggleLabel => 'Include order details';
+
+  @override
+  String get labReportOrderDetailsToggleHint =>
+      'Show order identifiers and dates above each results table.';
+
+  @override
+  String labReportSelectedTestCount(int selectedCount, int totalCount) {
+    return '$selectedCount of $totalCount tests selected';
+  }
+
+  @override
+  String get labReportIncludeColumnLabel => 'Include';
 
   @override
   String get labReportNoSelectionLabel => 'No report items selected';

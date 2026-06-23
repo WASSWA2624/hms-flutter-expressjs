@@ -41,6 +41,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   final Set<String> _selectedItemIds = <String>{};
   bool _selectionInitialized = false;
   AppFailure? _failure;
+  int? _batchValidationIssueCount;
   bool _isSaving = false;
 
   @override
@@ -51,7 +52,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
 
   void _handleDraftChanged() {
     if (mounted) {
-      setState(() {});
+      setState(() {
+        _batchValidationIssueCount = null;
+      });
     }
   }
 
@@ -296,6 +299,12 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        if (_batchValidationIssueCount != null) ...<Widget>[
+          _LabBatchValidationBanner(
+            issueCount: _batchValidationIssueCount!,
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+        ],
         if (_failure != null) ...<Widget>[
           AppFailureStateView(failure: _failure!),
           SizedBox(height: Theme.of(context).spacing.md),
@@ -414,6 +423,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           ),
       successMessage: context.l10n.labResultsVerifiedMessage,
       partialMessage: context.l10n.labBatchPartialVerifyMessage,
+      forVerify: true,
     );
   }
 
@@ -423,25 +433,29 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     persist, {
     required String successMessage,
     required String Function(int savedCount, int skippedCount) partialMessage,
+    bool forVerify = false,
   }) async {
     final List<_ResultDraft> validDrafts = <_ResultDraft>[];
     var invalidCount = 0;
     for (final _ResultDraft draft in drafts) {
-      final bool isValid = draft.formKey.currentState?.validate() ?? true;
-      draft.showValidationError = !isValid;
-      if (isValid) {
+      if (_validateDraftForPersist(draft, forVerify: forVerify)) {
         validDrafts.add(draft);
       } else {
         invalidCount += 1;
       }
     }
     if (validDrafts.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
+      setState(() {
+        _failure = null;
+        _batchValidationIssueCount = invalidCount;
+      });
+      _scrollToFirstInvalidDraft(drafts);
       return;
     }
     setState(() {
       _isSaving = true;
       _failure = null;
+      _batchValidationIssueCount = null;
     });
     final LabBatchPersistOutcome outcome = await persist(validDrafts);
     if (!mounted) {
@@ -460,16 +474,25 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _showSuccessMessage(partialMessage(savedCount, skippedCount));
     } else if (savedCount > 0 && outcome.lastFailure == null) {
       _showSuccessMessage(successMessage);
+    } else if (savedCount == 0 && invalidCount > 0) {
+      setState(() => _batchValidationIssueCount = invalidCount);
+      _scrollToFirstInvalidDraft(drafts);
     }
   }
 
   Future<void> _verifyOrderItem(_ResultDraft draft) async {
-    if (!(draft.formKey.currentState?.validate() ?? true)) {
+    if (!_validateDraftForPersist(draft, forVerify: true)) {
+      setState(() {
+        _failure = null;
+        _batchValidationIssueCount = 1;
+      });
+      _scrollToFirstInvalidDraft(<_ResultDraft>[draft]);
       return;
     }
     setState(() {
       _isSaving = true;
       _failure = null;
+      _batchValidationIssueCount = null;
     });
     final AppFailure? failure = await ref
         .read(labWorkspaceControllerProvider.notifier)
@@ -829,6 +852,55 @@ class _LabBulkResultActionsBar extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LabBatchValidationBanner extends StatelessWidget {
+  const _LabBatchValidationBanner({required this.issueCount});
+
+  final int issueCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.45),
+        border: Border.all(color: theme.colorScheme.error),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(Icons.error_outline, color: theme.colorScheme.error),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    l10n.labBatchValidationSummaryMessage(issueCount),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.xs / 2),
+                  Text(
+                    l10n.labBatchValidationSummaryHint,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1298,12 +1370,21 @@ class _LabResultEntryCards extends StatelessWidget {
         for (final _ResultDraft draft in drafts) ...<Widget>[
           DecoratedBox(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLowest,
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              color: draft.showValidationError
+                  ? theme.colorScheme.errorContainer.withValues(alpha: 0.28)
+                  : theme.colorScheme.surfaceContainerLowest,
+              border: Border.all(
+                color: draft.showValidationError
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.outlineVariant,
+                width: draft.showValidationError ? 1.5 : 1,
+              ),
             ),
             child: Padding(
               padding: EdgeInsets.all(theme.spacing.sm),
-              child: Column(
+              child: KeyedSubtree(
+                key: draft.rowKey,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   _LabResultTestCell(
@@ -1344,6 +1425,7 @@ class _LabResultEntryCards extends StatelessWidget {
                     onRemove: () => onRemove(draft),
                   ),
                 ],
+                ),
               ),
             ),
           ),
@@ -1556,18 +1638,26 @@ TableRow _labResultEntryTableRow(
 
   return TableRow(
     decoration: BoxDecoration(
-      color: abnormal
+      color: draft.showValidationError
+          ? theme.colorScheme.errorContainer.withValues(alpha: 0.28)
+          : abnormal
           ? theme.colorScheme.errorContainer.withValues(alpha: 0.14)
           : theme.colorScheme.surfaceContainerLowest,
+      border: draft.showValidationError
+          ? Border.all(color: theme.colorScheme.error, width: 1.5)
+          : null,
     ),
     children: <Widget>[
       _LabResultTableCell(
-        child: _LabResultTestCell(
-          draft: draft,
-          showSelection: showSelection,
-          isSelected: isSelected,
-          selectionEnabled: selectionEnabled,
-          onSelectionChanged: onSelectionChanged,
+        child: KeyedSubtree(
+          key: draft.rowKey,
+          child: _LabResultTestCell(
+            draft: draft,
+            showSelection: showSelection,
+            isSelected: isSelected,
+            selectionEnabled: selectionEnabled,
+            onSelectionChanged: onSelectionChanged,
+          ),
         ),
       ),
       _LabResultTableCell(child: _LabReferenceRangeCell(draft: draft)),
@@ -1998,9 +2088,12 @@ class _CompactResultInputState extends State<_CompactResultInput> {
           if (widget.draft.showValidationError) ...<Widget>[
             SizedBox(height: Theme.of(context).spacing.xs),
             Text(
-              l10n.labBatchEntryValidationMessage,
+              widget.draft.hasEntry
+                  ? l10n.labBatchEntryValidationMessage
+                  : l10n.labResultEntryRequiredMessage,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.error,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -2139,14 +2232,7 @@ class _LabReportPreviewDialogState
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            l10n.labReportSelectionTitle,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          _selectionControls(context),
+          _reportOptionsHeader(context),
           SizedBox(height: Theme.of(context).spacing.md),
           AppReportPreviewPanel(
             title: l10n.labReportPreviewTitle,
@@ -2161,6 +2247,9 @@ class _LabReportPreviewDialogState
                     workflows: selectedWorkflows,
                     selectedItemIds: _selectedItemIds,
                     showOrderDetails: _showOrderDetails,
+                    selectable: true,
+                    onToggleItem: _toggleReportItem,
+                    onToggleOrder: _toggleReportOrder,
                   ),
           ),
         ],
@@ -2188,12 +2277,32 @@ class _LabReportPreviewDialogState
     );
   }
 
-  Widget _selectionControls(BuildContext context) {
+  Widget _reportOptionsHeader(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final int selectedCount = _selectedItemIds.length;
+    final int totalCount = widget.workflows.fold<int>(
+      0,
+      (int count, LabOrderWorkflow workflow) =>
+          count + workflow.order.items.length,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        Text(
+          l10n.labReportSelectionTitle,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs / 2),
+        Text(
+          l10n.labReportSelectionHint,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
         DecoratedBox(
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLowest,
@@ -2202,94 +2311,90 @@ class _LabReportPreviewDialogState
           child: SwitchListTile(
             value: _showOrderDetails,
             dense: true,
-            title: Text('${l10n.labReportOrderLabel} details'),
-            subtitle: Text(
-              _showOrderDetails
-                  ? 'Include compact order identifiers and dates.'
-                  : 'Print selected tests without order headers.',
-            ),
+            title: Text(l10n.labReportOrderDetailsToggleLabel),
+            subtitle: Text(l10n.labReportOrderDetailsToggleHint),
             onChanged: (bool value) {
               setState(() => _showOrderDetails = value);
             },
           ),
         ),
         SizedBox(height: theme.spacing.sm),
-        for (final LabOrderWorkflow workflow in widget.workflows)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            Text(
+              l10n.labReportSelectedTestCount(selectedCount, totalCount),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            child: Column(
-              children: <Widget>[
-                CheckboxListTile(
-                  value: _selectedOrderIds.contains(workflow.order.apiId),
-                  title: Text(
-                    '${l10n.labOrderFieldLabel} ${workflow.order.displayId ?? workflow.order.apiId}',
-                  ),
-                  subtitle: Text(
-                    _joinDisplay(<String?>[
-                          _optionalDateTimeLabel(
-                            context,
-                            workflow.order.orderedAt,
-                          ),
-                          _statusLabel(context, workflow.order.status),
-                        ]) ??
-                        l10n.profileUnknownValue,
-                  ),
-                  onChanged: (bool? value) {
-                    setState(() {
-                      final bool selected = value ?? false;
-                      final String orderKey = workflow.order.apiId;
-                      if (selected) {
-                        _selectedOrderIds.add(orderKey);
-                        for (final LabOrderItem item in workflow.order.items) {
-                          _selectedItemIds.add(_itemSelectionKey(item));
-                        }
-                      } else {
-                        _selectedOrderIds.remove(orderKey);
-                        for (final LabOrderItem item in workflow.order.items) {
-                          _selectedItemIds.remove(_itemSelectionKey(item));
-                        }
-                      }
-                    });
-                  },
-                ),
-                for (final LabOrderItem item in workflow.order.items)
-                  Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: theme.spacing.lg,
-                    ),
-                    child: CheckboxListTile(
-                      dense: true,
-                      value: _selectedItemIds.contains(_itemSelectionKey(item)),
-                      title: Text(item.displayTitle),
-                      subtitle: Text(
-                        item.displayReferenceRange ?? l10n.profileUnknownValue,
-                      ),
-                      onChanged: (bool? value) {
-                        setState(() {
-                          final String itemKey = _itemSelectionKey(item);
-                          if (value ?? false) {
-                            _selectedItemIds.add(itemKey);
-                            _selectedOrderIds.add(workflow.order.apiId);
-                          } else {
-                            _selectedItemIds.remove(itemKey);
-                            if (!workflow.order.items.any(
-                              (LabOrderItem candidate) => _selectedItemIds
-                                  .contains(_itemSelectionKey(candidate)),
-                            )) {
-                              _selectedOrderIds.remove(workflow.order.apiId);
-                            }
-                          }
-                        });
-                      },
-                    ),
-                  ),
-              ],
+            AppButton.tertiary(
+              label: l10n.labSelectAllTestsAction,
+              enabled: selectedCount < totalCount,
+              onPressed: () => setState(_resetSelection),
             ),
-          ),
+            AppButton.tertiary(
+              label: l10n.labClearSelectionAction,
+              enabled: selectedCount > 0,
+              onPressed: () => setState(() {
+                _selectedOrderIds.clear();
+                _selectedItemIds.clear();
+              }),
+            ),
+          ],
+        ),
       ],
     );
+  }
+
+  void _toggleReportItem(LabOrderItem item, {required bool selected}) {
+    setState(() {
+      final String itemKey = _itemSelectionKey(item);
+      LabOrderWorkflow? owningWorkflow;
+      for (final LabOrderWorkflow workflow in widget.workflows) {
+        if (workflow.order.items.any(
+          (LabOrderItem orderItem) => _itemSelectionKey(orderItem) == itemKey,
+        )) {
+          owningWorkflow = workflow;
+          break;
+        }
+      }
+      if (selected) {
+        _selectedItemIds.add(itemKey);
+        if (owningWorkflow != null) {
+          _selectedOrderIds.add(owningWorkflow.order.apiId);
+        }
+      } else {
+        _selectedItemIds.remove(itemKey);
+        if (owningWorkflow != null &&
+            !owningWorkflow.order.items.any(
+              (LabOrderItem candidate) =>
+                  _selectedItemIds.contains(_itemSelectionKey(candidate)),
+            )) {
+          _selectedOrderIds.remove(owningWorkflow.order.apiId);
+        }
+      }
+    });
+  }
+
+  void _toggleReportOrder(LabOrderWorkflow workflow, {required bool selected}) {
+    setState(() {
+      final String orderKey = workflow.order.apiId;
+      if (selected) {
+        _selectedOrderIds.add(orderKey);
+        for (final LabOrderItem item in workflow.order.items) {
+          _selectedItemIds.add(_itemSelectionKey(item));
+        }
+      } else {
+        _selectedOrderIds.remove(orderKey);
+        for (final LabOrderItem item in workflow.order.items) {
+          _selectedItemIds.remove(_itemSelectionKey(item));
+        }
+      }
+    });
   }
 
   void _resetSelection() {
@@ -2346,11 +2451,18 @@ class _LabReportPreview extends StatelessWidget {
     required this.workflows,
     required this.selectedItemIds,
     required this.showOrderDetails,
+    this.selectable = false,
+    this.onToggleItem,
+    this.onToggleOrder,
   });
 
   final List<LabOrderWorkflow> workflows;
   final Set<String> selectedItemIds;
   final bool showOrderDetails;
+  final bool selectable;
+  final void Function(LabOrderItem item, {required bool selected})? onToggleItem;
+  final void Function(LabOrderWorkflow workflow, {required bool selected})?
+  onToggleOrder;
 
   @override
   Widget build(BuildContext context) {
@@ -2385,26 +2497,39 @@ class _LabReportPreview extends StatelessWidget {
         SizedBox(height: theme.spacing.md),
         if (showOrderDetails)
           for (final LabOrderWorkflow workflow in workflows) ...<Widget>[
-            Text(
-              '${l10n.labOrderFieldLabel} ${workflow.order.displayId ?? workflow.order.apiId}',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
+            _PreviewOrderSectionHeader(
+              workflow: workflow,
+              selectable: selectable,
+              allItemsSelected: workflow.order.items.every(
+                (LabOrderItem item) =>
+                    selectedItemIds.contains(_itemSelectionKey(item)),
               ),
+              someItemsSelected: workflow.order.items.any(
+                (LabOrderItem item) =>
+                    selectedItemIds.contains(_itemSelectionKey(item)),
+              ),
+              onToggleOrder: onToggleOrder == null
+                  ? null
+                  : (bool? value) => onToggleOrder!(
+                      workflow,
+                      selected: value ?? false,
+                    ),
             ),
             SizedBox(height: theme.spacing.xs),
             _PreviewResultsTable(
-              items: workflow.order.items
-                  .where(
-                    (LabOrderItem item) =>
-                        selectedItemIds.contains(_itemSelectionKey(item)),
-                  )
-                  .toList(growable: false),
+              items: workflow.order.items,
+              selectable: selectable,
+              selectedItemIds: selectedItemIds,
+              onToggleItem: onToggleItem,
             ),
             SizedBox(height: theme.spacing.md),
           ]
         else ...<Widget>[
           _PreviewResultsTable(
             items: _selectedReportItems(workflows, selectedItemIds),
+            selectable: selectable,
+            selectedItemIds: selectedItemIds,
+            onToggleItem: onToggleItem,
           ),
           SizedBox(height: theme.spacing.md),
         ],
@@ -2414,6 +2539,78 @@ class _LabReportPreview extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _PreviewOrderSectionHeader extends StatelessWidget {
+  const _PreviewOrderSectionHeader({
+    required this.workflow,
+    required this.selectable,
+    required this.allItemsSelected,
+    required this.someItemsSelected,
+    this.onToggleOrder,
+  });
+
+  final LabOrderWorkflow workflow;
+  final bool selectable;
+  final bool allItemsSelected;
+  final bool someItemsSelected;
+  final ValueChanged<bool?>? onToggleOrder;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final LabOrderSummary order = workflow.order;
+    final Widget title = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          '${l10n.labOrderFieldLabel} ${order.displayId ?? order.apiId}',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs / 2),
+        Wrap(
+          spacing: theme.spacing.md,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[
+            if (_optionalDateTimeLabel(context, order.orderedAt) != null)
+              _PreviewMeta(
+                label: l10n.labOrderedAtFieldLabel,
+                value: _optionalDateTimeLabel(context, order.orderedAt)!,
+              ),
+            _PreviewMeta(
+              label: l10n.labOrderStatusFieldLabel,
+              value: _statusLabel(context, order.status),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    if (!selectable || onToggleOrder == null) {
+      return title;
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Checkbox(
+          tristate: true,
+          value: allItemsSelected
+              ? true
+              : someItemsSelected
+              ? null
+              : false,
+          onChanged: onToggleOrder,
+          visualDensity: VisualDensity.compact,
+        ),
+        SizedBox(width: theme.spacing.xs),
+        Expanded(child: title),
       ],
     );
   }
@@ -2436,9 +2633,17 @@ class _PreviewMeta extends StatelessWidget {
 }
 
 class _PreviewResultsTable extends StatelessWidget {
-  const _PreviewResultsTable({required this.items});
+  const _PreviewResultsTable({
+    required this.items,
+    this.selectable = false,
+    this.selectedItemIds = const <String>{},
+    this.onToggleItem,
+  });
 
   final List<LabOrderItem> items;
+  final bool selectable;
+  final Set<String> selectedItemIds;
+  final void Function(LabOrderItem item, {required bool selected})? onToggleItem;
 
   @override
   Widget build(BuildContext context) {
@@ -2453,11 +2658,13 @@ class _PreviewResultsTable extends StatelessWidget {
     }
     return Table(
       border: TableBorder.all(color: theme.colorScheme.outlineVariant),
-      columnWidths: const <int, TableColumnWidth>{
-        0: FlexColumnWidth(2),
-        1: FlexColumnWidth(2),
-        2: FlexColumnWidth(2),
-        3: FlexColumnWidth(1.5),
+      columnWidths: <int, TableColumnWidth>{
+        if (selectable) 0: const FixedColumnWidth(44),
+        if (selectable) 1: const FlexColumnWidth(2)
+        else 0: const FlexColumnWidth(2),
+        if (selectable) 2: const FlexColumnWidth(2) else 1: const FlexColumnWidth(2),
+        if (selectable) 3: const FlexColumnWidth(2) else 2: const FlexColumnWidth(2),
+        if (selectable) 4: const FlexColumnWidth(1.5) else 3: const FlexColumnWidth(1.5),
       },
       children: <TableRow>[
         TableRow(
@@ -2465,6 +2672,11 @@ class _PreviewResultsTable extends StatelessWidget {
             color: theme.colorScheme.surfaceContainerHighest,
           ),
           children: <Widget>[
+            if (selectable)
+              _PreviewCell(
+                text: l10n.labReportIncludeColumnLabel,
+                isHeader: true,
+              ),
             _PreviewCell(text: l10n.labTestsColumnLabel, isHeader: true),
             _PreviewCell(text: l10n.labReferenceRangeLabel, isHeader: true),
             _PreviewCell(text: l10n.labReportResultLabel, isHeader: true),
@@ -2473,7 +2685,27 @@ class _PreviewResultsTable extends StatelessWidget {
         ),
         for (final LabOrderItem item in items)
           TableRow(
+            decoration: BoxDecoration(
+              color: selectable &&
+                      !selectedItemIds.contains(_itemSelectionKey(item))
+                  ? theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.35)
+                  : null,
+            ),
             children: <Widget>[
+              if (selectable)
+                Padding(
+                  padding: EdgeInsets.all(theme.spacing.xs),
+                  child: Checkbox(
+                    value: selectedItemIds.contains(_itemSelectionKey(item)),
+                    onChanged: onToggleItem == null
+                        ? null
+                        : (bool? value) => onToggleItem!(
+                            item,
+                            selected: value ?? false,
+                          ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
               _PreviewCell(text: item.displayTitle),
               _PreviewCell(
                 text: item.displayReferenceRange ?? l10n.profileUnknownValue,
@@ -2534,6 +2766,7 @@ final class _ResultDraft {
 
   final LabOrderItem item;
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final GlobalKey rowKey = GlobalKey();
   final TextEditingController valueController;
   final TextEditingController unitController;
   final TextEditingController textController;
@@ -2965,7 +3198,51 @@ bool _canSubmitDraft(_ResultDraft draft) {
 }
 
 bool _canVerifyDraft(_ResultDraft draft) {
-  return draft.item.canVerify && draft.hasEntry;
+  return draft.item.canVerify &&
+      (draft.hasEntry || _hasSavedResult(draft.item));
+}
+
+bool _validateDraftForPersist(_ResultDraft draft, {required bool forVerify}) {
+  if (forVerify && _hasSavedResult(draft.item) && !draft.hasChangedEntry) {
+    draft.showValidationError = false;
+    return true;
+  }
+  if (!draft.hasEntry) {
+    draft.showValidationError = true;
+    return false;
+  }
+  if (!draft.item.canEnterResult) {
+    draft.showValidationError = false;
+    return _hasSavedResult(draft.item);
+  }
+  final bool isValid = draft.formKey.currentState?.validate() ?? true;
+  draft.showValidationError = !isValid;
+  return isValid;
+}
+
+void _scrollToFirstInvalidDraft(List<_ResultDraft> drafts) {
+  _ResultDraft? invalidDraft;
+  for (final _ResultDraft draft in drafts) {
+    if (draft.showValidationError) {
+      invalidDraft = draft;
+      break;
+    }
+  }
+  if (invalidDraft == null) {
+    return;
+  }
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final BuildContext? context = invalidDraft!.rowKey.currentContext;
+    if (context == null || !context.mounted) {
+      return;
+    }
+    Scrollable.ensureVisible(
+      context,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: 0.15,
+    );
+  });
 }
 
 bool _isBulkSelectable(_ResultDraft draft) {
@@ -2993,31 +3270,31 @@ AppWorkspaceStatus _resultLifecycleStatus(
       _hasSavedResult(item) &&
       (item.resultStatus ?? '').trim().toUpperCase() == 'PENDING';
   if (pendingSavedResult || (draft.hasEntry && draft.hasChangedEntry)) {
-    return const AppWorkspaceStatus(
-      label: 'Draft',
+    return AppWorkspaceStatus(
+      label: context.l10n.labResultLifecycleDraft,
       tone: AppWorkspaceStatusTone.warning,
       icon: Icons.edit_note_outlined,
     );
   }
 
   if (_hasSavedResult(item)) {
-    return const AppWorkspaceStatus(
-      label: 'Submitted',
+    return AppWorkspaceStatus(
+      label: context.l10n.labResultLifecycleSubmitted,
       tone: AppWorkspaceStatusTone.info,
       icon: Icons.outbox_outlined,
     );
   }
 
   if (draft.hasEntry) {
-    return const AppWorkspaceStatus(
-      label: 'Draft',
+    return AppWorkspaceStatus(
+      label: context.l10n.labResultLifecycleDraft,
       tone: AppWorkspaceStatusTone.warning,
       icon: Icons.edit_note_outlined,
     );
   }
 
-  return const AppWorkspaceStatus(
-    label: 'Blank',
+  return AppWorkspaceStatus(
+    label: context.l10n.labResultLifecycleBlank,
     icon: Icons.radio_button_unchecked,
   );
 }

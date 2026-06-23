@@ -8815,9 +8815,36 @@
       "skippedCount": { "type": "int" }
     }
   },
-  "labBatchEntryValidationMessage": "Complete or correct this entry before it can be saved in bulk.",
+  "labBatchEntryValidationMessage": "Correct the highlighted value before continuing.",
   "@labBatchEntryValidationMessage": {
     "description": "Inline validation message for invalid lab result rows during batch operations."
+  },
+  "labResultEntryRequiredMessage": "Enter a result value before saving, submitting, or verifying.",
+  "@labResultEntryRequiredMessage": {
+    "description": "Inline validation message when a lab result row is missing a required value."
+  },
+  "labBatchValidationSummaryMessage": "{count, plural, =1{1 selected test needs attention before this action can continue.} other{{count} selected tests need attention before this action can continue.}}",
+  "@labBatchValidationSummaryMessage": {
+    "description": "Summary shown when batch lab result actions fail validation.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "labBatchValidationSummaryHint": "Check the highlighted tests below and complete any missing or invalid values.",
+  "@labBatchValidationSummaryHint": {
+    "description": "Hint shown under the batch lab validation summary banner."
+  },
+  "labResultLifecycleDraft": "Draft",
+  "@labResultLifecycleDraft": {
+    "description": "Badge label for lab results saved locally but not yet submitted."
+  },
+  "labResultLifecycleSubmitted": "Submitted",
+  "@labResultLifecycleSubmitted": {
+    "description": "Badge label for lab results submitted but not yet verified."
+  },
+  "labResultLifecycleBlank": "Not entered",
+  "@labResultLifecycleBlank": {
+    "description": "Badge label for lab tests without entered results."
   },
   "labWorkflowCurrentStepLabel": "Current step",
   "@labWorkflowCurrentStepLabel": {
@@ -15636,9 +15663,33 @@
   "@labResetReportSelectionAction": {
     "description": "Action label for resetting selected lab report items."
   },
-  "labReportSelectionTitle": "Choose report content",
+  "labReportSelectionTitle": "Select tests for the report",
   "@labReportSelectionTitle": {
     "description": "Title for the lab report print preview selection controls."
+  },
+  "labReportSelectionHint": "Use the checkboxes on each result row below to choose what to print.",
+  "@labReportSelectionHint": {
+    "description": "Hint explaining how to select lab report content."
+  },
+  "labReportOrderDetailsToggleLabel": "Include order details",
+  "@labReportOrderDetailsToggleLabel": {
+    "description": "Toggle label for including order metadata in a lab report preview."
+  },
+  "labReportOrderDetailsToggleHint": "Show order identifiers and dates above each results table.",
+  "@labReportOrderDetailsToggleHint": {
+    "description": "Toggle hint for including order metadata in a lab report preview."
+  },
+  "labReportSelectedTestCount": "{selectedCount} of {totalCount} tests selected",
+  "@labReportSelectedTestCount": {
+    "description": "Selection count shown in the lab report preview dialog.",
+    "placeholders": {
+      "selectedCount": { "type": "int" },
+      "totalCount": { "type": "int" }
+    }
+  },
+  "labReportIncludeColumnLabel": "Include",
+  "@labReportIncludeColumnLabel": {
+    "description": "Column header for report inclusion checkboxes in the lab report preview."
   },
   "labReportNoSelectionLabel": "No report items selected",
   "@labReportNoSelectionLabel": {

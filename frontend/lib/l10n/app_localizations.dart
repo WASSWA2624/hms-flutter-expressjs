@@ -12751,8 +12751,44 @@ abstract class AppLocalizations {
   /// Inline validation message for invalid lab result rows during batch operations.
   ///
   /// In en, this message translates to:
-  /// **'Complete or correct this entry before it can be saved in bulk.'**
+  /// **'Correct the highlighted value before continuing.'**
   String get labBatchEntryValidationMessage;
+
+  /// Inline validation message when a lab result row is missing a required value.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a result value before saving, submitting, or verifying.'**
+  String get labResultEntryRequiredMessage;
+
+  /// Summary shown when batch lab result actions fail validation.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 selected test needs attention before this action can continue.} other{{count} selected tests need attention before this action can continue.}}'**
+  String labBatchValidationSummaryMessage(int count);
+
+  /// Hint shown under the batch lab validation summary banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the highlighted tests below and complete any missing or invalid values.'**
+  String get labBatchValidationSummaryHint;
+
+  /// Badge label for lab results saved locally but not yet submitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get labResultLifecycleDraft;
+
+  /// Badge label for lab results submitted but not yet verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted'**
+  String get labResultLifecycleSubmitted;
+
+  /// Badge label for lab tests without entered results.
+  ///
+  /// In en, this message translates to:
+  /// **'Not entered'**
+  String get labResultLifecycleBlank;
 
   /// Label for the current lab workflow step.
   ///
@@ -22704,8 +22740,38 @@ abstract class AppLocalizations {
   /// Title for the lab report print preview selection controls.
   ///
   /// In en, this message translates to:
-  /// **'Choose report content'**
+  /// **'Select tests for the report'**
   String get labReportSelectionTitle;
+
+  /// Hint explaining how to select lab report content.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the checkboxes on each result row below to choose what to print.'**
+  String get labReportSelectionHint;
+
+  /// Toggle label for including order metadata in a lab report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Include order details'**
+  String get labReportOrderDetailsToggleLabel;
+
+  /// Toggle hint for including order metadata in a lab report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Show order identifiers and dates above each results table.'**
+  String get labReportOrderDetailsToggleHint;
+
+  /// Selection count shown in the lab report preview dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'{selectedCount} of {totalCount} tests selected'**
+  String labReportSelectedTestCount(int selectedCount, int totalCount);
+
+  /// Column header for report inclusion checkboxes in the lab report preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Include'**
+  String get labReportIncludeColumnLabel;
 
   /// Empty state title shown when no lab report items are selected for print preview.
   ///
