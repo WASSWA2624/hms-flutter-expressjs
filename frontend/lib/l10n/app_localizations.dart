@@ -12802,6 +12802,18 @@ abstract class AppLocalizations {
   /// **'One or more selected tests are no longer available. Refresh the order and try again.'**
   String get labBatchItemNotFoundMessage;
 
+  /// Shown when batch lab actions cannot resolve the selected order workflow.
+  ///
+  /// In en, this message translates to:
+  /// **'The lab order could not be found. Close this dialog, reopen the order, and try again.'**
+  String get labBatchOrderNotSelectedMessage;
+
+  /// Inline status shown while lab result entry saves and refreshes affected rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating results…'**
+  String get labApplyingResultChangesMessage;
+
   /// Badge label for lab results saved locally but not yet submitted.
   ///
   /// In en, this message translates to:

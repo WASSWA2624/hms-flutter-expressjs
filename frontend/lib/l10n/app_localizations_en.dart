@@ -6862,6 +6862,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'One or more selected tests are no longer available. Refresh the order and try again.';
 
   @override
+  String get labBatchOrderNotSelectedMessage =>
+      'The lab order could not be found. Close this dialog, reopen the order, and try again.';
+
+  @override
+  String get labApplyingResultChangesMessage => 'Updating results…';
+
+  @override
   String get labResultLifecycleDraft => 'Draft';
 
   @override

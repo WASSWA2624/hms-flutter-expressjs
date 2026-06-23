@@ -38,11 +38,13 @@ final class LabBatchPersistOutcome {
     this.savedCount = 0,
     this.skippedCount = 0,
     this.lastFailure,
+    this.failedItemIds = const <String>[],
   });
 
   final int savedCount;
   final int skippedCount;
   final AppFailure? lastFailure;
+  final List<String> failedItemIds;
 
   bool get hasSavedEntries => savedCount > 0;
   bool get hasSkippedEntries => skippedCount > 0;
@@ -611,15 +613,19 @@ final class LabWorkspaceController
     _LabOrderItemResultPersister persist,
   ) async {
     if (entries.isEmpty) {
-      return LabBatchPersistOutcome(lastFailure: AppFailure.validation());
+      return LabBatchPersistOutcome(
+        lastFailure: AppFailure.validation(code: 'lab.result.no_entries'),
+      );
     }
 
     final Map<String, _LabOrderItemResultGroup> entriesByOrder =
         <String, _LabOrderItemResultGroup>{};
+    final List<String> unresolvedItemIds = <String>[];
     for (final _LabOrderItemResultEntry entry in entries) {
       final LabOrderWorkflow? workflow = _workflowForItem(entry.item);
       if (workflow == null) {
-        return LabBatchPersistOutcome(lastFailure: AppFailure.validation());
+        unresolvedItemIds.add(entry.item.apiId);
+        continue;
       }
       entriesByOrder
           .putIfAbsent(
@@ -630,9 +636,18 @@ final class LabWorkspaceController
           .add(entry);
     }
 
+    if (entriesByOrder.isEmpty) {
+      return LabBatchPersistOutcome(
+        skippedCount: unresolvedItemIds.length,
+        lastFailure: AppFailure.validation(code: 'lab.result.order_not_selected'),
+        failedItemIds: unresolvedItemIds,
+      );
+    }
+
     var savedCount = 0;
-    var skippedCount = 0;
+    var skippedCount = unresolvedItemIds.length;
     AppFailure? lastFailure;
+    final List<String> failedItemIds = <String>[...unresolvedItemIds];
     for (final _LabOrderItemResultGroup group in entriesByOrder.values) {
       var groupSavedCount = 0;
       for (final _LabOrderItemResultEntry entry in group.entries) {
@@ -643,6 +658,7 @@ final class LabWorkspaceController
         );
         if (itemFailure != null) {
           skippedCount += 1;
+          failedItemIds.add(entry.item.apiId);
           lastFailure = itemFailure;
           continue;
         }
@@ -650,8 +666,8 @@ final class LabWorkspaceController
         savedCount += 1;
       }
       if (groupSavedCount > 0) {
-        final AppFailure? refreshFailure = await _mutateWorkflow(
-          () => _repository.loadOrderWorkflow(group.workflow.order.apiId),
+        final AppFailure? refreshFailure = await _refreshSelectedWorkflow(
+          group.workflow.order.apiId,
         );
         if (refreshFailure != null) {
           lastFailure = refreshFailure;
@@ -662,6 +678,37 @@ final class LabWorkspaceController
       savedCount: savedCount,
       skippedCount: skippedCount,
       lastFailure: lastFailure,
+      failedItemIds: failedItemIds,
+    );
+  }
+
+  Future<AppFailure?> _refreshSelectedWorkflow(String orderId) async {
+    final Result<LabOrderWorkflow> result = await _repository.loadOrderWorkflow(
+      orderId,
+    );
+    return result.when(
+      success: (LabOrderWorkflow workflow) {
+        final LabWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              selectedWorkflow: workflow,
+              selectedWorkflows: _replaceSelectedWorkflow(
+                latest.selectedWorkflows.isNotEmpty
+                    ? latest.selectedWorkflows
+                    : latest.selectedWorkflow == null
+                    ? const <LabOrderWorkflow>[]
+                    : <LabOrderWorkflow>[latest.selectedWorkflow!],
+                workflow,
+              ),
+              worklist: _replaceOrder(latest.worklist, workflow.order),
+              clearLastFailure: true,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
     );
   }
 
@@ -1132,6 +1179,13 @@ final class LabWorkspaceController
 
   LabOrderWorkflow? _workflowForItem(LabOrderItem item) {
     final List<LabOrderWorkflow> workflows = _currentSelectedWorkflows();
+    for (final LabOrderWorkflow workflow in workflows) {
+      if (workflow.order.items.any((LabOrderItem orderItem) {
+        return orderItem.apiId == item.apiId;
+      })) {
+        return workflow;
+      }
+    }
     for (final LabOrderWorkflow workflow in workflows) {
       if (_itemBelongsToOrder(item, workflow.order)) {
         return workflow;

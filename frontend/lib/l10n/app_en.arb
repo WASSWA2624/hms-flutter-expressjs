@@ -8864,6 +8864,14 @@
   "@labBatchItemNotFoundMessage": {
     "description": "Shown when a selected lab test cannot be resolved during batch actions."
   },
+  "labBatchOrderNotSelectedMessage": "The lab order could not be found. Close this dialog, reopen the order, and try again.",
+  "@labBatchOrderNotSelectedMessage": {
+    "description": "Shown when batch lab actions cannot resolve the selected order workflow."
+  },
+  "labApplyingResultChangesMessage": "Updating results…",
+  "@labApplyingResultChangesMessage": {
+    "description": "Inline status shown while lab result entry saves and refreshes affected rows."
+  },
   "labResultLifecycleDraft": "Draft",
   "@labResultLifecycleDraft": {
     "description": "Badge label for lab results saved locally but not yet submitted."

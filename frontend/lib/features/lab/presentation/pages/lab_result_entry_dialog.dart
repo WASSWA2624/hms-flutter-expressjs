@@ -83,8 +83,17 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     if (_draftSignature == signature && _drafts != null) {
       return;
     }
-    _disposeDrafts();
+    if (_drafts == null) {
+      _createDrafts(workflows);
+      _draftSignature = signature;
+      return;
+    }
+    _patchDraftsFromWorkflows(workflows);
     _draftSignature = signature;
+  }
+
+  void _createDrafts(List<LabOrderWorkflow> workflows) {
+    _disposeDrafts();
     final List<_ResultDraft> drafts = <_ResultDraft>[
       for (final LabOrderWorkflow workflow in workflows)
         for (final LabOrderItem item in workflow.order.items)
@@ -95,6 +104,72 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     _drafts = drafts;
     _syncSelection(drafts);
+  }
+
+  void _patchDraftsFromWorkflows(
+    List<LabOrderWorkflow> workflows, {
+    Set<String>? affectedItemIds,
+  }) {
+    final List<_ResultDraft>? drafts = _drafts;
+    if (drafts == null) {
+      _createDrafts(workflows);
+      return;
+    }
+
+    final Map<String, LabOrderItem> itemsById = <String, LabOrderItem>{
+      for (final LabOrderWorkflow workflow in workflows)
+        for (final LabOrderItem item in workflow.order.items)
+          item.apiId: item,
+    };
+    final Set<String> nextItemIds = itemsById.keys.toSet();
+    final Set<String> existingItemIds = drafts
+        .map((_ResultDraft draft) => draft.item.apiId)
+        .toSet();
+
+    drafts.removeWhere(
+      (_ResultDraft draft) => !nextItemIds.contains(draft.item.apiId),
+    );
+
+    for (final _ResultDraft draft in drafts) {
+      final LabOrderItem? updatedItem = itemsById[draft.item.apiId];
+      if (updatedItem == null) {
+        continue;
+      }
+      if (affectedItemIds != null &&
+          !affectedItemIds.contains(draft.item.apiId)) {
+        continue;
+      }
+      draft.applyServerItem(
+        updatedItem,
+        preserveUserEntry: draft.hasChangedEntry,
+      );
+    }
+
+    for (final String itemId in nextItemIds.difference(existingItemIds)) {
+      final LabOrderItem? item = itemsById[itemId];
+      if (item == null) {
+        continue;
+      }
+      final _ResultDraft draft = _ResultDraft(item);
+      draft.addListener(_handleDraftChanged);
+      drafts.add(draft);
+    }
+
+    _syncSelection(drafts);
+  }
+
+  void _applyWorkflowUpdates({Set<String>? affectedItemIds}) {
+    final LabWorkspaceState? state = ref
+        .read(labWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(success: (LabWorkspaceState value) => value, failure: (_) => null);
+    final List<LabOrderWorkflow> workflows = _selectedWorkflows(state);
+    if (workflows.isEmpty) {
+      return;
+    }
+    _patchDraftsFromWorkflows(workflows, affectedItemIds: affectedItemIds);
+    _draftSignature = _draftSignatureFor(workflows);
   }
 
   void _syncSelection(List<_ResultDraft> drafts) {
@@ -357,39 +432,74 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
           const LinearProgressIndicator(minHeight: 2),
           SizedBox(height: Theme.of(context).spacing.md),
         ],
-        for (final LabOrderWorkflow workflow in workflows) ...<Widget>[
-          _LabOrderResultSection(
-            workflow: workflow,
-            drafts: _draftsForWorkflow(drafts, workflow),
-            catalogPanels: catalogPanels,
-            canMutate: canMutate,
-            selectedItemIds: _selectedItemIds,
-            onToggleItemSelection: canMutate ? _toggleItemSelection : null,
-            onSaveDraft: _saveDraft,
-            onSubmitItem: _submitDraft,
-            onVerifyItem: _verifyOrderItem,
-            onRejectItem: (LabOrderItem item) =>
-                _openRejectDialog(<LabOrderItem>[item]),
-            onRemoveResult: _removeDraftResult,
-            onEditOrder: widget.onEditOrder == null
-                ? null
-                : () => widget.onEditOrder?.call(context, workflow),
-            onDeleteOrder: widget.onDeleteOrder == null
-                ? null
-                : () => widget.onDeleteOrder?.call(context, workflow),
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
+        if (_isSaving) ...<Widget>[
+          _LabApplyingChangesBanner(message: l10n.labApplyingResultChangesMessage),
+          SizedBox(height: Theme.of(context).spacing.sm),
         ],
+        AbsorbPointer(
+          absorbing: _isSaving,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (final LabOrderWorkflow workflow in workflows) ...<Widget>[
+                _LabOrderResultSection(
+                  workflow: workflow,
+                  drafts: _draftsForWorkflow(drafts, workflow),
+                  catalogPanels: catalogPanels,
+                  canMutate: canMutate,
+                  selectedItemIds: _selectedItemIds,
+                  onToggleItemSelection:
+                      canMutate ? _toggleItemSelection : null,
+                  onSaveDraft: _saveDraft,
+                  onSubmitItem: _submitDraft,
+                  onVerifyItem: _verifyOrderItem,
+                  onRejectItem: (LabOrderItem item) =>
+                      _openRejectDialog(<LabOrderItem>[item]),
+                  onRemoveResult: _removeDraftResult,
+                  onEditOrder: widget.onEditOrder == null
+                      ? null
+                      : () => widget.onEditOrder?.call(context, workflow),
+                  onDeleteOrder: widget.onDeleteOrder == null
+                      ? null
+                      : () => widget.onDeleteOrder?.call(context, workflow),
+                ),
+                SizedBox(height: Theme.of(context).spacing.md),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
 
   Future<void> _saveDraft(_ResultDraft draft) async {
-    await _saveDrafts(<_ResultDraft>[draft]);
+    await _persistDrafts(
+      <_ResultDraft>[draft],
+      (List<_ResultDraft> validDrafts) => ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .saveOrderItemDrafts(
+            validDrafts
+                .map(
+                  (_ResultDraft draft) =>
+                      (item: draft.item, payload: draft.toDraftPayload()),
+                )
+                .toList(growable: false),
+          ),
+      successMessage: context.l10n.labDraftSavedMessage,
+      partialMessage: context.l10n.labBatchPartialSaveMessage,
+      actionLabel: context.l10n.labSaveDraftAction,
+    );
   }
 
   Future<void> _submitDraft(_ResultDraft draft) async {
-    await _submitDrafts(<_ResultDraft>[draft]);
+    await _persistDrafts(
+      <_ResultDraft>[draft],
+      _submitAndVerifyValidDrafts,
+      successMessage: context.l10n.labResultsVerifiedMessage,
+      partialMessage: context.l10n.labBatchPartialVerifyMessage,
+      actionLabel: context.l10n.labSubmitResultAction,
+      forVerify: true,
+    );
   }
 
   Future<void> _saveDrafts(List<_ResultDraft> drafts) async {
@@ -414,18 +524,10 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   Future<void> _submitDrafts(List<_ResultDraft> drafts) async {
     await _persistDrafts(
       drafts,
-      (List<_ResultDraft> validDrafts) => ref
-          .read(labWorkspaceControllerProvider.notifier)
-          .submitOrderItemDrafts(
-            validDrafts
-                .map(
-                  (_ResultDraft draft) =>
-                      (item: draft.item, payload: draft.toSubmittedPayload()),
-                )
-                .toList(growable: false),
-          ),
-      successMessage: context.l10n.labResultsSubmittedMessage,
-      partialMessage: context.l10n.labBatchPartialSubmitMessage,
+      _submitAndVerifyValidDrafts,
+      successMessage: context.l10n.labResultsVerifiedMessage,
+      partialMessage: context.l10n.labBatchPartialVerifyMessage,
+      forVerify: true,
       actionLabel: context.l10n.labSubmitAllResultsAction,
     );
   }
@@ -441,17 +543,25 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     );
   }
 
-  Future<LabBatchPersistOutcome> _verifyValidDrafts(
+  List<_ResultDraft> _draftsNeedingPersistBeforeVerify(
     List<_ResultDraft> validDrafts,
-  ) async {
-    final List<_ResultDraft> needsSubmit = validDrafts
+  ) {
+    return validDrafts
         .where(
           (_ResultDraft draft) =>
               draft.hasEntry &&
-              !_hasSavedResult(draft.item) &&
-              draft.item.canEnterResult,
+              draft.item.canEnterResult &&
+              (!_hasSavedResult(draft.item) || draft.hasChangedEntry),
         )
         .toList(growable: false);
+  }
+
+  Future<LabBatchPersistOutcome> _submitAndVerifyValidDrafts(
+    List<_ResultDraft> validDrafts,
+  ) async {
+    final List<_ResultDraft> needsSubmit = _draftsNeedingPersistBeforeVerify(
+      validDrafts,
+    );
     if (needsSubmit.isNotEmpty) {
       final LabBatchPersistOutcome submitOutcome = await ref
           .read(labWorkspaceControllerProvider.notifier)
@@ -470,6 +580,39 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       }
     }
 
+    return _verifyPersistedDrafts(validDrafts);
+  }
+
+  Future<LabBatchPersistOutcome> _verifyValidDrafts(
+    List<_ResultDraft> validDrafts,
+  ) async {
+    final List<_ResultDraft> needsSubmit = _draftsNeedingPersistBeforeVerify(
+      validDrafts,
+    );
+    if (needsSubmit.isNotEmpty) {
+      final LabBatchPersistOutcome submitOutcome = await ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .submitOrderItemDrafts(
+            needsSubmit
+                .map(
+                  (_ResultDraft draft) => (
+                    item: draft.item,
+                    payload: draft.toSubmittedPayload(),
+                  ),
+                )
+                .toList(growable: false),
+          );
+      if (submitOutcome.savedCount == 0) {
+        return submitOutcome;
+      }
+    }
+
+    return _verifyPersistedDrafts(validDrafts);
+  }
+
+  Future<LabBatchPersistOutcome> _verifyPersistedDrafts(
+    List<_ResultDraft> validDrafts,
+  ) async {
     final List<({LabOrderItem item, Map<String, Object?> payload})> entries =
         <({LabOrderItem item, Map<String, Object?> payload})>[];
     for (final _ResultDraft draft in validDrafts) {
@@ -477,11 +620,12 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       if (freshItem == null) {
         return LabBatchPersistOutcome(
           lastFailure: AppFailure.validation(code: 'lab.result.item_not_found'),
+          failedItemIds: <String>[draft.item.apiId],
         );
       }
       entries.add((
         item: freshItem,
-        payload: draft.toVerifiedPayload(includeOrderItemId: true),
+        payload: draft.toVerifiedPayload(),
       ));
     }
     return ref
@@ -496,7 +640,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         ?.value
         .when(success: (LabWorkspaceState value) => value, failure: (_) => null);
     if (state == null) {
-      return draft.item;
+      return null;
     }
     for (final LabOrderWorkflow workflow in _selectedWorkflows(state)) {
       for (final LabOrderItem item in workflow.order.items) {
@@ -505,7 +649,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         }
       }
     }
-    return draft.item;
+    return null;
   }
 
   Future<void> _persistDrafts(
@@ -547,6 +691,16 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     final int savedCount = outcome.savedCount;
     final int skippedCount = outcome.skippedCount + invalidCount;
+    if (savedCount > 0) {
+      _applyWorkflowUpdates(
+        affectedItemIds: validDrafts
+            .map((_ResultDraft draft) => draft.item.apiId)
+            .toSet(),
+      );
+    }
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isSaving = false;
       if (savedCount == 0) {
@@ -559,12 +713,16 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
         );
         if (invalidCount > 0) {
           _batchValidationIssueCount = invalidCount;
+        } else {
+          _markFailedDrafts(drafts, outcome.failedItemIds);
         }
       } else if (outcome.lastFailure != null) {
         _failure = outcome.lastFailure;
         _labActionFailureMessage = null;
         if (invalidCount > 0) {
           _batchValidationIssueCount = invalidCount;
+        } else {
+          _markFailedDrafts(drafts, outcome.failedItemIds);
         }
       } else {
         _failure = null;
@@ -578,9 +736,22 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _showSuccessMessage(partialMessage(savedCount, skippedCount));
     } else if (savedCount > 0 && outcome.lastFailure == null) {
       _showSuccessMessage(successMessage);
-    } else if (invalidCount > 0) {
+    } else if (invalidCount > 0 || outcome.failedItemIds.isNotEmpty) {
       _scrollToFirstInvalidDraft(drafts);
     }
+  }
+
+  void _markFailedDrafts(List<_ResultDraft> drafts, List<String> failedItemIds) {
+    if (failedItemIds.isEmpty) {
+      return;
+    }
+    final Set<String> failedIds = failedItemIds.toSet();
+    for (final _ResultDraft draft in drafts) {
+      if (failedIds.contains(draft.item.apiId)) {
+        draft.showValidationError = true;
+      }
+    }
+    _batchValidationIssueCount = failedIds.length;
   }
 
   String _labBatchActionFailureMessage(
@@ -600,6 +771,13 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       'errors.lab_workflow.invalid_transition' =>
         l10n.labBatchInvalidTransitionMessage,
       'lab.result.item_not_found' => l10n.labBatchItemNotFoundMessage,
+      'lab.result.order_not_selected' => l10n.labBatchOrderNotSelectedMessage,
+      _ when failure.category == AppFailureCategory.validation &&
+          failure.validationFields.isNotEmpty =>
+        l10n.labBatchActionFailedDetailMessage(
+          actionLabel,
+          l10n.failureMessage(failure),
+        ),
       _ when failure.category == AppFailureCategory.validation =>
         l10n.labBatchActionValidationMessage(actionLabel),
       _ => l10n.labBatchActionFailedDetailMessage(
@@ -610,44 +788,14 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   }
 
   Future<void> _verifyOrderItem(_ResultDraft draft) async {
-    if (!_validateDraftForPersist(draft, forVerify: true)) {
-      setState(() {
-        _clearLabActionFeedback();
-        _batchValidationIssueCount = 1;
-      });
-      _scrollToFirstInvalidDraft(<_ResultDraft>[draft]);
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _clearLabActionFeedback();
-    });
-    final LabBatchPersistOutcome outcome = await _verifyValidDrafts(<_ResultDraft>[
-      draft,
-    ]);
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isSaving = false;
-      if (outcome.savedCount > 0 && outcome.lastFailure == null) {
-        _failure = null;
-        _labActionFailureMessage = null;
-      } else {
-        _failure = outcome.lastFailure;
-        _labActionFailureMessage = _labBatchActionFailureMessage(
-          outcome.lastFailure,
-          actionLabel: context.l10n.labVerifyResultAction,
-          invalidCount: 0,
-          skippedCount: outcome.skippedCount,
-        );
-      }
-    });
-    if (outcome.savedCount > 0 &&
-        outcome.lastFailure == null &&
-        mounted) {
-      _showSuccessMessage(context.l10n.labResultsVerifiedMessage);
-    }
+    await _persistDrafts(
+      <_ResultDraft>[draft],
+      _verifyValidDrafts,
+      successMessage: context.l10n.labResultsVerifiedMessage,
+      partialMessage: context.l10n.labBatchPartialVerifyMessage,
+      forVerify: true,
+      actionLabel: context.l10n.labVerifyResultAction,
+    );
   }
 
   Future<void> _removeDraftResult(_ResultDraft draft) async {
@@ -677,6 +825,13 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     final AppFailure? failure = await ref
         .read(labWorkspaceControllerProvider.notifier)
         .removeOrderItemDraftResult(draft.item);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      _applyWorkflowUpdates(affectedItemIds: <String>{draft.item.apiId});
+      draft.clearEntry();
+    }
     if (!mounted) {
       return;
     }
@@ -744,9 +899,22 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     if (!mounted) {
       return;
     }
+    if (failure == null) {
+      _applyWorkflowUpdates(
+        affectedItemIds: savedDrafts
+            .map((_ResultDraft draft) => draft.item.apiId)
+            .toSet(),
+      );
+    }
+    if (!mounted) {
+      return;
+    }
     setState(() {
       if (failure == null) {
         for (final _ResultDraft draft in unsavedDrafts) {
+          draft.clearEntry();
+        }
+        for (final _ResultDraft draft in savedDrafts) {
           draft.clearEntry();
         }
       }
@@ -961,26 +1129,26 @@ class _LabBulkResultActionsBar extends StatelessWidget {
             runSpacing: theme.spacing.sm,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
-              if (saveTargets.isNotEmpty)
+              if (draftableEntries.isNotEmpty)
                 AppButton.secondary(
                   label: l10n.labSaveAllDraftsAction,
                   leadingIcon: Icons.save_outlined,
                   isLoading: isSaving,
-                  onPressed: () => onSaveDrafts(saveTargets),
+                  onPressed: () => onSaveDrafts(draftableEntries),
                 ),
-              if (submitTargets.isNotEmpty)
+              if (submittableDrafts.isNotEmpty)
                 AppButton.secondary(
                   label: l10n.labSubmitAllResultsAction,
                   leadingIcon: Icons.outbox_outlined,
                   isLoading: isSaving,
-                  onPressed: () => onSubmitDrafts(submitTargets),
+                  onPressed: () => onSubmitDrafts(submittableDrafts),
                 ),
-              if (verifyTargets.isNotEmpty)
+              if (verifiableDrafts.isNotEmpty)
                 AppButton.primary(
                   label: l10n.labVerifyAllAction,
                   leadingIcon: Icons.verified_outlined,
                   isLoading: isSaving,
-                  onPressed: () => onVerifyDrafts(verifyTargets),
+                  onPressed: () => onVerifyDrafts(verifiableDrafts),
                 ),
               if (removableDrafts.isNotEmpty)
                 AppButton.tertiary(
@@ -999,6 +1167,51 @@ class _LabBulkResultActionsBar extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LabApplyingChangesBanner extends StatelessWidget {
+  const _LabApplyingChangesBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.45),
+        border: Border.all(color: theme.colorScheme.primary),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Text(
+                message,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2981,7 +3194,7 @@ final class _ResultDraft {
       selectedOption = item.resultText ?? item.resultValue,
       interpretationOverride = item.interpretationOverride;
 
-  final LabOrderItem item;
+  LabOrderItem item;
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final GlobalKey rowKey = GlobalKey();
   final TextEditingController valueController;
@@ -3051,10 +3264,51 @@ final class _ResultDraft {
 
   void clearEntry() {
     valueController.clear();
+    unitController.clear();
     textController.clear();
     notesController.clear();
     selectedOption = null;
     notifyChanged();
+  }
+
+  void applyServerItem(
+    LabOrderItem serverItem, {
+    required bool preserveUserEntry,
+  }) {
+    item = serverItem;
+    showValidationError = false;
+    if (preserveUserEntry) {
+      return;
+    }
+    _syncControllersFromItem(serverItem);
+  }
+
+  void _syncControllersFromItem(LabOrderItem serverItem) {
+    _setControllerText(valueController, serverItem.resultValue ?? '');
+    _setControllerText(
+      unitController,
+      serverItem.resultUnit ?? serverItem.unit ?? '',
+    );
+    _setControllerText(textController, serverItem.resultText ?? '');
+    selectedOption = serverItem.resultText ?? serverItem.resultValue;
+    interpretationOverride = serverItem.interpretationOverride;
+    _setControllerText(
+      referenceRangeOverrideController,
+      serverItem.referenceRangeOverride ??
+          serverItem.referenceRangeSummary ??
+          '',
+    );
+    _setControllerText(
+      resultFlagOverrideController,
+      serverItem.resultFlagOverride ?? serverItem.resultFlag ?? '',
+    );
+  }
+
+  void _setControllerText(TextEditingController controller, String text) {
+    if (controller.text == text) {
+      return;
+    }
+    controller.text = text;
   }
 
   void dispose() {
@@ -3094,7 +3348,7 @@ final class _ResultDraft {
       if (includeOrderItemId) 'order_item_id': item.apiId,
       'result_id': ?resultId,
       'status': ?status,
-      'reported_at': DateTime.now().toIso8601String(),
+      'reported_at': DateTime.now().toUtc().toIso8601String(),
       if (notesController.text.trim().isNotEmpty)
         'notes': notesController.text.trim(),
       ..._interpretationPayload(),
