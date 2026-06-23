@@ -34,4 +34,23 @@ void main() {
       expect(item.panelTitle, 'Full blood count | FBC');
     });
   });
+
+  group('LabOrderItemDto', () {
+    test('maps interpretation override fields from API payloads', () {
+      const LabOrderItemDto dto = LabOrderItemDto(<String, Object?>{
+        'id': 'LIT0000002',
+        'interpretation_override': true,
+        'reference_range_override': '10 - 18 (manual)',
+        'result_flag_override': 'HIGH',
+        'reference_range_summary': '12 - 16',
+      });
+
+      final item = dto.toEntity();
+
+      expect(item.interpretationOverride, isTrue);
+      expect(item.referenceRangeOverride, '10 - 18 (manual)');
+      expect(item.resultFlagOverride, 'HIGH');
+      expect(item.displayReferenceRange, '10 - 18 (manual)');
+    });
+  });
 }

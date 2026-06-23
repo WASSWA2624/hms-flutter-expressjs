@@ -228,6 +228,72 @@ describe('lab-result.service', () => {
     );
   });
 
+  it('preserves manual interpretation overrides when interpretation_override is true', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
+    resolveModelRecordOrThrow.mockResolvedValue({
+      id: 'order-item-internal-1',
+      lab_test: {
+        unit: 'g/dL',
+        reference_ranges: [
+          {
+            normal_min_value: 12,
+            normal_max_value: 16,
+            gender: 'FEMALE',
+          },
+        ],
+        unit_options: [],
+        result_options: [],
+      },
+      lab_order: {
+        patient: {
+          gender: 'FEMALE',
+          date_of_birth: new Date('1994-06-01T00:00:00.000Z'),
+        },
+      },
+    });
+    labResultRepository.create.mockResolvedValue({ id: 'result-internal-1' });
+    labResultRepository.findById.mockResolvedValue(
+      buildLabResultRecord({
+        interpretation_override: true,
+        reference_range_override: '10 - 18 (manual)',
+        result_flag_override: 'HIGH',
+        reference_range_summary: '10 - 18 (manual)',
+        result_flag: 'HIGH',
+        status: 'ABNORMAL',
+        result_value: '19.2',
+      })
+    );
+
+    await labResultService.createLabResult(
+      {
+        lab_order_item_id: 'LIT0000001',
+        result_value: '19.2',
+        reported_at: now.toISOString(),
+        interpretation_override: true,
+        reference_range_override: '10 - 18 (manual)',
+        result_flag_override: 'HIGH',
+        status: 'ABNORMAL',
+      },
+      mockUserId,
+      mockIpAddress
+    );
+
+    expect(labResultRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interpretation_override: true,
+        reference_range_summary: '10 - 18 (manual)',
+        result_flag: 'HIGH',
+        status: 'ABNORMAL',
+      })
+    );
+    expect(labResultRepository.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        reference_range_override: expect.anything(),
+        result_flag_override: expect.anything(),
+      })
+    );
+  });
+
   it('updates and releases lab results through resolved records', async () => {
     const before = buildLabResultRecord();
     const interpretationContext = {

@@ -113,6 +113,16 @@ describe('Lab Result Schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should accept manual interpretation override fields', () => {
+      const result = createLabResultSchema.safeParse({
+        ...validData,
+        interpretation_override: true,
+        reference_range_override: '10 - 18 (manual)',
+        result_flag_override: 'HIGH',
+      });
+      expect(result.success).toBe(true);
+    });
+
     it('should enforce max length for result_value', () => {
       const data = { ...validData, result_value: 'a'.repeat(121) };
       const result = createLabResultSchema.safeParse(data);
