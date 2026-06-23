@@ -38,6 +38,8 @@ class LabResultEntryDialog extends ConsumerStatefulWidget {
 class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
   List<_ResultDraft>? _drafts;
   String? _draftSignature;
+  final Set<String> _selectedItemIds = <String>{};
+  bool _selectionInitialized = false;
   AppFailure? _failure;
   bool _isSaving = false;
 
@@ -81,6 +83,68 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       draft.addListener(_handleDraftChanged);
     }
     _drafts = drafts;
+    _syncSelection(drafts);
+  }
+
+  void _syncSelection(List<_ResultDraft> drafts) {
+    final Set<String> validIds = drafts
+        .map((_ResultDraft draft) => draft.item.apiId)
+        .toSet();
+    _selectedItemIds.removeWhere((String id) => !validIds.contains(id));
+    if (!_selectionInitialized && drafts.isNotEmpty) {
+      _selectionInitialized = true;
+      _selectedItemIds.addAll(
+        drafts
+            .where(_isBulkSelectable)
+            .map((_ResultDraft draft) => draft.item.apiId),
+      );
+    }
+  }
+
+  void _toggleItemSelection(String itemId, {required bool selected}) {
+    setState(() {
+      if (selected) {
+        _selectedItemIds.add(itemId);
+      } else {
+        _selectedItemIds.remove(itemId);
+      }
+    });
+  }
+
+  void _selectAllItems(List<_ResultDraft> drafts) {
+    setState(() {
+      _selectedItemIds
+        ..clear()
+        ..addAll(
+          drafts
+              .where(_isBulkSelectable)
+              .map((_ResultDraft draft) => draft.item.apiId),
+        );
+    });
+  }
+
+  void _clearItemSelection() {
+    if (_selectedItemIds.isEmpty) {
+      return;
+    }
+    setState(_selectedItemIds.clear);
+  }
+
+  List<_ResultDraft> _selectedDrafts(List<_ResultDraft> drafts) {
+    if (_selectedItemIds.isEmpty) {
+      return const <_ResultDraft>[];
+    }
+    return drafts
+        .where(
+          (_ResultDraft draft) => _selectedItemIds.contains(draft.item.apiId),
+        )
+        .toList(growable: false);
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -106,6 +170,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
 
     final List<_ResultDraft> drafts = _drafts ?? const <_ResultDraft>[];
     final bool canMutate = widget.canMutate && !_isSaving;
+    final bool compact = MediaQuery.sizeOf(context).width < 600;
 
     return AppDialog(
       title: Column(
@@ -123,7 +188,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       ),
       icon: const Icon(Icons.biotech_outlined),
       scrollable: true,
-      maxWidth: 1600,
+      maxWidth: compact ? double.infinity : 1600,
       closeEnabled: !_isSaving,
       content: _buildContent(
         context,
@@ -201,29 +266,32 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       );
     }
 
-    final List<_ResultDraft> draftableEntries = drafts
+    final List<_ResultDraft> selectedDrafts = _selectedDrafts(drafts);
+    final List<_ResultDraft> draftableEntries = selectedDrafts
         .where((_ResultDraft draft) => _canSaveDraft(draft))
         .toList(growable: false);
-    final List<_ResultDraft> submittableDrafts = drafts
+    final List<_ResultDraft> submittableDrafts = selectedDrafts
         .where(_canSubmitDraft)
         .toList(growable: false);
-    final List<_ResultDraft> verifiableDrafts = drafts
+    final List<_ResultDraft> verifiableDrafts = selectedDrafts
         .where(_canVerifyDraft)
         .toList(growable: false);
-    final List<_ResultDraft> removableDrafts = drafts
+    final List<_ResultDraft> removableDrafts = selectedDrafts
         .where((draft) => _canRemoveResult(draft.item, draft))
         .toList(growable: false);
-    final List<LabOrderItem> rejectableItems = drafts
+    final List<LabOrderItem> rejectableItems = selectedDrafts
         .map((_ResultDraft draft) => draft.item)
         .where((LabOrderItem item) => item.canReject)
         .toList(growable: false);
+    final int selectableCount = drafts.where(_isBulkSelectable).length;
     final bool hasBulkActions =
         canMutate &&
+        selectableCount > 0 &&
         (draftableEntries.isNotEmpty ||
             submittableDrafts.isNotEmpty ||
             verifiableDrafts.isNotEmpty ||
             removableDrafts.isNotEmpty ||
-            rejectableItems.length > 1);
+            rejectableItems.isNotEmpty);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -241,12 +309,16 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
             verifiableDrafts: verifiableDrafts,
             removableDrafts: removableDrafts,
             rejectableItems: rejectableItems,
+            selectedCount: _selectedItemIds.length,
+            selectableCount: selectableCount,
             isSaving: _isSaving,
             onSaveDrafts: _saveDrafts,
             onSubmitDrafts: _submitDrafts,
             onVerifyDrafts: _verifyDrafts,
             onRemoveDrafts: _removeDraftResults,
             onRejectItems: _openRejectDialog,
+            onSelectAll: () => _selectAllItems(drafts),
+            onClearSelection: _clearItemSelection,
           ),
           SizedBox(height: Theme.of(context).spacing.md),
         ],
@@ -260,6 +332,8 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
             drafts: _draftsForWorkflow(drafts, workflow),
             catalogPanels: catalogPanels,
             canMutate: canMutate,
+            selectedItemIds: _selectedItemIds,
+            onToggleItemSelection: canMutate ? _toggleItemSelection : null,
             onSaveDraft: _saveDraft,
             onSubmitItem: _submitDraft,
             onVerifyItem: _verifyOrderItem,
@@ -318,6 +392,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _failure = failure;
       _isSaving = false;
     });
+    if (failure == null && validDrafts.isNotEmpty && mounted) {
+      _showSuccessMessage(context.l10n.labDraftSavedMessage);
+    }
   }
 
   Future<void> _submitDrafts(List<_ResultDraft> drafts) async {
@@ -351,6 +428,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _failure = failure;
       _isSaving = false;
     });
+    if (failure == null && validDrafts.isNotEmpty && mounted) {
+      _showSuccessMessage(context.l10n.labResultsSubmittedMessage);
+    }
   }
 
   Future<void> _verifyDrafts(List<_ResultDraft> drafts) async {
@@ -386,10 +466,13 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _failure = failure;
       _isSaving = false;
     });
+    if (failure == null && validDrafts.isNotEmpty && mounted) {
+      _showSuccessMessage(context.l10n.labResultsVerifiedMessage);
+    }
   }
 
   Future<void> _verifyOrderItem(_ResultDraft draft) async {
-    if (!(draft.formKey.currentState?.validate() ?? false)) {
+    if (!(draft.formKey.currentState?.validate() ?? true)) {
       return;
     }
     setState(() {
@@ -406,6 +489,9 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
       _failure = failure;
       _isSaving = false;
     });
+    if (failure == null && mounted) {
+      _showSuccessMessage(context.l10n.labResultsVerifiedMessage);
+    }
   }
 
   Future<void> _removeDraftResult(_ResultDraft draft) async {
@@ -458,12 +544,11 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
     }
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (_) => const AppConfirmActionDialog(
-        title: 'Remove draft results?',
-        body:
-            'This will remove all saved or entered draft results that have not been verified.',
-        submitLabel: 'Remove drafts',
-        icon: Icon(Icons.delete_sweep_outlined),
+      builder: (_) => AppConfirmActionDialog(
+        title: context.l10n.labRemoveAllDraftsDialogTitle,
+        body: context.l10n.labRemoveAllDraftsDialogBody,
+        submitLabel: context.l10n.labRemoveAllDraftsAction,
+        icon: const Icon(Icons.delete_sweep_outlined),
       ),
     );
     if (confirmed != true || !mounted) {
@@ -638,12 +723,16 @@ class _LabBulkResultActionsBar extends StatelessWidget {
     required this.verifiableDrafts,
     required this.removableDrafts,
     required this.rejectableItems,
+    required this.selectedCount,
+    required this.selectableCount,
     required this.isSaving,
     required this.onSaveDrafts,
     required this.onSubmitDrafts,
     required this.onVerifyDrafts,
     required this.onRemoveDrafts,
     required this.onRejectItems,
+    required this.onSelectAll,
+    required this.onClearSelection,
   });
 
   final List<_ResultDraft> draftableEntries;
@@ -651,12 +740,16 @@ class _LabBulkResultActionsBar extends StatelessWidget {
   final List<_ResultDraft> verifiableDrafts;
   final List<_ResultDraft> removableDrafts;
   final List<LabOrderItem> rejectableItems;
+  final int selectedCount;
+  final int selectableCount;
   final bool isSaving;
   final ValueChanged<List<_ResultDraft>> onSaveDrafts;
   final ValueChanged<List<_ResultDraft>> onSubmitDrafts;
   final ValueChanged<List<_ResultDraft>> onVerifyDrafts;
   final ValueChanged<List<_ResultDraft>> onRemoveDrafts;
   final ValueChanged<List<LabOrderItem>> onRejectItems;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClearSelection;
 
   @override
   Widget build(BuildContext context) {
@@ -664,56 +757,85 @@ class _LabBulkResultActionsBar extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     return AppContentPanel(
       density: AppContentPanelDensity.compact,
-      child: Wrap(
-        spacing: theme.spacing.sm,
-        runSpacing: theme.spacing.sm,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Padding(
-            padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
-            child: Text(
-              'Bulk result actions',
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurfaceVariant,
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              Text(
+                l10n.labBulkResultActionsTitle,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+              if (selectableCount > 1)
+                Text(
+                  l10n.labSelectedTestCount(selectedCount, selectableCount),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              if (selectableCount > 1) ...<Widget>[
+                AppButton.tertiary(
+                  label: l10n.labSelectAllTestsAction,
+                  enabled: !isSaving && selectedCount < selectableCount,
+                  onPressed: onSelectAll,
+                ),
+                AppButton.tertiary(
+                  label: l10n.labClearSelectionAction,
+                  enabled: !isSaving && selectedCount > 0,
+                  onPressed: onClearSelection,
+                ),
+              ],
+            ],
           ),
-          if (draftableEntries.isNotEmpty)
-            AppButton.secondary(
-              label: 'Save all drafts',
-              leadingIcon: Icons.save_outlined,
-              isLoading: isSaving,
-              onPressed: () => onSaveDrafts(draftableEntries),
-            ),
-          if (submittableDrafts.isNotEmpty)
-            AppButton.secondary(
-              label: 'Submit all',
-              leadingIcon: Icons.outbox_outlined,
-              isLoading: isSaving,
-              onPressed: () => onSubmitDrafts(submittableDrafts),
-            ),
-          if (verifiableDrafts.isNotEmpty)
-            AppButton.primary(
-              label: l10n.labVerifyAllAction,
-              leadingIcon: Icons.verified_outlined,
-              isLoading: isSaving,
-              onPressed: () => onVerifyDrafts(verifiableDrafts),
-            ),
-          if (removableDrafts.isNotEmpty)
-            AppButton.tertiary(
-              label: 'Remove drafts',
-              leadingIcon: Icons.delete_sweep_outlined,
-              isLoading: isSaving,
-              onPressed: () => onRemoveDrafts(removableDrafts),
-            ),
-          if (rejectableItems.length > 1)
-            AppButton.tertiary(
-              label: 'Reject all tests',
-              leadingIcon: Icons.block_outlined,
-              isLoading: isSaving,
-              onPressed: () => onRejectItems(rejectableItems),
-            ),
+          SizedBox(height: theme.spacing.sm),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              if (draftableEntries.isNotEmpty)
+                AppButton.secondary(
+                  label: l10n.labSaveAllDraftsAction,
+                  leadingIcon: Icons.save_outlined,
+                  isLoading: isSaving,
+                  onPressed: () => onSaveDrafts(draftableEntries),
+                ),
+              if (submittableDrafts.isNotEmpty)
+                AppButton.secondary(
+                  label: l10n.labSubmitAllResultsAction,
+                  leadingIcon: Icons.outbox_outlined,
+                  isLoading: isSaving,
+                  onPressed: () => onSubmitDrafts(submittableDrafts),
+                ),
+              if (verifiableDrafts.isNotEmpty)
+                AppButton.primary(
+                  label: l10n.labVerifyAllAction,
+                  leadingIcon: Icons.verified_outlined,
+                  isLoading: isSaving,
+                  onPressed: () => onVerifyDrafts(verifiableDrafts),
+                ),
+              if (removableDrafts.isNotEmpty)
+                AppButton.tertiary(
+                  label: l10n.labRemoveAllDraftsAction,
+                  leadingIcon: Icons.delete_sweep_outlined,
+                  isLoading: isSaving,
+                  onPressed: () => onRemoveDrafts(removableDrafts),
+                ),
+              if (rejectableItems.isNotEmpty)
+                AppButton.tertiary(
+                  label: l10n.labRejectAllTestsAction,
+                  leadingIcon: Icons.block_outlined,
+                  isLoading: isSaving,
+                  onPressed: () => onRejectItems(rejectableItems),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -794,11 +916,13 @@ class _LabOrderResultSection extends StatelessWidget {
     required this.drafts,
     required this.catalogPanels,
     required this.canMutate,
+    required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmitItem,
     required this.onVerifyItem,
     required this.onRejectItem,
     required this.onRemoveResult,
+    this.onToggleItemSelection,
     this.onEditOrder,
     this.onDeleteOrder,
   });
@@ -807,6 +931,9 @@ class _LabOrderResultSection extends StatelessWidget {
   final List<_ResultDraft> drafts;
   final List<LabCatalogItem> catalogPanels;
   final bool canMutate;
+  final Set<String> selectedItemIds;
+  final void Function(String itemId, {required bool selected})?
+  onToggleItemSelection;
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmitItem;
   final ValueChanged<_ResultDraft> onVerifyItem;
@@ -925,6 +1052,8 @@ class _LabOrderResultSection extends StatelessWidget {
                 drafts: drafts,
                 catalogPanels: catalogPanels,
                 canMutate: canMutate,
+                selectedItemIds: selectedItemIds,
+                onToggleItemSelection: onToggleItemSelection,
                 onSaveDraft: onSaveDraft,
                 onSubmit: onSubmitItem,
                 onVerify: onVerifyItem,
@@ -991,15 +1120,20 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
   const _ResponsiveLabResultEntry({
     required this.drafts,
     required this.canMutate,
+    required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
     required this.onReject,
     required this.onRemove,
+    this.onToggleItemSelection,
   });
 
   final List<_ResultDraft> drafts;
   final bool canMutate;
+  final Set<String> selectedItemIds;
+  final void Function(String itemId, {required bool selected})?
+  onToggleItemSelection;
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmit;
   final ValueChanged<_ResultDraft> onVerify;
@@ -1014,6 +1148,8 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
           return _LabResultEntryCards(
             drafts: drafts,
             canMutate: canMutate,
+            selectedItemIds: selectedItemIds,
+            onToggleItemSelection: onToggleItemSelection,
             onSaveDraft: onSaveDraft,
             onSubmit: onSubmit,
             onVerify: onVerify,
@@ -1024,6 +1160,8 @@ class _ResponsiveLabResultEntry extends StatelessWidget {
         return _LabResultEntryRowsTable(
           drafts: drafts,
           canMutate: canMutate,
+          selectedItemIds: selectedItemIds,
+          onToggleItemSelection: onToggleItemSelection,
           onSaveDraft: onSaveDraft,
           onSubmit: onSubmit,
           onVerify: onVerify,
@@ -1040,15 +1178,20 @@ class _LabResultEntryCards extends StatelessWidget {
   const _LabResultEntryCards({
     required this.drafts,
     required this.canMutate,
+    required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
     required this.onReject,
     required this.onRemove,
+    this.onToggleItemSelection,
   });
 
   final List<_ResultDraft> drafts;
   final bool canMutate;
+  final Set<String> selectedItemIds;
+  final void Function(String itemId, {required bool selected})?
+  onToggleItemSelection;
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmit;
   final ValueChanged<_ResultDraft> onVerify;
@@ -1072,7 +1215,18 @@ class _LabResultEntryCards extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  _LabResultTestCell(draft: draft),
+                  _LabResultTestCell(
+                    draft: draft,
+                    showSelection: canMutate && onToggleItemSelection != null,
+                    isSelected: selectedItemIds.contains(draft.item.apiId),
+                    selectionEnabled: _isBulkSelectable(draft),
+                    onSelectionChanged: onToggleItemSelection == null
+                        ? null
+                        : (bool? value) => onToggleItemSelection!(
+                            draft.item.apiId,
+                            selected: value ?? false,
+                          ),
+                  ),
                   SizedBox(height: theme.spacing.sm),
                   _LabReferenceRangeCell(item: draft.item),
                   SizedBox(height: theme.spacing.sm),
@@ -1110,16 +1264,21 @@ class _LabResultEntryTable extends StatelessWidget {
     required this.drafts,
     required this.catalogPanels,
     required this.canMutate,
+    required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
     required this.onReject,
     required this.onRemove,
+    this.onToggleItemSelection,
   });
 
   final List<_ResultDraft> drafts;
   final List<LabCatalogItem> catalogPanels;
   final bool canMutate;
+  final Set<String> selectedItemIds;
+  final void Function(String itemId, {required bool selected})?
+  onToggleItemSelection;
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmit;
   final ValueChanged<_ResultDraft> onVerify;
@@ -1145,6 +1304,8 @@ class _LabResultEntryTable extends StatelessWidget {
           _ResponsiveLabResultEntry(
             drafts: group.drafts,
             canMutate: canMutate,
+            selectedItemIds: selectedItemIds,
+            onToggleItemSelection: onToggleItemSelection,
             onSaveDraft: onSaveDraft,
             onSubmit: onSubmit,
             onVerify: onVerify,
@@ -1162,16 +1323,21 @@ class _LabResultEntryRowsTable extends StatelessWidget {
   const _LabResultEntryRowsTable({
     required this.drafts,
     required this.canMutate,
+    required this.selectedItemIds,
     required this.onSaveDraft,
     required this.onSubmit,
     required this.onVerify,
     required this.onReject,
     required this.onRemove,
     required this.availableWidth,
+    this.onToggleItemSelection,
   });
 
   final List<_ResultDraft> drafts;
   final bool canMutate;
+  final Set<String> selectedItemIds;
+  final void Function(String itemId, {required bool selected})?
+  onToggleItemSelection;
   final ValueChanged<_ResultDraft> onSaveDraft;
   final ValueChanged<_ResultDraft> onSubmit;
   final ValueChanged<_ResultDraft> onVerify;
@@ -1219,6 +1385,15 @@ class _LabResultEntryRowsTable extends StatelessWidget {
                 context,
                 draft: draft,
                 canMutate: canMutate,
+                isSelected: selectedItemIds.contains(draft.item.apiId),
+                showSelection: canMutate && onToggleItemSelection != null,
+                selectionEnabled: _isBulkSelectable(draft),
+                onSelectionChanged: onToggleItemSelection == null
+                    ? null
+                    : (bool? value) => onToggleItemSelection!(
+                        draft.item.apiId,
+                        selected: value ?? false,
+                      ),
                 onSaveDraft: () => onSaveDraft(draft),
                 onSubmit: () => onSubmit(draft),
                 onVerify: () => onVerify(draft),
@@ -1269,11 +1444,15 @@ TableRow _labResultEntryTableRow(
   BuildContext context, {
   required _ResultDraft draft,
   required bool canMutate,
+  required bool isSelected,
+  required bool showSelection,
+  required bool selectionEnabled,
   required VoidCallback onSaveDraft,
   required VoidCallback onSubmit,
   required VoidCallback onVerify,
   required VoidCallback onReject,
   required VoidCallback onRemove,
+  ValueChanged<bool?>? onSelectionChanged,
 }) {
   final ThemeData theme = Theme.of(context);
   final LabOrderItem item = draft.item;
@@ -1287,7 +1466,15 @@ TableRow _labResultEntryTableRow(
           : theme.colorScheme.surfaceContainerLowest,
     ),
     children: <Widget>[
-      _LabResultTableCell(child: _LabResultTestCell(draft: draft)),
+      _LabResultTableCell(
+        child: _LabResultTestCell(
+          draft: draft,
+          showSelection: showSelection,
+          isSelected: isSelected,
+          selectionEnabled: selectionEnabled,
+          onSelectionChanged: onSelectionChanged,
+        ),
+      ),
       _LabResultTableCell(child: _LabReferenceRangeCell(item: item)),
       _LabResultTableCell(
         child: item.canEnterResult
@@ -1313,15 +1500,25 @@ TableRow _labResultEntryTableRow(
 }
 
 class _LabResultTestCell extends StatelessWidget {
-  const _LabResultTestCell({required this.draft});
+  const _LabResultTestCell({
+    required this.draft,
+    this.showSelection = false,
+    this.isSelected = false,
+    this.selectionEnabled = false,
+    this.onSelectionChanged,
+  });
 
   final _ResultDraft draft;
+  final bool showSelection;
+  final bool isSelected;
+  final bool selectionEnabled;
+  final ValueChanged<bool?>? onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final LabOrderItem item = draft.item;
-    return Column(
+    final Widget titleColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
@@ -1339,6 +1536,23 @@ class _LabResultTestCell extends StatelessWidget {
             _LabResultLifecycleBadge(draft: draft),
           ],
         ),
+      ],
+    );
+
+    if (!showSelection) {
+      return titleColumn;
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Checkbox(
+          value: isSelected,
+          onChanged: selectionEnabled ? onSelectionChanged : null,
+          visualDensity: VisualDensity.compact,
+        ),
+        SizedBox(width: theme.spacing.xs),
+        Expanded(child: titleColumn),
       ],
     );
   }
@@ -1438,7 +1652,7 @@ class _LabResultActionsCell extends StatelessWidget {
         ),
       if (canMutate && _canSubmitDraft(draft))
         AppButton.tertiary(
-          label: 'Submit result',
+          label: l10n.labSubmitResultAction,
           leadingIcon: Icons.outbox_outlined,
           onPressed: onSubmit,
         ),
@@ -1547,6 +1761,9 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  onChanged: enabled
+                      ? (_) => widget.draft.notifyChanged()
+                      : null,
                   validator: (String? value) {
                     final String normalized = value?.trim() ?? '';
                     if (normalized.isEmpty) {
@@ -1618,11 +1835,13 @@ class _CompactResultInputState extends State<_CompactResultInput> {
                   : l10n.labResultTextLabel,
               enabled: enabled,
               maxLines: item.isText ? 3 : 1,
+              onChanged: enabled ? (_) => widget.draft.notifyChanged() : null,
             ),
           AppTextField(
             controller: widget.draft.notesController,
             labelText: l10n.labNotesLabel,
             enabled: enabled,
+            onChanged: enabled ? (_) => widget.draft.notifyChanged() : null,
           ),
         ],
       ),
@@ -2541,6 +2760,14 @@ bool _canSubmitDraft(_ResultDraft draft) {
 
 bool _canVerifyDraft(_ResultDraft draft) {
   return draft.item.canVerify && draft.hasEntry;
+}
+
+bool _isBulkSelectable(_ResultDraft draft) {
+  return _canSaveDraft(draft) ||
+      _canSubmitDraft(draft) ||
+      _canVerifyDraft(draft) ||
+      _canRemoveResult(draft.item, draft) ||
+      draft.item.canReject;
 }
 
 AppWorkspaceStatus _resultLifecycleStatus(

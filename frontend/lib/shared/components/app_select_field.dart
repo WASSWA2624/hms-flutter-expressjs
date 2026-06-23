@@ -212,7 +212,6 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             _dropdownMenuEntries();
 
         return DropdownMenuFormField<T>(
-          key: ValueKey<T?>(widget.value),
           restorationId: widget.restorationId,
           controller: _controller,
           initialSelection: widget.value,
@@ -255,8 +254,21 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           onSelected: (T? value) {
             if (value == null) {
               _controller.clear();
+            } else {
+              final String label = _labelForValue(value);
+              if (_controller.text != label) {
+                _isSyncingControllerText = true;
+                try {
+                  _controller.value = TextEditingValue(text: label);
+                } finally {
+                  _isSyncingControllerText = false;
+                }
+              }
             }
             widget.onChanged?.call(value);
+            if (_focusNode.hasFocus) {
+              _focusNode.unfocus();
+            }
           },
           dropdownMenuEntries: dropdownMenuEntries,
         );

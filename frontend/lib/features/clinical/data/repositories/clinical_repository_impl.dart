@@ -170,14 +170,31 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     required String termType,
     String? query,
     int limit = 25,
+    String source = 'ALL',
+  }) {
+    return searchClinicalCatalog(
+      termType: termType,
+      query: query,
+      limit: limit,
+      source: source,
+    );
+  }
+
+  @override
+  Future<Result<List<ClinicalCatalogOption>>> searchClinicalCatalog({
+    required String termType,
+    String? query,
+    int limit = 80,
+    String source = 'ALL',
   }) {
     return _apiClient.get<List<ClinicalCatalogOption>>(
       ApiEndpoints.apiV1(<String>[
-        HmsApiResource.clinicalTerms.path,
-        'suggestions',
+        HmsApiResource.clinicalCatalog.path,
+        'search',
       ]),
       queryParameters: _withoutEmpty(<String, Object?>{
         'term_type': termType,
+        'source': source,
         'q': query,
         'limit': limit.clamp(1, 1000),
       }),
@@ -190,6 +207,49 @@ final class ClinicalRepositoryImpl implements ClinicalRepository {
     Map<String, Object?> payload,
   ) {
     return _postVoid(HmsApiResource.clinicalTermFavorites, payload);
+  }
+
+  @override
+  Future<Result<void>> upsertFacilityCatalogOffering(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.clinicalCatalog.path,
+        'offerings',
+      ]),
+      data: _withoutEmpty(payload),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<List<Map<String, Object?>>>> listFacilityCatalogOfferings({
+    required String facilityId,
+    String? termType,
+    String? query,
+  }) {
+    return _apiClient.get<List<Map<String, Object?>>>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.clinicalCatalog.path,
+        'offerings',
+      ]),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'facility_id': facilityId,
+        'term_type': termType,
+        'q': query,
+        'limit': 1000,
+      }),
+      decoder: (Object? data) {
+        final Object? payload = (data as Map<String, Object?>?)?['data'];
+        if (payload is! List) {
+          return const <Map<String, Object?>>[];
+        }
+        return payload
+            .whereType<Map<String, Object?>>()
+            .toList(growable: false);
+      },
+    );
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -195,6 +196,16 @@ List<Widget> _setupSummaryCards(
       compact: true,
       onPressed: () => _openBedsModal(context),
     ),
+    if (snapshot.facility?.id != null)
+      AppWorkspaceSummaryCard(
+        icon: Icons.medical_information_outlined,
+        label: l10n.clinicalCatalogConfigurationTitle,
+        value: l10n.clinicalCatalogSourceFacility,
+        description: l10n.clinicalCatalogConfigurationBody,
+        status: _setupSummaryStatus(l10n, true),
+        compact: true,
+        onPressed: () => _openFacilityCatalogModal(context, snapshot),
+      ),
   ];
 }
 
@@ -623,6 +634,31 @@ Future<void> _openBedsModal(BuildContext context) {
             canSubmit: canManageFacility && snapshot.facility != null,
             framed: false,
           ),
+    ),
+  );
+}
+
+Future<void> _openFacilityCatalogModal(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final String? facilityId = snapshot.facility?.id;
+  if (facilityId == null || facilityId.isEmpty) {
+    return Future<void>.value();
+  }
+
+  return showAppDialog<void>(
+    context: context,
+    builder: (BuildContext dialogContext) => AppDialog(
+      title: Text(l10n.clinicalCatalogConfigurationTitle),
+      icon: const Icon(Icons.medical_information_outlined),
+      scrollable: true,
+      maxWidth: 920,
+      content: FacilityCatalogConfigPanel(
+        facilityId: facilityId,
+        enabled: true,
+      ),
     ),
   );
 }

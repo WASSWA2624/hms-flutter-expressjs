@@ -150,6 +150,7 @@ const createClinicalTermFavorite = async (payload = {}, context = {}) => {
   const scope = normalizeScope(payload.scope || 'PERSONAL');
   const code = normalizeText(payload.code) || null;
   const description = normalizeText(payload.description);
+  const itemId = normalizeText(payload.item_id) || null;
   const facilityId =
     payload.facility_id !== undefined
       ? payload.facility_id || null
@@ -170,6 +171,7 @@ const createClinicalTermFavorite = async (payload = {}, context = {}) => {
     owner_user_id: ownerUserId,
     scope,
     term_type: termType,
+    item_id: itemId,
     code,
     description,
     deleted_at: null,
@@ -183,6 +185,7 @@ const createClinicalTermFavorite = async (payload = {}, context = {}) => {
       owner_user_id: ownerUserId,
       term_type: termType,
       scope,
+      item_id: itemId,
       code,
       description,
     }));

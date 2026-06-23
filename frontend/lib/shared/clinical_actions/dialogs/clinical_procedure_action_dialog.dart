@@ -6,6 +6,8 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_layer_selector.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -22,6 +24,7 @@ class ClinicalProcedureActionDialog extends StatefulWidget {
     required String termType,
     String? query,
     int? limit,
+    String source,
   })
   onSearchClinicalTerms;
   final Future<AppFailure?> Function({
@@ -41,6 +44,7 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
 
   Timer? _searchDebounce;
   int _searchRequest = 0;
+  ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.all;
   List<ClinicalActionCatalogOption> _catalogOptions =
       const <ClinicalActionCatalogOption>[];
   final List<ClinicalActionCatalogOption> _selectedProcedures =
@@ -119,6 +123,15 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
                 ],
               ),
             ),
+          ),
+          ClinicalCatalogLayerSelector(
+            value: _catalogSource,
+            enabled: !_isSaving,
+            onChanged: (ClinicalCatalogSource source) {
+              setState(() => _catalogSource = source);
+              _searchRequest += 1;
+              unawaited(_loadProcedureCatalog('', _searchRequest));
+            },
           ),
           AppResponsiveFieldRow(
             gap: AppResponsiveFieldRowGap.form,
@@ -236,6 +249,7 @@ class _ProcedureDialogState extends State<ClinicalProcedureActionDialog> {
           termType: 'PROCEDURE',
           query: query,
           limit: _searchLimit,
+          source: _catalogSource.apiValue,
         );
     if (!mounted || requestId != _searchRequest) {
       return;

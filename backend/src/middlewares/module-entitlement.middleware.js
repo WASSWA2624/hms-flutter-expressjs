@@ -126,6 +126,7 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'clinical-alerts': 'encounters-vitals',
   'clinical-alert-thresholds': 'encounters-vitals',
   'clinical-terms': 'encounters-vitals',
+  'clinical-catalog': 'encounters-vitals',
   'clinical-term-favorites': 'encounters-vitals',
   encounters: 'encounters-vitals',
   'clinical-notes': 'encounters-vitals',

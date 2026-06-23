@@ -6532,6 +6532,42 @@ abstract class AppLocalizations {
   /// **'Search by diagnosis name, code, type, status, or source'**
   String get clinicalDiagnosisSearchHint;
 
+  /// Clinical catalog layer filter for all sources.
+  ///
+  /// In en, this message translates to:
+  /// **'All sources'**
+  String get clinicalCatalogSourceAll;
+
+  /// Clinical catalog layer filter for user favorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get clinicalCatalogSourceFavorites;
+
+  /// Clinical catalog layer filter for facility-specific items.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get clinicalCatalogSourceFacility;
+
+  /// Clinical catalog layer filter for global catalog items.
+  ///
+  /// In en, this message translates to:
+  /// **'Global catalog'**
+  String get clinicalCatalogSourceGlobal;
+
+  /// Title for facility clinical catalog configuration section.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical service catalog'**
+  String get clinicalCatalogConfigurationTitle;
+
+  /// Body text for facility clinical catalog configuration section.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which diagnoses, procedures, lab tests, radiology tests, and prescriptions this facility offers.'**
+  String get clinicalCatalogConfigurationBody;
+
   /// Clinical diagnosis selected items section title.
   ///
   /// In en, this message translates to:
@@ -12693,6 +12729,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Draft results saved.'**
   String get labDraftSavedMessage;
+
+  /// Title for the bulk lab result actions toolbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk actions'**
+  String get labBulkResultActionsTitle;
+
+  /// Action label for submitting a single lab result.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit result'**
+  String get labSubmitResultAction;
+
+  /// Confirmation shown after submitting lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Results submitted.'**
+  String get labResultsSubmittedMessage;
+
+  /// Confirmation shown after verifying lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Results verified.'**
+  String get labResultsVerifiedMessage;
+
+  /// Action label for selecting all lab tests in result entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get labSelectAllTestsAction;
+
+  /// Action label for clearing lab test selection in result entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get labClearSelectionAction;
+
+  /// Selection count label in lab result entry bulk actions.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total} selected'**
+  String labSelectedTestCount(int selected, int total);
+
+  /// Action label for rejecting all selected lab tests.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject all tests'**
+  String get labRejectAllTestsAction;
+
+  /// Action label for removing all selected draft lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove drafts'**
+  String get labRemoveAllDraftsAction;
+
+  /// Action label for saving all selected draft lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Save all drafts'**
+  String get labSaveAllDraftsAction;
+
+  /// Action label for submitting all selected lab results.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit all'**
+  String get labSubmitAllResultsAction;
+
+  /// Title for bulk remove draft lab results confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove draft results?'**
+  String get labRemoveAllDraftsDialogTitle;
+
+  /// Body for bulk remove draft lab results confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove all saved or entered draft results that have not been verified.'**
+  String get labRemoveAllDraftsDialogBody;
 
   /// Field label for lab order status in the result entry dialog.
   ///

@@ -2370,11 +2370,17 @@ Future<void> _openDiagnosisDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalDiagnosisActionDialog(
         onSearchClinicalTerms:
-            ({required String termType, String? query, int? limit}) {
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
               return controller.searchClinicalTerms(
                 termType: termType,
                 query: query,
                 limit: limit ?? 25,
+                source: source,
               );
             },
         onSubmit: controller.addDiagnosis,
@@ -2394,11 +2400,17 @@ Future<void> _openProcedureDialog(
       barrierDismissible: false,
       builder: (_) => ClinicalProcedureActionDialog(
         onSearchClinicalTerms:
-            ({required String termType, String? query, int? limit}) {
+            ({
+              required String termType,
+              String? query,
+              int? limit,
+              String source = 'ALL',
+            }) {
               return controller.searchClinicalTerms(
                 termType: termType,
                 query: query,
                 limit: limit ?? 25,
+                source: source,
               );
             },
         onSubmit: controller.addProcedures,

@@ -106,12 +106,122 @@ const findRecentDiagnoses = async (where = {}, take = 12) => {
   }
 };
 
+const findFacilityOfferings = async (where = {}, take = 500) => {
+  try {
+    return await prisma.facility_catalog_offering.findMany({
+      where,
+      orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }],
+      take,
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const findFacilityOffering = async (where = {}) => {
+  try {
+    return await prisma.facility_catalog_offering.findFirst({ where });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const createFacilityOffering = async (data = {}) => {
+  try {
+    return await prisma.facility_catalog_offering.create({ data });
+  } catch (error) {
+    if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409);
+    if (error.code === 'P2003') throw new HttpError('errors.database.foreign_key_field', 400);
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const updateFacilityOffering = async (id, data = {}) => {
+  try {
+    return await prisma.facility_catalog_offering.update({
+      where: { id },
+      data,
+    });
+  } catch (error) {
+    if (error.code === 'P2025') throw new HttpError('errors.facility_catalog_offering.not_found', 404);
+    if (error.code === 'P2002') throw new HttpError('errors.database.unique_field', 409);
+    if (error.code === 'P2003') throw new HttpError('errors.database.foreign_key_field', 400);
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const findLabTests = async (where = {}, take = 500) => {
+  try {
+    return await prisma.lab_test.findMany({
+      where,
+      orderBy: [{ name: 'asc' }],
+      take,
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        code: true,
+        category: true,
+        specimen_type: true,
+      },
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const findRadiologyTests = async (where = {}, take = 500) => {
+  try {
+    return await prisma.radiology_test.findMany({
+      where,
+      orderBy: [{ name: 'asc' }],
+      take,
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        code: true,
+        modality: true,
+      },
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const findDrugs = async (where = {}, take = 500) => {
+  try {
+    return await prisma.drug.findMany({
+      where,
+      orderBy: [{ name: 'asc' }],
+      take,
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        code: true,
+        form: true,
+        strength: true,
+      },
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   createFavorite,
+  createFacilityOffering,
   findCatalogTerms,
+  findDrugs,
+  findFacilityOffering,
+  findFacilityOfferings,
   findFavorite,
   findFavorites,
+  findLabTests,
+  findRadiologyTests,
   findRecentDiagnoses,
   findRecentProcedures,
+  updateFacilityOffering,
   updateFavorite,
 };

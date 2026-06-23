@@ -577,11 +577,17 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       context,
       ClinicalDiagnosisActionDialog(
         onSearchClinicalTerms:
-            ({int? limit, String? query, required String termType}) {
+            ({
+              int? limit,
+              String? query,
+              required String termType,
+              String source = 'ALL',
+            }) {
               return repository.searchClinicalTerms(
                 termType: termType,
                 query: query,
                 limit: limit ?? 20,
+                source: source,
               );
             },
         onSubmit:
@@ -631,11 +637,17 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       context,
       ClinicalProcedureActionDialog(
         onSearchClinicalTerms:
-            ({int? limit, String? query, required String termType}) {
+            ({
+              int? limit,
+              String? query,
+              required String termType,
+              String source = 'ALL',
+            }) {
               return repository.searchClinicalTerms(
                 termType: termType,
                 query: query,
                 limit: limit ?? 20,
+                source: source,
               );
             },
         onSubmit:

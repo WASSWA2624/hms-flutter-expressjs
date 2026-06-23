@@ -235,11 +235,13 @@ final class ClinicalWorkspaceController
     required String termType,
     String? query,
     int limit = 25,
+    String source = 'ALL',
   }) {
-    return _repository.searchClinicalTerms(
+    return _repository.searchClinicalCatalog(
       termType: termType,
       query: query,
       limit: limit,
+      source: source,
     );
   }
 
@@ -292,12 +294,12 @@ final class ClinicalWorkspaceController
           return Result<void>.failure(diagnosisFailure);
         }
 
-        await _repository.createClinicalTermFavorite(<String, Object?>{
-          'term_type': 'DIAGNOSIS',
-          'scope': 'SHARED',
-          'code': code,
-          'description': description,
-        });
+        await _recordCatalogFavorite(
+          termType: 'DIAGNOSIS',
+          itemId: diagnosis.id,
+          code: code,
+          description: description,
+        );
       }
       return const Result<void>.success(null);
     });
@@ -363,12 +365,12 @@ final class ClinicalWorkspaceController
       }
 
       for (final ClinicalCatalogOption procedure in normalizedProcedures) {
-        await _repository.createClinicalTermFavorite(<String, Object?>{
-          'term_type': 'PROCEDURE',
-          'scope': 'SHARED',
-          'code': _normalizedOptionalText(procedure.code),
-          'description': _procedureDescription(procedure),
-        });
+        await _recordCatalogFavorite(
+          termType: 'PROCEDURE',
+          itemId: procedure.id,
+          code: _normalizedOptionalText(procedure.code),
+          description: _procedureDescription(procedure),
+        );
       }
 
       return const Result<void>.success(null);
@@ -399,21 +401,35 @@ final class ClinicalWorkspaceController
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
-    return _mutateSelectedEncounter(
-      () => _repository.createLabOrder(<String, Object?>{
-        'encounter_id': entry.encounterId,
-        'patient_id': entry.apiPatientId,
-        'ordered_at': DateTime.now().toUtc().toIso8601String(),
-        'requested_tests': <Map<String, Object?>>[
-          for (final String id in labTestIds)
-            <String, Object?>{'lab_test_id': id},
-        ],
-        'requested_panels': <Map<String, Object?>>[
-          for (final String id in labPanelIds)
-            <String, Object?>{'lab_panel_id': id},
-        ],
-      }),
-    );
+    return _mutateSelectedEncounter(() async {
+      final Result<void> orderResult = await _repository.createLabOrder(
+        <String, Object?>{
+          'encounter_id': entry.encounterId,
+          'patient_id': entry.apiPatientId,
+          'ordered_at': DateTime.now().toUtc().toIso8601String(),
+          'requested_tests': <Map<String, Object?>>[
+            for (final String id in labTestIds)
+              <String, Object?>{'lab_test_id': id},
+          ],
+          'requested_panels': <Map<String, Object?>>[
+            for (final String id in labPanelIds)
+              <String, Object?>{'lab_panel_id': id},
+          ],
+        },
+      );
+      final AppFailure? failure = _failureOrNull(orderResult);
+      if (failure != null) {
+        return Result<void>.failure(failure);
+      }
+      for (final String id in labTestIds) {
+        await _recordCatalogFavorite(
+          termType: 'LAB_TEST',
+          itemId: id,
+          description: id,
+        );
+      }
+      return const Result<void>.success(null);
+    });
   }
 
   Future<AppFailure?> updateLabOrder({
@@ -457,26 +473,48 @@ final class ClinicalWorkspaceController
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
-    return _mutateSelectedEncounter(
-      () => _repository.createRadiologyOrder(<String, Object?>{
-        'encounter_id': entry.encounterId,
-        'patient_id': entry.apiPatientId,
-        'ordered_at': DateTime.now().toUtc().toIso8601String(),
-        'requested_tests': <Map<String, Object?>>[
-          for (final ClinicalRadiologyRequest request in requests)
-            <String, Object?>{
-              'radiology_test_id': request.radiologyTestId,
-              'clinical_note': request.clinicalNote,
-              'request_details': <String, Object?>{
-                'modality': request.modality,
-                'body_region': request.bodyRegion,
-                'laterality': request.laterality,
-                'priority': request.priority,
+    return _mutateSelectedEncounter(() async {
+      final Result<void> orderResult = await _repository.createRadiologyOrder(
+        <String, Object?>{
+          'encounter_id': entry.encounterId,
+          'patient_id': entry.apiPatientId,
+          'ordered_at': DateTime.now().toUtc().toIso8601String(),
+          'requested_tests': <Map<String, Object?>>[
+            for (final ClinicalRadiologyRequest request in requests)
+              <String, Object?>{
+                'radiology_test_id': request.radiologyTestId,
+                'clinical_note': request.clinicalNote,
+                'request_details': <String, Object?>{
+                  'modality': request.modality,
+                  'body_region': request.bodyRegion,
+                  'laterality': request.laterality,
+                  'priority': request.priority,
+                },
               },
-            },
-        ],
-      }),
-    );
+          ],
+        },
+      );
+      final AppFailure? failure = _failureOrNull(orderResult);
+      if (failure != null) {
+        return Result<void>.failure(failure);
+      }
+      for (final ClinicalRadiologyRequest request in requests) {
+        final String testId = request.radiologyTestId.trim();
+        if (testId.isEmpty) {
+          continue;
+        }
+        await _recordCatalogFavorite(
+          termType: 'RADIOLOGY_TEST',
+          itemId: testId,
+          description: <String?>[
+            testId,
+            request.modality,
+            request.bodyRegion,
+          ].whereType<String>().join(' '),
+        );
+      }
+      return const Result<void>.success(null);
+    });
   }
 
   Future<AppFailure?> cancelRadiologyOrder(String radiologyOrderId) {
@@ -500,14 +538,37 @@ final class ClinicalWorkspaceController
       return Future<AppFailure?>.value(AppFailure.validation());
     }
 
-    return _mutateSelectedEncounter(
-      () => _repository.createPharmacyOrder(<String, Object?>{
-        'encounter_id': entry.encounterId,
-        'patient_id': entry.apiPatientId,
-        'ordered_at': DateTime.now().toUtc().toIso8601String(),
-        'items': items,
-      }),
-    );
+    return _mutateSelectedEncounter(() async {
+      final Result<void> orderResult = await _repository.createPharmacyOrder(
+        <String, Object?>{
+          'encounter_id': entry.encounterId,
+          'patient_id': entry.apiPatientId,
+          'ordered_at': DateTime.now().toUtc().toIso8601String(),
+          'items': items,
+        },
+      );
+      final AppFailure? failure = _failureOrNull(orderResult);
+      if (failure != null) {
+        return Result<void>.failure(failure);
+      }
+      for (final Map<String, Object?> item in items) {
+        final String? drugId = _normalizedOptionalText(
+          item['drug_id']?.toString(),
+        );
+        final String? description = _normalizedOptionalText(
+          item['drug_name']?.toString() ?? item['instructions']?.toString(),
+        );
+        if (drugId == null && description == null) {
+          continue;
+        }
+        await _recordCatalogFavorite(
+          termType: 'PRESCRIPTION',
+          itemId: drugId,
+          description: description ?? drugId ?? '',
+        );
+      }
+      return const Result<void>.success(null);
+    });
   }
 
   Future<AppFailure?> cancelPharmacyOrder(String pharmacyOrderId) {
@@ -1377,6 +1438,25 @@ final class ClinicalWorkspaceController
     return _normalizedOptionalText(diagnosis.name) ??
         _normalizedOptionalText(diagnosis.displayTitle) ??
         '';
+  }
+
+  Future<void> _recordCatalogFavorite({
+    required String termType,
+    String? itemId,
+    String? code,
+    required String description,
+  }) async {
+    final String normalizedDescription = description.trim();
+    if (normalizedDescription.isEmpty) {
+      return;
+    }
+    await _repository.createClinicalTermFavorite(<String, Object?>{
+      'term_type': termType,
+      'scope': 'PERSONAL',
+      'item_id': _normalizedOptionalText(itemId),
+      'code': _normalizedOptionalText(code),
+      'description': normalizedDescription,
+    });
   }
 
   String _procedureDescription(ClinicalCatalogOption procedure) {

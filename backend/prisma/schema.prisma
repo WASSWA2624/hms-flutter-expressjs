@@ -236,6 +236,15 @@ enum ClinicalAlertSource {
 enum ClinicalTermType {
   DIAGNOSIS
   PROCEDURE
+  LAB_TEST
+  RADIOLOGY_TEST
+  PRESCRIPTION
+}
+
+enum ClinicalCatalogSource {
+  FAVORITES
+  FACILITY
+  GLOBAL
 }
 
 enum ClinicalTermScope {
@@ -908,6 +917,7 @@ model tenant {
   clinical_vital_alert_thresholds clinical_vital_alert_threshold[]
   clinical_term_favorites         clinical_term_favorite[]
   clinical_term_catalogs          clinical_term_catalog[]
+  facility_catalog_offerings      facility_catalog_offering[]
   staff_positions                 staff_position[]
   staff_profiles                  staff_profile[]
   shifts                          shift[]
@@ -1012,6 +1022,7 @@ model facility {
   clinical_vital_alert_thresholds clinical_vital_alert_threshold[]
   clinical_term_favorites         clinical_term_favorite[]
   clinical_term_catalogs          clinical_term_catalog[]
+  facility_catalog_offerings      facility_catalog_offering[]
   shifts                          shift[]
   nurse_rosters                   nurse_roster[]
   shift_templates                 shift_template[]
@@ -2452,6 +2463,7 @@ model clinical_term_favorite {
   owner_user_id     String?           @db.VarChar(36)
   term_type         ClinicalTermType
   scope             ClinicalTermScope
+  item_id           String?           @db.VarChar(36)
   code              String?           @db.VarChar(80)
   description       String            @db.Text
   usage_count       Int               @default(0)
@@ -2470,8 +2482,37 @@ model clinical_term_favorite {
   @@index([owner_user_id])
   @@index([term_type])
   @@index([scope])
+  @@index([item_id])
   @@index([code])
   @@index([usage_count])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model facility_catalog_offering {
+  id                String           @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?          @db.VarChar(32)
+  tenant_id         String           @db.VarChar(36)
+  facility_id       String           @db.VarChar(36)
+  term_type         ClinicalTermType
+  item_id           String           @db.VarChar(36)
+  is_active         Boolean          @default(true)
+  sort_order        Int              @default(0)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+  deleted_at        DateTime?
+  version           Int              @default(1)
+
+  tenant   tenant   @relation(fields: [tenant_id], references: [id])
+  facility facility @relation(fields: [facility_id], references: [id])
+
+  @@unique([facility_id, term_type, item_id])
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([term_type])
+  @@index([item_id])
+  @@index([is_active])
+  @@index([sort_order])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

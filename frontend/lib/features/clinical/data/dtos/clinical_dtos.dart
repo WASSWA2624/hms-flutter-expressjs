@@ -539,17 +539,29 @@ final class ClinicalTermOptionDto {
     final String? source = _string(json['source']) ?? _string(json['origin']);
     return ClinicalCatalogOption(
       id:
+          _string(json['item_id']) ??
           _string(json['id']) ??
           _joinDisplay(<String?>[code, description]) ??
           description ??
           code ??
           '',
-      publicId: _string(json['human_friendly_id']),
-      name: description,
+      publicId: _string(json['human_friendly_id']) ?? _string(json['item_id']),
+      name: _string(json['name']) ?? description,
       code: code,
       category: category,
       secondaryText: source,
-      searchText: _joinDisplay(<String?>[description, code, category, source]),
+      searchText: _joinDisplay(<String?>[
+        _string(json['name']),
+        description,
+        code,
+        category,
+        source,
+      ]),
+      metadata: _withoutNullValues(<String, Object?>{
+        'source': source,
+        'item_id': _string(json['item_id']),
+        'term_type': _string(json['term_type']),
+      }),
     );
   }
 }

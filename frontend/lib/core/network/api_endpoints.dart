@@ -79,6 +79,7 @@ enum HmsApiResource {
     HmsApiEndpointGroup.clinicalCare,
   ),
   clinicalTerms('clinical-terms', HmsApiEndpointGroup.clinicalCare),
+  clinicalCatalog('clinical-catalog', HmsApiEndpointGroup.clinicalCare),
   clinicalTermFavorites(
     'clinical-term-favorites',
     HmsApiEndpointGroup.clinicalCare,

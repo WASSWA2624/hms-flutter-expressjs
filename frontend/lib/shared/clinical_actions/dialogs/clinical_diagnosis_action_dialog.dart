@@ -6,6 +6,8 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_layer_selector.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -21,6 +23,7 @@ class ClinicalDiagnosisActionDialog extends StatefulWidget {
     required String termType,
     String? query,
     int? limit,
+    String source,
   })
   onSearchClinicalTerms;
   final Future<AppFailure?> Function({
@@ -50,6 +53,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   late final TextEditingController _searchController;
   Timer? _searchDebounce;
   String _diagnosisType = 'PRIMARY';
+  ClinicalCatalogSource _catalogSource = ClinicalCatalogSource.all;
   String _searchQuery = '';
   int _searchRequest = 0;
   List<ClinicalActionCatalogOption> _catalogOptions =
@@ -107,6 +111,18 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
                 if (value != null) {
                   setState(() => _diagnosisType = value);
                 }
+              },
+            ),
+            SizedBox(height: theme.spacing.sm),
+            ClinicalCatalogLayerSelector(
+              value: _catalogSource,
+              enabled: !_isSaving,
+              onChanged: (ClinicalCatalogSource source) {
+                setState(() => _catalogSource = source);
+                _searchRequest += 1;
+                unawaited(
+                  _loadDiagnosisCatalog(_searchQuery, _searchRequest),
+                );
               },
             ),
             SizedBox(height: theme.spacing.md),
@@ -252,6 +268,7 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
           termType: 'DIAGNOSIS',
           query: query.isEmpty ? null : query,
           limit: _searchLimit,
+          source: _catalogSource.apiValue,
         );
     if (!mounted || requestId != _searchRequest) {
       return;

@@ -4479,6 +4479,30 @@
   "@clinicalDiagnosisSearchHint": {
     "description": "Clinical diagnosis search field hint."
   },
+  "clinicalCatalogSourceAll": "All sources",
+  "@clinicalCatalogSourceAll": {
+    "description": "Clinical catalog layer filter for all sources."
+  },
+  "clinicalCatalogSourceFavorites": "Favorites",
+  "@clinicalCatalogSourceFavorites": {
+    "description": "Clinical catalog layer filter for user favorites."
+  },
+  "clinicalCatalogSourceFacility": "Facility",
+  "@clinicalCatalogSourceFacility": {
+    "description": "Clinical catalog layer filter for facility-specific items."
+  },
+  "clinicalCatalogSourceGlobal": "Global catalog",
+  "@clinicalCatalogSourceGlobal": {
+    "description": "Clinical catalog layer filter for global catalog items."
+  },
+  "clinicalCatalogConfigurationTitle": "Clinical service catalog",
+  "@clinicalCatalogConfigurationTitle": {
+    "description": "Title for facility clinical catalog configuration section."
+  },
+  "clinicalCatalogConfigurationBody": "Choose which diagnoses, procedures, lab tests, radiology tests, and prescriptions this facility offers.",
+  "@clinicalCatalogConfigurationBody": {
+    "description": "Body text for facility clinical catalog configuration section."
+  },
   "clinicalDiagnosisSelectedTitle": "Selected diagnoses",
   "@clinicalDiagnosisSelectedTitle": {
     "description": "Clinical diagnosis selected items section title."
@@ -8766,6 +8790,66 @@
   "labDraftSavedMessage": "Draft results saved.",
   "@labDraftSavedMessage": {
     "description": "Confirmation shown after saving draft lab results."
+  },
+  "labBulkResultActionsTitle": "Bulk actions",
+  "@labBulkResultActionsTitle": {
+    "description": "Title for the bulk lab result actions toolbar."
+  },
+  "labSubmitResultAction": "Submit result",
+  "@labSubmitResultAction": {
+    "description": "Action label for submitting a single lab result."
+  },
+  "labResultsSubmittedMessage": "Results submitted.",
+  "@labResultsSubmittedMessage": {
+    "description": "Confirmation shown after submitting lab results."
+  },
+  "labResultsVerifiedMessage": "Results verified.",
+  "@labResultsVerifiedMessage": {
+    "description": "Confirmation shown after verifying lab results."
+  },
+  "labSelectAllTestsAction": "Select all",
+  "@labSelectAllTestsAction": {
+    "description": "Action label for selecting all lab tests in result entry."
+  },
+  "labClearSelectionAction": "Clear selection",
+  "@labClearSelectionAction": {
+    "description": "Action label for clearing lab test selection in result entry."
+  },
+  "labSelectedTestCount": "{selected} of {total} selected",
+  "@labSelectedTestCount": {
+    "description": "Selection count label in lab result entry bulk actions.",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "labRejectAllTestsAction": "Reject all tests",
+  "@labRejectAllTestsAction": {
+    "description": "Action label for rejecting all selected lab tests."
+  },
+  "labRemoveAllDraftsAction": "Remove drafts",
+  "@labRemoveAllDraftsAction": {
+    "description": "Action label for removing all selected draft lab results."
+  },
+  "labSaveAllDraftsAction": "Save all drafts",
+  "@labSaveAllDraftsAction": {
+    "description": "Action label for saving all selected draft lab results."
+  },
+  "labSubmitAllResultsAction": "Submit all",
+  "@labSubmitAllResultsAction": {
+    "description": "Action label for submitting all selected lab results."
+  },
+  "labRemoveAllDraftsDialogTitle": "Remove draft results?",
+  "@labRemoveAllDraftsDialogTitle": {
+    "description": "Title for bulk remove draft lab results confirmation."
+  },
+  "labRemoveAllDraftsDialogBody": "This will remove all saved or entered draft results that have not been verified.",
+  "@labRemoveAllDraftsDialogBody": {
+    "description": "Body for bulk remove draft lab results confirmation."
   },
   "labOrderStatusFieldLabel": "Order status",
   "@labOrderStatusFieldLabel": {

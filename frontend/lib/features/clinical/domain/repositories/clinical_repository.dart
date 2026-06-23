@@ -21,9 +21,27 @@ abstract interface class ClinicalRepository {
     required String termType,
     String? query,
     int limit = 25,
+    String source = 'ALL',
+  });
+
+  Future<Result<List<ClinicalCatalogOption>>> searchClinicalCatalog({
+    required String termType,
+    String? query,
+    int limit = 80,
+    String source = 'ALL',
   });
 
   Future<Result<void>> createClinicalTermFavorite(Map<String, Object?> payload);
+
+  Future<Result<void>> upsertFacilityCatalogOffering(
+    Map<String, Object?> payload,
+  );
+
+  Future<Result<List<Map<String, Object?>>>> listFacilityCatalogOfferings({
+    required String facilityId,
+    String? termType,
+    String? query,
+  });
 
   Future<Result<void>> createClinicalNote(Map<String, Object?> payload);
 

@@ -3475,6 +3475,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search by diagnosis name, code, type, status, or source';
 
   @override
+  String get clinicalCatalogSourceAll => 'All sources';
+
+  @override
+  String get clinicalCatalogSourceFavorites => 'Favorites';
+
+  @override
+  String get clinicalCatalogSourceFacility => 'Facility';
+
+  @override
+  String get clinicalCatalogSourceGlobal => 'Global catalog';
+
+  @override
+  String get clinicalCatalogConfigurationTitle => 'Clinical service catalog';
+
+  @override
+  String get clinicalCatalogConfigurationBody =>
+      'Choose which diagnoses, procedures, lab tests, radiology tests, and prescriptions this facility offers.';
+
+  @override
   String get clinicalDiagnosisSelectedTitle => 'Selected diagnoses';
 
   @override
@@ -6779,6 +6798,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labDraftSavedMessage => 'Draft results saved.';
+
+  @override
+  String get labBulkResultActionsTitle => 'Bulk actions';
+
+  @override
+  String get labSubmitResultAction => 'Submit result';
+
+  @override
+  String get labResultsSubmittedMessage => 'Results submitted.';
+
+  @override
+  String get labResultsVerifiedMessage => 'Results verified.';
+
+  @override
+  String get labSelectAllTestsAction => 'Select all';
+
+  @override
+  String get labClearSelectionAction => 'Clear selection';
+
+  @override
+  String labSelectedTestCount(int selected, int total) {
+    return '$selected of $total selected';
+  }
+
+  @override
+  String get labRejectAllTestsAction => 'Reject all tests';
+
+  @override
+  String get labRemoveAllDraftsAction => 'Remove drafts';
+
+  @override
+  String get labSaveAllDraftsAction => 'Save all drafts';
+
+  @override
+  String get labSubmitAllResultsAction => 'Submit all';
+
+  @override
+  String get labRemoveAllDraftsDialogTitle => 'Remove draft results?';
+
+  @override
+  String get labRemoveAllDraftsDialogBody =>
+      'This will remove all saved or entered draft results that have not been verified.';
 
   @override
   String get labOrderStatusFieldLabel => 'Order status';
