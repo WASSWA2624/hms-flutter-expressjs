@@ -232,11 +232,11 @@ class _DiagnosisDialogState extends State<ClinicalDiagnosisActionDialog> {
   void _scheduleSearch(String value) {
     _searchDebounce?.cancel();
     final String query = value.trim();
+    setState(() => _searchQuery = query);
     _searchDebounce = Timer(_searchDebounceDuration, () {
       if (!mounted) {
         return;
       }
-      setState(() => _searchQuery = query);
       _searchRequest += 1;
       unawaited(_loadDiagnosisCatalog(query, _searchRequest));
     });

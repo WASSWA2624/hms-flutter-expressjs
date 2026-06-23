@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -54,39 +55,59 @@ class _ClinicalReferralActionDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     return AppDialog(
       title: Text(l10n.opdReferAction),
       icon: const Icon(Icons.alt_route_outlined),
+      maxWidth: 720,
+      scrollable: true,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          density: AppFormSectionDensity.spacious,
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
             ...widget.leadingContent,
-            AppTextField(
-              controller: _facilityController,
-              labelText: l10n.opdExternalFacilityLabel,
-              enabled: !_isSaving,
-              isRequired: true,
-              textCapitalization: TextCapitalization.words,
-              validator: AppValidators.requiredText(l10n.validationRequired),
+            AppFormSection(
+              title: l10n.clinicalReferralDetailsTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                AppTextField(
+                  controller: _facilityController,
+                  labelText: l10n.opdExternalFacilityLabel,
+                  enabled: !_isSaving,
+                  isRequired: true,
+                  textCapitalization: TextCapitalization.words,
+                  prefixIcon: const Icon(Icons.local_hospital_outlined),
+                  validator: AppValidators.requiredText(l10n.validationRequired),
+                ),
+                AppTextField(
+                  controller: _reasonController,
+                  labelText: l10n.opdReasonLabel,
+                  enabled: !_isSaving,
+                  isRequired: true,
+                  maxLines: 3,
+                  textCapitalization: TextCapitalization.sentences,
+                  prefixIcon: const Icon(Icons.notes_outlined),
+                  validator: AppValidators.requiredText(l10n.validationRequired),
+                ),
+              ],
             ),
-            AppTextField(
-              controller: _reasonController,
-              labelText: l10n.opdReasonLabel,
-              enabled: !_isSaving,
-              isRequired: true,
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.opdNotesLabel,
-              enabled: !_isSaving,
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
+            SizedBox(height: theme.spacing.sm),
+            AppFormSection(
+              title: l10n.clinicalReferralNotesTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                AppTextField(
+                  controller: _notesController,
+                  labelText: l10n.opdNotesLabel,
+                  enabled: !_isSaving,
+                  maxLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  prefixIcon: const Icon(Icons.edit_note_outlined),
+                ),
+              ],
             ),
           ],
         ),

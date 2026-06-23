@@ -2172,6 +2172,7 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final String readableSummary = clinicalPrescriptionItemReadableSummary(item);
     final List<AppWorkspacePatientContextField> facts =
         <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
@@ -2206,15 +2207,25 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                item.displayTitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      item.displayTitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      readableSummary,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
                 ),
               ),
               if (_hasText(status))

@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -361,6 +362,7 @@ class _PrescriptionLineCard extends StatelessWidget {
           children: <Widget>[
             _PrescriptionLineHeader(
               index: index,
+              line: line,
               selectedDrugLabel: selectedDrugLabel,
               canRemove: canRemove,
               onRemove: onRemove,
@@ -479,12 +481,14 @@ class _PrescriptionLineCard extends StatelessWidget {
 class _PrescriptionLineHeader extends StatelessWidget {
   const _PrescriptionLineHeader({
     required this.index,
+    required this.line,
     required this.selectedDrugLabel,
     required this.canRemove,
     required this.onRemove,
   });
 
   final int index;
+  final _PrescriptionLineFormState line;
   final String? selectedDrugLabel;
   final bool canRemove;
   final VoidCallback onRemove;
@@ -495,6 +499,18 @@ class _PrescriptionLineHeader extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String fallback = l10n.clinicalPrescriptionItemDescription;
+    final String preview = clinicalPrescriptionReadableSummary(
+      drugName: selectedDrugLabel,
+      quantity: line.quantityController.text.trim(),
+      quantityUnit: line.quantityUnit,
+      doseAmount: line.doseAmountController.text.trim(),
+      doseUnit: line.doseUnit,
+      route: line.route,
+      frequency: line.frequency,
+      durationValue: line.durationController.text.trim(),
+      durationUnit: line.durationUnit,
+      instructions: line.instructionsController.text.trim(),
+    );
 
     return Row(
       children: <Widget>[
@@ -532,6 +548,15 @@ class _PrescriptionLineHeader extends StatelessWidget {
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (line.drugId != null)
+                Text(
+                  preview,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.primary,
+                  ),
+                ),
             ],
           ),
         ),

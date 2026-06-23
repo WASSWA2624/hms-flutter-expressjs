@@ -59,10 +59,8 @@ final class _LabCatalogSearchResults {
 
 class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   static const int _maxVisibleCatalogOptions = 80;
-  static const Duration _searchDebounceDuration = Duration(milliseconds: 120);
 
   late final TextEditingController _searchController;
-  Timer? _searchDebounce;
   _LabRequestSelectionKind _selectionKind = _LabRequestSelectionKind.tests;
   String _searchQuery = '';
   final List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
@@ -79,7 +77,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -367,13 +364,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   }
 
   void _scheduleSearch(String value) {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(_searchDebounceDuration, () {
-      if (!mounted) {
-        return;
-      }
-      setState(() => _searchQuery = value);
-    });
+    setState(() => _searchQuery = value.trim());
   }
 
   void _clearSearch() {
@@ -381,7 +372,6 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   }
 
   void _resetSearch() {
-    _searchDebounce?.cancel();
     _searchController.clear();
     _searchQuery = '';
   }

@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_radiology_order_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -3649,14 +3650,7 @@ List<AppSelectOption<String>> _radiologyPriorityOptions(
 List<AppSelectOption<String>> _radiologyLateralityOptions(
   AppLocalizations l10n,
 ) {
-  return <AppSelectOption<String>>[
-    AppSelectOption<String>(value: 'LEFT', label: l10n.radiologyLateralityLeft),
-    AppSelectOption<String>(value: 'RIGHT', label: l10n.radiologyLateralityRight),
-    AppSelectOption<String>(
-      value: 'BILATERAL',
-      label: l10n.radiologyLateralityBilateral,
-    ),
-  ];
+  return clinicalRadiologyLateralityOptions(l10n);
 }
 
 List<AppSelectOption<String>> _referenceOptions(

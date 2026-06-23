@@ -1025,6 +1025,34 @@
   "opdPaymentPaidLabel": "Paid",
   "opdPaymentRequiredLabel": "Payment required",
   "opdPaymentNotRequiredLabel": "Not required",
+  "opdBillingRequiredAmountLabel": "Required amount",
+  "@opdBillingRequiredAmountLabel": {
+    "description": "Label for consultation fee required before payment is complete."
+  },
+  "opdBillingAmountPaidLabel": "Amount paid",
+  "@opdBillingAmountPaidLabel": {
+    "description": "Label for consultation amount already paid."
+  },
+  "opdBillingRemainingBalanceLabel": "Remaining balance",
+  "@opdBillingRemainingBalanceLabel": {
+    "description": "Label for outstanding consultation balance."
+  },
+  "opdClinicalServicesTitle": "Clinical services",
+  "@opdClinicalServicesTitle": {
+    "description": "Section title for diagnoses, labs, imaging, and prescriptions on an OPD encounter."
+  },
+  "opdClinicalServicesEmpty": "No clinical services recorded yet.",
+  "@opdClinicalServicesEmpty": {
+    "description": "Empty state when an OPD encounter has no clinical services yet."
+  },
+  "clinicalReferralDetailsTitle": "Referral details",
+  "@clinicalReferralDetailsTitle": {
+    "description": "Section title for external referral form fields."
+  },
+  "clinicalReferralNotesTitle": "Additional notes",
+  "@clinicalReferralNotesTitle": {
+    "description": "Section title for optional referral notes."
+  },
   "opdEncounterContextTitle": "Encounter context",
   "opdCopyPatientIdAction": "Copy patient ID",
   "opdCopyEncounterIdAction": "Copy encounter ID",
@@ -7085,6 +7113,14 @@
   "radiologyLateralityBilateral": "BILATERAL",
   "@radiologyLateralityBilateral": {
     "description": "Radiology bilateral laterality label."
+  },
+  "radiologyLateralityOblique": "OBLIQUE",
+  "@radiologyLateralityOblique": {
+    "description": "Radiology oblique view laterality label."
+  },
+  "clinicalRadiologyBodyRegionPickerHint": "Select a body region to filter the imaging catalog.",
+  "@clinicalRadiologyBodyRegionPickerHint": {
+    "description": "Helper text for the radiology body region chip picker."
   },
   "radiologyReportSectionTitle": "Report",
   "@radiologyReportSectionTitle": {

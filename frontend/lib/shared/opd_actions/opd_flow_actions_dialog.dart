@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -23,6 +24,7 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_consultation_billing_breakdown.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
@@ -118,6 +120,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             OpdActionContextPanel(flow: flow, detail: detail),
             if (isSaving || isRefreshingDetail || isLoadingDetail)
               const LinearProgressIndicator(),
+            if (detail != null && _isClinicalReviewStage(flow.stage))
+              _OpdClinicalServicesPanel(detail: detail),
             _actionGrid(
               context,
               flow,
@@ -810,21 +814,40 @@ class _ConsultationPaymentDialogState
   bool _isSaving = false;
   AppFailure? _failure;
 
+  OpdFlowSummary get _currentFlow {
+    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
+    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+    if (selected != null && _isSameFlow(selected.summary, widget.flow)) {
+      return selected.summary;
+    }
+    return widget.flow;
+  }
+
+  OpdFlowDetail? get _currentDetail {
+    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
+    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+    if (selected != null && _isSameFlow(selected.summary, widget.flow)) {
+      return selected;
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
-    final OpdBillingState billingState = opdFlowBillingState(widget.flow);
+    final OpdFlowSummary flow = widget.flow;
+    final OpdBillingState billingState = opdFlowBillingState(flow);
     _amountController = TextEditingController(
       text: opdCurrencyAmountInput(
         billingState == OpdBillingState.paid
-            ? widget.flow.consultationPaidAmount ?? widget.flow.consultationFee
-            : widget.flow.consultationFee,
+            ? flow.consultationPaidAmount ?? flow.consultationFee
+            : flow.consultationFee,
       ),
     );
     _referenceController = TextEditingController();
     _notesController = TextEditingController();
     _currency =
-        widget.flow.consultationCurrency?.trim().toUpperCase() ??
+        flow.consultationCurrency?.trim().toUpperCase() ??
         appDefaultCurrencyCode;
   }
 
@@ -839,8 +862,9 @@ class _ConsultationPaymentDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool alreadyPaid =
-        opdFlowBillingState(widget.flow) == OpdBillingState.paid;
+    final OpdFlowSummary flow = _currentFlow;
+    final OpdFlowDetail? detail = _currentDetail;
+    final bool alreadyPaid = opdFlowBillingState(flow) == OpdBillingState.paid;
     final String actionLabel = alreadyPaid
         ? l10n.opdUpdateConsultationBillingAction
         : l10n.opdPayConsultationAction;
@@ -854,7 +878,8 @@ class _ConsultationPaymentDialogState
         child: AppFormSection(
           children: <Widget>[
             if (_failure != null) AppFailureStateView(failure: _failure!),
-            OpdActionContextPanel(flow: widget.flow, showTitle: false),
+            OpdActionContextPanel(flow: flow, detail: detail, showTitle: false),
+            OpdConsultationBillingBreakdownPanel(flow: flow, detail: detail),
             AppCurrencyAmountField(
               amountController: _amountController,
               currency: _currency,
@@ -924,14 +949,14 @@ class _ConsultationPaymentDialogState
     });
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
-        .payConsultation(widget.flow, <String, Object?>{
+        .payConsultation(_currentFlow, <String, Object?>{
           'amount': normalizeCurrencyAmount(_amountController.text),
           'currency': _currency,
           'method': _method,
           'status': 'COMPLETED',
           'transaction_ref': _referenceController.text.trim(),
           'notes': _notesController.text.trim(),
-          if (opdFlowBillingState(widget.flow) == OpdBillingState.paid)
+          if (opdFlowBillingState(_currentFlow) == OpdBillingState.paid)
             'correction': true,
           'paid_at': DateTime.now().toUtc().toIso8601String(),
         });
@@ -2178,6 +2203,128 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     add(l10n.opdTriageNotesLabel, _notesController.text);
     return lines.join('\n');
   }
+}
+
+bool _isClinicalReviewStage(String? stage) {
+  return <String>{
+    'WAITING_DOCTOR_REVIEW',
+    'WAITING_DISPOSITION',
+    'LAB_REQUESTED',
+    'RADIOLOGY_REQUESTED',
+    'LAB_AND_RADIOLOGY_REQUESTED',
+    'PHARMACY_REQUESTED',
+    'DECISION_NEEDED',
+    'RESULTS_READY',
+    'REPORT_READY',
+    'MEDICINES_DISPENSED',
+  }.contains(_normalizedStage(stage));
+}
+
+class _OpdClinicalServicesPanel extends StatelessWidget {
+  const _OpdClinicalServicesPanel({required this.detail});
+
+  final OpdFlowDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<_OpdClinicalServiceEntry> entries = <_OpdClinicalServiceEntry>[
+      for (final OpdRelatedRecord record in detail.diagnoses)
+        _OpdClinicalServiceEntry(
+          icon: Icons.rule_outlined,
+          title: record.title ?? record.id,
+          subtitle: record.subtitle,
+        ),
+      for (final OpdRelatedRecord record in detail.labOrders)
+        _OpdClinicalServiceEntry(
+          icon: Icons.science_outlined,
+          title: record.title ?? record.id,
+          subtitle: record.subtitle,
+        ),
+      for (final OpdRelatedRecord record in detail.radiologyOrders)
+        _OpdClinicalServiceEntry(
+          icon: Icons.biotech_outlined,
+          title: record.title ?? record.id,
+          subtitle: record.subtitle,
+        ),
+      for (final OpdRelatedRecord record in detail.pharmacyOrders)
+        _OpdClinicalServiceEntry(
+          icon: Icons.medication_outlined,
+          title: record.title ?? record.id,
+          subtitle: record.subtitle,
+        ),
+      for (final OpdRelatedRecord record in detail.procedures)
+        _OpdClinicalServiceEntry(
+          icon: Icons.healing_outlined,
+          title: record.title ?? record.id,
+          subtitle: record.subtitle,
+        ),
+    ];
+
+    return AppSectionPanel(
+      title: l10n.opdClinicalServicesTitle,
+      density: AppContentPanelDensity.compact,
+      children: <Widget>[
+        if (entries.isEmpty)
+          Text(
+            l10n.opdClinicalServicesEmpty,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          for (final _OpdClinicalServiceEntry entry in entries)
+            Padding(
+              padding: EdgeInsets.only(bottom: theme.spacing.xs),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Icon(
+                    entry.icon,
+                    size: theme.appTokens.listIconSize,
+                    color: colorScheme.primary,
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          entry.title,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if ((entry.subtitle ?? '').trim().isNotEmpty)
+                          Text(
+                            entry.subtitle!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+final class _OpdClinicalServiceEntry {
+  const _OpdClinicalServiceEntry({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
 }
 
 class _OpdWorkflowStatusSummary extends StatelessWidget {

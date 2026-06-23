@@ -1007,6 +1007,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdPaymentNotRequiredLabel => 'Not required';
 
   @override
+  String get opdBillingRequiredAmountLabel => 'Required amount';
+
+  @override
+  String get opdBillingAmountPaidLabel => 'Amount paid';
+
+  @override
+  String get opdBillingRemainingBalanceLabel => 'Remaining balance';
+
+  @override
+  String get opdClinicalServicesTitle => 'Clinical services';
+
+  @override
+  String get opdClinicalServicesEmpty => 'No clinical services recorded yet.';
+
+  @override
+  String get clinicalReferralDetailsTitle => 'Referral details';
+
+  @override
+  String get clinicalReferralNotesTitle => 'Additional notes';
+
+  @override
   String get opdEncounterContextTitle => 'Encounter context';
 
   @override
@@ -5490,6 +5511,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get radiologyLateralityBilateral => 'BILATERAL';
+
+  @override
+  String get radiologyLateralityOblique => 'OBLIQUE';
+
+  @override
+  String get clinicalRadiologyBodyRegionPickerHint =>
+      'Select a body region to filter the imaging catalog.';
 
   @override
   String get radiologyReportSectionTitle => 'Report';

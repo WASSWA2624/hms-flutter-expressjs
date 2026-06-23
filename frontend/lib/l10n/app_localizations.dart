@@ -2020,6 +2020,48 @@ abstract class AppLocalizations {
   /// **'Not required'**
   String get opdPaymentNotRequiredLabel;
 
+  /// Label for consultation fee required before payment is complete.
+  ///
+  /// In en, this message translates to:
+  /// **'Required amount'**
+  String get opdBillingRequiredAmountLabel;
+
+  /// Label for consultation amount already paid.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount paid'**
+  String get opdBillingAmountPaidLabel;
+
+  /// Label for outstanding consultation balance.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining balance'**
+  String get opdBillingRemainingBalanceLabel;
+
+  /// Section title for diagnoses, labs, imaging, and prescriptions on an OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical services'**
+  String get opdClinicalServicesTitle;
+
+  /// Empty state when an OPD encounter has no clinical services yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No clinical services recorded yet.'**
+  String get opdClinicalServicesEmpty;
+
+  /// Section title for external referral form fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral details'**
+  String get clinicalReferralDetailsTitle;
+
+  /// Section title for optional referral notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional notes'**
+  String get clinicalReferralNotesTitle;
+
   /// Title for the reusable OPD encounter context panel.
   ///
   /// In en, this message translates to:
@@ -10293,6 +10335,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'BILATERAL'**
   String get radiologyLateralityBilateral;
+
+  /// Radiology oblique view laterality label.
+  ///
+  /// In en, this message translates to:
+  /// **'OBLIQUE'**
+  String get radiologyLateralityOblique;
+
+  /// Helper text for the radiology body region chip picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a body region to filter the imaging catalog.'**
+  String get clinicalRadiologyBodyRegionPickerHint;
 
   /// Localized text for radiologyReportSectionTitle.
   ///
