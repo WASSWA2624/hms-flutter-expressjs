@@ -1,58 +1,78 @@
-The select component requires two clicks to register a selection, which is not acceptable from a UX perspective. It should respond immediately on the first click.
+### Lab Module – Refined Requirements
 
-We also need to enhance how clinical items are managed across the system:
+In the lab module, when a patient has requested lab tests (single tests or panels), the system should provide a highly efficient and user-friendly interface for entering and managing results.
 
-### 1. Favorites system (user-level)
+#### 1. Core Result Entry Workflow
 
-Add support for users to mark and reuse favorites for:
+* Support both **single tests and test panels**
+* Allow **fast result entry in batch or individual mode**
+* Each test should clearly show:
 
-* Diagnoses
-* Lab tests
-* Procedures
-* Prescriptions
-* Radiology tests
+  * Test name
+  * Expected unit (descriptive and context-aware)
+  * Reference range (auto-applied based on patient context)
 
-Once added, these favorites should be:
+#### 2. Result States & Actions
 
-* Easily accessible in future sessions
-* Visible directly in selection forms for quick entry
+Each test or batch should support the following actions:
 
-### 2. Facility-level configuration
+* Save as draft
+* Submit results
+* Verify results
+* Reject tests/results
+* Remove results
 
-Each facility should be able to define and manage its own available service lists, such as:
+#### 3. Partial Save Handling
 
-* Lab tests offered
-* Procedures available
-* Radiology tests available
-* Prescriptions or medication templates (where applicable)
+* The system must allow **partial saves in batch operations**
+* If some tests are incomplete or invalid:
 
-Facilities may not offer all possible items, so the system should allow them to configure only what they provide.
+  * Valid entries are saved normally
+  * Invalid/missing entries are flagged but do not block the rest
 
-### 3. Data visibility layers
+#### 4. Real-Time Updates
 
-Each module (lab, radiology, procedures, prescriptions, diagnoses) should support three structured sources:
+* Once results are submitted or verified:
 
-| Source            | Description                        |
-| ----------------- | ---------------------------------- |
-| Favorites         | User-defined frequently used items |
-| Facility-specific | Items configured by the facility   |
-| Global list       | Full system-wide catalog           |
+  * The requesting doctor should receive **real-time updates/notifications**
+  * Updates should be tied directly to the patient and the original test request
+  * Changes must reflect immediately in the doctor’s view
 
-Users should be able to switch or search across these layers when entering data.
+#### 5. Clinical Reference Ranges
 
-### 4. Configuration structure
+* The system must support **dynamic reference ranges based on:**
 
-These settings should be organized logically in the system:
+  * Patient age group
+  * Sex
+  * Clinical configuration rules
+* When entering results:
 
-* Facility setup → facility-specific service configuration
-* Lab settings / lab configuration → lab-specific tests and rules
-* Clinical settings → prescriptions, diagnoses, procedures configuration
+  * Appropriate reference ranges should auto-populate
+  * Abnormal values should be automatically flagged with annotations
+* Users may override ranges or interpretations manually if needed
 
-### 5. Expected outcome
+#### 6. Test Configuration & Reusability
 
-* Faster data entry with fewer clicks
-* Reduced clutter by filtering irrelevant items per facility
-* Personalized workflow through favorites
-* Flexible configuration per healthcare institution
+* Support **facility-specific, tenant-specific, and user-specific test setups**
+* Include a concept of:
 
-Ensure these changes are applied on the backend and frontend.
+  * Favorite or frequently used tests
+  * Configurable templates for common lab workflows
+
+#### 7. UX & Automation Goals
+
+* Minimize manual input as much as possible
+* Automate:
+
+  * Unit selection
+  * Reference range assignment
+  * Result interpretation hints
+* Still allow full manual override where necessary for clinical flexibility
+
+#### 8. Design Principle
+
+The overall goal is:
+
+* High-speed data entry for lab staff
+* Minimal cognitive load
+* Maximum automation with safe manual control when required
