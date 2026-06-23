@@ -2,10 +2,10 @@
 
 Rule sources:
 
-- [`app-rules/environment_configuration.md`](../../app-planner/app-rules/environment_configuration.md)
-- [`app-rules/security.md`](../../app-planner/app-rules/security.md)
-- [`app-rules/network_api.md`](../../app-planner/app-rules/network_api.md)
-- [`app-rules/feature_flags.md`](../../app-planner/app-rules/feature_flags.md)
+- [`environment_configuration.mdc`](../../.cursor/environment_configuration.mdc)
+- [`security.mdc`](../../.cursor/security.mdc)
+- [`network_api.mdc`](../../.cursor/network_api.mdc)
+- [`feature_flags.mdc`](../../.cursor/feature_flags.mdc)
 
 The app reads public, non-secret configuration from Flutter compile-time
 defines. Store environment-specific values in Flutter define files under

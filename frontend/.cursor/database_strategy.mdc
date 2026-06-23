@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Database Strategy
@@ -38,7 +38,7 @@ core/storage/database/
 - Migration tests exist for non-trivial schema changes.
 
 ## Related rules
-- [`storage_strategy.md`](./storage_strategy.md)
-- [`offline_sync.md`](./offline_sync.md)
-- [`data_modeling.md`](./data_modeling.md)
-- [`testing.md`](./testing.md)
+- [`storage_strategy.md`](./storage_strategy.mdc)
+- [`offline_sync.md`](./offline_sync.mdc)
+- [`data_modeling.md`](./data_modeling.mdc)
+- [`testing.md`](./testing.mdc)

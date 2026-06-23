@@ -13,7 +13,7 @@ professional baseline before product-specific behavior is added. It provides:
 - Riverpod-based state management and dependency injection.
 - GoRouter routing with guard-ready route metadata.
 - Centralized configuration, networking, storage, security, sync, permissions,
-  localization, theming, responsive layout, and shared UI components.
+  localization, design-system, responsive layout, and shared UI components.
 - Unit, widget, and integration test scaffolding that avoids production
   services and secrets.
 
@@ -151,7 +151,7 @@ the normal analysis workflow.
 ## Dependency stack
 
 The dependency set follows
-[`app-rules/dependencies.md`](app-planner/app-rules/dependencies.md): required
+[`dependencies.mdc`](.cursor/dependencies.mdc): required
 starter packages are present, and optional packages are included only where the
 template already implements the matching capability.
 
@@ -265,9 +265,9 @@ generation, and the starter feature skeleton are documented in
 
 New features must follow `docs/workflows/feature-workflow.md` and the rule
 sources in
-[`app-rules/feature_workflow.md`](app-planner/app-rules/feature_workflow.md),
-[`app-rules/checklists.md`](app-planner/app-rules/checklists.md), and
-[`app-rules/coding_conventions.md`](app-planner/app-rules/coding_conventions.md).
+[`feature_workflow.mdc`](.cursor/feature_workflow.mdc),
+[`checklists.mdc`](.cursor/checklists.mdc), and
+[`coding_conventions.mdc`](.cursor/coding_conventions.mdc).
 Start by identifying route, state, data, validation, localization, responsive
 behavior, and tests. Use shared components before adding feature-specific
 widgets.
@@ -288,5 +288,5 @@ widgets.
 ## Current scope
 
 This template provides a minimal runnable app and the canonical folders from
-[`app-rules/project_structure.md`](app-planner/app-rules/project_structure.md).
+[`project_structure.mdc`](.cursor/project_structure.mdc).
 It intentionally avoids product-specific backend behavior.

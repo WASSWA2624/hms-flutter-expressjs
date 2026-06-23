@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 # Offline Support Rules
 
@@ -11,3 +11,5 @@ Rules:
 - auth, entitlement changes, break-glass approval, payments, refunds, mortuary release, and last-office final close are online-only actions
 - conflict responses must identify the conflicting record and latest version metadata
 - server logic must never assume the client clock is authoritative
+
+See also: [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) and [`frontend/offline_sync.mdc`](../../frontend/.cursor/offline_sync.mdc).

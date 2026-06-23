@@ -1,0 +1,54 @@
+---
+description: Forms, data tables, lists, search, and filter UX patterns
+alwaysApply: false
+globs: ["frontend/lib/shared/forms/**", "frontend/lib/features/**/presentation/**"]
+---
+# UI Patterns (Forms, Tables, Search)
+
+Purpose: uniform data-entry and data-display interaction patterns.
+
+## Forms
+
+- Use shared form components from [`components.mdc`](./components.mdc).
+- Keep validation rules out of raw widgets when reused or business-relevant.
+- Field-level errors beside fields; form-level errors for server/cross-field failures.
+- Localize all labels, hints, helper text, and validation messages.
+- Prevent duplicate submissions while submit is in progress.
+- Preserve input on recoverable errors.
+- Use appropriate keyboard types and input formatters.
+- Group related fields into sections; avoid giant ungrouped forms.
+
+### Validation timing
+
+- Required fields: on blur or submit.
+- Format errors: after user interaction.
+- Server errors: map back to fields when possible.
+
+## Lists, tables, and pagination
+
+- Use lazy builders for long lists.
+- Paginate, infinite-load, or server-query large datasets ([`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) pagination `meta`).
+- Do not load large tables into memory unnecessarily.
+- Keep row tap/click clear and accessible.
+- On mobile, dense tables may become list rows/cards with the same meaning.
+- On desktop, use wider containers; horizontal overflow only when necessary.
+- Localize column labels; use stable item keys when rows update or reorder.
+- Pagination state survives refresh where UX expects it.
+
+## Search and filtering
+
+- Use shared search/select components.
+- Debounce remote search requests.
+- Show loading, empty, error, and results states clearly.
+- Keep query, filters, and sort explicit in the controller.
+- Do not fetch unbounded data to filter in memory when a backend/query is available.
+- Preserve search/filter state on back navigation where expected.
+- Localize result counts, empty states, and errors.
+- Searchable selects: overlay/menu pattern; filters resettable and visually clear.
+
+## See also
+
+- [`components.mdc`](./components.mdc)
+- [`ui-feedback.mdc`](./ui-feedback.mdc)
+- [`validation.mdc`](./validation.mdc)
+- [`performance.mdc`](./performance.mdc)

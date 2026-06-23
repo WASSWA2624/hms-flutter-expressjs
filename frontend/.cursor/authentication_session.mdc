@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Authentication and Session Strategy
@@ -33,7 +33,7 @@ Defines sign-in, registration readiness, session restoration, secure token stora
 - Token values never appear in logs or UI.
 
 ## Related rules
-- [`navigation.md`](./navigation.md)
-- [`permissions.md`](./permissions.md)
-- [`security.md`](./security.md)
-- [`storage_strategy.md`](./storage_strategy.md)
+- [`navigation.md`](./navigation.mdc)
+- [`permissions.md`](./permissions.mdc)
+- [`security.md`](./security.mdc)
+- [`storage_strategy.md`](./storage_strategy.mdc)

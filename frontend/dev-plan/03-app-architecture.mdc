@@ -4,13 +4,13 @@
 Implement the feature-first clean architecture foundation and dependency boundaries.
 
 ## Applies app rules
-- [`architecture.md`](../app-rules/architecture.md)
-- [`project_structure.md`](../app-rules/project_structure.md)
-- [`state_management.md`](../app-rules/state_management.md)
-- [`data_modeling.md`](../app-rules/data_modeling.md)
+- [`architecture.md`](../.cursor/architecture.mdc)
+- [`project_structure.md`](../.cursor/project_structure.mdc)
+- [`state_management.md`](../.cursor/state_management.mdc)
+- [`data_modeling.md`](../.cursor/data_modeling.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Create or normalize `app`, `core`, `features`, `l10n`, and `shared` folders.
 3. Add a minimal `home` feature only as the runnable starter screen.
 4. Add domain/data/presentation subfolders only when a feature needs those layers.

@@ -4,13 +4,13 @@
 Finalize README, architecture docs, ADRs, and the repeatable feature workflow.
 
 ## Applies app rules
-- [`documentation_standards.md`](../app-rules/documentation_standards.md)
-- [`feature_workflow.md`](../app-rules/feature_workflow.md)
-- [`checklists.md`](../app-rules/checklists.md)
-- [`coding_conventions.md`](../app-rules/coding_conventions.md)
+- [`documentation_standards.md`](../.cursor/documentation_standards.mdc)
+- [`feature_workflow.md`](../.cursor/feature_workflow.mdc)
+- [`checklists.md`](../.cursor/checklists.mdc)
+- [`coding_conventions.md`](../.cursor/coding_conventions.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Update `README.md` with purpose, platforms, setup, run, test, build, architecture, and folder structure.
 3. Create or update `docs/architecture/`.
 4. Add ADR template or initial ADRs for major choices.

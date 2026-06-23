@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Scalability Strategy
@@ -32,7 +32,7 @@ Defines how the template remains maintainable as more features, platforms, and t
 - Architecture boundaries remain enforceable by review and tests.
 
 ## Related rules
-- [`architecture.md`](./architecture.md)
-- [`project_structure.md`](./project_structure.md)
-- [`feature_workflow.md`](./feature_workflow.md)
-- [`performance.md`](./performance.md)
+- [`architecture.md`](./architecture.mdc)
+- [`project_structure.md`](./project_structure.mdc)
+- [`feature_workflow.md`](./feature_workflow.mdc)
+- [`performance.md`](./performance.mdc)

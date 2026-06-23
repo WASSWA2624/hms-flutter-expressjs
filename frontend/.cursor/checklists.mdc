@@ -1,40 +1,33 @@
 ---
-alwaysApply: true
+description: Release readiness gates for HOSSPI HMS frontend
+alwaysApply: false
 ---
+# Checklists
 
-# Checklists and Final Standard
+Purpose: release gates only. Detailed standards live in owner files in [`index.mdc`](./index.mdc).
 
-## Scope
-Defines final review checklists for the reusable Flutter starter.
+## Release readiness
 
-## Starter readiness checklist
-- Project structure follows `project_structure.md`.
-- Architecture boundaries follow `architecture.md`.
-- Dependencies follow `dependencies.md` and only actively used packages are added.
-- Theme supports light, dark, and system mode.
-- Light theme is blue-based and dark theme is clean, readable, and Material-aligned.
-- Localization is configured with English as the initial locale.
-- Responsive utilities and breakpoints are implemented.
-- Desktop layouts include a menu bar, side navigation, collapsible navigation behavior, and readable content constraints.
-- Shared components are minimal, theme-aware, accessible, and not oversized.
-- Routing uses `go_router`; route guards are ready.
-- State management uses Riverpod only.
-- API, storage, offline, and auth contracts are ready without hard-coded product backend logic.
-- Tests and CI commands are documented.
+- [ ] Structure matches [`project_structure.mdc`](./project_structure.mdc)
+- [ ] Layer boundaries per [`architecture.mdc`](./architecture.mdc)
+- [ ] Dependencies per [`dependencies.mdc`](./dependencies.mdc)
+- [ ] Theme/tokens per [`design-system.mdc`](./design-system.mdc)
+- [ ] Components per [`components.mdc`](./components.mdc)
+- [ ] Layouts/shell per [`layouts.mdc`](./layouts.mdc)
+- [ ] Localization: no hard-coded user-facing strings
+- [ ] Auth/permissions align with backend entitlements
+- [ ] API integration per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
+- [ ] `flutter analyze` and `flutter test` pass ([`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc))
 
-## Per-feature checklist
-- Feature folder follows the standard structure.
-- User-facing strings are localized.
-- UI uses theme tokens and shared components.
-- Loading, empty, error, and success states are handled.
-- Forms validate and preserve recoverable input.
-- Data models are mapped explicitly.
-- Tests cover controller and critical UI behavior.
+## Per-feature gate
 
-## Final standard
-A developer or coding agent following the rules and dev plan must produce the same architecture, conventions, responsive behavior, theming behavior, and reusable component patterns.
+- [ ] Standard `data/domain/presentation` structure
+- [ ] Shared components reused from `lib/shared/`
+- [ ] UI feedback states per [`ui-feedback.mdc`](./ui-feedback.mdc)
+- [ ] Forms/tables per [`ui-patterns.mdc`](./ui-patterns.mdc)
+- [ ] Tests for controller and critical UI
 
-## Related rules
-- [`scope.md`](./scope.md)
-- [`validation_report.md`](./validation_report.md)
-- [`documentation_standards.md`](./documentation_standards.md)
+## See also
+
+- [`scope.mdc`](./scope.mdc)
+- [`feature_workflow.mdc`](./feature_workflow.mdc)

@@ -4,13 +4,13 @@
 Create a small entry point and predictable startup sequence.
 
 ## Applies app rules
-- [`startup_flow.md`](../app-rules/startup_flow.md)
-- [`state_management.md`](../app-rules/state_management.md)
-- [`environment_configuration.md`](../app-rules/environment_configuration.md)
-- [`error_handling.md`](../app-rules/error_handling.md)
+- [`startup_flow.md`](../.cursor/startup_flow.mdc)
+- [`state_management.md`](../.cursor/state_management.mdc)
+- [`environment_configuration.md`](../.cursor/environment_configuration.mdc)
+- [`error_handling.md`](../.cursor/error_handling.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Keep `lib/main.dart` limited to calling `bootstrap`.
 3. Use `lib/bootstrap.dart` for `WidgetsFlutterBinding.ensureInitialized()`, startup services, and `ProviderScope` setup.
 4. Create startup state under `lib/app/startup/` when initialization can fail or take time.

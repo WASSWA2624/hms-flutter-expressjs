@@ -7,9 +7,10 @@ Purpose: define backend technical standards for `hms-backend`.
 
 Conflict order:
 1. security, privacy, safety, and compliance rules
-2. the owner file named in this index
-3. other backend rule files
-4. backend dev-plan files
+2. [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for cross-stack HTTP behavior
+3. the owner file named in this index
+4. other backend rule files
+5. backend dev-plan files
 
 Backend-wide invariants:
 - Express.js and CommonJS are mandatory.

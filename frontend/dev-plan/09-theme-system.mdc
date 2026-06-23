@@ -4,13 +4,13 @@
 Implement a professional Material theme system with light, dark, and system theme mode.
 
 ## Applies app rules
-- [`theming.md`](../app-rules/theming.md)
-- [`assets_branding.md`](../app-rules/assets_branding.md)
-- [`accessibility.md`](../app-rules/accessibility.md)
-- [`localization_i18n.md`](../app-rules/localization_i18n.md)
+- [`design-system.mdc`](../.cursor/design-system.mdc)
+- [`assets_branding.md`](../.cursor/assets_branding.mdc)
+- [`accessibility.md`](../.cursor/accessibility.mdc)
+- [`localization_i18n.md`](../.cursor/localization_i18n.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Create `AppTheme.light` using a clean blue Material 3 seed color.
 3. Create `AppTheme.dark` using a clean dark Material 3 scheme.
 4. Create `AppThemeTokens` for spacing, radius, sizing, and optional status colors.

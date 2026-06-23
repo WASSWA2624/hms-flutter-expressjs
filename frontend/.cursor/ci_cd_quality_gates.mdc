@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # CI/CD and Quality Gates
@@ -59,7 +59,7 @@ flutter build linux    # Linux host only
 - Release artifacts and platform host requirements are documented.
 
 ## Related rules
-- [`testing.md`](./testing.md)
-- [`dependencies.md`](./dependencies.md)
-- [`security.md`](./security.md)
-- [`platform_guidelines.md`](./platform_guidelines.md)
+- [`testing.md`](./testing.mdc)
+- [`dependencies.md`](./dependencies.mdc)
+- [`security.md`](./security.mdc)
+- [`platform_guidelines.md`](./platform_guidelines.mdc)

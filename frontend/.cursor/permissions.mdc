@@ -1,32 +1,34 @@
 ---
-alwaysApply: true
+description: App-level and module permission checks aligned with backend auth
+alwaysApply: false
+globs: ["frontend/lib/core/permissions/**", "frontend/lib/app/router/**", "frontend/lib/features/**"]
 ---
-
 # Permissions and Authorization
 
-## Scope
-Defines app-level permission checks, platform permissions, and role-based UI behavior.
+Purpose: frontend RBAC, ABAC, entitlements, and platform permissions — aligned with `backend/.cursor/auth-security.mdc`.
 
-## Mandatory rules
-- Separate platform permissions from app authorization permissions.
-- Hide UI actions that the user cannot access, but never rely only on hidden UI for security.
-- Protect restricted routes through navigation guards.
-- Map forbidden responses to a localized forbidden state or page.
-- Request platform permissions only when needed and explain why before or during the request.
-- Handle denied and permanently denied platform permission states.
+## Backend source of truth
 
-## Implementation standard
+- `user_role` is the role-assignment source of truth; users may hold multiple active scoped roles.
+- RBAC grants baseline permissions; ABAC narrows by tenant, facility, scope, ownership, shift, patient relationship, and emergency state.
+- Module entitlements enforced in backend middleware **and** services; frontend must mirror entitlement keys in route guards and action visibility.
+- Break-glass access is explicit, time-limited, and audited.
+- Management roles: `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, `THEATRE_MANAGER` with scoped roster authority.
+- Sensitive workflows (patient, billing, payroll, mortuary release, security admin) require full audit evidence on the backend.
+
+## Frontend rules
+
+- Separate platform permissions from app authorization.
+- Hide UI actions the user cannot access; never rely on hidden UI alone for security.
+- Protect restricted routes through guards ([`navigation.mdc`](./navigation.mdc)).
+- Map `403` to localized forbidden state ([`ui-feedback.mdc`](./ui-feedback.mdc)).
 - Represent app permissions as typed values, not scattered strings.
-- Keep permission checks reusable through providers or guards.
-- Backend authorization remains the source of truth for protected resources.
+- Reuse permission checks through providers or guards.
+- Request platform permissions only when needed with localized rationale.
 
-## Acceptance checklist
-- Restricted screens and actions behave correctly for allowed and denied users.
-- Permission error messages are localized.
-- Platform permission flows are testable or documented per platform.
+## See also
 
-## Related rules
-- [`authentication_session.md`](./authentication_session.md)
-- [`navigation.md`](./navigation.md)
-- [`security.md`](./security.md)
-- [`platform_guidelines.md`](./platform_guidelines.md)
+- [`authentication_session.mdc`](./authentication_session.mdc)
+- [`security.mdc`](./security.mdc)
+- [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
+- [`backend/auth-security.mdc`](../../backend/.cursor/auth-security.mdc)

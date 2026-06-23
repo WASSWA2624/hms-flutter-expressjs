@@ -1,24 +1,25 @@
 ---
-alwaysApply: true
+description: HTTP client, interceptors, and API error mapping
+alwaysApply: false
+globs: ["frontend/lib/core/network/**", "frontend/lib/features/**/data/**"]
 ---
+# Network and API
 
-# Network and API Strategy
-
-## Scope
-Defines HTTP access, API clients, interceptors, error mapping, and backend-agnostic contracts.
+Purpose: HTTP access against `hms-backend` per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
 
 ## Mandatory rules
-- Use repository contracts in the domain layer instead of calling HTTP from UI.
-- Use `dio` for HTTP clients and interceptors.
-- Keep API DTOs in the data layer.
-- Map API errors into app failures before they reach the UI.
-- Apply request timeouts.
-- Do not log tokens, passwords, or sensitive payloads.
-- Handle unauthorized responses through the session manager.
-- Keep backend URLs and timeouts environment-driven.
-- Support cancellation where long requests can become stale.
 
-## Client standard
+- Repository contracts in domain layer; no HTTP from UI.
+- Use `dio` for clients and interceptors.
+- DTOs in data layer with `snake_case` JSON mapping.
+- Map API errors to app failures before UI.
+- Apply request timeouts; support cancellation for stale requests.
+- No logging of tokens, passwords, or sensitive payloads.
+- Handle `401` through session manager.
+- Environment-driven base URLs and timeouts.
+
+## Client layout
+
 ```txt
 core/network/
 ├── api_client.dart
@@ -28,24 +29,8 @@ core/network/
 └── network_failure_mapper.dart
 ```
 
-## Error mapping
-| Backend condition | App result |
-|---|---|
-| timeout | localized retryable network failure |
-| no reachable internet | localized offline/network failure |
-| `401` | session refresh or logout flow |
-| `403` | forbidden failure |
-| `404` | not found failure |
-| validation error | field/server validation failure |
-| unexpected response | generic safe failure |
+## See also
 
-## Acceptance checklist
-- API logic is testable without rendering widgets.
-- The UI receives typed results or failures, not raw `DioException` objects.
-- Token refresh is centralized.
-
-## Related rules
-- [`authentication_session.md`](./authentication_session.md)
-- [`error_handling.md`](./error_handling.md)
-- [`security.md`](./security.md)
-- [`offline_sync.md`](./offline_sync.md)
+- [`authentication_session.mdc`](./authentication_session.mdc)
+- [`error_handling.mdc`](./error_handling.mdc)
+- [`offline_sync.mdc`](./offline_sync.mdc)

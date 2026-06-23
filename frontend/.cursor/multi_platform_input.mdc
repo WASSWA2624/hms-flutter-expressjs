@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Multi-Platform Input
@@ -26,7 +26,7 @@ Defines touch, mouse, keyboard, focus, hover, and shortcut behavior across platf
 - Touch targets are practical on mobile.
 
 ## Related rules
-- [`accessibility.md`](./accessibility.md)
-- [`reusable_components.md`](./reusable_components.md)
-- [`responsive_adaptive_design.md`](./responsive_adaptive_design.md)
-- [`platform_guidelines.md`](./platform_guidelines.md)
+- [`accessibility.md`](./accessibility.mdc)
+- [`components.mdc`](./components.mdc)
+- [`layouts.mdc`](./layouts.mdc)
+- [`platform_guidelines.md`](./platform_guidelines.mdc)

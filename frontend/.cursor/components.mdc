@@ -1,0 +1,61 @@
+---
+description: Shared component catalog, states, and styling bounds
+alwaysApply: false
+globs: ["frontend/lib/shared/**", "frontend/lib/features/**/presentation/widgets/**"]
+---
+# Shared Components
+
+Purpose: uniform reusable UI built on Flutter Material primitives.
+
+## Mandatory rules
+
+- Prefer Flutter Material/Cupertino widgets; wrap only for consistency or repeated behavior.
+- Keep shared components minimal, flexible, and stable.
+- Do not create multiple components for the same job.
+- Do not put product-specific business logic in shared components.
+- All user-facing labels, hints, validation messages, and accessibility labels come from localization.
+- Components support enabled, disabled, loading, error, focused, and empty states where relevant.
+- Components adapt to supported screen sizes and input methods.
+- Components use [`design-system.mdc`](./design-system.mdc) tokens for colors, spacing, typography, radius, and elevation.
+- Before creating new UI, check `lib/shared/` for an existing component; add reusable widgets there, one-off widgets in the feature.
+
+## Standard catalog
+
+| Component | Built on | Purpose |
+|---|---|---|
+| `AppButton` | `FilledButton`, `OutlinedButton`, `TextButton` | primary, secondary, tertiary actions |
+| `AppIconButton` | `IconButton` | compact icon actions with semantic labels |
+| `AppTextField` | `TextFormField` | text, number, password, multiline |
+| `AppSelectField<T>` | `DropdownMenu<T>` or Material menus | searchable selection |
+| `AppRadioGroup<T>` | `RadioGroup` / `RadioListTile` | exclusive options |
+| `AppCheckboxField` | `CheckboxListTile` | boolean option |
+| `AppSwitchField` | `SwitchListTile` | setting toggle |
+| `AppDateField` | date picker primitives | locale-aware date input |
+| `AppDialog` | `Dialog` / `AlertDialog` | consistent modals |
+| `AsyncStateScaffold` | composition | loading, empty, error, success ([`ui-feedback.mdc`](./ui-feedback.mdc)) |
+| `ResponsivePage` | layout | page padding and max-width ([`layouts.mdc`](./layouts.mdc)) |
+| `ResponsiveAppShell` | `Scaffold`, `NavigationRail`, `MenuBar` | mobile/tablet/desktop shell |
+| `AppMenuBar` | `MenuBar` | desktop/web app-level actions |
+| `SideNavigation` | `NavigationRail` or Material composition | collapsed/expanded side nav |
+
+**Naming:** public widget `ResponsiveAppShell` lives in `lib/shared/layout/responsive_shell_scaffold.dart`.
+
+## Styling bounds
+
+- Icons: `20–24px` unless layout requires larger.
+- Button heights: `40–48px`.
+- Radii: `8–12px`.
+- Use text plus icons for important navigation or status items where space allows.
+
+## Form components
+
+- Expose validation hooks; do not own feature validation rules.
+- Searchable selects use overlays/menus, not pushing unrelated content down by default.
+- Date fields use locale-aware formatting.
+- Password fields provide accessible show/hide when used.
+
+## See also
+
+- [`ui-patterns.mdc`](./ui-patterns.mdc) — forms and tables
+- [`ui-feedback.mdc`](./ui-feedback.mdc) — async states
+- [`layouts.mdc`](./layouts.mdc) — shell and breakpoints

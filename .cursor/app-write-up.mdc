@@ -1,7 +1,7 @@
 ---
-
-## description: Use this file whenever a change is to be made to a module (adding, modifying, deleting a feature)
+description: Use when adding, modifying, or deleting a product module or feature
 alwaysApply: false
+---
 
 # HOSSPI HMS App Write-Up
 
@@ -13,7 +13,7 @@ alwaysApply: false
 
 HOSSPI HMS is a full-stack, multi-tenant Hospital Management System for managing hospital administration, patient registration, outpatient flow, triage, clinical care, nursing, inpatient care, ICU, theater, pharmacy, laboratory, radiology, billing, insurance, claims, human resources, biomedical engineering, facility operations, housekeeping, physiotherapy, mortuary services, subscriptions, notifications, reports, audit, and integrations.
 
-This file defines product scope only: core functions, modules, and module responsibilities. Technical implementation rules remain in the backend and frontend `.cursor/`* files. Chronological implementation work belongs in the respective backend and fontend `dev-plan` folders.
+This file defines product scope only: core functions, modules, and module responsibilities. Technical implementation rules remain in `backend/.cursor/` and `frontend/.cursor/`. Chronological implementation work belongs in the respective `dev-plan` folders.
 
 ## Core Product Goals
 

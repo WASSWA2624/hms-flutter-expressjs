@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Accessibility Strategy
@@ -30,7 +30,7 @@ Defines baseline accessibility requirements for screens, components, forms, navi
 - Text scaling does not hide important controls.
 
 ## Related rules
-- [`theming.md`](./theming.md)
-- [`forms.md`](./forms.md)
-- [`localization_i18n.md`](./localization_i18n.md)
-- [`multi_platform_input.md`](./multi_platform_input.md)
+- [`design-system.mdc`](./design-system.mdc)
+- [`ui-patterns.mdc`](./ui-patterns.mdc)
+- [`localization_i18n.md`](./localization_i18n.mdc)
+- [`multi_platform_input.md`](./multi_platform_input.mdc)

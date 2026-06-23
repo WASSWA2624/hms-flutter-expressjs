@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Localization and Internationalization
@@ -47,7 +47,7 @@ Defines how user-facing text, formatting, and accessibility labels are handled.
 - Changing locale updates the app without changing business logic.
 
 ## Related rules
-- [`date_time_formatting.md`](./date_time_formatting.md)
-- [`forms.md`](./forms.md)
-- [`error_handling.md`](./error_handling.md)
-- [`accessibility.md`](./accessibility.md)
+- [`date_time_formatting.md`](./date_time_formatting.mdc)
+- [`ui-patterns.mdc`](./ui-patterns.mdc)
+- [`error_handling.md`](./error_handling.mdc)
+- [`accessibility.md`](./accessibility.mdc)

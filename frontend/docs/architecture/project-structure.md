@@ -1,7 +1,7 @@
 # Project Structure
 
 The template follows
-[`app-rules/project_structure.md`](../../app-planner/app-rules/project_structure.md).
+[`project_structure.mdc`](../../.cursor/project_structure.mdc).
 
 ```txt
 .

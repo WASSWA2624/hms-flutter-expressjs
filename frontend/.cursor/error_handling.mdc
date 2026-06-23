@@ -1,40 +1,34 @@
 ---
-alwaysApply: true
+description: Typed failures and layer-boundary error mapping (not UI presentation)
+alwaysApply: false
+globs: ["frontend/lib/core/errors/**", "frontend/lib/features/**/data/**"]
 ---
+# Error Handling
 
-# Error Handling Strategy
-
-## Scope
-Defines typed failures, UI error states, retries, and safe messages.
+Purpose: typed failures and safe mapping at layer boundaries. UI presentation: [`ui-feedback.mdc`](./ui-feedback.mdc).
 
 ## Mandatory rules
-- Convert thrown exceptions into typed failures at layer boundaries.
-- Do not expose raw technical errors directly to users.
-- Keep user-facing error messages localized.
-- Provide retry actions for recoverable failures.
-- Use consistent loading, empty, error, and success views.
-- Log diagnostic details safely without secrets or sensitive data.
-- Preserve user input on recoverable form failures.
+
+- Convert exceptions to typed failures at layer boundaries.
+- Map API errors per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) before UI.
+- Do not expose raw technical errors to users.
+- Log diagnostics without secrets ([`observability.mdc`](./observability.mdc)).
 - Handle startup, navigation, network, storage, validation, and permission errors explicitly.
 
 ## Failure categories
-| Category | Example UI behavior |
+
+| Category | Layer behavior |
 |---|---|
-| network | retry option |
-| validation | field errors or form summary |
-| unauthorized | restore session or redirect to login |
-| forbidden | forbidden page/state |
-| not found | not-found page/state |
-| storage | safe fallback or recovery guidance |
-| unexpected | generic safe message with diagnostics logged |
+| network | retryable failure type |
+| validation | field/form failure type |
+| unauthorized | session refresh or logout trigger |
+| forbidden | forbidden failure type |
+| not found | not-found failure type |
+| storage | safe fallback type |
+| unexpected | generic failure; log stack |
 
-## Acceptance checklist
-- No feature displays raw exception text to users.
-- Error states are visually consistent.
-- Errors are testable through provider/repository overrides.
+## See also
 
-## Related rules
-- [`network_api.md`](./network_api.md)
-- [`forms.md`](./forms.md)
-- [`observability.md`](./observability.md)
-- [`localization_i18n.md`](./localization_i18n.md)
+- [`network_api.mdc`](./network_api.mdc)
+- [`ui-feedback.mdc`](./ui-feedback.mdc)
+- [`validation.mdc`](./validation.mdc)

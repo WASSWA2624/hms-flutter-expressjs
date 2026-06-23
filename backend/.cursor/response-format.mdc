@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 # Response Format Rules
 
@@ -10,6 +10,7 @@ Success rules:
 - list responses include pagination or cursor metadata in `meta`
 - mutation responses return the authoritative current resource or accepted job metadata
 - human-facing messages use translation keys or localized strings from the i18n layer
+- see [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for cross-stack envelope details
 
 Error rules:
 - errors use one normalized problem-details shape

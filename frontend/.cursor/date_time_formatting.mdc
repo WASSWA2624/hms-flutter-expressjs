@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Date, Time, and Formatting Strategy
@@ -25,6 +25,6 @@ Defines storage, transfer, and display formatting for dates, times, numbers, and
 - Localization changes update formatting correctly.
 
 ## Related rules
-- [`localization_i18n.md`](./localization_i18n.md)
-- [`data_modeling.md`](./data_modeling.md)
-- [`validation.md`](./validation.md)
+- [`localization_i18n.md`](./localization_i18n.mdc)
+- [`data_modeling.md`](./data_modeling.mdc)
+- [`validation.md`](./validation.mdc)

@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Observability Strategy
@@ -30,6 +30,6 @@ Defines logging, diagnostics, analytics readiness, and privacy constraints.
 - Logging can be disabled or adjusted per environment.
 
 ## Related rules
-- [`security.md`](./security.md)
-- [`error_handling.md`](./error_handling.md)
-- [`environment_configuration.md`](./environment_configuration.md)
+- [`security.md`](./security.mdc)
+- [`error_handling.md`](./error_handling.mdc)
+- [`environment_configuration.md`](./environment_configuration.mdc)

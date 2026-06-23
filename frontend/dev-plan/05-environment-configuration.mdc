@@ -4,13 +4,13 @@
 Create safe environment configuration for development, staging, and production without committing secrets.
 
 ## Applies app rules
-- [`environment_configuration.md`](../app-rules/environment_configuration.md)
-- [`security.md`](../app-rules/security.md)
-- [`feature_flags.md`](../app-rules/feature_flags.md)
-- [`startup_flow.md`](../app-rules/startup_flow.md)
+- [`environment_configuration.md`](../.cursor/environment_configuration.mdc)
+- [`security.md`](../.cursor/security.mdc)
+- [`feature_flags.md`](../.cursor/feature_flags.mdc)
+- [`startup_flow.md`](../.cursor/startup_flow.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Create `env/development.json.example`, `env/staging.json.example`, and `env/production.json.example` with non-secret values only.
 3. Create `AppConfig` under `lib/core/config/`.
 4. Read compile-time values with Flutter defines or define files.

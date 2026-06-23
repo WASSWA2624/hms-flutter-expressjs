@@ -1,0 +1,124 @@
+---
+description: Cross-stack HTTP envelope, errors, pagination, naming, auth, and offline boundaries
+alwaysApply: true
+---
+# API Contract (Frontend ↔ Backend)
+
+Purpose: single source of truth for shared API behavior between `hms-backend` and the Flutter client.
+
+## Base URL and versioning
+
+- Business endpoints: `/api/v1/*` (`v1` is the current stable contract).
+- Health endpoints (unversioned): `/health`, `/ready`, `/live`.
+- Breaking changes require a new API version and migration plan.
+
+## Naming
+
+| Surface | Convention |
+|---|---|
+| API routes | plural `kebab-case` segments |
+| Query params and JSON fields | lowercase `snake_case` |
+| Backend module folders | `kebab-case` |
+| Backend JS identifiers | `camelCase` |
+| Flutter files | `snake_case.dart` |
+| Flutter identifiers | `PascalCase` / `camelCase` |
+| Flutter feature folders | `snake_case` |
+
+### Flutter DTO mapping
+
+- DTOs live in `data/dtos/` and mirror backend `snake_case` JSON.
+- Use `@JsonSerializable(fieldRename: FieldRename.snake)` or explicit `@JsonKey(name: 'snake_case')`.
+- Domain entities use Dart `camelCase`; mappers convert DTO ↔ entity explicitly.
+- Never pass DTOs into domain logic or widgets.
+
+## Success envelope
+
+```json
+{
+  "success": true,
+  "data": {},
+  "meta": {}
+}
+```
+
+- `data` — resource, list, or accepted job metadata.
+- `meta` — pagination or cursor metadata on list responses (required for paginated lists).
+
+### Pagination meta (list responses)
+
+Include in `meta` at minimum:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `page` | number | current page (1-based) |
+| `per_page` | number | page size |
+| `total` | number | total matching records |
+| `total_pages` | number | computed page count |
+
+Cursor-based lists may use `next_cursor` / `has_more` instead when documented.
+
+## Error envelope (problem details)
+
+- One normalized problem-details shape for all errors.
+- Every error includes a stable machine-readable `code`.
+- Validation errors include field-level detail in `errors` when safe.
+- Never expose internal traces, Prisma internals, secrets, or PHI.
+
+### HTTP status mapping (frontend)
+
+| Status | Frontend handling |
+|---|---|
+| timeout | localized retryable network failure |
+| no connectivity | localized offline/network failure |
+| `401` | session refresh or logout |
+| `403` | forbidden failure / page |
+| `404` | not found failure / page |
+| `422` / validation | field or form validation failure |
+| `409` | conflict (offline sync); include version metadata |
+| `5xx` | generic safe failure; log diagnostics |
+
+## Auth
+
+- JWT access tokens with finite-lifetime refresh or session records.
+- Frontend stores tokens in secure storage only (not `shared_preferences`).
+- `user_role` is the backend role-assignment source of truth.
+- RBAC grants baseline permissions; ABAC narrows by scope, ownership, shift, patient relationship, and emergency state.
+- Module entitlements are enforced in backend middleware **and** services; frontend route guards and action visibility must match entitlement keys.
+- Break-glass access is explicit, time-limited, and audited.
+
+## Timestamps and locale
+
+- Store and transfer timestamps in UTC using ISO-8601 strings unless domain requires otherwise.
+- Display using user locale via shared formatters (`frontend/.cursor/date_time_formatting.mdc`).
+- Backend `en` is baseline; locale resolution may use user preference, tenant default, and `Accept-Language`.
+
+## Offline boundaries
+
+### Server rules
+
+- Offline-capable mutations require idempotency keys and deterministic conflict handling.
+- List/detail endpoints for offline clients should support incremental sync metadata.
+- Server never assumes client clock is authoritative.
+
+### Online-only actions (never queue offline)
+
+- Authentication and session changes
+- Entitlement and break-glass approval
+- Payments, refunds, and billing closeout
+- Mortuary release authorization
+- Last-office / final close workflows
+
+### Client rules
+
+- Connectivity is a hint, not proof of reachability.
+- Conflict responses must surface `409` with record id and version metadata.
+- Pending writes survive restart; failed syncs show recoverable UI.
+
+## WebSocket events
+
+- Event payloads use stable `snake_case` fields (see `backend/.cursor/websockets.mdc`).
+
+## Related rules
+
+- Backend: [`response-format.mdc`](../backend/.cursor/response-format.mdc), [`api.mdc`](../backend/.cursor/api.mdc), [`offline-support.mdc`](../backend/.cursor/offline-support.mdc)
+- Frontend: [`network_api.mdc`](../frontend/.cursor/network_api.mdc), [`offline_sync.mdc`](../frontend/.cursor/offline_sync.mdc), [`data_modeling.mdc`](../frontend/.cursor/data_modeling.mdc)

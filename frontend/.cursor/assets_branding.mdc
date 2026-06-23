@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Asset and Branding Strategy
@@ -28,7 +28,7 @@ Defines asset folders, naming, branding, icons, splash screens, and image qualit
 - Asset paths are centralized when reused.
 
 ## Related rules
-- [`theming.md`](./theming.md)
-- [`accessibility.md`](./accessibility.md)
-- [`dependencies.md`](./dependencies.md)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.md)
+- [`design-system.mdc`](./design-system.mdc)
+- [`accessibility.md`](./accessibility.mdc)
+- [`dependencies.md`](./dependencies.mdc)
+- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)

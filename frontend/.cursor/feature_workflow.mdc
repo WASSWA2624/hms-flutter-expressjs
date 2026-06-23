@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Feature Workflow
@@ -26,8 +26,8 @@ Defines the repeatable process for adding a new feature to the template or an ap
 - Tests and localization are included.
 
 ## Related rules
-- [`architecture.md`](./architecture.md)
-- [`project_structure.md`](./project_structure.md)
-- [`reusable_components.md`](./reusable_components.md)
-- [`testing.md`](./testing.md)
-- [`localization_i18n.md`](./localization_i18n.md)
+- [`architecture.md`](./architecture.mdc)
+- [`project_structure.md`](./project_structure.mdc)
+- [`components.mdc`](./components.mdc)
+- [`testing.md`](./testing.mdc)
+- [`localization_i18n.md`](./localization_i18n.mdc)

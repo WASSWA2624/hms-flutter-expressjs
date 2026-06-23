@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Environment Configuration
@@ -31,7 +31,7 @@ Defines how development, staging, and production configuration is represented.
 - Tests can override environment config.
 
 ## Related rules
-- [`security.md`](./security.md)
-- [`network_api.md`](./network_api.md)
-- [`feature_flags.md`](./feature_flags.md)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.md)
+- [`security.md`](./security.mdc)
+- [`network_api.md`](./network_api.mdc)
+- [`feature_flags.md`](./feature_flags.mdc)
+- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)

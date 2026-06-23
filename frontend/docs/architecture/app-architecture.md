@@ -4,14 +4,14 @@ This template follows feature-first clean architecture.
 
 Rule sources:
 
-- [`app-rules/architecture.md`](../../app-planner/app-rules/architecture.md)
-- [`app-rules/project_structure.md`](../../app-planner/app-rules/project_structure.md)
-- [`app-rules/state_management.md`](../../app-planner/app-rules/state_management.md)
-- [`app-rules/data_modeling.md`](../../app-planner/app-rules/data_modeling.md)
-- [`app-rules/navigation.md`](../../app-planner/app-rules/navigation.md)
-- [`app-rules/localization_i18n.md`](../../app-planner/app-rules/localization_i18n.md)
-- [`app-rules/testing.md`](../../app-planner/app-rules/testing.md)
-- [`app-rules/code_generation.md`](../../app-planner/app-rules/code_generation.md)
+- [`architecture.mdc`](../../.cursor/architecture.mdc)
+- [`project_structure.mdc`](../../.cursor/project_structure.mdc)
+- [`state_management.mdc`](../../.cursor/state_management.mdc)
+- [`data_modeling.mdc`](../../.cursor/data_modeling.mdc)
+- [`navigation.mdc`](../../.cursor/navigation.mdc)
+- [`localization_i18n.mdc`](../../.cursor/localization_i18n.mdc)
+- [`testing.mdc`](../../.cursor/testing.mdc)
+- [`code_generation.mdc`](../../.cursor/code_generation.mdc)
 
 ## Dependency Direction
 

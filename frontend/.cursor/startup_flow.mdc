@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Startup Flow
@@ -33,7 +33,7 @@ Defines how the app initializes configuration, storage, session, localization, t
 - `main.dart` remains readable and does not contain feature logic.
 
 ## Related rules
-- [`environment_configuration.md`](./environment_configuration.md)
-- [`state_management.md`](./state_management.md)
-- [`authentication_session.md`](./authentication_session.md)
-- [`error_handling.md`](./error_handling.md)
+- [`environment_configuration.md`](./environment_configuration.mdc)
+- [`state_management.md`](./state_management.mdc)
+- [`authentication_session.md`](./authentication_session.mdc)
+- [`error_handling.md`](./error_handling.mdc)

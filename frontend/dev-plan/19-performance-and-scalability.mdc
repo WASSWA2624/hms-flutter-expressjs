@@ -4,13 +4,13 @@
 Optimize rebuilds, list rendering, startup cost, shell performance, and future feature growth.
 
 ## Applies app rules
-- [`performance.md`](../app-rules/performance.md)
-- [`scalability.md`](../app-rules/scalability.md)
-- [`responsive_adaptive_design.md`](../app-rules/responsive_adaptive_design.md)
-- [`pagination_data_tables.md`](../app-rules/pagination_data_tables.md)
+- [`performance.md`](../.cursor/performance.mdc)
+- [`scalability.md`](../.cursor/scalability.mdc)
+- [`layouts.mdc`](../.cursor/layouts.mdc)
+- [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Review provider watches for unnecessary rebuilds.
 3. Ensure lists are lazy, virtualized, or paginated where datasets can grow.
 4. Avoid heavy startup network work.

@@ -4,13 +4,13 @@
 Finalize platform compatibility, input methods, accessibility, focus behavior, and permission handling.
 
 ## Applies app rules
-- [`platform_guidelines.md`](../app-rules/platform_guidelines.md)
-- [`multi_platform_input.md`](../app-rules/multi_platform_input.md)
-- [`accessibility.md`](../app-rules/accessibility.md)
-- [`permissions.md`](../app-rules/permissions.md)
+- [`platform_guidelines.md`](../.cursor/platform_guidelines.mdc)
+- [`multi_platform_input.md`](../.cursor/multi_platform_input.mdc)
+- [`accessibility.md`](../.cursor/accessibility.mdc)
+- [`permissions.md`](../.cursor/permissions.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Check mobile safe areas and keyboard insets.
 3. Check desktop/web keyboard, pointer, hover, and focus behavior.
 4. Add semantic labels to icon-only actions.

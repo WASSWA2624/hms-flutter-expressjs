@@ -4,14 +4,14 @@
 Create typed failures, safe logging, and consistent state views.
 
 ## Applies app rules
-- [`error_handling.md`](../app-rules/error_handling.md)
-- [`observability.md`](../app-rules/observability.md)
-- [`network_api.md`](../app-rules/network_api.md)
-- [`security.md`](../app-rules/security.md)
-- [`localization_i18n.md`](../app-rules/localization_i18n.md)
+- [`error_handling.md`](../.cursor/error_handling.mdc)
+- [`observability.md`](../.cursor/observability.mdc)
+- [`network_api.md`](../.cursor/network_api.mdc)
+- [`security.md`](../.cursor/security.mdc)
+- [`localization_i18n.md`](../.cursor/localization_i18n.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Create typed failure classes or sealed failures.
 3. Create error-to-message mapping through localization.
 4. Create safe logger abstraction under `lib/core/logging/`.

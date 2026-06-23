@@ -1,0 +1,37 @@
+---
+description: Historical validation snapshot from 2026-05-14 (not current policy)
+alwaysApply: false
+---
+# Validation Snapshot (2026-05-14)
+
+Historical record only. Current quality gates: [`ci_cd_quality_gates.mdc`](../ci_cd_quality_gates.mdc) and [`checklists.mdc`](../checklists.mdc).
+
+## Executed results (at time of snapshot)
+
+| Check | Result |
+|---|---|
+| `flutter pub get` | Passed |
+| `dart run build_runner build --delete-conflicting-outputs` | Passed |
+| `dart format --set-exit-if-changed .` | Passed (143 files) |
+| `flutter analyze` | Passed |
+| `flutter test` | Passed (142 tests) |
+
+## Commands
+
+```bash
+flutter pub get
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test
+```
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+## Responsive tests validated
+
+- `test/app/app_test.dart` — home shell at `320px`
+- `test/core/responsive/app_breakpoints_test.dart` — through `1600px`
+- `test/shared/layout/responsive_shell_scaffold_test.dart` — shell behavior
+- `test/shared/layout/responsive_page_test.dart` — keyboard insets

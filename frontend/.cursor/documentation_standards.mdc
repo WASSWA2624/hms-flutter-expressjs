@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Documentation Standards
@@ -24,6 +24,6 @@ Defines required documentation for setup, architecture, decisions, components, a
 - Architecture decisions can be traced to the relevant rules.
 
 ## Related rules
-- [`checklists.md`](./checklists.md)
-- [`feature_workflow.md`](./feature_workflow.md)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.md)
+- [`checklists.md`](./checklists.mdc)
+- [`feature_workflow.md`](./feature_workflow.mdc)
+- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)

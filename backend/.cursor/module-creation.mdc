@@ -1,12 +1,12 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 # Module Creation Rules
 
 Purpose: define the mandatory build sequence for every backend module.
 
 Required sequence:
-1. define the module contract in `app-write-up.md`, `dev-plan/P010_api_endpoints.md`, and `dev-plan/P011_modules.md`
+1. define the module contract in `../../.cursor/app-write-up.mdc`, `dev-plan/P010_api_endpoints.mdc`, and `dev-plan/P011_modules.mdc`
 2. create the module folder and mirrored test folder
 3. implement Zod schemas using `snake_case` field names
 4. implement repositories with tenancy, soft-delete, and audit-friendly query patterns

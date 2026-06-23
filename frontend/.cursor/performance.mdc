@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Performance Strategy
@@ -30,7 +30,7 @@ Defines performance expectations for startup, rendering, lists, images, networki
 - Large lists are paginated, streamed, or built lazily.
 
 ## Related rules
-- [`responsive_adaptive_design.md`](./responsive_adaptive_design.md)
-- [`database_strategy.md`](./database_strategy.md)
-- [`network_api.md`](./network_api.md)
-- [`scalability.md`](./scalability.md)
+- [`layouts.mdc`](./layouts.mdc)
+- [`database_strategy.md`](./database_strategy.mdc)
+- [`network_api.md`](./network_api.mdc)
+- [`scalability.md`](./scalability.mdc)

@@ -2,11 +2,11 @@
 
 Rule sources:
 
-- [`app-rules/ci_cd_quality_gates.md`](../../app-planner/app-rules/ci_cd_quality_gates.md)
-- [`app-rules/platform_guidelines.md`](../../app-planner/app-rules/platform_guidelines.md)
-- [`app-rules/security.md`](../../app-planner/app-rules/security.md)
-- [`app-rules/dependencies.md`](../../app-planner/app-rules/dependencies.md)
-- [`app-rules/testing.md`](../../app-planner/app-rules/testing.md)
+- [`ci_cd_quality_gates.mdc`](../../.cursor/ci_cd_quality_gates.mdc)
+- [`platform_guidelines.mdc`](../../.cursor/platform_guidelines.mdc)
+- [`security.mdc`](../../.cursor/security.mdc)
+- [`dependencies.mdc`](../../.cursor/dependencies.mdc)
+- [`testing.mdc`](../../.cursor/testing.mdc)
 
 This template keeps build inputs public and non-secret. Pass runtime values with
 Flutter define files through `--dart-define-from-file`; do not commit API keys,

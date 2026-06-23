@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Security Rules
@@ -31,7 +31,7 @@ Defines security expectations for storage, networking, logging, configuration, a
 - Security-sensitive dependencies are reviewed before release.
 
 ## Related rules
-- [`authentication_session.md`](./authentication_session.md)
-- [`storage_strategy.md`](./storage_strategy.md)
-- [`network_api.md`](./network_api.md)
-- [`environment_configuration.md`](./environment_configuration.md)
+- [`authentication_session.md`](./authentication_session.mdc)
+- [`storage_strategy.md`](./storage_strategy.mdc)
+- [`network_api.md`](./network_api.mdc)
+- [`environment_configuration.md`](./environment_configuration.mdc)

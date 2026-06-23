@@ -2,10 +2,10 @@
 
 This template follows the shared platform rules in:
 
-- [`app-rules/platform_guidelines.md`](../../app-planner/app-rules/platform_guidelines.md)
-- [`app-rules/multi_platform_input.md`](../../app-planner/app-rules/multi_platform_input.md)
-- [`app-rules/accessibility.md`](../../app-planner/app-rules/accessibility.md)
-- [`app-rules/permissions.md`](../../app-planner/app-rules/permissions.md)
+- [`platform_guidelines.mdc`](../../.cursor/platform_guidelines.mdc)
+- [`multi_platform_input.mdc`](../../.cursor/multi_platform_input.mdc)
+- [`accessibility.mdc`](../../.cursor/accessibility.mdc)
+- [`permissions.mdc`](../../.cursor/permissions.mdc)
 
 ## Supported targets
 

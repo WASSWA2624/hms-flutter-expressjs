@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Dependency Strategy
@@ -49,7 +49,7 @@ Defines approved dependencies, when they may be added, and how to avoid unnecess
 - Dependency decisions are documented in README or an ADR when they affect architecture.
 
 ## Related rules
-- [`code_generation.md`](./code_generation.md)
-- [`platform_guidelines.md`](./platform_guidelines.md)
-- [`security.md`](./security.md)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.md)
+- [`code_generation.md`](./code_generation.mdc)
+- [`platform_guidelines.md`](./platform_guidelines.mdc)
+- [`security.md`](./security.mdc)
+- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)

@@ -5,10 +5,10 @@ without rewriting app-wide foundations.
 
 Rule sources:
 
-- [`app-rules/performance.md`](../../app-planner/app-rules/performance.md)
-- [`app-rules/scalability.md`](../../app-planner/app-rules/scalability.md)
-- [`app-rules/responsive_adaptive_design.md`](../../app-planner/app-rules/responsive_adaptive_design.md)
-- [`app-rules/pagination_data_tables.md`](../../app-planner/app-rules/pagination_data_tables.md)
+- [`performance.mdc`](../../.cursor/performance.mdc)
+- [`scalability.mdc`](../../.cursor/scalability.mdc)
+- [`layouts.mdc`](../../.cursor/layouts.mdc)
+- [`ui-patterns.mdc`](../../.cursor/ui-patterns.mdc)
 
 ## Provider Rebuilds
 

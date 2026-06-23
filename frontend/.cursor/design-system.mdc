@@ -1,0 +1,59 @@
+---
+description: Colors, design tokens, typography, and Material 3 theme rules
+alwaysApply: false
+globs: ["frontend/lib/app/theme/**", "frontend/lib/shared/**", "frontend/lib/features/**/presentation/**"]
+---
+# Design System
+
+Purpose: single source of truth for the HOSSPI HMS visual system.
+
+## Mandatory rules
+
+- Use Material 3 as the default foundation.
+- Light theme is the default; support dark theme and system theme mode.
+- Light theme: clean blue-based palette; dark theme: clean, readable, Material-aligned.
+- Do not hard-code colors, spacing, radius, elevation, or typography in feature widgets.
+- Store theme mode as a non-sensitive preference when persisted.
+- Theme changes must update the app reactively.
+- Shared components read colors, typography, shape, and spacing from the active theme or design tokens.
+
+## Color standard
+
+| Theme | Baseline |
+|---|---|
+| Light | `ColorScheme.fromSeed(seedColor: Color(0xFF1565C0), brightness: Brightness.light)` |
+| Dark | `ColorScheme.fromSeed(seedColor: Color(0xFF90CAF9), brightness: Brightness.dark)` |
+| Error | Material error roles from active `ColorScheme` |
+| Status | success, warning, info via theme extension only when required |
+
+## Design tokens
+
+| Token group | Values |
+|---|---|
+| Spacing | `xs=4`, `sm=8`, `md=12`, `lg=16`, `xl=24`, `xxl=32` |
+| Radius | `xs=4`, `sm=8`, `md=10`, `lg=12`, `xl=16` |
+| Page padding | mobile `16`, tablet `24`, desktop `32` |
+| Button height | compact `36–40`, standard `40–48` |
+| Icon size | default `20–24`; larger only when layout requires |
+| Max widths | see [`layouts.mdc`](./layouts.mdc) |
+
+## Shape and density
+
+- Prefer moderate radii `8–12` for cards, fields, and buttons.
+- Avoid excessive padding; keep desktop controls visually balanced.
+- Use consistent elevation and borders; do not mix unrelated card/button/dialog styles.
+- Keep navigation items readable without oversized icons or row heights.
+
+## Typography
+
+- Use theme text styles, not raw duplicated `TextStyle`.
+- Keep headings consistent by screen purpose.
+- Keep body text readable at scaled font sizes.
+- Use locale-aware text direction where needed.
+
+## See also
+
+- [`components.mdc`](./components.mdc) — component styling
+- [`layouts.mdc`](./layouts.mdc) — breakpoints and page padding
+- [`localization_i18n.mdc`](./localization_i18n.mdc)
+- [`accessibility.mdc`](./accessibility.mdc)

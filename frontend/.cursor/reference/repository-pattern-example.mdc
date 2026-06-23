@@ -1,21 +1,16 @@
 ---
-alwaysApply: true
+description: Reference example for repository layer boundaries
+alwaysApply: false
 ---
-
 # Repository Pattern Example
 
-## Scope
-Shows the expected boundary between domain contracts, data implementation, and data sources.
+Reference only. Policy lives in [`architecture.mdc`](../architecture.mdc) and [`data_modeling.mdc`](../data_modeling.mdc).
 
-## Domain contract
 ```dart
 abstract class ProfileRepository {
   Future<Result<Profile>> getCurrentProfile();
 }
-```
 
-## Data implementation
-```dart
 class ProfileRepositoryImpl implements ProfileRepository {
   const ProfileRepositoryImpl({
     required ProfileRemoteDataSource remoteDataSource,
@@ -39,16 +34,3 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 }
 ```
-
-## Rules
-- Widgets depend on controllers, not repository implementations.
-- Domain depends on repository contracts, not remote/local data sources.
-- Data implementations map external data into domain entities.
-- Failures are mapped before reaching presentation code.
-- Repository implementations must not navigate or show UI messages.
-
-## Related rules
-- [`architecture.md`](./architecture.md)
-- [`data_modeling.md`](./data_modeling.md)
-- [`network_api.md`](./network_api.md)
-- [`error_handling.md`](./error_handling.md)

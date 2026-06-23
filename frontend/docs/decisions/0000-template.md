@@ -11,7 +11,7 @@ necessary.
 
 Rule sources:
 
-- [`app-rules/documentation_standards.md`](../../app-planner/app-rules/documentation_standards.md)
+- [`documentation_standards.mdc`](../../.cursor/documentation_standards.mdc)
 - Add any architecture, dependency, security, testing, or platform rule that
   applies.
 

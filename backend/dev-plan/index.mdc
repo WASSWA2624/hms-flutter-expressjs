@@ -1,6 +1,6 @@
 # Backend Development Plan
 
-Purpose: this folder is the backend implementation chronology for the target HMS product described in `../app-write-up.md` and constrained by `../app-rules/*`.
+Purpose: this folder is the backend implementation chronology for HOSSPI HMS described in `../../.cursor/app-write-up.mdc` and constrained by `backend/.cursor/*` and `../../.cursor/api-contract.mdc`.
 
 Execution order is mandatory:
 1. `P000_setup.md`

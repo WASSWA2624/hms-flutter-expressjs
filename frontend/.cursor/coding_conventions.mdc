@@ -1,52 +1,45 @@
 ---
 alwaysApply: true
 ---
-
 # Coding Conventions
 
-## Scope
-Defines naming, imports, style, and file focus conventions.
+Purpose: naming, imports, style, and file focus.
 
-## Mandatory rules
-- Use `snake_case.dart` for file names.
-- Use `PascalCase` for classes, enums, typedefs, and extensions.
-- Use `camelCase` for variables, methods, parameters, and providers.
-- Use `_privateName` for private members.
-- Prefer package imports for cross-folder imports.
-- Use relative imports only inside the same small folder tree.
-- Avoid circular imports.
-- Use `const` constructors where possible.
-- Keep widgets focused and small.
-- Avoid business logic inside widgets.
-- Use typed models instead of maps for app data.
-- Do not hard-code route strings, user-facing text, colors, spacing, or repeated formatting.
+## Naming
+
+- Files: `snake_case.dart`
+- Classes, enums, typedefs, extensions: `PascalCase`
+- Variables, methods, parameters, providers: `camelCase`
+- Private members: `_privateName`
+
+## Imports
+
+- Package imports for cross-folder imports; relative only inside the same small folder tree.
+- No circular imports.
+- Order: Dart SDK → Flutter → packages → project.
+
+## Style
+
+- `const` constructors where possible.
+- Small focused widgets; no business logic in widgets.
+- Typed models, not maps, for app data.
+- No hard-coded route strings, user-facing text, colors, spacing, or repeated formatting.
 - Treat analyzer warnings seriously.
 
-## File focus rule
-| File type | Owns |
+## File focus
+
+| Suffix | Owns |
 |---|---|
-| `*_page.dart` | page composition and layout |
-| `*_controller.dart` | user actions and presentation state |
+| `*_page.dart` | page composition |
+| `*_controller.dart` | user actions, presentation state |
 | `*_state.dart` | UI state shape |
 | `*_repository.dart` | domain contract |
 | `*_repository_impl.dart` | data coordination |
-| `*_dto.dart` | API data shape |
+| `*_dto.dart` | API shape (`snake_case` JSON per [api-contract](../../.cursor/api-contract.mdc)) |
 | `*_mapper.dart` | explicit conversion |
 
-## Import order
-1. Dart SDK imports.
-2. Flutter imports.
-3. Package imports.
-4. Project imports.
+## See also
 
-## Acceptance checklist
-- Formatting passes.
-- Analyzer passes.
-- Naming and file placement are consistent across features.
-- The same type of change is made in the same type of file across the codebase.
-
-## Related rules
-- [`architecture.md`](./architecture.md)
-- [`localization_i18n.md`](./localization_i18n.md)
-- [`theming.md`](./theming.md)
-- [`navigation.md`](./navigation.md)
+- [`architecture.mdc`](./architecture.mdc)
+- [`localization_i18n.mdc`](./localization_i18n.mdc)
+- [`design-system.mdc`](./design-system.mdc)

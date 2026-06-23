@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+---
+# HOSSPI HMS — Monorepo Rules Index
+
+Purpose: single entry point for all Cursor rules in this repository.
+
+## Product
+
+**HOSSPI HMS** (HOSSPI Hospital Management System) is a full-stack, multi-tenant hospital management system:
+- `frontend/` — Flutter client (`hosspi_hms`)
+- `backend/` — Express.js API (`hms-backend`)
+- Product scope and modules: [`app-write-up.mdc`](./app-write-up.mdc)
+
+## Conflict order
+
+When rules disagree, apply this order:
+
+1. Security, privacy, safety, and compliance
+2. [`.cursor/api-contract.mdc`](./api-contract.mdc) for cross-stack HTTP, errors, pagination, and naming
+3. Product scope in [`app-write-up.mdc`](./app-write-up.mdc)
+4. Contextual flow files (`flows/opd-flow.mdc`, `flows/ipd-flow.mdc`) when editing those domains
+5. Stack owner index: [`frontend/.cursor/index.mdc`](../frontend/.cursor/index.mdc) or [`backend/.cursor/index.mdc`](../backend/.cursor/index.mdc)
+6. Other stack-specific rule files named in the stack index
+7. `dev-plan/` steps (chronology only — not a duplicate standards source)
+
+## Stack indexes
+
+| Stack | Index | Scope |
+|---|---|---|
+| Frontend | [`frontend/.cursor/index.mdc`](../frontend/.cursor/index.mdc) | Flutter architecture, UI, data, quality |
+| Backend | [`backend/.cursor/index.mdc`](../backend/.cursor/index.mdc) | Express, Prisma, API, security |
+
+## Contextual rules (not always applied)
+
+| File | When to use |
+|---|---|
+| [`app-write-up.mdc`](./app-write-up.mdc) | Adding, modifying, or deleting a product module |
+| [`flows/opd-flow.mdc`](./flows/opd-flow.mdc) | OPD module, flow, or action changes |
+| [`flows/ipd-flow.mdc`](./flows/ipd-flow.mdc) | IPD module, flow, or action changes |
+
+## Cross-stack invariants
+
+- API JSON, query params, and documented payload fields use lowercase `snake_case` (backend owns; frontend DTOs map explicitly).
+- Success responses: `{ success: true, data, meta? }`; errors: normalized problem-details shape (see `api-contract.mdc`).
+- Backend authorization (RBAC, ABAC, entitlements, break-glass) is the source of truth; frontend mirrors it in guards and UI visibility.
+- Offline-capable mutations are idempotent; auth, payments, break-glass, and mortuary release are online-only (see `api-contract.mdc`).

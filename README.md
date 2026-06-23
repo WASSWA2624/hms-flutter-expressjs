@@ -4,9 +4,9 @@ Hospital management system codebase with a Flutter frontend and an Express.js ba
 
 ## Structure
 
-- `frontend/` - Flutter application
-- `backend/` - Express.js API and Prisma database layer
-- `app-planner/` - planning and project notes
+- `frontend/` - Flutter application (`frontend/.cursor/` rules, `frontend/dev-plan/`)
+- `backend/` - Express.js API and Prisma layer (`backend/.cursor/` rules, `backend/dev-plan/`)
+- `.cursor/` - product scope, API contract, OPD/IPD flows
 
 ## Web development
 

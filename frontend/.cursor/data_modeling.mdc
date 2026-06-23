@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Data Modeling Strategy
@@ -14,7 +14,7 @@ Defines entities, DTOs, value objects, mappers, and database models.
 - Use immutable models for app state and domain entities.
 - Keep mappers explicit and testable.
 - Use value objects for important constrained values.
-- Keep DTOs shaped around external API contracts.
+- Keep DTOs shaped around external API contracts (`snake_case` JSON per [api-contract](../../.cursor/api-contract.mdc)).
 - Keep entities shaped around business meaning.
 - Keep presentation-only formatting out of domain entities.
 

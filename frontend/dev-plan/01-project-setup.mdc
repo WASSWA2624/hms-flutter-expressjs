@@ -4,13 +4,13 @@
 Create or normalize the Flutter project root for consistent multi-platform development.
 
 ## Applies app rules
-- [`scope.md`](../app-rules/scope.md)
-- [`project_structure.md`](../app-rules/project_structure.md)
-- [`platform_guidelines.md`](../app-rules/platform_guidelines.md)
-- [`documentation_standards.md`](../app-rules/documentation_standards.md)
+- [`scope.md`](../.cursor/scope.mdc)
+- [`project_structure.md`](../.cursor/project_structure.mdc)
+- [`platform_guidelines.md`](../.cursor/platform_guidelines.mdc)
+- [`documentation_standards.md`](../.cursor/documentation_standards.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. If no Flutter project exists, create one with the supported platform set:
    ```bash
    flutter create . --platforms=android,ios,web,windows,macos,linux
@@ -28,4 +28,4 @@ Create or normalize the Flutter project root for consistent multi-platform devel
 ## Acceptance criteria
 - `flutter pub get` succeeds.
 - Project structure matches `project_structure.md`.
-- The project remains backend-agnostic.
+- The project remains backend-integrated per api-contract.mdc.

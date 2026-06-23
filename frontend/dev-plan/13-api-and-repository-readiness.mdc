@@ -4,14 +4,14 @@
 Prepare backend integration boundaries without requiring a real backend.
 
 ## Applies app rules
-- [`network_api.md`](../app-rules/network_api.md)
-- [`repository_pattern_example.md`](../app-rules/repository_pattern_example.md)
-- [`architecture.md`](../app-rules/architecture.md)
-- [`error_handling.md`](../app-rules/error_handling.md)
-- [`environment_configuration.md`](../app-rules/environment_configuration.md)
+- [`network_api.md`](../.cursor/network_api.mdc)
+- [`repository_pattern_example.md`](../.cursor/repository_pattern_example.mdc)
+- [`architecture.md`](../.cursor/architecture.mdc)
+- [`error_handling.md`](../.cursor/error_handling.mdc)
+- [`environment_configuration.md`](../.cursor/environment_configuration.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Create API client abstraction under `lib/core/network/`.
 3. Add a real HTTP package only when an actual HTTP client is implemented.
 4. Create repository contracts in feature domain folders.

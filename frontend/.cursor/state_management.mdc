@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # State Management and Dependency Injection
@@ -32,7 +32,7 @@ Defines how app state, feature state, and dependencies are created, read, tested
 - Loading, empty, error, and success states are handled consistently.
 
 ## Related rules
-- [`architecture.md`](./architecture.md)
-- [`startup_flow.md`](./startup_flow.md)
-- [`testing.md`](./testing.md)
-- [`error_handling.md`](./error_handling.md)
+- [`architecture.md`](./architecture.mdc)
+- [`startup_flow.md`](./startup_flow.mdc)
+- [`testing.md`](./testing.mdc)
+- [`error_handling.md`](./error_handling.mdc)

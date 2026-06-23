@@ -33,7 +33,7 @@ Flutter template.
 
 Rule sources for documentation:
 
-- [`app-rules/documentation_standards.md`](../app-planner/app-rules/documentation_standards.md)
-- [`app-rules/feature_workflow.md`](../app-planner/app-rules/feature_workflow.md)
-- [`app-rules/checklists.md`](../app-planner/app-rules/checklists.md)
-- [`app-rules/coding_conventions.md`](../app-planner/app-rules/coding_conventions.md)
+- [`documentation_standards.mdc`](../.cursor/documentation_standards.mdc)
+- [`feature_workflow.mdc`](../.cursor/feature_workflow.mdc)
+- [`checklists.mdc`](../.cursor/checklists.mdc)
+- [`coding_conventions.mdc`](../.cursor/coding_conventions.mdc)

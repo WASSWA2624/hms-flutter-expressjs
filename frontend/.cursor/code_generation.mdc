@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Code Generation Strategy
@@ -33,6 +33,6 @@ dart run build_runner build --delete-conflicting-outputs
 - Source models remain readable and testable.
 
 ## Related rules
-- [`dependencies.md`](./dependencies.md)
-- [`data_modeling.md`](./data_modeling.md)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.md)
+- [`dependencies.md`](./dependencies.mdc)
+- [`data_modeling.md`](./data_modeling.mdc)
+- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)

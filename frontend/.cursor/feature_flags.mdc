@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Feature Flags
@@ -23,6 +23,6 @@ Defines how optional or staged features are controlled.
 - Flag behavior is documented for release builds.
 
 ## Related rules
-- [`environment_configuration.md`](./environment_configuration.md)
-- [`navigation.md`](./navigation.md)
-- [`testing.md`](./testing.md)
+- [`environment_configuration.md`](./environment_configuration.mdc)
+- [`navigation.md`](./navigation.mdc)
+- [`testing.md`](./testing.mdc)

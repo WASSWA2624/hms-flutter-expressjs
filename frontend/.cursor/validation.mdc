@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Validation Strategy
@@ -31,6 +31,6 @@ Defines validation ownership for user input, API data, domain values, and local 
 - Invalid states are not silently accepted into domain models.
 
 ## Related rules
-- [`forms.md`](./forms.md)
-- [`data_modeling.md`](./data_modeling.md)
-- [`error_handling.md`](./error_handling.md)
+- [`ui-patterns.mdc`](./ui-patterns.mdc)
+- [`data_modeling.md`](./data_modeling.mdc)
+- [`error_handling.md`](./error_handling.mdc)

@@ -1,0 +1,37 @@
+---
+description: Loading, empty, error, success views and user-safe failure display
+alwaysApply: false
+globs: ["frontend/lib/features/**/presentation/**", "frontend/lib/shared/**"]
+---
+# UI Feedback States
+
+Purpose: consistent async and error presentation in the UI.
+
+## Mandatory rules
+
+- Use `AsyncStateScaffold` or equivalent shared wrappers for loading, empty, error, and success.
+- Do not expose raw technical errors or exception text to users.
+- Keep user-facing error messages localized.
+- Provide retry actions for recoverable failures.
+- Preserve user input on recoverable form failures.
+- Log diagnostic details safely without secrets (see [`observability.mdc`](./observability.mdc)).
+
+## Failure categories (UI behavior)
+
+| Category | UI behavior |
+|---|---|
+| network | retry option |
+| validation | field errors or form summary |
+| unauthorized | restore session or redirect to login |
+| forbidden | forbidden page/state |
+| not found | not-found page/state |
+| storage | safe fallback or recovery guidance |
+| unexpected | generic safe message; diagnostics logged |
+
+Layer-boundary mapping (DTO → typed failures) is owned by [`error_handling.mdc`](./error_handling.mdc).
+
+## See also
+
+- [`error_handling.mdc`](./error_handling.mdc) — typed failures at layer boundaries
+- [`components.mdc`](./components.mdc) — `AsyncStateScaffold`, `AppDialog`
+- [`localization_i18n.mdc`](./localization_i18n.mdc)

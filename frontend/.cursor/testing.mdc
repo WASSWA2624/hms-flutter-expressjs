@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Testing Strategy
@@ -32,7 +32,7 @@ Defines the minimum testing structure for the reusable app foundation.
 - Responsive layout utilities have tests.
 
 ## Related rules
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.md)
-- [`state_management.md`](./state_management.md)
-- [`reusable_components.md`](./reusable_components.md)
-- [`responsive_adaptive_design.md`](./responsive_adaptive_design.md)
+- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)
+- [`state_management.md`](./state_management.mdc)
+- [`components.mdc`](./components.mdc)
+- [`layouts.mdc`](./layouts.mdc)

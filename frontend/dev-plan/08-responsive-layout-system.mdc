@@ -4,13 +4,13 @@
 Create centralized breakpoints, layout helpers, page constraints, and adaptive shell behavior.
 
 ## Applies app rules
-- [`responsive_adaptive_design.md`](../app-rules/responsive_adaptive_design.md)
-- [`platform_guidelines.md`](../app-rules/platform_guidelines.md)
-- [`multi_platform_input.md`](../app-rules/multi_platform_input.md)
-- [`performance.md`](../app-rules/performance.md)
+- [`layouts.mdc`](../.cursor/layouts.mdc)
+- [`platform_guidelines.md`](../.cursor/platform_guidelines.mdc)
+- [`multi_platform_input.md`](../.cursor/multi_platform_input.mdc)
+- [`performance.md`](../.cursor/performance.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Implement `lib/core/responsive/app_breakpoints.dart` using the canonical breakpoints.
 3. Implement `ResponsivePage` for padding, scrolling, and max-width constraints.
 4. Implement `ResponsiveAppShell` for mobile, tablet, and desktop layouts.

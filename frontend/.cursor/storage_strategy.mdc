@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Storage Strategy
@@ -32,7 +32,7 @@ Defines local storage choices and ownership.
 - Logout clears sensitive session data.
 
 ## Related rules
-- [`database_strategy.md`](./database_strategy.md)
-- [`offline_sync.md`](./offline_sync.md)
-- [`security.md`](./security.md)
-- [`state_management.md`](./state_management.md)
+- [`database_strategy.md`](./database_strategy.mdc)
+- [`offline_sync.md`](./offline_sync.mdc)
+- [`security.md`](./security.mdc)
+- [`state_management.md`](./state_management.mdc)

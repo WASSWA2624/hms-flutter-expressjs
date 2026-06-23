@@ -4,13 +4,13 @@
 Validate the whole starter against all rules and the execution policy.
 
 ## Applies app rules
-- [`checklists.md`](../app-rules/checklists.md)
-- [`validation_report.md`](../app-rules/validation_report.md)
-- [`scope.md`](../app-rules/scope.md)
-- [`ci_cd_quality_gates.md`](../app-rules/ci_cd_quality_gates.md)
+- [`checklists.md`](../.cursor/checklists.mdc)
+- [`reference/validation-snapshot-2026-05-14.mdc`](../.cursor/reference/validation-snapshot-2026-05-14.mdc)
+- [`scope.md`](../.cursor/scope.mdc)
+- [`ci_cd_quality_gates.md`](../.cursor/ci_cd_quality_gates.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Read every rule file and confirm there are no contradictions.
 3. Confirm every dev-plan file references relevant rules.
 4. Run final quality commands:
@@ -23,8 +23,8 @@ Validate the whole starter against all rules and the execution policy.
 5. Run code generation first when generated files are used.
 6. Validate supported screen-size behavior, including `320px` mobile and large desktop widths.
 7. Validate desktop menu bar, side navigation, and collapsed navigation behavior.
-8. Confirm the starter remains backend-agnostic and reusable.
-9. Update `app-rules/validation_report.md` with actual results from the generated project.
+8. Confirm the starter remains backend-integrated per api-contract.mdc and reusable.
+9. Update `frontend/.cursor/reference/validation-snapshot-2026-05-14.mdc` with actual results from the project.
 
 ## Expected output
 - Updated validation report.

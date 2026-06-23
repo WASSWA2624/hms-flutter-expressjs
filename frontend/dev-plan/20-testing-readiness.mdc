@@ -4,13 +4,13 @@
 Add unit, widget, and integration test foundations.
 
 ## Applies app rules
-- [`testing.md`](../app-rules/testing.md)
-- [`ci_cd_quality_gates.md`](../app-rules/ci_cd_quality_gates.md)
-- [`state_management.md`](../app-rules/state_management.md)
-- [`responsive_adaptive_design.md`](../app-rules/responsive_adaptive_design.md)
+- [`testing.md`](../.cursor/testing.mdc)
+- [`ci_cd_quality_gates.md`](../.cursor/ci_cd_quality_gates.mdc)
+- [`state_management.md`](../.cursor/state_management.mdc)
+- [`layouts.mdc`](../.cursor/layouts.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Create test helper utilities for app setup and provider overrides.
 3. Add tests for validators, mappers, responsive utilities, theme, and shared components.
 4. Add shell tests for mobile and desktop layout decisions.

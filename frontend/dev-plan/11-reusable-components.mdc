@@ -4,14 +4,14 @@
 Build the minimal shared UI component library without creating unnecessary wrappers.
 
 ## Applies app rules
-- [`reusable_components.md`](../app-rules/reusable_components.md)
-- [`forms.md`](../app-rules/forms.md)
-- [`theming.md`](../app-rules/theming.md)
-- [`accessibility.md`](../app-rules/accessibility.md)
-- [`responsive_adaptive_design.md`](../app-rules/responsive_adaptive_design.md)
+- [`components.mdc`](../.cursor/components.mdc)
+- [`ui-patterns.mdc`](../.cursor/ui-patterns.mdc)
+- [`design-system.mdc`](../.cursor/design-system.mdc)
+- [`accessibility.md`](../.cursor/accessibility.mdc)
+- [`layouts.mdc`](../.cursor/layouts.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Create shared wrappers only where repeated styling or behavior exists.
 3. Implement minimal starter components: `AppButton`, `AppIconButton`, `AppTextField`, `AppDialog`, `AsyncStateScaffold`, and layout helpers.
 4. Add form/select/radio/checkbox/switch/date components only when the starter demonstrates or requires those controls.

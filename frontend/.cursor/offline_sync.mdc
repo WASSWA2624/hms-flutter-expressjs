@@ -1,39 +1,39 @@
 ---
-alwaysApply: true
+description: Offline queue, sync states, and conflict handling
+alwaysApply: false
+globs: ["frontend/lib/core/sync/**", "frontend/lib/features/**/data/**"]
 ---
+# Offline and Sync
 
-# Offline and Sync Strategy
-
-## Scope
-Defines offline-capable behavior, sync queues, conflict handling, and connectivity use.
+Purpose: client-side offline behavior per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
 
 ## Mandatory rules
-- Treat connectivity status as a hint, not proof that the backend is reachable.
-- Store offline drafts or pending writes in a structured local queue when offline-capable behavior is required.
-- Make sync operations idempotent when possible.
-- Show clear sync states: pending, syncing, synced, failed, conflict.
+
+- Connectivity is a hint, not proof of reachability.
+- Queue offline drafts/pending writes in structured local storage when required.
+- Sync operations idempotent where possible.
+- Show sync states: pending, syncing, synced, failed, conflict.
 - Do not silently discard offline changes.
-- Keep conflict handling explicit and product-specific where needed.
-- Repositories should expose a consistent view of local and remote data.
+- Conflict handling explicit; surface `409` with version metadata.
+- Repositories expose consistent local + remote views.
+
+## Online-only (never queue)
+
+Auth/session changes, entitlement/break-glass approval, payments/refunds, mortuary release, final closeout — see `api-contract.mdc`.
 
 ## Sync queue fields
+
 | Field | Purpose |
 |---|---|
 | local id | stable local reference |
 | operation type | create, update, delete, upload |
-| payload | serialized request payload |
+| payload | serialized request |
 | status | pending, syncing, failed, synced, conflict |
-| retry count | retry policy control |
-| created/updated timestamps | ordering and diagnostics |
+| retry count | retry policy |
+| timestamps | ordering and diagnostics |
 
-## Acceptance checklist
-- App can show cached or local data where supported.
-- Pending writes survive app restart.
-- Failed syncs show recoverable UI states.
-- Conflict behavior is documented before release.
+## See also
 
-## Related rules
-- [`database_strategy.md`](./database_strategy.md)
-- [`network_api.md`](./network_api.md)
-- [`error_handling.md`](./error_handling.md)
-- [`observability.md`](./observability.md)
+- [`database_strategy.mdc`](./database_strategy.mdc)
+- [`network_api.mdc`](./network_api.mdc)
+- [`ui-feedback.mdc`](./ui-feedback.mdc)

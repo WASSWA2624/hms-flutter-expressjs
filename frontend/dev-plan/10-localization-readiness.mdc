@@ -4,13 +4,13 @@
 Configure generated localization and keep all user-facing starter text localizable.
 
 ## Applies app rules
-- [`localization_i18n.md`](../app-rules/localization_i18n.md)
-- [`date_time_formatting.md`](../app-rules/date_time_formatting.md)
-- [`accessibility.md`](../app-rules/accessibility.md)
-- [`error_handling.md`](../app-rules/error_handling.md)
+- [`localization_i18n.md`](../.cursor/localization_i18n.mdc)
+- [`date_time_formatting.md`](../.cursor/date_time_formatting.mdc)
+- [`accessibility.md`](../.cursor/accessibility.mdc)
+- [`error_handling.md`](../.cursor/error_handling.mdc)
 
 ## Implementation tasks
-1. Follow [`00-execution-policy.md`](./00-execution-policy.md).
+1. Follow [`00-execution-policy.mdc`](./00-execution-policy.mdcc).
 2. Enable `flutter: generate: true` in `pubspec.yaml`.
 3. Create root `l10n.yaml`.
 4. Create `lib/l10n/app_en.arb` with starter labels, navigation labels, error labels, and accessibility labels.

@@ -12,11 +12,11 @@ provider or backend contract.
 
 Rule sources:
 
-- [`app-rules/authentication_session.md`](../../app-planner/app-rules/authentication_session.md)
-- [`app-rules/security.md`](../../app-planner/app-rules/security.md)
-- [`app-rules/permissions.md`](../../app-planner/app-rules/permissions.md)
-- [`app-rules/navigation.md`](../../app-planner/app-rules/navigation.md)
-- [`app-rules/storage_strategy.md`](../../app-planner/app-rules/storage_strategy.md)
+- [`authentication_session.mdc`](../../.cursor/authentication_session.mdc)
+- [`security.mdc`](../../.cursor/security.mdc)
+- [`permissions.mdc`](../../.cursor/permissions.mdc)
+- [`navigation.mdc`](../../.cursor/navigation.mdc)
+- [`storage_strategy.mdc`](../../.cursor/storage_strategy.mdc)
 
 ## Decision
 
